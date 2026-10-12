@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 pub(super) fn compile_connection(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -27,6 +28,7 @@ pub(super) fn compile_connection(
         kind: layout.connection.entity_kind,
     });
     let family = observed_u64(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -35,6 +37,7 @@ pub(super) fn compile_connection(
         facts,
     )?;
     let variant = observed_u64(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -43,6 +46,7 @@ pub(super) fn compile_connection(
         facts,
     )?;
     let retry_reason = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -51,6 +55,7 @@ pub(super) fn compile_connection(
         facts,
     )?;
     let retry_maximum_attempts = observed_optional_u64(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -59,6 +64,7 @@ pub(super) fn compile_connection(
         facts,
     )?;
     let source = exact_adjacent(
+        execution,
         runtime,
         snapshot,
         layout.connection_source_relation,
@@ -68,6 +74,7 @@ pub(super) fn compile_connection(
         facts,
     )?;
     let target = exact_adjacent(
+        execution,
         runtime,
         snapshot,
         layout.connection_target_relation,

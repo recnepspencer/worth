@@ -92,45 +92,53 @@ pub(crate) fn scalar_async_view_named(
     identity: &str,
 ) -> runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> {
     workspace
-        .declare_bridge_async_live_view(
-            identity,
-            foundation::DeclarativeLiveQueryRequest::new(
-                "WorthUiProjectionText",
-                foundation::DeclarativeLiveViewShape::table(),
-            )
-            .project(
-                foundation::DeclarativeProjectionField::new(
-                    foundation::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .expect("valid identity field"),
-                )
-                .delivered_as("identity.id"),
-            )
-            .project(
-                foundation::DeclarativeProjectionField::new(
-                    foundation::AspectFieldKey::from_authoring_parts("query_text", "status")
-                        .expect("valid status field"),
-                )
-                .delivered_as("query_text.status"),
-            ),
-            read::QuerySchemaView::new(
-                "worth-ui-qp02-async",
-                [
-                    read::SchemaFieldView::new(
-                        read::AspectName::new("identity").expect("valid identity aspect"),
-                        read::FieldName::new("id").expect("valid identity field"),
-                        ScalarAspectType::String,
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .declare_bridge_async_live_view(
+                    execution,
+                    identity,
+                    foundation::DeclarativeLiveQueryRequest::new(
+                        "WorthUiProjectionText",
+                        foundation::DeclarativeLiveViewShape::table(),
+                    )
+                    .project(
+                        foundation::DeclarativeProjectionField::new(
+                            foundation::AspectFieldKey::from_authoring_parts("identity", "id")
+                                .expect("valid identity field"),
+                        )
+                        .delivered_as("identity.id"),
+                    )
+                    .project(
+                        foundation::DeclarativeProjectionField::new(
+                            foundation::AspectFieldKey::from_authoring_parts(
+                                "query_text",
+                                "status",
+                            )
+                            .expect("valid status field"),
+                        )
+                        .delivered_as("query_text.status"),
                     ),
-                    read::SchemaFieldView::new(
-                        read::AspectName::new("query_text").expect("valid text aspect"),
-                        read::FieldName::new("status").expect("valid status field"),
-                        ScalarAspectType::String,
+                    read::QuerySchemaView::new(
+                        "worth-ui-qp02-async",
+                        [
+                            read::SchemaFieldView::new(
+                                read::AspectName::new("identity").expect("valid identity aspect"),
+                                read::FieldName::new("id").expect("valid identity field"),
+                                ScalarAspectType::String,
+                            ),
+                            read::SchemaFieldView::new(
+                                read::AspectName::new("query_text").expect("valid text aspect"),
+                                read::FieldName::new("status").expect("valid status field"),
+                                ScalarAspectType::String,
+                            ),
+                        ],
+                        [],
                     ),
-                ],
-                [],
-            ),
-            request,
-        )
-        .expect("Bridge-backed QP02 view must declare")
+                    request,
+                )
+                .expect("Bridge-backed QP02 view must declare")
+        })
+        .expect("workspace host call opens")
 }
 
 pub(crate) fn admitted_async_request_and_completion(

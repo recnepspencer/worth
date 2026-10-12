@@ -44,7 +44,14 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
                 ..
             }) = world
                 .application
-                .redispatch_admitted_external_effect(&handle, &authority, &admission)
+                .with_application_advancement(admission.publication_request(), |phase| {
+                    world.application.redispatch_admitted_external_effect(
+                        &phase, &handle, &authority, &admission,
+                    )
+                })
+                .unwrap_or_else(|cause| {
+                    Err(WorthQueryExternalRedispatchDenial::advancement(cause))
+                })
             else {
                 panic!("redispatch opening retains cause")
             };
@@ -75,7 +82,12 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
         let before = reads();
         world
             .application
-            .redispatch_admitted_external_effect(&handle, &authority, &admission)
+            .with_application_advancement(admission.publication_request(), |phase| {
+                world
+                    .application
+                    .redispatch_admitted_external_effect(&phase, &handle, &authority, &admission)
+            })
+            .unwrap_or_else(|cause| Err(WorthQueryExternalRedispatchDenial::advancement(cause)))
             .unwrap();
         assert!(
             reads() > before,

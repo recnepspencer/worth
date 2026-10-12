@@ -44,11 +44,13 @@ where
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
         value: Value,
         request: &WorthQueryRequestScope,
-    ) where
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryAdvancementDenial>
+    where
         Field: DeclaredApplicationFieldValue<Value = Value>,
         Unit: ApplicationFieldUnit,
     {
         self.with_application_advancement(request, |phase| {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
         let value = Field::Binding::encode(&value).expect("the native field value encodes");
         let entity_id = EntityId::new(
             PartitionId(record.partition_id()),
@@ -57,7 +59,7 @@ where
         );
         let selected = self
             .on_branch(branch)
-            .select()
+            .select(&phase)
             .expect("the native writer branch remains admitted");
         let (_, product, application_basis) = selected.into_parts();
         let graph = self
@@ -65,7 +67,7 @@ where
             .primary_graph()
             .expect("the application retains its primary graph");
         let handle = graph.integration_handle();
-        let candidate = handle.with_query_runtime_mut(|runtime, layout| {
+        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
             let locator = layout
                 .field_locator(field.entity(), field.aspect(), field.field())
                 .expect("the native field is installed")
@@ -89,28 +91,26 @@ where
                 )
                 .expect("the native field write stays within resource budgets");
             runtime
-                .prepare_branch_transaction(
-                    transaction,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(&execution, transaction)
                 .expect("the native field write prepares a Relational candidate")
         });
         let outcome = product
             .publication_binding()
             .prepare_relational_candidate(candidate, request, false)
             .expect("the native World publication prepares")
-            .execute(phase.execution_request_for(&self.product_runtime).expect("private progression uses its admitted runtime phase"));
+            .execute(execution);
         let RuntimeWorldPublicationOutcome::Performed(performed) = outcome else {
             panic!("the native World publication must perform: {outcome:?}");
         };
         let published = performed.commit().basis().relational_basis().clone();
         drop(performed.consume());
-        handle.with_runtime_mut(|runtime| {
+        handle.with_runtime_mut(&execution, |runtime| {
             let observation = published.observation();
             let head = observation
                 .commit_receipt()
                 .expect("the native publication has a canonical commit");
             crate::domain_computation::primary_graph::index_maintenance_budget::refresh_with_cold_fallback(
+                &execution,
                 runtime,
                 DerivedIndexBuildRequest {
                     source_commit_id: head.commit_id,
@@ -122,6 +122,7 @@ where
             )
             .expect("the native publication refreshes its exact indexes");
         });
-        }).expect("the declared native writer policy admits its host call");
+        Ok(())
+        })?
     }
 }

@@ -14,8 +14,11 @@ use worth_relational::facade::inspection::{
 
 #[test]
 fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
-    let (mut world, baseline) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &baseline);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &baseline);
 
     let execution_order = [
         DeltaId::StormRerouteAurora,
@@ -64,6 +67,7 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
         let unrelated_scope = RelationalMvccCostScope::capture(&world.runtime, unrelated);
 
         let batch = lower_supply_chain_production_delta(
+            execution,
             &world.runtime,
             &world.program,
             &world.handles,
@@ -72,8 +76,14 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
             delta,
         )
         .expect("the production lowerer accepts the selected branch's actual state");
-        let committed =
-            commit_supply_chain_delta(&world.runtime, &world.program, branch.clone(), delta, batch);
+        let committed = commit_supply_chain_delta(
+            execution,
+            &world.runtime,
+            &world.program,
+            branch.clone(),
+            delta,
+            batch,
+        );
         committed_deltas.push(delta);
         for (ordinal, (candidate, _)) in scenarios.iter().enumerate() {
             let after = world.runtime.branch_reference_state(candidate).unwrap();
@@ -96,6 +106,7 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
             "only the declared hazard boundary carries schema-transition truth"
         );
         let observed = observe_supply_chain_snapshot(
+            execution,
             &world.program,
             &world.handles.for_snapshot(committed.snapshot.clone()),
             &world.runtime,
@@ -131,20 +142,21 @@ fn all_declared_supply_chain_deltas_match_oracle_and_isolate_cost() {
             "a branch-local delta must charge no synchronous work to siblings"
         );
         assert_eq!(unrelated_cost.branch_cell_contacts(), 0);
-        assert_all_sibling_semantics(&mut world, &scenarios, &committed_deltas);
+        assert_all_sibling_semantics(execution, &mut world, &scenarios, &committed_deltas);
     }
 
-    assert_v1_sibling_progressed_after_v2_transition(&mut world, &rewire_before);
+    assert_v1_sibling_progressed_after_v2_transition(execution, &mut world, &rewire_before);
 
     let final_sharing = world.runtime.observe_branch_sharing(&identities).unwrap();
     assert_eq!(final_sharing.unique_root_count(), 9);
     assert_eq!(final_sharing.unique_canonical_commit_artifacts(), 9);
     assert_eq!(final_sharing.fork_materialized_authoritative_bytes(), 0);
     assert_eq!(final_sharing.copied_commit_envelopes(), 0);
-    assert_main_remains_operating(&mut world);
+    assert_main_remains_operating(execution, &mut world);
 }
 
 fn assert_all_sibling_semantics(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut super::world::supply_chain::ProductionSeededSupplyChainWorld,
     scenarios: &[(BranchId, DeltaId); 8],
     committed: &[DeltaId],
@@ -158,6 +170,7 @@ fn assert_all_sibling_semantics(
             .snapshot_for_observation(&basis.observation())
             .unwrap();
         let observed = observe_supply_chain_snapshot(
+            execution,
             &world.program,
             &world.handles.for_snapshot(snapshot.clone()),
             &world.runtime,
@@ -178,10 +191,11 @@ fn assert_all_sibling_semantics(
             .release_snapshot(&snapshot)
             .unwrap();
     }
-    assert_main_remains_operating(world);
+    assert_main_remains_operating(execution, world);
 }
 
 fn assert_v1_sibling_progressed_after_v2_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut super::world::supply_chain::ProductionSeededSupplyChainWorld,
     before: &worth_relational::facade::branch::RelationalBranchReferenceState,
 ) {
@@ -199,6 +213,7 @@ fn assert_v1_sibling_progressed_after_v2_transition(
         .snapshot_for_observation(&basis.observation())
         .unwrap();
     let observed = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         &world.runtime,
@@ -223,6 +238,7 @@ fn assert_v1_sibling_progressed_after_v2_transition(
 }
 
 fn assert_main_remains_operating(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut super::world::supply_chain::ProductionSeededSupplyChainWorld,
 ) {
     let identity = world.runtime.main_branch_identity();
@@ -233,6 +249,7 @@ fn assert_main_remains_operating(
         .snapshot_for_observation(&basis.observation())
         .unwrap();
     let observed = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         &world.runtime,

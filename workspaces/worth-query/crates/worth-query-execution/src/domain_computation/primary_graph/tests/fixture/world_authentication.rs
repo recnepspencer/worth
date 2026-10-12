@@ -9,12 +9,19 @@ use super::{authenticate_external, AuthorizationWorld, IdentityExecutionSchema, 
 impl IdentityWorld {
     pub(in crate::domain_computation::primary_graph::tests) fn selected_product(
         &self,
+        phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     ) -> crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
         '_,
         IdentityExecutionSchema,
     > {
+        let execution = phase
+            .execution_request_for(self.application.product_runtime())
+            .expect("fixture lends its installed phase");
         self.application
-            .select_product_branch(self.application.product_runtime().default_branch())
+            .select_product_branch(
+                &execution,
+                self.application.product_runtime().default_branch(),
+            )
             .expect("the fixture product branch remains admitted")
     }
 

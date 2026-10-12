@@ -13,9 +13,9 @@ fn historical_activity_denies_exact_support_loss_after_admission() {
         .query(activity_request())
         .as_principal(&world.requester)
         .controls(controls(8))
-        .admit_historical_with_approved_elevation(&world.approved, |admitted| {
+        .admit_historical_with_approved_elevation(&world.approved, |phase, admitted| {
             revoke_exact_support(&world, 157);
-            admitted.execute()
+            admitted.execute(phase)
         });
     let Err(denial) = result else {
         panic!("historical activity must refresh exact support before payload delivery");
@@ -43,9 +43,9 @@ fn preview_activity_denies_exact_support_loss_after_admission() {
         .query(activity_request())
         .as_principal(&world.requester)
         .controls(controls(8))
-        .admit_preview_with_approved_elevation(&world.approved, &session, |admitted| {
+        .admit_preview_with_approved_elevation(&world.approved, &session, |phase, admitted| {
             revoke_exact_support(&world, 159);
-            admitted.execute()
+            admitted.execute(phase)
         });
     let Err(denial) = result else {
         panic!("preview activity must refresh exact support before payload delivery");

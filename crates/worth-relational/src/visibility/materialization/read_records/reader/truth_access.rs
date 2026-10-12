@@ -4,6 +4,7 @@ use crate::storage::data::RecordLifecycleState;
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn visible_entity_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
     ) -> Option<EntityReadRecord> {
@@ -13,6 +14,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn visible_relation_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: crate::identity::data::RelationId,
         version_id: crate::identity::data::VersionId,
     ) -> Option<RelationReadRecord> {
@@ -22,16 +24,18 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn visible_entities_of_kind(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
     ) -> Vec<EntityReadRecord> {
-        self.bounded_visible_entities_of_kind(kind_id, version_id, usize::MAX)
+        self.bounded_visible_entities_of_kind(_execution, kind_id, version_id, usize::MAX)
             .expect("an unbounded kind scan cannot exhaust usize::MAX work")
             .into_records()
     }
 
     pub fn visible_entities_of_kind_in_partition(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
@@ -49,6 +53,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn visible_relations_of_kind(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
     ) -> Vec<RelationReadRecord> {
@@ -68,6 +73,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn visible_relations_of_kind_in_partition(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: crate::identity::data::PartitionId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
@@ -84,6 +90,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     }
     pub fn entity_aspects_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
     ) -> Option<Vec<AspectKey>> {
@@ -98,6 +105,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn relation_aspects_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: crate::identity::data::RelationId,
         version_id: crate::identity::data::VersionId,
     ) -> Option<Vec<AspectKey>> {

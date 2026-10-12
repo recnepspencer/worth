@@ -18,6 +18,7 @@ use crate::domain_computation::primary_graph::workflow::evidence_dependency::{
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_evidence_dependencies(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -26,14 +27,20 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
     check_request_live(observation_request, "workflow evidence dependency relation")?;
-    let (dependencies, adjacency) =
-        traversal::observe(runtime, snapshot, layout, evidence, observation_request)?;
+    let (dependencies, adjacency) = traversal::observe(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        evidence,
+        observation_request,
+    )?;
     facts.push(adjacency);
     let mut observed = Vec::new();
     for dependency in dependencies {
         check_request_live(observation_request, "workflow evidence dependency")?;
         observed.push(observe_dependency(
-            runtime, snapshot, layout, dependency, facts,
+            execution, runtime, snapshot, layout, dependency, facts,
         )?);
         check_request_live(observation_request, "workflow evidence dependency")?;
     }
@@ -41,6 +48,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
 }
 
 fn observe_dependency(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -53,6 +61,7 @@ fn observe_dependency(
         kind,
     });
     let fact_kind = observed_text(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -62,6 +71,7 @@ fn observe_dependency(
     )?;
     let entity = EntityId::new(
         PartitionId::new(narrow_u32(observed_u64(
+            execution,
             runtime,
             snapshot,
             dependency,
@@ -70,6 +80,7 @@ fn observe_dependency(
             facts,
         )?)?),
         observed_u64(
+            execution,
             runtime,
             snapshot,
             dependency,
@@ -78,6 +89,7 @@ fn observe_dependency(
             facts,
         )?,
         narrow_u32(observed_u64(
+            execution,
             runtime,
             snapshot,
             dependency,
@@ -87,6 +99,7 @@ fn observe_dependency(
         )?)?,
     );
     let aspect = optional_text(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -95,6 +108,7 @@ fn observe_dependency(
         facts,
     )?;
     let native_entity_kind = optional_u64(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -103,6 +117,7 @@ fn observe_dependency(
         facts,
     )?;
     let field = optional_text(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -111,6 +126,7 @@ fn observe_dependency(
         facts,
     )?;
     let field_presence = optional_text(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -119,6 +135,7 @@ fn observe_dependency(
         facts,
     )?;
     let relation_kind = optional_u64(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -127,6 +144,7 @@ fn observe_dependency(
         facts,
     )?;
     let direction = optional_text(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -135,6 +153,7 @@ fn observe_dependency(
         facts,
     )?;
     let native_revision = optional_u64(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -143,6 +162,7 @@ fn observe_dependency(
         facts,
     )?;
     let comparison_work_limit = optional_u64(
+        execution,
         runtime,
         snapshot,
         dependency,
@@ -281,6 +301,7 @@ pub(in crate::domain_computation::primary_graph) fn decode_field_revision_fact(
 }
 
 fn optional_text(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: EntityId,
@@ -288,7 +309,7 @@ fn optional_text(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
-    match optional_value(runtime, snapshot, entity, kind, locator, facts)? {
+    match optional_value(execution, runtime, snapshot, entity, kind, locator, facts)? {
         Some(AspectValue::String(InternedString::Raw(value))) => Ok(Some(value)),
         Some(_) => Err(denial(
             "workflow evidence dependency field has the wrong type",
@@ -298,6 +319,7 @@ fn optional_text(
 }
 
 fn optional_u64(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: EntityId,
@@ -305,7 +327,7 @@ fn optional_u64(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
-    match optional_value(runtime, snapshot, entity, kind, locator, facts)? {
+    match optional_value(execution, runtime, snapshot, entity, kind, locator, facts)? {
         Some(AspectValue::UInt64(value)) => Ok(Some(value)),
         Some(_) => Err(denial(
             "workflow evidence dependency field has the wrong type",
@@ -315,6 +337,7 @@ fn optional_u64(
 }
 
 fn optional_value(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: EntityId,
@@ -322,7 +345,7 @@ fn optional_value(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<AspectValue>, WorthQueryApplicationAttemptDenial> {
-    match observe_field(runtime, snapshot, entity, kind, locator)
+    match observe_field(runtime, execution, snapshot, entity, kind, locator)
         .ok_or_else(|| denial("workflow evidence dependency field is unavailable"))?
     {
         WorthQueryApplicationFieldObservation::Present(value) => {

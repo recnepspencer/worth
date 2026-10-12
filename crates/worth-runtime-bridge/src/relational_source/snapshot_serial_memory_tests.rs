@@ -9,7 +9,9 @@ use worth_foundational::{
 #[test]
 fn snapshot_serial_memory_is_refused_after_scope_admission() {
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "visible");
+    let fixture_host_request = crate::snapshot::test_serial_request();
+    let fixture_execution = &worth_execution::ExecutionRequest::serial(&fixture_host_request);
+    let created = create_entity_outcome(fixture_execution, &runtime, "visible");
     let identity = bridge_snapshot_identity_for_handle(&created.snapshot);
     let reader = reader_for_current(runtime, identity, created.snapshot.version_id());
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(
@@ -62,8 +64,11 @@ fn snapshot_serial_memory_is_refused_after_scope_admission() {
 
 #[test]
 fn snapshot_result_clone_shares_reserved_record_storage() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "visible");
+    let created = create_entity_outcome(execution, &runtime, "visible");
     let identity = bridge_snapshot_identity_for_handle(&created.snapshot);
     let reader = reader_for_current(runtime, identity, created.snapshot.version_id());
     let packet = SnapshotReadPacket::new(vec![SnapshotReadRequest::for_relational_record(

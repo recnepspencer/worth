@@ -7,6 +7,7 @@ use worth_server::{
 };
 
 pub(super) fn install_requested_named_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     request: &WorthServerQueryWorkspaceBindingRequest,
 ) -> Result<(), WorthServerQueryWorkspaceBindingError> {
@@ -19,7 +20,7 @@ pub(super) fn install_requested_named_read(
     }
 
     workspace
-        .live_view::<serde_json::Value>(binding_label, |q| {
+        .live_view::<serde_json::Value>(request_execution, binding_label, |q| {
             q.from("User")
                 .select([
                     aspect_field_key("identity", "id"),

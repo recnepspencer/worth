@@ -8,6 +8,14 @@ pub enum WorthQueryWorkflowAdvanceDenialKind {
     ExecutionRequest(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
+    /// Native execution refused this application stage under its caller request.
+    StageExecutionRequest {
+        stage_identity: String,
+        cause: Result<
+            worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+            worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+        >,
+    },
     RuntimeAuthority(crate::domain_installation::WorthQueryDomainHandleDenialKind),
     UnknownStage,
     StageAlreadyCompleted,

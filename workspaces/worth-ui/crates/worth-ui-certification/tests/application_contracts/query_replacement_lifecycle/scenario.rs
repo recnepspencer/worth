@@ -153,14 +153,15 @@ pub(crate) fn installed_workspace_with_measurement_authority(
         .expect("identity aspect")
         .aspect("measurement.value", "measurement.value")
         .expect("measurement aspect");
-    let mut workspace =
+    let mut workspace = crate::request_custody::with_bootstrap_request(|execution| {
         worth_ui_query_binding::install_worth_ui_test_operation_executors(operation_live_support(
             in_memory_test_runtime()
                 .with_schema(schema)
                 .domain_package(worth_ui_domain_package()),
         ))
-        .workspace(label)
-        .expect("installed Query workspace");
+        .workspace(execution, label)
+        .expect("installed Query workspace")
+    });
     let measurement = insert_measurement(&mut workspace);
     (workspace, measurement)
 }
@@ -169,27 +170,35 @@ pub(crate) fn insert_measurement(
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> WorthQueryEntityIdentity {
     workspace
-        .insert("WorthUiMeasurement", |measurement| {
-            measurement
-                .set_aspect(
-                    runtime::WorthQueryAspectTouch::from_authoring_ingress_text("identity.id")
-                        .expect("identity touch"),
-                    runtime::WorthQueryAuthoredAspectValue::string("query-lifecycle-measurement"),
-                )
-                .set_aspect(
-                    runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
-                        "measurement.value",
-                    )
-                    .expect("measurement touch"),
-                    runtime::WorthQueryAuthoredAspectValue::native(AspectValue::Float32(
-                        CanonicalF32::from_f32(240.0),
-                    )),
-                )
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .insert(execution, "WorthUiMeasurement", |measurement| {
+                    measurement
+                        .set_aspect(
+                            runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "identity.id",
+                            )
+                            .expect("identity touch"),
+                            runtime::WorthQueryAuthoredAspectValue::string(
+                                "query-lifecycle-measurement",
+                            ),
+                        )
+                        .set_aspect(
+                            runtime::WorthQueryAspectTouch::from_authoring_ingress_text(
+                                "measurement.value",
+                            )
+                            .expect("measurement touch"),
+                            runtime::WorthQueryAuthoredAspectValue::native(AspectValue::Float32(
+                                CanonicalF32::from_f32(240.0),
+                            )),
+                        )
+                })
+                .expect("real replacement-lifecycle measurement insertion")
+                .deltas()[0]
+                .entity_identity()
+                .clone()
         })
-        .expect("real replacement-lifecycle measurement insertion")
-        .deltas()[0]
-        .entity_identity()
-        .clone()
+        .expect("workspace host call opens")
 }
 
 pub(crate) fn operation_live_support(

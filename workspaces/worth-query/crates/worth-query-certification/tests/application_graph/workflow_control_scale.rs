@@ -38,171 +38,9 @@ use super::document_retention_model::{
 const FRAGMENT_NODES: u16 = 9;
 const FRAGMENT_CONNECTIONS: u16 = 16;
 
-fn control_definition(occurrences: u16) -> AuthoredWorkflowDefinition<ReviewedDocumentWorkflow> {
-    let nodes = occurrences * FRAGMENT_NODES + 1;
-    let connections = occurrences * (FRAGMENT_CONNECTIONS + 1);
-    let limits = ApplicationWorkflowDefinitionLimits::new(
-        nodes,
-        connections,
-        connections,
-        component_limits(occurrences),
-        16 * 1024 * 1024,
-    )
-    .expect("finite control definition limits");
-    let mut fragment =
-        ApplicationWorkflowComponentBuilder::<ReviewedDocumentWorkflow>::new("control-fragment")
-            .expect("component identity");
-    let proposal = fragment
-        .operation::<WorkflowDefinitionAuthoringOperation>("proposal", false)
-        .expect("proposal operation");
-    let condition = fragment
-        .condition(
-            "condition",
-            "retained",
-            ApplicationWorkflowConditionOperands::new()
-                .query::<DocumentRetentionConditionQuery>("retained"),
-        )
-        .expect("typed condition");
-    let retention = fragment
-        .assessment::<DocumentRetentionQuery>("retention")
-        .expect("resource assessment");
-    let independent = fragment
-        .assessment_for::<DocumentRetentionQuery>(
-            "independent",
-            ApplicationWorkflowSubjectSelector::related(),
-        )
-        .expect("related assessment");
-    let join = fragment
-        .evidence_join(
-            "evidence",
-            ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
-        )
-        .expect("evidence join");
-    let revise = fragment
-        .operation::<WorkflowDefinitionAuthoringOperation>("revise", false)
-        .expect("revision operation");
-    let exit = fragment
-        .operation::<WorkflowDefinitionAuthoringOperation>("exit", false)
-        .expect("fragment exit");
-    let checkpoint = fragment
-        .operation::<WorkflowDefinitionAuthoringOperation>("checkpoint", false)
-        .expect("fragment checkpoint");
-    let last = fragment
-        .operation::<WorkflowDefinitionAuthoringOperation>("last", false)
-        .expect("fragment last operation");
-    let retry = ApplicationWorkflowRetry::new(
-        ApplicationWorkflowControlOutcome::Completed,
-        "control-revision",
-        2,
-    )
-    .expect("finite retry");
-    fragment
-        .control(
-            &proposal,
-            ApplicationWorkflowControlOutcome::Completed,
-            &condition,
-        )
-        .unwrap()
-        .control(
-            &condition,
-            ApplicationWorkflowControlOutcome::ConditionSatisfied,
-            &retention,
-        )
-        .unwrap()
-        .control(
-            &condition,
-            ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
-            &exit,
-        )
-        .unwrap()
-        .control(
-            &retention,
-            ApplicationWorkflowControlOutcome::Completed,
-            &independent,
-        )
-        .unwrap()
-        .control(
-            &independent,
-            ApplicationWorkflowControlOutcome::Completed,
-            &join,
-        )
-        .unwrap()
-        .control(
-            &join,
-            ApplicationWorkflowControlOutcome::EvidenceSatisfied,
-            &exit,
-        )
-        .unwrap()
-        .control(
-            &join,
-            ApplicationWorkflowControlOutcome::EvidenceFailed,
-            &revise,
-        )
-        .unwrap()
-        .retry(&revise, retry, &proposal)
-        .unwrap()
-        .control(
-            &revise,
-            ApplicationWorkflowControlOutcome::RetryExhausted,
-            &exit,
-        )
-        .unwrap()
-        .control(
-            &exit,
-            ApplicationWorkflowControlOutcome::Completed,
-            &checkpoint,
-        )
-        .unwrap()
-        .control(
-            &checkpoint,
-            ApplicationWorkflowControlOutcome::Completed,
-            &last,
-        )
-        .unwrap()
-        .condition_subject(&proposal, &condition)
-        .unwrap()
-        .proposal_for_assessment(&proposal, &retention)
-        .unwrap()
-        .proposal_for_assessment(&proposal, &independent)
-        .unwrap()
-        .assessment_evidence(&retention, &join)
-        .unwrap()
-        .assessment_evidence(&independent, &join)
-        .unwrap();
-    let input = fragment.input_port("input", &proposal).unwrap();
-    let output = fragment.output_port("output", &last).unwrap();
-    let fragment = fragment.finish().expect("control fragment closes");
-    let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
-        "repeated-control-fragment",
-        limits,
-    )
-    .expect("definition identity");
-    let mut previous = None;
-    for index in 0..occurrences {
-        let expanded = definition
-            .expand_component(&format!("control-{index:04}"), &fragment)
-            .expect("bounded control expansion");
-        let entry = expanded.input(&input).expect("exported input binds");
-        let exit = expanded.output(&output).expect("exported output binds");
-        if let Some(previous) = previous {
-            definition.control(
-                &previous,
-                ApplicationWorkflowControlOutcome::Completed,
-                &entry,
-            );
-        } else {
-            definition.start(&entry);
-        }
-        previous = Some(exit);
-    }
-    let terminal = definition.terminal("done").expect("terminal node");
-    definition.control(
-        &previous.expect("nonempty control sequence"),
-        ApplicationWorkflowControlOutcome::Completed,
-        &terminal,
-    );
-    definition.finish().expect("control definition closes")
-}
+#[path = "workflow_control_scale/control_definition.rs"]
+mod control_definition;
+use control_definition::control_definition;
 
 fn component_limits(occurrences: u16) -> ApplicationWorkflowComponentLimits {
     ApplicationWorkflowComponentLimits::new(
@@ -305,22 +143,30 @@ fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
     assert_eq!(work.indexed_nodes(), u64::from(nodes));
     assert_eq!(work.indexed_connections(), u64::from(connections));
     assert!(work.total_visits() <= u64::from(nodes) * 64, "{work:?}");
-    let cost_scope = runtime
-        .capture_certification_cost_scope(application.current_world())
-        .expect("the branch remains measurable");
+    let cost_scope = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .capture_certification_cost_scope(&host_phase, application.current_world())
+                .expect("the branch remains measurable")
+        })
+        .expect("installed host call opens");
     let publication_at = Instant::now();
     let publication = runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &application, control_definition(occurrences))
+                .expect("control graph binds to installed vocabulary")
+                .publish(WorkflowDefinitionExpectedPredecessor::Absent)
+                .idempotency(&key)
         })
-        .workflow(&application, control_definition(occurrences))
-        .expect("control graph binds to installed vocabulary")
-        .publish(WorkflowDefinitionExpectedPredecessor::Absent)
-        .idempotency(&key)
+        .expect("installed host call opens")
         .execute()
         .expect("control definition publishes");
     let publication_ms = publication_at.elapsed().as_millis();
@@ -331,9 +177,13 @@ fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
         published.definition().content_identity(),
         validated.content_identity()
     );
-    let cost = runtime
-        .observe_certification_cost(&cost_scope)
-        .expect("publication cost remains measurable");
+    let cost = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .observe_certification_cost(&host_phase, &cost_scope)
+                .expect("publication cost remains measurable")
+        })
+        .expect("installed host call opens");
     let sharing = cost.relational().sharing_cost_delta();
     assert_eq!(sharing.copied_truth_bytes, 0);
     let before = runtime.workflow_compilation_reuse_counters();

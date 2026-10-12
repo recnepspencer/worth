@@ -35,16 +35,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        if let Err(cause) = phase.execution_request_for(&self.product_runtime) {
-            return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
-                cause,
-            )
-            .into_commit_outcome();
-        }
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    cause,
+                )
+                .into_commit_outcome()
+            }
+        };
         if let Some(denial) = self.direct_operation_commit_denial::<Operation>() {
             return WorthQueryApplicationCommitOutcome::Denied(denial);
         }
         self.compare_and_commit_application_with_output_observation(
+            &execution,
             phase,
             program,
             idempotency,

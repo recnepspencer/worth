@@ -1,3 +1,5 @@
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 use axum::http::StatusCode;
 
 #[path = "support/route_assembly_phase_twelve/fixture.rs"]

@@ -120,7 +120,17 @@ fn omitted_dependency_cannot_be_used_as_a_complete_source_expectation() {
     world
         .authorization_time
         .script(vec![UNIX_EPOCH + Duration::from_secs(100); 32]);
-    let result = execute_result(&world);
+    let result = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            execute_result(
+                &(phase).test_host_request(),
+                &host_custody.borrowed_request_for_test(),
+                &world,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let source = result
         .observed_sources()
         .first()
@@ -139,21 +149,39 @@ fn observe(label: &str) -> ConsumerObservation {
     world
         .authorization_time
         .script(vec![UNIX_EPOCH + Duration::from_secs(100); 32]);
-    execute(&world)
+    world
+        .application
+        .with_host_advancement(|phase| execute(&phase.test_host_request(), &world))
+        .expect("the observation fixture owns its installed read")
 }
 
-fn execute(world: &AuthorizationWorld) -> ConsumerObservation {
-    capture_observation(&execute_result(world))
+fn execute(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    world: &AuthorizationWorld,
+) -> ConsumerObservation {
+    capture_observation(&execute_result(
+        phase_custody,
+        &phase_custody.borrowed_request_for_test(),
+        world,
+    ))
 }
 
-fn execute_result(world: &AuthorizationWorld) -> GovernedResult {
+fn execute_result(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+) -> GovernedResult {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
+            &phase_custody.phase_for_application(&world.application),
             &world.binding,
             &external,
             &request,
@@ -162,9 +190,13 @@ fn execute_result(world: &AuthorizationWorld) -> GovernedResult {
         .unwrap();
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             AccountIdentity::reference(),
             "account-1".to_owned(),
             &request,
@@ -176,14 +208,21 @@ fn execute_result(world: &AuthorizationWorld) -> GovernedResult {
         .installed_schema()
         .certification_query(GovernedAccountOmissionQuery::reference())
         .unwrap();
-    let capability = admit_touch_account_capability(world, &principal, &request).unwrap();
+    let capability = admit_touch_account_capability(
+        &(phase_custody).test_host_request(),
+        world,
+        &principal,
+        &request,
+    )
+    .unwrap();
     let capability_session = capability.graph_work_session_identity();
     let capability_run = capability.graph_work_managed_run_identity();
     let capability_branch = capability.graph_work_branch().clone();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
     let plan = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .admit_governed_application_query(
+            &phase_custody.phase_for_application(&world.application),
             &query,
             &access,
             capability,
@@ -202,7 +241,10 @@ fn execute_result(world: &AuthorizationWorld) -> GovernedResult {
     assert!(plan.graph_work_decision_fact_count() >= 3);
     world
         .application
-        .execute_application_query_one_shot(plan)
+        .execute_application_query_one_shot(
+            &phase_custody.phase_for_application(&world.application),
+            plan,
+        )
         .unwrap()
 }
 

@@ -2,6 +2,9 @@ use super::*;
 use std::num::NonZeroUsize;
 #[test]
 fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut court = CompositeSupplyChainCourt::compile();
     let policy = match court.world.execution_placement() {
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
@@ -12,8 +15,8 @@ fn mixed_same_head_race_has_one_winner_and_preserves_signal_loser() {
     let root = court.bootstrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let signal_attempt = signal_prepared(&court, &root, &token);
-    let relational_attempt = court.prepare_cargo(&root, "5");
-    let mut context = court.context(&root);
+    let relational_attempt = court.prepare_cargo(request_execution, &root, "5");
+    let mut context = court.context(request_execution, &root);
     let port = court.world.publication_port();
     let control = court.world.world_operation_control_for_test();
     let signal = court

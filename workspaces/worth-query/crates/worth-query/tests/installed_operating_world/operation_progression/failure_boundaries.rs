@@ -8,7 +8,11 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn ordinary_executor_failures_are_typed_and_must_be_declared() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declared = operation_failure(
+        request_execution,
         "ordinary-declared-failure",
         domain::WorthQueryOperationFailureClass::Dependency,
     );
@@ -19,6 +23,7 @@ fn ordinary_executor_failures_are_typed_and_must_be_declared() {
         )
     );
     let undeclared = operation_failure(
+        request_execution,
         "ordinary-undeclared-failure",
         domain::WorthQueryOperationFailureClass::Unsupported,
     );
@@ -31,10 +36,11 @@ fn ordinary_executor_failures_are_typed_and_must_be_declared() {
 }
 
 fn operation_failure(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     class: domain::WorthQueryOperationFailureClass,
 ) -> domain::WorthQueryBoundExecutionDenial {
-    let mut workspace = workspace(name, false).unwrap();
+    let mut workspace = workspace(request_execution, name, false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -61,13 +67,21 @@ fn operation_failure(
 
 #[test]
 fn unsupported_primary_read_basis_denies_before_execution_work() {
-    let workspace = workspace("installed-foreign-basis-material", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace =
+        workspace(request_execution, "installed-foreign-basis-material", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let branch = workspace
-        .branches()
-        .fork(workspace.current_world())
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(workspace.current_world())
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .unwrap();
     let denial = match workspace
         .observe_operating_world(branch)
@@ -89,7 +103,11 @@ fn unsupported_primary_read_basis_denies_before_execution_work() {
 
 #[test]
 fn same_shaped_read_from_a_foreign_runtime_cannot_publish() {
-    let mut workspace = foreign_material_workspace("foreign-runtime-material-owner").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        foreign_material_workspace(request_execution, "foreign-runtime-material-owner").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let executed = workspace
         .observe_operating_world(workspace.current_world())

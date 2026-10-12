@@ -22,7 +22,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         maximum_work: NonZeroUsize,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
-        phase
+        let execution = phase
             .execution_request_for(&runtime.product_runtime)
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
@@ -30,54 +30,57 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ))
             })?;
         let mut admission = self.request_admission(maximum_work);
-        runtime.primary_provider.graph.with_runtime(|relational| {
-            for settlement in settlements {
-                if !settlement.belongs_to(runtime) {
-                    return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
-                }
-                let lineage = runtime
-                    .primary_provider
-                    .graph
-                    .output_lineage
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let read = lineage_read(&mut admission, |maximum_work| {
-                    if let Some(receipt) = settlement.application_commit_receipt() {
-                        lineage.source_facts_for_receipt(
-                            runtime.runtime.authority_identity().as_u64(),
-                            &runtime.installed_schema.binding_identity(),
-                            self.product().observation(),
-                            receipt,
-                            maximum_work,
-                        )
-                    } else if let Some(stable) = settlement.stable.as_ref() {
-                        lineage.source_facts_for_stable_output(
-                            runtime.runtime.authority_identity().as_u64(),
-                            &runtime.installed_schema.binding_identity(),
-                            self.product().observation(),
-                            stable,
-                            maximum_work,
-                        )
-                    } else {
-                        lineage.source_facts_for_restored_output(
-                            runtime.runtime.authority_identity().as_u64(),
-                            &runtime.installed_schema.binding_identity(),
-                            self.product().observation(),
-                            settlement,
-                            maximum_work,
-                        )
+        runtime
+            .primary_provider
+            .graph
+            .with_runtime(&execution, |relational| {
+                for settlement in settlements {
+                    if !settlement.belongs_to(runtime) {
+                        return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
                     }
-                })?;
-                drop(lineage);
-                let Some(read) = read else {
-                    let receipt = settlement.application_commit_receipt();
-                    require_own_publication(receipt, self.product().observation())?;
-                    continue;
-                };
-                self.require_current_read(relational, &read, &mut admission)?;
-            }
-            Ok(())
-        })
+                    let lineage = runtime
+                        .primary_provider
+                        .graph
+                        .output_lineage
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let read = lineage_read(&mut admission, |maximum_work| {
+                        if let Some(receipt) = settlement.application_commit_receipt() {
+                            lineage.source_facts_for_receipt(
+                                runtime.runtime.authority_identity().as_u64(),
+                                &runtime.installed_schema.binding_identity(),
+                                self.product().observation(),
+                                receipt,
+                                maximum_work,
+                            )
+                        } else if let Some(stable) = settlement.stable.as_ref() {
+                            lineage.source_facts_for_stable_output(
+                                runtime.runtime.authority_identity().as_u64(),
+                                &runtime.installed_schema.binding_identity(),
+                                self.product().observation(),
+                                stable,
+                                maximum_work,
+                            )
+                        } else {
+                            lineage.source_facts_for_restored_output(
+                                runtime.runtime.authority_identity().as_u64(),
+                                &runtime.installed_schema.binding_identity(),
+                                self.product().observation(),
+                                settlement,
+                                maximum_work,
+                            )
+                        }
+                    })?;
+                    drop(lineage);
+                    let Some(read) = read else {
+                        let receipt = settlement.application_commit_receipt();
+                        require_own_publication(receipt, self.product().observation())?;
+                        continue;
+                    };
+                    self.require_current_read(&execution, relational, &read, &mut admission)?;
+                }
+                Ok(())
+            })
     }
 
     /// Checks a set of retained producer receipts against this exact product
@@ -90,7 +93,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         maximum_work: NonZeroUsize,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let runtime = self.application();
-        phase
+        let execution = phase
             .execution_request_for(&runtime.product_runtime)
             .map_err(|cause| {
                 denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
@@ -98,38 +101,41 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 ))
             })?;
         let mut admission = self.request_admission(maximum_work);
-        runtime.primary_provider.graph.with_runtime(|relational| {
-            for receipt in receipts {
-                if receipt.runtime_authority() != runtime.runtime.authority_identity()
-                    || receipt.principal_scope().binding_identity()
-                        != &runtime.installed_schema.binding_identity()
-                {
-                    return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
+        runtime
+            .primary_provider
+            .graph
+            .with_runtime(&execution, |relational| {
+                for receipt in receipts {
+                    if receipt.runtime_authority() != runtime.runtime.authority_identity()
+                        || receipt.principal_scope().binding_identity()
+                            != &runtime.installed_schema.binding_identity()
+                    {
+                        return Err(denial(WorthQueryOutputDemandDenialKind::ForeignSettlement));
+                    }
+                    let lineage = runtime
+                        .primary_provider
+                        .graph
+                        .output_lineage
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let read = lineage_read(&mut admission, |maximum_work| {
+                        lineage.source_facts_for_receipt(
+                            runtime.runtime.authority_identity().as_u64(),
+                            &runtime.installed_schema.binding_identity(),
+                            self.product().observation(),
+                            receipt,
+                            maximum_work,
+                        )
+                    })?;
+                    drop(lineage);
+                    let Some(read) = read else {
+                        require_own_publication(Some(receipt), self.product().observation())?;
+                        continue;
+                    };
+                    self.require_current_read(&execution, relational, &read, &mut admission)?;
                 }
-                let lineage = runtime
-                    .primary_provider
-                    .graph
-                    .output_lineage
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                let read = lineage_read(&mut admission, |maximum_work| {
-                    lineage.source_facts_for_receipt(
-                        runtime.runtime.authority_identity().as_u64(),
-                        &runtime.installed_schema.binding_identity(),
-                        self.product().observation(),
-                        receipt,
-                        maximum_work,
-                    )
-                })?;
-                drop(lineage);
-                let Some(read) = read else {
-                    require_own_publication(Some(receipt), self.product().observation())?;
-                    continue;
-                };
-                self.require_current_read(relational, &read, &mut admission)?;
-            }
-            Ok(())
-        })
+                Ok(())
+            })
     }
 
     /// The request's meter, within the caller's declared maximum.
@@ -148,6 +154,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// request pays for re-establishing them; their outcome changes no answer.
     pub(in crate::domain_computation::primary_graph) fn require_current_read(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,
         read: &RetainedOutputCurrentnessRead,
         admission: &mut InvalidationEditAdmission,
@@ -160,12 +167,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .invalidation_owner;
         let snapshot = self.application_basis().snapshot_handle();
         require_witnessed_output(
+            execution,
             relational,
             snapshot,
             read.native_output_witness.as_ref(),
             admission,
         )?;
-        require_current_facts(relational, snapshot, read, admission).map_err(
+        require_current_facts(execution, relational, snapshot, read, admission).map_err(
             |error| match read.verification_requirement {
                 Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)) => WorthQueryOutputDemandDenial::new(
                     error.kind(),
@@ -257,6 +265,7 @@ fn require_own_publication(
 }
 
 fn require_witnessed_output(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<
@@ -272,7 +281,7 @@ fn require_witnessed_output(
     let witness = witness
         .and_then(|witness| witness.get())
         .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
-    match witness.unchanged_in(relational, snapshot, admission) {
+    match witness.unchanged_in(execution, relational, snapshot, admission) {
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
         Err(
@@ -287,12 +296,19 @@ fn require_witnessed_output(
 }
 
 fn require_current_facts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     read: &RetainedOutputCurrentnessRead,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    match first_moved_fact(relational, snapshot, read.facts.iter(), admission) {
+    match first_moved_fact(
+        execution,
+        relational,
+        snapshot,
+        read.facts.iter(),
+        admission,
+    ) {
         Ok(None) => Ok(()),
         Ok(Some(moved)) => Err(denial_subject(
             WorthQueryOutputDemandDenialKind::Superseded,

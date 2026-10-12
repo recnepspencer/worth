@@ -142,9 +142,11 @@ fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
                 provider,
                 resource_request,
             );
+            let installed_running_phase = execution.phase_for_direct(&running);
+
             let active = running
                 .begin_graph_execution(
-                    execution,
+                    &installed_running_phase,
                     &graph,
                     WorthQueryManagedGraphCallRequest::new(
                         WorthQueryGraphProviderCallKind::Observe,
@@ -152,7 +154,7 @@ fn physical_release_failure_terminalizes_with_exact_recovery_evidence() {
                     ),
                 )
                 .expect("physical-release provider should start");
-            let terminal = match active.advance(execution) {
+            let terminal = match active.advance(&installed_running_phase) {
                 WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
                 _ => panic!("physical-release failure returned reusable running authority"),
             };
@@ -256,9 +258,11 @@ fn workflow_disposal_rejection_terminalizes_before_returning_running_authority()
             resources,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "stage",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -267,7 +271,7 @@ fn workflow_disposal_rejection_terminalizes_before_returning_running_authority()
                 ),
             )
             .expect("workflow release provider should start");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("workflow disposal rejection returned reusable running authority"),
         };
@@ -328,9 +332,11 @@ fn invocation_panic_and_destructor_panic_are_independently_evidenced() {
                 provider,
                 resource_request,
             );
+            let installed_running_phase = execution.phase_for_direct(&running);
+
             let active = running
                 .begin_graph_execution(
-                    execution,
+                    &installed_running_phase,
                     &graph,
                     WorthQueryManagedGraphCallRequest::new(
                         WorthQueryGraphProviderCallKind::Project,
@@ -338,7 +344,7 @@ fn invocation_panic_and_destructor_panic_are_independently_evidenced() {
                     ),
                 )
                 .expect("panic probe should start before its bounded step");
-            let terminal = match active.advance(execution) {
+            let terminal = match active.advance(&installed_running_phase) {
                 WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
                 _ => panic!("provider invocation panic did not terminalize"),
             };

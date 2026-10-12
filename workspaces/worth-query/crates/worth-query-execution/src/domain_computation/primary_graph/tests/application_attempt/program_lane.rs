@@ -8,50 +8,83 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(ProgramRequiredOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
+        .application
+        .with_host_advancement(|phase| {
+            world
+        .selected_product(&(phase).test_host_request(), )
+        .authorize_operation(&phase,
             &principal,
             &account,
             &operation,
             worth_query_declaration::facade::application_schema::TypedMutationPreconditions::new(),
             &request,
         )
-        .unwrap();
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, projected| {
-                reader
-                    .require_decision_field(projected, AccountStatus::reference())
-                    .unwrap();
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
         .unwrap()
-        .into_parts();
+        })
+        .expect("the fixture read owns its installed host call");
+    let (_, projection, _) = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, projected| {
+                        reader
+                            .require_decision_field(projected, AccountStatus::reference())
+                            .unwrap();
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
     let reads = world
         .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .begin_effect_program();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut effects = world
+        .application
+        .with_host_advancement(|phase| {
+            reads
+                .complete_projected_dependencies(
+                    &phase,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .begin_effect_program()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = effects.existing_entity(&account).unwrap();
     effects
         .write_field(
@@ -61,7 +94,16 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
         )
         .unwrap();
     let program = effects.finish().unwrap();
-    let predecessor = world.selected_product().product().selected_commit().clone();
+    let predecessor = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
@@ -85,10 +127,18 @@ fn declaration_derived_program_requirement_denies_the_raw_commit_entry() {
         std::any::type_name::<ProgramRequiredOperation>()
     );
     assert_eq!(denial.detail(), Some(expected.as_str()));
-    assert_eq!(
-        world.selected_product().product().selected_commit(),
-        &predecessor
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            assert_eq!(
+                world
+                    .selected_product(&(phase).test_host_request(),)
+                    .product()
+                    .selected_commit(),
+                &predecessor
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -102,10 +152,41 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
         &world.application.installed_schema,
     ));
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let predecessor = world.selected_product().product().selected_commit().clone();
-    let program = admitted_program(&world, &principal, &account, &request, "program-owned");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let predecessor = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "program-owned",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
             program,
@@ -128,55 +209,130 @@ fn installed_program_denies_raw_commit_for_an_unlisted_operation() {
         std::any::type_name::<TouchAccountOperation>()
     );
     assert_eq!(denial.detail(), Some(expected.as_str()));
-    assert_eq!(
-        world.selected_product().product().selected_commit(),
-        &predecessor
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            assert_eq!(
+                world
+                    .selected_product(&(phase).test_host_request(),)
+                    .product()
+                    .selected_commit(),
+                &predecessor
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
 fn program_output_producer_names_an_operation_not_installed_as_conditional() {
-    let mut world = installed_authorization_world(true);
-    world.application.program_support = Some(installed_program_support(
-        &world.application.installed_schema,
-    ));
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let predecessor = world.selected_product().product().selected_commit().clone();
-    let program =
-        admitted_program_required_program(&world, &principal, &account, &request, "program-owned");
-    let outcome = world
-        .application
-        .with_application_advancement(&request, |phase| {
-            world
-                .application
-                .compare_and_commit_application_for_program_output_producer(
-                    &phase,
-                    program,
-                    idempotency(39, 39),
-                    None,
+    {
+        let mut world = installed_authorization_world(true);
+        world.application.program_support = Some(installed_program_support(
+            &world.application.installed_schema,
+        ));
+        let request = live_scope();
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                authenticated_principal(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    &request,
                 )
-        })
-        .unwrap();
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("an ordinary mutation cannot enter as a conditional producer: {outcome:?}");
-    };
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
-    );
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::ProposalBinding
-    );
-    let expected = format!(
-        "operation {} is not installed as a conditional operation",
-        std::any::type_name::<ProgramRequiredOperation>()
-    );
-    assert_eq!(denial.detail(), Some(expected.as_str()));
-    assert_eq!(
-        world.selected_product().product().selected_commit(),
-        &predecessor
-    );
+            })
+            .expect("the fixture read owns its installed host call");
+        let account = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                resolved_account(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    "open",
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let predecessor = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                world
+                    .selected_product(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                    )
+                    .product()
+                    .selected_commit()
+                    .clone()
+            })
+            .expect("the fixture read owns its installed host call");
+        let program = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                admitted_program_required_program(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    &principal,
+                    &account,
+                    &request,
+                    "program-owned",
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let outcome = world
+            .application
+            .with_application_advancement(&request, |phase| {
+                let execution = &phase.borrowed_request_for_test();
+                world
+                    .application
+                    .compare_and_commit_application_for_program_output_producer(
+                        execution,
+                        &phase,
+                        program,
+                        idempotency(39, 39),
+                        None,
+                    )
+            })
+            .unwrap();
+        let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
+            panic!("an ordinary mutation cannot enter as a conditional producer: {outcome:?}");
+        };
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationCommitDenialKind::ApplicationProgramRequired
+        );
+        assert_eq!(
+            denial.stage(),
+            WorthQueryApplicationCommitDenialStage::ProposalBinding
+        );
+        let expected = format!(
+            "operation {} is not installed as a conditional operation",
+            std::any::type_name::<ProgramRequiredOperation>()
+        );
+        assert_eq!(denial.detail(), Some(expected.as_str()));
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+
+                assert_eq!(
+                    world
+                        .selected_product(
+                            &(host_custody.phase_for_application(&world.application))
+                                .test_host_request(),
+                        )
+                        .product()
+                        .selected_commit(),
+                    &predecessor
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+    }
 }

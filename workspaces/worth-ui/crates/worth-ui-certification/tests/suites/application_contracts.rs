@@ -166,3 +166,6 @@ mod source_event_ingress_journey;
 mod source_transport_diagnostic_parity;
 #[path = "../application_contracts/visual_snapshot.rs"]
 mod visual_snapshot;
+
+#[path = "../request_custody.rs"]
+mod request_custody;

@@ -88,7 +88,11 @@ fn real_collection_snapshot_compiles_distinct_keyed_mounted_rows() {
         entities[1].clone(),
         "Bravo updated",
     );
-    let refreshed = match live.refresh(&mut workspace).unwrap() {
+    let refreshed = match workspace
+        .with_execution_request_mut(|execution, workspace| live.refresh(execution, workspace))
+        .expect("fixture workspace host call opens")
+        .unwrap()
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => receipt,
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::NoSemanticDelivery => {
             panic!("the Query update must deliver its exact patch")

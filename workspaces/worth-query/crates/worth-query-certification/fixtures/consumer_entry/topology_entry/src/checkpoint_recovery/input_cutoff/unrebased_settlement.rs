@@ -47,7 +47,8 @@ fn a_commit_whose_facts_cannot_be_rebased_settles_and_leaves_no_candidate() {
     drop(performed);
 
     for _ in 0..2 {
-        let before = request.retain_read().unwrap();
+        let before =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let denial = demand_outcome(&request, &application, SURVEYED)
             .map_err(|stop| *stop)
             .err()
@@ -57,7 +58,8 @@ fn a_commit_whose_facts_cannot_be_rebased_settles_and_leaves_no_candidate() {
                 if cause.kind() == WorthQueryOutputDemandDenialKind::MissingApplicableProducer),
             "{denial:?}"
         );
-        let after = request.retain_read().unwrap();
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert_eq!(before.selected_commit(), after.selected_commit());
     }
 }
@@ -76,11 +78,13 @@ fn a_commit_whose_facts_rebase_is_reused_where_no_producer_preserves() {
     drop(performed);
 
     for _ in 0..2 {
-        let before = request.retain_read().unwrap();
+        let before =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let reused = direct_demand(&request, &application, RESOLVED);
         assert_eq!(reused.producer_contacts_in_this_demand(), 0);
         drop(reused);
-        let after = request.retain_read().unwrap();
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert_eq!(before.selected_commit(), after.selected_commit());
     }
 }
@@ -97,9 +101,11 @@ fn a_commit_that_moved_its_own_read_refreshes_whether_or_not_it_rebased() {
     let request = application.request(&principal, &scope);
 
     let demanded = |root: &str| {
-        let before = request.retain_read().unwrap();
+        let before =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let outcome = demand_outcome(&request, &application, root).map_err(|stop| *stop);
-        let after = request.retain_read().unwrap();
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let landed = before.selected_commit() != after.selected_commit();
         let standing = match outcome {
             Ok(settled) => format!("{:?}", settled.posture()),
@@ -138,11 +144,13 @@ fn a_failed_rebase_settles_until_a_later_publication_where_a_producer_preserves(
 
     // Whether the demand landed a commit, and its producer contacts.
     let demanded = || {
-        let before = request.retain_read().unwrap();
+        let before =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let settled = direct_demand(&request, &application, PRESERVED);
         let contacts = settled.producer_contacts_in_this_demand();
         drop(settled);
-        let after = request.retain_read().unwrap();
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         (
             before.selected_commit() != after.selected_commit(),
             contacts,

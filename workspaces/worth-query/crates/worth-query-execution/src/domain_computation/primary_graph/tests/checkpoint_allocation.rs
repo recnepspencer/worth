@@ -51,11 +51,19 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
         .unwrap()
     });
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let original_principal = resolve_alice(&world, 1);
+    let original_principal = world
+        .application
+        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request(), &world, 1))
+        .expect("fixture host admits the identity read");
     let zero = authority.request_lease(request(0)).unwrap();
     let refusal = world
         .application
-        .capture_application_checkpoint(Policy::Execution(&zero))
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .capture_application_checkpoint(&phase, Policy::Execution(&zero))
+        })
+        .expect("installed host call opens")
         .unwrap_err();
     let WorthQueryCheckpointCaptureDenial::Allocation(refusal) = refusal else {
         panic!("genuine lease refusal must preserve its exact typed cause");
@@ -78,7 +86,12 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     let lease = parent.child(request(LIMIT)).unwrap();
     let (checkpoint, sections) = world
         .application
-        .capture_application_checkpoint_with_sections(Policy::Execution(&lease))
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .capture_application_checkpoint_with_sections(&phase, Policy::Execution(&lease))
+        })
+        .expect("installed host call opens")
         .unwrap();
     let charge = u64::try_from(checkpoint.bytes().len()).unwrap();
     assert_eq!(checkpoint.charged_payload_bytes(), Some(charge));
@@ -110,7 +123,17 @@ fn leased_checkpoint_retains_one_frame_charge_through_native_handoff_and_reopen_
     drop(world);
 
     let restored = restored_world(checkpoint.clone()).unwrap();
-    assert_eq!(resolve_alice(&restored, 1), original_principal);
+    assert_eq!(
+        restored
+            .application
+            .with_host_advancement(|phase| resolve_alice(
+                &(phase).test_host_request(),
+                &restored,
+                1
+            ))
+            .expect("fixture host admits the restored identity read"),
+        original_principal
+    );
     drop(restored);
     drop(checkpoint);
     drop(native);

@@ -24,9 +24,14 @@ impl<'a> WorthQueryPreviewSession<'a> {
         }
     }
 
-    pub fn promote(mut self) -> Result<WorthQueryPreviewOutcome, WorthQueryRuntimeError> {
+    pub fn promote(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryPreviewOutcome, WorthQueryRuntimeError> {
         let staged_preview_write_count = self.pending_commands.len();
-        let promotion_snapshot_identity = self.runtime.current_snapshot_identity();
+        let promotion_snapshot_identity = self
+            .runtime
+            .current_snapshot_identity_with_request(execution);
         let residue_snapshot = self.residue_snapshot();
         if !promotion_snapshot_identity.is_same_current_identity_as(&self.basis_snapshot_identity) {
             return Err(WorthQueryRuntimeError::PreviewPromotionStaleBasis(
@@ -98,7 +103,7 @@ impl<'a> WorthQueryPreviewSession<'a> {
             .into_iter()
             .enumerate()
         {
-            match self.runtime.write(command) {
+            match self.runtime.write(execution, command) {
                 Ok(receipt) => {
                     self.writes.push(receipt);
                     promoted_writes += 1;

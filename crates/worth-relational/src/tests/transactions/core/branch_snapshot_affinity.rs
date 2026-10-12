@@ -2,15 +2,18 @@ use crate::tests::support::*;
 
 #[test]
 fn current_branch_snapshot_never_substitutes_another_branch_head() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "base");
+    let entity = create_entity(execution, &runtime, "base");
     let main = BranchId("main".to_owned());
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
         .fork_branch_from(feature.clone(), &main)
         .unwrap();
-    update_entity_on_branch(&runtime, entity, "feature", feature.clone());
+    update_entity_on_branch(execution, &runtime, entity, "feature", feature.clone());
 
     let main_snapshot = snapshot_for_owner_branch(&runtime, &main);
     let feature_snapshot = snapshot_for_owner_branch(&runtime, &feature);

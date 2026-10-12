@@ -7,11 +7,29 @@ use super::samples::{matrix_aspect_key, matrix_value_with_order, sample_field};
 
 #[test]
 fn bound_window_preserves_canonical_identity_order_and_cursor_meaning() {
-    let mut workspace = matrix_workspace("collection-window-identity", 0, false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = matrix_workspace(request_execution, "collection-window-identity", 0, false);
     let identities = [
-        insert_matrix_value(&mut workspace, 0, matrix_value_with_order(0, "30")),
-        insert_matrix_value(&mut workspace, 1, matrix_value_with_order(1, "10")),
-        insert_matrix_value(&mut workspace, 2, matrix_value_with_order(2, "20")),
+        insert_matrix_value(
+            request_execution,
+            &mut workspace,
+            0,
+            matrix_value_with_order(0, "30"),
+        ),
+        insert_matrix_value(
+            request_execution,
+            &mut workspace,
+            1,
+            matrix_value_with_order(1, "10"),
+        ),
+        insert_matrix_value(
+            request_execution,
+            &mut workspace,
+            2,
+            matrix_value_with_order(2, "20"),
+        ),
     ];
     let (collection, order_key) = bound_collection(&mut workspace);
     let window = first_window(&collection, 2);
@@ -48,10 +66,28 @@ fn bound_window_preserves_canonical_identity_order_and_cursor_meaning() {
 
 #[test]
 fn ordering_change_moves_the_same_entity_and_view_identity() {
-    let mut workspace = matrix_workspace("collection-window-reorder", 0, false);
-    let alpha = insert_matrix_value(&mut workspace, 0, matrix_value_with_order(0, "20"));
-    let moved = insert_matrix_value(&mut workspace, 1, matrix_value_with_order(1, "30"));
-    let _beta = insert_matrix_value(&mut workspace, 2, matrix_value_with_order(2, "40"));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = matrix_workspace(request_execution, "collection-window-reorder", 0, false);
+    let alpha = insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        0,
+        matrix_value_with_order(0, "20"),
+    );
+    let moved = insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        1,
+        matrix_value_with_order(1, "30"),
+    );
+    let _beta = insert_matrix_value(
+        request_execution,
+        &mut workspace,
+        2,
+        matrix_value_with_order(2, "40"),
+    );
     let (before, before_order_key) = bound_collection(&mut workspace);
     let before_window = first_window(&before, 3);
     assert_eq!(
@@ -66,7 +102,7 @@ fn ordering_change_moves_the_same_entity_and_view_identity() {
         .clone();
 
     workspace
-        .update(moved.clone(), |mutation| {
+        .update(request_execution, moved.clone(), |mutation| {
             mutation.set_aspect(
                 runtime::WorthQueryAspectTouch::whole_aspect(matrix_aspect_key()),
                 matrix_value_with_order(1, "10"),
@@ -95,7 +131,10 @@ fn ordering_change_moves_the_same_entity_and_view_identity() {
 
 #[test]
 fn foreign_cursor_denies_before_any_row_or_index_work() {
-    let mut workspace = matrix_workspace("collection-window-foreign", 3, false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = matrix_workspace(request_execution, "collection-window-foreign", 3, false);
     let (owner, _) = bound_collection(&mut workspace);
     let (foreign, _) = bound_collection(&mut workspace);
 
@@ -115,8 +154,16 @@ fn foreign_cursor_denies_before_any_row_or_index_work() {
 
 #[test]
 fn window_resolution_cost_is_independent_of_total_collection_width() {
-    let mut small = matrix_workspace("collection-window-scale-small", 4, false);
-    let mut large = matrix_workspace("collection-window-scale-large", 512, true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut small = matrix_workspace(request_execution, "collection-window-scale-small", 4, false);
+    let mut large = matrix_workspace(
+        request_execution,
+        "collection-window-scale-large",
+        512,
+        true,
+    );
     let (small_collection, _) = bound_collection(&mut small);
     let (large_collection, _) = bound_collection(&mut large);
     let small_window = first_window(&small_collection, 3);
@@ -130,12 +177,17 @@ fn window_resolution_cost_is_independent_of_total_collection_width() {
 
 #[test]
 fn grouped_collection_requires_native_access_instead_of_degrading_to_an_offset_window() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::suite::installed_operation_fixture::collection_impact::{
         impact_collection_workspace, ImpactCollectionRead,
     };
     use crate::suite::installed_operation_fixture::{GeometryDomain, ReadFamily};
 
-    let mut workspace = impact_collection_workspace("collection-window-grouping-denial").unwrap();
+    let mut workspace =
+        impact_collection_workspace(request_execution, "collection-window-grouping-denial")
+            .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())

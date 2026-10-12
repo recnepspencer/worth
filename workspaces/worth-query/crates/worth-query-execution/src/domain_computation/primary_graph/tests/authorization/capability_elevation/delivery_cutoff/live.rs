@@ -16,16 +16,24 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn revocation_after_a_queued_live_cause_terminates_delivery() {
-    let mut context = context(true);
+    let mut context = { context(true) };
     context.script_current_time();
-    let capability = context.elevated_access();
+    let capability = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.elevated_access(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
     let mut lease = context
         .world
         .application
-        .with_application_advancement(&context.request, |phase| {
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
             context
         .world
-        .selected_product()
+        .selected_product(&host_custody, )
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,
@@ -38,8 +46,7 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
             _,
-        >(
- &phase,
+        >(&host_custody.phase_for_application(&context.world.application),
             context.query,
             &context.principal,
             context.account,
@@ -50,38 +57,68 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
         )
         .unwrap()
         })
-        .unwrap();
+        .expect("the fixture read owns its installed host call");
     commit_live_activity(&context.world, &context.committer, &context.request);
     let approved = context.approved.take().unwrap();
     close_elevation(&context.world, &context.request, approved);
 
-    assert_authorization_denied(
-        lease.next(&context.principal, &context.request),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
-    );
-    assert!(matches!(
-        lease.next(&context.principal, &context.request),
-        WorthQueryApplicationLiveOutcome::Closed
-    ));
+    context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_authorization_denied(
+                lease.next(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &context.principal,
+                    &context.request,
+                ),
+                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(matches!(
+                lease.next(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &context.principal,
+                    &context.request
+                ),
+                WorthQueryApplicationLiveOutcome::Closed
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
     drop(lease);
     assert_resources_released(&context.world);
 }
 
 #[test]
 fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
-    let context = context(true);
+    let context = { context(true) };
     context
         .world
         .authorization_time
         .script([time(100), time(100), time(100), time(106)]);
-    let capability = context.elevated_access();
+    let capability = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.elevated_access(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
     let mut lease = context
         .world
         .application
-        .with_application_advancement(&context.request, |phase| {
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
             context
         .world
-        .selected_product()
+        .selected_product(&host_custody, )
         .open_governed_application_query_live::<
             ElevatedAccountActivityQuery,
             AccountSummaryParameters,
@@ -94,8 +131,7 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
             _,
             _,
             _,
-        >(
- &phase,
+        >(&host_custody.phase_for_application(&context.world.application),
             context.query,
             &context.principal,
             context.account,
@@ -106,17 +142,39 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
         )
         .unwrap()
         })
-        .unwrap();
+        .expect("the fixture read owns its installed host call");
     commit_live_activity(&context.world, &context.committer, &context.request);
 
-    assert_authorization_denied(
-        lease.next(&context.principal, &context.request),
-        WorthQueryOperationAuthorizationDenialKind::ElevationExpired,
-    );
-    assert!(matches!(
-        lease.next(&context.principal, &context.request),
-        WorthQueryApplicationLiveOutcome::Closed
-    ));
+    context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_authorization_denied(
+                lease.next(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &context.principal,
+                    &context.request,
+                ),
+                WorthQueryOperationAuthorizationDenialKind::ElevationExpired,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert!(matches!(
+                lease.next(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &context.principal,
+                    &context.request
+                ),
+                WorthQueryApplicationLiveOutcome::Closed
+            ))
+        })
+        .expect("the fixture read owns its installed host call");
     drop(lease);
     assert_resources_released(&context.world);
 }

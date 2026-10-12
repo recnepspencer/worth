@@ -12,6 +12,7 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use syn::visit::{self, Visit};
 use syn::{ImplItem, Item, TraitItem};
+mod request_aliases;
 mod signal_host_doors;
 
 pub(crate) fn enforce_request_constructor_denials(
@@ -32,10 +33,15 @@ pub(crate) fn enforce_request_constructor_denials(
 }
 
 fn check_graphs(graphs: &[ModuleGraph], rule: &RequestConstructorDenialConfig) -> Vec<Diagnostic> {
+    let constructor_owners = request_aliases::owners(graphs);
     let mut diagnostics = Vec::new();
     let mut host_seen = false;
     for module in production_modules(graphs) {
-        let mut visitor = RequestBackingNames::default();
+        let mut visitor = RequestBackingNames {
+            constructor_names: rule.constructor_names.iter().cloned().collect(),
+            constructor_owners: constructor_owners.clone(),
+            ..Default::default()
+        };
         for item in module.items {
             visitor.visit_item(item);
         }
@@ -77,6 +83,8 @@ fn check_graphs(graphs: &[ModuleGraph], rule: &RequestConstructorDenialConfig) -
 
 #[derive(Default)]
 struct RequestBackingNames {
+    constructor_names: BTreeSet<String>,
+    constructor_owners: BTreeSet<String>,
     scope: Vec<String>,
     found: BTreeSet<(String, String, usize)>,
 }
@@ -86,7 +94,36 @@ impl ScopedVisitor for RequestBackingNames {
     }
 }
 impl RequestBackingNames {
+    fn record_constructor(&mut self, name: &proc_macro2::Ident) {
+        self.found.insert((
+            self.scope.join("::"),
+            name.to_string(),
+            name.span().start().line,
+        ));
+    }
     fn tokens(&mut self, tokens: proc_macro2::TokenStream) {
+        if let Ok(expression) = syn::parse2::<syn::Expr>(tokens.clone()) {
+            self.visit_expr(&expression);
+        }
+        let tokens: Vec<_> = tokens.into_iter().collect();
+        // An associated constructor remains a path inside a macro's token tree.
+        for pair in tokens.windows(4) {
+            if let [proc_macro2::TokenTree::Ident(owner), proc_macro2::TokenTree::Punct(first), proc_macro2::TokenTree::Punct(second), proc_macro2::TokenTree::Ident(name)] =
+                pair
+            {
+                if first.as_char() == ':'
+                    && second.as_char() == ':'
+                    && self
+                        .constructor_owners
+                        .contains(owner.to_string().trim_start_matches("r#"))
+                    && self
+                        .constructor_names
+                        .contains(name.to_string().trim_start_matches("r#"))
+                {
+                    self.record_constructor(name);
+                }
+            }
+        }
         for token in tokens {
             match token {
                 proc_macro2::TokenTree::Ident(identifier) => self.visit_ident(&identifier),
@@ -127,6 +164,27 @@ impl<'ast> Visit<'ast> for RequestBackingNames {
                 identifier.span().start().line,
             ));
         }
+    }
+    fn visit_expr_path(&mut self, node: &'ast syn::ExprPath) {
+        let owner_in_path = node.path.segments.iter().any(|segment| {
+            self.constructor_owners
+                .contains(segment.ident.to_string().trim_start_matches("r#"))
+        });
+        let owner_in_self = node
+            .qself
+            .as_ref()
+            .is_some_and(|qself| request_aliases::is_owner(&qself.ty, &self.constructor_owners));
+        if owner_in_path || owner_in_self {
+            if let Some(last) = node.path.segments.last() {
+                if self
+                    .constructor_names
+                    .contains(last.ident.to_string().trim_start_matches("r#"))
+                {
+                    self.record_constructor(&last.ident);
+                }
+            }
+        }
+        visit::visit_expr_path(self, node);
     }
     fn visit_macro(&mut self, node: &'ast syn::Macro) {
         visit::visit_macro(self, node);

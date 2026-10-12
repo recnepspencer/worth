@@ -59,6 +59,7 @@ impl domain::WorthQueryDomainOperationExecutor<GeometryDomain, ReadVertex, ReadF
 }
 
 pub(super) fn execute_reconstructed_read_for_sabotage(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut runtime::WorthQueryWorkspace,
 ) -> Result<read::WorthQueryReadCompletion, domain::WorthQueryOperationExecutorFailure> {
     let declaration = read::declare(|builder| {
@@ -79,7 +80,7 @@ pub(super) fn execute_reconstructed_read_for_sabotage(
     })?;
     declaration
         .using(read::current())
-        .run(workspace)
+        .run(request_execution, workspace)
         .into_result()
         .map_err(|stop| {
             domain::WorthQueryOperationExecutorFailure::new(

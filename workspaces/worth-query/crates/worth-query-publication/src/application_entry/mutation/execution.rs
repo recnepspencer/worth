@@ -356,7 +356,7 @@ where
         let resolution = match self
             .request
             .application
-            .resolve_admitted_application_idempotency(admission, idempotency)
+            .resolve_admitted_application_idempotency(phase, admission, idempotency)
         {
             Ok(read) => read.into_resolution(),
             Err(denial) => {

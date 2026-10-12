@@ -40,7 +40,10 @@ use transcript_aspect_contracts::transcript_aspect_contracts;
 use transcript_authority::TranscriptWriteAuthority;
 use transcript_bridge::transcript_bridge;
 
-pub(super) fn transcript_runtime(produced_aspects: &[&str]) -> WorthQueryRuntime {
+pub(super) fn transcript_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    produced_aspects: &[&str],
+) -> WorthQueryRuntime {
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .runtime_name("worth-query-transcript-product")
         .build();
@@ -72,7 +75,7 @@ pub(super) fn transcript_runtime(produced_aspects: &[&str]) -> WorthQueryRuntime
         .intent_authority(TranscriptIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("transcript runtime backend parts should build")
 }
 
@@ -99,7 +102,10 @@ struct TranscriptSchemaAdapter;
 struct TranscriptSnapshotIdentity;
 
 impl WorthQueryRuntimeSnapshotIdentityAdapter for TranscriptSnapshotIdentity {
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::preview(
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::RuntimeStateSnapshot)
                 .field_shape(
@@ -153,6 +159,7 @@ impl WorthQueryRuntimeSourceAdapter for TranscriptSourceAdapter {
 
     fn live_entities_for_target(
         &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         Vec::new()

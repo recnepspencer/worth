@@ -42,6 +42,7 @@ fn install_and_inspect(
 }
 
 fn phase_seven_through_ten_consumer_journey(
+    request: &worth_execution::ExecutionRequest<'_, '_>,
     execution_request: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     running: &mut execution::WorthQueryRunningDirectRun,
     graph: &worth_query_host::facade::domain::WorthQueryInstalledGraphParticipationAuthority,
@@ -67,7 +68,7 @@ fn phase_seven_through_ten_consumer_journey(
                 None,
             )
             .unwrap();
-        match reads.compare_decision_read_set(captured).unwrap() {
+        match reads.compare_decision_read_set(request, captured).unwrap() {
             execution::WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) => fresh,
             execution::WorthQueryDecisionReadSetFreshnessOutcome::Stale(_) => return,
         }

@@ -23,42 +23,57 @@ fn scoped_name_index(runtime: &crate::runtime::RelationalRuntime) -> DerivedInde
 }
 
 fn build(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     index: DerivedIndexId,
     outcome: &crate::transactions::data::CommitResult,
 ) -> crate::indexes::data::DerivedIndexGenerationId {
-    build_on_branch(runtime, index, outcome, BranchId("main".into()))
+    build_on_branch(execution, runtime, index, outcome, BranchId("main".into()))
 }
 
 fn build_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     index: DerivedIndexId,
     outcome: &crate::transactions::data::CommitResult,
     branch_id: BranchId,
 ) -> crate::indexes::data::DerivedIndexGenerationId {
-    let built = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let built = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: outcome.commit.commit_id,
             branch_id,
             index_ids: vec![index],
-        });
+        },
+    );
     assert!(built.failed_indexes.is_empty());
     built.generations[0].generation_id
 }
 
 #[test]
 fn reclamation_and_checkpoint_keep_sibling_head_generation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "sibling-index-first");
+    let first = create_entity_outcome(execution, &runtime, "sibling-index-first");
     let sibling = create_branch_from_main(&runtime, "index-sibling");
     let index = name_index(&runtime);
-    let sibling_commit =
-        create_entity_outcome_on_branch(&runtime, "sibling-index-own-head", sibling.clone());
-    let sibling_generation =
-        build_on_branch(&runtime, index.index_id, &sibling_commit, sibling.clone());
-    let main = create_entity_outcome(&runtime, "main-index-new-head");
-    let main_generation = build(&runtime, index.index_id, &main);
+    let sibling_commit = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "sibling-index-own-head",
+        sibling.clone(),
+    );
+    let sibling_generation = build_on_branch(
+        execution,
+        &runtime,
+        index.index_id,
+        &sibling_commit,
+        sibling.clone(),
+    );
+    let main = create_entity_outcome(execution, &runtime, "main-index-new-head");
+    let main_generation = build(execution, &runtime, index.index_id, &main);
     release_test_commit_snapshot(&runtime, &first);
     release_test_commit_snapshot(&runtime, &sibling_commit);
     release_test_commit_snapshot(&runtime, &main);
@@ -71,20 +86,27 @@ fn reclamation_and_checkpoint_keep_sibling_head_generation() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     assert!(recovered.indexes.generation(sibling_generation).is_some());
     assert!(recovered.indexes.generation(main_generation).is_some());
 }
 
 #[test]
 fn live_fork_scoped_generation_readmits_from_shared_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "scoped-fork-checkpoint-anchor");
+    let anchor = create_entity_outcome(execution, &runtime, "scoped-fork-checkpoint-anchor");
     let branch = create_branch_from_main(&runtime, "scoped-fork-checkpoint");
     let identity = runtime.branch_identity(&branch).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let index = scoped_name_index(&runtime);
     let built = runtime.index_authority().build_for_basis(
+        execution,
         DerivedIndexBuildRequest {
             source_commit_id: anchor.commit.commit_id,
             branch_id: branch.clone(),
@@ -101,20 +123,27 @@ fn live_fork_scoped_generation_readmits_from_shared_basis() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     assert!(recovered.indexes.generation(generation).is_some());
 }
 
 #[test]
 fn repeated_edits_checkpoint_only_the_live_index_payload() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "checkpoint-size-0");
+    let first = create_entity_outcome(execution, &runtime, "checkpoint-size-0");
     let index = name_index(&runtime);
-    build(&runtime, index.index_id, &first);
+    build(execution, &runtime, index.index_id, &first);
     release_test_commit_snapshot(&runtime, &first);
     for ordinal in 1..24 {
-        let outcome = create_entity_outcome(&runtime, &format!("checkpoint-size-{ordinal}"));
-        build(&runtime, index.index_id, &outcome);
+        let outcome =
+            create_entity_outcome(execution, &runtime, &format!("checkpoint-size-{ordinal}"));
+        build(execution, &runtime, index.index_id, &outcome);
         release_test_commit_snapshot(&runtime, &outcome);
     }
     let legacy_all = crate::indexes::data::DerivedIndexArtifacts::new(
@@ -135,37 +164,50 @@ fn repeated_edits_checkpoint_only_the_live_index_payload() {
 
 #[test]
 fn checkpoint_index_artifact_survives_tail_replay_without_envelope_caches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "checkpoint-index-first");
+    let first = create_entity_outcome(execution, &runtime, "checkpoint-index-first");
     let index = name_index(&runtime);
-    let first_generation = build(&runtime, index.index_id, &first);
+    let first_generation = build(execution, &runtime, index.index_id, &first);
     let checkpoint = runtime.durability_authority().checkpoint().unwrap();
     assert!(checkpoint.derived_index_artifacts.is_empty());
     assert_eq!(checkpoint.derived_index_checkpoint_format, 2);
-    let second = create_entity_outcome(&runtime, "checkpoint-index-tail");
-    let unjournaled_cache = build(&runtime, index.index_id, &second);
+    let second = create_entity_outcome(execution, &runtime, "checkpoint-index-tail");
+    let unjournaled_cache = build(execution, &runtime, index.index_id, &second);
     let plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     assert!(recovered.indexes.generation(first_generation).is_some());
     assert!(recovered.indexes.generation(unjournaled_cache).is_none());
-    let rebuilt = build(&recovered, index.index_id, &second);
+    let rebuilt = build(execution, &recovered, index.index_id, &second);
     assert!(recovered.indexes.generation(rebuilt).is_some());
 }
 
 #[test]
 fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-missing-index-payload");
+    create_entity_outcome(execution, &runtime, "checkpoint-missing-index-payload");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     plan.checkpoint.as_mut().unwrap().derived_index_checkpoint = None;
     let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     let mut old_format = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -178,17 +220,21 @@ fn checkpoint_index_artifact_missing_payload_denies_before_recovery() {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(old_format)
+        .recover(execution, old_format)
         .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
 }
 
 #[test]
 fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let commit = create_entity_outcome(&runtime, "foreign-affinity-index");
+    let commit = create_entity_outcome(execution, &runtime, "foreign-affinity-index");
     let index = name_index(&runtime);
-    build(&runtime, index.index_id, &commit);
+    build(execution, &runtime, index.index_id, &commit);
     release_test_commit_snapshot(&runtime, &commit);
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
@@ -211,21 +257,28 @@ fn checkpoint_recovery_denies_a_digest_valid_foreign_generation_affinity() {
         .unwrap(),
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    let error = recovered.durability_recovery().recover(plan).unwrap_err();
+    let error = recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("branch affinity"));
 }
 
 #[test]
 fn reclamation_keeps_a_pinned_old_reader_until_release() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "pinned-index-first");
+    let first = create_entity_outcome(execution, &runtime, "pinned-index-first");
     let index = name_index(&runtime);
-    let first_generation = build(&runtime, index.index_id, &first);
-    let middle = create_entity_outcome(&runtime, "pinned-index-middle");
-    let middle_generation = build(&runtime, index.index_id, &middle);
-    let latest = create_entity_outcome(&runtime, "pinned-index-latest");
-    let latest_generation = build(&runtime, index.index_id, &latest);
+    let first_generation = build(execution, &runtime, index.index_id, &first);
+    let middle = create_entity_outcome(execution, &runtime, "pinned-index-middle");
+    let middle_generation = build(execution, &runtime, index.index_id, &middle);
+    let latest = create_entity_outcome(execution, &runtime, "pinned-index-latest");
+    let latest_generation = build(execution, &runtime, index.index_id, &latest);
     release_test_commit_snapshot(&runtime, &middle);
     release_test_commit_snapshot(&runtime, &latest);
     runtime.run_branch_root_reclamation_pass();
@@ -239,7 +292,10 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     assert!(recovered.indexes.generation(first_generation).is_none());
     assert!(recovered.indexes.generation(latest_generation).is_some());
     release_test_commit_snapshot(&runtime, &first);
@@ -251,8 +307,11 @@ fn reclamation_keeps_a_pinned_old_reader_until_release() {
 
 #[test]
 fn repeated_closed_branches_leave_no_latest_generation_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "closed-index-anchor");
+    let anchor = create_entity_outcome(execution, &runtime, "closed-index-anchor");
     let index = scoped_name_index(&runtime);
     release_test_commit_snapshot(&runtime, &anchor);
     let mut runtime = runtime;
@@ -262,6 +321,7 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
         let generation = {
             let (_, basis) = runtime.observe_branch(&identity).unwrap();
             let built = runtime.index_authority().build_for_basis(
+                execution,
                 DerivedIndexBuildRequest {
                     source_commit_id: anchor.commit.commit_id,
                     branch_id: branch.clone(),
@@ -289,78 +349,14 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
     assert!(runtime.index_access().generations_snapshot().is_empty());
 }
 
-#[test]
-fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
-    let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "pinned-deleted-fork-anchor");
-    let index = scoped_name_index(&runtime);
-    release_test_commit_snapshot(&runtime, &anchor);
-    let mut runtime = runtime;
-    let branch = create_branch_from_main(&runtime, "pinned-deleted-fork");
-    let identity = runtime.branch_identity(&branch).unwrap();
-    let (_, basis) = runtime.observe_branch(&identity).unwrap();
-    let built = runtime.index_authority().build_for_basis(
-        DerivedIndexBuildRequest {
-            source_commit_id: anchor.commit.commit_id,
-            branch_id: branch.clone(),
-            index_ids: vec![index.index_id],
-        },
-        &basis,
-    );
-    assert!(built.failed_indexes.is_empty());
-    let generation = built.generations[0].generation_id;
-    assert!(runtime
-        .delete_branch(&identity)
-        .unwrap()
-        .deleted()
-        .is_some());
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
-    assert!(runtime.indexes.generation(generation).is_some());
-    runtime.durability_authority().checkpoint().unwrap();
-    let plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
-    let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
-    assert!(recovered.indexes.generation(generation).is_none());
-    drop(basis);
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(1));
-    assert!(runtime.indexes.generation(generation).is_none());
-}
-
-#[test]
-fn historical_reader_from_live_head_survives_head_retirement() {
-    let runtime = persisted_runtime_with_test_schema();
-    let anchor = create_entity_outcome(&runtime, "historical-reader-anchor");
-    let branch = create_branch_from_main(&runtime, "historical-reader-fork");
-    let first =
-        create_entity_outcome_on_branch(&runtime, "historical-reader-first", branch.clone());
-    let index = scoped_name_index(&runtime);
-    let first_generation = build_on_branch(&runtime, index.index_id, &first, branch.clone());
-    release_test_commit_snapshot(&runtime, &anchor);
-    release_test_commit_snapshot(&runtime, &first);
-    let advanced_main = create_entity_outcome(&runtime, "historical-reader-main-advanced");
-    release_test_commit_snapshot(&runtime, &advanced_main);
-    let retained = crate::visibility::snapshot_states::HistoricalVisibilityBasis::resolve(
-        &runtime,
-        first.commit.version_id,
-    )
-    .unwrap();
-    assert_eq!(retained.branch_id(), &branch);
-    let next = create_entity_outcome_on_branch(&runtime, "historical-reader-next", branch.clone());
-    let next_generation = build_on_branch(&runtime, index.index_id, &next, branch);
-    release_test_commit_snapshot(&runtime, &next);
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(0));
-    assert!(runtime.indexes.generation(first_generation).is_some());
-    assert!(runtime.indexes.generation(next_generation).is_some());
-    drop(retained);
-    assert_eq!(runtime.run_index_generation_reclamation_pass(), Some(1));
-    assert!(runtime.indexes.generation(first_generation).is_none());
-    assert!(runtime.indexes.generation(next_generation).is_some());
-}
-
 #[path = "derived_index_checkpoint/scoped_affinity.rs"]
 mod scoped_affinity;
 
 #[path = "derived_index_checkpoint/lagging_scoped.rs"]
 mod lagging_scoped;
+
+#[path = "derived_index_checkpoint/historical_reader.rs"]
+mod historical_reader;
+
+#[path = "derived_index_checkpoint/deleted_branch_reader.rs"]
+mod deleted_branch_reader;

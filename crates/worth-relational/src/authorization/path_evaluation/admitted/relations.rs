@@ -13,6 +13,7 @@ use crate::visibility::materialization::read_records::{
 type OrderedRelation = ((u32, u64, u32, u64, u32, u64), RelationId);
 
 pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &Context<'_, '_, '_>,
     entity: EntityId,
     traversal: &RelationalAuthorizationTraversal,
@@ -33,6 +34,7 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
         }
     };
     context.view.try_visit_adjacency_ids(
+        execution,
         entity,
         traversal.relation_kind(),
         direction,
@@ -60,7 +62,7 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
             admission::prepare(state.admission, read_work, 0)?;
             let record = context
                 .view
-                .exact_relation_metadata(id)
+                .exact_relation_metadata(execution, id)
                 .map_err(|_| RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?;
             let descriptor = record.and_then(|record| {
                 if record.lifecycle != RecordLifecycleState::Live
@@ -118,6 +120,7 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
 }
 
 pub(super) fn traverse<A: RelationalAuthorizationObservationAdmission>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &Context<'_, '_, '_>,
     id: RelationId,
     current: EntityId,
@@ -131,7 +134,7 @@ pub(super) fn traverse<A: RelationalAuthorizationObservationAdmission>(
     admission::prepare(state.admission, read_work, 0)?;
     let record = context
         .view
-        .exact_relation_metadata(id)
+        .exact_relation_metadata(execution, id)
         .map_err(|_| RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?;
     if let Some(record) = record {
         let candidate = if record.lifecycle != RecordLifecycleState::Live

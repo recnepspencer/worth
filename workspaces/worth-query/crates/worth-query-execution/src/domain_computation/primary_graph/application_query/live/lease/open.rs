@@ -174,7 +174,7 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
         let (application, product, application_basis) = self.into_parts();
-        phase
+        let execution = phase
             .execution_request_for(&application.product_runtime)
             .map_err(|_| {
                 open_denial(
@@ -186,7 +186,7 @@ where
         let query_controls = WorthQueryApplicationQueryControls::product_live(
             product.read_lease(),
             application
-                .retain_product_application_basis(product.observation())
+                .retain_product_application_basis(&execution, product.observation())
                 .map_err(|_| {
                     open_denial(
                         WorthQueryApplicationLiveOpenDenialKind::ProviderVersionUnavailable,
@@ -309,6 +309,7 @@ where
             .map_err(open_admission_denial)?;
         let plan = self
             .finish_application_query_admission(
+                &execution,
                 &request.query,
                 &access,
                 admitted_parameters,
@@ -316,7 +317,7 @@ where
                 request.pending_governance,
             )
             .map_err(open_admission_denial)?;
-        let initial_read = execute_live_initial_read(self, plan, request.query.name())?;
+        let initial_read = execute_live_initial_read(&execution, self, plan, request.query.name())?;
         let basis = admit_live_managed_basis(
             self,
             live,

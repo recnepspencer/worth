@@ -14,10 +14,13 @@ use worth_runtime_bridge::facade::{
 };
 
 fn inspect_live_view_posture<T>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryRuntime,
     view: &WorthQueryLiveView<T>,
 ) -> WorthQueryOrdinaryRuntimePosture {
-    let inspection = runtime.inspect(view).expect("inspection should succeed");
+    let inspection = runtime
+        .inspect(request_execution, view)
+        .expect("inspection should succeed");
     let WorthQueryInspection::LiveView(inspection) = inspection else {
         panic!("inspection should target the live-view surface");
     };
@@ -26,9 +29,13 @@ fn inspect_live_view_posture<T>(
 
 #[test]
 fn runtime_state_and_inspection_share_time_only_compact_posture() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.compact-time-only",
             task_live_request(),
             task_schema(),
@@ -45,9 +52,7 @@ fn runtime_state_and_inspection_share_time_only_compact_posture() {
         .expect("time-only delivery should emit");
     let _ = runtime.drain_patches(&view);
 
-    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-        &view, &runtime,
-    )
+    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
     .expect("state should snapshot");
     let posture = state
         .ordinary_runtime_posture()
@@ -72,13 +77,19 @@ fn runtime_state_and_inspection_share_time_only_compact_posture() {
             .support_projection()
             .label()
     );
-    assert_eq!(posture, &inspect_live_view_posture(&runtime, &view));
+    assert_eq!(
+        posture,
+        &inspect_live_view_posture(request_execution, &runtime, &view)
+    );
 }
 
 #[test]
 fn runtime_state_and_inspection_share_mixed_async_compact_posture() {
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let bridge = test_bridge();
     let truth_patch = canonical_truth_patch("truth-main", "snapshot-a", "commit-a", "patch-a");
@@ -109,9 +120,10 @@ fn runtime_state_and_inspection_share_mixed_async_compact_posture() {
         )
         .expect("mixed-cause delivery window should plan");
 
-    let mut runtime = stateful_bridge_task_runtime();
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.compact-mixed-async",
             task_live_request(),
             task_schema(),
@@ -134,9 +146,7 @@ fn runtime_state_and_inspection_share_mixed_async_compact_posture() {
         .expect("async result state should project");
     let _ = runtime.drain_patches(&view);
 
-    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-        &view, &runtime,
-    )
+    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
     .expect("state should snapshot");
     let posture = state
         .ordinary_runtime_posture()
@@ -164,14 +174,21 @@ fn runtime_state_and_inspection_share_mixed_async_compact_posture() {
             .support_projection()
             .label()
     );
-    assert_eq!(posture, &inspect_live_view_posture(&runtime, &view));
+    assert_eq!(
+        posture,
+        &inspect_live_view_posture(request_execution, &runtime, &view)
+    );
 }
 
 #[test]
 fn runtime_compact_posture_keeps_basis_sensitive_denied_async_state_typed_on_scalar_surfaces() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.compact-async-denied",
             task_live_request(),
             task_schema(),
@@ -193,9 +210,7 @@ fn runtime_compact_posture_keeps_basis_sensitive_denied_async_state_typed_on_sca
         )
         .expect("denied async state should project");
 
-    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-        &view, &runtime,
-    )
+    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
     .expect("state should snapshot");
     let posture = state
         .ordinary_runtime_posture()
@@ -222,5 +237,8 @@ fn runtime_compact_posture_keeps_basis_sensitive_denied_async_state_typed_on_sca
             .support_projection()
             .label()
     );
-    assert_eq!(posture, &inspect_live_view_posture(&runtime, &view));
+    assert_eq!(
+        posture,
+        &inspect_live_view_posture(request_execution, &runtime, &view)
+    );
 }

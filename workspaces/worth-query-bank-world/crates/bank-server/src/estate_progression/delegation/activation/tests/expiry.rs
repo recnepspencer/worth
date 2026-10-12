@@ -20,13 +20,23 @@ fn parent_expiry_after_activation_materialization_denies_final_commit() {
     )
     .unwrap();
     let command = delegation_command(action).unwrap();
-    let admission = fixture
-        .runtime
-        .admit_delegation(&specialist, action, command.child, &request_scope())
+    let admission =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.admit_delegation(
+                phase,
+                &specialist,
+                action,
+                command.child,
+                &request_scope(),
+            )
+        })
         .unwrap();
-    let program = fixture
-        .runtime
-        .materialize_delegation(admission, command.child)
+    let program =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .materialize_delegation(phase, admission, command.child)
+        })
         .expect("the activation program must materialize before parent expiry");
 
     while epoch_seconds() <= expiry {

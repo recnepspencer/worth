@@ -1,12 +1,15 @@
 use super::*;
 
-pub(super) fn certify_merge_verify_vs_execute_feature_adoption(suite: &'static str) {
+pub(super) fn certify_merge_verify_vs_execute_feature_adoption(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let merge_verify_execute_split_samples = capture_perf_samples(
         suite,
         "merge_verify_vs_execute_feature_adoption",
         || {
             let runtime = persisted_runtime_with_test_schema();
-            create_entity(&runtime, "main-anchor");
+            create_entity(execution, &runtime, "main-anchor");
             create_branch_from_main(&runtime, "feature");
             let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
                 &runtime,
@@ -28,27 +31,25 @@ pub(super) fn certify_merge_verify_vs_execute_feature_adoption(suite: &'static s
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-            let _feature_only = changed_entities(
-                &txn.commit(
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("feature create"),
-            )[0];
+            let _feature_only =
+                changed_entities(&txn.commit(execution, &runtime).expect("feature create"))[0];
 
             let prepared = runtime
-                .prepare_merge_execution(MergeExecutionRequest {
-                    target_branch: BranchId("main".to_string()),
-                    source_branch: BranchId("feature".to_string()),
-                    merge_intent: MergeIntent::ReconcileIntoTarget,
-                })
+                .prepare_merge_execution(
+                    execution,
+                    MergeExecutionRequest {
+                        target_branch: BranchId("main".to_string()),
+                        source_branch: BranchId("feature".to_string()),
+                        merge_intent: MergeIntent::ReconcileIntoTarget,
+                    },
+                )
                 .expect("prepared merge");
 
             runtime.performance_access().reset_counters();
             let verify_started_at = Instant::now();
             runtime
                 .merge()
-                .verify_prepared_merge_execution(&prepared)
+                .verify_prepared_merge_execution(execution, &prepared)
                 .expect("verify prepared merge");
             let verify_elapsed_micros = verify_started_at.elapsed().as_micros();
             let verify_counters = runtime.performance_access().counters();
@@ -56,7 +57,7 @@ pub(super) fn certify_merge_verify_vs_execute_feature_adoption(suite: &'static s
             runtime.performance_access().reset_counters();
             let execute_started_at = Instant::now();
             let outcome = runtime
-                .execute_prepared_merge(prepared)
+                .execute_prepared_merge(execution, prepared)
                 .expect("execute merge");
             let execute_elapsed_micros = execute_started_at.elapsed().as_micros();
             let execute_counters = runtime.performance_access().counters();

@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn certify_hundred_k_nodes_geometry_profile_propagation_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     suite: &'static str,
     node_count: usize,
     query_target_count: usize,
@@ -22,12 +23,17 @@ pub(super) fn certify_hundred_k_nodes_geometry_profile_propagation_wave(
                 config.publication.policy.max_patch_records_per_commit = node_count * 2
             });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
-            let seeded =
-                seed_pseudorealistic_rocketship_world(&runtime, node_count, query_target_count);
+            let seeded = seed_pseudorealistic_rocketship_world(
+                execution,
+                &runtime,
+                node_count,
+                query_target_count,
+            );
 
             runtime.performance_access().reset_counters();
             let hot_update_started_at = Instant::now();
             let update = update_entity(
+                execution,
                 &runtime,
                 seeded.hot_update_target,
                 "rocket.plumbing_and_feed.propagation_patch.rich",
@@ -70,7 +76,9 @@ pub(super) fn certify_hundred_k_nodes_geometry_profile_propagation_wave(
             let propagation_execution_started_at = Instant::now();
             let propagation_outcome = runtime
                 .read_truth()
-                .execute_query_plan(propagation_plan)
+                .execute_query_plan(propagation_plan, execution)
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("rocketship rich propagation outcome");
             let propagation_execution_micros =
                 propagation_execution_started_at.elapsed().as_micros();
@@ -95,7 +103,10 @@ pub(super) fn certify_hundred_k_nodes_geometry_profile_propagation_wave(
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned rocketship rich propagation explicit query"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("rocketship rich propagation explicit query outcome");
             let explicit_query_micros = explicit_started_at.elapsed().as_micros();
             let hot_phase_timing = update.execution().phase_timing.clone();

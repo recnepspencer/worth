@@ -18,6 +18,9 @@ mod resource_admission;
 use provider_fixture::*;
 #[test]
 fn projection_receipt_without_query_material_denies_before_executor_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let log = Arc::new(Mutex::new(Vec::new()));
     let mut workspace = configured_runtime_for_package(federated_package::<RemoteA, RemoteB>())
         .graph_participation(read_definition::<RemoteA>(
@@ -30,7 +33,7 @@ fn projection_receipt_without_query_material_denies_before_executor_contact() {
             domain::WorthQueryGraphProjectionPosture::NativeProjection,
         ))
         .graph_participation_provider(RemoteB, SelectiveProvider::new(&log, None))
-        .workspace("graph-provider-receipt-only")
+        .workspace(request_execution, "graph-provider-receipt-only")
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
@@ -60,6 +63,9 @@ fn projection_receipt_without_query_material_denies_before_executor_contact() {
 }
 #[test]
 fn every_graph_entrypoint_fails_at_its_exact_boundary_and_commit_precedes_touch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (name, failure, expected_log) in [
         ("project", FailAt::Project, vec!["project"]),
         ("observe", FailAt::Observe, vec!["project", "observe"]),
@@ -105,7 +111,7 @@ fn every_graph_entrypoint_fails_at_its_exact_boundary_and_commit_precedes_touch(
                     vec!["remote-a", "remote-b"],
                 ),
             )
-            .workspace(format!("graph-sabotage-{name}"))
+            .workspace(request_execution, format!("graph-sabotage-{name}"))
             .unwrap();
         let installed = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
@@ -143,6 +149,9 @@ fn every_graph_entrypoint_fails_at_its_exact_boundary_and_commit_precedes_touch(
 
 #[test]
 fn read_only_participation_does_not_widen_the_mutating_commit_set() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let log = Arc::new(Mutex::new(Vec::new()));
     let mut workspace = configured_runtime_for_partial_effect_package(federated_touch_package::<
         RemoteA,
@@ -163,7 +172,7 @@ fn read_only_participation_does_not_widen_the_mutating_commit_set() {
         SharedCommit,
         SelectiveProvider::partial_effect_commit(&log, None, vec!["remote-a"]),
     )
-    .workspace("graph-selective-commit-set")
+    .workspace(request_execution, "graph-selective-commit-set")
     .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
@@ -193,6 +202,9 @@ fn read_only_participation_does_not_widen_the_mutating_commit_set() {
 
 #[test]
 fn graph_contract_insufficiency_denies_before_provider_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let log = Arc::new(Mutex::new(Vec::new()));
     let workspace = configured_runtime_for_package(federated_package::<RemoteA, RemoteB>())
         .graph_participation(read_definition::<RemoteA>(
@@ -205,7 +217,7 @@ fn graph_contract_insufficiency_denies_before_provider_contact() {
             domain::WorthQueryGraphProjectionPosture::NativeProjection,
         ))
         .graph_participation_provider(RemoteB, SelectiveProvider::new(&log, None))
-        .workspace("graph-contract-insufficient")
+        .workspace(request_execution, "graph-contract-insufficient")
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let denial = match workspace

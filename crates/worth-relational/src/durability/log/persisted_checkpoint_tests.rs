@@ -11,8 +11,11 @@ use crate::tests::support::*;
 
 #[test]
 fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cache() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "borrowed-checkpoint-wire");
+    let committed = create_entity_outcome(execution, &runtime, "borrowed-checkpoint-wire");
     release_test_commit_snapshot(&runtime, &committed);
     let mut checkpoint = runtime.durability_authority().checkpoint().unwrap();
     let envelope = checkpoint.envelopes[0].envelope_mut_for_test();
@@ -91,8 +94,11 @@ fn partition_alias_wire_readmits_legacy_checkpoint_and_omits_envelope_index_cach
 
 #[test]
 fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "partition-alias-seed");
+    create_entity(execution, &runtime, "partition-alias-seed");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -111,19 +117,15 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let second = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let second = transaction.commit(execution, &runtime).unwrap();
     release_test_commit_snapshot(&runtime, &second);
     let main = BranchId("main".into());
     let pinned = snapshot_for_owner_branch(&runtime, &main);
     let sibling = create_branch_from_main(&runtime, "partition-alias-sibling");
-    let on_sibling = create_entity_outcome_on_branch(&runtime, "sibling-only", sibling.clone());
+    let on_sibling =
+        create_entity_outcome_on_branch(execution, &runtime, "sibling-only", sibling.clone());
     release_test_commit_snapshot(&runtime, &on_sibling);
-    let on_main = create_entity_outcome(&runtime, "main-only");
+    let on_main = create_entity_outcome(execution, &runtime, "main-only");
     release_test_commit_snapshot(&runtime, &on_main);
 
     let checkpoint = runtime.durability_authority().checkpoint().unwrap();
@@ -160,7 +162,7 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     assert_eq!(
         runtime
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),
@@ -172,13 +174,16 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
     );
     plan.checkpoint = Some(restored.checkpoint);
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     for branch in [main, sibling] {
         let snapshot = snapshot_for_owner_branch(&recovered, &branch);
         assert_eq!(
             recovered
                 .read_truth()
-                .read_snapshot(&snapshot)
+                .read_snapshot(&snapshot, execution)
                 .unwrap()
                 .entities()
                 .len(),
@@ -189,8 +194,11 @@ fn partition_alias_wire_preserves_divergent_sibling_roots_and_pinned_reader() {
 
 #[test]
 fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "partition-alias-corruption");
+    create_entity(execution, &runtime, "partition-alias-corruption");
     let checkpoint = runtime.durability_authority().checkpoint().unwrap();
     let wire =
         rmp_serde::to_vec_named(&PersistedDurableCheckpointFileRef::new(&checkpoint)).unwrap();
@@ -255,8 +263,11 @@ fn partition_alias_wire_rejects_unknown_or_inconsistent_aliases() {
 
 #[test]
 fn native_capture_sections_count_exact_written_values_without_changing_wire() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "section-seed");
+    let entity = create_entity(execution, &runtime, "section-seed");
     let checkpoint = runtime.durability_authority().checkpoint().unwrap();
     let (bytes, sections) = super::super::native_file_codec::encode_checkpoint(
         &checkpoint,
@@ -336,7 +347,7 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
     );
 
     let pinned = snapshot_for_owner_branch(&runtime, &BranchId("main".into()));
-    update_entity_and_release_snapshot(&runtime, entity, "section-revision");
+    update_entity_and_release_snapshot(execution, &runtime, entity, "section-revision");
     let later = runtime
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -346,7 +357,7 @@ fn native_capture_sections_count_exact_written_values_without_changing_wire() {
     assert_eq!(
         runtime
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),

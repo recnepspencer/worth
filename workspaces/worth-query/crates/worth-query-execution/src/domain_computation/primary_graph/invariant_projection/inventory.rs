@@ -24,16 +24,20 @@ where
 {
     pub fn entities<Entity>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: ApplicationEntityRef<Schema, Entity>,
     ) -> Vec<WorthQueryInvariantEntityIdentity<Schema, Entity>> {
         let Some(kind) = self.layout.entity_kind(entity.name()) else {
             return Vec::new();
         };
-        let records = self.graph.with_runtime(|runtime| {
+        let records = self.graph.with_runtime(execution, |runtime| {
             runtime
                 .read_truth()
-                .project_snapshot(self.snapshot())
-                .and_then(|view| view.bounded_entities_of_kind(kind, usize::MAX).ok())
+                .project_snapshot(self.snapshot(), execution)
+                .and_then(|view| {
+                    view.bounded_entities_of_kind(execution, kind, usize::MAX)
+                        .ok()
+                })
                 .map(|read| read.into_records())
                 .unwrap_or_default()
         });
@@ -52,16 +56,20 @@ where
 
     pub fn relations<Relation, From, To>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
     ) -> Vec<WorthQueryInvariantRelation<Schema, Relation, From, To>> {
         let Some(layout) = self.layout.relation(relation.name()).cloned() else {
             return Vec::new();
         };
-        let records = self.graph.with_runtime(|runtime| {
+        let records = self.graph.with_runtime(execution, |runtime| {
             runtime
                 .read_truth()
-                .project_snapshot(self.snapshot())
-                .and_then(|view| view.bounded_relations_of_kind(layout.kind, usize::MAX).ok())
+                .project_snapshot(self.snapshot(), execution)
+                .and_then(|view| {
+                    view.bounded_relations_of_kind(execution, layout.kind, usize::MAX)
+                        .ok()
+                })
                 .map(|read| read.into_records())
                 .unwrap_or_default()
         });

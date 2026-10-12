@@ -124,6 +124,7 @@ where
         Spec,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: crate::domain_computation::primary_graph::WorkflowDefinitionExpectedPredecessor,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -142,7 +143,8 @@ where
         let (_, projection, _) = self
             .application()
             .mutation_projection
-            .project_admitted_operation(
+            .project_admitted_operation_with_request(
+                execution,
                 &admission,
                 |_, _| {},
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -151,18 +153,21 @@ where
             .into_parts();
         let read_set = self
             .application()
-            .begin_projected_application_read_attempt(
+            .begin_projected_application_read_attempt_with_request(
+                execution,
                 admission,
                 projection,
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?
-            .complete_projected_dependencies(
+            .complete_projected_dependencies_with_request(
+                execution,
                 crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(WorkflowDefinitionPreparationDenial::Attempt)?;
         read_set
             .materialize_workflow_definition_publication::<Capability, Spec>(
+                execution,
                 bound,
                 expected_predecessor,
             )

@@ -25,6 +25,9 @@ const DIVERGENT_CALL_SIGN: &str = "BRANCH-DIVERGENCE";
 
 #[test]
 fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -38,7 +41,7 @@ fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
             ),
         )],
     };
-    let world = compile_supply_chain_baseline_with_invariant_catalog(program, catalog)
+    let world = compile_supply_chain_baseline_with_invariant_catalog(execution, program, catalog)
         .expect("Court world with native uniqueness compiles");
     let main = BranchId("main".to_owned());
     let storm = BranchId("storm".to_owned());
@@ -74,30 +77,38 @@ fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
     )
     .expect("oracle accepts the independent storm vessel");
 
-    let main_commit = commit_vessel(&world.runtime, main.clone(), "main-only-vessel");
+    let main_commit = commit_vessel(execution, &world.runtime, main.clone(), "main-only-vessel");
     assert!(main_commit.is_ok(), "main-only call sign is admissible");
     assert_unique_execution(main_commit.as_ref().expect("main commit"));
-    let main_values = vessel_call_signs(&world.runtime, &main);
-    let storm_before = vessel_call_signs(&world.runtime, &storm);
+    let main_values = vessel_call_signs(execution, &world.runtime, &main);
+    let storm_before = vessel_call_signs(execution, &world.runtime, &storm);
     assert_eq!(main_values, oracle_vessel_call_signs(&oracle_main));
     assert_eq!(storm_before, oracle_vessel_call_signs(&oracle_genesis));
 
     // A global-current-state mutant would see main's value here and reject this
     // legal child commit. The semantic oracle is independent of production
     // snapshots, indexes, and record identifiers.
-    let storm_commit = commit_vessel(&world.runtime, storm.clone(), "storm-only-vessel");
+    let storm_commit = commit_vessel(
+        execution,
+        &world.runtime,
+        storm.clone(),
+        "storm-only-vessel",
+    );
     assert!(
         storm_commit.is_ok(),
         "child uniqueness must use the child root plus its proposal: {storm_commit:?}"
     );
     assert_unique_execution(storm_commit.as_ref().expect("storm commit"));
-    let storm_values = vessel_call_signs(&world.runtime, &storm);
+    let storm_values = vessel_call_signs(execution, &world.runtime, &storm);
     assert_eq!(storm_values, oracle_vessel_call_signs(&oracle_storm));
     assert_eq!(main_values, oracle_vessel_call_signs(&oracle_main));
 }
 
 #[test]
 fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -111,12 +122,12 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
             ),
         )],
     };
-    let world = compile_supply_chain_baseline_with_invariant_catalog(program, catalog)
+    let world = compile_supply_chain_baseline_with_invariant_catalog(execution, program, catalog)
         .expect("Court world with native uniqueness compiles");
     let main = BranchId("main".to_owned());
-    commit_vessel(&world.runtime, main.clone(), "first-vessel")
+    commit_vessel(execution, &world.runtime, main.clone(), "first-vessel")
         .expect("first branch vessel commits");
-    let before_values = vessel_call_signs(&world.runtime, &main);
+    let before_values = vessel_call_signs(execution, &world.runtime, &main);
     let before_branch = world
         .runtime
         .branch_reference_state(&main)
@@ -130,10 +141,13 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
     let before_catalog = world.runtime.history().immutable_commit_count();
     let before_snapshot = current_snapshot_version(&world.runtime, &main);
 
-    let duplicate = commit_vessel(&world.runtime, main.clone(), "duplicate-vessel");
+    let duplicate = commit_vessel(execution, &world.runtime, main.clone(), "duplicate-vessel");
     assert_unique_conflict(duplicate.unwrap_err(), DIVERGENT_CALL_SIGN);
 
-    assert_eq!(vessel_call_signs(&world.runtime, &main), before_values);
+    assert_eq!(
+        vessel_call_signs(execution, &world.runtime, &main),
+        before_values
+    );
     assert_eq!(
         world
             .runtime
@@ -163,6 +177,9 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
 
 #[test]
 fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let program = CompiledSupplyChainProgram::compile(
         SupplyChainWorldDefinition::operating(SupplyChainScale::court())
             .expect("Court Supply Chain definition is valid"),
@@ -176,10 +193,10 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
             ),
         )],
     };
-    let world = compile_supply_chain_baseline_with_invariant_catalog(program, catalog)
+    let world = compile_supply_chain_baseline_with_invariant_catalog(execution, program, catalog)
         .expect("Court world with native uniqueness compiles");
     let main = BranchId("main".to_owned());
-    let before_values = vessel_call_signs(&world.runtime, &main);
+    let before_values = vessel_call_signs(execution, &world.runtime, &main);
     let before_branch = world
         .runtime
         .branch_reference_state(&main)
@@ -187,10 +204,13 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
     let before_catalog = world.runtime.history().immutable_commit_count();
     let before_snapshot = current_snapshot_version(&world.runtime, &main);
 
-    let duplicate = commit_two_vessels(&world.runtime, main.clone());
+    let duplicate = commit_two_vessels(execution, &world.runtime, main.clone());
     assert_unique_conflict(duplicate.unwrap_err(), DIVERGENT_CALL_SIGN);
 
-    assert_eq!(vessel_call_signs(&world.runtime, &main), before_values);
+    assert_eq!(
+        vessel_call_signs(execution, &world.runtime, &main),
+        before_values
+    );
     assert_eq!(
         world
             .runtime
@@ -209,31 +229,8 @@ fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_resid
     );
 }
 
-#[test]
-fn semantic_uniqueness_oracle_rejects_duplicate_without_mutating_branch() {
-    let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
-        .expect("Court Supply Chain definition is valid");
-    let genesis = OracleBranch::genesis(OracleState::from_definition(&definition));
-    let key = next_vessel_key(&genesis);
-    let first =
-        insert_vessel(&genesis, key, DIVERGENT_CALL_SIGN).expect("oracle accepts first value");
-    let duplicate = insert_vessel(&first, next_vessel_key(&first), DIVERGENT_CALL_SIGN);
-    assert_eq!(
-        duplicate,
-        Err(UniqueEntityFieldOracleError::DuplicateValue(
-            DIVERGENT_CALL_SIGN.to_owned()
-        ))
-    );
-    assert_eq!(
-        oracle_vessel_call_signs(&first),
-        oracle_vessel_call_signs(&genesis)
-            .into_iter()
-            .chain([DIVERGENT_CALL_SIGN.to_owned()])
-            .collect::<Vec<_>>()
-    );
-}
-
 fn commit_vessel(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: BranchId,
     client_key: &str,
@@ -251,13 +248,11 @@ fn commit_vessel(
         )
         .expect("owner-admitted transaction context");
     push_vessel(&mut transaction, client_key);
-    transaction.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    transaction.commit(execution, runtime)
 }
 
 fn commit_two_vessels(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: BranchId,
 ) -> Result<worth_relational::facade::transactions::CommitResult, TransactionCommitError> {
@@ -275,10 +270,7 @@ fn commit_two_vessels(
         .expect("owner-admitted transaction context");
     push_vessel(&mut transaction, "same-transaction-vessel-a");
     push_vessel(&mut transaction, "same-transaction-vessel-b");
-    transaction.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    transaction.commit(execution, runtime)
 }
 
 fn push_vessel(
@@ -329,14 +321,18 @@ fn insert_string(
     );
 }
 
-fn vessel_call_signs(runtime: &RelationalRuntime, branch: &BranchId) -> Vec<String> {
+fn vessel_call_signs(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &BranchId,
+) -> Vec<String> {
     let identity = runtime
         .branch_identity(branch)
         .expect("branch identity is owner-issued");
     let snapshot = snapshot_for_supply_chain_identity(runtime, &identity);
     let view = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("branch snapshot is readable");
     let aspect = AspectKey::new("call_sign").expect("call-sign aspect");
     view.entities()
@@ -375,11 +371,9 @@ fn assert_unique_execution(commit: &worth_relational::facade::transactions::Comm
     assert!(observed, "commit must record native uniqueness execution");
 }
 
-fn current_snapshot_version(runtime: &RelationalRuntime, branch: &BranchId) -> u64 {
-    let identity = runtime
-        .branch_identity(branch)
-        .expect("branch identity is owner-issued");
-    snapshot_for_supply_chain_identity(runtime, &identity)
-        .version_id()
-        .0
-}
+#[path = "global/current_version.rs"]
+mod current_version;
+use current_version::current_snapshot_version;
+
+#[path = "global/semantic_oracle.rs"]
+mod semantic_oracle;

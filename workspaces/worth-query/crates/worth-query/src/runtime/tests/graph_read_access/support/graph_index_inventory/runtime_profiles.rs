@@ -7,17 +7,25 @@ use crate::runtime::tests::graph_read_access::support::public_bridge_runtime::{
 };
 
 pub fn workspace_with_graph_support(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     support_profile: WorthQueryRuntimeSupportProfile,
 ) -> WorthQueryWorkspace {
     PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime_with_support(support_profile)
+        .bridge_backed_runtime_with_support(request_execution, support_profile)
         .workspace(workspace_name)
         .expect("runtime should open graph inventory workspace")
 }
 
-pub fn default_graph_support_workspace(workspace_name: &str) -> WorthQueryWorkspace {
-    workspace_with_graph_support(workspace_name, public_graph_support_profile())
+pub fn default_graph_support_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace_name: &str,
+) -> WorthQueryWorkspace {
+    workspace_with_graph_support(
+        request_execution,
+        workspace_name,
+        public_graph_support_profile(),
+    )
 }
 
 pub fn profile_without_graph_support(

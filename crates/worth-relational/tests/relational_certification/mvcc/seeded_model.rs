@@ -99,11 +99,14 @@ fn standard_sequence_seed(sequence: u64) -> u64 {
     0x9171_1200_u64.wrapping_add(sequence.wrapping_mul(0x9e37_79b9))
 }
 
-fn assert_standard_sequence_replayable_and_shrinkable(sequence: u64) {
+fn assert_standard_sequence_replayable_and_shrinkable(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    sequence: u64,
+) {
     let trace = generate_trace(standard_sequence_seed(sequence));
-    if let Err(failure) = replay_trace(&trace) {
+    if let Err(failure) = replay_trace(execution, &trace) {
         let (shrunk, shrunk_failure) =
-            seeded_trace_shrinking::shrink_failing_trace(trace.clone(), failure.clone());
+            seeded_trace_shrinking::shrink_failing_trace(execution, trace.clone(), failure.clone());
         panic!(
             "generated production model failed\noriginal={trace:#?}\n\
              original_failure={failure:#?}\nshrunk={shrunk:#?}\n\
@@ -114,42 +117,66 @@ fn assert_standard_sequence_replayable_and_shrinkable(sequence: u64) {
 
 #[test]
 fn generated_standard_seed_91711200_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(0);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 0);
 }
 
 #[test]
 fn generated_standard_seed_12fa88bb9_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(1);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 1);
 }
 
 #[test]
 fn generated_standard_seed_1cde00572_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(2);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 2);
 }
 
 #[test]
 fn generated_standard_seed_26c177f2b_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(3);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 3);
 }
 
 #[test]
 fn generated_standard_seed_30a4ef8e4_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(4);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 4);
 }
 
 #[test]
 fn generated_standard_seed_3a886729d_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(5);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 5);
 }
 
 #[test]
 fn generated_standard_seed_446bdec56_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(6);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 6);
 }
 
 #[test]
 fn generated_standard_seed_4e4f5660f_is_replayable_and_shrinkable() {
-    assert_standard_sequence_replayable_and_shrinkable(7);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    assert_standard_sequence_replayable_and_shrinkable(execution, 7);
 }
 
 fn generate_trace(seed: u64) -> ProductionModelTrace {
@@ -204,12 +231,16 @@ fn generate_trace(seed: u64) -> ProductionModelTrace {
     }
 }
 
-fn replay_trace(trace: &ProductionModelTrace) -> Result<(), TraceFailure> {
+fn replay_trace(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    trace: &ProductionModelTrace,
+) -> Result<(), TraceFailure> {
     let (mut world, _) = super::world::supply_chain::certified_supply_chain_world(
+        execution,
         super::world::supply_chain::SupplyChainScale::standard(),
     );
     catch_unwind(AssertUnwindSafe(|| {
-        seeded_trace_execution::execute_trace(&mut world, trace)
+        seeded_trace_execution::execute_trace(execution, &mut world, trace)
     }))
     .map_err(panic_observation)
 }

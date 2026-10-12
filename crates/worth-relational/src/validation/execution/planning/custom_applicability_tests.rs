@@ -21,8 +21,11 @@ use super::CandidateTouchedKinds;
 
 #[test]
 fn replacement_defers_old_kind_and_adjacency_to_the_ordinary_planner() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime();
-    let entity = create_entity(&runtime, KindId(2), "old");
+    let entity = create_entity(execution, &runtime, KindId(2), "old");
     let plan = plan(
         1,
         MutationIntent::Entity(EntityMutationIntent::Replace(ReplaceEntityIntent {
@@ -40,11 +43,14 @@ fn replacement_defers_old_kind_and_adjacency_to_the_ordinary_planner() {
 
 #[test]
 fn endpoint_move_defers_old_source_kind_to_the_ordinary_planner() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime();
-    let old_source = create_entity(&runtime, KindId(2), "old-source");
-    let target = create_entity(&runtime, KindId(1), "target");
-    let new_source = create_entity(&runtime, KindId(3), "new-source");
-    let relation = create_relation(&runtime, old_source, target);
+    let old_source = create_entity(execution, &runtime, KindId(2), "old-source");
+    let target = create_entity(execution, &runtime, KindId(1), "target");
+    let new_source = create_entity(execution, &runtime, KindId(3), "new-source");
+    let relation = create_relation(execution, &runtime, old_source, target);
     let plan = plan(
         2,
         MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(
@@ -61,10 +67,13 @@ fn endpoint_move_defers_old_source_kind_to_the_ordinary_planner() {
 
 #[test]
 fn entity_delete_defers_cascade_applicability_to_the_ordinary_planner() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime();
-    let source = create_entity(&runtime, KindId(1), "source");
-    let target = create_entity(&runtime, KindId(1), "target");
-    create_relation(&runtime, source, target);
+    let source = create_entity(execution, &runtime, KindId(1), "source");
+    let target = create_entity(execution, &runtime, KindId(1), "target");
+    create_relation(execution, &runtime, source, target);
     let plan = plan(
         3,
         MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent {
@@ -76,9 +85,12 @@ fn entity_delete_defers_cascade_applicability_to_the_ordinary_planner() {
 
 #[test]
 fn endpoint_touch_policy_preserves_default_and_allows_explicit_opt_out() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime();
-    let source = create_entity(&runtime, KindId(2), "source");
-    let target = create_entity(&runtime, KindId(1), "target");
+    let source = create_entity(execution, &runtime, KindId(2), "source");
+    let target = create_entity(execution, &runtime, KindId(1), "target");
     let plan = plan(
         4,
         MutationIntent::Create(CreateIntent::Relation(RelationSpec {
@@ -181,7 +193,12 @@ fn runtime() -> RelationalRuntime {
         .build()
 }
 
-fn create_entity(runtime: &RelationalRuntime, kind: KindId, key: &str) -> EntityId {
+fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    kind: KindId,
+    key: &str,
+) -> EntityId {
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     transaction
         .push_batch(
@@ -197,10 +214,7 @@ fn create_entity(runtime: &RelationalRuntime, kind: KindId, key: &str) -> Entity
         )
         .expect("entity stages");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("entity publishes")
         .changed_records
         .iter()
@@ -211,7 +225,12 @@ fn create_entity(runtime: &RelationalRuntime, kind: KindId, key: &str) -> Entity
         .expect("entity identity")
 }
 
-fn create_relation(runtime: &RelationalRuntime, source: EntityId, target: EntityId) -> RelationId {
+fn create_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    source: EntityId,
+    target: EntityId,
+) -> RelationId {
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     transaction
         .push_batch(
@@ -229,10 +248,7 @@ fn create_relation(runtime: &RelationalRuntime, source: EntityId, target: Entity
         )
         .expect("relation stages");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("relation publishes")
         .changed_records
         .iter()

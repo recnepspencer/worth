@@ -143,6 +143,7 @@ where
                     return Err(WorthQueryWorkflowConditionAcceptanceDenial::RequirementMismatch);
                 }
                 if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_condition_replay(
+                    &phase,
                     request.application,
                     &request.prepared,
                     required,

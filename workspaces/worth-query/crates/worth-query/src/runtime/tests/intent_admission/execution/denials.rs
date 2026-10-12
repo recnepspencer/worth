@@ -2,10 +2,16 @@ use super::*;
 
 #[test]
 fn denied_intent_stops_before_backend_execution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let attempted = Rc::new(Cell::new(0));
-    let mut runtime = intent_runtime_with_authority(CountingIntentAuthority {
-        attempted: attempted.clone(),
-    });
+    let mut runtime = intent_runtime_with_authority(
+        request_execution,
+        CountingIntentAuthority {
+            attempted: attempted.clone(),
+        },
+    );
     let declaration = WorthQueryIntentDeclaration::strategy_commit(
         "denied-runtime-intent",
         "strategy.intent.reconcile",
@@ -16,7 +22,7 @@ fn denied_intent_stops_before_backend_execution() {
     .with_source_lane(WorthQueryIntentSourceLane::EffectTriggered);
 
     let error = runtime
-        .execute_intent(declaration)
+        .execute_intent(request_execution, declaration)
         .expect_err("mismatched source lane should deny");
 
     assert_eq!(attempted.get(), 0);
@@ -67,15 +73,22 @@ fn denied_intent_stops_before_backend_execution() {
 
 #[test]
 fn execution_denial_keeps_admission_and_execution_provenance_in_trace() {
-    let mut runtime = intent_runtime_with_authority(InvariantViolationIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime =
+        intent_runtime_with_authority(request_execution, InvariantViolationIntentAuthority);
     let error = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "traceable-invariant-denial",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1"), ("dependency", "cycle")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "traceable-invariant-denial",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1"), ("dependency", "cycle")]),
+            ),
+        )
         .expect_err("invariant violation must deny");
 
     match error {

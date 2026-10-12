@@ -31,7 +31,10 @@ const RELATION_KIND: KindId = KindId(2);
 
 #[test]
 fn actual_snapshot_observation_mints_exact_neutral_evidence() {
-    let fixture = authorization_fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let plan = allow_plan(
         snapshot,
@@ -43,7 +46,7 @@ fn actual_snapshot_observation_mints_exact_neutral_evidence() {
     );
     let evidence = fixture
         .runtime
-        .observe_authorization(plan)
+        .observe_authorization(plan, execution)
         .expect("installed path should be observable");
 
     assert_ne!(evidence.observation_identity().bytes(), &[0; 32]);
@@ -75,8 +78,12 @@ fn actual_snapshot_observation_mints_exact_neutral_evidence() {
 
 #[test]
 fn parallel_matching_paths_remain_neutral_graph_observations() {
-    let fixture = authorization_fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = authorization_fixture(execution);
     create_relation(
+        execution,
         &fixture.runtime,
         fixture.principal,
         fixture.scope,
@@ -87,7 +94,7 @@ fn parallel_matching_paths_remain_neutral_graph_observations() {
 
     let evidence = fixture
         .runtime
-        .observe_authorization(plan)
+        .observe_authorization(plan, execution)
         .expect("the snapshot can be observed");
 
     assert!(evidence.paths()[0].matched());
@@ -97,18 +104,20 @@ fn parallel_matching_paths_remain_neutral_graph_observations() {
 
 #[test]
 fn revocation_changes_only_new_snapshot_authority() {
-    let fixture = authorization_fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = authorization_fixture(execution);
     let before = fixture.runtime.visibility_authority().snapshot();
     let before_evidence = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            before.clone(),
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(before.clone(), fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("pre-revocation observation");
     let revocation = delete_relation_on_branch(
+        execution,
         &fixture.runtime,
         fixture.role_scope_relation,
         BranchId("main".to_string()),
@@ -116,16 +125,22 @@ fn revocation_changes_only_new_snapshot_authority() {
 
     let after_evidence = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            revocation.snapshot.clone(),
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(
+                revocation.snapshot.clone(),
+                fixture.principal,
+                fixture.scope,
+                [],
+            ),
+            execution,
+        )
         .expect("post-revocation observation");
     let historical_evidence = fixture
         .runtime
-        .observe_authorization(allow_plan(before, fixture.principal, fixture.scope, []))
+        .observe_authorization(
+            allow_plan(before, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("pinned historical observation");
 
     assert!(before_evidence.paths()[0].matched());
@@ -140,16 +155,17 @@ fn revocation_changes_only_new_snapshot_authority() {
 
 #[test]
 fn foreign_runtime_is_a_typed_denial_before_graph_reads() {
-    let source = authorization_fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let source = authorization_fixture(execution);
     let foreign_snapshot = source.runtime.visibility_authority().snapshot();
     let destination = runtime_with_test_schema();
     let denial = destination
-        .observe_authorization(allow_plan(
-            foreign_snapshot,
-            source.principal,
-            source.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(foreign_snapshot, source.principal, source.scope, []),
+            execution,
+        )
         .expect_err("foreign snapshot must not open destination runtime");
 
     assert!(matches!(
@@ -160,7 +176,10 @@ fn foreign_runtime_is_a_typed_denial_before_graph_reads() {
 
 #[test]
 fn empty_observation_plan_is_rejected_before_graph_reads() {
-    let fixture = authorization_fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let denial = RelationalAuthorizationObservationPlan::try_new(
         snapshot,
@@ -178,7 +197,10 @@ fn empty_observation_plan_is_rejected_before_graph_reads() {
 
 #[test]
 fn reverse_path_validation_uses_declared_relation_orientation() {
-    let fixture = authorization_fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = authorization_fixture(execution);
     let snapshot = fixture.runtime.visibility_authority().snapshot();
     let principal_kind = KindId(11);
     let scope_kind = KindId(12);
@@ -206,21 +228,31 @@ fn reverse_path_validation_uses_declared_relation_orientation() {
 
 #[test]
 fn unrelated_graph_scale_does_not_change_observation_work() {
-    let fixture = authorization_fixture();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let fixture = authorization_fixture(execution);
     let baseline_snapshot = fixture.runtime.visibility_authority().snapshot();
     let baseline = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            baseline_snapshot,
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(baseline_snapshot, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("baseline observation");
     for index in 0..64 {
-        let left = create_entity(&fixture.runtime, &format!("unrelated-left-{index}"));
-        let right = create_entity(&fixture.runtime, &format!("unrelated-right-{index}"));
+        let left = create_entity(
+            execution,
+            &fixture.runtime,
+            &format!("unrelated-left-{index}"),
+        );
+        let right = create_entity(
+            execution,
+            &fixture.runtime,
+            &format!("unrelated-right-{index}"),
+        );
         create_relation(
+            execution,
             &fixture.runtime,
             left,
             right,
@@ -230,12 +262,10 @@ fn unrelated_graph_scale_does_not_change_observation_work() {
     let scaled_snapshot = fixture.runtime.visibility_authority().snapshot();
     let scaled = fixture
         .runtime
-        .observe_authorization(allow_plan(
-            scaled_snapshot,
-            fixture.principal,
-            fixture.scope,
-            [],
-        ))
+        .observe_authorization(
+            allow_plan(scaled_snapshot, fixture.principal, fixture.scope, []),
+            execution,
+        )
         .expect("scaled observation");
 
     assert_eq!(scaled.counters(), baseline.counters());
@@ -253,7 +283,9 @@ struct AuthorizationFixture {
     role_scope_relation: crate::identity::data::RelationId,
 }
 
-fn authorization_fixture() -> AuthorizationFixture {
+fn authorization_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> AuthorizationFixture {
     let mut schema = test_schema_registry();
     let mut unrelated_schema = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
@@ -266,11 +298,11 @@ fn authorization_fixture() -> AuthorizationFixture {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build();
-    let principal = create_entity(&runtime, "principal");
-    let role = create_entity(&runtime, "approver");
-    let scope = create_entity(&runtime, "payment");
-    create_relation(&runtime, principal, role, "principal-role");
-    let role_scope_relation = create_relation(&runtime, role, scope, "role-scope");
+    let principal = create_entity(execution, &runtime, "principal");
+    let role = create_entity(execution, &runtime, "approver");
+    let scope = create_entity(execution, &runtime, "payment");
+    create_relation(execution, &runtime, principal, role, "principal-role");
+    let role_scope_relation = create_relation(execution, &runtime, role, scope, "role-scope");
     AuthorizationFixture {
         runtime,
         principal,

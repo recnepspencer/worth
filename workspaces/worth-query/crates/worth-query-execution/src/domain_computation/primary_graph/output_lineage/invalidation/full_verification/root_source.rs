@@ -8,6 +8,7 @@ mod tests;
 impl FullVerificationImage<'_> {
     pub(super) fn root_source_is_current(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EvidenceView<'_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, FullVerificationStop> {
@@ -21,7 +22,7 @@ impl FullVerificationImage<'_> {
             return Err(FullVerificationStop::Foreign);
         }
         for fact in source.source_facts() {
-            if !fact_is_current(fact, self.runtime, self.snapshot, admission)? {
+            if !fact_is_current(execution, fact, self.runtime, self.snapshot, admission)? {
                 return Ok(false);
             }
         }

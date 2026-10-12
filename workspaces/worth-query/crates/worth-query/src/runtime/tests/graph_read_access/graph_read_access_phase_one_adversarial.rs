@@ -17,8 +17,11 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn graph_read_access_shape_changes_for_relation_direction_and_depth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-one.direction-depth")
         .expect("runtime should open workspace");
@@ -88,7 +91,10 @@ fn graph_read_access_shape_changes_for_relation_direction_and_depth() {
 
 #[test]
 fn graph_read_access_shape_classifies_predicate_families_and_mixed_predicates() {
-    let equality = predicate_shape("equality", |query| {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let equality = predicate_shape(request_execution, "equality", |query| {
         query
             .where_equal(
                 EqualityPredicate::new(
@@ -100,7 +106,7 @@ fn graph_read_access_shape_classifies_predicate_families_and_mixed_predicates() 
             )
             .project(field("identity", "id"))
     });
-    let range = predicate_shape("range", |query| {
+    let range = predicate_shape(request_execution, "range", |query| {
         query
             .where_greater_than(
                 NativeComparisonPredicate::greater_than("profile", "age", 21)
@@ -108,7 +114,7 @@ fn graph_read_access_shape_classifies_predicate_families_and_mixed_predicates() 
             )
             .project(field("identity", "id"))
     });
-    let text = predicate_shape("text", |query| {
+    let text = predicate_shape(request_execution, "text", |query| {
         query
             .where_contains(
                 StringContainsPredicate::new("profile", "display_name", "Ada")
@@ -116,7 +122,7 @@ fn graph_read_access_shape_classifies_predicate_families_and_mixed_predicates() 
             )
             .project(field("identity", "id"))
     });
-    let membership = predicate_shape("membership", |query| {
+    let membership = predicate_shape(request_execution, "membership", |query| {
         query
             .where_in(
                 SetMembershipPredicate::new(
@@ -128,7 +134,7 @@ fn graph_read_access_shape_classifies_predicate_families_and_mixed_predicates() 
             )
             .project(field("identity", "id"))
     });
-    let presence = predicate_shape("presence", |query| {
+    let presence = predicate_shape(request_execution, "presence", |query| {
         query
             .where_present(
                 PresencePredicate::is_present("profile", "display_name")
@@ -136,7 +142,7 @@ fn graph_read_access_shape_classifies_predicate_families_and_mixed_predicates() 
             )
             .project(field("identity", "id"))
     });
-    let mixed = predicate_shape("mixed", |query| {
+    let mixed = predicate_shape(request_execution, "mixed", |query| {
         query
             .where_contains(
                 StringContainsPredicate::new("profile", "display_name", "Ada")
@@ -177,8 +183,11 @@ fn graph_read_access_shape_classifies_predicate_families_and_mixed_predicates() 
 
 #[test]
 fn graph_read_access_shape_distinguishes_canonical_and_explicit_ordering() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-one.ordering")
         .expect("runtime should open workspace");
@@ -284,11 +293,12 @@ fn access_shape<'a>(
 }
 
 fn predicate_shape(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     label: &str,
     declare_query: impl FnOnce(CollectionQueryBuilder) -> CollectionQueryBuilder,
 ) -> WorthQueryGraphReadAccessShape {
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace(format!("graph-read-access.phase-one.predicate.{label}"))
         .expect("runtime should open workspace");

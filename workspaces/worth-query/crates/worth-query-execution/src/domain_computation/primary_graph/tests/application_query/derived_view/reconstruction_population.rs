@@ -11,7 +11,10 @@ use worth_relational::facade::{
     symbols::ClientKey,
     transactions::{AspectFieldPatch, CreateIntent, EntitySpec, MutationIntent, WorkerIntentBatch},
 };
-pub(super) fn add_third_root(world: &AuthorizationWorld) {
+pub(super) fn add_third_root(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+) {
     let graph = world.application.runtime.primary_graph().unwrap();
     macro_rules! declared_field {
         ($marker:ty, $value:expr) => {{
@@ -33,6 +36,7 @@ pub(super) fn add_third_root(world: &AuthorizationWorld) {
         declared_field!(AccountMembershipTag, "open"),
     ]));
     publish_relational_mutation(
+        execution,
         world,
         WorkerIntentBatch::new("third-reconstruction-root").push(MutationIntent::Create(
             CreateIntent::Entity(EntitySpec {
@@ -50,16 +54,22 @@ pub(super) fn add_third_root(world: &AuthorizationWorld) {
 
 /// Other roots have one primary child and no collections. The original root
 /// retains two collections and an optional child, giving unequal read costs.
-pub(super) fn add_primary_reads(world: &AuthorizationWorld, third: bool) {
+pub(super) fn add_primary_reads(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    third: bool,
+) {
     use crate::domain_computation::primary_graph::tests::fixture::{
         live_scope, AccountPrimaryActivity,
     };
     use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
     use worth_relational::facade::transactions::{EntityReference, RelationSpec};
     let scope = live_scope();
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let root = selected
         .resolve_entity(
+            phase_custody,
             AccountStatus::reference(),
             "open".to_owned(),
             &scope,
@@ -72,24 +82,28 @@ pub(super) fn add_primary_reads(world: &AuthorizationWorld, third: bool) {
         .relation(AccountPrimaryActivity::reference().name())
         .unwrap()
         .kind;
-    let target = graph.integration_handle().with_runtime(|runtime| {
-        runtime
-            .read_truth()
-            .visible_relations_of_kind(
-                kind,
-                selected.application_basis().snapshot_handle().version_id(),
-            )
-            .into_iter()
-            .find(|relation| relation.source == root.entity_id())
-            .unwrap()
-            .target
-    });
+    let target = graph
+        .integration_handle()
+        .with_runtime(execution, |runtime| {
+            runtime
+                .read_truth()
+                .visible_relations_of_kind(
+                    execution,
+                    kind,
+                    selected.application_basis().snapshot_handle().version_id(),
+                )
+                .into_iter()
+                .find(|relation| relation.source == root.entity_id())
+                .unwrap()
+                .target
+        });
     let sources = ["unrelated", "third"]
         .into_iter()
         .take(if third { 2 } else { 1 })
         .map(|status| {
             selected
                 .resolve_entity(
+                    phase_custody,
                     AccountStatus::reference(),
                     status.to_owned(),
                     &scope,
@@ -113,5 +127,5 @@ pub(super) fn add_primary_reads(world: &AuthorizationWorld, third: bool) {
             },
         )));
     }
-    publish_relational_mutation(world, batch);
+    publish_relational_mutation(execution, world, batch);
 }

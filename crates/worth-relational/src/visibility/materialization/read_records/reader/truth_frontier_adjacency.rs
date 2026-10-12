@@ -22,6 +22,7 @@ pub struct FrontierAdjacencyTruthReadLimitExceeded {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn bounded_outgoing_relations_for_frontier_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<crate::identity::data::EntityId>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
@@ -38,6 +39,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn bounded_incoming_relations_for_frontier_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<crate::identity::data::EntityId>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,

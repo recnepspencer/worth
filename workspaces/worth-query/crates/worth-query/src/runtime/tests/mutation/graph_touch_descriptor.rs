@@ -5,7 +5,10 @@ use crate::intent_admission::{
 
 #[test]
 fn graph_touch_descriptor_is_derived_from_real_graph_builder_and_admission() {
-    let runtime = stateful_bridge_task_edge_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_edge_runtime(request_execution);
     let (commands, breadth, program) = mixed_graph_program();
 
     let review = runtime
@@ -46,7 +49,10 @@ fn graph_touch_descriptor_is_derived_from_real_graph_builder_and_admission() {
 
 #[test]
 fn graph_touch_descriptor_replay_is_stable_for_equivalent_real_graph_programs() {
-    let mut runtime = stateful_bridge_task_edge_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_edge_runtime(request_execution);
     let first = review_descriptor(&mut runtime, mixed_graph_program());
     let second = review_descriptor(&mut runtime, mixed_graph_program());
 
@@ -55,7 +61,10 @@ fn graph_touch_descriptor_replay_is_stable_for_equivalent_real_graph_programs() 
 
 #[test]
 fn ordinary_batch_reuses_touch_vocabulary_without_graph_lifecycle_overclaim() {
-    let runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_runtime(request_execution);
     let command = WorthQueryWriteCommand::InsertAspects {
         collection: crate::runtime::WorthQueryMutationTargetCollectionIdentity::new(
             "write-command-declared",

@@ -14,8 +14,9 @@ impl RelationalRuntime {
         &self,
         plan: RelationalAuthorizationObservationPlan,
         admission: &mut A,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationObservationEvidence, Stop<A::Stop>> {
-        let evaluation = self.evaluate_authorization_admitted(&plan, admission)?;
+        let evaluation = self.evaluate_authorization_admitted(&plan, admission, execution)?;
         admission::prepare(admission, 1, 0)?;
         let identity = mint_observation_identity(&plan).ok_or(Stop::Native(
             RelationalAuthorizationObservationDenial::ObservationIdentityExhausted,
@@ -31,9 +32,10 @@ impl RelationalRuntime {
     pub fn observe_authorization(
         &self,
         plan: RelationalAuthorizationObservationPlan,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationObservationEvidence, RelationalAuthorizationObservationDenial>
     {
-        self.observe_authorization_budgeted(plan, &mut UnrestrictedObservation)
+        self.observe_authorization_budgeted(plan, &mut UnrestrictedObservation, execution)
             .map_err(admission::legacy_stop)
     }
 
@@ -43,6 +45,7 @@ impl RelationalRuntime {
         &self,
         plan: &RelationalAuthorizationObservationPlan,
         admission: &mut A,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> ObservationResult<RelationalAuthorizationEvaluation, A> {
         admission::prepare(admission, 1, 0)?;
         if plan.snapshot().runtime_instance_id != self.runtime_instance_id() {
@@ -55,13 +58,13 @@ impl RelationalRuntime {
         }
         let view = self
             .read_truth()
-            .project_snapshot(plan.snapshot())
+            .project_snapshot(plan.snapshot(), execution)
             .ok_or(Stop::Native(
                 RelationalAuthorizationObservationDenial::SnapshotUnavailable,
             ))?;
         admission::prepare(admission, 1, 0)?;
         let principal = view
-            .with_exact_entity_state(plan.principal(), |metadata, _| {
+            .with_exact_entity_state(execution, plan.principal(), |metadata, _| {
                 metadata.kind_id == plan.principal_kind()
             })
             .map_err(|_| Stop::ExactBasisRequired)?
@@ -78,7 +81,7 @@ impl RelationalRuntime {
         if plan.scope() != plan.principal() {
             admission::prepare(admission, 1, 0)?;
             let scope = view
-                .with_exact_entity_state(plan.scope(), |metadata, _| {
+                .with_exact_entity_state(execution, plan.scope(), |metadata, _| {
                     metadata.kind_id == plan.scope_kind()
                 })
                 .map_err(|_| Stop::ExactBasisRequired)?
@@ -97,6 +100,7 @@ impl RelationalRuntime {
         let mut paths = Vec::with_capacity(plan.paths().len());
         for path in plan.paths() {
             paths.push(super::path_evaluation::admitted::evaluate_path(
+                execution,
                 self,
                 &view,
                 plan,

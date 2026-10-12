@@ -14,7 +14,7 @@ fn same_runtime_foreign_bridge_adapter_denies_before_lower_authority_admission()
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("exact operation should start");
-    let context = causal_fixture::source_profile_substitution_context();
+    let context = causal_fixture::source_profile_substitution_context(&resource_request);
     let request = WorthQueryManagedTruthReadRequest::from_relational_basis(
         context.descriptor.clone(),
         worth_runtime_bridge::facade::SnapshotReadPacket::new(vec![]),

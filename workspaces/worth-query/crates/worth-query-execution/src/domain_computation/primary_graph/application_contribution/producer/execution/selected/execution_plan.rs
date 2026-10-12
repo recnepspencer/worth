@@ -33,6 +33,14 @@ where
     SourceQuery<Schema, Binding>: 'static,
 {
     use super::super::super::demand::disclosure::FreshDisclosureAdmissionStop;
+    let execution = phase
+        .execution_request_for(&runtime.product_runtime)
+        .map_err(|cause| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                "producer phase",
+            )
+        })?;
     // Fund the typed edition/type checks and the move-only execution split
     // before any early refusal. Producer subjects are borrowed statics.
     let entry_work = u64::try_from(
@@ -108,6 +116,7 @@ where
     let input = this.provider.operation_input(&source);
     let prepared =
         super::super::selected_public::prepare_selected_public_mutation::<Schema, Binding>(
+            &execution,
             this,
             runtime,
             shared,

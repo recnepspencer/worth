@@ -4,9 +4,13 @@ use super::*;
 /// product comparison, rather than either owner's latest head, selects truth.
 #[test]
 fn disjoint_owner_attempts_both_execute_and_only_one_product_head_moves() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for relational_wins in [true, false] {
         let (fixture, owner, expected) = setup();
-        let relational = prepare_relational(&fixture, &owner, &expected, "mixed-plan-race");
+        let relational =
+            prepare_relational(execution, &fixture, &owner, &expected, "mixed-plan-race");
         let signal = prepare_signal(&owner, &expected, None);
         let (relational, signal) = execute_while_signal_is_parked(&owner, relational, signal);
         // Direct owner observations establish that both components moved while

@@ -14,12 +14,37 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn committed_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
+    let baseline = baselines(request_execution, &world);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = admitted_program(&world, &principal, &account, &request, "terminal-commit");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "terminal-commit",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             program,
@@ -28,18 +53,55 @@ fn committed_terminal() {
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 #[test]
 fn stale_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
+    let baseline = baselines(request_execution, &world);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let winner = admitted_program(&world, &principal, &account, &request, "terminal-winner");
-    let stale = admitted_program(&world, &principal, &account, &request, "terminal-stale");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let winner = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "terminal-winner",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let stale = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "terminal-stale",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             winner,
@@ -56,21 +118,46 @@ fn stale_terminal() {
         ),
         "the serial loser bound to the prior product",
     );
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 #[test]
 fn cancelled_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
+    let baseline = baselines(request_execution, &world);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
         Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = admitted_program(&world, &principal, &account, &request, "terminal-cancel");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "terminal-cancel",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     cancellation.cancel();
     assert!(matches!(
         world.application.compare_and_commit_application(
@@ -80,14 +167,20 @@ fn cancelled_terminal() {
         ),
         WorthQueryApplicationCommitOutcome::Cancelled
     ));
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 #[test]
 fn provider_denial_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
-    let program = program(&world, "terminal-denied");
+    let baseline = baselines(request_execution, &world);
+    let program = world
+        .application
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-denied"))
+        .expect("the fixture read owns its installed host call");
     world.faults.reject_next_session_prepare();
     assert!(matches!(
         world
@@ -96,14 +189,20 @@ fn provider_denial_terminal() {
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.stage() == WorthQueryApplicationCommitDenialStage::ProviderPlan
     ));
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 #[test]
 fn aborted_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
-    let program = program(&world, "terminal-abort");
+    let baseline = baselines(request_execution, &world);
+    let program = world
+        .application
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-abort"))
+        .expect("the fixture read owns its installed host call");
     world.faults.reject_next_commit_before_transaction();
     assert!(matches!(
         world.application.compare_and_commit_application(
@@ -113,14 +212,20 @@ fn aborted_terminal() {
         ),
         WorthQueryApplicationCommitOutcome::Aborted
     ));
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 #[test]
 fn skipped_owner_admission_is_a_denied_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
-    let program = program(&world, "terminal-skipped-owner");
+    let baseline = baselines(request_execution, &world);
+    let program = world
+        .application
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-skipped-owner"))
+        .expect("the fixture read owns its installed host call");
     world.faults.skip_next_invariant_owner_execution();
     assert!(matches!(
         world
@@ -129,14 +234,20 @@ fn skipped_owner_admission_is_a_denied_terminal() {
         WorthQueryApplicationCommitOutcome::Denied(denial)
             if denial.stage() == WorthQueryApplicationCommitDenialStage::InvariantExecution
     ));
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 #[test]
 fn response_loss_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
-    let program = program(&world, "terminal-response-loss");
+    let baseline = baselines(request_execution, &world);
+    let program = world
+        .application
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-response-loss"))
+        .expect("the fixture read owns its installed host call");
     world.faults.lose_next_commit_response();
     assert!(matches!(
         world.application.compare_and_commit_application(
@@ -146,15 +257,24 @@ fn response_loss_terminal() {
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 #[test]
 fn idempotent_retry_terminal() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let baseline = baselines(&world);
-    let first = program(&world, "terminal-idempotent");
-    let retry = program(&world, "terminal-idempotent");
+    let baseline = baselines(request_execution, &world);
+    let first = world
+        .application
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-idempotent"))
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| program(&phase, &world, "terminal-idempotent"))
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             first,
@@ -171,28 +291,51 @@ fn idempotent_retry_terminal() {
         ),
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
     ));
-    assert_baselines(&world, baseline);
+    assert_baselines(request_execution, &world, baseline);
 }
 
 fn program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &super::super::fixture::AuthorizationWorld,
     replacement: &str,
 ) -> super::program_fixture::Program {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
-    admitted_program(world, &principal, &account, &request, replacement)
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "open",
+        &request,
+    );
+    admitted_program(
+        phase_custody,
+        world,
+        &principal,
+        &account,
+        &request,
+        replacement,
+    )
 }
 
-fn baselines(world: &super::super::fixture::AuthorizationWorld) -> (usize, usize) {
+fn baselines(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::super::fixture::AuthorizationWorld,
+) -> (usize, usize) {
     (
-        world.invariant.active_snapshot_count(),
+        world.invariant.active_snapshot_count(request_execution),
         world.application.provider_session_resource_count_for_test(),
     )
 }
 
-fn assert_baselines(world: &super::super::fixture::AuthorizationWorld, expected: (usize, usize)) {
-    assert_eq!(world.invariant.active_snapshot_count(), expected.0);
+fn assert_baselines(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::super::fixture::AuthorizationWorld,
+    expected: (usize, usize),
+) {
+    assert_eq!(
+        world.invariant.active_snapshot_count(request_execution),
+        expected.0
+    );
     assert_eq!(
         world.application.provider_session_resource_count_for_test(),
         expected.1

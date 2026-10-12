@@ -70,6 +70,7 @@ impl domain::WorthQueryDomainOperationExecutor<GeometryDomain, NativeMatrixRead,
 }
 
 pub(crate) fn matrix_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     row_count: usize,
     unrelated_domains: bool,
@@ -77,25 +78,28 @@ pub(crate) fn matrix_workspace(
     let values = (0..row_count)
         .map(|row| matrix_value(row as u64))
         .collect::<Vec<_>>();
-    matrix_workspace_with_values(name, &values, unrelated_domains)
+    matrix_workspace_with_values(request_execution, name, &values, unrelated_domains)
 }
 
 pub(super) fn matrix_workspace_with_values(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     values: &[worth_foundational::facade::StructAspectValue],
     unrelated_domains: bool,
 ) -> runtime::WorthQueryWorkspace {
-    matrix_workspace_with_lookup(name, values, unrelated_domains, true)
+    matrix_workspace_with_lookup(request_execution, name, values, unrelated_domains, true)
 }
 
 pub(super) fn matrix_workspace_without_collection_lookup(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     values: &[worth_foundational::facade::StructAspectValue],
 ) -> runtime::WorthQueryWorkspace {
-    matrix_workspace_with_lookup(name, values, false, false)
+    matrix_workspace_with_lookup(request_execution, name, values, false, false)
 }
 
 fn matrix_workspace_with_lookup(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     values: &[worth_foundational::facade::StructAspectValue],
     unrelated_domains: bool,
@@ -171,20 +175,21 @@ fn matrix_workspace_with_lookup(
     if !collection_entity_lookup_supported {
         builder = builder.without_collection_entity_lookup();
     }
-    let mut workspace = builder.workspace(name).unwrap();
+    let mut workspace = builder.workspace(request_execution, name).unwrap();
     for (row, value) in values.iter().enumerate() {
-        insert_matrix_value(&mut workspace, row, value.clone());
+        insert_matrix_value(request_execution, &mut workspace, row, value.clone());
     }
     workspace
 }
 
 pub(crate) fn insert_matrix_value(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut runtime::WorthQueryWorkspace,
     row: usize,
     value: worth_foundational::facade::StructAspectValue,
 ) -> foundation::WorthQueryEntityIdentity {
     workspace
-        .insert(COLLECTION, |mutation| {
+        .insert(request_execution, COLLECTION, |mutation| {
             mutation
                 .set_aspect(
                     runtime::WorthQueryAspectTouch::whole_aspect(matrix_aspect_key()),

@@ -12,12 +12,15 @@ use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::RecordRef;
 
 pub(crate) fn merge_schema_snapshot_for_execution_ready(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     target_version_id: crate::identity::data::VersionId,
     source_records: &[VisibleMergeRecord],
     target_touched_records: &[BranchTouchedRecordDelta],
 ) -> MergeSchemaSnapshotDigestBasis {
-    let target_view = runtime.read_truth().read_version(target_version_id);
+    let target_view = runtime
+        .read_truth()
+        .read_version(execution, target_version_id);
     merge_schema_snapshot(
         &runtime.runtime_config().schema.registry,
         source_records,

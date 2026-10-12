@@ -3,8 +3,11 @@ use crate::tests::support::*;
 
 #[test]
 fn publication_rejects_envelope_identity_drift_before_any_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let commit = create_entity_outcome(&runtime, "publication-identity");
+    let commit = create_entity_outcome(execution, &runtime, "publication-identity");
     let receipt = commit.commit.clone();
     let envelope = commit.publication().envelope.clone();
     let identity = runtime
@@ -39,8 +42,11 @@ fn publication_rejects_envelope_identity_drift_before_any_effect() {
 
 #[test]
 fn prepared_publication_rejects_an_existing_envelope_before_any_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "duplicate-catalog-envelope");
+    let committed = create_entity_outcome(execution, &runtime, "duplicate-catalog-envelope");
     let identity = runtime
         .branch_identity(&BranchId("main".to_owned()))
         .expect("main identity");
@@ -79,8 +85,11 @@ fn prepared_publication_rejects_an_existing_envelope_before_any_effect() {
 
 #[test]
 fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let committed = create_entity_outcome(&runtime, "root-capture-sabotage");
+    let committed = create_entity_outcome(execution, &runtime, "root-capture-sabotage");
     let current_receipt = committed.commit.clone();
     let identity = runtime
         .branch_identity(&BranchId("main".to_owned()))
@@ -187,8 +196,11 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
 
 #[test]
 fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "root-capture-production-anchor");
+    create_entity_outcome(execution, &runtime, "root-capture-production-anchor");
     let before_storage = runtime
         .acquire_partition_edition()
         .entries()
@@ -218,10 +230,7 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("the test-only root court must reject the real commit path");
     assert!(format!("{error:?}").contains("UnresolvedContentSymbol"));
 
@@ -258,15 +267,18 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
 
 #[test]
 fn new_partition_publication_reuses_every_prior_region() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "prior-main-region");
+    create_entity_outcome(execution, &runtime, "prior-main-region");
     let identity = runtime
         .branch_identity(&BranchId("main".to_owned()))
         .expect("main branch identity exists");
     let scope =
         crate::facade::inspection::RelationalMvccCostScope::capture(&runtime, vec![identity]);
 
-    create_entity_in_partition(&runtime, "new-partition-region", PartitionId(29));
+    create_entity_in_partition(execution, &runtime, "new-partition-region", PartitionId(29));
     let costs = runtime
         .observe_mvcc_cost(&scope)
         .expect("main sharing remains inspectable")

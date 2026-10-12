@@ -29,12 +29,18 @@ use super::super::{
 
 #[test]
 fn branch_merge_runs_the_real_relational_effect_lifecycle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = merge_declaration().with_rich_inspection();
-    let mut workspace = stateful_bridge_task_runtime_with_merge()
+    let mut workspace = stateful_bridge_task_runtime_with_merge(request_execution)
         .workspace("ordinary-branch-merge")
         .expect("workspace should open");
-    let context = branch_merge(&workspace, &declaration).expect("merge authority should admit");
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context = branch_merge(request_execution, &workspace, &declaration)
+        .expect("merge authority should admit");
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     let completion = completed_or_panic(&outcome);
 
     assert_eq!(
@@ -60,14 +66,20 @@ fn branch_merge_runs_the_real_relational_effect_lifecycle() {
 
 #[test]
 fn ordinary_branch_merge_preserves_settlement_from_its_real_backend_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = merge_declaration();
-    let (runtime, probe) = stateful_bridge_task_runtime_with_merge_durable_fault();
+    let (runtime, probe) = stateful_bridge_task_runtime_with_merge_durable_fault(request_execution);
     let mut workspace = runtime
         .workspace("ordinary-branch-merge-durable-fault")
         .expect("workspace should open");
-    let context = branch_merge(&workspace, &declaration).expect("merge authority should admit");
+    let context = branch_merge(request_execution, &workspace, &declaration)
+        .expect("merge authority should admit");
 
-    let outcome = declaration.using(context).run(&mut workspace);
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     let deferred = outcome
         .settlement_deferred()
         .expect("performed merge must return a settlement-deferred outcome");
@@ -88,11 +100,11 @@ fn ordinary_branch_merge_preserves_settlement_from_its_real_backend_path() {
     );
     assert_eq!(deferred.counters().settlement_deferred_count(), 1);
 
-    let mut foreign_workspace = stateful_bridge_task_runtime_with_merge()
+    let mut foreign_workspace = stateful_bridge_task_runtime_with_merge(request_execution)
         .workspace("ordinary-branch-merge-foreign-settlement")
         .expect("foreign workspace opens");
     assert!(matches!(
-        foreign_workspace.repair_deferred_branch_merge_settlement(deferred),
+        foreign_workspace.repair_deferred_branch_merge_settlement(request_execution, deferred),
         Err(crate::runtime::WorthQuerySettlementRepairError::Settlement(
             worth_relational::facade::publication::DeferredPublicationSettlementError::ForeignRuntime {
                 ..
@@ -102,22 +114,25 @@ fn ordinary_branch_merge_preserves_settlement_from_its_real_backend_path() {
     drop(outcome);
 
     let repaired = workspace
-        .repair_pending_branch_merge_settlement(commit_id)
+        .repair_pending_branch_merge_settlement(request_execution, commit_id)
         .expect("public workspace owner repairs settlement after the token is dropped");
     let repeated = workspace
-        .repair_pending_branch_merge_settlement(commit_id)
+        .repair_pending_branch_merge_settlement(request_execution, commit_id)
         .expect("public workspace settlement repair is idempotent");
     assert_eq!(repaired.commit_id, commit_id);
     assert_eq!(repeated, repaired);
     assert_eq!(
-        probe.main_entity_count(),
+        probe.main_entity_count(request_execution),
         2,
         "settlement recovery must preserve the source-only entity on the target branch"
     );
 
     let child = declare_branch_merge("candidate", "main").expect("child merge declares");
-    let child_context = branch_merge(&workspace, &child).expect("child merge authority admits");
-    let child_outcome = child.using(child_context).run(&mut workspace);
+    let child_context =
+        branch_merge(request_execution, &workspace, &child).expect("child merge authority admits");
+    let child_outcome = child
+        .using(child_context)
+        .run(request_execution, &mut workspace);
     assert!(
         child_outcome.completed().is_some(),
         "a subsequent public operation must proceed after repair"
@@ -126,14 +141,21 @@ fn ordinary_branch_merge_preserves_settlement_from_its_real_backend_path() {
 
 #[test]
 fn ordinary_and_explicit_branch_merge_preserve_identical_evidence() {
-    let declaration = merge_declaration().with_rich_inspection();
-    let (explicit_receipt, explicit_diagnostics) = explicit_merge(&declaration, true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut workspace = stateful_bridge_task_runtime_with_merge()
+    let declaration = merge_declaration().with_rich_inspection();
+    let (explicit_receipt, explicit_diagnostics) =
+        explicit_merge(request_execution, &declaration, true);
+
+    let mut workspace = stateful_bridge_task_runtime_with_merge(request_execution)
         .workspace("ordinary-branch-merge-parity")
         .expect("workspace should open");
-    let context = branch_merge(&workspace, &declaration).expect("merge authority should admit");
-    let outcome = declaration.using(context).run(&mut workspace);
+    let context = branch_merge(request_execution, &workspace, &declaration)
+        .expect("merge authority should admit");
+    let outcome = declaration
+        .using(context)
+        .run(request_execution, &mut workspace);
     let ordinary = completed_or_panic(&outcome);
 
     assert_eq!(
@@ -173,8 +195,16 @@ fn ordinary_and_explicit_branch_merge_preserve_identical_evidence() {
 
 #[test]
 fn merge_diagnostic_policy_changes_only_derived_inspection() {
-    let operational = run_merge("branch-merge-operational", merge_declaration());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let operational = run_merge(
+        request_execution,
+        "branch-merge-operational",
+        merge_declaration(),
+    );
     let rich = run_merge(
+        request_execution,
         "branch-merge-rich",
         merge_declaration().with_rich_inspection(),
     );
@@ -192,84 +222,27 @@ fn merge_diagnostic_policy_changes_only_derived_inspection() {
     assert_eq!(rich.counters().inspection_materialization_count(), 1);
 }
 
-#[test]
-fn invalid_unsupported_foreign_mismatched_and_stale_merges_do_no_lower_work() {
-    let invalid = declare_branch_merge("main", "main").expect_err("same branch must deny");
-    assert_eq!(
-        invalid.denial_kind(),
-        WorthQueryBranchMergeDeclarationDenialKind::SameBranch
-    );
-
-    let unsupported = stateful_bridge_task_runtime()
-        .workspace("unsupported-branch-merge")
-        .expect("workspace should open");
-    let declaration = merge_declaration();
-    let unsupported = branch_merge(&unsupported, &declaration)
-        .expect_err("missing relational authority must deny");
-    assert_eq!(
-        unsupported
-            .counters()
-            .lower_runtime_execution_attempt_count(),
-        0
-    );
-
-    let left = stateful_bridge_task_runtime_with_merge()
-        .workspace("foreign-branch-merge-left")
-        .expect("left should open");
-    let foreign_context = branch_merge(&left, &declaration).expect("left should admit");
-    let mut right = stateful_bridge_task_runtime_with_merge()
-        .workspace("foreign-branch-merge-right")
-        .expect("right should open");
-    let foreign = declaration.clone().using(foreign_context).run(&mut right);
-    let foreign = foreign.stop().expect("foreign authority must stop");
-    assert_eq!(
-        foreign.source(),
-        WorthQueryBranchMergeStopSource::ForeignAuthority
-    );
-    assert_eq!(
-        foreign.counters().lower_runtime_execution_attempt_count(),
-        0
-    );
-
-    let captured = branch_merge(&right, &declaration).expect("context should admit");
-    let reverse = declare_branch_merge("candidate", "main").expect("reverse should declare");
-    let mismatch = reverse.using(captured).run(&mut right);
-    let mismatch = mismatch.stop().expect("mismatched context must stop");
-    assert_eq!(
-        mismatch.source(),
-        WorthQueryBranchMergeStopSource::MismatchedContext
-    );
-    assert_eq!(
-        mismatch.counters().lower_runtime_execution_attempt_count(),
-        0
-    );
-
-    let first = branch_merge(&right, &declaration).expect("first context should admit");
-    let stale = branch_merge(&right, &declaration).expect("second context should admit");
-    let first = declaration.clone().using(first).run(&mut right);
-    assert!(first.completed().is_some(), "first merge should execute");
-    let stale = declaration.using(stale).run(&mut right);
-    let stale = stale.stop().expect("retained context must stale-deny");
-    assert_eq!(
-        stale.source(),
-        WorthQueryBranchMergeStopSource::StaleAuthority
-    );
-    assert_eq!(stale.counters().lower_runtime_execution_attempt_count(), 0);
-}
+#[path = "branch_merge/invalid_unsupported_foreign_mismatched_and_stale_merges_do_no_lo.rs"]
+mod invalid_unsupported_foreign_mismatched_and_stale_merges_do_no_lo;
 
 fn merge_declaration() -> WorthQueryBranchMergeDeclaration {
     declare_branch_merge("main", "candidate").expect("merge should declare")
 }
 
 fn run_merge(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     declaration: WorthQueryBranchMergeDeclaration,
 ) -> WorthQueryBranchMergeCompletion {
-    let mut workspace = stateful_bridge_task_runtime_with_merge()
+    let mut workspace = stateful_bridge_task_runtime_with_merge(request_execution)
         .workspace(name)
         .expect("workspace should open");
-    let context = branch_merge(&workspace, &declaration).expect("merge authority should admit");
-    match declaration.using(context).run(&mut workspace) {
+    let context = branch_merge(request_execution, &workspace, &declaration)
+        .expect("merge authority should admit");
+    match declaration
+        .using(context)
+        .run(request_execution, &mut workspace)
+    {
         crate::ordinary::workflow::WorthQueryBranchMergeOutcome::Completed(completion) => {
             completion
         }
@@ -306,6 +279,7 @@ fn completed_or_panic(
 }
 
 fn explicit_merge(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declaration: &WorthQueryBranchMergeDeclaration,
     materialize_diagnostics: bool,
 ) -> (
@@ -313,7 +287,12 @@ fn explicit_merge(
     Option<EffectDiagnosticsMaterialization>,
 ) {
     let mut runtime = relational_runtime_with_intent_strategy();
-    create_entity(&mut runtime, "main", BranchId("main".to_string()));
+    create_entity(
+        request_execution,
+        &mut runtime,
+        "main",
+        BranchId("main".to_string()),
+    );
     crate::runtime::fork_branch_from_exact_source(
         &mut runtime,
         BranchId("candidate".to_string()),
@@ -321,6 +300,7 @@ fn explicit_merge(
     )
     .expect("candidate branch should be created");
     create_entity(
+        request_execution,
         &mut runtime,
         "candidate-only",
         BranchId("candidate".to_string()),
@@ -363,6 +343,7 @@ fn explicit_merge(
         .expect("explicit merge should lower");
     let receipt = lowered
         .execute_with(
+            request_execution,
             EffectExecutionAuthority::crate_relational_without_application_schema(&mut runtime),
         )
         .expect("explicit merge should execute")

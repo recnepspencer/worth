@@ -3,6 +3,9 @@ use crate::capabilities::DurabilityRead;
 
 #[test]
 fn worth_query_9_16_1_1_native_tail_recovers_through_current_schema_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     install_legacy_segment(
         &runtime,
@@ -22,7 +25,7 @@ fn worth_query_9_16_1_1_native_tail_recovers_through_current_schema_authority() 
     let mut recovered = persisted_runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("current runtime recovers the legacy native tail");
     assert_eq!(outcome.recovered_commits, 1);
     assert_eq!(
@@ -48,7 +51,7 @@ fn worth_query_9_16_1_1_native_tail_recovers_through_current_schema_authority() 
         Some("9.16.1.1-native-fixture".to_owned())
     );
 
-    let continued = create_entity_outcome(&recovered, "post-legacy-recovery");
+    let continued = create_entity_outcome(execution, &recovered, "post-legacy-recovery");
     assert_eq!(
         continued.patch_position(),
         crate::publication::patch::data::PatchStreamPosition(2)
@@ -66,6 +69,9 @@ fn worth_query_9_16_1_1_native_tail_recovers_through_current_schema_authority() 
 
 #[test]
 fn worth_query_9_16_1_1_native_tail_rejects_schema_authority_substitution() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_mismatched_legacy_registry();
     install_legacy_segment(
         &runtime,
@@ -79,8 +85,9 @@ fn worth_query_9_16_1_1_native_tail_rejects_schema_authority_substitution() {
     let mut recovered = persisted_runtime_with_mismatched_legacy_registry();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("a configured registry cannot replace mismatched legacy authority");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(
         error.class,
         crate::durability::data::RecoveryFailureClass::SchemaMismatch
@@ -94,6 +101,9 @@ fn worth_query_9_16_1_1_native_tail_rejects_schema_authority_substitution() {
 
 #[test]
 fn worth_query_9_16_1_1_non_main_tail_reconstructs_its_parent_branch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     install_legacy_segment(
         &runtime,
@@ -109,7 +119,7 @@ fn worth_query_9_16_1_1_non_main_tail_reconstructs_its_parent_branch() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("legacy non-main branch is reconstructed from its first parent");
     assert_eq!(
         recovered
@@ -147,6 +157,9 @@ fn worth_query_9_16_1_1_non_main_tail_reconstructs_its_parent_branch() {
 
 #[test]
 fn worth_query_9_16_1_1_metadata_lineage_tail_preserves_lineage_semantics() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     install_legacy_segment(
         &runtime,
@@ -186,7 +199,7 @@ fn worth_query_9_16_1_1_metadata_lineage_tail_preserves_lineage_semantics() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("legacy metadata-lineage publication recovers");
     let envelope = recovered
         .history()
@@ -217,6 +230,9 @@ fn worth_query_9_16_1_1_metadata_lineage_tail_preserves_lineage_semantics() {
 
 #[test]
 fn worth_query_9_16_1_1_rejected_correspondence_is_typed_unsupported() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     install_legacy_segment(
         &runtime,
@@ -240,8 +256,9 @@ fn worth_query_9_16_1_1_rejected_correspondence_is_typed_unsupported() {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("unsupported legacy lineage cannot be silently discarded");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(
         error.class,
         crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics

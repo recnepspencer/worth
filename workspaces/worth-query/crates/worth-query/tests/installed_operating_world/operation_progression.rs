@@ -10,7 +10,10 @@ mod failure_boundaries;
 
 #[test]
 fn public_bound_execution_projection_and_settlement_remain_one_chain() {
-    let mut workspace = workspace("installed-progression", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "installed-progression", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -83,7 +86,10 @@ fn public_bound_execution_projection_and_settlement_remain_one_chain() {
 
 #[test]
 fn non_publishing_execution_is_a_terminal_typed_outcome() {
-    let mut workspace = workspace("installed-terminal", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(request_execution, "installed-terminal", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -108,7 +114,10 @@ fn non_publishing_execution_is_a_terminal_typed_outcome() {
 
 #[test]
 fn installed_parameter_contract_denies_before_graph_or_executor_work() {
-    let workspace = workspace("installed-parameter-denial", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution, "installed-parameter-denial", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -137,7 +146,11 @@ fn installed_parameter_contract_denies_before_graph_or_executor_work() {
 
 #[test]
 fn declared_primary_read_cannot_be_skipped_by_a_terminal_executor() {
-    let mut workspace = missing_read_execution_workspace("installed-skipped-read").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        missing_read_execution_workspace(request_execution, "installed-skipped-read").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
         .observe_operating_world(workspace.current_world())
@@ -168,7 +181,10 @@ fn declared_primary_read_cannot_be_skipped_by_a_terminal_executor() {
 
 #[test]
 fn foreign_workspace_denies_before_graph_or_executor_work() {
-    let owner = workspace("installed-execution-owner", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = workspace(request_execution, "installed-execution-owner", false).unwrap();
     let installed_domain = owner.domain(GeometryDomain).unwrap();
     let bound = owner
         .observe_operating_world(owner.current_world())
@@ -176,7 +192,7 @@ fn foreign_workspace_denies_before_graph_or_executor_work() {
         .family(ReadFamily)
         .bind(&installed_domain, ReadVertex)
         .unwrap();
-    let foreign = workspace("installed-execution-foreign", false).unwrap();
+    let foreign = workspace(request_execution, "installed-execution-foreign", false).unwrap();
     let denial = match bound.admit_execution_resources(
         ReadExecutionInput::default(),
         crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -199,8 +215,11 @@ fn foreign_workspace_denies_before_graph_or_executor_work() {
 
 #[test]
 fn admitted_direct_attempt_becomes_stale_before_any_execution_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
-        .controlled_workspace("installed-post-admission-stale")
+        .controlled_workspace(request_execution, "installed-post-admission-stale")
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let admitted = workspace
@@ -236,7 +255,11 @@ fn admitted_direct_attempt_becomes_stale_before_any_execution_work() {
 
 #[test]
 fn equivalent_but_distinct_bound_contract_cannot_splice_the_chain() {
-    let mut workspace = workspace("installed-progression-splice", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workspace(request_execution, "installed-progression-splice", false).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let first = workspace
         .observe_operating_world(workspace.current_world())
@@ -271,6 +294,9 @@ fn equivalent_but_distinct_bound_contract_cannot_splice_the_chain() {
 
 #[test]
 fn result_state_and_warning_postures_survive_through_settlement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let states = [
         domain::WorthQueryOperationResultState::Ready,
         domain::WorthQueryOperationResultState::Advisory,
@@ -279,7 +305,12 @@ fn result_state_and_warning_postures_survive_through_settlement() {
         domain::WorthQueryOperationResultState::Violation,
     ];
     for (index, state) in states.into_iter().enumerate() {
-        let mut workspace = workspace(&format!("installed-posture-{index}"), false).unwrap();
+        let mut workspace = workspace(
+            request_execution,
+            &format!("installed-posture-{index}"),
+            false,
+        )
+        .unwrap();
         let installed_domain = workspace.domain(GeometryDomain).unwrap();
         let bound = workspace
             .observe_operating_world(workspace.current_world())

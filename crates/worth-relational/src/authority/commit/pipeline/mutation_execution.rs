@@ -44,11 +44,12 @@ impl MutatedCommitExecution {
 }
 
 pub(super) fn mutate_commit_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut validated: BoundaryValidatedCommitExecution,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutatedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    super::consult_stage(execution, super::CommitStage::Mutation)?;
     let selected_branch_state = validated.prepared_mut().selected_branch_state().clone();
     let proposed_version_id = validated.prepared_mut().proposed_version_id();
     let proposal_identity = validated.prepared_mut().proposal_identity().clone();
@@ -72,7 +73,7 @@ pub(super) fn mutate_commit_execution(
             proposed_version_id,
             proposal_identity: &proposal_identity,
             prevalidated_mutation_sensitive,
-            lease,
+            execution,
         },
         control,
     )?;

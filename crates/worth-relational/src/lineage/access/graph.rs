@@ -5,8 +5,12 @@ use crate::lineage::data::{
 };
 
 impl<'runtime> LineageAccess<'runtime> {
-    pub fn graph(&self, request: LineageGraphRequest) -> LineageGraphSnapshot {
-        let mut nodes = self.branch_nodes_snapshot(&request.branch_id);
+    pub fn graph(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: LineageGraphRequest,
+    ) -> LineageGraphSnapshot {
+        let mut nodes = self.branch_nodes_snapshot(execution, &request.branch_id);
         nodes.sort_by_key(|node| node.lineage_id);
         let mut events = self.branch_events_snapshot(&request.branch_id);
         events.sort_by_key(|event| event.event_id);

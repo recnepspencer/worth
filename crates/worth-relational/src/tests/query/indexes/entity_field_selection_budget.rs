@@ -6,12 +6,15 @@ use crate::facade::indexes::{
 
 #[test]
 fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
     let mut entities = Vec::new();
     for ordinal in 0..65 {
-        let created = create_entity_outcome(&runtime, &format!("selected-{ordinal}"));
+        let created = create_entity_outcome(execution, &runtime, &format!("selected-{ordinal}"));
         let entity = changed_entities(&created)[0];
-        update_entity(&runtime, entity, "shared");
+        update_entity(execution, &runtime, entity, "shared");
         entities.push(entity);
     }
     entities.sort();
@@ -24,35 +27,42 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: runtime.history().latest_commit().unwrap().commit_id,
             branch_id: BranchId("main".to_owned()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
     let snapshot = runtime.visibility_authority().snapshot();
-    let view = runtime.read_truth().project_snapshot(&snapshot).unwrap();
+    let view = runtime
+        .read_truth()
+        .project_snapshot(&snapshot, execution)
+        .unwrap();
     let prepared = runtime
         .index_access()
-        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator)
+        .prepare_entity_field_lookup(&view, index.index_id, KindId(1), &locator, execution)
         .unwrap();
     let mut admitted_work = false;
     let denied = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup_admitted(
-            &view,
-            index.index_id,
-            KindId(1),
-            &locator,
-            &string_aspect_value("shared"),
-            65,
+        .execute_bounded_entity_field_lookup(
+            crate::facade::indexes::BoundedEntityFieldSelectedLookup::new(
+                &view,
+                index.index_id,
+                KindId(1),
+                &locator,
+                &string_aspect_value("shared"),
+                65,
+                |_, _| {
+                    admitted_work = true;
+                    Ok::<_, ()>(())
+                },
+            ),
             BoundedIndexParityMode::Production,
-            |_, _| {
-                admitted_work = true;
-                Ok::<_, ()>(())
-            },
+            execution,
         )
         .unwrap_err();
     assert!(matches!(denied, Stop::Lookup(denial)
@@ -70,7 +80,11 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
         .unwrap();
         let observed = runtime
             .index_access()
-            .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Certification)
+            .execute_bounded_entity_field_lookup(
+                request,
+                BoundedIndexParityMode::Certification,
+                execution,
+            )
             .unwrap();
         let repeated = runtime
             .index_access()
@@ -79,6 +93,7 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
                 &string_aspect_value("shared"),
                 limit,
                 BoundedIndexParityMode::Certification,
+                execution,
                 || Ok::<_, ()>(()),
             )
             .unwrap();

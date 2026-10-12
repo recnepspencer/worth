@@ -67,6 +67,7 @@ where
     /// answers as its begin would.
     pub(super) fn leave_replaced_source<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         disclosure: ValidatedOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
@@ -132,6 +133,7 @@ where
             .charge_external_work(std::mem::size_of_val(disclosure.source()) as u64)
             .map_err(|_| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?;
         self.refresh_output_demand(
+            execution,
             demand,
             disclosure.value(),
             disclosure.source().clone(),

@@ -114,7 +114,7 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-            >(selected, installed, definition, key, admission)
+            >(phase, selected, installed, definition, key, admission)
         })
 
 
@@ -160,7 +160,7 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-            >(selected, installed, instance, target, resume_at, key, admission)
+            >(&phase, selected, installed, instance, target, resume_at, key, admission)
         })
 
         }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(
@@ -209,7 +209,7 @@ where
                 MutationInput<Schema, Intent>,
                 MutationScope<Schema, IntentBinding<Schema, Intent>>,
                 Spec,
-            >(selected, installed, instance, target, resume_at, key, admission)
+            >(&phase, selected, installed, instance, target, resume_at, key, admission)
         })
 
         }).map_err(|cause| WorthQueryWorkflowInstancePreparationDenial::RequestAdmission(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)))?
@@ -218,7 +218,7 @@ where
     #[allow(clippy::type_complexity)]
     fn prepare_start<'workflow, Spec>(
         self,
-        phase: &AdvancementPhase<'_>,
+phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         prepare: impl FnOnce(
             &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
@@ -270,7 +270,7 @@ where
     #[allow(clippy::type_complexity)]
     fn prepare_instance<'workflow, Spec, Prepared>(
         mut self,
-        phase: &AdvancementPhase<'_>,
+phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'workflow, Schema, Spec>>,
         prepare: impl FnOnce(
             &worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
@@ -306,7 +306,7 @@ where
         }
         let selected = application
             .on_branch(self.product_branch())
-            .select()
+            .select(phase, )
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)
             .map_err(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission)?;
         let staged = self.stage().map_err(WorthQueryWorkflowInstancePreparationDenial::RequestAdmission)?;

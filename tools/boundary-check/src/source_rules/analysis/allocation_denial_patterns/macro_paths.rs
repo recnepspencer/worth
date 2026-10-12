@@ -1,151 +1,147 @@
-//! Recognize paths in macro DSL fragments, with disjoint token ownership.
-use proc_macro2::{Spacing, TokenTree};
+//! A single marked-frame walk recognizes raw-kind reads in macro DSL tokens.
+use proc_macro2::{Spacing, Span, TokenStream, TokenTree};
 
 use super::raw_kind_types::RAW;
 
-pub(super) enum Fragment {
-    Path(syn::TypePath),
-    Group(proc_macro2::TokenStream),
-    RawMember(proc_macro2::Span),
+pub(super) enum Fragment<'a> {
+    Mention(&'a syn::Path),
+    Read(Span),
+    Items(TokenStream),
 }
 
-pub(super) fn scan(tokens: &[TokenTree], mut path: impl FnMut(Fragment)) -> usize {
-    scan_fragments(tokens, &mut path, true)
+struct Body {
+    tokens: Vec<TokenTree>,
+    index: usize,
+    frames: Vec<Option<Span>>,
+    path: syn::Path,
+    path_mark: Option<Span>,
+    within_angle: bool,
+    mark_only: bool,
 }
 
-fn scan_fragments(
-    tokens: &[TokenTree],
-    path: &mut impl FnMut(Fragment),
-    first_pass: bool,
-) -> usize {
+impl Body {
+    fn new(tokens: Vec<TokenTree>, within_angle: bool, mark_only: bool) -> Self {
+        Self {
+            tokens,
+            index: 0,
+            frames: vec![None],
+            path: syn::Path {
+                leading_colon: None,
+                segments: Default::default(),
+            },
+            path_mark: None,
+            within_angle,
+            mark_only,
+        }
+    }
+
+    fn clear_path(&mut self) {
+        self.path.segments.clear();
+        self.path_mark = None;
+    }
+
+    fn mark(&mut self, mark: Option<Span>) {
+        let frame = self.frames.last_mut().unwrap();
+        *frame = frame.or(mark);
+    }
+}
+
+pub(super) fn scan(tokens: &[TokenTree], mut observe: impl FnMut(Fragment<'_>) -> bool) -> usize {
+    let mut bodies = vec![Body::new(tokens.to_vec(), false, false)];
     let mut operations = 0;
-    let mut candidate = Vec::new();
-    let mut angles = 0usize;
-    for (index, token) in tokens.iter().enumerate() {
+    while let Some(body) = bodies.last_mut() {
+        if body.index == body.tokens.len() {
+            let body = bodies.pop().unwrap();
+            operations += body.frames.len() - 1;
+            let mark = body.frames.into_iter().flatten().next();
+            if let Some(parent) = bodies.last_mut() {
+                parent.mark(mark);
+            }
+            continue;
+        }
+        let index = body.index;
+        body.index += 1;
         operations += 1;
-        if first_pass {
-            if let TokenTree::Ident(name) = token {
-                if name == RAW {
-                    operations += 2;
-                    if tokens.get(index + 1).is_some_and(colon)
-                        && tokens.get(index + 2).is_some_and(colon)
-                    {
-                        path(Fragment::RawMember(name.span()));
+        match body.tokens[index].clone() {
+            TokenTree::Ident(name) => {
+                // Build ident-only lexical prefixes, never argument syntax.
+                // Alias resolution supplies meaning; the token walk only asks
+                // whether this prefix mentions the raw kind.
+                if index < 2 || !member(&body.tokens, index - 2) {
+                    body.clear_path();
+                }
+                body.path.segments.push(syn::PathSegment {
+                    ident: name.clone(),
+                    arguments: syn::PathArguments::None,
+                });
+                operations += 1;
+                if name == RAW || observe(Fragment::Mention(&body.path)) {
+                    body.path_mark = body.path_mark.or(Some(name.span()));
+                }
+                body.mark(body.path_mark);
+                if !body.mark_only && member(&body.tokens, index + 1) {
+                    if let Some(mark) = body.path_mark {
+                        observe(Fragment::Read(mark));
                     }
                 }
             }
-            if let TokenTree::Group(group) = token {
-                path(Fragment::Group(group.stream()));
-            }
-        }
-        let continues = match token {
-            TokenTree::Group(_) if angles > 0 => true,
-            TokenTree::Ident(_) => {
-                if angles == 0 && matches!(candidate.last(), Some(TokenTree::Ident(_))) {
-                    finish(&mut candidate, path, &mut operations, first_pass);
-                }
-                true
-            }
             TokenTree::Punct(p) if p.as_char() == '<' => {
-                angles += 1;
-                true
+                operations += 1;
+                body.frames.push(body.path_mark);
+                body.clear_path();
             }
-            TokenTree::Punct(p) if p.as_char() == '>' && angles > 0 => {
-                angles -= 1;
-                true
+            TokenTree::Punct(p) if p.as_char() == '>' && !arrow(&body.tokens, index) => {
+                if body.frames.len() > 1 {
+                    operations += 1;
+                    let mark = body.frames.pop().unwrap();
+                    body.mark(mark);
+                    if !body.mark_only && member(&body.tokens, index + 1) {
+                        if let Some(mark) = mark {
+                            observe(Fragment::Read(mark));
+                        }
+                    }
+                }
+                body.clear_path();
             }
-            // Neither delimiter belongs to a type argument. In particular, an
-            // unclosed comparison angle must not absorb the next DSL entry.
-            TokenTree::Punct(p) if p.as_char() == ';' => false,
-            TokenTree::Punct(p)
-                if p.as_char() == '='
-                    && tokens.get(index + 1).is_some_and(
-                        |next| matches!(next, TokenTree::Punct(p) if p.as_char() == '>'),
-                    ) =>
-            {
-                false
+            TokenTree::Group(group) => {
+                body.clear_path();
+                let within_angle = body.within_angle || body.frames.len() > 1;
+                // Offer groups to the syntax visitor at every frame depth.
+                // Owned groups under angles still supply marks, but the visitor
+                // already owns their reads and all descendant syntax visits.
+                let tokens = group.stream();
+                let owned = !body.mark_only && observe(Fragment::Items(tokens.clone()));
+                let mark_only = body.mark_only || owned;
+                if within_angle || !owned {
+                    bodies.push(Body::new(
+                        tokens.into_iter().collect(),
+                        within_angle,
+                        mark_only,
+                    ));
+                }
             }
-            TokenTree::Punct(_) if angles > 0 => true,
-            TokenTree::Punct(_) if colon(token) => path_colon(tokens, index),
-            _ => false,
-        };
-        if continues {
-            candidate.push(token.clone());
-        } else {
-            finish(&mut candidate, path, &mut operations, first_pass);
-            angles = 0;
+            TokenTree::Punct(p) if p.as_char() == ':' => {}
+            _ => body.clear_path(),
         }
     }
-    finish(&mut candidate, path, &mut operations, first_pass);
     operations
 }
 
-fn finish(
-    candidate: &mut Vec<TokenTree>,
-    path: &mut impl FnMut(Fragment),
-    operations: &mut usize,
-    first_pass: bool,
-) {
-    // Each candidate is disjoint, so parsing cannot repeatedly reread prefixes.
-    if candidate.iter().any(colon) {
-        *operations += candidate.len();
-        let tokens = std::mem::take(candidate);
-        match syn::parse2::<syn::TypePath>(tokens.iter().cloned().collect()) {
-            Ok(candidate) => path(Fragment::Path(candidate)),
-            Err(_) if first_pass => recover_unclosed_angles(&tokens, path, operations),
-            Err(_) => {}
-        }
-    } else {
-        candidate.clear();
-    }
+fn member(tokens: &[TokenTree], index: usize) -> bool {
+    matches!(tokens.get(index), Some(TokenTree::Punct(p)) if p.as_char() == ':')
+        && matches!(tokens.get(index + 1), Some(TokenTree::Punct(p)) if p.as_char() == ':')
 }
 
-// An unmatched comparison angle cannot own the following DSL entries. Split
-// only at unmatched opens: each recovered piece is balanced and scanned once.
-fn recover_unclosed_angles(
-    tokens: &[TokenTree],
-    path: &mut impl FnMut(Fragment),
-    operations: &mut usize,
-) {
-    let mut unmatched = Vec::new();
-    for (index, token) in tokens.iter().enumerate() {
-        *operations += 1;
-        match token {
-            TokenTree::Punct(p) if p.as_char() == '<' => unmatched.push(index),
-            TokenTree::Punct(p) if p.as_char() == '>' => {
-                unmatched.pop();
-            }
-            _ => {}
-        }
-    }
-    if unmatched.is_empty() {
-        return;
-    }
-    let mut start = 0;
-    for end in unmatched.into_iter().chain(std::iter::once(tokens.len())) {
-        // Reuse the same callback type and leave descendant groups and raw
-        // members with their first pass. Balanced pieces need no recovery.
-        *operations += scan_fragments(&tokens[start..end], path, false);
-        start = end + 1;
-    }
-}
-
-fn colon(token: &TokenTree) -> bool {
-    matches!(token, TokenTree::Punct(p) if p.as_char() == ':')
-}
-
-fn path_colon(tokens: &[TokenTree], index: usize) -> bool {
-    matches!(&tokens[index], TokenTree::Punct(p) if p.spacing() == Spacing::Joint)
-        && tokens.get(index + 1).is_some_and(colon)
-        || index.checked_sub(1).is_some_and(|previous| {
-            matches!(&tokens[previous], TokenTree::Punct(p)
-                if p.as_char() == ':' && p.spacing() == Spacing::Joint)
-        })
+fn arrow(tokens: &[TokenTree], index: usize) -> bool {
+    index.checked_sub(1).is_some_and(|previous| {
+        matches!(&tokens[previous], TokenTree::Punct(p)
+            if p.as_char() == '-' && p.spacing() == Spacing::Joint)
+    })
 }
 
 #[cfg(test)]
 mod tests {
-    use super::scan;
+    use super::{scan, Fragment, RAW};
 
     #[test]
     fn doubling_a_macro_body_doubles_token_work() {
@@ -153,6 +149,14 @@ mod tests {
             "Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
             "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
             "a < b < c, Family::<ExecutionAllocationDenialKind>::Cancelled: value;",
+            "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled > c => value;",
+            "a < b, c > Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            "Vec<u8> Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled,",
+            "a < b, <Vec<ExecutionAllocationDenialKind> as IntoIterator>::Item,",
+            "<fn() -> ExecutionAllocationDenialKind as Id>::Out,",
+            "<Arr<ExecutionAllocationDenialKind, 3> as Id>::Out,",
+            "wrap!({ nested!(Family::<ExecutionAllocationDenialKind>::Cancelled); }),",
         ] {
             let count = |n| {
                 let tokens = fragment
@@ -161,17 +165,50 @@ mod tests {
                     .unwrap();
                 let tokens: Vec<_> = tokens.into_iter().collect();
                 let mut reads = 0;
-                let work = scan(&tokens, |fragment| {
-                    if matches!(fragment, super::Fragment::Path(_)) {
+                let work = scan(&tokens, |fragment| match fragment {
+                    Fragment::Mention(path) => path.segments.last().is_some_and(|s| s.ident == RAW),
+                    Fragment::Read(_) => {
                         reads += 1;
+                        false
                     }
+                    Fragment::Items(_) => false,
                 });
                 (work, reads)
             };
             let small = count(16);
             let large = count(32);
-            assert_eq!(large.0, 2 * small.0);
-            assert_eq!((small.1, large.1), (16, 32));
+            assert_eq!(large.0, 2 * small.0, "{fragment}");
+            assert_eq!((small.1, large.1), (16, 32), "{fragment}");
         }
+    }
+
+    #[test]
+    fn owned_groups_supply_marks_without_repeating_reads_or_syntax_visits() {
+        let count = |n| {
+            let tokens = "<fn((ExecutionAllocationDenialKind::Cancelled)) as Id>::Out,"
+                .repeat(n)
+                .parse::<proc_macro2::TokenStream>()
+                .unwrap();
+            let tokens: Vec<_> = tokens.into_iter().collect();
+            let mut reads = 0;
+            let mut syntax_visits = 0;
+            let work = scan(&tokens, |fragment| match fragment {
+                Fragment::Mention(path) => path.segments.last().is_some_and(|s| s.ident == RAW),
+                Fragment::Read(_) => {
+                    reads += 1;
+                    false
+                }
+                Fragment::Items(_) => {
+                    syntax_visits += 1;
+                    true
+                }
+            });
+            (work, reads, syntax_visits)
+        };
+        let small = count(16);
+        let large = count(32);
+        assert_eq!(large.0, 2 * small.0);
+        assert_eq!((small.1, large.1), (16, 32));
+        assert_eq!((small.2, large.2), (16, 32));
     }
 }

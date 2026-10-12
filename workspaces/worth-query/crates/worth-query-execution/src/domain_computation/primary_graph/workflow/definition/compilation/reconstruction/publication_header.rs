@@ -22,6 +22,7 @@ pub(super) struct ObservedWorkflowPublicationHeader {
 }
 
 pub(super) fn observe_publication_revisions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -31,6 +32,7 @@ pub(super) fn observe_publication_revisions(
 ) -> Result<WorkflowDefinitionPublicationRevisions, WorthQueryApplicationAttemptDenial> {
     let revisions = WorkflowDefinitionPublicationRevisions {
         start: observe_adjacency_revision(
+            execution,
             runtime,
             snapshot,
             layout.definition_start_relation,
@@ -38,6 +40,7 @@ pub(super) fn observe_publication_revisions(
             facts,
         )?,
         nodes: observe_adjacency_revision(
+            execution,
             runtime,
             snapshot,
             layout.definition_node_relation,
@@ -45,6 +48,7 @@ pub(super) fn observe_publication_revisions(
             facts,
         )?,
         connections: observe_adjacency_revision(
+            execution,
             runtime,
             snapshot,
             layout.definition_connection_relation,
@@ -61,6 +65,7 @@ pub(super) fn observe_publication_revisions(
 }
 
 fn observe_adjacency_revision(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     relation_kind: worth_relational::facade::identity::KindId,
@@ -71,9 +76,10 @@ fn observe_adjacency_revision(
     const COMPARISON_WORK_LIMIT: usize = 1;
     let truth = runtime.read_truth();
     let revision = truth
-        .project_snapshot(snapshot)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| super::denial("workflow publication snapshot is unavailable"))?
         .bounded_adjacency_structural_revision(
+            execution,
             definition,
             relation_kind,
             RelationalAdjacencyDirection::Outgoing,
@@ -104,6 +110,7 @@ fn observe_adjacency_revision(
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe_publication_header(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -119,6 +126,7 @@ pub(super) fn observe_publication_header(
         kind: layout.definition.entity_kind,
     }];
     exact_text(
+        execution,
         runtime,
         snapshot,
         definition,
@@ -130,6 +138,7 @@ pub(super) fn observe_publication_header(
     // Publication provenance is immutable; adoption records a carriage
     // beside it, and the latest carriage names the executing revision.
     let published_under = observed_text(
+        execution,
         runtime,
         snapshot,
         definition,
@@ -138,6 +147,7 @@ pub(super) fn observe_publication_header(
         &mut facts,
     )?;
     let carried_to = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         definition,
@@ -151,6 +161,7 @@ pub(super) fn observe_publication_header(
         ));
     }
     let lineage = exact_adjacent(
+        execution,
         runtime,
         snapshot,
         layout.lineage_definition_relation,
@@ -179,6 +190,7 @@ pub(super) fn observe_publication_header(
         kind: layout.lineage.entity_kind,
     });
     exact_text(
+        execution,
         runtime,
         snapshot,
         lineage,
@@ -187,7 +199,7 @@ pub(super) fn observe_publication_header(
         expected_spec,
         &mut facts,
     )?;
-    exact_u64(
+    exact_u64(execution,
         runtime,
         snapshot,
         lineage,

@@ -87,16 +87,20 @@ fn package<D: WorthQueryDomainEntryMarker>(marker: D) -> WorthQueryDomainPackage
         .permits_contribution(WorthQueryDeclarationEntryContributionCategoryFamily::Admission)
 }
 
-fn installed_runtime() -> WorthQueryRuntime {
+fn installed_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
     complete_backend_from_parts_builder()
         .domain_package(package(InstalledDomain))
         .unwrap()
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .unwrap()
 }
 
-fn changed_package_runtime() -> WorthQueryRuntime {
+fn changed_package_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
     let changed = WorthQueryDomainPackage::declare(InstalledDomain, identity_version(1))
         .requires_capability(WorthQueryCapabilityFamily::QueryRead)
         .requires_configuration(WorthQueryConfigSectionFamily::Query)
@@ -105,14 +109,17 @@ fn changed_package_runtime() -> WorthQueryRuntime {
         .domain_package(changed)
         .unwrap()
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .unwrap()
 }
 
 #[test]
 fn equivalent_packages_mint_semantically_equal_but_runtime_affine_handles() {
-    let left = installed_runtime();
-    let right = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = installed_runtime(request_execution);
+    let right = installed_runtime(request_execution);
     let left_handle = left.domain(InstalledDomain).unwrap();
     let right_handle = right.domain(InstalledDomain).unwrap();
 
@@ -201,8 +208,11 @@ fn runtime_installation_reports_platform_support_admission_before_compilation() 
 
 #[test]
 fn installed_operation_declaration_cannot_cross_runtime_authority() {
-    let owner = installed_runtime();
-    let foreign = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = installed_runtime(request_execution);
+    let foreign = installed_runtime(request_execution);
     let declaration = installed_operation_family(&owner.domain(InstalledDomain).unwrap());
 
     owner
@@ -224,7 +234,10 @@ fn installed_operation_declaration_cannot_cross_runtime_authority() {
 
 #[test]
 fn handle_lookup_is_constant_width_and_installation_is_self_describing() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     assert_eq!(handle.domain_key(), "WORTH.tests.installed-domain");
     assert_eq!(handle.display_name(), "InstalledDomain");

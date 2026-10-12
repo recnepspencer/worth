@@ -6,12 +6,15 @@ use crate::runtime::{WorthQueryReadBuiltInOperator, WorthQueryReadScopeClass};
 
 #[test]
 fn compose_read_bounded_descendant_detail_matches_open_coded_anchored_detail_query_semantics() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.descendant-parity-detail")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_descendant_detail(
                 "user",
                 expanded_manager_schema(),
@@ -48,7 +51,7 @@ fn compose_read_bounded_descendant_detail_matches_open_coded_anchored_detail_que
         .expect("operator-owned bounded descendant detail should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_detail(
                 "user",
                 expanded_manager_schema(),
@@ -137,12 +140,15 @@ fn compose_read_bounded_descendant_detail_matches_open_coded_anchored_detail_que
 #[test]
 fn compose_read_bounded_descendant_collection_matches_open_coded_anchored_collection_query_semantics(
 ) {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.descendant-parity-collection")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_bounded_descendant_collection(
                 "user",
                 expanded_manager_schema(),
@@ -183,7 +189,7 @@ fn compose_read_bounded_descendant_collection_matches_open_coded_anchored_collec
         .expect("operator-owned bounded descendant collection should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_collection(
                 "user",
                 expanded_manager_schema(),

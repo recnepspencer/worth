@@ -64,8 +64,15 @@ impl domain::WorthQueryGraphCommitProvider<SeparateCommit> for UncontactedProvid
 
 #[test]
 fn primary_and_separate_mutation_requires_declared_compensation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
-    let uncompensated = runtime(Arc::clone(&contacts), "mixed-uncompensated");
+    let uncompensated = runtime(
+        request_execution,
+        Arc::clone(&contacts),
+        "mixed-uncompensated",
+    );
     let installed = uncompensated.domain(GeometryDomain).unwrap();
     let denial = match uncompensated
         .prepare_mutation_operating_world(uncompensated.current_world())
@@ -84,6 +91,7 @@ fn primary_and_separate_mutation_requires_declared_compensation() {
 }
 
 fn runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     contacts: Arc<AtomicUsize>,
     name: &str,
 ) -> worth_query::facade::runtime::WorthQueryWorkspace {
@@ -95,7 +103,7 @@ fn runtime(
             SeparateCommit,
         )
         .graph_commit_provider(SeparateCommit, UncontactedProvider(contacts))
-        .workspace(name)
+        .workspace(request_execution, name)
         .unwrap()
 }
 

@@ -31,13 +31,23 @@ fn raw_specialized_commit_cannot_bypass_the_installed_program() {
     let specialist = fixture.authenticate();
     let action = delegated_action();
     let command = delegation_command(action).unwrap();
-    let admission = fixture
-        .runtime
-        .admit_delegation(&specialist, action, command.child, &request_scope())
+    let admission =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.admit_delegation(
+                phase,
+                &specialist,
+                action,
+                command.child,
+                &request_scope(),
+            )
+        })
         .expect("the exact delegation command should admit");
-    let program = fixture
-        .runtime
-        .materialize_delegation(admission, command.child)
+    let program =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .materialize_delegation(phase, admission, command.child)
+        })
         .expect("Query should materialize a valid specialized program");
     let outcome = fixture
         .runtime
@@ -59,13 +69,23 @@ fn parent_revocation_after_activation_materialization_denies_final_commit() {
     let specialist = fixture.authenticate();
     let action = delegated_action();
     let command = delegation_command(action).unwrap();
-    let admission = fixture
-        .runtime
-        .admit_delegation(&specialist, action, command.child, &request_scope())
+    let admission =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.admit_delegation(
+                phase,
+                &specialist,
+                action,
+                command.child,
+                &request_scope(),
+            )
+        })
         .unwrap();
-    let program = fixture
-        .runtime
-        .materialize_delegation(admission, command.child)
+    let program =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .materialize_delegation(phase, admission, command.child)
+        })
         .expect("the exact activation program must materialize while its parent is current");
     let revoked = fixture
         .runtime
@@ -110,13 +130,23 @@ fn ancestor_revocation_after_grandchild_materialization_denies_final_commit() {
     let approver = fixture.authenticate_approver();
     let action = delegated_action_from_child();
     let command = delegation_command(action).unwrap();
-    let admission = fixture
-        .runtime
-        .admit_delegation(&approver, action, command.child, &request_scope())
+    let admission =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.admit_delegation(
+                phase,
+                &approver,
+                action,
+                command.child,
+                &request_scope(),
+            )
+        })
         .expect("the active child and its lineage must admit the grandchild");
-    let program = fixture
-        .runtime
-        .materialize_delegation(admission, command.child)
+    let program =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .materialize_delegation(phase, admission, command.child)
+        })
         .expect("the grandchild program must retain its exact ancestor lineage");
 
     fixture
@@ -181,13 +211,23 @@ fn activation_program_cannot_cross_runtime_session_authority() {
     let source_principal = source.authenticate();
     let action = delegated_action();
     let command = delegation_command(action).unwrap();
-    let admission = source
-        .runtime
-        .admit_delegation(&source_principal, action, command.child, &request_scope())
+    let admission =
+        crate::test_host_policy::with_phase(source.runtime.application_runtime(), |phase| {
+            source.runtime.admit_delegation(
+                phase,
+                &source_principal,
+                action,
+                command.child,
+                &request_scope(),
+            )
+        })
         .unwrap();
-    let program = source
-        .runtime
-        .materialize_delegation(admission, command.child)
+    let program =
+        crate::test_host_policy::with_phase(source.runtime.application_runtime(), |phase| {
+            source
+                .runtime
+                .materialize_delegation(phase, admission, command.child)
+        })
         .expect("the source runtime must materialize its own activation program");
 
     let foreign = delegation_world("delegation-provider-foreign-runtime");
@@ -265,32 +305,40 @@ fn materialize_generic(
 > {
     let action = delegated_action();
     let command = delegation_command(action)?;
-    let admission = runtime.admit_delegation(principal, action, command.child, &request_scope())?;
-    let projected = runtime
-        .invariant_projection()
-        .project_admitted_operation(
+    let admission = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime.admit_delegation(phase, principal, action, command.child, &request_scope())
+    })?;
+    let projected = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime.invariant_projection().project_admitted_operation(
+            phase,
             &admission,
             |reader, estate| project_delegation(reader, estate, command.child),
             ExecutionAllocationPolicy::SystemAllocation,
         )
-        .map_err(BankEstateProgressionDenial::from_projection)?;
+    })
+    .map_err(BankEstateProgressionDenial::from_projection)?;
     let (result, projection, _) = projected.into_parts();
     result.map_err(BankEstateProgressionDenial::CapabilityDelegationProjection)?;
-    let reads = runtime
-        .application_runtime()
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .map_err(BankEstateProgressionDenial::from_attempt)?;
-    reads
-        .complete_projected_dependencies(
+    let reads = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime
+            .application_runtime()
+            .begin_projected_application_read_attempt(
+                phase,
+                admission,
+                projection,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+    })
+    .map_err(BankEstateProgressionDenial::from_attempt)?;
+    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        reads.complete_projected_dependencies(
+            phase,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )?
-        .begin_effect_program()
-        .finish()
-        .map_err(BankEstateProgressionDenial::from_attempt)
+        )
+    })?
+    .begin_effect_program()
+    .finish()
+    .map_err(BankEstateProgressionDenial::from_attempt)
 }
 
 fn assert_provider_currentness_denial(outcome: WorthQueryApplicationCommitOutcome) {

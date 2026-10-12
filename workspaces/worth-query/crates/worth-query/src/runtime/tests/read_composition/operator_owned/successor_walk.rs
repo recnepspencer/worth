@@ -7,12 +7,15 @@ use crate::runtime::{
 
 #[test]
 fn compose_read_executes_operator_owned_successor_walk_detail_as_local_neighborhood() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.successor-walk-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_successor_walk_detail(
                 "user",
                 expanded_manager_schema(),
@@ -66,12 +69,15 @@ fn compose_read_executes_operator_owned_successor_walk_detail_as_local_neighborh
 
 #[test]
 fn compose_read_executes_operator_owned_successor_walk_collection_as_local_neighborhood() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.successor-walk-collection")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_successor_walk_collection(
                 "user",
                 expanded_manager_schema(),
@@ -125,12 +131,15 @@ fn compose_read_executes_operator_owned_successor_walk_collection_as_local_neigh
 
 #[test]
 fn compose_read_denies_zero_depth_successor_walk() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.successor-walk-zero-depth")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_successor_walk_detail(
                 "user",
                 expanded_manager_schema(),
@@ -166,12 +175,15 @@ fn compose_read_denies_zero_depth_successor_walk() {
 
 #[test]
 fn compose_read_denies_degenerate_one_hop_successor_walk() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.successor-walk-degenerate")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_successor_walk_detail(
                 "user",
                 expanded_manager_schema(),

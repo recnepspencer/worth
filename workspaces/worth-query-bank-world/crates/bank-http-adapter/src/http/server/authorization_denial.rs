@@ -75,7 +75,8 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         }
         // Repeating the request cannot install or repair its policy.
         Authorization::PolicyNotInstalled => (Kind::Unavailable, Next::ContactOperator),
-        Authorization::CapabilityProjectionRejected
+        Authorization::ForeignPhase
+        | Authorization::CapabilityProjectionRejected
         | Authorization::ElevationProjectionRejected
         | Authorization::InvalidInstalledPolicy
         | Authorization::RelationalObservationRejected

@@ -50,6 +50,7 @@ impl HostileGraphFixtureSummary {
 }
 
 pub fn seed_hostile_frontier_graph(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     prefix: &str,
 ) -> HostileGraphFixtureSummary {
@@ -57,7 +58,7 @@ pub fn seed_hostile_frontier_graph(
     let mut active_identities = Vec::with_capacity(spec.active_user_count);
     for index in 0..spec.active_user_count {
         let receipt = workspace
-            .insert("user", |user| {
+            .insert(request_execution, "user", |user| {
                 user.set_aspect(touch("identity.id"), authored_text(user_id(prefix, index)))
                     .set_aspect(touch("status.value"), authored_text("active"))
                     .set_aspect(
@@ -70,7 +71,7 @@ pub fn seed_hostile_frontier_graph(
     }
     for index in spec.active_user_count..spec.total_user_count() {
         workspace
-            .insert("user", |user| {
+            .insert(request_execution, "user", |user| {
                 user.set_aspect(touch("identity.id"), authored_text(user_id(prefix, index)))
                     .set_aspect(touch("status.value"), authored_text("inactive"))
                     .set_aspect(
@@ -81,12 +82,14 @@ pub fn seed_hostile_frontier_graph(
             .expect("hostile decoy user should insert");
     }
     let relation_edge_count = seed_relation_edges(
+        request_execution,
         workspace,
         prefix,
         "manager",
         &active_identities,
         spec.branching_factor,
     ) + seed_relation_edges(
+        request_execution,
         workspace,
         prefix,
         "mentor",
@@ -102,6 +105,7 @@ pub fn seed_hostile_frontier_graph(
 }
 
 fn seed_relation_edges(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     prefix: &str,
     relation: &str,
@@ -113,7 +117,7 @@ fn seed_relation_edges(
         for branch in 1..=branching_factor {
             let target_index = (source_index + branch) % active_identities.len();
             workspace
-                .insert(relation, |edge| {
+                .insert(request_execution, relation, |edge| {
                     edge.set_aspect(
                         touch("identity.id"),
                         authored_text(format!("{prefix}-{relation}-{source_index}-{target_index}")),

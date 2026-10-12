@@ -1,18 +1,23 @@
 use super::*;
 
 pub(super) fn replay_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: crate::history::data::CommitId,
     branch_id: BranchId,
 ) -> crate::facade::replay::RelationalReplayOutcome {
     runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id,
-            branch_id,
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        })
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id,
+                branch_id,
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap()
 }
 
 pub(super) fn assert_strategy_replay_clean(
@@ -75,15 +80,17 @@ pub(super) fn planning_evidence(
 }
 
 pub(super) fn recover_stage(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     root_path: std::path::PathBuf,
 ) -> RelationalRuntime {
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(runtime, || persisted_strategy_runtime(root_path));
+        checkpoint_and_recover_with(execution, runtime, || persisted_strategy_runtime(root_path));
     recovered
 }
 
 pub(super) fn recover_stage_from_final_history(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &RelationalRuntime,
     root_path: std::path::PathBuf,
     source_head: crate::history::data::RelationalCommitReceipt,
@@ -175,7 +182,7 @@ pub(super) fn recover_stage_from_final_history(
     let mut recovered = persisted_strategy_runtime(root_path);
     recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("recover staged runtime from final history");
     if let Some(base_commit_id) = recovered
         .history()

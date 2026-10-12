@@ -69,10 +69,11 @@ fn derivation_owner() -> (RealReferenceFixture, TestOwner) {
 }
 
 fn settled_relational_evidence(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &RealReferenceFixture,
     owner: &TestOwner,
 ) -> SettledRelationalEvidence {
-    let performed = fixture.perform_relational_owner_change();
+    let performed = fixture.perform_relational_owner_change(execution);
     let commit_identity = performed.commit_identity();
     let successor_basis = performed.next_basis().clone();
     let result = owner
@@ -163,12 +164,15 @@ fn assert_shapes_without_publication_evidence(fixture: &mut RealReferenceFixture
 
 /// Every Relational posture that still owes settlement names settlement first.
 fn assert_shapes_that_owe_settlement(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &RealReferenceFixture,
     evidence: &SettledRelationalEvidence,
 ) {
     assert_derives(
         &CompositeAttemptProgress::new(
-            RelationalAttemptProgress::performed(fixture.perform_relational_owner_change()),
+            RelationalAttemptProgress::performed(
+                fixture.perform_relational_owner_change(execution),
+            ),
             SignalAttemptProgress::untouched(),
         ),
         &SETTLEMENT_OWED,
@@ -206,10 +210,13 @@ fn assert_settled_publication_shapes(
 
 #[test]
 fn every_composite_progress_shape_derives_an_exact_continuation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut fixture, owner) = derivation_owner();
-    let evidence = settled_relational_evidence(&fixture, &owner);
+    let evidence = settled_relational_evidence(execution, &fixture, &owner);
     assert_shapes_without_publication_evidence(&mut fixture);
-    assert_shapes_that_owe_settlement(&fixture, &evidence);
+    assert_shapes_that_owe_settlement(execution, &fixture, &evidence);
     assert_settled_publication_shapes(&mut fixture, &evidence);
 }
 
@@ -218,12 +225,17 @@ fn every_composite_progress_shape_derives_an_exact_continuation() {
 /// the list the progress already justified rather than reshaping it.
 #[test]
 fn owner_loss_is_the_only_cause_that_permits_closing_the_owner() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner) = derivation_owner();
-    let evidence = settled_relational_evidence(&fixture, &owner);
+    let evidence = settled_relational_evidence(execution, &fixture, &owner);
     for progress in [
         CompositeAttemptProgress::untouched(),
         CompositeAttemptProgress::new(
-            RelationalAttemptProgress::performed(fixture.perform_relational_owner_change()),
+            RelationalAttemptProgress::performed(
+                fixture.perform_relational_owner_change(execution),
+            ),
             SignalAttemptProgress::untouched(),
         ),
         settled_progress(&evidence, SignalAttemptProgress::untouched()),

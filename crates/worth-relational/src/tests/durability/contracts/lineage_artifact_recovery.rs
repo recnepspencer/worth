@@ -2,9 +2,12 @@ use super::*;
 
 #[test]
 fn checkpoint_duplicate_lineage_event_ids_deny() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-duplicate-first");
-    create_entity_outcome(&runtime, "checkpoint-duplicate-second");
+    create_entity_outcome(execution, &runtime, "checkpoint-duplicate-first");
+    create_entity_outcome(execution, &runtime, "checkpoint-duplicate-second");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -31,18 +34,21 @@ fn checkpoint_duplicate_lineage_event_ids_deny() {
             .rebuild_lineage_basis_for_test();
     }
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("reused"));
 }
 
 #[test]
 fn tail_duplicate_lineage_event_ids_deny() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "tail-duplicate-checkpoint");
+    create_entity_outcome(execution, &runtime, "tail-duplicate-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "tail-duplicate-first");
-    create_entity_outcome(&runtime, "tail-duplicate-second");
+    create_entity_outcome(execution, &runtime, "tail-duplicate-first");
+    create_entity_outcome(execution, &runtime, "tail-duplicate-second");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -65,17 +71,20 @@ fn tail_duplicate_lineage_event_ids_deny() {
             .rebuild_lineage_basis_for_test();
     }
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("reused"));
 }
 
 #[test]
 fn checkpoint_and_tail_lineage_event_id_collision_denies() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "cross-segment-checkpoint");
+    create_entity_outcome(execution, &runtime, "cross-segment-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "cross-segment-tail");
+    create_entity_outcome(execution, &runtime, "cross-segment-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -98,17 +107,20 @@ fn checkpoint_and_tail_lineage_event_id_collision_denies() {
         .envelope_mut_for_test()
         .rebuild_lineage_basis_for_test();
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("reused"));
 }
 
 #[test]
 fn tail_lineage_commit_and_branch_cross_splices_deny() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "cross-splice-checkpoint");
+    create_entity_outcome(execution, &runtime, "cross-splice-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "cross-splice-tail");
+    create_entity_outcome(execution, &runtime, "cross-splice-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -124,15 +136,18 @@ fn tail_lineage_commit_and_branch_cross_splices_deny() {
         .envelope_mut_for_test()
         .rebuild_lineage_basis_for_test();
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("cross-spliced"));
 }
 
 #[test]
 fn checkpoint_lineage_commit_cross_splice_denies() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-cross-splice");
+    create_entity_outcome(execution, &runtime, "checkpoint-cross-splice");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -148,18 +163,21 @@ fn checkpoint_lineage_commit_cross_splice_denies() {
         .envelope_mut_for_test()
         .rebuild_lineage_basis_for_test();
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("cross-spliced"));
 }
 
 #[test]
 fn replay_and_durable_lineage_payload_conflict_denies() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "payload-conflict-checkpoint");
+    create_entity_outcome(execution, &runtime, "payload-conflict-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    let first = create_entity_outcome(&runtime, "payload-conflict-first");
-    let second = create_entity_outcome(&runtime, "payload-conflict-second");
+    let first = create_entity_outcome(execution, &runtime, "payload-conflict-first");
+    let second = create_entity_outcome(execution, &runtime, "payload-conflict-second");
     let first_lineage = runtime
         .lineage_access()
         .for_record(changed_entities(&first)[0])
@@ -187,15 +205,18 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
         .expect("second tail envelope");
     second_envelope.rebuild_lineage_basis_for_test();
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("create lineage id"));
 }
 
 #[test]
 fn checkpoint_lineage_node_deletion_denies_before_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-node-deletion");
+    create_entity_outcome(execution, &runtime, "checkpoint-node-deletion");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -207,15 +228,18 @@ fn checkpoint_lineage_node_deletion_denies_before_installation() {
         .nodes_mut()
         .clear();
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("lineage counters"));
 }
 
 #[test]
 fn checkpoint_lineage_node_remap_denies_before_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "checkpoint-node-remap");
+    create_entity_outcome(execution, &runtime, "checkpoint-node-remap");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
@@ -228,13 +252,16 @@ fn checkpoint_lineage_node_remap_denies_before_installation() {
         .entity_id =
         crate::identity::data::EntityId::new(crate::identity::data::PartitionId::main(), 99_999, 1);
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("does not name its exact entity"));
 }
 
 #[test]
 fn checkpoint_lineage_node_swap_denies_before_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -250,10 +277,7 @@ fn checkpoint_lineage_node_swap_denies_before_installation() {
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("two-entity commit");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
@@ -270,13 +294,16 @@ fn checkpoint_lineage_node_swap_denies_before_installation() {
     nodes[0].entity_id = nodes[1].entity_id;
     nodes[1].entity_id = first_entity;
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("does not name its exact entity"));
 }
 
 #[test]
 fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -292,10 +319,7 @@ fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("two-entity commit");
     runtime.durability_authority().checkpoint().unwrap();
     let mut plan = runtime.durability().recovery_plan(
@@ -310,17 +334,20 @@ fn checkpoint_duplicate_lineage_entity_mapping_denies_before_installation() {
     assert_eq!(nodes.len(), 2);
     nodes[1].entity_id = nodes[0].entity_id;
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(error.detail.contains("does not name its exact entity"));
 }
 
 #[test]
 fn tail_lineage_event_regression_below_checkpoint_high_water_denies() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "event-regression-checkpoint");
+    create_entity_outcome(execution, &runtime, "event-regression-checkpoint");
     runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "event-regression-tail");
+    create_entity_outcome(execution, &runtime, "event-regression-tail");
     let mut plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
@@ -333,44 +360,24 @@ fn tail_lineage_event_regression_below_checkpoint_high_water_denies() {
         .envelope_mut_for_test()
         .rebuild_lineage_basis_for_test();
 
-    let error = recover_error(plan);
+    let error = recover_error(execution, plan);
     assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
     assert!(error.detail.contains("lineage event id 0 does not advance"));
 }
 
-#[test]
-fn tail_created_lineage_regression_below_checkpoint_high_water_denies() {
-    let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "lineage-regression-checkpoint");
-    runtime.durability_authority().checkpoint().unwrap();
-    create_entity_outcome(&runtime, "lineage-regression-tail");
-    let mut plan = runtime.durability().recovery_plan(
-        crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
-    );
-    plan.tail_log[0]
-        .envelope_mut_for_test()
-        .published_lineage_mut_for_test()
-        .lineage_events_mut()[0]
-        .targets[0] = crate::identity::data::LineageId(0);
-    plan.tail_log[0]
-        .envelope_mut_for_test()
-        .rebuild_lineage_basis_for_test();
-
-    let error = recover_error(plan);
-    assert_eq!(error.class, RecoveryFailureClass::CorruptSegment);
-    assert!(error
-        .detail
-        .contains("create lineage id 0 does not advance"));
-}
-
 fn recover_error(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: crate::durability::data::RecoveryPlan,
 ) -> crate::durability::data::DurabilityError {
     let mut recovered = persisted_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect_err("corrupt lineage artifact must deny recovery");
+    let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(recovered.history().immutable_commit_count(), 0);
     error
 }
+
+#[path = "lineage_artifact_recovery/lineage_regression.rs"]
+mod lineage_regression;

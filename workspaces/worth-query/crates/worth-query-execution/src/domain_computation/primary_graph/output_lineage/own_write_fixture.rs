@@ -63,16 +63,29 @@ fn commit_own_write(
     let world = crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world_with_product_resources(product_resources);
     world.declare_output_contract::<OwnWriteOutputs>("OwnWriteOutputs");
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let seed = retained_status_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "1",
-        RetentionMutationBreadth::Narrow,
-    );
+    let seed = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+            let account = resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
+            retained_status_program(
+                &(phase_custody).test_host_request(),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "1",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture host admits its seed reads");
     assert!(matches!(
         world.application.compare_and_commit_application(
             seed,
@@ -81,16 +94,18 @@ fn commit_own_write(
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "1", &request);
+    let mut program = world.application.with_host_advancement(|phase| {
+        let phase_custody = &phase;
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+    let account = resolved_account(&(phase_custody).test_host_request(), &world, "1", &request);
     let operation = world
         .application
         .installed_schema()
         .installed_operation(OwnWriteComputation::reference())
         .unwrap();
     let mut admitted = world
-        .selected_product()
-        .authorize_operation(
+        .selected_product(&(phase_custody).test_host_request(), )
+        .authorize_operation(phase_custody,
             &principal,
             &account,
             &operation,
@@ -101,7 +116,7 @@ fn commit_own_write(
     admitted.bind_source_partition([7; 32]);
     let (computed, projection, _) = world
         .invariant
-        .project_admitted_operation(
+        .project_admitted_operation(phase_custody,
             &admitted,
             |reader, projected| {
                 reader
@@ -126,14 +141,14 @@ fn commit_own_write(
         .into_parts();
     let reads = world
         .application
-        .begin_projected_application_read_attempt(
+        .begin_projected_application_read_attempt(phase_custody,
             admitted,
             projection,
             ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     let mut effects = reads
-        .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
+        .complete_projected_dependencies(phase_custody, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap()
         .begin_effect_program();
     let source = effects.existing_entity(&account).unwrap();
@@ -176,7 +191,9 @@ fn commit_own_write(
     effects
         .write_field(&source, AccountStatus::reference(), "2".to_owned())
         .unwrap();
-    let mut program = effects.finish().unwrap().with_output_demand_observation();
+
+        effects.finish().unwrap().with_output_demand_observation()
+    }).expect("the fixture host admits its own-write preparation");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;

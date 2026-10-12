@@ -17,9 +17,12 @@ struct CrossRegistryIdentities {
 /// Both witnesses stay resident for the whole proof, so an observer really does
 /// have to consult both registries; a world with an empty registry would answer
 /// from the first lookup and prove nothing.
-fn with_cross_registry_world(proof: impl FnOnce(&RelationalRuntime, CrossRegistryIdentities)) {
+fn with_cross_registry_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    proof: impl FnOnce(&RelationalRuntime, CrossRegistryIdentities),
+) {
     let runtime = runtime_with_test_schema();
-    let published = create_entity_outcome(&runtime, "cross-registry-witness");
+    let published = create_entity_outcome(execution, &runtime, "cross-registry-witness");
     let active = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
     let identities = CrossRegistryIdentities {
         active: active.snapshot_id(),
@@ -55,7 +58,9 @@ fn with_cross_registry_world(proof: impl FnOnce(&RelationalRuntime, CrossRegistr
 /// discipline note on `SnapshotHandles`.
 #[test]
 fn a_known_snapshot_is_found_in_whichever_registry_holds_it() {
-    with_cross_registry_world(|runtime, identities| {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    with_cross_registry_world(execution, |runtime, identities| {
         assert!(runtime.visibility.is_known_snapshot(identities.active));
         assert!(runtime.visibility.is_known_snapshot(identities.published));
         assert!(!runtime.visibility.is_known_snapshot(identities.absent));

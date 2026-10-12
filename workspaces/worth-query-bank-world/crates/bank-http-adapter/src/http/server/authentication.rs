@@ -56,6 +56,9 @@ fn authentication_denial(error: AuthentikBankAuthenticationError) -> BankHttpDen
             BankPrincipalAdmissionError::Authentication(denial) => {
                 authentication_kind(denial.kind())
             }
+            BankPrincipalAdmissionError::ExecutionRequest(cause) => {
+                super::advancement_denial::advancement(cause)
+            }
             BankPrincipalAdmissionError::ProductSelection(_) => unavailable(),
             BankPrincipalAdmissionError::Resolution(denial) => resolution_kind(denial.kind()),
         },

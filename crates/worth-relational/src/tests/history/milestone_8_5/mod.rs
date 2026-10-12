@@ -46,7 +46,10 @@ use replacement_lineage::*;
 use runtime_fixtures::*;
 #[test]
 fn milestone_8_5_strategy_certification_preserves_merge_replay_and_recovery_truth() {
-    let certification = strategy_certification::run_strategy_merge_certification();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let certification = strategy_certification::run_strategy_merge_certification(execution);
     assert!(
         certification
             .main_commit_strategy_artifacts

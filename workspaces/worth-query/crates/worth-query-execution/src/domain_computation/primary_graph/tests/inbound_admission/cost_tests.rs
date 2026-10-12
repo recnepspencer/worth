@@ -17,7 +17,7 @@ fn empty_operation_program_denial_has_no_inbound_reservation_or_lookup_work() {
         .application
         .observe_inbound_cost(&world.verifier)
         .unwrap();
-    let outcome = world.attempt_empty_program(70);
+    let outcome = { world.attempt_empty_program(70) };
     assert!(
         matches!(outcome, WorthQueryApplicationCommitOutcome::Denied(_)),
         "{outcome:?}"
@@ -31,6 +31,9 @@ fn empty_operation_program_denial_has_no_inbound_reservation_or_lookup_work() {
 
 #[test]
 fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_world();
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
@@ -46,7 +49,7 @@ fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
         .application
         .observe_inbound_cost(&world.verifier)
         .unwrap();
-    let commits = super::tests::owner_commits(&world);
+    let commits = super::tests::owner_commits(request_execution, &world);
     let outcome = std::thread::scope(|threads| {
         let attempt =
             threads.spawn(|| world.attempt_dispatch_with_scope(73, "no-effect", &request));
@@ -71,145 +74,172 @@ fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
         before.outstanding_dispatches()
     );
     assert_eq!(after.accepted_occurrences(), before.accepted_occurrences());
-    assert_eq!(super::tests::owner_commits(&world), commits);
+    assert_eq!(
+        super::tests::owner_commits(request_execution, &world),
+        commits
+    );
 }
 
 #[test]
 fn one_and_one_hundred_exact_duplicates_add_only_bounded_verifier_work() {
-    for duplicates in [1_u64, 100] {
-        let world = installed_world();
-        let dispatch = world.commit_dispatch(71, "cost-selected");
-        let record = dispatch.dispatch_outbox().unwrap();
-        let envelope = signed_envelope(record, [0x77; 32], record.payload(), false);
-        let request = super::super::fixture::live_scope();
-        let first = world
-            .application
-            .receive_inbound_occurrence(&world.verifier, &envelope, &request)
-            .unwrap();
-        assert_eq!(first.posture(), WorthQueryInboundReceiptPosture::Performed);
-        let before = world
-            .application
-            .observe_inbound_cost(&world.verifier)
-            .unwrap();
-        let commits = super::tests::owner_commits(&world);
-        for _ in 0..duplicates {
+    {
+        for duplicates in [1_u64, 100] {
+            let world = installed_world();
+            let dispatch = world.commit_dispatch(71, "cost-selected");
+            let record = dispatch.dispatch_outbox().unwrap();
+            let envelope = signed_envelope(record, [0x77; 32], record.payload(), false);
+            let request = super::super::fixture::live_scope();
+            let first = world
+                .application
+                .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+                .unwrap();
+            assert_eq!(first.posture(), WorthQueryInboundReceiptPosture::Performed);
+            let before = world
+                .application
+                .observe_inbound_cost(&world.verifier)
+                .unwrap();
+            let commits = world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+
+                    super::tests::owner_commits(&host_custody.borrowed_request_for_test(), &world)
+                })
+                .expect("the fixture read owns its installed host call");
+            for _ in 0..duplicates {
+                assert_eq!(
+                    world
+                        .application
+                        .receive_inbound_occurrence(&world.verifier, &envelope, &request)
+                        .unwrap()
+                        .posture(),
+                    WorthQueryInboundReceiptPosture::Performed
+                );
+            }
+            let after = world
+                .application
+                .observe_inbound_cost(&world.verifier)
+                .unwrap();
             assert_eq!(
-                world
-                    .application
-                    .receive_inbound_occurrence(&world.verifier, &envelope, &request)
-                    .unwrap()
-                    .posture(),
-                WorthQueryInboundReceiptPosture::Performed
+                after.verifier_input_bytes() - before.verifier_input_bytes(),
+                duplicates * envelope.len() as u64,
             );
+            assert_eq!(
+                after.custody_key_probes() - before.custody_key_probes(),
+                duplicates
+            );
+            assert_eq!(after.terminal_key_probes(), before.terminal_key_probes());
+            assert_eq!(after.outbox_key_probes(), before.outbox_key_probes());
+            assert_eq!(
+                after.selected_outbox_records(),
+                before.selected_outbox_records()
+            );
+            assert_eq!(
+                after.completion_candidate_prepares(),
+                before.completion_candidate_prepares()
+            );
+            assert_eq!(
+                after.world_publication_attempts(),
+                before.world_publication_attempts()
+            );
+            assert_eq!(
+                after.world_performed_publications(),
+                before.world_performed_publications()
+            );
+            assert_eq!(after.accepted_occurrences(), before.accepted_occurrences());
+            assert_eq!(
+                after.accepted_charged_bytes(),
+                before.accepted_charged_bytes()
+            );
+            assert_eq!(after.outstanding_dispatches(), 0);
+            world
+                .application
+                .with_host_advancement(|phase| {
+                    let host_custody = phase.test_host_request();
+
+                    assert_eq!(
+                        super::tests::owner_commits(
+                            &host_custody.borrowed_request_for_test(),
+                            &world
+                        ),
+                        commits
+                    )
+                })
+                .expect("the fixture read owns its installed host call");
         }
-        let after = world
-            .application
-            .observe_inbound_cost(&world.verifier)
-            .unwrap();
-        assert_eq!(
-            after.verifier_input_bytes() - before.verifier_input_bytes(),
-            duplicates * envelope.len() as u64,
-        );
-        assert_eq!(
-            after.custody_key_probes() - before.custody_key_probes(),
-            duplicates
-        );
-        assert_eq!(after.terminal_key_probes(), before.terminal_key_probes());
-        assert_eq!(after.outbox_key_probes(), before.outbox_key_probes());
-        assert_eq!(
-            after.selected_outbox_records(),
-            before.selected_outbox_records()
-        );
-        assert_eq!(
-            after.completion_candidate_prepares(),
-            before.completion_candidate_prepares()
-        );
-        assert_eq!(
-            after.world_publication_attempts(),
-            before.world_publication_attempts()
-        );
-        assert_eq!(
-            after.world_performed_publications(),
-            before.world_performed_publications()
-        );
-        assert_eq!(after.accepted_occurrences(), before.accepted_occurrences());
-        assert_eq!(
-            after.accepted_charged_bytes(),
-            before.accepted_charged_bytes()
-        );
-        assert_eq!(after.outstanding_dispatches(), 0);
-        assert_eq!(super::tests::owner_commits(&world), commits);
     }
 }
 
 #[test]
 fn signed_receive_selects_one_effect_among_inbound_bound_dispatches() {
-    for population in [10_u64, 1_000] {
-        let world = installed_world();
-        let wide_operation = world
-            .application
-            .installed_schema()
-            .installed_operation(WideNotifyOperation::reference())
-            .unwrap();
-        let wide_handle = world
-            .application
-            .install_inbound_occurrence_verifier(&wide_operation, Arc::new(TestVerifier))
-            .unwrap();
-        for seed in 0..population {
-            world.commit_wide_dispatch(seed + 1, &format!("unrelated-inbound-{seed}"));
-        }
-        assert_eq!(
-            world
+    {
+        for population in [10_u64, 1_000] {
+            let world = installed_world();
+            let wide_operation = world
                 .application
-                .observe_inbound_cost(&wide_handle)
-                .unwrap()
-                .outstanding_dispatches(),
-            population,
-            "the unrelated dispatches must occupy the inbound owner index",
-        );
-        let dispatch = world.commit_dispatch(72, "cost-selected");
-        let record = dispatch.dispatch_outbox().unwrap();
-        let envelope = signed_envelope(record, [0x78; 32], record.payload(), false);
-        let before = world
-            .application
-            .observe_inbound_cost(&world.verifier)
-            .unwrap();
-        let receipt = world
-            .application
-            .receive_inbound_occurrence(
-                &world.verifier,
-                &envelope,
-                &super::super::fixture::live_scope(),
-            )
-            .unwrap();
-        assert_eq!(
-            receipt.posture(),
-            WorthQueryInboundReceiptPosture::Performed
-        );
-        let after = world
-            .application
-            .observe_inbound_cost(&world.verifier)
-            .unwrap();
-        assert_eq!(
-            after.verifier_input_bytes() - before.verifier_input_bytes(),
-            envelope.len() as u64
-        );
-        assert_eq!(
-            after.terminal_key_probes() - before.terminal_key_probes(),
-            2
-        );
-        assert_eq!(after.outbox_key_probes() - before.outbox_key_probes(), 1);
-        assert_eq!(
-            after.selected_outbox_records() - before.selected_outbox_records(),
-            1
-        );
-        assert_eq!(
-            after.completion_candidate_prepares() - before.completion_candidate_prepares(),
-            1
-        );
-        assert_eq!(
-            after.world_performed_publications() - before.world_performed_publications(),
-            1
-        );
+                .installed_schema()
+                .installed_operation(WideNotifyOperation::reference())
+                .unwrap();
+            let wide_handle = world
+                .application
+                .install_inbound_occurrence_verifier(&wide_operation, Arc::new(TestVerifier))
+                .unwrap();
+            for seed in 0..population {
+                world.commit_wide_dispatch(seed + 1, &format!("unrelated-inbound-{seed}"));
+            }
+            assert_eq!(
+                world
+                    .application
+                    .observe_inbound_cost(&wide_handle)
+                    .unwrap()
+                    .outstanding_dispatches(),
+                population,
+                "the unrelated dispatches must occupy the inbound owner index",
+            );
+            let dispatch = world.commit_dispatch(72, "cost-selected");
+            let record = dispatch.dispatch_outbox().unwrap();
+            let envelope = signed_envelope(record, [0x78; 32], record.payload(), false);
+            let before = world
+                .application
+                .observe_inbound_cost(&world.verifier)
+                .unwrap();
+            let receipt = world
+                .application
+                .receive_inbound_occurrence(
+                    &world.verifier,
+                    &envelope,
+                    &super::super::fixture::live_scope(),
+                )
+                .unwrap();
+            assert_eq!(
+                receipt.posture(),
+                WorthQueryInboundReceiptPosture::Performed
+            );
+            let after = world
+                .application
+                .observe_inbound_cost(&world.verifier)
+                .unwrap();
+            assert_eq!(
+                after.verifier_input_bytes() - before.verifier_input_bytes(),
+                envelope.len() as u64
+            );
+            assert_eq!(
+                after.terminal_key_probes() - before.terminal_key_probes(),
+                2
+            );
+            assert_eq!(after.outbox_key_probes() - before.outbox_key_probes(), 1);
+            assert_eq!(
+                after.selected_outbox_records() - before.selected_outbox_records(),
+                1
+            );
+            assert_eq!(
+                after.completion_candidate_prepares() - before.completion_candidate_prepares(),
+                1
+            );
+            assert_eq!(
+                after.world_performed_publications() - before.world_performed_publications(),
+                1
+            );
+        }
     }
 }

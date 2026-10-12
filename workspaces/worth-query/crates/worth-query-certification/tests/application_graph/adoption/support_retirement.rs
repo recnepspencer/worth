@@ -17,11 +17,14 @@ use crate::document_retention_model::programs::RetentionProgramP1;
 
 #[test]
 fn current_branch_prevents_program_support_retirement() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let source = *host.owned_revision();
 
     let denial = host
-        .retire_program_support(&source)
+        .retire_program_support(request_execution, &source)
         .expect_err("the live root still requires P0 support");
     let WorthQueryProgramSupportRetirementDenial::CurrentBranches(inventory) = denial else {
         panic!("the live branch must be the stated retirement blocker")
@@ -36,14 +39,20 @@ fn current_branch_prevents_program_support_retirement() {
 
 #[test]
 fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let source = *host.owned_revision();
     let retained = host
-        .runtime()
-        .on_branch(branch)
-        .select()
-        .expect("the exact P0 branch selection is retained");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the exact P0 branch selection is retained")
+        })
+        .expect("installed host call opens");
     let target = *host
         .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
@@ -51,7 +60,7 @@ fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
     adopt(&host, branch, &target);
 
     let denial = host
-        .retire_program_support(&source)
+        .retire_program_support(request_execution, &source)
         .expect_err("the retained P0 interpretation remains a live user");
     let WorthQueryProgramSupportRetirementDenial::RetainedInterpretation(inventory) = denial else {
         panic!("the retained interpretation must be the stated retirement blocker")
@@ -62,13 +71,13 @@ fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
 
     drop(retained);
     let receipt = host
-        .retire_program_support(&source)
+        .retire_program_support(request_execution, &source)
         .expect("P0 retires after its final retained interpretation is released");
     assert_eq!(receipt.inventory().revision(), &source);
     assert!(receipt.inventory().can_retire());
     assert!(receipt.inventory().retained_program_bytes() > 0);
     assert!(matches!(
-        host.retire_program_support(&source),
+        host.retire_program_support(request_execution, &source),
         Err(WorthQueryProgramSupportRetirementDenial::AlreadyRetired { revision })
             if revision == source
     ));
@@ -76,6 +85,9 @@ fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
 
 #[test]
 fn prepared_adoption_custody_blocks_target_support_retirement() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
@@ -96,7 +108,7 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
         .expect("the adoption prepares with exact support custody");
 
     let denial = host
-        .retire_program_support(&target)
+        .retire_program_support(request_execution, &target)
         .expect_err("the prepared adoption still requires target support");
     let WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory) = denial else {
         panic!("mandatory adoption custody must be the stated retirement blocker: {denial:?}")
@@ -107,7 +119,7 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
 
     drop(prepared);
     let receipt = host
-        .retire_program_support(&target)
+        .retire_program_support(request_execution, &target)
         .expect("P1 retires after prepared custody is released");
     assert!(receipt.inventory().can_retire());
     assert!(host.supported_program::<RetentionProgramP1>().is_none());
@@ -128,6 +140,9 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
 
 #[test]
 fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
@@ -146,14 +161,15 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
         .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let unpublished = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
         _ => panic!("the injected durability loss must retain adoption custody"),
     };
 
     let denial = host
-        .retire_program_support(&target)
+        .retire_program_support(request_execution, &target)
         .expect_err("the unpublished adoption's custody holds the target support");
     // The branch still publishes P0, so the inventory is complete: only the
     // retained adoption custody uses P1.
@@ -191,7 +207,7 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
         WorthQueryBranchAdoptionRecoveryOutcome::Performed { .. }
     ));
     let denial = host
-        .retire_program_support(&target)
+        .retire_program_support(request_execution, &target)
         .expect_err("performed recovery makes P1 the live branch program");
     assert!(matches!(
         denial,
@@ -201,6 +217,9 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
 
 #[test]
 fn denied_recovery_release_preserves_support_custody_for_retry() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
@@ -219,7 +238,8 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
         .adopt(&requirements)
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let recovery = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
             unpublished.into_recovery()
@@ -237,7 +257,7 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
             .expect("a retryable release denial must return complete adoption recovery"),
     };
     let denial = host
-        .retire_program_support(&target)
+        .retire_program_support(request_execution, &target)
         .expect_err("returned recovery must continue owning target support custody");
     let WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory) = denial else {
         panic!("the returned recovery must be named as mandatory custody: {denial:?}")
@@ -268,7 +288,7 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
         WorthQueryBranchAdoptionRecoveryOutcome::Performed { .. }
     ));
     assert!(matches!(
-        host.retire_program_support(&target),
+        host.retire_program_support(request_execution, &target),
         Err(WorthQueryProgramSupportRetirementDenial::CurrentBranches(_))
     ));
 }

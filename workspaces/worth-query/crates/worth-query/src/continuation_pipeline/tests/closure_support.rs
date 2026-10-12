@@ -19,8 +19,9 @@ pub(crate) struct RuntimeBackedContinuationClosureSummary {
 }
 
 pub(crate) fn runtime_backed_continuation_closure_summary(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RuntimeBackedContinuationClosureSummary {
-    let runtime_handle = admitted_handle("main");
+    let runtime_handle = admitted_handle(request_execution, "main");
     let runtime_prepared =
         match runtime_handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
             &runtime_handle,
@@ -37,7 +38,7 @@ pub(crate) fn runtime_backed_continuation_closure_summary(
             runtime_handle.support_snapshot(),
         );
 
-    let (historical_workspace, historical_handle) = admitted_workspace("main");
+    let (historical_workspace, historical_handle) = admitted_workspace(request_execution, "main");
     let historical_prepared = match historical_handle.prepare_continuation_from_target(
         target_request::<HistoricalFamily>(
             &historical_handle,
@@ -55,7 +56,7 @@ pub(crate) fn runtime_backed_continuation_closure_summary(
         worth_query_recovery_brief_from_continuation_execution_checked(replay_checked)
             .expect("replay drift should yield a recovery brief");
 
-    let (preview_workspace, preview_handle) = admitted_workspace("main");
+    let (preview_workspace, preview_handle) = admitted_workspace(request_execution, "main");
     let preview_prepared =
         match preview_handle.prepare_continuation_from_target(target_request::<PreviewFamily>(
             &preview_handle,
@@ -75,7 +76,7 @@ pub(crate) fn runtime_backed_continuation_closure_summary(
         worth_query_recovery_brief_from_continuation_execution_checked(preview_checked)
             .expect("preview-crossed residue should yield a recovery brief");
 
-    let (stale_workspace, stale_handle) = admitted_workspace("main");
+    let (stale_workspace, stale_handle) = admitted_workspace(request_execution, "main");
     let stale_prepared =
         match stale_handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
             &stale_handle,

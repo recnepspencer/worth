@@ -209,7 +209,8 @@ pub struct WorthQuerySharedProjectionDrainStop {
 }
 
 impl WorthQuerySharedProjectionDrainStop {
-    pub(crate) fn new(
+    /// Preserves a host opening refusal in the existing drain error envelope.
+    pub fn new(
         error: crate::runtime::WorthQueryRuntimeError,
         counters: WorthQuerySharedProjectionDrainCounters,
     ) -> Self {

@@ -1,3 +1,5 @@
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 use std::sync::Arc;
 
 use axum::body::{to_bytes, Body};
@@ -145,13 +147,17 @@ fn primary_graph_application_registration_requires_its_query_owner() {
 async fn mutation_session_response_carries_registered_primary_graph_basis() {
     let application = Arc::new(primary_graph_application());
     let expected_basis = application
-        .on_branch(application.current_world())
-        .select()
-        .expect("current product branch must select")
-        .inspect_application_readiness()
-        .expect("published Query application must expose readiness")
-        .basis_token()
-        .to_string();
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(application.current_world())
+                .select(&host_phase)
+                .expect("current product branch must select")
+                .inspect_application_readiness()
+                .expect("published Query application must expose readiness")
+                .basis_token()
+                .to_string()
+        })
+        .expect("installed host call opens");
     let declaration = WorthServerProductOperationDeclaration::product_mutation(
         "workflow_editor.apply",
         "workflow-editor.apply.v1",

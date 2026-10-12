@@ -7,8 +7,11 @@ use worth_foundational::facade::AspectKey;
 
 #[test]
 fn commit_publication_exposes_aspect_evaluation_and_emission_traces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let result = create_entity_outcome(&runtime, "traced");
+    let result = create_entity_outcome(execution, &runtime, "traced");
     let evaluation_traces = result.aspect_evaluation_traces();
     let emission_traces = result.aspect_emission_traces();
     let patch_vs_truth = assert_patch_truth_invariants(&result);
@@ -50,6 +53,9 @@ fn commit_publication_exposes_aspect_evaluation_and_emission_traces() {
 
 #[test]
 fn detailed_trace_profile_emits_commit_side_aspect_trace_diagnostics() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let diagnostics = RelationalDiagnosticsProfile {
         detailed_traces_enabled: true,
         ..RelationalDiagnosticsProfile::default()
@@ -61,7 +67,7 @@ fn detailed_trace_profile_emits_commit_side_aspect_trace_diagnostics() {
         ))
         .diagnostics(diagnostics)
         .build();
-    let result = create_entity_outcome(&runtime, "diagnostic-traced");
+    let result = create_entity_outcome(execution, &runtime, "diagnostic-traced");
 
     assert!(result.diagnostics().iter().any(|artifact| {
         artifact.scope == DiagnosticsScope::Transaction
@@ -83,6 +89,9 @@ fn detailed_trace_profile_emits_commit_side_aspect_trace_diagnostics() {
 
 #[test]
 fn aspect_evaluation_trace_retains_unchanged_bindings_for_auditability() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(
@@ -123,12 +132,7 @@ fn aspect_evaluation_trace_retains_unchanged_bindings_for_auditability() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let created = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let created = txn.commit(execution, &runtime).unwrap();
     let entity = changed_entities(&created)[0];
 
     let mut update_txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -154,12 +158,7 @@ fn aspect_evaluation_trace_retains_unchanged_bindings_for_auditability() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let result = update_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let result = update_txn.commit(execution, &runtime).unwrap();
     let trace = &result.aspect_evaluation_traces()[0];
     let status_key = AspectKey::new("status").unwrap();
     let status_row = trace

@@ -19,10 +19,12 @@ pub(in crate::intent_admission::certification) struct CertifiedEffectIntentFixtu
 }
 
 pub(in crate::intent_admission::certification) fn certified_effect_intent_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> CertifiedEffectIntentFixture {
-    let mut runtime = certification_runtime();
+    let mut runtime = certification_runtime(execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            execution,
             "certification.effect-live",
             certification_task_live_request(),
             certification_task_schema(),
@@ -37,6 +39,7 @@ pub(in crate::intent_admission::certification) fn certified_effect_intent_fixtur
         .expect("effect certification effect should declare");
     runtime
         .write(
+            execution,
             crate::facade::runtime::WorthQueryWriteCommand::UpdateAspect {
                 entity_identity: certification_entity_identity("task-1"),
                 aspect: crate::facade::runtime::WorthQueryAuthoredAspectMutation::new_set(
@@ -68,7 +71,7 @@ pub(in crate::intent_admission::certification) fn certified_effect_intent_fixtur
     let handoff_digest = admitted.handoff().handoff_digest().to_string();
     let binding_digest = admitted.execution_binding().binding_digest().to_string();
     let receipt = admitted
-        .execute()
+        .execute(execution)
         .expect("effect certification admitted execution should succeed");
     let trace_digest = receipt.decision_trace_envelope().trace_digest().to_string();
     let execution_provenance_chain_digest = receipt.execution_provenance_chain_digest().to_string();

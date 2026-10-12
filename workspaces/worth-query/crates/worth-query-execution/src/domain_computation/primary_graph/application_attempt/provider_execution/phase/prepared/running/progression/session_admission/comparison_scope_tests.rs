@@ -25,16 +25,32 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
             Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
             cancellation.token(),
         );
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = retained_status_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "overlay-owner",
-        RetentionMutationBreadth::Narrow,
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            retained_status_program(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "overlay-owner",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     world
         .application
         .with_application_advancement(
@@ -42,6 +58,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
             |active_phase| {
                 let phase = &active_phase;
                 let prepared = prepare_application_commit(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     &world.application,
                     WorthQueryApplicationCommitPreparationRequest::new(
@@ -95,7 +112,13 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
                     .unwrap_or_else(|_| panic!("overlay fixture must register"));
-                registered.assert_scoped_comparison(&world, &foreign, &request, &cancellation);
+                registered.assert_scoped_comparison(
+                    &phase.borrowed_request_for_test(),
+                    &world,
+                    &foreign,
+                    &request,
+                    &cancellation,
+                );
                 mutation_run
                     .finish(
                         running,
@@ -108,16 +131,32 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
         .unwrap();
     // The retry is a separate host call after the interrupted attempt closed.
     let fresh = live_scope();
-    let principal = authenticated_principal(&world, &fresh);
-    let account = resolved_account(&world, "open", &fresh);
-    let retry = retained_status_program(
-        &world,
-        &principal,
-        &account,
-        &fresh,
-        "after-retry",
-        RetentionMutationBreadth::Narrow,
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &fresh)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &fresh)
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            retained_status_program(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &account,
+                &fresh,
+                "after-retry",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(
         matches!(
             world.application.compare_and_commit_application(

@@ -11,6 +11,7 @@ use crate::intent_admission::{
 impl WorthQueryRuntime {
     pub(crate) fn inspect_live_view_name_result(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view_name: &str,
     ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         let seed = WorthQueryGenericInspectionIntentSeed::from_target(
@@ -20,7 +21,7 @@ impl WorthQueryRuntime {
         let review = self.review_unified_inspection(seed)?;
         let handoff = self.resolve_reviewed_admitted_unified_inspection_handoff(review)?;
         let binding = self.prepare_unified_inspection_execution_binding(handoff);
-        self.execute_unified_inspection_execution_binding(binding)
+        self.execute_unified_inspection_execution_binding(execution, binding)
     }
 
     pub(crate) fn review_unified_inspection(
@@ -65,10 +66,11 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_unified_inspection_execution_binding(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryUnifiedInspectionExecutionBinding,
     ) -> Result<WorthQueryUnifiedInspectionResult, WorthQueryRuntimeError> {
         let inspection = self.inspect_from_generic_seed(binding.seed())?;
-        let snapshot_identity = self.current_snapshot_identity();
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
         let receipt = WorthQueryUnifiedInspectionReceipt::from_inspection(
             binding.seed().request_label().clone(),
             &inspection,

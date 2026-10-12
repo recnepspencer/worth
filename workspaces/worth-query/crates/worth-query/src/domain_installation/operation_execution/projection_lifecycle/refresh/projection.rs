@@ -19,6 +19,7 @@ pub(super) struct PreparedRefreshProjection {
 }
 
 pub(super) fn prepare_projection<D: 'static, O: 'static, F: 'static, L: BasisOperationLane, S>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &S,
     handle: &crate::ordinary::live::WorthQueryManagedLiveHandle,
     workspace: &mut WorthQueryWorkspace,
@@ -34,8 +35,8 @@ where
 {
     work.begin_read();
     let read = match granular_read {
-        Some((scope, basis)) => handle.read_granular_scope(workspace, scope, basis),
-        None => handle.read(workspace),
+        Some((scope, basis)) => handle.read_granular_scope(execution, workspace, scope, basis),
+        None => handle.read(execution, workspace),
     }
     .map_err(|error| WorthQueryLiveProjectionRefreshError::Runtime {
         error,

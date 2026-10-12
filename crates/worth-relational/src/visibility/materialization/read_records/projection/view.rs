@@ -54,9 +54,12 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         self.basis.root().map(|root| root.schema_authority())
     }
 
-    pub fn entities<T: EntityRecordProjection>(&self) -> Vec<T> {
+    pub fn entities<T: EntityRecordProjection>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Vec<T> {
         let projection_scope = self.assert_entity_projection_contract::<T>();
-        self.authoritative_entity_records(T::KIND)
+        self.authoritative_entity_records(execution, T::KIND)
             .into_iter()
             .filter_map(|record| {
                 T::from_record(EntityProjectionRecord::new(&record, &projection_scope))
@@ -64,9 +67,13 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
             .collect()
     }
 
-    pub fn entities_in<T: EntityRecordProjection>(&self, partition_id: PartitionId) -> Vec<T> {
+    pub fn entities_in<T: EntityRecordProjection>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partition_id: PartitionId,
+    ) -> Vec<T> {
         let projection_scope = self.assert_entity_projection_contract::<T>();
-        self.authoritative_entity_records_in(partition_id, T::KIND)
+        self.authoritative_entity_records_in(execution, partition_id, T::KIND)
             .into_iter()
             .filter_map(|record| {
                 T::from_record(EntityProjectionRecord::new(&record, &projection_scope))
@@ -74,19 +81,24 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
             .collect()
     }
 
-    pub fn entity<T: EntityRecordProjection>(&self, entity_id: EntityId) -> Option<T> {
+    pub fn entity<T: EntityRecordProjection>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+    ) -> Option<T> {
         let projection_scope = self.assert_entity_projection_contract::<T>();
-        self.project_entity_record(entity_id, &projection_scope, T::from_record)
+        self.project_entity_record(execution, entity_id, &projection_scope, T::from_record)
     }
 
     pub fn entity_records_with_projection_scope<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
     ) -> Vec<T> {
         self.assert_entity_projection_scope(kind_id, &projection_scope);
-        self.authoritative_entity_records(kind_id)
+        self.authoritative_entity_records(execution, kind_id)
             .into_iter()
             .filter_map(|record| project(EntityProjectionRecord::new(&record, &projection_scope)))
             .collect()
@@ -94,11 +106,12 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
 
     pub fn entity_record_with_projection_scope<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
     ) -> Option<T> {
-        self.project_entity_record(entity_id, &projection_scope, |record| {
+        self.project_entity_record(execution, entity_id, &projection_scope, |record| {
             self.assert_entity_projection_scope(record.kind_id(), &projection_scope);
             project(record)
         })
@@ -106,12 +119,13 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
 
     pub(crate) fn entity_record_of_expected_kind_with_projection_scope<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         expected_kind_id: KindId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
     ) -> Result<Option<T>, KindId> {
-        self.project_entity_record(entity_id, &projection_scope, |record| {
+        self.project_entity_record(execution, entity_id, &projection_scope, |record| {
             Some(if record.kind_id() != expected_kind_id {
                 Err(record.kind_id())
             } else {
@@ -122,9 +136,12 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
         .unwrap_or(Ok(None))
     }
 
-    pub fn relations<T: RelationRecordProjection>(&self) -> Vec<T> {
+    pub fn relations<T: RelationRecordProjection>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Vec<T> {
         let projection_scope = self.assert_relation_projection_contract::<T>();
-        self.authoritative_relation_records(T::KIND)
+        self.authoritative_relation_records(execution, T::KIND)
             .into_iter()
             .filter_map(|record| {
                 T::from_record(RelationProjectionRecord::new(&record, &projection_scope))
@@ -132,9 +149,13 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
             .collect()
     }
 
-    pub fn relations_in<T: RelationRecordProjection>(&self, partition_id: PartitionId) -> Vec<T> {
+    pub fn relations_in<T: RelationRecordProjection>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partition_id: PartitionId,
+    ) -> Vec<T> {
         let projection_scope = self.assert_relation_projection_contract::<T>();
-        self.authoritative_relation_records_in(partition_id, T::KIND)
+        self.authoritative_relation_records_in(execution, partition_id, T::KIND)
             .into_iter()
             .filter_map(|record| {
                 T::from_record(RelationProjectionRecord::new(&record, &projection_scope))
@@ -142,9 +163,13 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
             .collect()
     }
 
-    pub fn relation<T: RelationRecordProjection>(&self, relation_id: RelationId) -> Option<T> {
+    pub fn relation<T: RelationRecordProjection>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        relation_id: RelationId,
+    ) -> Option<T> {
         let projection_scope = self.assert_relation_projection_contract::<T>();
-        self.authoritative_relation_record(relation_id)
+        self.authoritative_relation_record(execution, relation_id)
             .and_then(|record| {
                 T::from_record(RelationProjectionRecord::new(&record, &projection_scope))
             })
@@ -152,12 +177,13 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
 
     pub fn relation_records_with_projection_scope<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(RelationProjectionRecord<'_>) -> Option<T>,
     ) -> Vec<T> {
         self.assert_relation_projection_scope(kind_id, &projection_scope);
-        self.authoritative_relation_records(kind_id)
+        self.authoritative_relation_records(execution, kind_id)
             .into_iter()
             .filter_map(|record| project(RelationProjectionRecord::new(&record, &projection_scope)))
             .collect()
@@ -165,11 +191,12 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
 
     pub fn relation_record_with_projection_scope<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
         projection_scope: ProjectionAspectScope,
         mut project: impl FnMut(RelationProjectionRecord<'_>) -> Option<T>,
     ) -> Option<T> {
-        let record = self.authoritative_relation_record(relation_id)?;
+        let record = self.authoritative_relation_record(execution, relation_id)?;
         self.assert_relation_projection_scope(record.kind.kind_id, &projection_scope);
         project(RelationProjectionRecord::new(&record, &projection_scope))
     }
@@ -265,6 +292,7 @@ impl<'runtime> VisibilityProjectionView<'runtime> {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub(crate) fn project_branch_head(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &crate::history::data::BranchId,
         version_id: VersionId,
     ) -> Result<
@@ -286,9 +314,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub(crate) fn project_historical_version(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: VersionId,
     ) -> VisibilityProjectionView<'runtime> {
-        self.try_project_historical_version(version_id)
+        self.try_project_historical_version(execution, version_id)
             .expect("internal historical projection requires retained MVCC coverage")
     }
 
@@ -296,6 +325,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// it, so a fork's commit is read from the fork's own root.
     pub fn try_project_historical_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: VersionId,
     ) -> Result<VisibilityProjectionView<'runtime>, crate::branch::RelationalBranchBasisDenial>
     {
@@ -312,6 +342,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub(crate) fn try_project_retained_commit(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
         branch_id: crate::history::data::BranchId,
         version_id: VersionId,
@@ -334,6 +365,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn project_snapshot(
         &self,
         handle: &SnapshotHandle,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Option<VisibilityProjectionView<'runtime>> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime(), handle)?;
@@ -347,23 +379,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     }
 }
 
-fn historical_projection_denial(
-    denial: crate::visibility::snapshot_states::HistoricalVisibilityDenial,
-) -> crate::branch::RelationalBranchBasisDenial {
-    use crate::visibility::snapshot_states::HistoricalVisibilityDenial as Denial;
-    match denial {
-        Denial::RetentionCapacityExhausted => {
-            crate::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted
-        }
-        Denial::RetentionIdentityExhausted => {
-            crate::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted
-        }
-        Denial::RetentionUnavailable => crate::branch::RelationalBranchBasisDenial::OwnerFailure,
-        Denial::UnknownVersion
-        | Denial::AuthoringBranchUnavailable
-        | Denial::MvccIntervalUnavailable
-        | Denial::CertificationReconstructionRequired => {
-            crate::branch::RelationalBranchBasisDenial::UnavailableRetainedTarget
-        }
-    }
-}
+#[path = "historical_denial.rs"]
+mod historical_denial;
+use historical_denial::historical_projection_denial;

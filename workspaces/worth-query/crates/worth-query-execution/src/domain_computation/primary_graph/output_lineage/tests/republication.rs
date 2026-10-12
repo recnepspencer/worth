@@ -71,11 +71,16 @@ struct Continued {
     witness: Witness,
 }
 
-fn staged(test: impl FnOnce(Stage<'_>)) {
+fn staged(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    test: impl FnOnce(Stage<'_>),
+) {
     let world = installed_authorization_world(true);
+    world.application.with_host_advancement(|phase| {
+    let phase_custody = &phase;
     let output = world
-        .selected_product()
-        .resolve_entity(
+        .selected_product(&(phase_custody).test_host_request(), )
+        .resolve_entity(phase_custody,
             AccountStatus::reference(),
             "open".to_owned(),
             &live_scope(),
@@ -92,7 +97,7 @@ fn staged(test: impl FnOnce(Stage<'_>)) {
         .field_locator(label.entity(), label.aspect(), label.field())
         .unwrap();
     for value in ["performed", "suspended"] {
-        publish_relational_mutation(
+        publish_relational_mutation(&phase_custody.borrowed_request_for_test(),
             &world,
             WorkerIntentBatch::new("republication-generation").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -129,7 +134,7 @@ fn staged(test: impl FnOnce(Stage<'_>)) {
         )
         .unwrap(),
     );
-    let (performed_witness, restored_witness, read_basis) = handle.with_runtime_mut(|runtime| {
+    let (performed_witness, restored_witness, read_basis) = handle.with_runtime_mut(request_execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .unwrap();
@@ -190,6 +195,7 @@ fn staged(test: impl FnOnce(Stage<'_>)) {
         owner,
         read_basis: Some(read_basis),
     });
+    }).expect("the republication fixture opens its installed host call");
 }
 
 impl Stage<'_> {

@@ -45,6 +45,7 @@ where
 {
     pub fn authorize_capability_operation<Capability, Operation, Input>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
         preconditions: TypedMutationPreconditions<
@@ -65,7 +66,47 @@ where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
         Input: ApplicationCapabilityRequest<Schema, Capability>,
     {
-        crate::domain_computation::authorization::operation_progression::progress_capability_operation(
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody")),
+        };
+        let execution = &phase_request;
+        self.authorize_capability_operation_with_request(
+            execution,
+            access,
+            operation,
+            preconditions,
+        )
+    }
+
+    pub(in crate::domain_computation) fn authorize_capability_operation_with_request<
+        Capability,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+    {
+        crate::domain_computation::authorization::operation_progression::progress_capability_operation(execution,
             self,
             access,
             operation,
@@ -123,6 +164,7 @@ pub(in crate::domain_computation::authorization) fn transition_capability_operat
     Operation,
     Input,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -165,6 +207,7 @@ where
         ..
     } = access;
     let graph_work = transition_capability_to_operation_graph_work(
+        execution,
         runtime,
         operation,
         &resource_binding_identity,
@@ -173,6 +216,7 @@ where
     )?;
     validate_operation_graph_work_authority(&graph_work, operation)?;
     let revalidated = revalidate_operation_authorization(
+        execution,
         runtime,
         authorization,
         graph_work,
@@ -216,6 +260,7 @@ where
 }
 
 fn revalidate_operation_authorization<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     mut authorization: crate::domain_computation::authorization::WorthQueryRetainedCapabilityAuthorization,
     mut graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
@@ -224,7 +269,11 @@ fn revalidate_operation_authorization<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    runtime.refresh_capability_authorization_for_graph_work(&mut authorization, &graph_work)?;
+    runtime.refresh_capability_authorization_for_graph_work(
+        execution,
+        &mut authorization,
+        &graph_work,
+    )?;
     graph_work.set_retained_decision_facts(authorization.exact_fact_count());
     let session = graph_work.identity();
     let authorization =

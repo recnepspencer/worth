@@ -31,6 +31,7 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
     StaleSource,
     ForeignObservation,
     ForeignRuntime,
+    ForeignPhase,
     SourceUnavailable,
     AdmissionRejected,
     CleanupRejected,
@@ -51,18 +52,26 @@ pub struct WorthQueryReadmittedApplicationPreview {
 impl WorthQueryApplicationPreviewSession {
     pub fn readmit<Schema, Program>(
         mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<WorthQueryReadmittedApplicationPreview, WorthQueryApplicationPreviewReadmissionDenial>
     where
         Schema: ApplicationSchema,
         Program: ApplicationProgramDefinition<Schema>,
     {
+        let phase_request = phase
+            .execution_request_for(&runtime.runtime().product_runtime)
+            .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
+        let execution = &phase_request;
         if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
             self.discard_active()
                 .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
         }
-        let current = match runtime.on_branch(runtime.current_world()).select() {
+        let current = match runtime
+            .on_branch(runtime.current_world())
+            .select_with_request(execution)
+        {
             Ok(current) => current,
             Err(_) => {
                 self.discard_active()
@@ -152,12 +161,17 @@ where
 {
     pub fn begin_preview(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         observation: &WorthQueryApplicationReadObservation,
         request: WorthQueryApplicationPreviewRequest,
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>
     {
+        let phase_request = phase
+            .execution_request_for(&self.runtime().product_runtime)
+            .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
+        let execution = &phase_request;
         let selected = self
-            .select_application_read_observation(observation)
+            .select_application_read_observation_with_request(execution, observation)
             .map_err(|denial| match denial {
                 crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignOwner => {
                     WorthQueryApplicationPreviewReadmissionDenial::ForeignObservation

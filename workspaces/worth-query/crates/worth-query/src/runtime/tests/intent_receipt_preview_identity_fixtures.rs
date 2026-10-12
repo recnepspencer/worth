@@ -6,6 +6,7 @@ pub(super) struct PreviewReceiptInspectionFixture {
 }
 
 pub(super) fn preview_receipt_with_basis<const N: usize>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis_evidence: [&'static str; N],
     intent_name: &str,
     input: WorthQueryIntentInput,
@@ -22,11 +23,12 @@ pub(super) fn preview_receipt_with_basis<const N: usize>(
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
 
     let mut preview = runtime
         .preview_with_options(
+            request_execution,
             test_session_label("preview basis delimiter pressure"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
@@ -41,7 +43,7 @@ pub(super) fn preview_receipt_with_basis<const N: usize>(
         ))
         .expect("preview intent should be admitted");
     let inspection = runtime
-        .inspect_preview_intent_receipt(&receipt)
+        .inspect_preview_intent_receipt(request_execution, &receipt)
         .expect("preview receipt inspection should be available");
 
     PreviewReceiptInspectionFixture {

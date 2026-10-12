@@ -7,8 +7,11 @@ use crate::tests::support::*;
 
 #[test]
 fn lineage_branch_divergence_is_queryable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _main = create_entity_outcome(&runtime, "main");
+    let _main = create_entity_outcome(execution, &runtime, "main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -16,16 +19,20 @@ fn lineage_branch_divergence_is_queryable() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let _feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
-    let divergence =
-        runtime
-            .lineage_access()
-            .divergence_between_branches(LineageDivergenceRequest {
-                left_branch: BranchId("main".to_string()),
-                right_branch: BranchId("feature".to_string()),
-                traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
-            });
+    let _feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
+    let divergence = runtime.lineage_access().divergence_between_branches(
+        execution,
+        LineageDivergenceRequest {
+            left_branch: BranchId("main".to_string()),
+            right_branch: BranchId("feature".to_string()),
+            traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
+        },
+    );
 
     assert_eq!(
         divergence.traversal_basis,

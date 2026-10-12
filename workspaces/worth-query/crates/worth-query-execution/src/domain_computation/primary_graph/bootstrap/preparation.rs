@@ -12,7 +12,6 @@ impl WorthQueryExecutionInstallationAuthority {
         Schema: ApplicationSchema,
     {
         // Installation has no World identity yet; this borrows its admitted root.
-        let _execution = phase.execution_request();
         let factories =
             WorthQueryApplicationInvariantFactories::for_installed_schema(installed_schema);
         self.prepare_primary_graph_with_relational_runtime_and_invariants(
@@ -74,7 +73,7 @@ impl WorthQueryExecutionInstallationAuthority {
     /// The phase witnesses admission before inline Relational schema and recovery reads.
     pub(super) fn prepare_primary_graph_with_optional_checkpoint<Schema>(
         &self,
-        _phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
+        phase: &super::super::WorthQueryBootstrapAdvancementPhase<'_>,
         runtime: &WorthQueryExecutionRuntime,
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         mut relational_runtime: RelationalRuntime,
@@ -85,6 +84,8 @@ impl WorthQueryExecutionInstallationAuthority {
     where
         Schema: ApplicationSchema,
     {
+        let execution = phase.execution_request();
+
         if !self.belongs_to(runtime) {
             return Err(primary_graph_denial(
                 WorthQueryPrimaryGraphInstallationDenialKind::ForeignRuntime,
@@ -139,29 +140,24 @@ impl WorthQueryExecutionInstallationAuthority {
                 "Relational installed an invariant inventory outside the application catalog",
             ));
         }
-        let (recovered_relational_authority, recovered_checkpoint_restore_work) =
-            if let Some(checkpoint) = checkpoint {
+        let (recovered_relational_authority, recovered_checkpoint_restore_work) = match checkpoint {
+            Some(checkpoint) => {
                 let (outcome, authority) = relational_runtime
                     .durability_recovery()
-                    .restore_native_checkpoint_with_authority(&checkpoint.native)
-                    .map_err(|error| {
-                        primary_graph_denial(
-                        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                        format!("native checkpoint recovery denied: {error:?}"),
-                    )
-                    })?;
+                    .restore_native_checkpoint_with_authority(&execution, &checkpoint.native)
+                    .map_err(map_checkpoint_recovery_stop)?;
                 invariant_installation_receipt = relational_runtime
                     .readmit_recovered_initial_schema_installation(invariant_installation_receipt)
                     .map_err(|error| {
                         primary_graph_denial(
-                        WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                        format!("recovered schema authority denied: {error}"),
-                    )
+                            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+                            format!("recovered schema authority denied: {error}"),
+                        )
                     })?;
                 (Some(authority), outcome.checkpoint_restore_work)
-            } else {
-                (None, None)
-            };
+            }
+            None => (None, None),
+        };
         let graph = checkpoint::primary_graph_for_installation(
             runtime.authority_identity(),
             installed_schema.binding_identity(),
@@ -171,7 +167,7 @@ impl WorthQueryExecutionInstallationAuthority {
             checkpoint.is_some(),
         )?;
         let recovered_publication = checkpoint
-            .map(|checkpoint| checkpoint.recover_publication(&graph))
+            .map(|checkpoint| checkpoint.recover_publication(&execution, &graph))
             .transpose()?;
         Ok(WorthQueryPrimaryGraphBootstrap {
             runtime_authority: runtime.authority_identity(),
@@ -209,5 +205,109 @@ impl WorthQueryExecutionInstallationAuthority {
             expected_invariant_inventory_digest,
             _schema: PhantomData,
         })
+    }
+}
+
+fn map_checkpoint_recovery_stop(
+    stop: worth_relational::facade::durability::RelationalRecoveryStop,
+) -> WorthQueryPrimaryGraphInstallationDenial {
+    use worth_relational::facade::durability::RelationalRecoveryStop;
+    match stop {
+        RelationalRecoveryStop::Durability(error) => primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            format!("native checkpoint recovery denied: {error:?}"),
+        ),
+        RelationalRecoveryStop::Request(cause) => {
+            let translated =
+                super::super::provider::relational_execution_denial::relational_execution_kind(
+                    cause, None,
+                );
+            let kind = match translated {
+                Ok(kind) => WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied { kind },
+                Err(kind) => {
+                    WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped { kind }
+                }
+            };
+            primary_graph_denial(
+                kind,
+                format!("native checkpoint recovery request stopped: {cause:?}"),
+            )
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn checkpoint_recovery_request_arm_keeps_control_and_memory_by_value() {
+        use crate::domain_computation::primary_graph::application_contribution::{
+            WorthQueryManagedComputationResourceDenial as Resource,
+            WorthQueryMemoryLimitLevel as Level,
+        };
+        use crate::domain_computation::{
+            WorthQueryProviderSessionControlStopKind as Control,
+            WorthQueryProviderSessionDenialKind as Denial,
+        };
+        use worth_relational::facade::{
+            durability::RelationalRecoveryStop as Stop,
+            transactions::RelationalExecutionDenialCause as Cause,
+        };
+        use WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+        for (cause, kind) in [
+            (
+                Cause::Cancelled,
+                Kind::ExecutionControlStopped {
+                    kind: Control::Cancelled,
+                },
+            ),
+            (
+                Cause::DeadlineElapsed,
+                Kind::ExecutionControlStopped {
+                    kind: Control::TimedOut,
+                },
+            ),
+            (
+                Cause::PolicyMemoryExhausted {
+                    requested: 4096,
+                    admitted: 4095,
+                    ancestor: 2,
+                },
+                Kind::ExecutionDenied {
+                    kind: Denial::ExecutionResource {
+                        denial: Resource::MemoryLimit {
+                            requested: 4096,
+                            admitted: 4095,
+                            level: Level::Policy,
+                        },
+                        partition_identity: None,
+                        policy_ancestor: Some(2),
+                    },
+                },
+            ),
+        ] {
+            assert_eq!(
+                map_checkpoint_recovery_stop(Stop::Request(cause)).kind(),
+                kind
+            );
+        }
+    }
+    #[test]
+    fn checkpoint_recovery_durability_arm_keeps_the_existing_denial_by_value() {
+        use worth_relational::facade::durability::{
+            DurabilityError, RecoveryFailureClass, RelationalRecoveryStop,
+        };
+        let error = DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            "invalid checkpoint evidence",
+        );
+        let expected = primary_graph_denial(
+            WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
+            format!("native checkpoint recovery denied: {error:?}"),
+        );
+        assert_eq!(
+            map_checkpoint_recovery_stop(RelationalRecoveryStop::Durability(error)),
+            expected
+        );
     }
 }

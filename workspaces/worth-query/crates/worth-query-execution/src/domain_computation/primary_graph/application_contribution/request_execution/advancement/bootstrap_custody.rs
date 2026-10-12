@@ -67,7 +67,7 @@ pub struct WorthQueryBootstrapAdvancementPhase<'scope> {
 
 impl WorthQueryBootstrapAdvancementPhase<'_> {
     /// Borrows the same installation request at an execution owner's boundary.
-    pub(crate) fn execution_request(&self) -> ExecutionRequest<'_, '_> {
+    pub fn execution_request(&self) -> ExecutionRequest<'_, '_> {
         self.active
             .execution
             .execution_request()

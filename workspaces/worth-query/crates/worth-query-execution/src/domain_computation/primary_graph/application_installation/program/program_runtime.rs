@@ -117,6 +117,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     /// adoption-recovery obligation has been inventoried and released.
     pub fn retire_program_support(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     ) -> Result<
         WorthQueryProgramSupportRetirementReceipt,
@@ -167,7 +168,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     return Err(retirement.inventory_unavailable(retained_program_bytes));
                 }
             };
-            let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(
+            let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
                     &self.runtime,
                     selected.relational_basis(),
                 ) {

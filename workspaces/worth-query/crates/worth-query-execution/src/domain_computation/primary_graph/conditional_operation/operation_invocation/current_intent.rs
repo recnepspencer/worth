@@ -48,6 +48,7 @@ where
 {
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn observe_current_intent(
         &self,
+_execution: &worth_execution::ExecutionRequest<'_, '_>,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         identity: IdentityValue,
         expected_revision: &RevisionValue,
@@ -96,6 +97,7 @@ where
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn resolve_current_intent(
         &self,
+execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &WorthQuerySelectedProductOperation<'_, Schema>,
         record_identity: &worth_foundational::facade::AspectValue,
         revision: u64,
@@ -116,7 +118,7 @@ where
         let identity_value = IdentityField::Binding::decode(record_identity)
             .map_err(super::super::WorthQueryConditionalReentryFailure::IntentIdentityDecode)?;
         let entity = product
-            .resolve_entity(
+            .resolve_entity_with_request(execution,
                 self.identity_field,
                 identity_value.clone(),
                 request,
@@ -127,8 +129,8 @@ where
             .ok_or(super::super::WorthQueryConditionalReentryFailure::IntentRevisionUnrepresentable)?;
         let current = self
             .invariant
-            .project_operation_on_product::<Operation, _>(product.product(), |reader| {
-                self.observe_current_intent(reader, identity_value.clone(), &expected_revision)
+            .project_operation_on_product::<Operation, _>(execution, product.product(), |reader| {
+                self.observe_current_intent(execution, reader, identity_value.clone(), &expected_revision)
             }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .map_err(WorthQueryTemporalReentryDenial::from_invariant)?;
         Ok(current.output().is_ok().then_some(WorthQueryCurrentTemporalIntent {

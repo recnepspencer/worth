@@ -86,7 +86,13 @@ fn runtime_world_cancel_reaches_an_in_flight_signal_advance() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let prepared = prepare_both_owners(&fixture, &owner, &expected, "cancel-in-flight-advance");
+    let prepared = prepare_both_owners(
+        &execution,
+        &fixture,
+        &owner,
+        &expected,
+        "cancel-in-flight-advance",
+    );
     let (rehearsal, reached) =
         arm_rehearsal(owner.as_ref(), ExecutionRehearsalBoundary::SignalAdvance);
     let (entered_mutation, mutation_entered) = sync_channel::<()>(1);

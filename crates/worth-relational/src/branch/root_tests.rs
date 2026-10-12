@@ -5,13 +5,15 @@ use crate::history::data::{BranchId, CommitId};
 use crate::schema::data::SchemaId;
 use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_schema};
 
-fn committed_root_and_envelope() -> (
+fn committed_root_and_envelope(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (
     crate::runtime::RelationalRuntime,
     Arc<super::RelationalBranchRoot>,
     crate::history::data::CanonicalCommitEnvelope,
 ) {
     let runtime = persisted_runtime_with_test_schema();
-    let performed = create_entity_outcome(&runtime, "branch-root-axis-binding");
+    let performed = create_entity_outcome(execution, &runtime, "branch-root-axis-binding");
     let root = runtime
         .history
         .branch_cell(&BranchId("main".to_owned()))
@@ -27,14 +29,17 @@ fn committed_root_and_envelope() -> (
 
 #[test]
 fn publication_cost_distinguishes_new_and_reused_schema_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity_outcome(&runtime, "schema-authority-allocation-owner");
+    create_entity_outcome(execution, &runtime, "schema-authority-allocation-owner");
     let first = runtime
         .history
         .branch_cell(&BranchId("main".to_owned()))
         .and_then(|cell| cell.root())
         .expect("first commit installs a root");
-    create_entity_outcome(&runtime, "schema-authority-reuse");
+    create_entity_outcome(execution, &runtime, "schema-authority-reuse");
     let second = runtime
         .history
         .branch_cell(&BranchId("main".to_owned()))
@@ -53,7 +58,10 @@ fn publication_cost_distinguishes_new_and_reused_schema_authority() {
 
 #[test]
 fn relink_rejects_schema_authority_mutation() {
-    let (runtime, root, mut envelope) = committed_root_and_envelope();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, root, mut envelope) = committed_root_and_envelope(execution);
     envelope.schema_authority.primary_schema_id = Some(SchemaId("mutated-schema".to_owned()));
 
     let denial = root
@@ -71,7 +79,10 @@ fn relink_rejects_schema_authority_mutation() {
 
 #[test]
 fn relink_rejects_visibility_tuple_mutation() {
-    let (runtime, root, mut envelope) = committed_root_and_envelope();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, root, mut envelope) = committed_root_and_envelope(execution);
     envelope.patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
 
     let denial = root
@@ -89,7 +100,10 @@ fn relink_rejects_visibility_tuple_mutation() {
 
 #[test]
 fn completeness_recomputes_visibility_commitment() {
-    let (runtime, root, mut altered_envelope) = committed_root_and_envelope();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, root, mut altered_envelope) = committed_root_and_envelope(execution);
     assert!(root.is_complete(&runtime.services.symbols.interner_snapshot()));
     altered_envelope.patch.authoritative_record_patches[0].contains_opaque_aspect ^= true;
     let mut corrupted = root.as_ref().clone();
@@ -112,7 +126,10 @@ fn completeness_recomputes_visibility_commitment() {
 
 #[test]
 fn visibility_commitment_binds_every_visible_tuple_axis() {
-    let (runtime, root, envelope) = committed_root_and_envelope();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (runtime, root, envelope) = committed_root_and_envelope(execution);
     let storage_root = [17; 32];
     let schema_root = [29; 32];
     let baseline = RelationalBranchVisibilityCommitment::for_root(

@@ -1,13 +1,17 @@
 use super::*;
 
-pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(suite: &'static str) {
+pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let mixed_locality_samples = capture_perf_samples(
         suite,
         "geometry_commit_downstream_wave_mixed_locality_operational",
         || {
             let relational =
                 runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-            let entities = seed_downstream_region_world(&relational, "downstream-mixed", 20, 5);
+            let entities =
+                seed_downstream_region_world(execution, &relational, "downstream-mixed", 20, 5);
             let updated = entities[9];
             let query_targets = [
                 "downstream-mixed-node-2",
@@ -19,7 +23,7 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(suite: &'st
             let mut downstream_runtime = build_mock_downstream_runtime(false, entities.len());
 
             let relational_commit_started_at = Instant::now();
-            let update = update_entity(&relational, updated, "downstream-mixed-updated");
+            let update = update_entity(execution, &relational, updated, "downstream-mixed-updated");
             let relational_commit_micros = relational_commit_started_at.elapsed().as_micros();
 
             let snapshot = relational.visibility_authority().snapshot();
@@ -50,7 +54,10 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(suite: &'st
                         .read_truth()
                         .plan_query_packet(&snapshot, traversal_packet)
                         .expect("downstream mixed traversal plan"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("downstream mixed traversal outcome");
             let explicit_hits = query_targets
                 .iter()
@@ -70,7 +77,10 @@ pub(super) fn certify_geometry_commit_downstream_mixed_locality_wave(suite: &'st
                                     ),
                                 )
                                 .expect("downstream mixed explicit plan"),
+                            execution,
                         )
+                        .expect("request remains live")
+                        .map(|read| read.outcome)
                         .expect("downstream mixed explicit outcome")
                         .result
                         .entities

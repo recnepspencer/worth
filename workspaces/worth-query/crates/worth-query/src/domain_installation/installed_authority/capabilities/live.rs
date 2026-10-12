@@ -51,6 +51,7 @@ pub struct WorthQueryInstalledDomainLiveRequest<D> {
 impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
     pub fn open(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<
         WorthQueryInstalledDomainLiveOpenOutcome<D>,
@@ -70,8 +71,10 @@ impl<D: 'static> WorthQueryInstalledDomainLiveRequest<D> {
                 )
             },
         )?;
-        let basis_identity = workspace.snapshot_identity().evidence_identity();
-        Ok(match self.request.open(workspace) {
+        let basis_identity = workspace
+            .snapshot_identity_with_request(execution)
+            .evidence_identity();
+        Ok(match self.request.open(execution, workspace) {
             WorthQueryLiveOpenOutcome::Opened(completion) => {
                 let context_receipt_digest = completion.context_receipt().digest().to_string();
                 let handle = completion.into_handle();
@@ -131,11 +134,12 @@ impl<D: 'static> WorthQueryInstalledDomainLiveHandle<D> {
 
     pub fn read(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryInstalledDomainLiveRead, WorthQueryInstalledDomainLiveOperationError>
     {
         self.validate(workspace, WorthQueryInstalledDomainCapabilityKind::LiveRead)?;
-        let result = self.handle.read(workspace).map_err(|error| {
+        let result = self.handle.read(execution, workspace).map_err(|error| {
             self.runtime_stop(WorthQueryInstalledDomainCapabilityKind::LiveRead, error)
         })?;
         let receipt = self.receipt.derive(

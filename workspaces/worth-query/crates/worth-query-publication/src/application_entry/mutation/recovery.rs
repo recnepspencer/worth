@@ -52,6 +52,7 @@ impl From<WorthQueryApplicationRequestMutationDenial>
             WorthQueryPrincipalResolutionDenialKind as Principal,
         };
         let interruption = match &denial {
+            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause) => Some(*cause),
             WorthQueryApplicationRequestMutationDenial::Authorization(cause) => {
                 authorization_interruption(cause.kind())
             }
@@ -205,7 +206,7 @@ where
             .request
             .application
             .on_branch(self.request.branch)
-            .select()
+            .select(phase)
             .map_err(WorthQueryApplicationRequestMutationDenial::ProductSelection)?;
         let owner = application
             .selected_program_owner(&selected)
@@ -241,7 +242,11 @@ where
             })?;
         self.request
             .application
-            .resolve_admitted_application_idempotency(&prepared.admission, prepared.idempotency)
+            .resolve_admitted_application_idempotency(
+                phase,
+                &prepared.admission,
+                prepared.idempotency,
+            )
             .map_err(WorthQueryApplicationRecoveryRequestDenial::Idempotency)
     }
 

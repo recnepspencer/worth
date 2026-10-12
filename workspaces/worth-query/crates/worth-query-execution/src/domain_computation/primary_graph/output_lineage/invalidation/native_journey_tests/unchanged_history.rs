@@ -8,17 +8,29 @@ use std::alloc::Layout;
 
 #[test]
 fn pinned_same_position_replacements_share_history_but_own_their_root_bytes() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -45,120 +57,133 @@ fn pinned_same_position_replacements_share_history_but_own_their_root_bytes() {
         .field_locator(label_ref.entity(), label_ref.aspect(), label_ref.field())
         .unwrap()
         .clone();
-    handle.with_runtime_mut(|runtime| {
-        for ordinal in 0..20 {
-            write_field(
-                runtime,
-                entity,
-                label.clone(),
-                &format!("history-{ordinal}"),
-            );
-        }
-        let (basis_handle, basis) = snapshot(runtime);
-        let cell = owner
-            .cell_for_read(&basis, &mut owner.edit_admission())
-            .unwrap()
-            .unwrap();
-        let original = cell.read_image();
-        assert!(!original.payload().past.is_empty());
-        let history = Arc::clone(original.payload().history_capacity.as_ref().unwrap());
-        let historical_sources = original
-            .payload()
-            .past
-            .iter()
-            .map(|(position, row)| (*position, row.root_id, row.commit_id))
-            .collect::<Vec<_>>();
-        let expected_root_charge = arc_layout_bytes::<BranchMarkRoot>()
-            + arc_layout_bytes::<RetainedInvalidationCapacity>();
-        assert_eq!(
-            original
-                .payload()
-                .retained_capacity
-                .as_ref()
-                .unwrap()
-                .bytes(),
-            expected_root_charge,
-            "the root object charge excludes the separately owned history map"
-        );
-        let facts = Arc::from([field_fact(runtime, &basis_handle, entity, status)]);
-        let mut images = vec![original];
-        let mut identities = Vec::new();
-        for ordinal in 0..8 {
-            let identity = RecordedSettlementIdentity::retain(&source, coordinate, ordinal);
-            register(
-                owner,
-                Arc::clone(&identity),
-                Arc::clone(&facts),
-                &basis,
-                OrdSet::new(),
-            );
-            assert!(matches!(
-                currentness(owner, &basis, &identity),
-                SourceSettlementCurrentness::Clean
-            ));
-            let image = cell.read_image();
-            assert_eq!(image.root_id(), basis.root_id());
-            assert_eq!(image.commit_id(), basis.commit_id());
-            assert_eq!(image.position(), basis.position());
-            assert!(Arc::ptr_eq(
-                image.payload().history_capacity.as_ref().unwrap(),
-                &history
-            ));
-            let root_charge = image.payload().retained_capacity.as_ref().unwrap();
-            assert_eq!(root_charge.bytes(), expected_root_charge);
-            assert!(images.iter().all(|old| !Arc::ptr_eq(
-                old.payload().retained_capacity.as_ref().unwrap(),
-                root_charge
-            )));
-            assert_eq!(
-                image
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime_mut(request_execution, |runtime| {
+                for ordinal in 0..20 {
+                    write_field(
+                        request_execution,
+                        runtime,
+                        entity,
+                        label.clone(),
+                        &format!("history-{ordinal}"),
+                    );
+                }
+                let (basis_handle, basis) = snapshot(runtime);
+                let cell = owner
+                    .cell_for_read(&basis, &mut owner.edit_admission())
+                    .unwrap()
+                    .unwrap();
+                let original = cell.read_image();
+                assert!(!original.payload().past.is_empty());
+                let history = Arc::clone(original.payload().history_capacity.as_ref().unwrap());
+                let historical_sources = original
                     .payload()
                     .past
                     .iter()
                     .map(|(position, row)| (*position, row.root_id, row.commit_id))
-                    .collect::<Vec<_>>(),
-                historical_sources
-            );
-            images.push(image);
-            identities.push(identity);
-        }
-        let pinned = owner.resources.retained_capacity_bytes();
-        // The live cell still holds the final replacement. Releasing old native
-        // image leases reclaims their objects without releasing its shared map.
-        images.clear();
-        assert!(owner.resources.retained_capacity_bytes() < pinned);
-        assert!(Arc::ptr_eq(
-            cell.read_image()
-                .payload()
-                .history_capacity
-                .as_ref()
-                .unwrap(),
-            &history
-        ));
-        let last = cell.read_image();
-        write_field(runtime, entity, label, "edited-history");
-        let next = cell.read_image();
-        assert_ne!(next.position(), last.position());
-        assert!(
-            !Arc::ptr_eq(next.payload().history_capacity.as_ref().unwrap(), &history),
-            "a native history edit retains its own conservative map charge"
-        );
-        assert_eq!(last.payload().past.len(), historical_sources.len());
-        for identity in identities {
-            assert!(
-                matches!(
-                    currentness(owner, &basis, &identity),
-                    SourceSettlementCurrentness::Clean
-                ),
-                "a later publication preserves the exact retained read basis"
-            );
-        }
-        let pinned = owner.resources.retained_capacity_bytes();
-        drop(history);
-        drop(last);
-        assert!(owner.resources.retained_capacity_bytes() < pinned);
-        runtime.snapshots().release_snapshot(&basis_handle).unwrap();
-    });
+                    .collect::<Vec<_>>();
+                let expected_root_charge = arc_layout_bytes::<BranchMarkRoot>()
+                    + arc_layout_bytes::<RetainedInvalidationCapacity>();
+                assert_eq!(
+                    original
+                        .payload()
+                        .retained_capacity
+                        .as_ref()
+                        .unwrap()
+                        .bytes(),
+                    expected_root_charge,
+                    "the root object charge excludes the separately owned history map"
+                );
+                let facts = Arc::from([field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &basis_handle,
+                    entity,
+                    status,
+                )]);
+                let mut images = vec![original];
+                let mut identities = Vec::new();
+                for ordinal in 0..8 {
+                    let identity = RecordedSettlementIdentity::retain(&source, coordinate, ordinal);
+                    register(
+                        owner,
+                        Arc::clone(&identity),
+                        Arc::clone(&facts),
+                        &basis,
+                        OrdSet::new(),
+                    );
+                    assert!(matches!(
+                        currentness(owner, &basis, &identity),
+                        SourceSettlementCurrentness::Clean
+                    ));
+                    let image = cell.read_image();
+                    assert_eq!(image.root_id(), basis.root_id());
+                    assert_eq!(image.commit_id(), basis.commit_id());
+                    assert_eq!(image.position(), basis.position());
+                    assert!(Arc::ptr_eq(
+                        image.payload().history_capacity.as_ref().unwrap(),
+                        &history
+                    ));
+                    let root_charge = image.payload().retained_capacity.as_ref().unwrap();
+                    assert_eq!(root_charge.bytes(), expected_root_charge);
+                    assert!(images.iter().all(|old| !Arc::ptr_eq(
+                        old.payload().retained_capacity.as_ref().unwrap(),
+                        root_charge
+                    )));
+                    assert_eq!(
+                        image
+                            .payload()
+                            .past
+                            .iter()
+                            .map(|(position, row)| (*position, row.root_id, row.commit_id))
+                            .collect::<Vec<_>>(),
+                        historical_sources
+                    );
+                    images.push(image);
+                    identities.push(identity);
+                }
+                let pinned = owner.resources.retained_capacity_bytes();
+                // The live cell still holds the final replacement. Releasing old native
+                // image leases reclaims their objects without releasing its shared map.
+                images.clear();
+                assert!(owner.resources.retained_capacity_bytes() < pinned);
+                assert!(Arc::ptr_eq(
+                    cell.read_image()
+                        .payload()
+                        .history_capacity
+                        .as_ref()
+                        .unwrap(),
+                    &history
+                ));
+                let last = cell.read_image();
+                write_field(request_execution, runtime, entity, label, "edited-history");
+                let next = cell.read_image();
+                assert_ne!(next.position(), last.position());
+                assert!(
+                    !Arc::ptr_eq(next.payload().history_capacity.as_ref().unwrap(), &history),
+                    "a native history edit retains its own conservative map charge"
+                );
+                assert_eq!(last.payload().past.len(), historical_sources.len());
+                for identity in identities {
+                    assert!(
+                        matches!(
+                            currentness(owner, &basis, &identity),
+                            SourceSettlementCurrentness::Clean
+                        ),
+                        "a later publication preserves the exact retained read basis"
+                    );
+                }
+                let pinned = owner.resources.retained_capacity_bytes();
+                drop(history);
+                drop(last);
+                assert!(owner.resources.retained_capacity_bytes() < pinned);
+                runtime.snapshots().release_snapshot(&basis_handle).unwrap();
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 // Independent layout oracle for an Arc allocation: two atomic counters followed

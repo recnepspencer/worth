@@ -10,12 +10,15 @@ use crate::runtime::{
 
 #[test]
 fn compose_read_executes_operator_owned_shared_endpoint_detail() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-endpoint-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_endpoint_detail(
                 "user",
                 frontier_manager_schema(),
@@ -76,12 +79,15 @@ fn compose_read_executes_operator_owned_shared_endpoint_detail() {
 
 #[test]
 fn compose_read_executes_operator_owned_shared_endpoint_collection() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-endpoint-collection")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_endpoint_collection(
                 "user",
                 frontier_manager_schema(),
@@ -130,12 +136,15 @@ fn compose_read_executes_operator_owned_shared_endpoint_collection() {
 
 #[test]
 fn compose_read_keeps_identity_anchored_shared_endpoint_collection_local() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-endpoint-identity-anchor")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_endpoint_collection(
                 "user",
                 frontier_manager_schema(),
@@ -178,12 +187,15 @@ fn compose_read_keeps_identity_anchored_shared_endpoint_collection_local() {
 
 #[test]
 fn compose_read_denies_shared_endpoint_without_enough_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-endpoint-too-small")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_endpoint_detail(
                 "user",
                 frontier_manager_schema(),
@@ -218,12 +230,15 @@ fn compose_read_denies_shared_endpoint_without_enough_relations() {
 
 #[test]
 fn compose_read_denies_shared_endpoint_with_duplicate_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-shared-endpoint-duplicate")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_shared_endpoint_collection(
                 "user",
                 frontier_manager_schema(),

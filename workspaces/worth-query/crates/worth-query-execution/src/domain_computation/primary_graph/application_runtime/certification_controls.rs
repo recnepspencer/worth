@@ -1,3 +1,5 @@
+#[path = "certification_controls/workflow_membership.rs"]
+mod workflow_membership;
 use worth_execution::ExecutionAllocationPolicy as NativeAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -137,91 +139,39 @@ where
     #[doc(hidden)]
     pub fn relational_snapshot_state_for_test(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> (
         usize,
         worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     ) {
-        self.primary_provider.graph.with_runtime_mut(|runtime| {
-            let active = runtime.retention().inspect_plan().active_snapshot_count;
-            let identity = runtime
-                .branch_identity(self.relational_branch_identity.branch_id())
-                .expect("the application branch remains owner registered");
-            let (_, basis) = runtime
-                .observe_branch(&identity)
-                .expect("the application branch remains owner observable");
-            (active, basis.descriptor().clone())
-        })
-    }
-
-    /// Attempts to cycle one published definition-node membership natively.
-    #[doc(hidden)]
-    pub fn attempt_workflow_definition_membership_cycle_for_test(
-        &self,
-        definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
-    ) -> Result<(), worth_relational::facade::transactions::TransactionCommitError> {
-        let selected = self
-            .on_branch(definition.branch())
-            .select()
-            .expect("the workflow definition branch remains admitted");
-        let (_, product, application_basis) = selected.into_parts();
-        let handle = self
-            .runtime
-            .primary_graph()
-            .expect("the application retains its primary graph")
-            .integration_handle();
-        let candidate = handle.with_query_runtime_mut(|runtime, layout| {
-            let relation_kind = layout.workflow().definition_node_relation;
-            let membership = runtime
-                .read_truth()
-                .visible_relations_of_kind(
-                    relation_kind,
-                    application_basis.snapshot_handle().version_id(),
-                )
-                .into_iter()
-                .find(|relation| relation.source == definition.entity_id())
-                .expect("the published definition retains a node membership");
-            let batch = WorkerIntentBatch::new("workflow-membership-aba")
-                .push(MutationIntent::Relation(RelationMutationIntent::Delete(
-                    DeleteRelationIntent {
-                        relation_id: membership.relation_id,
-                    },
-                )))
-                .push(MutationIntent::Create(CreateIntent::Relation(
-                    RelationSpec {
-                        partition_id: PartitionId::main(),
-                        kind_id: relation_kind,
-                        client_key: ClientKey::raw("workflow-membership-aba"),
-                        source: EntityReference::Existing(membership.source),
-                        target: EntityReference::Existing(membership.target),
-                        fields: AspectFieldPatch::default(),
-                    },
-                )));
-            let mut transaction = runtime
-                .begin_branch_transaction(
-                    product.relational_basis(),
-                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
-                )
-                .expect("the selected product basis admits the fault transaction");
-            transaction
-                .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
-                .expect("the membership cycle stays within resource budgets");
-            runtime
-                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
-                .map(|_| ())
-        });
-        drop(application_basis);
-        candidate
+        self.primary_provider
+            .graph
+            .with_runtime_mut(request_execution, |runtime| {
+                let active = runtime.retention().inspect_plan().active_snapshot_count;
+                let identity = runtime
+                    .branch_identity(self.relational_branch_identity.branch_id())
+                    .expect("the application branch remains owner registered");
+                let (_, basis) = runtime
+                    .observe_branch(&identity)
+                    .expect("the application branch remains owner observable");
+                (active, basis.descriptor().clone())
+            })
     }
 
     /// Attempts to alter one published node's meaning without touching membership.
     #[doc(hidden)]
     pub fn attempt_workflow_node_field_update_for_test(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
-    ) -> Result<(), worth_relational::facade::transactions::TransactionCommitError> {
+    ) -> Result<
+        Result<(), worth_relational::facade::transactions::TransactionCommitError>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())
-            .select()
+            .select(phase)
             .expect("the workflow definition branch remains admitted");
         let (_, product, application_basis) = selected.into_parts();
         let handle = self
@@ -229,10 +179,11 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(|runtime, layout| {
+        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
             let membership = runtime
                 .read_truth()
                 .visible_relations_of_kind(
+                    &execution,
                     layout.workflow().definition_node_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
@@ -260,22 +211,27 @@ where
                 .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the field update stays within resource budgets");
             runtime
-                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
+                .prepare_branch_transaction(&execution, transaction)
                 .map(|_| ())
         });
         drop(application_basis);
-        candidate
+        Ok(candidate)
     }
 
     /// Attempts to attach a newly created definition to a published node.
     #[doc(hidden)]
     pub fn attempt_workflow_existing_node_attachment_for_test(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
-    ) -> Result<(), worth_relational::facade::transactions::TransactionCommitError> {
+    ) -> Result<
+        Result<(), worth_relational::facade::transactions::TransactionCommitError>,
+        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+    > {
+        let execution = phase.execution_request_for(&self.product_runtime)?;
         let selected = self
             .on_branch(definition.branch())
-            .select()
+            .select(phase)
             .expect("the workflow definition branch remains admitted");
         let (_, product, application_basis) = selected.into_parts();
         let handle = self
@@ -283,11 +239,12 @@ where
             .primary_graph()
             .expect("the application retains its primary graph")
             .integration_handle();
-        let candidate = handle.with_query_runtime_mut(|runtime, layout| {
+        let candidate = handle.with_query_runtime_mut(&execution, |runtime, layout| {
             let workflow = layout.workflow();
             let membership = runtime
                 .read_truth()
                 .visible_relations_of_kind(
+                    &execution,
                     workflow.definition_node_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
@@ -326,18 +283,23 @@ where
                 .push_batch(batch, NativeAllocationPolicy::SystemAllocation)
                 .expect("the attachment stays within resource budgets");
             runtime
-                .prepare_branch_transaction(transaction, NativeAllocationPolicy::SystemAllocation)
+                .prepare_branch_transaction(&execution, transaction)
                 .map(|_| ())
         });
         drop(application_basis);
-        candidate
+        Ok(candidate)
     }
 
     #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(&self) {
+    pub fn fail_next_durable_append_for_test(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         self.primary_provider
             .graph
-            .with_runtime_mut(|runtime| runtime.fail_next_durable_append_for_test());
+            .with_runtime_mut(request_execution, |runtime| {
+                runtime.fail_next_durable_append_for_test()
+            });
     }
 
     #[cfg(test)]

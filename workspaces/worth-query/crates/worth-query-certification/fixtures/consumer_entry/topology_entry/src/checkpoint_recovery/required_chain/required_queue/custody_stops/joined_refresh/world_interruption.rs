@@ -74,7 +74,10 @@ fn a_world_superseding_a_joined_refresh_stops_it_and_the_next_demand_reads_curre
     drop(c);
     let mut current = start_consumer!(application, request, "anchor-c");
     application.retained_source_selections_for_test();
-    let world_head = request.retain_read().unwrap().selected_commit().clone();
+    let world_head = crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        .clone();
     let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
     settled_in_one_advance!(
         current,

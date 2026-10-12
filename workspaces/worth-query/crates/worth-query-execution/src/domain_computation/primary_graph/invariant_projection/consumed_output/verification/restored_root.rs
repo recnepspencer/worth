@@ -16,6 +16,7 @@ impl ConsumedOutputEvidence {
     /// at `snapshot`. `None` when the facts do not cover the output or either
     /// has changed.
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn verify_restored_root_at(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         correspondence: &WorthQueryApplicationOutputCorrespondence,
         source_facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
         layout: &WorthQueryPrimaryGraphLayout,
@@ -39,7 +40,13 @@ impl ConsumedOutputEvidence {
             let current = witness
                 .get()
                 .expect("checkpoint constructor sealed its witness")
-                .checkpoint_facts_current_in(runtime, snapshot, source_facts, admission)?;
+                .checkpoint_facts_current_in(
+                    execution,
+                    runtime,
+                    snapshot,
+                    source_facts,
+                    admission,
+                )?;
             Ok(current.then_some(witness))
         })
         .map_err(map_admission_stop)

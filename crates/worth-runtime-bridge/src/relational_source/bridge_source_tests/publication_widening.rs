@@ -13,7 +13,7 @@ fn live_runtime_mints_publication_provenance_and_rejects_foreign_widening_author
         .serial_request(worth_execution::CancellationToken::new(), None);
     let execution = worth_execution::ExecutionRequest::serial(&serial);
     let owner = runtime_with_test_schema();
-    create_entity_outcome(&owner, "owner");
+    create_entity_outcome(&execution, &owner, "owner");
     let commit = owner
         .publication()
         .latest_bundle()

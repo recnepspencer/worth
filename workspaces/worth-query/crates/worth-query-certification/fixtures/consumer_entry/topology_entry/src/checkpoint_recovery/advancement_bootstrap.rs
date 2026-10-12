@@ -23,10 +23,10 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
         1,
         "preparation, seeding and publication borrow one root"
     );
-    let checkpoint = application
+    let checkpoint = application.runtime().with_host_advancement(|host_phase| application
         .runtime()
-        .capture_application_checkpoint( worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
-        .unwrap();
+        .capture_application_checkpoint( &host_phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
+        .unwrap()).expect("installed host call opens");
     reports();
     let before = reads();
     drop(install(Some(checkpoint)));
@@ -59,10 +59,10 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
                 policy,
             );
             let checkpoint = restored.then(|| {
-                application
+                application.runtime().with_host_advancement(|host_phase| application
                     .runtime()
-                    .capture_application_checkpoint( worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
-                    .unwrap()
+                    .capture_application_checkpoint( &host_phase, worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation)
+                    .unwrap()).expect("installed host call opens")
             });
             let before = reads();
             reports();

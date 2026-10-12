@@ -7,6 +7,7 @@ use crate::identity::data::EntityId;
 use std::collections::BTreeSet;
 
 pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &Context<'_, '_, '_>,
     path: &RelationalAuthorizationPathPlan,
     ordinal: usize,
@@ -36,6 +37,7 @@ pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
             state.counters.entity_records_inspected += 1;
             state.field(entity, predicate.field())?;
             let Some(value) = field::observe(
+                execution,
                 context,
                 entity,
                 predicate.entity_kind(),
@@ -74,6 +76,7 @@ pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
             state.field(left, constraint.left().field())?;
             state.field(right, constraint.right().field())?;
             let left = field::observe(
+                execution,
                 context,
                 left,
                 constraint.left().entity_kind(),
@@ -81,6 +84,7 @@ pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
                 state,
             )?;
             let right = field::observe(
+                execution,
                 context,
                 right,
                 constraint.right().entity_kind(),
@@ -116,11 +120,18 @@ pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
         admission::prepare(state.admission, frontier.len() as u64, 0)?;
         try_retain::<A>(frontier, |witness| {
             let source = witness.current();
-            for id in relations::collect(context, source, constraint.traversal(), state)? {
+            for id in relations::collect(execution, context, source, constraint.traversal(), state)?
+            {
                 admission::prepare(state.admission, 1, 0)?;
                 state.counters.relation_records_inspected += 1;
-                let Some((candidate, kind)) =
-                    relations::traverse(context, id, source, constraint.traversal(), state)?
+                let Some((candidate, kind)) = relations::traverse(
+                    execution,
+                    context,
+                    id,
+                    source,
+                    constraint.traversal(),
+                    state,
+                )?
                 else {
                     continue;
                 };
@@ -128,7 +139,7 @@ pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
                     continue;
                 }
                 state.entity(candidate)?;
-                if field::live(context, candidate, kind, state)? {
+                if field::live(execution, context, candidate, kind, state)? {
                     return Ok(true);
                 }
             }
@@ -143,19 +154,26 @@ pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
         admission::prepare(state.admission, frontier.len() as u64, 0)?;
         try_retain::<A>(frontier, |witness| {
             let source = witness.current();
-            let ids = relations::collect(context, source, constraint.traversal(), state)?;
+            let ids =
+                relations::collect(execution, context, source, constraint.traversal(), state)?;
             admission::array::<A, EntityId>(state.admission, ids.len())?;
             let mut observed = Vec::with_capacity(ids.len());
             for id in ids {
                 admission::prepare(state.admission, 1, 0)?;
                 state.counters.relation_records_inspected += 1;
-                let Some((candidate, kind)) =
-                    relations::traverse(context, id, source, constraint.traversal(), state)?
+                let Some((candidate, kind)) = relations::traverse(
+                    execution,
+                    context,
+                    id,
+                    source,
+                    constraint.traversal(),
+                    state,
+                )?
                 else {
                     continue;
                 };
                 state.entity(candidate)?;
-                if field::live(context, candidate, kind, state)? {
+                if field::live(execution, context, candidate, kind, state)? {
                     observed.push(candidate);
                 }
             }

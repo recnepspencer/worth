@@ -2,15 +2,18 @@ use super::*;
 
 #[test]
 fn execute_read_family_delegates_to_canonical_admission_and_execution_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut delegated_workspace =
         WorthQueryWorkspace::new("delegated-read-family", runtime).expect("workspace should build");
     let family = identity_read_family(&mut delegated_workspace, "tasks");
     let delegated = delegated_workspace
-        .execute_read_family(&family)
+        .execute_read_family(request_execution, &family)
         .expect("delegated read family should execute");
 
-    let runtime = read_runtime();
+    let runtime = read_runtime(request_execution);
     let mut canonical_workspace =
         WorthQueryWorkspace::new("canonical-read-family", runtime).expect("workspace should build");
     let canonical_family = identity_read_family(&mut canonical_workspace, "tasks");
@@ -24,7 +27,7 @@ fn execute_read_family_delegates_to_canonical_admission_and_execution_handoff() 
         .into_runtime_read_execution_binding(handoff)
         .expect("canonical read binding should prepare");
     let canonical = canonical_workspace
-        .execute_bound_read_execution(binding)
+        .execute_bound_read_execution(request_execution, binding)
         .expect("canonical read binding should execute");
 
     assert_eq!(delegated.rows(), canonical.rows());
@@ -54,11 +57,14 @@ fn execute_read_family_delegates_to_canonical_admission_and_execution_handoff() 
 
 #[test]
 fn workspace_read_delegates_to_live_read_intent_execution() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut delegated_workspace =
         WorthQueryWorkspace::new("delegated-live-read", runtime).expect("workspace should build");
     let delegated_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = delegated_workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -73,13 +79,13 @@ fn workspace_read_delegates_to_live_read_intent_execution() {
                 .schema_basis("intent-admission-live-read")
         })
         .expect("live view should declare");
-    let delegated = delegated_workspace.read(&delegated_view);
+    let delegated = delegated_workspace.read(request_execution, &delegated_view);
 
-    let runtime = read_runtime();
+    let runtime = read_runtime(request_execution);
     let mut canonical_workspace =
         WorthQueryWorkspace::new("canonical-live-read", runtime).expect("workspace should build");
     let canonical_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = canonical_workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -96,7 +102,7 @@ fn workspace_read_delegates_to_live_read_intent_execution() {
         .expect("live view should declare");
     let canonical = canonical_workspace
         .read_live_intent(&canonical_view)
-        .execute()
+        .execute(request_execution)
         .expect("live read common path should execute");
 
     assert_eq!(delegated, canonical.rows());
@@ -125,18 +131,22 @@ fn workspace_read_delegates_to_live_read_intent_execution() {
 
 #[test]
 fn runtime_read_live_delegates_to_canonical_live_read_execution() {
-    let mut runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = read_runtime(request_execution);
     let live_view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
         )
         .expect("live view should declare");
 
-    let delegated = runtime.read_live(&live_view);
+    let delegated = runtime.read_live(request_execution, &live_view);
     let canonical = runtime
-        .read_live_result(&live_view)
+        .read_live_result(request_execution, &live_view)
         .expect("canonical runtime live read should execute");
 
     assert_eq!(delegated, canonical.rows());

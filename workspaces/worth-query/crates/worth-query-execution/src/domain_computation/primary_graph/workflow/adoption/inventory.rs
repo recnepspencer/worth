@@ -42,6 +42,7 @@ struct ReadDefinition {
 }
 
 pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     branch: VisibilityProjectionView<'_>,
     request: &WorkflowAdoptionInventoryRequest<'_>,
 ) -> Result<WorthQueryWorkflowAdoptionInventory, WorkflowAdoptionReadDenial> {
@@ -49,8 +50,9 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
     let mut truth = WorkflowAdoptionTruth::new(branch, request.maximum_work_units);
     let mut read = BTreeMap::<EntityId, ReadDefinition>::new();
     let mut definitions = Vec::new();
-    for current in truth.relations_of_kind(layout.current_definition_relation)? {
+    for current in truth.relations_of_kind(execution, layout.current_definition_relation)? {
         let definition = read_definition(
+            execution,
             &mut truth,
             &mut read,
             request,
@@ -67,8 +69,9 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
     }
     definitions.sort_unstable_by_key(|occurrence| occurrence.definition);
     let mut instances = Vec::new();
-    for live in read_live_instances(&mut truth, layout, request.branch_occurrence)? {
+    for live in read_live_instances(execution, &mut truth, layout, request.branch_occurrence)? {
         let definition = read_definition(
+            execution,
             &mut truth,
             &mut read,
             request,
@@ -101,6 +104,7 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
 }
 
 fn read_definition<'read>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &mut WorkflowAdoptionTruth<'_>,
     read: &'read mut BTreeMap<EntityId, ReadDefinition>,
     request: &WorkflowAdoptionInventoryRequest<'_>,
@@ -111,7 +115,8 @@ fn read_definition<'read>(
         std::collections::btree_map::Entry::Occupied(read) => return Ok(read.into_mut()),
         std::collections::btree_map::Entry::Vacant(entry) => entry,
     };
-    let dependencies = read_definition_dependencies(truth, request.layout, lineage, definition)?;
+    let dependencies =
+        read_definition_dependencies(execution, truth, request.layout, lineage, definition)?;
     let coverage = request.coverage.lookup(&dependencies.spec, request.target);
     let compatibility =
         legality::definition_compatibility(coverage, request.requirements, &dependencies);

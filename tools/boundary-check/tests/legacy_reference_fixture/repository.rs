@@ -53,6 +53,10 @@ impl LegacyReferenceTestRepository {
     /// Assemble the canonical thin-orchestrator layout, config, and snapshot body.
     pub fn assemble_canonical_layout(&self, snapshot_body: &str) {
         self.write_file(
+            ".boundary-check-mock-root",
+            "Declared boundary-check mock root.\n",
+        );
+        self.write_file(
             ".claude/settings.json",
             r#"{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"powershell -NoProfile -File scripts/prepare-constitution-hook.ps1"}]}],"PostToolUse":[{"matcher":"Write|Edit|MultiEdit|apply_patch|Bash","hooks":[{"type":"command","command":"powershell -NoProfile -File scripts/check-constitution-post-tool-use.ps1"}]}]}}"#,
         );

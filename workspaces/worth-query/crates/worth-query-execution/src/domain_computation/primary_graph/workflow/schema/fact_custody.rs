@@ -6,7 +6,7 @@ use std::sync::Arc;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::runtime::{
     CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantExecutionContext,
-    CustomInvariantExecutionError, CustomInvariantOperationalMetadata,
+    CustomInvariantExecutionError, CustomInvariantLeaseBudget, CustomInvariantOperationalMetadata,
     CustomInvariantPreparationError, CustomInvariantRegistration, CustomInvariantRule,
     CustomInvariantRuleId, CustomInvariantScopePlanner, CustomInvariantSemanticIdentity,
     CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCostClass,
@@ -123,28 +123,66 @@ impl CustomInvariantRule for WorkflowFactCustody {
         Ok(())
     }
 
+    fn supports_checked_preparation(&self) -> bool {
+        true
+    }
+
+    fn prepare_scope_checked(
+        &self,
+        _planner: &mut CustomInvariantScopePlanner<'_>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, CustomInvariantPreparationError>> {
+        Some(if budget.checkpoint(0) {
+            Ok(())
+        } else {
+            Err(CustomInvariantPreparationError::new(
+                "workflow custody request refused",
+            ))
+        })
+    }
+
+    fn evaluate_checked(
+        &self,
+        context: &CustomInvariantExecutionContext<'_>,
+        _scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<CustomInvariantVerdict, CustomInvariantExecutionError>> {
+        Some(self.evaluate_with_budget(context, Some(budget)))
+    }
+
     fn evaluate(
         &self,
         context: &CustomInvariantExecutionContext<'_>,
         _scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
+        self.evaluate_with_budget(context, None)
+    }
+}
+
+impl WorkflowFactCustody {
+    fn evaluate_with_budget(
+        &self,
+        context: &CustomInvariantExecutionContext<'_>,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
+    ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
+        custody_checkpoint(budget, 0)?;
         if !context.touched().planned_entity_deletes().is_empty()
             || !context.touched().planned_relation_deletes().is_empty()
             || !context
                 .touched()
                 .planned_relation_endpoint_updates()
                 .is_empty()
-            || context
-                .touched()
-                .planned_relation_creates()
-                .iter()
-                .any(|create| {
-                    !self.allows_relation_create(create.kind_id(), create.source(), create.target())
-                })
         {
             return Ok(CustomInvariantVerdict::Violation);
         }
+        for create in context.touched().planned_relation_creates() {
+            custody_checkpoint(budget, CUSTODY_CANDIDATE_WORK)?;
+            if !self.allows_relation_create(create.kind_id(), create.source(), create.target()) {
+                return Ok(CustomInvariantVerdict::Violation);
+            }
+        }
         for entity in context.touched().direct_visible_entity_ids() {
+            custody_checkpoint(budget, CUSTODY_CANDIDATE_WORK)?;
             let before = match context
                 .committed_aspect_states()
                 .entity_aspect_state(*entity)
@@ -165,6 +203,7 @@ impl CustomInvariantRule for WorkflowFactCustody {
             }
         }
         for relation in context.touched().visible_relation_ids() {
+            custody_checkpoint(budget, CUSTODY_CANDIDATE_WORK)?;
             let before = match context.committed_relations().relation(*relation) {
                 Ok(before) => before,
                 // Adjacency expansion includes other relation kinds touching a
@@ -202,9 +241,6 @@ impl CustomInvariantRule for WorkflowFactCustody {
         }
         Ok(CustomInvariantVerdict::Pass)
     }
-}
-
-impl WorkflowFactCustody {
     fn allows_relation_create(
         &self,
         kind: KindId,
@@ -222,6 +258,20 @@ impl WorkflowFactCustody {
             _ => false,
         }
     }
+}
+
+const CUSTODY_CANDIDATE_WORK: u64 = 1;
+
+fn custody_checkpoint(
+    budget: Option<&dyn CustomInvariantLeaseBudget>,
+    work: u64,
+) -> Result<(), CustomInvariantExecutionError> {
+    if budget.is_some_and(|budget| !budget.checkpoint(work)) {
+        return Err(CustomInvariantExecutionError::new(
+            "workflow custody request refused",
+        ));
+    }
+    Ok(())
 }
 
 fn read_failure(error: StructuralReadError) -> CustomInvariantExecutionError {

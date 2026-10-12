@@ -256,6 +256,7 @@ where
     let prepared = authorization::prepare(phase, operation, &identities, staged)
         .map_err(WorthQueryWorkflowOperationOwnerAcceptanceDenial::Request)?;
     let custody = WorthQueryWorkflowAdvanceAdapter::resolve_guarded_operation_custody(
+        phase,
         advance.application,
         &prepared.admission,
         prepared.idempotency,

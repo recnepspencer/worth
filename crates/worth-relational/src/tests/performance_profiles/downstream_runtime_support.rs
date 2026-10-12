@@ -200,6 +200,7 @@ pub(super) fn build_mock_downstream_runtime(
 }
 
 pub(super) fn seed_downstream_region_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     label: &str,
     node_count: usize,
@@ -207,13 +208,14 @@ pub(super) fn seed_downstream_region_world(
 ) -> Vec<crate::facade::identity::EntityId> {
     let mut entities = Vec::with_capacity(node_count);
     for index in 0..node_count {
-        let created = create_entity_outcome(runtime, &format!("{label}-node-{index}"));
+        let created = create_entity_outcome(execution, runtime, &format!("{label}-node-{index}"));
         entities.push(changed_entities(&created)[0]);
     }
 
     for window in entities.windows(2).enumerate() {
         let (index, pair) = window;
         create_relation_outcome(
+            execution,
             runtime,
             pair[0],
             pair[1],
@@ -226,6 +228,7 @@ pub(super) fn seed_downstream_region_world(
             let target = index + cross_link_stride;
             if target < entities.len() {
                 create_relation_outcome(
+                    execution,
                     runtime,
                     entities[index],
                     entities[target],
@@ -239,6 +242,7 @@ pub(super) fn seed_downstream_region_world(
 }
 
 pub(super) fn seed_game_engine_frame_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     label: &str,
     region_count: usize,
@@ -255,6 +259,7 @@ pub(super) fn seed_game_engine_frame_world(
         let region_start = entities.len();
         for node in 0..nodes_per_region {
             let entity = create_entity_in_partition(
+                execution,
                 runtime,
                 &format!("{label}-region-{region}-node-{node}"),
                 partition_id,
@@ -266,6 +271,7 @@ pub(super) fn seed_game_engine_frame_world(
         let region_entities = &entities[region_start..region_end];
         for index in 0..(region_entities.len().saturating_sub(1)) {
             create_relation_in_partition(
+                execution,
                 runtime,
                 region_entities[index],
                 region_entities[index + 1],
@@ -277,6 +283,7 @@ pub(super) fn seed_game_engine_frame_world(
 
         for index in (0..region_entities.len().saturating_sub(3)).step_by(3) {
             create_relation_in_partition(
+                execution,
                 runtime,
                 region_entities[index],
                 region_entities[index + 3],
@@ -299,6 +306,7 @@ pub(super) fn seed_game_engine_frame_world(
         let current = frame_targets[region];
         let next = frame_targets[(region + 1) % region_count];
         create_relation_in_partition(
+            execution,
             runtime,
             current,
             next,

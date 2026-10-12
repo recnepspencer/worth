@@ -8,13 +8,20 @@ use super::super::courtroom_support::outcome_kind;
 use super::super::product_query_support::fork_independent_product;
 use super::super::world::CourtroomWorld;
 
-pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
+pub(crate) fn independent_products_advance_and_retain_exact_definitions(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("blocked");
     let source = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let product_a = fork_independent_product(
         &world,
         &source,
@@ -31,14 +38,34 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
     );
     drop(source);
 
-    let pinned_a_d0 = world.application.on_branch(product_a).select().unwrap();
-    let pinned_b_d0 = world.application.on_branch(product_b).select().unwrap();
+    let pinned_a_d0 = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(product_a)
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let pinned_b_d0 = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(product_b)
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_suppressed(
+        request_execution,
         &world,
         product_a,
         "A D0 must resolve before either successor",
     );
     assert_suppressed(
+        request_execution,
         &world,
         product_b,
         "B D0 must resolve before either successor",
@@ -53,9 +80,14 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
             let (replacement, _) = ReplacementPredicate::controlled(world_ref.contacts.clone());
             let selected = world_ref
                 .application
-                .on_branch(product_a_for_publish)
-                .select()
-                .unwrap();
+                .with_host_advancement(|phase| {
+                    world_ref
+                        .application
+                        .on_branch(product_a_for_publish)
+                        .select(&phase)
+                        .unwrap()
+                })
+                .expect("installed host call opens");
             start_a.wait();
             selected
                 .publish_conditional_definition(
@@ -71,9 +103,14 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
             let (replacement, _) = ReplacementPredicate::controlled(world_ref.contacts.clone());
             let selected = world_ref
                 .application
-                .on_branch(product_b_for_publish)
-                .select()
-                .unwrap();
+                .with_host_advancement(|phase| {
+                    world_ref
+                        .application
+                        .on_branch(product_b_for_publish)
+                        .select(&phase)
+                        .unwrap()
+                })
+                .expect("installed host call opens");
             start_b.wait();
             selected
                 .publish_conditional_definition(
@@ -101,10 +138,30 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
     assert_eq!(published_b.product_branch(), product_b);
     assert_eq!(published_b.definition_generation(), 2);
 
-    assert_suppressed(&world, product_a, "fresh A must resolve exact D1");
-    assert_suppressed(&world, product_b, "fresh B must resolve exact D1");
-    assert_pinned_suppressed(pinned_a_d0, &world, "pinned A must retain exact D0");
-    assert_pinned_suppressed(pinned_b_d0, &world, "pinned B must retain exact D0");
+    assert_suppressed(
+        request_execution,
+        &world,
+        product_a,
+        "fresh A must resolve exact D1",
+    );
+    assert_suppressed(
+        request_execution,
+        &world,
+        product_b,
+        "fresh B must resolve exact D1",
+    );
+    assert_pinned_suppressed(
+        request_execution,
+        pinned_a_d0,
+        &world,
+        "pinned A must retain exact D0",
+    );
+    assert_pinned_suppressed(
+        request_execution,
+        pinned_b_d0,
+        &world,
+        "pinned B must retain exact D0",
+    );
 
     drop(published_a);
     drop(published_b);
@@ -113,15 +170,20 @@ pub(crate) fn independent_products_advance_and_retain_exact_definitions() {
 }
 
 fn assert_suppressed(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &CourtroomWorld,
     branch: product::WorthQueryProductBranch,
     message: &str,
 ) {
-    let selected = world.application.on_branch(branch).select().unwrap();
-    assert_pinned_suppressed(selected, world, message);
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(branch).select(&phase).unwrap())
+        .expect("installed host call opens");
+    assert_pinned_suppressed(request_execution, selected, world, message);
 }
 
 fn assert_pinned_suppressed(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     selected: primary_graph::WorthQuerySelectedProductOperation<
         '_,
         super::super::schema::TemporalHostSchema,
@@ -130,9 +192,9 @@ fn assert_pinned_suppressed(
     message: &str,
 ) {
     let outcome = selected
-        .conditional_clock(&world.clock)
+        .conditional_clock(request_execution, &world.clock)
         .unwrap_or_else(|denial| panic!("{message}: {denial:?}"))
-        .observe();
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) = outcome
     else {
         panic!("{message}: {}", outcome_kind(&outcome))

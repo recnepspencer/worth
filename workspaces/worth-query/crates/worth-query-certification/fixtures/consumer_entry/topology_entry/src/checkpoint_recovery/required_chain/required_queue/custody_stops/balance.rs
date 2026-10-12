@@ -35,7 +35,8 @@ fn cancelled_refresh_rows_return_to_the_same_live_custody_and_ledger() {
         );
         // The first attempt refreshes A. Every later attempt has that same
         // selected truth, the same old B Ready and a cancelled new B row.
-        let head = request.retain_read().unwrap();
+        let head =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let commit = head.selected_commit().clone();
         assert_eq!(selected.get_or_insert(commit.clone()), &commit);
         let retained = (

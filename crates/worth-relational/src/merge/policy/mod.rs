@@ -20,17 +20,19 @@ pub(crate) use decisions::{
 impl<'runtime> MergeAccess<'runtime> {
     pub(crate) fn plan_policy_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: NormalizedRelationalMergeRequest,
     ) -> Result<PolicyResolvedMergePlan, MergePlanningError> {
-        let causal_plan = self.plan_causal_scope(request)?;
-        self.resolve_policy_scope(causal_plan)
+        let causal_plan = self.plan_causal_scope(execution, request)?;
+        self.resolve_policy_scope(execution, causal_plan)
     }
 
     fn resolve_policy_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         causal_plan: CausallyAnnotatedMergePlan,
     ) -> Result<PolicyResolvedMergePlan, MergePlanningError> {
-        resolution::resolve_policy_scope(self.runtime, causal_plan)
+        resolution::resolve_policy_scope(execution, self.runtime, causal_plan)
     }
 }
 

@@ -55,13 +55,17 @@ struct InspectingInvariantWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingInvariantWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WriteAuthorityExecutionReceipt, WorthQueryWorkspaceError> {
         let relational_runtime = relational_runtime
             .expect("query-owned invariant registration should lower a relational runtime");
-        let certification = relational_runtime.validation().certification_state();
+        let certification = relational_runtime
+            .validation()
+            .certification_state(execution)
+            .expect("fixture invariant inspection");
         assert_eq!(certification.summary().result_count(), 1);
         assert_eq!(certification.summary().violation_count(), 1);
         assert!(certification.summary().publication_failure().is_some());
@@ -82,7 +86,7 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingInvariantWriteAuthorit
         assert!(format!("{:?}", result.verdict).contains("Violation"));
 
         let mut authority = TestWriteAuthority;
-        authority.write(bridge, Some(relational_runtime), mutation)
+        authority.write(execution, bridge, Some(relational_runtime), mutation)
     }
 }
 
@@ -93,6 +97,7 @@ struct InspectingCatalogWriteAuthority {
 impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingCatalogWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -105,36 +110,45 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for InspectingCatalogWriteAuthority 
         );
 
         let mut authority = TestWriteAuthority;
-        authority.write(bridge, Some(relational_runtime), mutation)
+        authority.write(execution, bridge, Some(relational_runtime), mutation)
     }
 }
 
 #[test]
 fn query_builder_register_invariant_lowers_custom_rule_into_relational_runtime() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = complete_query_owned_backend_from_parts_builder()
         .register_invariant(CertificationBoundaryViolationRule)
         .expect("custom query invariant registration should succeed")
         .write_authority(InspectingInvariantWriteAuthority)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("query runtime with registered invariant should build");
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("query-invariant-1")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Invariant test task"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("query-invariant-1")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Invariant test task"),
+                    ),
+                ],
+            ),
+        )
         .expect("write should exercise invariant-aware relational runtime");
 }
 
 #[test]
 fn query_builder_invariant_catalog_lowers_into_relational_runtime_config() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let expected_catalog = InvariantCatalog {
         registrations: vec![InvariantRegistration::commit_boundary_blocking(
             InvariantRule::MaxMergedIntents(7),
@@ -147,28 +161,34 @@ fn query_builder_invariant_catalog_lowers_into_relational_runtime_config() {
             expected_catalog: expected_catalog.clone(),
         })
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("query runtime with invariant catalog should build");
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("query-catalog-1")),
-                ("title.value", test_string_aspect_value("Catalog test task")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("query-catalog-1")),
+                    ("title.value", test_string_aspect_value("Catalog test task")),
+                ],
+            ),
+        )
         .expect("write should expose lowered invariant catalog");
 }
 
 #[test]
 fn query_builder_rejects_explicit_relational_runtime_when_query_owned_invariants_are_queued() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = match WorthQueryRuntime::builder(test_product_world_resources())
         .register_invariant(CertificationBoundaryViolationRule)
         .expect("custom query invariant registration should succeed")
         .relational_runtime(RelationalRuntimeApi::builder().build())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
     {
         Ok(_) => {
             panic!("explicit relational runtime should conflict with queued query-owned invariants")
@@ -188,6 +208,9 @@ fn query_builder_rejects_explicit_relational_runtime_when_query_owned_invariants
 
 #[test]
 fn query_builder_rejects_explicit_backend_when_query_owned_invariants_are_queued() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let explicit_backend = WorthQueryBridgeBackedRuntimeBackend::from_parts(
         WorthQueryRuntimeBackendParts::new()
             .runtime_bridge(test_bridge())
@@ -206,7 +229,7 @@ fn query_builder_rejects_explicit_backend_when_query_owned_invariants_are_queued
         .register_invariant(CertificationBoundaryViolationRule)
         .expect("custom query invariant registration should succeed")
         .backend(explicit_backend)
-        .build()
+        .build(request_execution)
     {
         Ok(_) => panic!("explicit backend should reject queued query-owned invariants"),
         Err(error) => error,
@@ -225,6 +248,9 @@ fn query_builder_rejects_explicit_backend_when_query_owned_invariants_are_queued
 
 #[test]
 fn query_builder_accepts_proof_lane_invariant_registration_artifact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = sample_declaration("runtime-artifact");
     let requested =
         WorthQueryInvariantCapabilityContributionAuthoring::invariant_rule_registration(
@@ -253,25 +279,31 @@ fn query_builder_accepts_proof_lane_invariant_registration_artifact() {
             },
         })
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("query runtime should accept proof-lane invariant registration artifacts");
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("query-artifact-1")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Artifact-backed task"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("query-artifact-1")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Artifact-backed task"),
+                    ),
+                ],
+            ),
+        )
         .expect("artifact-backed invariant registration should lower into runtime config");
 }
 
 #[test]
 fn query_builder_canonicalizes_and_deduplicates_merged_invariant_catalog_sources() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = sample_declaration("runtime-canonical-merge");
     let requested = WorthQueryInvariantCapabilityContributionAuthoring::invariant_registration(
         InvariantCatalog {
@@ -312,23 +344,26 @@ fn query_builder_canonicalizes_and_deduplicates_merged_invariant_catalog_sources
             expected_catalog: expected_catalog.clone(),
         })
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("merged invariant catalogs should lower canonically");
 
     runtime
-        .write(insert_command(
-            "Task",
-            [
-                (
-                    "identity.id",
-                    test_string_aspect_value("query-canonical-merge-1"),
-                ),
-                (
-                    "title.value",
-                    test_string_aspect_value("Canonical merge task"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    (
+                        "identity.id",
+                        test_string_aspect_value("query-canonical-merge-1"),
+                    ),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Canonical merge task"),
+                    ),
+                ],
+            ),
+        )
         .expect("merged invariant catalogs should stay executable");
 }
 

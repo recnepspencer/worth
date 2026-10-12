@@ -136,14 +136,16 @@ impl crate::runtime::WorthQuerySettlementRecoveryBackend for WorthQueryInMemoryT
 impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
     fn prepare_product_source(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query_execution::facade::integration::WorthQueryProductRelationalInstallation,
         crate::runtime::WorthQueryProductSourceDenial,
     > {
         let source = self.workspace.relational_source_owner();
-        let branch = source.with_runtime(|runtime| runtime.main_branch_identity());
+        let branch =
+            source.with_runtime(request_execution, |runtime| runtime.main_branch_identity());
         source
-            .prepare_product_source(&branch)
+            .prepare_product_source(request_execution, &branch)
             .map_err(crate::runtime::WorthQueryProductSourceDenial::Basis)
     }
 
@@ -151,8 +153,11 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
         self.support_profile.clone()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
-        self.workspace.snapshot_identity()
+    fn current_snapshot_identity(
+        &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
+        self.workspace.snapshot_identity(request_execution)
     }
 
     fn admit_live_view_declaration(
@@ -195,24 +200,27 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
 
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutation: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
-        self.apply_backend_admissible_mutation(mutation)
+        self.apply_backend_admissible_mutation(execution, mutation)
     }
 
     fn write_batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mutations: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         let mut prepared = Vec::with_capacity(mutations.len());
         for mutation in mutations {
             prepared.push(self.prepare_batch_mutation(mutation)?);
         }
-        self.workspace.apply_batch_atomically(prepared)
+        self.workspace.apply_batch_atomically(execution, prepared)
     }
 
     fn execute_intent(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         Err(WorthQueryRuntimeError::MissingIntentAuthority)
@@ -220,12 +228,13 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
 
     fn live_entities_for_target(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         if self.view_targets_collection(target) {
             return self
                 .workspace
-                .entities()
+                .entities(execution)
                 .expect("test backend workspace truth remains readable");
         }
         Vec::new()
@@ -233,6 +242,7 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
 
     fn collection_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         collection: &str,
         identity: &crate::memory_workspace::WorthQueryEntityIdentity,
     ) -> WorthQueryBackendEntityLookup {
@@ -243,7 +253,7 @@ impl WorthQueryRuntimeBackend for WorthQueryInMemoryTestBackend {
             return WorthQueryBackendEntityLookup::Absent;
         }
         self.workspace
-            .entity(identity)
+            .entity(execution, identity)
             .expect("test backend workspace lookup remains readable")
             .map(WorthQueryBackendEntityLookup::Found)
             .unwrap_or(WorthQueryBackendEntityLookup::Absent)

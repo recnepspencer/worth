@@ -2,7 +2,10 @@ use super::super::super::super::support::*;
 
 #[test]
 fn runtime_public_authority_evidence_support_report_freezes_surface() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.authority-evidence-support")
         .expect("task runtime should open a named workspace");
     let report = workspace.public_authoritative_mutation_evidence_support();

@@ -32,12 +32,14 @@ where
 {
     pub fn recover_deferred_application_settlement(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         deferred: &super::WorthQueryApplicationSettlementDeferred,
     ) -> Result<
         worth_relational::facade::history::RelationalCommitReceipt,
         WorthQueryApplicationSettlementRecoveryError,
     > {
         self.primary_provider.recover_application_settlement(
+            execution,
             deferred.settlement(),
             deferred.branch(),
             deferred.product_affinity(),

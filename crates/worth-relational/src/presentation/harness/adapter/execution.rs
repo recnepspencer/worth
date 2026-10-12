@@ -21,6 +21,7 @@ pub(super) fn prepare_runtime(
 }
 
 pub(super) fn execute_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     _adapter: &RelationalHarnessAdapter,
     runtime: &RelationalRuntime,
     fixture: &worth_harness::facade::ScenarioFixture<RelationalFixture>,
@@ -49,7 +50,10 @@ pub(super) fn execute_request(
                     PlannedQueryPacket::explicit_targets("execute", context, parsed_targets),
                 )
                 .ok_or_else(|| RelationalHarnessError("query plan unavailable".to_string()))?,
+            execution,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .ok_or_else(|| RelationalHarnessError("query execution unavailable".to_string()))?
         .result;
     let publication_artifacts = runtime.publication().artifacts().snapshot();

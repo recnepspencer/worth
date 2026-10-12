@@ -25,39 +25,61 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     let _serial = SERIAL.lock().unwrap();
     let world = installed_authorization_world(true);
     let request_scope = live_scope();
-    let actor = authenticated_principal(&world, &request_scope);
-    let account = resolved_account(&world, "open", &request_scope);
+    let actor = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request_scope)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request_scope)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &actor,
-            &account,
-            &operation,
-            Default::default(),
-            &request_scope,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &actor,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request_scope,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let zero = authority().request_lease(request(0)).unwrap();
-    let denial = match world.invariant.project_admitted_operation(
-        &admission,
-        |reader, _| {
-            // Ignoring the local error must not seal a partial/empty projection.
-            let _ = reader.decision_select_entities(
-                AccountStatus::reference(),
-                "unseen-retained-key".to_owned(),
-                2,
-            );
-        },
-        Policy::Execution(&zero),
-    ) {
-        Err(denial) => denial,
-        Ok(_) => panic!("nonempty canonical key requires backing"),
-    };
+    let denial = world
+        .application
+        .with_host_advancement(|phase| {
+            match world.invariant.project_admitted_operation(
+                &phase,
+                &admission,
+                |reader, _| {
+                    // Ignoring the local error must not seal a partial/empty projection.
+                    let _ = reader.decision_select_entities(
+                        AccountStatus::reference(),
+                        "unseen-retained-key".to_owned(),
+                        2,
+                    );
+                },
+                Policy::Execution(&zero),
+            ) {
+                Err(denial) => denial,
+                Ok(_) => panic!("nonempty canonical key requires backing"),
+            }
+        })
+        .expect("the fixture read owns its installed host call");
     let retained = denial.invariant_denial().unwrap();
     assert_eq!(
         retained.kind(),
@@ -81,23 +103,29 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
     let parent = authority().request_lease(request(PAYLOAD)).unwrap();
     let child = parent.child(request(PAYLOAD)).unwrap();
     let (_, snapshot, work) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, _| {
-                assert!(reader
-                    .decision_select_entities(
-                        AccountStatus::reference(),
-                        "unseen-retained-key".to_owned(),
-                        2
-                    )
-                    .unwrap()
-                    .is_empty());
-            },
-            Policy::Execution(&child),
-        )
-        .unwrap()
-        .into_parts();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, _| {
+                        assert!(reader
+                            .decision_select_entities(
+                                AccountStatus::reference(),
+                                "unseen-retained-key".to_owned(),
+                                2
+                            )
+                            .unwrap()
+                            .is_empty());
+                    },
+                    Policy::Execution(&child),
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(work.equality_lookups(), 1);
     drop(child);
     assert!(

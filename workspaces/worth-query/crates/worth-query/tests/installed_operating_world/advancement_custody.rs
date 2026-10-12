@@ -74,10 +74,14 @@ fn bind(
 }
 #[test]
 fn workflow_start_refuses_before_any_stage_or_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
-        let mut admitted_workspace = workflow_workspace("workflow-custody-control").unwrap();
+        let mut admitted_workspace =
+            workflow_workspace(request_execution, "workflow-custody-control").unwrap();
         let admitted = bind(&admitted_workspace)
             .admit_workflow_resources(execution_resource_request(), &admitted_workspace)
             .unwrap();
@@ -93,7 +97,8 @@ fn workflow_start_refuses_before_any_stage_or_reader() {
         );
 
         for zero_memory in [false, true] {
-            let mut workspace = workflow_workspace("workflow-request-custody").unwrap();
+            let mut workspace =
+                workflow_workspace(request_execution, "workflow-request-custody").unwrap();
             let admitted = bind(&workspace)
                 .admit_workflow_resources(execution_resource_request(), &workspace)
                 .unwrap();
@@ -117,13 +122,18 @@ fn workflow_start_refuses_before_any_stage_or_reader() {
 }
 #[test]
 fn projection_readmission_refuses_before_reading_the_pair() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
-        let mut workspace = controlled_workflow_workspace("provider-request-readmission").unwrap();
+        let mut workspace =
+            controlled_workflow_workspace(request_execution, "provider-request-readmission")
+                .unwrap();
         let prior = workspace.domain(GeometryDomain).unwrap();
         let (settled, _) = settle_workflow(&mut workspace);
-        let live = promoted(settled, &mut workspace);
+        let live = promoted(request_execution, settled, &mut workspace);
         workspace.advance_domain_installation_generation().unwrap();
         let (_, receipt) = workspace
             .rebind_domain(prior.rebind_request())
@@ -134,7 +144,7 @@ fn projection_readmission_refuses_before_reading_the_pair() {
         let witness = live.rebind_witness_for(&candidate, receipt).unwrap();
 
         let before = reads();
-        let control = live.rebind_with(candidate, witness, &mut workspace);
+        let control = live.rebind_with(request_execution, candidate, witness, &mut workspace);
         assert!(
             reads() > before,
             "admitted projection readmission contacts its real source"
@@ -150,10 +160,11 @@ fn projection_readmission_refuses_before_reading_the_pair() {
         use super::workflow_projection_lifecycle::{promoted, settle_workflow};
         for zero_memory in [false, true] {
             let mut workspace =
-                controlled_workflow_workspace("provider-request-readmission").unwrap();
+                controlled_workflow_workspace(request_execution, "provider-request-readmission")
+                    .unwrap();
             let prior = workspace.domain(GeometryDomain).unwrap();
             let (settled, _) = settle_workflow(&mut workspace);
-            let live = promoted(settled, &mut workspace);
+            let live = promoted(request_execution, settled, &mut workspace);
             workspace.advance_domain_installation_generation().unwrap();
             let (_, receipt) = workspace
                 .rebind_domain(prior.rebind_request())
@@ -166,7 +177,7 @@ fn projection_readmission_refuses_before_reading_the_pair() {
             let before = reads();
             reports();
             let domain::WorthQueryWorkflowProjectionRebindOutcome::Stopped(stop) =
-                live.rebind_with(candidate, witness, &mut workspace)
+                live.rebind_with(request_execution, candidate, witness, &mut workspace)
             else {
                 panic!("readmission cannot enter its provider under a refused root");
             };
@@ -207,6 +218,7 @@ pub(super) fn verify<T, W: ProbeWorkspace>(
     mut setup: impl FnMut() -> (W, T),
     mut execute: impl FnMut(T, &mut worth_query::facade::runtime::WorthQueryWorkspace) -> Option<Denial>,
 ) {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
         for budget in [None, Some(false), Some(true)] {

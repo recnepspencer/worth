@@ -33,13 +33,25 @@ use adapters::{CommitLog, CommitThenDecline, DECLINED_AFTER_COMMIT};
 
 #[test]
 fn the_first_production_write_after_restore_answers_as_before_the_capture() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
-    let before = write_twice(&host.granular_invalidation_installation());
-    let captured = ledger_position(&host.granular_invalidation_installation());
+    let before = write_twice(
+        request_execution,
+        &host.granular_invalidation_installation(),
+    );
+    let captured = ledger_position(
+        request_execution,
+        &host.granular_invalidation_installation(),
+    );
     let checkpoint = host
-        .runtime()
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the host captures");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the host captures")
+        })
+        .expect("installed host call opens");
     drop(host);
 
     let restored = restore_on_first_program(
@@ -49,18 +61,18 @@ fn the_first_production_write_after_restore_answers_as_before_the_capture() {
     .expect("the host restores under the roster it installed");
     let installation = restored.granular_invalidation_installation();
     assert_eq!(
-        ledger_position(&installation),
+        ledger_position(request_execution, &installation),
         captured,
         "a restore answers the ledger position the capture held"
     );
 
-    let after = write_twice(&installation);
+    let after = write_twice(request_execution, &installation);
     assert_eq!(
         after, before,
         "the same write answers the same after restore"
     );
     assert_eq!(
-        ledger_position(&installation),
+        ledger_position(request_execution, &installation),
         captured.map(|position| PatchStreamPosition(position.0 + 2)),
         "each production write committed exactly once after the restore"
     );
@@ -68,13 +80,16 @@ fn the_first_production_write_after_restore_answers_as_before_the_capture() {
 
 /// Composes a Query runtime over the installation and writes twice, returning
 /// each answer. Every write must have committed exactly once.
-fn write_twice(installation: &WorthQueryGranularInvalidationInstallation) -> Vec<String> {
+fn write_twice(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    installation: &WorthQueryGranularInvalidationInstallation,
+) -> Vec<String> {
     let commits = CommitLog::default();
-    let mut runtime = production_runtime(installation, Arc::clone(&commits));
+    let mut runtime = production_runtime(request_execution, installation, Arc::clone(&commits));
     let answers = (0..2)
         .map(|ordinal| {
             let answer = runtime
-                .write(identity_insert(ordinal))
+                .write(request_execution, identity_insert(ordinal))
                 .expect_err("the certification authority declines after its commit")
                 .to_string();
             assert!(
@@ -93,6 +108,7 @@ fn write_twice(installation: &WorthQueryGranularInvalidationInstallation) -> Vec
 }
 
 fn production_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     installation: &WorthQueryGranularInvalidationInstallation,
     commits: CommitLog,
 ) -> WorthQueryRuntime {
@@ -121,16 +137,19 @@ fn production_runtime(
     .preview_basis(adapters::PreviewBasis)
     .inspector_evidence(adapters::InspectorEvidence)
     .build_backend_from_parts()
-    .build()
+    .build(request_execution)
     .expect("the Query runtime composes over the primary graph")
 }
 
 fn ledger_position(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     installation: &WorthQueryGranularInvalidationInstallation,
 ) -> Option<PatchStreamPosition> {
     installation
         .retain_primary_graph_integration_handle()
-        .with_runtime(|runtime| runtime.history().latest_patch_stream_position())
+        .with_runtime(request_execution, |runtime| {
+            runtime.history().latest_patch_stream_position()
+        })
 }
 
 fn identity_insert(ordinal: usize) -> WorthQueryWriteCommand {

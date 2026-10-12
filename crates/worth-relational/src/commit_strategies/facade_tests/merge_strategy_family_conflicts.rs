@@ -2,6 +2,9 @@ use super::native_strategy_fixtures::*;
 
 #[test]
 fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conflict() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let main_descriptor = strategy_descriptor_named(
         CommitStrategyId(41),
         "strategy.intent.reconcile",
@@ -25,7 +28,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
                 .expect("feature strategy registration"),
         )
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch = crate::tests::support::create_branch_from_main(&runtime, "feature");
 
     {
@@ -63,10 +66,10 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             )
             .expect("lowered main strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated main strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("main strategy commit");
     }
 
@@ -107,20 +110,23 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             )
             .expect("lowered feature strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated feature strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("feature strategy commit");
     }
 
     let planning = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            feature_branch,
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            request_execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                feature_branch,
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("merge planning artifact");
 
     let classification = planning
@@ -156,6 +162,9 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
 
 #[test]
 fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let intent_descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(71));
     let replica_descriptor = ReplicaConvergenceStrategy::descriptor(CommitStrategyId(72));
     let runtime = RelationalRuntimeBuilder::new()
@@ -175,7 +184,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             &replica_descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch = crate::tests::support::create_branch_from_main(&runtime, "feature-real");
 
     {
@@ -197,7 +206,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
         let snapshot = runtime.visibility_authority().snapshot();
         let execution = runtime
             .commit_strategies()
-            .execute(&request, &snapshot)
+            .execute(&request, &snapshot, request_execution)
             .expect("intent execution");
         let (transaction_validation_input, mut authority) =
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
@@ -210,10 +219,10 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             )
             .expect("lowered intent plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated intent plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("intent strategy commit");
     }
 
@@ -236,7 +245,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
         let snapshot = runtime.visibility_authority().snapshot();
         let execution = runtime
             .commit_strategies()
-            .execute(&request, &snapshot)
+            .execute(&request, &snapshot, request_execution)
             .expect("replica execution");
         let (transaction_validation_input, mut authority) =
             crate::tests::support::test_owner_strategy_authority(
@@ -252,20 +261,23 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             )
             .expect("lowered replica plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated replica plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("replica strategy commit");
     }
 
     let lowered = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            feature_branch,
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            request_execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                feature_branch,
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("merge planning scope");
 
     let classification_index = lowered

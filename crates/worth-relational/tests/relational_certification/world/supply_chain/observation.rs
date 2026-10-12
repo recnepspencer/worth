@@ -52,6 +52,7 @@ pub(crate) enum ObservationError {
 }
 
 pub(crate) fn observe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &ProductionSeededSupplyChainWorld,
 ) -> Result<ObservedSupplyChainState, ObservationError> {
     let observation = world.basis.observation();
@@ -60,11 +61,18 @@ pub(crate) fn observe(
     {
         return Err(ObservationError::SnapshotUnavailable);
     }
-    observe_observation(&world.program, &world.handles, &world.runtime, &observation)
+    observe_observation(
+        execution,
+        &world.program,
+        &world.handles,
+        &world.runtime,
+        &observation,
+    )
 }
 
 /// Observe the immutable root carried by an owner-admitted branch observation.
 pub(crate) fn observe_observation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: &CompiledSupplyChainProgram,
     handles: &SupplyChainSemanticHandles,
     runtime: &RelationalRuntime,
@@ -75,7 +83,7 @@ pub(crate) fn observe_observation(
     }
     let view = runtime
         .read_truth()
-        .read_observation(observation)
+        .read_observation(execution, observation)
         .map_err(ObservationError::BranchBasis)?;
     let schema = runtime
         .read_truth()
@@ -96,6 +104,7 @@ pub(crate) fn observe_observation(
 /// consulting the global latest partition set.  The caller must supply the
 /// exact branch-qualified handle issued by `VisibilityAuthority`.
 pub(crate) fn observe_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     program: &CompiledSupplyChainProgram,
     handles: &SupplyChainSemanticHandles,
     runtime: &RelationalRuntime,
@@ -106,7 +115,7 @@ pub(crate) fn observe_snapshot(
     {
         return Err(ObservationError::SnapshotUnavailable);
     }
-    let Some(view) = runtime.read_truth().read_snapshot(snapshot) else {
+    let Some(view) = runtime.read_truth().read_snapshot(snapshot, execution) else {
         return Err(ObservationError::SnapshotUnavailable);
     };
     let schema = observe_schema_version(runtime, snapshot)?;

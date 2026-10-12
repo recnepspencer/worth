@@ -27,13 +27,14 @@ pub(super) fn retired_anchor(fact: &Fact, retired: &BTreeSet<EntityId>) -> Optio
 /// The committed retirement that replaces `fact`; `None` when the snapshot
 /// does not hold that retirement at its own version.
 pub(super) fn committed_retirement(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity_id: EntityId,
     fact: &Fact,
 ) -> Option<Fact> {
-    let view = runtime.read_truth().project_snapshot(snapshot)?;
-    let record = view.entity_retirement(entity_id)?;
+    let view = runtime.read_truth().project_snapshot(snapshot, execution)?;
+    let record = view.entity_retirement(execution, entity_id)?;
     if record.deleted_at_version() != view.version_id() {
         return None;
     }
@@ -48,6 +49,7 @@ pub(super) fn committed_retirement(
 
 #[cfg(test)]
 pub(super) fn rebase(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: Vec<Fact>,
@@ -56,7 +58,7 @@ pub(super) fn rebase(
     facts
         .into_iter()
         .map(|fact| match retired_anchor(&fact, retired) {
-            Some(entity_id) => committed_retirement(runtime, snapshot, entity_id, &fact),
+            Some(entity_id) => committed_retirement(execution, runtime, snapshot, entity_id, &fact),
             None => Some(fact),
         })
         .collect()

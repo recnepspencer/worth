@@ -162,18 +162,21 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
 {
     pub fn refresh(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError> {
-        refresh_source(self.snapshot(), self.managed_handle(), workspace)
+        refresh_source(execution, self.snapshot(), self.managed_handle(), workspace)
     }
 
     pub(crate) fn refresh_granular_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &crate::live::WorthQueryMaintenanceScope,
         basis: &crate::runtime::WorthQueryGranularSourceReadBasis,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError> {
         refresh_granular_source(
+            execution,
             self.snapshot(),
             self.managed_handle(),
             scope,
@@ -188,13 +191,15 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
 {
     pub fn refresh(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut WorthQueryWorkspace,
     ) -> Result<WorthQueryLiveProjectionRefresh, WorthQueryLiveProjectionRefreshError> {
-        refresh_source(self.snapshot(), self.managed_handle(), workspace)
+        refresh_source(execution, self.snapshot(), self.managed_handle(), workspace)
     }
 }
 
 pub(super) fn refresh_source<D: 'static, O: 'static, F: 'static, L: BasisOperationLane, S>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &S,
     handle: &crate::ordinary::live::WorthQueryManagedLiveHandle,
     workspace: &mut WorthQueryWorkspace,
@@ -237,7 +242,9 @@ where
         ),
     );
     work.retain_impact(&impact);
-    finish_refresh(source, handle, workspace, delivery, impact, work, None)
+    finish_refresh(
+        execution, source, handle, workspace, delivery, impact, work, None,
+    )
 }
 
 pub(crate) fn refresh_granular_source<
@@ -247,6 +254,7 @@ pub(crate) fn refresh_granular_source<
     L: BasisOperationLane,
     S,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &S,
     handle: &crate::ordinary::live::WorthQueryManagedLiveHandle,
     scope: &crate::live::WorthQueryMaintenanceScope,
@@ -276,6 +284,7 @@ where
         owner_delivery_retained: true,
     })?;
     let prepared = projection::prepare_projection(
+        execution,
         source,
         handle,
         workspace,
@@ -312,6 +321,7 @@ where
 }
 
 fn finish_refresh<D: 'static, O: 'static, F: 'static, L: BasisOperationLane, S>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &S,
     handle: &crate::ordinary::live::WorthQueryManagedLiveHandle,
     workspace: &mut WorthQueryWorkspace,
@@ -326,8 +336,15 @@ fn finish_refresh<D: 'static, O: 'static, F: 'static, L: BasisOperationLane, S>(
 where
     S: WorthQueryProjectionLifecycleSource<D, O, F, L>,
 {
-    let prepared =
-        projection::prepare_projection(source, handle, workspace, granular_read, work, false)?;
+    let prepared = projection::prepare_projection(
+        execution,
+        source,
+        handle,
+        workspace,
+        granular_read,
+        work,
+        false,
+    )?;
     Ok(WorthQueryLiveProjectionRefresh {
         authority: prepared.authority,
         source_rows: prepared.source_rows,

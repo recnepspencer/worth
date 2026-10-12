@@ -17,6 +17,9 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 #[test]
 fn lowered_merge_declaration_can_be_inspected_in_query_shape() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -51,7 +54,7 @@ fn lowered_merge_declaration_can_be_inspected_in_query_shape() {
     )
     .expect("conflict inspection declaration should admit");
 
-    let inspection_artifact = source_addition_inspection_artifact();
+    let inspection_artifact = source_addition_inspection_artifact(request_execution);
     let inspection =
         inspect_merge_conflicts(&inspection_declaration, &lowered, &inspection_artifact)
             .expect("inspection should succeed");
@@ -94,6 +97,9 @@ fn lowered_merge_declaration_can_be_inspected_in_query_shape() {
 
 #[test]
 fn lowered_merge_declaration_preserves_denied_merge_class_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -128,8 +134,8 @@ fn lowered_merge_declaration_preserves_denied_merge_class_identity() {
     )
     .expect("conflict inspection declaration should admit");
 
-    let deletion_denied_artifact = deleted_vs_modified_inspection_artifact();
-    let topology_denied_artifact = topology_region_conflict_inspection_artifact();
+    let deletion_denied_artifact = deleted_vs_modified_inspection_artifact(request_execution);
+    let topology_denied_artifact = topology_region_conflict_inspection_artifact(request_execution);
     let deletion_denied =
         inspect_merge_conflicts(&inspection_declaration, &lowered, &deletion_denied_artifact)
             .expect("denied deletion inspection should succeed");

@@ -123,7 +123,13 @@ fn setup_with_relational_source() -> (
     let warmup = settled(execute_without_signal(
         execution,
         &owner,
-        prepare_relational(&fixture, &owner, &expected, "relational-source-seed"),
+        prepare_relational(
+            &execution,
+            &fixture,
+            &owner,
+            &expected,
+            "relational-source-seed",
+        ),
     ));
     let successor = warmup
         .successor_basis()
@@ -175,6 +181,7 @@ fn setup_with_clock(
 /// reservation are one owner step, so no test can hold a lowered plan without
 /// the capacity that authorizes executing it.
 fn prepare_relational(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fixture: &RealReferenceFixture,
     owner: &TestOwner,
     expected: &ProductBranchObservation,
@@ -186,7 +193,7 @@ fn prepare_relational(
         expected.clone(),
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate(operation_name),
+                fixture.prepare_relational_owner_candidate(execution, operation_name),
             ),
         &cancellation.token(),
         None,
@@ -238,7 +245,7 @@ fn ready_relational_competitor(
     let settlement = settled(execute_without_signal(
         execution,
         owner,
-        prepare_relational(fixture, owner, expected, operation_name),
+        prepare_relational(&execution, fixture, owner, expected, operation_name),
     ));
     let successor = settlement
         .successor_basis()
@@ -349,26 +356,6 @@ fn awaited_signal_token(
 
 /// One publication that changes both owners: Relational `PublishPrepared` and
 /// then Signal `AdvanceExact`, in the one canonical order.
-fn prepare_both_owners(
-    fixture: &RealReferenceFixture,
-    owner: &TestOwner,
-    expected: &ProductBranchObservation,
-    operation_name: &str,
-) -> PreparedCompositePublicationWithSignal {
-    let cancellation = RuntimeWorldCancellationSource::new();
-    RuntimeWorldPreparationService::prepare_publication(
-        owner,
-        expected.clone(),
-        CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
-            .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate(operation_name),
-            ),
-        &cancellation.token(),
-        None,
-    )
-    .expect("the exact observed head admits both owner legs")
-}
-
 fn retained(outcome: OwnerExecutionOutcome) -> crate::recovery::ProductUnpublishedOwnerEffects {
     match outcome {
         OwnerExecutionOutcome::ProductUnpublished(retained) => retained,
@@ -393,3 +380,7 @@ mod clock;
 #[path = "tests/request_custody.rs"]
 mod request_custody;
 use clock::MutableClock;
+
+#[path = "tests/owner_preparation.rs"]
+mod owner_preparation;
+use owner_preparation::prepare_both_owners;

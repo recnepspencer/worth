@@ -16,6 +16,7 @@ impl VisibilityProjectionView<'_> {
     /// `None` retains the unrestricted read's unavailable/undeclared meaning.
     pub fn entity_field_revision_admitted<Stop>(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         locator: &AspectFieldLocator,
         mut admit_work: impl FnMut(u64) -> Result<(), Stop>,

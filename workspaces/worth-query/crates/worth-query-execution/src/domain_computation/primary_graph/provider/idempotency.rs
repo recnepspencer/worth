@@ -100,6 +100,7 @@ pub(super) fn idempotency_create_intent(
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn resolve_guarded_workflow_operation_custody(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryApplicationIdempotencyBinding,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     ) -> WorthQueryProviderGuardedWorkflowOperationCustody {
@@ -133,7 +134,7 @@ impl WorthQueryPrimaryGraphProvider {
                 WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
             );
         }
-        match self.resolve_idempotency_binding_at_product(binding, product) {
+        match self.resolve_idempotency_binding_at_product(execution, binding, product) {
             Ok(WorthQueryProviderIdempotencyResolution::Absent) => Custody::Unseen,
             Ok(WorthQueryProviderIdempotencyResolution::Equivalent(committed)) => {
                 Custody::Committed(committed)
@@ -148,6 +149,7 @@ impl WorthQueryPrimaryGraphProvider {
 
     pub(in crate::domain_computation::primary_graph) fn resolve_idempotency_binding_at_product(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryApplicationIdempotencyBinding,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
     ) -> Result<
@@ -158,8 +160,8 @@ impl WorthQueryPrimaryGraphProvider {
         let layout = self.graph.layout.provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        self.graph.with_runtime_mut_unwind_isolated(|runtime| {
-            self.resume_pending_application_publication(
+        self.graph.with_runtime_mut_unwind_isolated(execution, |runtime| {
+            self.resume_pending_application_publication(execution,
                 runtime,
                 product.observation().lifecycle_incarnation(),
             )
@@ -178,11 +180,11 @@ impl WorthQueryPrimaryGraphProvider {
                 return Ok(resolution);
             }
             self.graph
-                .ensure_primary_indexes_for_basis(runtime, basis)
+                .ensure_primary_indexes_for_basis(execution, runtime, basis)
                 .map_err(idempotency_index_currency_denial)?;
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;
-            let resolution = resolve_at_snapshot(
+            let resolution = resolve_at_snapshot(execution,
                 self,
                 runtime,
                 &snapshot,
@@ -201,6 +203,7 @@ impl WorthQueryPrimaryGraphProvider {
 
     pub(in crate::domain_computation::primary_graph) fn resolve_application_idempotency(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         provider_session: &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     ) -> Result<
         WorthQueryProviderIdempotencyResolution,
@@ -212,7 +215,7 @@ impl WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .idempotency_basis(provider_session)
             .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
-        basis.resolve(self)
+        basis.resolve(execution, self)
     }
 }
 

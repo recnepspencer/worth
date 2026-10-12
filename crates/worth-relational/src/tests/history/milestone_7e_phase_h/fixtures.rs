@@ -181,6 +181,7 @@ pub(super) fn runtime_with_relation_identity_registry(
 }
 
 pub(super) fn create_named_entity_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     name: &str,
@@ -207,11 +208,7 @@ pub(super) fn create_named_entity_on_branch(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .expect("seed entity");
+    txn.commit(execution, runtime).expect("seed entity");
 }
 
 pub(super) fn merge_request() -> MergeExecutionRequest {

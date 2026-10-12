@@ -47,22 +47,24 @@ enum AspectStateValueFingerprint {
 }
 
 pub(crate) fn capture_case_truth_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &FintechWorld,
     case: FintechCaseRole,
     stage: ProbeStage,
 ) -> CaseTruthProbe {
     let snapshot = world.latest_snapshot();
-    read_snapshot_probe(world, case, &snapshot, stage)
+    read_snapshot_probe(execution, world, case, &snapshot, stage)
 }
 
 pub(crate) fn read_snapshot_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &FintechWorld,
     case: FintechCaseRole,
     snapshot: &SnapshotHandle,
     stage: ProbeStage,
 ) -> CaseTruthProbe {
     let packet = world.packet_for_case_probe(case, snapshot);
-    let result = world.read_query(snapshot, packet);
+    let result = world.read_query(execution, snapshot, packet);
     CaseTruthProbe {
         case_role: case,
         stage,
@@ -105,13 +107,17 @@ pub(crate) fn read_snapshot_probe(
 }
 
 pub(crate) fn read_version_probe(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &FintechWorld,
     case: FintechCaseRole,
     version_id: VersionId,
     stage: ProbeStage,
 ) -> CaseTruthProbe {
     let packet = world.packet_for_case_probe(case, &world.latest_snapshot());
-    let read = world.runtime.read_truth().read_version(version_id);
+    let read = world
+        .runtime
+        .read_truth()
+        .read_version(execution, version_id);
     let fragment = read
         .execute_planned_packet_fragment(
             crate::facade::query::DeterministicQueryPlanKey(0),

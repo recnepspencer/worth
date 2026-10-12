@@ -3,8 +3,11 @@ use crate::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParity
 
 #[test]
 fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_index_field_aspects();
-    let created = create_entity_outcome(&runtime, "before-recovery");
+    let created = create_entity_outcome(execution, &runtime, "before-recovery");
     let entity = changed_entities(&created)[0];
     let field = aspect_field_locator(aspect_key("name"), field_key("name"));
     let mut definition = DerivedIndexDefinition {
@@ -19,26 +22,30 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
     let first = runtime.index_authority().register(definition.clone());
     definition.name = "entity.name.second".into();
     let second = runtime.index_authority().register(definition.clone());
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: created.commit.branch_id.clone(),
             index_ids: vec![first.index_id, second.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
-    let (_, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_index_field_aspects);
+    let (_, recovered) = checkpoint_and_recover_with(
+        execution,
+        &runtime,
+        persisted_runtime_with_index_field_aspects,
+    );
     let old_snapshot = recovered.visibility_authority().snapshot();
     definition.name = "entity.name.after-recovery".into();
     let third = recovered.index_authority().register(definition.clone());
     let fourth = recovered.index_authority().register(definition);
     assert!(third.index_id > second.index_id);
     assert!(fourth.index_id > third.index_id);
-    let committed = update_entity(&recovered, entity, "after-recovery");
-    let after = recovered
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let committed = update_entity(execution, &recovered, entity, "after-recovery");
+    let after = recovered.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: committed.commit.commit_id,
             branch_id: committed.commit.branch_id.clone(),
             index_ids: vec![
@@ -47,7 +54,8 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
                 third.index_id,
                 fourth.index_id,
             ],
-        });
+        },
+    );
     assert!(after.failed_indexes.is_empty());
     let previous_max = build
         .generations
@@ -85,6 +93,7 @@ fn restored_catalog_allocates_fresh_identities_and_preserves_old_observations() 
                 )
                 .unwrap(),
                 BoundedIndexParityMode::Certification,
+                execution,
             )
             .unwrap();
         assert_eq!(observed.generation_id(), expected);

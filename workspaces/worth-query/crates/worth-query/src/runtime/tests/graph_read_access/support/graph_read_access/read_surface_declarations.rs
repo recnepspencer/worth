@@ -17,9 +17,10 @@ pub fn graph_access_family(
 }
 
 pub fn execute_graph_access_compose_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
 ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
-    workspace.compose_read(graph_access_collection_read_graph)
+    workspace.compose_read(request_execution, graph_access_collection_read_graph)
 }
 
 pub fn dense_over_budget_family(
@@ -32,9 +33,10 @@ pub fn dense_over_budget_family(
 }
 
 pub fn execute_dense_over_budget_compose_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
 ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
-    workspace.compose_read(dense_over_budget_read_graph)
+    workspace.compose_read(request_execution, dense_over_budget_read_graph)
 }
 
 pub fn unregistered_domain_operation_family(
@@ -47,9 +49,10 @@ pub fn unregistered_domain_operation_family(
 }
 
 pub fn execute_unregistered_domain_operation_compose_read(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
 ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
-    workspace.compose_read(unregistered_domain_operation_read_graph)
+    workspace.compose_read(request_execution, unregistered_domain_operation_read_graph)
 }
 
 fn graph_access_collection_read_graph(

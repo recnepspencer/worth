@@ -11,19 +11,19 @@ use worth_query::facade::domain::{
 };
 use worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationOutcome;
 
-pub fn assert_shared_consumer_slope() {
+pub fn assert_shared_consumer_slope(request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
     let mut single_host = CourtroomWorld::publish("blocked");
-    let mut single = build_primary_query_world(&single_host);
+    let mut single = build_primary_query_world(request_execution, &single_host);
     let single_binding = bind_primary_runtime_granular_invalidations(
         &single.live,
         single_host.application.granular_invalidation_installation(),
     );
     single_host.amend_gate_only("ready");
-    let mut single_observation = observe(&mut single_host);
+    let mut single_observation = observe(request_execution, &mut single_host);
     let single_batch = single_observation.take_granular_invalidation_batch();
     let single_lower = single_batch.observation();
     let single_performed = match maintain_primary_runtime_granular_batch(
-            &single.live,
+            request_execution, &single.live,
             &mut single.workspace,
             &single_binding,
             single_batch,
@@ -41,17 +41,18 @@ pub fn assert_shared_consumer_slope() {
     };
 
     let mut shared_host = CourtroomWorld::publish("blocked");
-    let mut shared = build_shared_primary_query_world(&shared_host);
+    let mut shared = build_shared_primary_query_world(request_execution, &shared_host);
     let shared_binding = bind_shared_primary_runtime_granular_invalidations(
         &shared.subject,
         shared_host.application.granular_invalidation_installation(),
     );
     shared_host.amend_gate_only("ready");
-    let mut shared_observation = observe(&mut shared_host);
+    let mut shared_observation = observe(request_execution, &mut shared_host);
     let shared_batch = shared_observation.take_granular_invalidation_batch();
     let shared_lower = shared_batch.observation();
     let WorthQuerySharedPrimaryGranularMaintenanceOutcome::Performed(shared_performed) =
         maintain_shared_primary_runtime_granular_batch(
+            request_execution,
             &[&shared.subject, &shared.candidate],
             &mut shared.workspace,
             &shared_binding,
@@ -80,18 +81,20 @@ pub fn assert_shared_consumer_slope() {
     assert_eq!(shared_performed.publications().len(), 2);
 }
 
-pub fn assert_correspondence_rebind_restore() {
+pub fn assert_correspondence_rebind_restore(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let (foreign_reconstruction, foreign_record) = foreign_reinstallation_receipt();
     let mut host = CourtroomWorld::publish("blocked");
-    let mut query = build_primary_query_world(&host);
+    let mut query = build_primary_query_world(request_execution, &host);
     let old_binding = bind_primary_runtime_granular_invalidations(
         &query.live,
         host.application.granular_invalidation_installation(),
     );
-    let mut baseline = observe(&mut host);
+    let mut baseline = observe(request_execution, &mut host);
     assert!(baseline.take_granular_invalidation_batch().is_empty());
     host.amend_intent(1, "active", "waiting");
-    let mut delayed = observe(&mut host);
+    let mut delayed = observe(request_execution, &mut host);
 
     let reconstruction = host.reinstall_conditional_runtime().unwrap();
     assert_reconstruction(reconstruction.lower_runtime_reconstitution());
@@ -130,6 +133,7 @@ pub fn assert_correspondence_rebind_restore() {
     );
     let current_binding = bind_primary_runtime_granular_invalidations(&query.live, installation);
     let delayed_denial = maintain_primary_runtime_granular_invalidations(
+        request_execution,
         &query.live,
         &mut query.workspace,
         &current_binding,
@@ -143,9 +147,10 @@ pub fn assert_correspondence_rebind_restore() {
     assert_eq!(query.observations.exact_record_reads(), reads_before);
 
     host.amend_intent(2, "active", "ready");
-    let mut current_observation = observe(&mut host);
+    let mut current_observation = observe(request_execution, &mut host);
     assert!(matches!(
         maintain_primary_runtime_granular_invalidations(
+            request_execution,
             &query.live,
             &mut query.workspace,
             &old_binding,
@@ -166,6 +171,7 @@ pub fn assert_correspondence_rebind_restore() {
         "ordinary performed counters must exclude restore reconstruction work",
     );
     let current = maintain_primary_runtime_granular_batch(
+        request_execution,
         &query.live,
         &mut query.workspace,
         &current_binding,
@@ -214,11 +220,12 @@ fn assert_reconstruction(
 }
 
 fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut CourtroomWorld,
 ) -> worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationReceipt<
     crate::adapters::CourtroomClock,
 > {
-    match world.conditional_clock().observe() {
+    match world.conditional_clock().observe(request_execution) {
         WorthQueryConditionalClockObservationOutcome::Accepted(receipt) => receipt,
         WorthQueryConditionalClockObservationOutcome::Duplicate(_) => {
             panic!("the due courtroom observation was duplicate")

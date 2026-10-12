@@ -25,8 +25,9 @@ impl ChargedBytes for QueryPacketMapInput {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadExecutionStop {
+    Request(worth_execution::WorkCeilingDenial),
     PreparationAdmission(ScanDenial),
     PreparationStopped {
         reason: MapStop<()>,
@@ -46,6 +47,14 @@ pub enum QueryReadExecutionStop {
     },
 }
 
+impl std::fmt::Display for QueryReadExecutionStop {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "relational query read stopped: {self:?}")
+    }
+}
+
+impl std::error::Error for QueryReadExecutionStop {}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum QueryReadPacketDenial {
     FragmentUnavailable,
@@ -60,7 +69,7 @@ impl ChargedBytes for QueryReadPacketDenial {
 #[derive(Debug)]
 pub struct QueryLeasedReadOutcome {
     pub outcome: QueryExecutionOutcome,
-    pub report: ExecutionReport,
+    pub report: Option<ExecutionReport>,
 }
 
 /// Charges packet-owned buffers before growing them. The map also checks the
@@ -178,7 +187,8 @@ impl<'context, 'meter, 'lease> QueryPacketBudget<'context, 'meter, 'lease> {
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_query_packets(
     packets: Vec<PacketizedQueryWork>,
-    lease: &ExecutionResourceLease<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
     execute: impl Fn(
             &PacketizedQueryWork,
             usize,
@@ -188,12 +198,13 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         + Sync,
 ) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop> {
     let identities = packet_identity::identities(packets);
-    schedule_query_packets(identities, lease, execute)
+    schedule_query_packets(identities, execution, lease, execute)
 }
 
 fn schedule_query_packets(
     packets: Vec<packet_identity::NamedQueryPacket>,
-    lease: &ExecutionResourceLease<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
     execute: impl Fn(
             &PacketizedQueryWork,
             usize,
@@ -204,12 +215,12 @@ fn schedule_query_packets(
 ) -> Result<(Vec<QueryWorkerFragment>, ExecutionReport), QueryReadExecutionStop> {
     let packet_count = packets.len();
     let packet_count_u64 = u64::try_from(packet_count).unwrap_or(u64::MAX);
-    let per_packet_ceiling = lease.policy().budget().charged_memory_bytes()
+    let per_packet_ceiling = execution.memory_limit()
         / RESULT_BUDGET_DIVISOR
             .saturating_mul(packet_count_u64)
             .max(1);
     let map = packet_identity::declared_map(packets, per_packet_ceiling)?;
-    match map.run(Some(lease), |input, context| {
+    match map.run(lease, |input, context| {
         context.checkpoint(0)?;
         execute(&input.work, input.ordinal, per_packet_ceiling, context)
     }) {

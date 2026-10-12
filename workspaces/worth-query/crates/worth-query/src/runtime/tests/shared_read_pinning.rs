@@ -19,13 +19,15 @@ use crate::application::{
 };
 
 fn shared_read_pinning_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> (
     crate::runtime::WorthQueryWorkspace,
     crate::runtime::WorthQueryDerivedViewHandle<crate::runtime::WorthQueryUnrefinedLiveShape>,
 ) {
-    let mut workspace = shared_read_workspace(name);
+    let mut workspace = shared_read_workspace(request_execution, name);
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         name,
         SharedReadPublishingMaintainer {
@@ -33,7 +35,7 @@ fn shared_read_pinning_workspace(
             mode: SharedReadPublicationMode::SequencedRefresh(&["Task One", "Task Two"]),
         },
     );
-    insert_task(&mut workspace, "task-1", "Task One");
+    insert_task(request_execution, &mut workspace, "task-1", "Task One");
     (workspace, derived)
 }
 

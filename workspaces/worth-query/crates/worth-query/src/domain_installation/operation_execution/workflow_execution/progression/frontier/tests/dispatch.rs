@@ -31,6 +31,7 @@ impl Policy {
     }
     fn workspace(
         self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         probe: &phased_workflow::fold_executor::ComputeProbe,
     ) -> worth_query::facade::runtime::WorthQueryWorkspace {
         let policy = ExecutionRequestPolicy::new(
@@ -53,7 +54,11 @@ impl Policy {
         } else {
             resources.with_execution_authority(probe.authority())
         };
-        phased_workflow::phased_workspace_with_resources("width-oracle", resources)
+        phased_workflow::phased_workspace_with_resources(
+            request_execution,
+            "width-oracle",
+            resources,
+        )
     }
 }
 fn members(
@@ -79,12 +84,13 @@ fn members(
         .collect()
 }
 fn observe(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
     failure: Option<(usize, u64)>,
     policy: Policy,
     probe: &phased_workflow::fold_executor::ComputeProbe,
 ) -> (Record, u64, bool) {
-    let mut workspace = policy.workspace(probe);
+    let mut workspace = policy.workspace(request_execution, probe);
     observe_members(
         start(&mut workspace),
         members(seed, failure),
@@ -157,12 +163,15 @@ fn observe_members(
 }
 #[test]
 fn seeded_frontiers_are_identical_at_serial_one_two_and_four_workers() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for seed in [1, 7, 29] {
         for failure in std::iter::once(None)
             .chain((0..3).flat_map(|at| (1..=7).map(move |mode| Some((at, mode)))))
         {
-            let expected = observe(seed, failure, Policy::width(0), &probe);
+            let expected = observe(request_execution, seed, failure, Policy::width(0), &probe);
             // Preparation fails before its member computes. Compute failures,
             // panic and result capacity settle through that member. Apply never
             // refunds the computation of the complete prepared frontier.
@@ -177,7 +186,13 @@ fn seeded_frontiers_are_identical_at_serial_one_two_and_four_workers() {
                 "seed={seed} failure={failure:?}"
             );
             for workers in [1, 2, 4] {
-                let actual = observe(seed, failure, Policy::width(workers), &probe);
+                let actual = observe(
+                    request_execution,
+                    seed,
+                    failure,
+                    Policy::width(workers),
+                    &probe,
+                );
                 assert_eq!(
                     actual, expected,
                     "workers={workers} seed={seed} failure={failure:?}"
@@ -188,14 +203,17 @@ fn seeded_frontiers_are_identical_at_serial_one_two_and_four_workers() {
 }
 #[test]
 fn reversed_completion_still_applies_canonical_effects_and_receipts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     probe.take_computes();
-    let expected = observe(29, None, Policy::width(0), &probe);
+    let expected = observe(request_execution, 29, None, Policy::width(0), &probe);
     // Reset observations between runs: any purity mutant must prove order
     // dependence, not simply a counter carried over from a previous run.
     probe.take_computes();
     assert_eq!(
-        observe(29, None, Policy::width(0), &probe),
+        observe(request_execution, 29, None, Policy::width(0), &probe),
         expected,
         "two reset serial runs agree"
     );
@@ -212,7 +230,7 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
 
     probe.take_computes();
     probe.reorder();
-    let actual = observe(29, None, Policy::width(4), &probe);
+    let actual = observe(request_execution, 29, None, Policy::width(4), &probe);
     probe.assert_schedule_completed();
     assert_eq!(actual, expected);
     let completions = probe.take_computes();
@@ -229,10 +247,13 @@ fn reversed_completion_still_applies_canonical_effects_and_receipts() {
 }
 #[test]
 fn owner_failure_does_not_refund_settled_compute() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     let mut input = members(7, Some((0, 4)));
     input[2].1 = domain::WorthQueryWorkflowValue::Text("9:2:41".into());
-    let mut workspace = phased_workflow::phased_workspace("width-oracle");
+    let mut workspace = phased_workflow::phased_workspace(request_execution, "width-oracle");
     let (_, charged, failed) = observe_members(start(&mut workspace), input, &mut workspace, None);
     assert!(failed);
     assert_eq!(charged, COSTS.iter().sum::<u64>());
@@ -240,8 +261,11 @@ fn owner_failure_does_not_refund_settled_compute() {
 
 #[test]
 fn empty_frontier_keeps_shape_refusal_and_singleton_uses_the_same_metered_map() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
-    let mut workspace = phased_workflow::phased_workspace("empty-frontier");
+    let mut workspace = phased_workflow::phased_workspace(request_execution, "empty-frontier");
     let (empty, work, failed) =
         observe_members(start(&mut workspace), Vec::new(), &mut workspace, None);
     assert_eq!(
@@ -252,7 +276,7 @@ fn empty_frontier_keeps_shape_refusal_and_singleton_uses_the_same_metered_map() 
     assert!(!failed);
     let mut expected = None;
     for workers in [0, 1, 2, 4] {
-        let mut workspace = Policy::width(workers).workspace(&probe);
+        let mut workspace = Policy::width(workers).workspace(request_execution, &probe);
         let run = start(&mut workspace)
             .advance(
                 "left",

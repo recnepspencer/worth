@@ -147,6 +147,7 @@ fn resolve_at_snapshot<
     PrincipalIdentityBinding,
 >(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,
     resolution: &WorthQueryPrincipalSnapshotResolution<'_>,
     installed_binding: &WorthQueryInstalledPrincipalBinding<
@@ -166,8 +167,9 @@ where
     PrincipalIdentity: 'static,
 {
     let (mapping_id, examined_candidate_count) =
-        resolve_unique_mapping_candidate(runtime, snapshot, resolution)?;
+        resolve_unique_mapping_candidate(runtime, execution, snapshot, resolution)?;
     let mapping = observe_mapping(
+        execution,
         runtime,
         snapshot,
         mapping_id,
@@ -176,6 +178,7 @@ where
     )?;
     validate_resolved_mapping(&mapping, resolution.expected_identity, resolution.binding)?;
     let target = resolve_principal_target(
+        execution,
         runtime,
         snapshot,
         mapping_id,
@@ -206,6 +209,7 @@ where
 
 fn resolve_unique_mapping_candidate(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,
     resolution: &WorthQueryPrincipalSnapshotResolution<'_>,
 ) -> Result<(EntityId, usize), WorthQueryPrincipalResolutionDenial> {
@@ -224,7 +228,7 @@ fn resolve_unique_mapping_candidate(
     };
     let lookup = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request, parity_mode)
+        .execute_bounded_entity_field_lookup(request, parity_mode, execution)
         .map_err(|denial| entity_lookup_resolution_denial(denial.kind(), resolution.binding))?;
     if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
         return Err(resolution_denial(

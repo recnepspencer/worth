@@ -69,6 +69,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn reent
     Authorization,
     Clock,
 >(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -191,7 +192,7 @@ where
                 evidence,
                 deferred,
                 _,
-            ) => match settlement_reentry::repair(runtime, deferred) {
+            ) => match settlement_reentry::repair(request_execution, runtime, deferred) {
                 WorthQuerySettlementReentry::ExecutionDenied(deferred, kind) => {
                     wake.decision =
                         WorthQueryRetainedConditionalDecision::OperationSettlementExecutionDenied(
@@ -307,6 +308,7 @@ where
         }
         wake.application_attempted = true;
         let attempt = reenter_temporal_operation(
+            request_execution,
             phase,
             runtime,
             product,

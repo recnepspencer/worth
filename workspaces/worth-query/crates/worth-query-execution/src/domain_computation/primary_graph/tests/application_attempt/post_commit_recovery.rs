@@ -14,41 +14,69 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
     let _live = world
         .application
         .primary_provider
         .observe_application_commit_causality(selected.product());
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let published_snapshot_baseline =
         world
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| {
+            .with_runtime(request_execution, |runtime| {
                 runtime
                     .storage_access()
                     .storage_stats()
                     .published_snapshot_handle_count
             });
-    let first = admitted_program_with_emit(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "post-commit-recovery",
-        Some("post-commit-effect"),
-    );
-    let retry = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "post-commit-recovery",
-    );
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program_with_emit(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "post-commit-recovery",
+                Some("post-commit-effect"),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "post-commit-recovery",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     world.faults.fail_next_post_commit_snapshot();
     let WorthQueryApplicationCommitOutcome::Committed(first_receipt) =
@@ -118,7 +146,7 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| {
+            .with_runtime(request_execution, |runtime| {
                 runtime
                     .storage_access()
                     .storage_stats()
@@ -129,194 +157,8 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
     );
 }
 
-#[test]
-fn recovery_capacity_denies_before_any_selected_product_head_moves() {
-    let resources =
-        WorthQueryApplicationQueryResourceProfile::bounded(5_120, 2_048, usize::MAX, 2).unwrap();
-    let world = installed_authorization_world_with_resource_profile(resources);
-    let source = world.application.current_world();
-    let sibling_a_branch = world
-        .application
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the first real sibling product must publish");
-    let sibling_b_branch = world
-        .application
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the second real sibling product must publish");
-    let root = world.selected_product();
-    let sibling_a = world
-        .application
-        .on_branch(sibling_a_branch)
-        .select()
-        .expect("the first sibling remains selectable");
-    let sibling_b = world
-        .application
-        .on_branch(sibling_b_branch)
-        .select()
-        .expect("the second sibling remains selectable");
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let world_head_before = sibling_b.product().selected_commit().clone();
-    let relational_head_before = sibling_b
-        .product()
-        .observation()
-        .basis()
-        .relational_basis()
-        .descriptor()
-        .clone();
-    let relational_branch = relational_head_before.branch_id().clone();
-    let publication_cost_scope = world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| {
-            let identity = runtime
-                .branch_identity(&relational_branch)
-                .expect("the sibling's exact Relational branch remains installed");
-            worth_relational::facade::inspection::RelationalMvccCostScope::capture(
-                runtime,
-                vec![identity],
-            )
-        });
-    let provider_publications_before = world
-        .application
-        .primary_provider
-        .published_application_commit_count();
-
-    let root_slot = world
-        .application
-        .primary_provider
-        .reserve_application_publication_recovery(root.product().observation())
-        .expect("total minus one recovery slot remains admissible");
-    let sibling_a_slot = world
-        .application
-        .primary_provider
-        .reserve_application_publication_recovery(sibling_a.product().observation())
-        .expect("the final installed recovery slot remains admissible");
-    let denied_program = admitted_program_on_selected(
-        &world,
-        &sibling_b,
-        &principal,
-        &account,
-        &request,
-        "recovery-capacity-denied",
-    );
-    let denied = world
-        .application
-        .on_branch(sibling_b_branch)
-        .transaction()
-        .apply(WorthQueryAdmittedChange::new(
-            denied_program,
-            idempotency(200, 201),
-        ))
-        .commit()
-        .expect("the public product token remains admitted");
-    assert!(matches!(
-        denied,
-        WorthQueryApplicationCommitOutcome::Aborted
-    ));
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .pending_application_publication_count_for_test(),
-        2,
-        "the denied attempt must not acquire or disturb either retained slot"
-    );
-    let after_denial = world
-        .application
-        .on_branch(sibling_b_branch)
-        .select()
-        .expect("capacity denial leaves the sibling selectable");
-    assert_eq!(after_denial.product().selected_commit(), &world_head_before);
-    assert_eq!(
-        after_denial
-            .product()
-            .observation()
-            .basis()
-            .relational_basis()
-            .descriptor(),
-        &relational_head_before,
-        "recovery capacity must deny before the Relational head moves"
-    );
-    let publication_cost = world
-        .application
-        .primary_provider
-        .graph
-        .with_runtime(|runtime| {
-            runtime
-                .observe_mvcc_counters(&publication_cost_scope)
-                .expect("the exact sibling cost scope remains observable")
-        });
-    assert_eq!(
-        publication_cost.sharing_cost_delta().publication_attempts,
-        0,
-        "capacity denial must precede Relational publication owner contact"
-    );
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .published_application_commit_count(),
-        provider_publications_before,
-        "capacity denial must publish no application causality"
-    );
-
-    drop(root_slot);
-    let fresh = admitted_program_on_selected(
-        &world,
-        &after_denial,
-        &principal,
-        &account,
-        &request,
-        "recovery-capacity-denied",
-    );
-    let committed = world
-        .application
-        .on_branch(sibling_b_branch)
-        .transaction()
-        .apply(WorthQueryAdmittedChange::new(fresh, idempotency(200, 201)))
-        .commit()
-        .expect("the public product token remains admitted")
-        .require_committed()
-        .expect("releasing one slot must admit and commit a fresh exact twin");
-    assert_ne!(
-        committed.committed_product_publication().composite_commit(),
-        &world_head_before
-    );
-    drop(committed);
-    drop(sibling_a_slot);
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .pending_application_publication_count_for_test(),
-        0
-    );
-    drop(root);
-    drop(sibling_a);
-    drop(sibling_b);
-    drop(after_denial);
-    assert!(world
-        .application
-        .on_branch(sibling_a_branch)
-        .close()
-        .unwrap()
-        .is_complete());
-    assert!(world
-        .application
-        .on_branch(sibling_b_branch)
-        .close()
-        .unwrap()
-        .is_complete());
-}
+#[path = "post_commit_recovery/recovery_capacity_denies_before_any_selected_product_head_moves.rs"]
+mod recovery_capacity_denies_before_any_selected_product_head_moves;
 
 use worth_runtime_bridge::facade::TruthBranchHeadSource;
 

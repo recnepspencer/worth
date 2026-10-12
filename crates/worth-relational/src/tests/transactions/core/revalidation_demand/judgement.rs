@@ -9,9 +9,12 @@ use worth_foundational::facade::{AspectKey, AspectValue, FieldKey};
 
 #[test]
 fn a_revalidation_demand_makes_a_rule_judge_and_reject_an_unchanged_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let offending = create_entity(&runtime, "oversized");
-    let mode = create_entity(&runtime, "lax");
+    let offending = create_entity(execution, &runtime, "oversized");
+    let mode = create_entity(execution, &runtime, "lax");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -21,10 +24,7 @@ fn a_revalidation_demand_makes_a_rule_judge_and_reject_an_unchanged_record() {
         )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("the strict reading rejects the unchanged record");
 
     assert_rejected_by_strictness_rule(&error);
@@ -32,9 +32,12 @@ fn a_revalidation_demand_makes_a_rule_judge_and_reject_an_unchanged_record() {
 
 #[test]
 fn without_the_demand_the_same_candidate_leaves_the_record_unjudged() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let offending = create_entity(&runtime, "oversized");
-    let mode = create_entity(&runtime, "lax");
+    let offending = create_entity(execution, &runtime, "oversized");
+    let mode = create_entity(execution, &runtime, "lax");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -44,15 +47,12 @@ fn without_the_demand_the_same_candidate_leaves_the_record_unjudged() {
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the offending record is never touched, so no rule judges it");
 
     release_test_commit_snapshot(&runtime, &outcome);
     assert_eq!(
-        committed_name(&runtime, offending),
+        committed_name(execution, &runtime, offending),
         Some("oversized".to_owned()),
         "the unjudged record is also unchanged"
     );
@@ -60,10 +60,13 @@ fn without_the_demand_the_same_candidate_leaves_the_record_unjudged() {
 
 #[test]
 fn a_demand_alone_is_enough_when_the_committed_mode_is_already_strict() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let mode = create_entity(&runtime, "lax");
-    update_entity_and_release_snapshot(&runtime, mode, STRICT_MODE_NAME);
-    let offending = create_entity(&runtime, "oversized");
+    let mode = create_entity(execution, &runtime, "lax");
+    update_entity_and_release_snapshot(execution, &runtime, mode, STRICT_MODE_NAME);
+    let offending = create_entity(execution, &runtime, "oversized");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -73,10 +76,7 @@ fn a_demand_alone_is_enough_when_the_committed_mode_is_already_strict() {
         )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("a candidate that changes nothing can still be rejected");
 
     assert_rejected_by_strictness_rule(&error);
@@ -84,12 +84,16 @@ fn a_demand_alone_is_enough_when_the_committed_mode_is_already_strict() {
 
 #[test]
 fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let compliant = create_entity(&runtime, COMPLIANT_NAME);
-    let before_state = committed_name(&runtime, compliant);
+    let compliant = create_entity(execution, &runtime, COMPLIANT_NAME);
+    let before_state = committed_name(execution, &runtime, compliant);
     let before_versions = runtime
         .read_truth()
-        .entity_aspect_versions(compliant)
+        .entity_aspect_versions(execution, compliant)
+        .expect("aspect-version request remains live")
         .expect("aspect versions before the demand");
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -100,10 +104,7 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the compliant record passes the strict reading");
 
     assert!(
@@ -116,11 +117,12 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
         "a demand authors nothing, so there is no patch to deliver"
     );
     release_test_commit_snapshot(&runtime, &outcome);
-    assert_eq!(committed_name(&runtime, compliant), before_state);
+    assert_eq!(committed_name(execution, &runtime, compliant), before_state);
     assert_eq!(
         runtime
             .read_truth()
-            .entity_aspect_versions(compliant)
+            .entity_aspect_versions(execution, compliant)
+            .expect("aspect-version request remains live")
             .expect("aspect versions after the demand"),
         before_versions,
         "no aspect version may move for a record nothing was written to"
@@ -129,8 +131,11 @@ fn a_passing_demand_leaves_the_record_and_its_aspect_versions_untouched() {
 
 #[test]
 fn a_demand_for_a_record_this_branch_does_not_have_is_refused_as_a_stale_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let present = create_entity(&runtime, COMPLIANT_NAME);
+    let present = create_entity(execution, &runtime, COMPLIANT_NAME);
     let absent = crate::facade::identity::EntityId::new(
         present.partition_id,
         present.local_slot_value() + 4_096,
@@ -145,10 +150,7 @@ fn a_demand_for_a_record_this_branch_does_not_have_is_refused_as_a_stale_target(
         )
         .expect("staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("a demand names an existing record or it names nothing");
 
     let TransactionCommitError::Conflict { error, .. } = &error else {
@@ -206,11 +208,12 @@ fn assert_rejected_by_strictness_rule(error: &TransactionCommitError) {
 }
 
 fn committed_name(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
 ) -> Option<String> {
     let current = runtime
         .read_truth()
-        .read_version(runtime.current_version_id());
+        .read_version(execution, runtime.current_version_id());
     read_entity_name(current.get_entity(entity_id).expect("record is present"))
 }

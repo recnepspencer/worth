@@ -17,6 +17,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// retained and ordinary lookups remain unavailable until `Ok(true)`.
     pub(in crate::domain_computation) fn rebuild_completed_inbound_index(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         maximum_world_slots: NonZeroUsize,
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
@@ -36,6 +37,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         let mut entries = Vec::new();
         for world in page.rows() {
             match self.rebuild_one_terminal(
+                execution,
                 world,
                 maximum_changed_records,
                 maximum_ancestry_commits,
@@ -66,6 +68,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 
     fn rebuild_one_terminal(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         world: &RuntimeWorldPublicationRow,
         maximum_changed_records: NonZeroUsize,
         maximum_ancestry_commits: NonZeroUsize,
@@ -75,7 +78,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         };
         let row = self
             .primary_provider
-            .completion_row_from_commit_patch(relational, maximum_changed_records)
+            .completion_row_from_commit_patch(execution, relational, maximum_changed_records)
             .map_err(|denial| match denial {
                 WorthQueryInboundCompletionReadDenial::ReconstructionWorkExhausted => {
                     Denial::ReconstructionWorkExhausted
@@ -120,6 +123,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 /// Explicit repair result; ordinary exact lookup never invokes this lane.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundIndexRepairDenial {
+    ForeignPhase,
     ForeignVerifier,
     IndexUnavailable,
     ReconstructionWorkExhausted,
@@ -137,11 +141,15 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
     /// remains unavailable. Reconstruction is separate from ordinary discovery.
     pub fn repair_completed_inbound_index(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         handle: &WorthQueryInboundVerifierHandle,
         maximum_world_slots: NonZeroUsize,
         maximum_changed_records_per_commit: NonZeroUsize,
         maximum_ancestry_commits_per_completion: NonZeroUsize,
     ) -> Result<bool, WorthQueryInboundIndexRepairDenial> {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|_| WorthQueryInboundIndexRepairDenial::ForeignPhase)?;
         let installed = self
             .installed_inbound_verifier(handle)
             .ok_or(WorthQueryInboundIndexRepairDenial::ForeignVerifier)?;
@@ -152,6 +160,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             NonZeroUsize::new(maximum_world_slots.get().min(installed_page_limit))
                 .expect("installed discovery work is nonzero");
         self.rebuild_completed_inbound_index(
+            &execution,
             maximum_world_slots,
             maximum_changed_records_per_commit,
             maximum_ancestry_commits_per_completion,

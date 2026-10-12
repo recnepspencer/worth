@@ -13,8 +13,11 @@ use provider_fixture::*;
 
 #[test]
 fn required_domain_is_resolved_and_retained_by_the_bound_capability() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = required_domain_runtime(true)
-        .workspace("operating-world-required-domain")
+        .workspace(request_execution, "operating-world-required-domain")
         .unwrap();
     let rebuild = workspace.verify_domain_execution_index_rebuild();
     assert!(rebuild.is_equivalent());
@@ -35,8 +38,11 @@ fn required_domain_is_resolved_and_retained_by_the_bound_capability() {
 
 #[test]
 fn missing_required_domain_denies_before_graph_or_execution_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = required_domain_runtime(false)
-        .workspace("operating-world-missing-required-domain")
+        .workspace(request_execution, "operating-world-missing-required-domain")
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let denial = match workspace
@@ -60,7 +66,10 @@ fn missing_required_domain_denies_before_graph_or_execution_work() {
 
 #[test]
 fn one_root_mints_equivalent_non_detachable_bound_authority() {
-    let workspace = workspace("operating-world", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution, "operating-world", false).unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let first = workspace
         .observe_operating_world(workspace.current_world())
@@ -84,8 +93,11 @@ fn one_root_mints_equivalent_non_detachable_bound_authority() {
 
 #[test]
 fn foreign_domain_denies_before_graph_binding_or_provider_contact() {
-    let owner = workspace("operating-world-owner", false).unwrap();
-    let foreign = workspace("operating-world-foreign", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = workspace(request_execution, "operating-world-owner", false).unwrap();
+    let foreign = workspace(request_execution, "operating-world-foreign", false).unwrap();
     let foreign_domain = foreign.domain(GeometryDomain).unwrap();
     let denial = match owner
         .observe_operating_world(owner.current_world())
@@ -107,6 +119,9 @@ fn foreign_domain_denies_before_graph_binding_or_provider_contact() {
 
 #[test]
 fn read_only_operation_does_not_claim_or_contact_adapter_commit_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     let mut workspace = configured_runtime_for_package(federated_package::<RemoteA, RemoteB>())
         .graph_participation(atomic_definition::<RemoteA>("remote-a"))
@@ -122,7 +137,7 @@ fn read_only_operation_does_not_claim_or_contact_adapter_commit_authority() {
             SharedCommit,
         )
         .graph_commit_provider(SharedCommit, Provider::effect_free(Arc::clone(&contacts)))
-        .workspace("operating-world-shared-commit")
+        .workspace(request_execution, "operating-world-shared-commit")
         .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     assert_eq!(
@@ -173,6 +188,9 @@ fn read_only_operation_does_not_claim_or_contact_adapter_commit_authority() {
 
 #[test]
 fn independent_equal_role_providers_deny_before_provider_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     let workspace = configured_runtime_for_partial_effect_package(federated_touch_package::<
         RemoteA,
@@ -198,7 +216,7 @@ fn independent_equal_role_providers_deny_before_provider_contact() {
         OtherCommit,
         Provider::partial_effects(Arc::clone(&contacts)),
     )
-    .workspace("operating-world-split-commit")
+    .workspace(request_execution, "operating-world-split-commit")
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let denial = match workspace
@@ -222,6 +240,9 @@ fn independent_equal_role_providers_deny_before_provider_contact() {
 
 #[test]
 fn separately_committed_graphs_deny_without_domain_aftermath_compensation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     let workspace = configured_runtime_for_partial_effect_package(federated_touch_package::<
         RemoteA,
@@ -247,7 +268,7 @@ fn separately_committed_graphs_deny_without_domain_aftermath_compensation() {
         OtherCommit,
         Provider::partial_effects(Arc::clone(&contacts)),
     )
-    .workspace("operating-world-compensated-commit")
+    .workspace(request_execution, "operating-world-compensated-commit")
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     // Domain operations cannot yet carry aftermath from an installed declaration
@@ -271,6 +292,9 @@ fn separately_committed_graphs_deny_without_domain_aftermath_compensation() {
 
 #[test]
 fn same_role_lookalike_cannot_replace_the_exact_attached_graph_marker() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     let result = configured_runtime_for_package(federated_package::<RemoteA, RemoteB>())
         .graph_participation(atomic_definition::<RemoteALookalike>("remote-a"))
@@ -286,7 +310,7 @@ fn same_role_lookalike_cannot_replace_the_exact_attached_graph_marker() {
             SharedCommit,
         )
         .graph_commit_provider(SharedCommit, Provider::effect_free(Arc::clone(&contacts)))
-        .workspace("operating-world-graph-lookalike")
+        .workspace(request_execution, "operating-world-graph-lookalike")
         .unwrap();
     let installed_domain = result.domain(GeometryDomain).unwrap();
     let denial = match result

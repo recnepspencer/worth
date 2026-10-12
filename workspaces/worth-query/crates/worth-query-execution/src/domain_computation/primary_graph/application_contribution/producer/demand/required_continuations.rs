@@ -213,6 +213,7 @@ where
 
     fn advance_checkpoint(
         &mut self,
+
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -220,6 +221,14 @@ where
         paid: PaidCheckpointAdvance<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let admission = paid.into_admission();
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "advancement phase",
+                )
+            })?;
         let demand = self
             .demand
             .as_mut()
@@ -238,6 +247,7 @@ where
             return Ok(false);
         };
         runtime.advance_selected_output_checkpoint(
+            &execution,
             phase,
             &demand.selected.identity,
             claim,
@@ -261,8 +271,16 @@ where
         admission: &mut InvalidationEditAdmission,
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    super::super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "required successor advancement phase",
+                )
+            })?;
         self.run_again(
-            phase, runtime, principal, request, branch, admission, performed,
+            &execution, phase, runtime, principal, request, branch, admission, performed,
         )
     }
 

@@ -78,6 +78,7 @@ pub struct EmptyProjection;
 impl runtime::WorthQueryPrimaryGraphSourceProjection for EmptyProjection {
     fn project_live_target(
         &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _graph: &WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
     ) -> Vec<foundation::WorthQueryEntity> {
@@ -100,6 +101,7 @@ pub struct CommitThenDecline(pub CommitLog);
 impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for CommitThenDecline {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         _bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         _mutation: runtime::WorthQueryBackendAdmissibleMutation,
@@ -115,10 +117,7 @@ impl runtime::WorthQueryRuntimeWriteAuthorityAdapter for CommitThenDecline {
                 worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
             )
             .expect("the transaction binds to main")
-            .commit(
-                runtime,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, runtime)
             .expect("the empty certification transaction commits");
         runtime
             .snapshots()
@@ -151,7 +150,10 @@ impl runtime::WorthQueryRuntimeSchemaAdapter for SchemaAdapter {
 pub struct SnapshotAdapter(pub WorthQueryPrimaryGraphIntegrationHandle);
 
 impl runtime::WorthQueryRuntimeSnapshotIdentityAdapter for SnapshotAdapter {
-    fn current_snapshot_identity(&self) -> foundation::WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> foundation::WorthQuerySnapshotIdentity {
         let branch =
             worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id("main");
         let snapshot = self

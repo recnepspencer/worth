@@ -97,8 +97,11 @@ fn foundational_lowering_does_not_collapse_distinct_relational_meanings() {
 
 #[test]
 fn execution_authoring_and_explicit_normalization_lower_identically() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    crate::tests::support::create_entity_outcome(&runtime, "merge-seed");
+    crate::tests::support::create_entity_outcome(execution, &runtime, "merge-seed");
     runtime
         .history_authority()
         .fork_branch_from(

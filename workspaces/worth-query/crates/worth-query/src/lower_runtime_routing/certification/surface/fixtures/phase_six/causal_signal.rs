@@ -23,8 +23,10 @@ use super::super::{
     title_value_touch, RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentativeEvidenceSource,
 };
 
-pub(crate) fn representative_causal_bridge_materialization_row() -> RepresentativeArtifacts {
-    let read_result = certification_read_result();
+pub(crate) fn representative_causal_bridge_materialization_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let read_result = certification_read_result(execution);
     let inspection_basis = crate::basis_lifecycle::basis_lifecycle()
         .historical_snapshot("certification-read", true)
         .inspect()
@@ -151,21 +153,27 @@ fn route_planned_row(
     }
 }
 
-fn certification_read_result() -> WorthQueryReadResult {
-    let mut workspace = certification_runtime()
+fn certification_read_result(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryReadResult {
+    let mut workspace = certification_runtime(execution)
         .workspace("lower-runtime-causal-bridge")
         .expect("causal bridge workspace should build");
     workspace
-        .insert("Task", |task: WorthQueryAspectMutationBuilder| {
-            task.set_aspect(
-                title_value_touch(),
-                crate::runtime::WorthQueryAuthoredAspectValue::string("Causal fixture"),
-            )
-        })
+        .insert(
+            execution,
+            "Task",
+            |task: WorthQueryAspectMutationBuilder| {
+                task.set_aspect(
+                    title_value_touch(),
+                    crate::runtime::WorthQueryAuthoredAspectValue::string("Causal fixture"),
+                )
+            },
+        )
         .expect("causal bridge seed write should succeed");
     let family = certification_read_family(&mut workspace, "lower-runtime-causal-family");
     workspace
-        .execute_read_family(&family)
+        .execute_read_family(execution, &family)
         .expect("causal bridge read should execute")
 }
 

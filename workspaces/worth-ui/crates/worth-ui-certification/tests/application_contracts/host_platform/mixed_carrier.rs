@@ -1,6 +1,9 @@
 mod application;
 mod fixture_profile;
 mod geometry;
+mod seeded_workspace;
+use seeded_workspace::seeded_workspace;
+pub(super) use seeded_workspace::{initial_value, replacement_value};
 
 pub(super) use fixture_profile::{MixedCarrierFixtureProfile, CLOSURE, SMOKE};
 
@@ -201,36 +204,6 @@ fn scalar_observation(
     )
 }
 
-fn seeded_workspace(
-    profile: MixedCarrierFixtureProfile,
-) -> (
-    worth_query::facade::runtime::WorthQueryWorkspace,
-    Vec<worth_query::facade::foundation::WorthQueryEntityIdentity>,
-) {
-    let rows = (0..profile.collection_rows)
-        .map(|index| (format!("mixed.{index:04}"), initial_value(profile, index)))
-        .collect();
-    worth_ui_query_binding::certification::seeded_mixed_projection_workspace(rows)
-}
-
-pub(super) fn initial_value(profile: MixedCarrierFixtureProfile, index: usize) -> String {
-    if index == 0 {
-        return "Ready".to_owned();
-    }
-    let len = if index + 1 == profile.collection_rows {
-        profile.final_text_bytes
-    } else {
-        profile.ordinary_text_bytes
-    };
-    format!("A{index:04}{}", "x".repeat(len - 5))
-}
-
-pub(super) fn replacement_value(profile: MixedCarrierFixtureProfile, index: usize) -> String {
-    let mut value = initial_value(profile, index).into_bytes();
-    value[0] = b'B';
-    String::from_utf8(value).unwrap()
-}
-
 fn open_collection(
     profile: MixedCarrierFixtureProfile,
     registration: worth_ui_query_binding::UiCollectionProjectionRegistration,
@@ -264,7 +237,12 @@ fn refresh(
     mounted: &MountedMixedRows,
     request: u64,
 ) -> worth_ui_host_contract::UiHostPresentationCostReport {
-    let fact = match live.refresh(workspace).unwrap() {
+    let fact = match workspace
+        .with_execution_request_mut(|execution, workspace| {
+            live.refresh(execution, workspace).unwrap()
+        })
+        .expect("workspace host call opens")
+    {
         worth_ui_query_binding::UiCollectionProjectionRefreshOutcome::Applied(receipt) => {
             receipt.into_fact()
         }

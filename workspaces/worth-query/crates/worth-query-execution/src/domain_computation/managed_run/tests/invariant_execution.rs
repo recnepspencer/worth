@@ -289,7 +289,7 @@ fn empty_or_undeclared_state_loads_never_reach_validator_execution() {
 }
 
 pub(super) fn execute_invariant(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,

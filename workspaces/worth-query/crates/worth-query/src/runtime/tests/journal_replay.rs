@@ -5,21 +5,27 @@ use std::collections::BTreeSet;
 
 #[test]
 fn journal_segment_replay_returns_receipts_schedule_and_artifact_digest() {
-    let mut workspace = replay_workspace("tasks.journal-replay.success");
-    let first = submit_task(&mut workspace, "task-1", "First");
-    let second = submit_task(&mut workspace, "task-2", "Second");
-    let third = submit_task(&mut workspace, "task-3", "Third");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = replay_workspace(request_execution, "tasks.journal-replay.success");
+    let first = submit_task(request_execution, &mut workspace, "task-1", "First");
+    let second = submit_task(request_execution, &mut workspace, "task-2", "Second");
+    let third = submit_task(request_execution, &mut workspace, "task-3", "Third");
     let segment = WorthQueryJournalSegmentIdentity::between(
         first.journal_position(),
         third.journal_position(),
     )
     .expect("committed segment should build");
     let _published_generation = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint a published generation");
 
     let outcome = workspace
-        .replay_journal_segment(WorthQueryJournalReplayRequest::new(segment))
+        .replay_journal_segment(
+            request_execution,
+            WorthQueryJournalReplayRequest::new(segment),
+        )
         .expect("segment replay should succeed");
 
     assert_eq!(
@@ -84,10 +90,13 @@ fn journal_segment_replay_returns_receipts_schedule_and_artifact_digest() {
 
 #[test]
 fn journal_replay_stale_basis_denial_is_typed_and_leaves_replay_available() {
-    let mut workspace = replay_workspace("tasks.journal-replay.stale-basis");
-    let first = submit_task(&mut workspace, "task-1", "First");
-    let stale_basis = workspace.snapshot_identity();
-    submit_task(&mut workspace, "task-2", "Second");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = replay_workspace(request_execution, "tasks.journal-replay.stale-basis");
+    let first = submit_task(request_execution, &mut workspace, "task-1", "First");
+    let stale_basis = workspace.snapshot_identity_with_request(request_execution);
+    submit_task(request_execution, &mut workspace, "task-2", "Second");
     let segment = WorthQueryJournalSegmentIdentity::between(
         first.journal_position(),
         first.journal_position(),
@@ -96,6 +105,7 @@ fn journal_replay_stale_basis_denial_is_typed_and_leaves_replay_available() {
 
     let error = workspace
         .replay_journal_segment(
+            request_execution,
             WorthQueryJournalReplayRequest::new(segment.clone()).with_basis_snapshot(stale_basis),
         )
         .expect_err("stale basis should deny replay");
@@ -108,16 +118,22 @@ fn journal_replay_stale_basis_denial_is_typed_and_leaves_replay_available() {
         1,
     );
     assert!(workspace
-        .replay_journal_segment(WorthQueryJournalReplayRequest::new(segment))
+        .replay_journal_segment(
+            request_execution,
+            WorthQueryJournalReplayRequest::new(segment)
+        )
         .is_ok());
 }
 
 #[test]
 fn journal_replay_unknown_and_gap_segments_fail_with_typed_denials() {
-    let mut workspace = replay_workspace("tasks.journal-replay.unknown-gap");
-    let first = submit_task(&mut workspace, "task-1", "First");
-    let _second = submit_task(&mut workspace, "task-2", "Second");
-    let third = submit_task(&mut workspace, "task-3", "Third");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = replay_workspace(request_execution, "tasks.journal-replay.unknown-gap");
+    let first = submit_task(request_execution, &mut workspace, "task-1", "First");
+    let _second = submit_task(request_execution, &mut workspace, "task-2", "Second");
+    let third = submit_task(request_execution, &mut workspace, "task-3", "Third");
     let segment = WorthQueryJournalSegmentIdentity::between(
         first.journal_position(),
         third.journal_position(),
@@ -126,7 +142,10 @@ fn journal_replay_unknown_and_gap_segments_fail_with_typed_denials() {
 
     workspace.retain_journal_replay_positions_for_certification(&BTreeSet::new());
     let unknown_error = workspace
-        .replay_journal_segment(WorthQueryJournalReplayRequest::new(segment.clone()))
+        .replay_journal_segment(
+            request_execution,
+            WorthQueryJournalReplayRequest::new(segment.clone()),
+        )
         .expect_err("retained-away segment should deny as unknown");
     assert_journal_replay_denial(
         unknown_error,
@@ -147,7 +166,10 @@ fn journal_replay_unknown_and_gap_segments_fail_with_typed_denials() {
         )
         .expect("versioned structured segment should build");
     let cross_scheme_error = workspace
-        .replay_journal_segment(WorthQueryJournalReplayRequest::new(cross_scheme))
+        .replay_journal_segment(
+            request_execution,
+            WorthQueryJournalReplayRequest::new(cross_scheme),
+        )
         .expect_err("cross-scheme segment should deny replay");
     assert_journal_replay_denial(
         cross_scheme_error,
@@ -160,10 +182,10 @@ fn journal_replay_unknown_and_gap_segments_fail_with_typed_denials() {
         1,
     );
 
-    let mut gap_workspace = replay_workspace("tasks.journal-replay.gap");
-    let gap_first = submit_task(&mut gap_workspace, "task-1", "First");
-    let gap_second = submit_task(&mut gap_workspace, "task-2", "Second");
-    let gap_third = submit_task(&mut gap_workspace, "task-3", "Third");
+    let mut gap_workspace = replay_workspace(request_execution, "tasks.journal-replay.gap");
+    let gap_first = submit_task(request_execution, &mut gap_workspace, "task-1", "First");
+    let gap_second = submit_task(request_execution, &mut gap_workspace, "task-2", "Second");
+    let gap_third = submit_task(request_execution, &mut gap_workspace, "task-3", "Third");
     let gap = WorthQueryJournalSegmentIdentity::between(
         gap_first.journal_position(),
         gap_third.journal_position(),
@@ -175,7 +197,7 @@ fn journal_replay_unknown_and_gap_segments_fail_with_typed_denials() {
     ]);
     gap_workspace.retain_journal_replay_positions_for_certification(&retained_positions);
     let gap_error = gap_workspace
-        .replay_journal_segment(WorthQueryJournalReplayRequest::new(gap))
+        .replay_journal_segment(request_execution, WorthQueryJournalReplayRequest::new(gap))
         .expect_err("gap segment should deny replay");
     assert_journal_replay_denial(gap_error, WorthQueryJournalReplayDenialKind::JournalGap);
     assert_residue_free_denial(
@@ -189,7 +211,10 @@ fn journal_replay_unknown_and_gap_segments_fail_with_typed_denials() {
 
 #[test]
 fn journal_replay_surface_is_admitted_by_runtime_support_profile() {
-    let workspace = replay_workspace("tasks.journal-replay.support-profile");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = replay_workspace(request_execution, "tasks.journal-replay.support-profile");
     let contract = workspace.public_api_contract();
     let row = contract
         .family(WorthQueryRuntimeFacadeFamily::Replay)
@@ -223,13 +248,17 @@ fn assert_residue_free_denial(
     assert_eq!(snapshot.last_replay_outcome_digest(), None);
 }
 
-fn replay_workspace(name: &str) -> WorthQueryWorkspace {
-    stateful_bridge_task_runtime()
+fn replay_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> WorthQueryWorkspace {
+    stateful_bridge_task_runtime(request_execution)
         .workspace(name)
         .expect("task runtime should open replay workspace")
 }
 
 fn submit_task(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     id: &str,
     title: &str,
@@ -248,7 +277,7 @@ fn submit_task(
     workspace
         .submissions()
         .expect("submission lane should be admitted")
-        .submit(command)
+        .submit(request_execution, command)
         .expect("submission should commit")
 }
 

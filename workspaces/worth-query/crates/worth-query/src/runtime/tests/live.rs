@@ -2,19 +2,30 @@ use super::support::*;
 
 #[test]
 fn runtime_declares_live_view_and_routes_minimal_write_patches() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.table", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.table",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
 
     let insert = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Buy milk")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Buy milk")),
+                ],
+            ),
+        )
         .expect("insert should execute through runtime facade");
     let task_id = insert.deltas()[0].entity_identity.clone();
     let insert_patches = runtime.drain_patches(&view);
@@ -37,11 +48,10 @@ fn runtime_declares_live_view_and_routes_minimal_write_patches() {
     assert_eq!(insert_patches.query_delivery_batches[0].sequence(), 1);
 
     let update = runtime
-        .write(test_update_string_aspect_command(
-            task_id,
-            "title.value",
-            "Buy oat milk",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(task_id, "title.value", "Buy oat milk"),
+        )
         .expect("update should execute through runtime facade");
     let update_patches = runtime.drain_patches(&view);
 
@@ -58,11 +68,14 @@ fn runtime_declares_live_view_and_routes_minimal_write_patches() {
     assert_eq!(update_patches.query_delivery_batches[0].sequence(), 2);
 
     let irrelevant = runtime
-        .write(test_update_string_aspect_command(
-            update.deltas()[0].entity_identity.clone(),
-            "description.value",
-            "ignored by task table",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                update.deltas()[0].entity_identity.clone(),
+                "description.value",
+                "ignored by task table",
+            ),
+        )
         .expect("irrelevant update should execute");
     let irrelevant_patches = runtime.drain_patches(&view);
     assert!(irrelevant
@@ -73,28 +86,36 @@ fn runtime_declares_live_view_and_routes_minimal_write_patches() {
 
 #[test]
 fn runtime_grouped_live_view_uses_backend_baseline_and_delivers_grouped_membership_patch() {
-    let mut runtime = stateful_bridge_grouped_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_grouped_task_runtime(request_execution);
     let table: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.seed-table",
             grouped_task_table_live_request(),
             grouped_task_schema(),
         )
         .expect("table live view should declare before seed write");
     let seed = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Seed task")),
-                ("status.value", test_string_aspect_value("todo")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Seed task")),
+                    ("status.value", test_string_aspect_value("todo")),
+                ],
+            ),
+        )
         .expect("seed insert should write through table declaration");
     let task_id = seed.deltas()[0].entity_identity.clone();
     let _ = runtime.drain_patches(&table);
     let grouped: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
         .declare_live_view(
+            request_execution,
             "tasks.grouped",
             grouped_task_live_request(),
             grouped_task_schema(),
@@ -102,11 +123,10 @@ fn runtime_grouped_live_view_uses_backend_baseline_and_delivers_grouped_membersh
         .expect("grouped live view should declare with backend-owned baseline");
 
     let receipt = runtime
-        .write(test_update_string_aspect_command(
-            task_id,
-            "status.value",
-            "done",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(task_id, "status.value", "done"),
+        )
         .expect("grouping aspect update should write");
     let patches = runtime.drain_patches(&grouped);
 
@@ -126,9 +146,17 @@ fn runtime_grouped_live_view_uses_backend_baseline_and_delivers_grouped_membersh
 
 #[test]
 fn unified_inspect_routes_live_effect_and_write_receipt_targets() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.inspect-target", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.inspect-target",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     let effect = runtime
         .declare_effect::<WorthQueryUnrefinedLiveShape>(WorthQueryEffectDeclaration::deliver(
@@ -138,21 +166,26 @@ fn unified_inspect_routes_live_effect_and_write_receipt_targets() {
         ))
         .expect("effect should declare");
     let receipt = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Inspect target")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Inspect target")),
+                ],
+            ),
+        )
         .expect("write should execute");
 
-    let live_inspection = runtime.inspect(&live).expect("live target should inspect");
+    let live_inspection = runtime
+        .inspect(request_execution, &live)
+        .expect("live target should inspect");
     let effect_inspection = runtime
-        .inspect(&effect)
+        .inspect(request_execution, &effect)
         .expect("effect target should inspect");
     let receipt_inspection = runtime
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("receipt target should inspect");
 
     match live_inspection {
@@ -191,9 +224,17 @@ fn unified_inspect_routes_live_effect_and_write_receipt_targets() {
 
 #[test]
 fn live_view_inspection_reconstructs_subscription_proof_chain() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.table", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.table",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
 
     let installation = view.subscription_installation();

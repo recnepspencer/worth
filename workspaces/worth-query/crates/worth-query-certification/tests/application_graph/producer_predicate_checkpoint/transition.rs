@@ -30,8 +30,15 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
     };
     assert!(settled.application_commit_receipt().is_some());
     let (source, sections) = runtime
-        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            runtime
+                .capture_application_checkpoint_with_sections(
+                    &host_phase,
+                    CapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(sections.accepted_output_count(), 1);
     let mut called = false;
     let denial = installation::in_memory_rostered_program_from_checkpoint_with_transition(
@@ -65,10 +72,16 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
     assert_eq!(
         restored
             .runtime()
-            .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
-            .unwrap()
-            .1
-            .accepted_output_count(),
+            .with_host_advancement(|host_phase| restored
+                .runtime()
+                .capture_application_checkpoint_with_sections(
+                    &host_phase,
+                    CapturePolicy::SystemAllocation
+                )
+                .unwrap()
+                .1
+                .accepted_output_count())
+            .expect("installed host call opens"),
         1,
         "ordinary restore preserves the original accepted output"
     );

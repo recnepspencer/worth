@@ -100,6 +100,9 @@ fn harness_snapshot_marks_missing_targets_unknown() {
 
 #[test]
 fn harness_fixture_loads_declared_aspect_field_patches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let adapter = RelationalHarnessAdapter;
     let fixture = ScenarioPlan::new(
         "fixture",
@@ -120,7 +123,9 @@ fn harness_fixture_loads_declared_aspect_field_patches() {
     adapter.load_fixture(&mut runtime, &fixture).unwrap();
 
     let snapshot = runtime.visibility_authority().snapshot();
-    let read = runtime.read_truth().read_version(snapshot.version_id);
+    let read = runtime
+        .read_truth()
+        .read_version(execution, snapshot.version_id);
     let entity_id = crate::facade::identity::EntityId::new(PartitionId::main(), 0, 1);
     let entity = read.get_entity(entity_id).expect("fixture entity visible");
 
@@ -129,10 +134,14 @@ fn harness_fixture_loads_declared_aspect_field_patches() {
 
 #[test]
 fn runtime_packet_execution_and_storage_stats_are_readable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "first");
+    let entity = create_entity(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
     let result = execute_explicit_query(
+        execution,
         &runtime,
         &snapshot,
         "entities",

@@ -23,7 +23,10 @@ use crate::runtime::graph_read_access::explain_graph_read_access_requirements_fo
 
 #[test]
 fn equivalent_graphs_share_semantics_and_retain_their_traversal_mechanisms() {
-    let mature = support::mature_family();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mature = support::mature_family(request_execution);
     let application = support::installed_application_query();
     let parameters =
         admit_application_query_parameters(&application, support::application_parameters())
@@ -145,10 +148,17 @@ fn equivalent_graphs_share_semantics_and_retain_their_traversal_mechanisms() {
 
 #[test]
 fn mature_fanout_alone_adds_proof_support_and_wide_result_pressure() {
-    let flat =
-        explain_graph_read_access_requirements_for_family(&support::mature_flat_family()).unwrap();
-    let fanout = explain_graph_read_access_requirements_for_family(&support::mature_family())
-        .expect("fanout family should explain");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let flat = explain_graph_read_access_requirements_for_family(&support::mature_flat_family(
+        request_execution,
+    ))
+    .unwrap();
+    let fanout = explain_graph_read_access_requirements_for_family(&support::mature_family(
+        request_execution,
+    ))
+    .expect("fanout family should explain");
 
     assert!(!flat
         .rows()

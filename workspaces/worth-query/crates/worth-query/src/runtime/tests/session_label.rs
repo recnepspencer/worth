@@ -4,7 +4,9 @@ use crate::facade::runtime::{
     WorthQueryEvidenceScope, WorthQueryEvidenceTag, WorthQuerySessionLabel,
 };
 
-fn session_entry_runtime() -> WorthQueryRuntime {
+fn session_entry_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
     test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -17,12 +19,14 @@ fn session_entry_runtime() -> WorthQueryRuntime {
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("session-entry runtime should build")
 }
 
-fn session_entry_workspace() -> WorthQueryWorkspace {
-    session_entry_runtime()
+fn session_entry_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryWorkspace {
+    session_entry_runtime(request_execution)
         .workspace("session-entry-workspace")
         .expect("session-entry workspace should build")
 }
@@ -75,11 +79,15 @@ fn assert_session_label_collision(
 
 #[test]
 fn preview_and_branch_basis_admissions_record_canonical_session_label_identity() {
-    let mut runtime = session_entry_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = session_entry_runtime(request_execution);
     let label = test_session_label("typed-session-entry");
 
     let preview = runtime
         .preview_with_options(
+            request_execution,
             label.clone(),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
@@ -104,6 +112,7 @@ fn preview_and_branch_basis_admissions_record_canonical_session_label_identity()
 
     let branch = runtime
         .branch_with_options(
+            request_execution,
             label.clone(),
             WorthQueryBranchOptions::sandboxed_write_intent(),
         )
@@ -128,11 +137,15 @@ fn preview_and_branch_basis_admissions_record_canonical_session_label_identity()
 
 #[test]
 fn workspace_entrypoints_preserve_typed_session_label_identity_and_collision_posture() {
-    let mut workspace = session_entry_workspace();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = session_entry_workspace(request_execution);
     let label = test_session_label("workspace-session-entry");
 
     let preview = workspace
         .preview_with_options(
+            request_execution,
             label.clone(),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
@@ -157,6 +170,7 @@ fn workspace_entrypoints_preserve_typed_session_label_identity_and_collision_pos
 
     let branch = workspace
         .branch_with_options(
+            request_execution,
             label.clone(),
             WorthQueryBranchOptions::sandboxed_write_intent(),
         )
@@ -179,7 +193,7 @@ fn workspace_entrypoints_preserve_typed_session_label_identity_and_collision_pos
     );
     drop(branch);
 
-    let preview_collision = match workspace.preview(label.clone()) {
+    let preview_collision = match workspace.preview(request_execution, label.clone()) {
         Ok(_) => panic!("workspace preview replay should collide"),
         Err(error) => error,
     };
@@ -189,7 +203,7 @@ fn workspace_entrypoints_preserve_typed_session_label_identity_and_collision_pos
         &label,
     );
 
-    let branch_collision = match workspace.branch(label.clone()) {
+    let branch_collision = match workspace.branch(request_execution, label.clone()) {
         Ok(_) => panic!("workspace branch replay should collide"),
         Err(error) => error,
     };
@@ -204,11 +218,11 @@ fn workspace_entrypoints_preserve_typed_session_label_identity_and_collision_pos
     let render_collision_right =
         WorthQuerySessionLabel::scoped_strs("worth", ["kernel", "preview"]).expect("label");
     workspace
-        .preview(render_collision_left.clone())
+        .preview(request_execution, render_collision_left.clone())
         .expect("workspace should admit left render-collision label")
         .discard();
     workspace
-        .preview(render_collision_right.clone())
+        .preview(request_execution, render_collision_right.clone())
         .expect("workspace should admit right render-collision label")
         .discard();
     assert_eq!(
@@ -223,15 +237,18 @@ fn workspace_entrypoints_preserve_typed_session_label_identity_and_collision_pos
 
 #[test]
 fn equivalent_preview_session_label_replay_stops_with_typed_collision_class() {
-    let mut runtime = session_entry_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = session_entry_runtime(request_execution);
     let label = test_session_label("preview-collision");
 
     runtime
-        .preview(label.clone())
+        .preview(request_execution, label.clone())
         .expect("first preview label admission should succeed")
         .discard();
 
-    let error = match runtime.preview(label.clone()) {
+    let error = match runtime.preview(request_execution, label.clone()) {
         Ok(_) => panic!("re-admitting equivalent preview label should collide"),
         Err(error) => error,
     };
@@ -241,25 +258,28 @@ fn equivalent_preview_session_label_replay_stops_with_typed_collision_class() {
 
 #[test]
 fn session_label_collision_is_scoped_per_family_and_not_by_rendered_display() {
-    let mut runtime = session_entry_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = session_entry_runtime(request_execution);
     let preview_label =
         WorthQuerySessionLabel::scoped_strs("worth.kernel", ["preview"]).expect("label");
     let render_collision =
         WorthQuerySessionLabel::scoped_strs("worth", ["kernel", "preview"]).expect("label");
 
     runtime
-        .preview(preview_label.clone())
+        .preview(request_execution, preview_label.clone())
         .expect("first preview label should admit")
         .discard();
     runtime
-        .preview(render_collision.clone())
+        .preview(request_execution, render_collision.clone())
         .expect("display-colliding but identity-distinct preview label should admit")
         .discard();
     runtime
-        .branch(preview_label.clone())
+        .branch(request_execution, preview_label.clone())
         .expect("branch family should admit same identity independently");
 
-    let error = match runtime.branch(preview_label.clone()) {
+    let error = match runtime.branch(request_execution, preview_label.clone()) {
         Ok(_) => panic!("re-admitting the same branch label should collide"),
         Err(error) => error,
     };

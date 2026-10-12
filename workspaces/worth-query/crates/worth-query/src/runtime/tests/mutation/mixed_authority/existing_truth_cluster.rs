@@ -2,28 +2,35 @@ use super::*;
 
 #[test]
 fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.mixed-authority-batch")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.mixed-authority-batch-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-mixed-authority-batch-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.mixed-authority-batch-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-mixed-authority-batch-table")
+            },
+        )
         .expect("live view should declare");
 
     let assert_seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-assert"),
@@ -35,7 +42,7 @@ fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
         })
         .expect("assert seed insert should execute");
     let verify_seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-verify"),
@@ -47,7 +54,7 @@ fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
         })
         .expect("verify seed insert should execute");
     let update_seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-update"),
@@ -59,7 +66,7 @@ fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
         })
         .expect("update seed insert should execute");
     let delete_seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-delete"),
@@ -119,7 +126,7 @@ fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
         .expect("delete binding should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .assert_existing(assert_binding, |task| {
                     task.set_aspect(test_aspect_touch("title.value"), test_authored_string_aspect_value("Assert seed"))
@@ -205,7 +212,11 @@ fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
         .as_str()
         .to_string();
     let update_probe = workspace
-        .probe_existing(update_probe_binding, test_aspect_touches(["title.value"]))
+        .probe_existing(
+            request_execution,
+            update_probe_binding,
+            test_aspect_touches(["title.value"]),
+        )
         .expect("updated target should remain probeable after mixed batch");
     assert_eq!(
         update_probe.mode(),
@@ -220,7 +231,10 @@ fn mixed_batch_preserves_existing_truth_mode_and_neighbor_aggregate_evidence() {
     );
     assert_ne!(update_probe.probe_digest(), mode_digest.as_str());
 
-    match workspace.inspect(&receipt).expect("batch should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("batch should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             let batch_evidence = inspection.batch_mutation_evidence();
             assert_eq!(

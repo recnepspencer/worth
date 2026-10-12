@@ -244,14 +244,15 @@ where
 }
 
 fn terminalize_recovery_world(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: crate::domain_computation::WorthQueryRunningWorkflowRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQueryWorkflowYieldRecoveryRequired {
-    let active = running
-        .begin_stage_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_stage_graph_execution(
+            &installed_fixture_phase,
             "producer",
             graph,
             WorthQueryManagedGraphCallRequest::new(
@@ -259,10 +260,17 @@ fn terminalize_recovery_world(
                 "workflow-yield-recovery",
             ),
         )
-        .expect("recovery provider should begin");
-    let paused = match active.advance(execution) {
-        WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("recovery provider did not reach its safe point"),
+    }
+    .expect("recovery provider should begin");
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("recovery provider did not reach its safe point"),
+        }
     };
     let recovery = match paused.yield_run() {
         crate::domain_computation::WorthQueryWorkflowYieldOutcome::RecoveryRequired(recovery) => {

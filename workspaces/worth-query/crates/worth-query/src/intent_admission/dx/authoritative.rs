@@ -44,8 +44,11 @@ impl<'a> WorthQueryRuntimeIntentAuthoring<'a> {
         self.review()?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -119,8 +122,11 @@ impl<'a> WorthQueryRuntimeIntentAdmissionReview<'a> {
         })
     }
 
-    pub fn execute(self) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -152,8 +158,11 @@ impl<'a> WorthQueryAdmittedRuntimeIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
         self.runtime
-            .execute_authoritative_intent_execution_binding(self.execution_binding)
+            .execute_authoritative_intent_execution_binding(execution, self.execution_binding)
     }
 }

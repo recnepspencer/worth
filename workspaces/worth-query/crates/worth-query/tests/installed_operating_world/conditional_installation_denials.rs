@@ -8,6 +8,9 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn unsupported_eager_execution_is_denied_instead_of_degrading_to_lazy() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = conditional_node_result(
         "unsupported-eager",
@@ -19,7 +22,7 @@ fn unsupported_eager_execution_is_denied_instead_of_degrading_to_lazy() {
     )
     .unwrap();
 
-    let Err(error) = conditional_workspace("unsupported-eager", node) else {
+    let Err(error) = conditional_workspace(request_execution, "unsupported-eager", node) else {
         panic!("unsupported eager execution must not construct a runtime")
     };
     assert!(error.message().contains("UnsupportedMaintenancePosture"));
@@ -27,6 +30,9 @@ fn unsupported_eager_execution_is_denied_instead_of_degrading_to_lazy() {
 
 #[test]
 fn unsupported_durable_artifact_is_denied_without_claiming_persistence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let node = domain::WorthQueryPortableConditionalNodeDeclaration::declare(
         "unsupported-durable",
@@ -54,7 +60,7 @@ fn unsupported_durable_artifact_is_denied_without_claiming_persistence() {
     .finish()
     .unwrap();
 
-    let Err(error) = conditional_workspace("unsupported-durable", node) else {
+    let Err(error) = conditional_workspace(request_execution, "unsupported-durable", node) else {
         panic!("unsupported durable artifacts must not construct a runtime")
     };
     assert!(error.message().contains("UnsupportedArtifactPosture"));
@@ -62,6 +68,9 @@ fn unsupported_durable_artifact_is_denied_without_claiming_persistence() {
 
 #[test]
 fn partition_observation_requires_an_exact_observation_record() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let partition = worth_foundational::facade::TruthPartitionRole::new("model-main").unwrap();
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourcePartition(
         partition,
@@ -76,11 +85,16 @@ fn partition_observation_requires_an_exact_observation_record() {
     )
     .unwrap();
 
-    conditional_workspace("supported-partition-observation", node.clone())
-        .expect("partition invalidation with an exact observation record must install");
+    conditional_workspace(
+        request_execution,
+        "supported-partition-observation",
+        node.clone(),
+    )
+    .expect("partition invalidation with an exact observation record must install");
 
     let installation = conditional_installation_without_observation(&node);
     let Err(error) = conditional_workspace_with(
+        request_execution,
         "missing-partition-observation",
         node,
         installation,

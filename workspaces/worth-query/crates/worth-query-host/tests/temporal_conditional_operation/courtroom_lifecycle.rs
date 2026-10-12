@@ -4,13 +4,20 @@ use super::courtroom_support::{assert_authoritative_value, observe, wake_evidenc
 use super::schema::IntentEffectField;
 use super::world::CourtroomWorld;
 
-pub fn reinstallation_reconstructs_active_authoritative_work() {
+pub fn reinstallation_reconstructs_active_authoritative_work(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("ready");
     let before = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let before_branch = before.product().branch_identity().clone();
     let before_commit = before.product().selected_commit().clone();
     let before_relational = before.product().relational_basis_descriptor().clone();
@@ -19,9 +26,14 @@ pub fn reinstallation_reconstructs_active_authoritative_work() {
     let lower = receipt.lower_runtime_reconstitution();
     let after = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(&before_branch, after.product().branch_identity());
     assert_eq!(&before_commit, after.product().selected_commit());
     assert_eq!(
@@ -37,7 +49,7 @@ pub fn reinstallation_reconstructs_active_authoritative_work() {
     assert!(lower.correspondence().exact_index_parity());
     assert_eq!(receipt.reconstructed_binding_count(), 1);
     assert_eq!(receipt.reconstructed_intent_count(), 1);
-    let observed = observe(&world);
+    let observed = observe(request_execution, &world);
     assert_eq!(
         observed.committed_operation_count(),
         1,
@@ -72,27 +84,31 @@ pub fn reconstruction_work_ignores_unrelated_rows() {
     assert_eq!(baseline.total_work_units(), expanded.total_work_units());
 }
 
-pub fn reinstallation_restores_no_terminal_work() {
+pub fn reinstallation_restores_no_terminal_work(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut cancelled = CourtroomWorld::publish("ready");
     cancelled.amend_intent(2, "cancelled", "ready");
     cancelled.reinstall_conditional_runtime().unwrap();
-    let receipt = observe(&cancelled);
+    let receipt = observe(request_execution, &cancelled);
     assert_eq!(receipt.committed_operation_count(), 0);
     assert_eq!(cancelled.contacts.snapshot(), (0, 0, 0, 0));
 
     let mut completed = CourtroomWorld::publish("ready");
-    let _ = observe(&completed);
+    let _ = observe(request_execution, &completed);
     let contacts = completed.contacts.snapshot();
     completed.reinstall_conditional_runtime().unwrap();
-    let receipt = observe(&completed);
+    let receipt = observe(request_execution, &completed);
     assert_eq!(receipt.committed_operation_count(), 1);
     assert_eq!(completed.contacts.snapshot(), contacts);
 }
 
-pub fn reinstallation_after_eligibility_retries_freshly() {
+pub fn reinstallation_after_eligibility_retries_freshly(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("ready");
     world.preconditions_panic.set(true);
-    let failed = observe(&world);
+    let failed = observe(request_execution, &world);
     assert_eq!(
         failed.failed_operation_count(),
         1,
@@ -101,7 +117,7 @@ pub fn reinstallation_after_eligibility_retries_freshly() {
     );
     world.preconditions_panic.set(false);
     world.reinstall_conditional_runtime().unwrap();
-    let retried = observe(&world);
+    let retried = observe(request_execution, &world);
     assert_eq!(
         retried.committed_operation_count(),
         1,
@@ -110,12 +126,17 @@ pub fn reinstallation_after_eligibility_retries_freshly() {
     );
 }
 
-pub fn reinstallation_after_commit_cannot_duplicate_effect() {
+pub fn reinstallation_after_commit_cannot_duplicate_effect(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("ready");
-    assert_eq!(observe(&world).committed_operation_count(), 1);
+    assert_eq!(
+        observe(request_execution, &world).committed_operation_count(),
+        1
+    );
     let contacts = world.contacts.snapshot();
     world.reinstall_conditional_runtime().unwrap();
-    let second = observe(&world);
+    let second = observe(request_execution, &world);
     assert_eq!(second.committed_operation_count(), 1);
     assert_eq!(second.already_committed_operation_count(), 0);
     assert_eq!(world.contacts.snapshot(), contacts);
@@ -126,11 +147,13 @@ pub fn reinstallation_after_commit_cannot_duplicate_effect() {
     );
 }
 
-pub fn reinstallation_revokes_captured_granular_batches() {
+pub fn reinstallation_revokes_captured_granular_batches(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("blocked");
     let before = world.application.granular_invalidation_installation();
     world.amend_intent(1, "active", "ready");
-    let mut observed = observe(&world);
+    let mut observed = observe(request_execution, &world);
     let batch = observed.take_granular_invalidation_batch();
     assert!(before.admits_batch(&batch));
 
@@ -140,14 +163,21 @@ pub fn reinstallation_revokes_captured_granular_batches() {
     assert!(!current.admits_batch(&batch));
 }
 
-pub fn closing_runtime_releases_inventory_and_revokes_handles() {
+pub fn closing_runtime_releases_inventory_and_revokes_handles(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("blocked");
-    let _ = observe(&world);
+    let _ = observe(request_execution, &world);
     let before = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let before_branch = before.product().branch_identity().clone();
     let before_commit = before.product().selected_commit().clone();
     let before_relational = before.product().relational_basis_descriptor().clone();
@@ -166,9 +196,14 @@ pub fn closing_runtime_releases_inventory_and_revokes_handles() {
     assert_eq!(empty.signal_graph_count(), installed.signal_graph_count());
     let after = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(&before_branch, after.product().branch_identity());
     assert_eq!(&before_commit, after.product().selected_commit());
     assert_eq!(
@@ -177,22 +212,29 @@ pub fn closing_runtime_releases_inventory_and_revokes_handles() {
     );
     let denial = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .unwrap()
-        .conditional_clock(&world.clock)
-        .err()
-        .expect("closed clock must be rejected");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(request_execution, &world.clock)
+                .err()
+                .expect("closed clock must be rejected")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         denial.kind(),
         primary_graph::WorthQueryConditionalClockObservationDenialKind::ForeignRuntime
     );
 }
 
-pub fn dropping_runtime_releases_exact_inventory() {
+pub fn dropping_runtime_releases_exact_inventory(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let world = CourtroomWorld::publish("ready");
     world.preconditions_panic.set(true);
-    let failed = observe(&world);
+    let failed = observe(request_execution, &world);
     assert_eq!(failed.failed_operation_count(), 1);
     let probe = world.application.conditional_runtime_lifecycle_probe();
     let live = probe.live_inventory();

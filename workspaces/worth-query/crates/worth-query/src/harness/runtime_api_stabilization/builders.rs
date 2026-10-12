@@ -14,7 +14,9 @@ use super::{
     RuntimeApiStabilizationRejectionBundle,
 };
 
-pub(super) fn canonical_rows() -> Vec<
+pub(super) fn canonical_rows(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Vec<
     CanonicalCertificationRow<
         RuntimeApiStabilizationPerturbationClass,
         RuntimeApiStabilizationBundle,
@@ -22,6 +24,7 @@ pub(super) fn canonical_rows() -> Vec<
 > {
     vec![
         canonical_row(
+            request_execution,
             "workflow-editor-golden-transcript",
             RuntimeApiStabilizationPerturbationClass::WorkflowEditorGoldenTranscript,
             transcripts::workflow_editor_transcript,
@@ -36,6 +39,7 @@ pub(super) fn canonical_rows() -> Vec<
             9,
         ),
         canonical_row(
+            request_execution,
             "geometry-kernel-golden-transcript",
             RuntimeApiStabilizationPerturbationClass::GeometryKernelGoldenTranscript,
             transcripts::geometry_kernel_transcript,
@@ -49,6 +53,7 @@ pub(super) fn canonical_rows() -> Vec<
             8,
         ),
         canonical_row(
+            request_execution,
             "table-spreadsheet-golden-transcript",
             RuntimeApiStabilizationPerturbationClass::TableSpreadsheetGoldenTranscript,
             transcripts::table_spreadsheet_transcript,
@@ -61,11 +66,13 @@ pub(super) fn canonical_rows() -> Vec<
             ],
             8,
         ),
-        adversarial_composed_row(),
+        adversarial_composed_row(request_execution),
     ]
 }
 
-pub(super) fn rejection_rows() -> Vec<
+pub(super) fn rejection_rows(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Vec<
     RejectionCertificationRow<
         RuntimeApiStabilizationPerturbationClass,
         RuntimeApiStabilizationBundle,
@@ -74,12 +81,14 @@ pub(super) fn rejection_rows() -> Vec<
 > {
     vec![
         rejection_row(
+            request_execution,
             "store-backed-parity-deferred-gate",
             RuntimeApiStabilizationPerturbationClass::StoreBackedParityDeferredGate,
             WorthQueryRuntimeFacadeFamily::StoreBackedExecution,
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
         ),
         rejection_row(
+            request_execution,
             "durable-restart-deferred-gate",
             RuntimeApiStabilizationPerturbationClass::DurableRestartDeferredGate,
             WorthQueryRuntimeFacadeFamily::DurableArtifacts,
@@ -128,16 +137,19 @@ pub(super) fn coverage_digest_parts(
 }
 
 fn canonical_row(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     row_name: &'static str,
     perturbation_class: RuntimeApiStabilizationPerturbationClass,
-    transcript: fn() -> crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
+    transcript: fn(
+        &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence,
     surfaces: impl IntoIterator<Item = &'static str> + Clone,
     meaningful_assertion_count: usize,
 ) -> CanonicalCertificationRow<
     RuntimeApiStabilizationPerturbationClass,
     RuntimeApiStabilizationBundle,
 > {
-    let transcript_evidence = transcript();
+    let transcript_evidence = transcript(request_execution);
     CanonicalCertificationRow {
         row_name,
         perturbation_class,
@@ -157,12 +169,14 @@ fn canonical_row(
     }
 }
 
-fn adversarial_composed_row() -> CanonicalCertificationRow<
+fn adversarial_composed_row(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> CanonicalCertificationRow<
     RuntimeApiStabilizationPerturbationClass,
     RuntimeApiStabilizationBundle,
 > {
     let control_lane = bundle(
-        transcripts::composed_runtime_transcript(),
+        transcripts::composed_runtime_transcript(request_execution),
         [
             "live-subscription",
             "nested-computed",
@@ -176,7 +190,7 @@ fn adversarial_composed_row() -> CanonicalCertificationRow<
         14,
     );
     let hostile_lane = bundle(
-        transcripts::composed_runtime_hostile_transcript(),
+        transcripts::composed_runtime_hostile_transcript(request_execution),
         [
             "live-subscription",
             "nested-computed",
@@ -204,6 +218,7 @@ fn adversarial_composed_row() -> CanonicalCertificationRow<
 }
 
 fn rejection_row(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     row_name: &'static str,
     perturbation_class: RuntimeApiStabilizationPerturbationClass,
     family: WorthQueryRuntimeFacadeFamily,
@@ -214,7 +229,7 @@ fn rejection_row(
     RuntimeApiStabilizationRejectionBundle,
 > {
     let control_lane = bundle(
-        transcripts::workflow_editor_transcript(),
+        transcripts::workflow_editor_transcript(request_execution),
         ["read", "live", "inspect"],
         6,
     );

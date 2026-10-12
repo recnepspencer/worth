@@ -8,10 +8,14 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn artifact_package_requires_explicit_runtime_version_support() {
-    let error = match artifact_workspace_without_support("artifact-support-denial") {
-        Ok(_) => panic!("artifact contract without runtime version support installed"),
-        Err(error) => error,
-    };
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let error =
+        match artifact_workspace_without_support(request_execution, "artifact-support-denial") {
+            Ok(_) => panic!("artifact contract without runtime version support installed"),
+            Err(error) => error,
+        };
     assert!(error.message().contains("UnsupportedArtifactVersion"));
     assert!(error
         .message()
@@ -20,7 +24,11 @@ fn artifact_package_requires_explicit_runtime_version_support() {
 
 #[test]
 fn foreign_provider_is_denied_and_its_resource_is_disposed_exactly_once() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-provider-denial").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, "artifact-provider-denial").unwrap();
     let outcome = bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -44,7 +52,11 @@ fn foreign_provider_is_denied_and_its_resource_is_disposed_exactly_once() {
 
 #[test]
 fn retained_production_admission_denies_in_a_later_run_before_provider_projection() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-retained-admission").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, "artifact-retained-admission").unwrap();
     let retained = bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -79,8 +91,11 @@ fn retained_production_admission_denies_in_a_later_run_before_provider_projectio
 
 #[test]
 fn stale_installation_generation_denies_artifact_transfer_before_consumer_access() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (mut workspace, probe) =
-        artifact_controlled_workspace("artifact-stale-generation").unwrap();
+        artifact_controlled_workspace(request_execution, "artifact-stale-generation").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -120,7 +135,11 @@ fn stale_installation_generation_denies_artifact_transfer_before_consumer_access
 
 #[test]
 fn foreign_runtime_denies_artifact_progression_before_consumer_access() {
-    let (mut owner, probe) = artifact_move_workspace("artifact-runtime-owner").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut owner, probe) =
+        artifact_move_workspace(request_execution, "artifact-runtime-owner").unwrap();
     let installed = owner.domain(GeometryDomain).unwrap();
     let run = owner
         .observe_operating_world(owner.current_world())
@@ -141,7 +160,8 @@ fn foreign_runtime_denies_artifact_progression_before_consumer_access() {
             &mut owner,
         )
         .unwrap();
-    let (mut foreign, foreign_probe) = artifact_move_workspace("artifact-runtime-foreign").unwrap();
+    let (mut foreign, foreign_probe) =
+        artifact_move_workspace(request_execution, "artifact-runtime-foreign").unwrap();
 
     let denial = match run.advance_with_artifact("consume", "produce", &mut foreign) {
         TransitionOutcome::Denied(denial) => denial,
@@ -173,7 +193,11 @@ fn foreign_runtime_denies_artifact_progression_before_consumer_access() {
 
 #[test]
 fn undeclared_predecessor_denies_before_artifact_transfer_or_consumer_access() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-stage-mismatch").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, "artifact-stage-mismatch").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())

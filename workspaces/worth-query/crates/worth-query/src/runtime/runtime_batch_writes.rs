@@ -26,6 +26,7 @@ use runtime_batch_write_symbolics::{
 impl WorthQueryRuntime {
     pub(crate) fn execute_authoritative_write_batch_direct(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryWriteCommand>,
         graph_composition_breadth: WorthQueryGraphCompositionBreadth,
         graph_composition_program: WorthQueryGraphCompositionProgram,
@@ -67,7 +68,7 @@ impl WorthQueryRuntime {
             let declared_entity_identity = command.declared_entity_identity();
             let existing_truth_binding = command.existing_truth_binding().cloned();
             let verified_existing_truth_assertion =
-                self.verified_existing_assertion_for_command(&command)?;
+                self.verified_existing_assertion_for_command(execution, &command)?;
             let declared_aspect_operations = command.declared_aspect_operations();
             let declared_aspect_value_digest = command_declared_aspect_value_identity(&command);
             let mutation_metadata = command.mutation_metadata();
@@ -112,14 +113,14 @@ impl WorthQueryRuntime {
                 WorthQueryWriteCommand::AssertExistingAspects { binding, .. } => {
                     synthetic_existing_assertion_receipt(
                         &binding,
-                        &self.current_snapshot_identity(),
+                        &self.current_snapshot_identity_with_request(execution),
                         declared_aspect_value_digest.as_ref(),
                     )
                 }
                 WorthQueryWriteCommand::VerifyExistingAspects { binding, .. } => {
                     synthetic_existing_assertion_receipt(
                         &binding,
-                        &self.current_snapshot_identity(),
+                        &self.current_snapshot_identity_with_request(execution),
                         declared_aspect_value_digest.as_ref(),
                     )
                 }
@@ -146,7 +147,7 @@ impl WorthQueryRuntime {
                             continuity_intent,
                             symbolic_target_reference,
                         })?;
-                    self.backend.write(admitted)?
+                    self.backend.write(execution, admitted)?
                 }
                 WorthQueryWriteCommand::UpdateSymbolicAspects {
                     reference,
@@ -171,7 +172,7 @@ impl WorthQueryRuntime {
                             continuity_intent,
                         })?;
                     attach_symbolic_target_reference_to_receipt(
-                        self.backend.write(admitted)?,
+                        self.backend.write(execution, admitted)?,
                         symbolic_target_reference,
                     )
                 }
@@ -200,7 +201,7 @@ impl WorthQueryRuntime {
                         },
                     );
                     let admitted = self.admit_backend_write_command(command)?;
-                    self.backend.write(admitted)?
+                    self.backend.write(execution, admitted)?
                 }
                 WorthQueryWriteCommand::DeleteSymbolicAspects {
                     reference,
@@ -226,14 +227,14 @@ impl WorthQueryRuntime {
                             naming_intent,
                         })?;
                     attach_symbolic_target_reference_to_receipt(
-                        self.backend.write(admitted)?,
+                        self.backend.write(execution, admitted)?,
                         symbolic_target_reference,
                     )
                 }
                 other => {
                     let admitted =
                         self.admit_backend_write_command(Self::lower_backend_write_command(other))?;
-                    self.backend.write(admitted)?
+                    self.backend.write(execution, admitted)?
                 }
             };
             if let Some(intent) = summary.continuity_intent().as_ref() {
@@ -275,7 +276,7 @@ impl WorthQueryRuntime {
         if use_backend_atomic_batch {
             let deferred_receipts = self
                 .backend
-                .write_batch(deferred_backend_commands)
+                .write_batch(execution, deferred_backend_commands)
                 .map_err(WorthQueryRuntimeError::Workspace)?;
             let deferred_slot_count = resolved_receipts
                 .iter()
@@ -334,6 +335,7 @@ impl WorthQueryRuntime {
             .collect::<Vec<_>>();
         let combined_receipt = combined_batch_mutation_receipt(&receipts)?;
         let summary = self.route_authoritative_mutation_summary(
+            execution,
             &combined_receipt,
             &WorthQueryMutationMetadata::default(),
         )?;

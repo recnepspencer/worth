@@ -1,3 +1,4 @@
+mod advancement;
 use std::collections::BTreeSet;
 
 #[path = "identity_runtime/certification_controls.rs"]
@@ -210,6 +211,7 @@ impl BankIdentityRuntime {
 
     pub async fn authenticate_with<Adapter>(
         &self,
+
         authentication: &BankAuthenticationBoundary<Adapter>,
         credential: Adapter::Credential,
         scope: &WorthQueryRequestScope,
@@ -221,34 +223,44 @@ impl BankIdentityRuntime {
             .authenticate(credential, scope)
             .await
             .map_err(BankPrincipalAdmissionError::Authentication)?;
-        let selected = self
-            .select_current_product()
-            .map_err(BankPrincipalAdmissionError::ProductSelection)?;
-        let query = selected
-            .resolve_authenticated_principal(
-                &self.binding,
-                &external,
-                scope,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .map_err(BankPrincipalAdmissionError::Resolution)?;
-        let principal_id = *query.principal_identity();
-        Ok(BankAuthenticatedPrincipal::new(
-            principal_id,
-            external,
-            query,
-        ))
+        self.application_runtime()
+            .with_application_advancement(scope, |phase| {
+                let selected = self
+                    .select_current_product(&phase)
+                    .map_err(BankPrincipalAdmissionError::ProductSelection)?;
+                let query = selected
+                    .resolve_authenticated_principal(
+                        &phase,
+                        &self.binding,
+                        &external,
+                        scope,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .map_err(BankPrincipalAdmissionError::Resolution)?;
+                let principal_id = *query.principal_identity();
+                Ok(BankAuthenticatedPrincipal::new(
+                    principal_id,
+                    external,
+                    query,
+                ))
+            })
+            .map_err(BankPrincipalAdmissionError::ExecutionRequest)?
     }
 
     pub fn validate(
         &self,
+
         principal: &BankAuthenticatedPrincipal,
         scope: &WorthQueryRequestScope,
     ) -> Result<(), BankPrincipalAdmissionError> {
-        self.select_current_product()
-            .map_err(BankPrincipalAdmissionError::ProductSelection)?
-            .validate_authenticated_principal(principal.query(), scope)
-            .map_err(BankPrincipalAdmissionError::Resolution)
+        self.application_runtime()
+            .with_application_advancement(scope, |phase| {
+                self.select_current_product(&phase)
+                    .map_err(BankPrincipalAdmissionError::ProductSelection)?
+                    .validate_authenticated_principal(&phase, principal.query(), scope)
+                    .map_err(BankPrincipalAdmissionError::Resolution)
+            })
+            .map_err(BankPrincipalAdmissionError::ExecutionRequest)?
     }
 
     pub fn mapped_principal_count(&self) -> usize {
@@ -259,7 +271,11 @@ impl BankIdentityRuntime {
         &self,
         request: &WorthQueryRequestScope,
     ) -> Result<BankPreviewSession, BankApplicationQueryDenial> {
-        BankPreviewSession::open(&self.runtime, request)
+        self.application_runtime()
+            .with_application_advancement(request, |phase| {
+                BankPreviewSession::open(&phase, &self.runtime, request)
+            })
+            .map_err(BankApplicationQueryDenial::ExecutionRequest)?
     }
 
     pub(crate) const fn application_runtime(

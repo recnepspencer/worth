@@ -30,6 +30,9 @@ impl RelationalPublicationCompanion for OverflowCompanion {
 
 #[test]
 fn preflight_counter_overflow_denies_without_moving_the_native_head() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for meter in [OverflowMeter::Work, OverflowMeter::PreparationBytes] {
         let runtime = runtime_with_test_schema();
         let before = test_owner_main_basis(&runtime).expect("main branch has owner basis");
@@ -54,12 +57,11 @@ fn preflight_counter_overflow_denies_without_moving_the_native_head() {
             )
             .expect("candidate stages");
         let candidate = runtime
-            .prepare_branch_transaction(
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .expect("candidate prepares");
-        let outcome = runtime.publication_port().compare_and_publish(candidate);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate);
         let expected = match meter {
             OverflowMeter::Work => CompanionPreflightStop::WorkCounterOverflow,
             OverflowMeter::PreparationBytes => {

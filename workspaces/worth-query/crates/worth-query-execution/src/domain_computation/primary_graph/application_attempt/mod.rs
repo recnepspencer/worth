@@ -33,6 +33,8 @@ mod observation;
 pub(in crate::domain_computation::primary_graph) use observation::observe_field_value_borrowed;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;

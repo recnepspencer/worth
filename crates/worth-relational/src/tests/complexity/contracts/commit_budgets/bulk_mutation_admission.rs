@@ -2,9 +2,12 @@ use super::*;
 
 #[test]
 fn complexity_budget_bulk_mutation_planning_reports_identity_scope_and_batch_evidence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity_in_partition(&runtime, "source", PartitionId(7));
-    let target = create_entity_in_partition(&runtime, "target", PartitionId(11));
+    let source = create_entity_in_partition(execution, &runtime, "source", PartitionId(7));
+    let target = create_entity_in_partition(execution, &runtime, "target", PartitionId(11));
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -71,9 +74,12 @@ fn complexity_budget_bulk_mutation_planning_reports_identity_scope_and_batch_evi
 
 #[test]
 fn complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -127,10 +133,7 @@ fn complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_comm
         )
         .expect("test staging stays within configured resource budgets");
     let _ = commit_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("commit should succeed");
     let committed_counters = runtime.performance_access().counters();
 

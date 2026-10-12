@@ -31,6 +31,7 @@ where
 
     pub fn admit_output_demand<Family>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -40,6 +41,12 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
         let (source, observed_source) = source_result.into_single_source().ok_or_else(|| {
             denial(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
@@ -47,7 +54,7 @@ where
             )
         })?;
         let profile_kind = Family::profile_kind(&source);
-        self.admit_output_demand_with_source::<Family>(
+        self.admit_output_demand_with_source::<Family>(execution,
             source,
             observed_source,
             None,
@@ -64,6 +71,7 @@ where
     #[doc(hidden)]
     pub(in crate::domain_computation) fn admit_required_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -80,7 +88,7 @@ where
             )
         })?;
         let profile_kind = Family::profile_kind(&source);
-        self.admit_output_demand_with_source::<Family>(
+        self.admit_output_demand_with_source::<Family>(execution,
             source,
             observed_source,
             None,
@@ -97,6 +105,7 @@ where
     #[doc(hidden)]
     pub(in crate::domain_computation) fn admit_recovered_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -145,7 +154,7 @@ where
             ));
         }
         let profile_kind = Family::profile_kind(&source);
-        self.admit_output_demand_with_source::<Family>(
+        self.admit_output_demand_with_source::<Family>(execution,
             source,
             observed_source,
             Some(&current_observed_source),
@@ -161,6 +170,7 @@ where
 
     pub fn admit_performed_output_demand<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -183,7 +193,7 @@ where
             &observed_source,
         )?;
         let profile_kind = Family::profile_kind(&source);
-        self.admit_output_demand_with_source::<Family>(
+        self.admit_output_demand_with_source::<Family>(execution,
             source,
             observed_source,
             None,
@@ -199,6 +209,7 @@ where
 
     pub(super) fn admit_output_demand_with_source<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: FamilySourceValue<Schema, Family>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
@@ -222,6 +233,7 @@ where
         let mut admission = self.demand_request_admission();
         let result = self
             .admit_output_demand_with_source_admitted::<Family>(
+                execution,
                 &source,
                 observed_source,
                 selection_source,

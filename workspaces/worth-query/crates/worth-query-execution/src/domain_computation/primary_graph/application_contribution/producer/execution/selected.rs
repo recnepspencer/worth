@@ -164,6 +164,15 @@ where
         'owner: 'basis,
     {
         use super::required_cue::RequiredCueProgress;
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "producer advancement phase",
+                )
+            })?;
+
         // The registry selects this entry by the exact Ready producer, and
         // cold registration seals its sole typed executor to that entry.
         request_admission
@@ -192,6 +201,7 @@ where
             })?
             .source();
         source_readmission::certify_ready_on_selected_with_disclosure::<_, Schema, Binding>(
+            &execution,
             runtime,
             &self.source_query,
             &self.principal_validation,
@@ -228,6 +238,7 @@ where
                         )
                     })?;
                 let fresh = source_readmission::disclose_prepared_on_selected::<Schema, Binding>(
+                    &execution,
                     runtime,
                     permission,
                     principal,
@@ -239,6 +250,7 @@ where
                     admission,
                 )?;
                 let Some(readiness) = performed.borrow_mut().fresh(
+                    &execution,
                     selected.key(),
                     fresh.source().output_source_epoch().ok_or_else(|| {
                         denial(
@@ -283,6 +295,7 @@ where
         admission: &mut InvalidationEditAdmission,
     ) -> Result<super::required_cue::FrozenCurrentInspection<'basis>, ProducerExecutionStop> {
         let super::required_cue::FrozenInspection {
+            execution,
             runtime,
             principal,
             request: request_scope,
@@ -323,6 +336,7 @@ where
         // The same native certification as Live. Its disclosure continuation
         // only reports not-current: no refresh claim, source read or plan.
         source_readmission::certify_ready_on_selected_with_disclosure::<_, Schema, Binding>(
+            &execution,
             runtime,
             &self.source_query,
             &self.principal_validation,

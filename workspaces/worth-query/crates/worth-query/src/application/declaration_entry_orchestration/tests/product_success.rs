@@ -8,7 +8,10 @@ use super::domain::{admitted_handle, AdmittedFamily, Input};
 
 #[test]
 fn route_product_orchestration_matches_explicit_route_plan_digest() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = handle
         .declare_review_and_progress(Input::<AdmittedFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -45,7 +48,10 @@ fn route_product_orchestration_matches_explicit_route_plan_digest() {
 
 #[test]
 fn receipt_product_orchestration_matches_explicit_receipt_digest() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = handle
         .declare_review_and_progress(Input::<AdmittedFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -75,7 +81,10 @@ fn receipt_product_orchestration_matches_explicit_receipt_digest() {
 
 #[test]
 fn envelope_product_orchestration_matches_explicit_envelope_digest_and_intent() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = handle
         .declare_review_and_progress(Input::<AdmittedFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));
@@ -118,7 +127,10 @@ fn envelope_product_orchestration_matches_explicit_envelope_digest_and_intent() 
 
 #[test]
 fn declaration_entry_artifacts_expose_stable_binding_targets() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let progressed = handle
         .declare_review_and_progress(Input::<AdmittedFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));

@@ -94,6 +94,7 @@ impl worth_query::facade::runtime::WorthQueryMergeSnapshotOwner for TestQueryRun
 impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
     fn prepare_product_source(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_query::facade::runtime::WorthQueryProductRelationalInstallation,
         worth_query::facade::runtime::WorthQueryProductSourceDenial,
@@ -102,9 +103,10 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
             .product_source
             .as_ref()
             .ok_or(worth_query::facade::runtime::WorthQueryProductSourceDenial::Unsupported)?;
-        let branch = source.with_runtime(|runtime| runtime.main_branch_identity());
+        let branch =
+            source.with_runtime(request_execution, |runtime| runtime.main_branch_identity());
         source
-            .prepare_product_source(&branch)
+            .prepare_product_source(request_execution, &branch)
             .map_err(worth_query::facade::runtime::WorthQueryProductSourceDenial::Basis)
     }
 
@@ -138,6 +140,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn write(
         &mut self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         self.record_attempted_write(1);
@@ -146,6 +149,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn write_batch(
         &mut self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         self.record_attempted_write(commands.len());
@@ -158,6 +162,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn execute_intent(
         &mut self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         panic!("unused in query handoff phase tests")
@@ -165,6 +170,7 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         assert!(
@@ -209,7 +215,10 @@ impl WorthQueryRuntimeBackend for TestQueryRuntimeBackend {
         Vec::new()
     }
 
-    fn current_snapshot_identity(&self) -> WorthQuerySnapshotIdentity {
+    fn current_snapshot_identity(
+        &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
                 RelationalBridgeSnapshotIdentityParts::new(1, 1),

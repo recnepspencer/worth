@@ -16,6 +16,7 @@ where
 {
     pub fn read_admitted_operation<Operation, Input, Scope, Output>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
@@ -23,6 +24,7 @@ where
         ) -> WorthQueryOrdinaryReadBatch<Output>,
     ) -> Result<WorthQueryOrdinaryReadProjection<Output>, WorthQueryOperationProjectionDenial> {
         let completed = self.project_admitted_operation(
+            phase,
             admission,
             |reader, root| {
                 let version =

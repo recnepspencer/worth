@@ -26,7 +26,6 @@ use super::{
     WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationOwner,
 };
 use crate::domain_computation::primary_graph::application_attempt::ComputationFactReaders;
-use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::tests::application_attempt::{
     authenticated_principal, resolved_account,
 };
@@ -220,77 +219,92 @@ fn routed(
 ) -> (Option<Vec<ComputationFactReaders>>, Vec<PartitionIdentity>) {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let operation = world
+    world
         .application
-        .installed_schema()
-        .installed_operation(TouchAccountOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let installed =
-        WorthQueryInstalledPartitionedComputation::<Schema, Feature, Computation, Owner>::new(
-            Owner {
-                status,
-                gathered: Mutex::default(),
-            },
-            super::ComputationRetention::Unretained,
-        );
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(&admission, |reader, root| {
-            let execution = QueryRequestExecution::open(
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(
-                crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(
-                    std::num::NonZeroUsize::MIN, 1 << 30,
-                ),
-            ), &request);
-            for _ in 0..runs {
-                if installed.prepare_through(reader, &execution, root).is_err() {
-                    panic!("the owner's reads are declared reads of the operation");
-                }
-            }
-            if handler_reads_status {
-                reader
-                    .require_decision_field(root, AccountStatus::reference())
-                    .unwrap();
-            }
-        }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap()
-        .into_parts();
-    let read_set = world
-        .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .complete_projected_dependencies(
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut gathered = installed.owner.gathered.lock().unwrap().clone();
-    gathered.sort_unstable();
-    gathered.dedup();
-    (
-        read_set.computation_facts().map(|facts| {
-            facts
-                .facts()
-                .map(|(_, _, readers)| readers.clone())
-                .collect()
-        }),
-        gathered,
-    )
+        .with_application_advancement(&request, |phase| {
+            let custody = phase.test_host_request();
+            let principal = authenticated_principal(&custody, &world, &request);
+            let account = resolved_account(&custody, &world, "open", &request);
+            let operation = world
+                .application
+                .installed_schema()
+                .installed_operation(TouchAccountOperation::reference())
+                .unwrap();
+            let admission = world
+                .selected_product(&custody)
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap();
+            let installed = WorthQueryInstalledPartitionedComputation::<
+                Schema,
+                Feature,
+                Computation,
+                Owner,
+            >::new(
+                Owner {
+                    status,
+                    gathered: Mutex::default(),
+                },
+                super::ComputationRetention::Unretained,
+            );
+            let (_, projection, _) = world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, root| {
+                        let execution = phase
+                            .execution_for(&world.application.product_runtime)
+                            .expect("the installed fixture lends its computation execution");
+                        for _ in 0..runs {
+                            if installed.prepare_through(reader, execution, root).is_err() {
+                                panic!("the owner's reads are declared reads of the operation");
+                            }
+                        }
+                        if handler_reads_status {
+                            reader
+                                .require_decision_field(root, AccountStatus::reference())
+                                .unwrap();
+                        }
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts();
+            let read_set = world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .complete_projected_dependencies(
+                    &phase,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            let mut gathered = installed.owner.gathered.lock().unwrap().clone();
+            gathered.sort_unstable();
+            gathered.dedup();
+            (
+                read_set.computation_facts().map(|facts| {
+                    facts
+                        .facts()
+                        .map(|(_, _, readers)| readers.clone())
+                        .collect()
+                }),
+                gathered,
+            )
+        })
+        .expect("the attribution read owns its host call")
 }
 
 #[test]

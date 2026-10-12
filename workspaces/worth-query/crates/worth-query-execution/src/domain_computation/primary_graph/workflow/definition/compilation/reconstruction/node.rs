@@ -22,6 +22,7 @@ use crate::domain_computation::primary_graph::workflow::{
 };
 
 pub(super) fn compile_node(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -34,6 +35,7 @@ pub(super) fn compile_node(
         kind: node.entity_kind,
     });
     let path = observed_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -42,6 +44,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let kind = observed_u64(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -50,6 +53,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let member = observed_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -58,6 +62,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let input_type = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -66,6 +71,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let parameter_type = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -74,6 +80,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let result_type = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -82,6 +89,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let assessment_binding = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -90,6 +98,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let assessment_subject = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -98,6 +107,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let assessment_applicability_relation = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -106,6 +116,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let assessment_applicability_from = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -114,6 +125,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let assessment_applicability_to = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -122,6 +134,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let operation_binding = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -130,6 +143,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let inbound_origin = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -138,6 +152,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let inbound_contract = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -146,6 +161,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let inbound_wait = super::observed_optional_u64(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -154,6 +170,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let condition_binding = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -162,6 +179,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let condition_operands = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -170,6 +188,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let capability_type = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -178,6 +197,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let approval_operation = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -186,6 +206,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let approval_capability_identity = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         entity,
@@ -194,6 +215,7 @@ pub(super) fn compile_node(
         facts,
     )?;
     let requires_workflow_authority = observed_bool(
+        execution,
         runtime,
         snapshot,
         entity,

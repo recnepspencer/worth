@@ -25,24 +25,35 @@ pub mod public_bridge_runtime {
             Self
         }
 
-        pub fn bridge_backed_runtime(&self) -> WorthQueryRuntime {
-            self.bridge_backed_runtime_with_support(public_graph_support_profile())
+        pub fn bridge_backed_runtime(
+            &self,
+            request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        ) -> WorthQueryRuntime {
+            self.bridge_backed_runtime_with_support(
+                request_execution,
+                public_graph_support_profile(),
+            )
         }
 
         pub fn bridge_backed_runtime_with_support(
             &self,
+            request_execution: &worth_execution::ExecutionRequest<'_, '_>,
             support_profile: WorthQueryRuntimeSupportProfile,
         ) -> WorthQueryRuntime {
             stateful_bridge_runtime_with_support(
+                request_execution,
                 &["Task", "TaskRelation", "user", "manager", "mentor"],
                 support_profile,
             )
         }
     }
 
-    pub fn workspace(name: &str) -> crate::runtime::WorthQueryWorkspace {
+    pub fn workspace(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        name: &str,
+    ) -> crate::runtime::WorthQueryWorkspace {
         PublicBridgeRuntimeHarness::new()
-            .bridge_backed_runtime()
+            .bridge_backed_runtime(request_execution)
             .workspace(name)
             .expect("runtime should open workspace")
     }

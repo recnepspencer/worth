@@ -7,13 +7,16 @@ use super::{current, declare, project_facts, WorthQueryProjectionOutcome};
 
 #[test]
 fn completed_read_consumes_projection_without_exposing_phase_artifacts() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("ordinary-read-projection")
         .expect("workspace should open");
     let completion = declare(identity_read)
         .expect("read should declare")
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("read should complete");
 

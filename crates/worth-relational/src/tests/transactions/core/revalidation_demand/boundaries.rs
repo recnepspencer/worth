@@ -5,12 +5,15 @@ use crate::tests::support::*;
 
 #[test]
 fn a_refused_demand_leaves_no_staging_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_execution::{CancellationToken, ExecutionAllocationPolicy as Policy, LeaseRequest};
     use worth_foundational::{
         DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
     };
     let runtime = strictness_runtime();
-    let entity = create_entity(&runtime, COMPLIANT_NAME);
+    let entity = create_entity(execution, &runtime, COMPLIANT_NAME);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     let before_batches = transaction.batches().to_vec();
     let before_reads = transaction.footprint().clone();
@@ -48,8 +51,11 @@ fn a_refused_demand_leaves_no_staging_residue() {
 
 #[test]
 fn a_demand_claims_a_read_locus_and_never_a_write_locus() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let entity = create_entity(&runtime, COMPLIANT_NAME);
+    let entity = create_entity(execution, &runtime, COMPLIANT_NAME);
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
@@ -78,8 +84,11 @@ fn a_demand_claims_a_read_locus_and_never_a_write_locus() {
 
 #[test]
 fn rolling_back_a_savepoint_past_a_demand_reports_no_restoration() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
-    let entity = create_entity(&runtime, COMPLIANT_NAME);
+    let entity = create_entity(execution, &runtime, COMPLIANT_NAME);
 
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     let savepoint = transaction
@@ -104,11 +113,14 @@ fn rolling_back_a_savepoint_past_a_demand_reports_no_restoration() {
 
 #[test]
 fn a_demand_puts_exactly_its_record_in_front_of_the_platform_touched_slot_rules() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = strictness_runtime();
     for index in 0..4 {
-        let _ = create_entity(&runtime, &format!("bystander-{index}"));
+        let _ = create_entity(execution, &runtime, &format!("bystander-{index}"));
     }
-    let target = create_entity(&runtime, COMPLIANT_NAME);
+    let target = create_entity(execution, &runtime, COMPLIANT_NAME);
     assert_ne!(
         target.slot_index(),
         0,
@@ -124,10 +136,7 @@ fn a_demand_puts_exactly_its_record_in_front_of_the_platform_touched_slot_rules(
         )
         .expect("staging stays within configured resource budgets");
     let outcome = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("the compliant record passes the strict reading");
     let counters = runtime.performance_access().counters();
     release_test_commit_snapshot(&runtime, &outcome);

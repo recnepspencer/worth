@@ -161,31 +161,47 @@ fn request(identity: &str) -> WorthQueryManagedGraphCallRequest {
 }
 
 fn advance_direct(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     epoch: crate::domain_computation::WorthQueryIteratingDirectConvergenceEpoch,
     identity: &str,
 ) -> WorthQueryDirectConvergenceIterationOutcome {
-    let started = epoch
-        .begin_iteration(execution, request(identity))
-        .unwrap_or_else(|_| panic!("direct report history iteration must start"));
-    match started.advance(execution) {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("direct report history provider must complete"),
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(&installed_fixture_phase, request(identity))
+    }
+    .unwrap_or_else(|_| panic!("direct report history iteration must start"));
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("direct report history provider must complete"),
+        }
     }
 }
 
 fn advance_workflow(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     epoch: crate::domain_computation::WorthQueryIteratingWorkflowConvergenceEpoch,
     identity: &str,
 ) -> WorthQueryWorkflowConvergenceIterationOutcome {
-    let started = epoch
-        .begin_stage_iteration(execution, WORKFLOW_STAGE, request(identity))
-        .unwrap_or_else(|_| panic!("workflow report history iteration must start"));
-    match started.advance(execution) {
-        WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("workflow report history provider must complete"),
+    let started = {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_stage_iteration(&installed_fixture_phase, WORKFLOW_STAGE, request(identity))
+    }
+    .unwrap_or_else(|_| panic!("workflow report history iteration must start"));
+    {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryWorkflowConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("workflow report history provider must complete"),
+        }
     }
 }

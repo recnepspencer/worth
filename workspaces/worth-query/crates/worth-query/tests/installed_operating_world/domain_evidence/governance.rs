@@ -7,6 +7,9 @@ use super::execution::{admitted_receipt, admitted_receipt_with_governance, evide
 
 #[test]
 fn never_disclose_discards_malformed_optional_payload_before_sidecar_validation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (name, scenario) in [
         (
             "domain-evidence-never-disclose-malformed-records",
@@ -22,6 +25,7 @@ fn never_disclose_discards_malformed_optional_payload_before_sidecar_validation(
         ),
     ] {
         let receipt = admitted_receipt(
+            request_execution,
             name,
             scenario,
             domain::WorthQueryArtifactRedactionPosture::NeverDisclose,
@@ -50,6 +54,9 @@ fn never_disclose_discards_malformed_optional_payload_before_sidecar_validation(
 
 #[test]
 fn governance_redaction_never_recovers_payload_and_preserves_policy() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (name, redaction, expect_digest) in [
         (
             "domain-evidence-canonical-projection",
@@ -67,7 +74,8 @@ fn governance_redaction_never_recovers_payload_and_preserves_policy() {
             false,
         ),
     ] {
-        let receipt = admitted_receipt(name, EvidenceScenario::Honest, redaction);
+        let receipt =
+            admitted_receipt(request_execution, name, EvidenceScenario::Honest, redaction);
         let evidence = evidence(&receipt);
         assert_mandatory_core(evidence.core());
         assert_eq!(evidence.governance().redaction(), redaction);
@@ -115,6 +123,9 @@ fn governance_redaction_never_recovers_payload_and_preserves_policy() {
 
 #[test]
 fn expiry_deletion_and_legal_hold_propagate_without_detached_payload() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (name, governance) in [
         (
             "domain-evidence-expiring",
@@ -150,7 +161,12 @@ fn expiry_deletion_and_legal_hold_propagate_without_detached_payload() {
             },
         ),
     ] {
-        let receipt = admitted_receipt_with_governance(name, EvidenceScenario::Honest, governance);
+        let receipt = admitted_receipt_with_governance(
+            request_execution,
+            name,
+            EvidenceScenario::Honest,
+            governance,
+        );
         let evidence = evidence(&receipt);
         assert_eq!(evidence.governance().retention(), governance.retention);
         assert_eq!(evidence.governance().deletion(), governance.deletion);
@@ -181,7 +197,11 @@ fn expiry_deletion_and_legal_hold_propagate_without_detached_payload() {
 
 #[test]
 fn shorter_lived_decision_records_never_enter_the_durable_artifact_sidecar() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let receipt = admitted_receipt_with_governance(
+        request_execution,
         "domain-evidence-shorter-decision-retention",
         EvidenceScenario::Honest,
         EvidenceGovernance {
@@ -217,7 +237,11 @@ fn shorter_lived_decision_records_never_enter_the_durable_artifact_sidecar() {
 
 #[test]
 fn mixed_decision_governance_materializes_only_schema_eligible_records() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let receipt = admitted_receipt_with_governance(
+        request_execution,
         "domain-evidence-mixed-decision-retention",
         EvidenceScenario::MixedDecisionGovernance,
         EvidenceGovernance {

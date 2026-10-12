@@ -1,7 +1,7 @@
 use worth_relational::facade::runtime::{
     CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,
-    CustomInvariantPreparationError, CustomInvariantRegistration, CustomInvariantRule,
-    CustomInvariantScopePlanner, CustomInvariantVerdict,
+    CustomInvariantLeaseBudget, CustomInvariantPreparationError, CustomInvariantRegistration,
+    CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantVerdict,
 };
 
 use super::program_selection::{WorthQueryProgramRuleSelection, WorthQueryProgramRuleStanding};
@@ -82,6 +82,53 @@ where
             rule_scope,
             admission: planner.freeze_admission(),
         })
+    }
+
+    fn supports_checked_preparation(&self) -> bool {
+        self.rule.supports_checked_preparation()
+    }
+
+    fn prepare_scope_checked(
+        &self,
+        planner: &mut CustomInvariantScopePlanner<'_>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, CustomInvariantPreparationError>> {
+        let mut planner = super::WorthQueryApplicationInvariantScopePlanner::new(
+            planner,
+            self.binding_identity.clone(),
+        );
+        self.rule
+            .prepare_scope_checked(&mut planner, budget)
+            .map(|result| {
+                result.map(|rule_scope| InstalledApplicationInvariantScope {
+                    rule_scope,
+                    admission: planner.freeze_admission(),
+                })
+            })
+    }
+
+    fn evaluate_checked(
+        &self,
+        context: &CustomInvariantExecutionContext<'_>,
+        scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<CustomInvariantVerdict, CustomInvariantExecutionError>> {
+        if let Some(selection) = &self.program_selection {
+            match selection.standing(context) {
+                Ok(WorthQueryProgramRuleStanding::Silent) => {
+                    return Some(Ok(CustomInvariantVerdict::Pass))
+                }
+                Ok(WorthQueryProgramRuleStanding::Governs) => {}
+                Err(error) => return Some(Err(error)),
+            }
+        }
+        let context = super::WorthQueryApplicationInvariantContext::new(
+            context,
+            self.binding_identity.clone(),
+            std::sync::Arc::clone(&scope.admission),
+        );
+        self.rule
+            .evaluate_checked(&context, &scope.rule_scope, budget)
     }
 
     fn evaluate(

@@ -11,6 +11,9 @@ use super::{
 
 #[test]
 fn graph_identity_and_cost_postures_are_real_binding_requirements() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (name, package, understates_cost) in [
         (
             "identity",
@@ -44,7 +47,7 @@ fn graph_identity_and_cost_postures_are_real_binding_requirements() {
                 domain::WorthQueryGraphProjectionPosture::NativeProjection,
             ))
             .graph_participation_provider(RemoteB, SelectiveProvider::new(&log, None))
-            .workspace(format!("graph-contract-{name}"))
+            .workspace(request_execution, format!("graph-contract-{name}"))
             .unwrap();
         assert_graph_contract_denial(&workspace, &log, name);
     }
@@ -52,6 +55,9 @@ fn graph_identity_and_cost_postures_are_real_binding_requirements() {
 
 #[test]
 fn partial_commit_topology_requires_declared_operation_recovery() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let log = Arc::new(Mutex::new(Vec::new()));
     let workspace = configured_runtime_for_package(federated_package::<RemoteA, RemoteB>())
         .graph_participation(partial_commit_definition::<RemoteA>("remote-a"))
@@ -61,7 +67,7 @@ fn partial_commit_topology_requires_declared_operation_recovery() {
             domain::WorthQueryGraphProjectionPosture::NativeProjection,
         ))
         .graph_participation_provider(RemoteB, SelectiveProvider::new(&log, None))
-        .workspace("graph-contract-partial-commit")
+        .workspace(request_execution, "graph-contract-partial-commit")
         .unwrap();
     assert_graph_contract_denial(&workspace, &log, "partial commit");
 }

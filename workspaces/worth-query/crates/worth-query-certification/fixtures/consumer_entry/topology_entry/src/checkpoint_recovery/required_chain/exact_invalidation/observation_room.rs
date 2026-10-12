@@ -92,12 +92,14 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
             )
     };
     let recover = |receipt| {
-        request.recover_required_outputs::<program::ChainProgram, program::ChainRoot>(
-            &application,
-            receipt,
-            PlanarOutputDemand::new(body.clone()),
-            WorthQueryOutputDemandControls::host_policy(),
-        )
+        request
+            .recover_required_outputs::<program::ChainProgram, program::ChainRoot>(
+                &application,
+                receipt,
+                PlanarOutputDemand::new(body.clone()),
+                WorthQueryOutputDemandControls::host_policy(),
+            )
+            .map_err(Box::new)
     };
     let receipt = match write() {
         Ok(Performed::Performed(performed)) => performed.receipt().clone(),
@@ -120,7 +122,7 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
             court.write_y(&ring.key("a"), ring.a_y, at);
         }
     }
-    match recover(&receipt).err() {
+    match recover(&receipt).err().map(|denial| *denial) {
         Some(Preparation::Demand(WorthQueryApplicationOutputDemandDenial::Demand(denial)))
             if denial.kind()
                 == primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable => {}

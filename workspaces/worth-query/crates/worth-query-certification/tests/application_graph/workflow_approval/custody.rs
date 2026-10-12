@@ -23,14 +23,28 @@ fn native_writer_cannot_revise_a_published_approval_or_delete_its_evidence() {
         other => panic!("expected a published approval, got {other:?}"),
     };
     let error = application
-        .runtime()
-        .attempt_workflow_approval_field_update_for_test(&instance, approval)
-        .expect_err("a native writer cannot revise an issued decision");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .attempt_workflow_approval_field_update_for_test(&host_phase, &instance, approval)
+                .expect("native control enters its admitted phase")
+                .expect_err("a native writer cannot revise an issued decision")
+        })
+        .expect("installed host call opens");
     assert_fact_custody_denial(error);
     let error = application
-        .runtime()
-        .attempt_workflow_approval_evidence_delete_for_test(&instance, approval)
-        .expect_err("a native writer cannot delete issued approval evidence");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .attempt_workflow_approval_evidence_delete_for_test(
+                    &host_phase,
+                    &instance,
+                    approval,
+                )
+                .expect("native control enters its admitted phase")
+                .expect_err("a native writer cannot delete issued approval evidence")
+        })
+        .expect("installed host call opens");
     assert_fact_custody_denial(error);
 }
 

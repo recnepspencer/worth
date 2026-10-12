@@ -138,13 +138,19 @@ fn reviewed_document(
 }
 
 fn run() {
+    let host_request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let application = publish_workflow_on_first_program();
     let review = review();
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
     assert_eq!(first.component_expansions().len(), 1);
     assert_eq!(
-        discover(&application, &identity),
+        discover(request_execution, &application, &identity),
         WorthQueryWorkflowDefinitionDiscovery::Unpublished
     );
     let first = publish(
@@ -154,7 +160,7 @@ fn run() {
         1,
     );
     assert_eq!(
-        discover(&application, &identity),
+        discover(request_execution, &application, &identity),
         WorthQueryWorkflowDefinitionDiscovery::Current(first.clone())
     );
 
@@ -221,7 +227,7 @@ fn run() {
         500,
     );
     assert_eq!(
-        discover(&application, &identity),
+        discover(request_execution, &application, &identity),
         WorthQueryWorkflowDefinitionDiscovery::Current(second.clone())
     );
     let current = expect_superseded_start(start_instance(&application, first, 501));
@@ -249,15 +255,20 @@ fn publish(
 }
 
 fn discover(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &DocumentWorkflowRuntime,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) -> WorthQueryWorkflowDefinitionDiscovery {
     application
-        .runtime()
-        .on_branch(application.runtime().current_world())
-        .select()
-        .expect("the main branch selects its exact occurrence")
-        .discover_workflow_definition::<ReviewedDocumentWorkflow>(identity)
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .on_branch(application.runtime().current_world())
+                .select(&host_phase)
+                .expect("the main branch selects its exact occurrence")
+        })
+        .expect("installed host call opens")
+        .discover_workflow_definition::<ReviewedDocumentWorkflow>(request_execution, identity)
         .expect("the workflow lineage reads within its bound")
 }
 

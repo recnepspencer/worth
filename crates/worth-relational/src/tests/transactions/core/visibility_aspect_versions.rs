@@ -4,11 +4,18 @@ use worth_foundational::facade::AspectKey;
 
 #[test]
 fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared_fields() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "beta");
-    let versions = runtime.read_truth().entity_aspect_versions(entity).unwrap();
+    let updated = update_entity(execution, &runtime, entity, "beta");
+    let versions = runtime
+        .read_truth()
+        .entity_aspect_versions(execution, entity)
+        .expect("aspect-version request remains live")
+        .unwrap();
 
     assert_eq!(
         versions
@@ -28,10 +35,11 @@ fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared
         ]
     );
 
-    let relation = create_relation(&runtime, entity, entity, "edge");
+    let relation = create_relation(execution, &runtime, entity, entity, "edge");
     let relation_versions = runtime
         .read_truth()
-        .relation_aspect_versions(relation)
+        .relation_aspect_versions(execution, relation)
+        .expect("aspect-version request remains live")
         .unwrap();
     assert_eq!(
         relation_versions
@@ -49,38 +57,49 @@ fn visibility_aspect_versions_follow_canonical_delta_truth_and_ignore_undeclared
 
 #[test]
 fn visibility_aspect_versions_reject_stale_generation_ids() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
     let stale = EntityId::new(
         entity.partition_id,
         entity.local_slot.0,
         entity.generation.0 + 1,
     );
 
-    assert!(runtime.read_truth().entity_aspect_versions(stale).is_none());
     assert!(runtime
         .read_truth()
-        .entity_aspect_versions(entity)
+        .entity_aspect_versions(execution, stale)
+        .expect("aspect-version request remains live")
+        .is_none());
+    assert!(runtime
+        .read_truth()
+        .entity_aspect_versions(execution, entity)
+        .expect("aspect-version request remains live")
         .is_some());
 }
 
 #[test]
 fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "alpha");
+    let created = create_entity_outcome(execution, &runtime, "alpha");
     let entity = changed_entities(&created)[0];
-    let updated = update_entity(&runtime, entity, "beta");
+    let updated = update_entity(execution, &runtime, entity, "beta");
     let view = runtime
         .read_truth()
-        .project_snapshot(&updated.snapshot)
+        .project_snapshot(&updated.snapshot, execution)
         .expect("the committed basis remains projectable");
 
     assert_eq!(
-        view.entity_aspect_version(entity, &AspectKey::new("name").unwrap()),
+        view.entity_aspect_version(execution, entity, &AspectKey::new("name").unwrap()),
         Some(Some(updated.version_id.0))
     );
     assert_eq!(
-        view.entity_aspect_version(entity, &AspectKey::new("unrelated").unwrap()),
+        view.entity_aspect_version(execution, entity, &AspectKey::new("unrelated").unwrap()),
         Some(None)
     );
     let stale = EntityId::new(
@@ -89,7 +108,7 @@ fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
         entity.generation.0 + 1,
     );
     assert_eq!(
-        view.entity_aspect_version(stale, &AspectKey::new("name").unwrap()),
+        view.entity_aspect_version(execution, stale, &AspectKey::new("name").unwrap()),
         None
     );
 }

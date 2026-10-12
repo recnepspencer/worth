@@ -20,17 +20,29 @@ pub(super) fn observe(
     label: &str,
     occurrences: &mut GraphWorkOccurrences,
 ) -> (LaneObservation, u64, StableReadCompletionObservation) {
-    let query = installed_governed_query(context.world);
-    let account = resolve_account(context.world, context.request);
-    let capability =
-        admit_touch_account_capability(context.world, context.principal, context.request).unwrap();
     let mut lease = context
         .world
         .application
-        .with_application_advancement(context.request, |phase| {
-            context
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let query = installed_governed_query(context.world);
+            let account = resolve_account(
+                phase_custody,
+                &phase_custody.borrowed_request_for_test(),
+                context.world,
+                context.request,
+            );
+            let capability = admit_touch_account_capability(
+                &(phase_custody).test_host_request(),
+                context.world,
+                context.principal,
+                context.request,
+            )
+            .unwrap();
+            let lease = context
         .world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request(), )
         .open_governed_application_query_live::<
             GovernedLiveAccountActivityQuery,
             AccountSummaryParameters,
@@ -43,8 +55,7 @@ pub(super) fn observe(
             _,
             _,
             _,
-        >(
- &phase,
+        >(&phase_custody.phase_for_application(&context.world.application),
             query,
             context.principal,
             account,
@@ -58,13 +69,17 @@ pub(super) fn observe(
             )
             .unwrap(),
         )
-        .unwrap()
-        })
         .unwrap();
+            lease
+        })
+        .expect("the fixture owns its live opening call");
     let committed =
         commit_live_activity_with_label(context.world, context.committer, context.request, label);
-    let WorthQueryApplicationLiveOutcome::Delivered(update) =
-        lease.next(context.principal, context.request)
+    let WorthQueryApplicationLiveOutcome::Delivered(update) = context
+        .world
+        .application
+        .with_host_advancement(|phase| lease.next(&phase, context.principal, context.request))
+        .expect("the fixture owns its delivery call")
     else {
         panic!("the symmetric live cause must produce one governed delivery");
     };

@@ -8,11 +8,14 @@ use worth_query_execution::facade::application_contribution::{
 
 #[test]
 fn direct_request_refuses_foreign_phase_without_panicking() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = |name| {
         in_memory_test_runtime()
             .with_schema(task_schema())
             .product_world_resources(in_memory_test_product_world_resources())
-            .workspace(name)
+            .workspace(&resource_request, name)
             .unwrap()
     };
     let first = workspace("direct-phase-owner");

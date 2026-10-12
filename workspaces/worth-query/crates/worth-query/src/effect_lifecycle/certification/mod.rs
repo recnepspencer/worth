@@ -195,9 +195,13 @@ pub struct EffectLifecycleSeededCertificationBundle {
 }
 
 impl EffectLifecycleSeededCertificationBundle {
-    fn new(seed: u64, rows: Vec<EffectLifecycleSeededCertificationRow>) -> Self {
+    fn new(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        seed: u64,
+        rows: Vec<EffectLifecycleSeededCertificationRow>,
+    ) -> Self {
         let seeded_sequence_digest = rows_digest(&rows);
-        let replay_rows = scenarios::seeded_rows(seed, rows.len());
+        let replay_rows = scenarios::seeded_rows(execution, seed, rows.len());
         let replay_rows_digest = rows_digest(&replay_rows);
         let replay_is_deterministic = seeded_sequence_digest == replay_rows_digest;
         let seed_replay_digest = hash_parts(&[
@@ -246,14 +250,16 @@ impl EffectLifecycleSeededCertificationBundle {
 }
 
 pub fn certify_effect_lifecycle_seeded(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     seed: u64,
     scenario_count: usize,
 ) -> EffectLifecycleSeededCertificationBundle {
     let rows = scenarios::seeded_rows(
+        execution,
         seed,
         scenario_count.max(scenarios::minimum_seeded_scenario_count()),
     );
-    EffectLifecycleSeededCertificationBundle::new(seed, rows)
+    EffectLifecycleSeededCertificationBundle::new(execution, seed, rows)
 }
 
 fn rows_digest(rows: &[EffectLifecycleSeededCertificationRow]) -> String {

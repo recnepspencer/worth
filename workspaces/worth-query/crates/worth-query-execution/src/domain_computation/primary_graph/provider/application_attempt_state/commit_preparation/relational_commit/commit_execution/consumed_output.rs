@@ -27,6 +27,7 @@ enum PrecommitOutputStop {
 /// root, on the request's meter, which registration opened and paid the
 /// consumed edges' backing from, through all later preparation.
 pub(super) fn verify(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     attempt: &mut WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
@@ -42,17 +43,17 @@ pub(super) fn verify(
             .iter()
             .try_for_each(|consumed| {
                 consumed
-                    .establish_restored_before_commit(&provider.graph.source_owner, &mut admission)
+                    .establish_restored_before_commit(execution, &provider.graph.source_owner, &mut admission)
                     .map_err(PrecommitOutputStop::Verification)
             })
             .and_then(|()| provider
         .graph
-        .with_runtime(|runtime| {
+        .with_runtime(execution, |runtime| {
             let selected = runtime
                 .read_truth()
                 .positioned_snapshot(before)
                 .map_err(|_| PrecommitOutputStop::SelectedUnavailable)?;
-            let current = ConsumedOutputEvidence::verify_many_with_admission(
+            let current = ConsumedOutputEvidence::verify_many_with_admission(execution,
                 attempt.consumed_outputs(),
                 owner,
                 runtime,

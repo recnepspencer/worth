@@ -37,6 +37,7 @@ pub(super) fn execute_authorized_read<
     Scope,
     Output,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -74,6 +75,7 @@ where
     Schema: ApplicationSchema,
 {
     let ((output, authorization_work), proof) = execute_read_with_security(
+        execution,
         application,
         &plan.security_product,
         &plan.basis,
@@ -97,6 +99,7 @@ where
         },
         |runtime, layout, security, entity_resolution| {
             let authorization_work = validate_current_authorization(
+                execution,
                 application,
                 &entity_resolution,
                 runtime,
@@ -107,11 +110,12 @@ where
                 authorization_work.with_execution_security_product_resolution();
             entity_resolution
                 .at_snapshot(
+                    execution,
                     runtime,
                     plan.basis.snapshot_handle(),
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
-                .and_then(|truth| truth.validate_entity_freshness(plan.scope))
+                .and_then(|truth| truth.validate_entity_freshness(execution, plan.scope))
                 .map_err(|_| WorthQueryAuthorizedApplicationReadDenial::StaleBasisScope)?;
             let output = read(runtime, layout, plan)
                 .map_err(WorthQueryAuthorizedApplicationReadDenial::Read)?;
@@ -125,6 +129,7 @@ where
 /// ordinary and selected reads. Each caller supplies only its currentness
 /// validation and read body; the selected caller retains its typed meter stop.
 fn execute_read_with_security<Schema, Context, Output, Stop>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     security_product: &crate::basis::WorthQueryProductObservationLease,
     basis: &super::basis::WorthQueryApplicationQueryBasisCustody,
@@ -151,15 +156,15 @@ where
 {
     let security = match index_posture {
         WorthQueryQueryIndexPosture::HistoricalAllPrimary => {
-            application.admit_query_product_security_basis(security_product, basis)
+            application.admit_query_product_security_basis(execution, security_product, basis)
         }
-        WorthQueryQueryIndexPosture::SelectedInstalled(prepared) => {
-            application.admit_query_prepared_read_security_basis(security_product, basis, prepared)
-        }
+        WorthQueryQueryIndexPosture::SelectedInstalled(prepared) => application
+            .admit_query_prepared_read_security_basis(execution, security_product, basis, prepared),
     }
     .map_err(security_denial)?;
     let context = prepare()?;
     execute_graph_read_with_snapshot(
+        execution,
         graph_work,
         basis,
         security.snapshot_handle(),
@@ -170,6 +175,7 @@ where
 }
 
 pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     basis: &super::basis::WorthQueryApplicationQueryBasisCustody,
     security_snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -189,7 +195,7 @@ pub(super) fn execute_graph_read_with_snapshot<Context, Output, Stop>(
     Stop,
 > {
     let (read_outcome, proof) = graph_work
-        .execute_query_read(basis.identity(), |runtime, layout| {
+        .execute_query_read(execution, basis.identity(), |runtime, layout| {
             perform(runtime, layout, security_snapshot, context)
         })
         .map_err(|_| session_denial())?;
@@ -205,6 +211,7 @@ fn validate_current_authorization<
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     entity_resolution: &WorthQueryInstalledEntityResolutionContext,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
@@ -224,7 +231,7 @@ where
     Schema: ApplicationSchema,
 {
     plan.authorization
-        .validate_currentness_in(runtime, current, application.authorization.bridge())
+        .validate_currentness_in(execution, runtime, current, application.authorization.bridge())
         .map_err(|kind| match kind {
             crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::StalePrincipal => {
                 WorthQueryAuthorizedApplicationReadDenial::StalePrincipal
@@ -238,7 +245,7 @@ where
         })?;
     if let Some(authorization) = plan.governance.authorization() {
         authorization
-            .validate_currentness_in(runtime, current, application.authorization.bridge())
+            .validate_currentness_in(execution, runtime, current, application.authorization.bridge())
             .map_err(|kind| {
                 WorthQueryAuthorizedApplicationReadDenial::Authorization(
                     crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
@@ -264,11 +271,12 @@ where
     }
     entity_resolution
         .at_snapshot(
+            execution,
             runtime,
             current,
             WorthQueryPrincipalResolutionMode::Ordinary,
         )
-        .and_then(|truth| truth.validate_entity_freshness(plan.scope))
+        .and_then(|truth| truth.validate_entity_freshness(execution, plan.scope))
         .map_err(|_| WorthQueryAuthorizedApplicationReadDenial::StaleScope)?;
     Ok(plan.authorization_work)
 }
@@ -282,6 +290,7 @@ pub(super) fn refresh_governed_authorization<
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     plan: &mut WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -302,6 +311,6 @@ where
         return Ok(());
     };
     application
-        .refresh_capability_authorization_for_graph_work(authorization, graph_work)
+        .refresh_capability_authorization_for_graph_work(execution, authorization, graph_work)
         .map_err(WorthQueryAuthorizedApplicationReadDenial::Authorization)
 }

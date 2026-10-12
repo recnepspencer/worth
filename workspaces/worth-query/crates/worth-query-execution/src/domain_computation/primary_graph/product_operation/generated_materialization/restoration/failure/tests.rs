@@ -13,6 +13,9 @@ use worth_execution::CancellationSource;
 
 #[test]
 fn restoration_preserves_real_execution_refusals() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
         isolated(
             concat!(
@@ -20,7 +23,7 @@ fn restoration_preserves_real_execution_refusals() {
                 "::restoration_preserves_real_execution_refusals"
             ),
             || {
-                let error = RelationalMaterializationError::Commit(work_refusal());
+                let error = RelationalMaterializationError::Commit(work_refusal(execution));
                 let WorthQueryGeneratedOutputRestorationFailureCause::ExecutionDenied(kind) =
                     preparation_failure_cause(&error)
                 else {
@@ -43,7 +46,8 @@ fn restoration_preserves_real_execution_refusals() {
                 for (request, expected) in
                     [(canceled, Control::Cancelled), (expired, Control::TimedOut)]
                 {
-                    let error = RelationalMaterializationError::Commit(refused_commit(request));
+                    let error =
+                        RelationalMaterializationError::Commit(refused_commit(execution, request));
                     let WorthQueryGeneratedOutputRestorationFailureCause::ExecutionControlStopped(
                         kind,
                     ) = preparation_failure_cause(&error)

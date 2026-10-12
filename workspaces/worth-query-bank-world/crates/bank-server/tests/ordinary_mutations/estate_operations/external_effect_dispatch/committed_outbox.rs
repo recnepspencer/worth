@@ -16,9 +16,16 @@ fn committed_outbox_is_fresh_owner_truth_with_exact_commit_affinity() {
         .fixture
         .world
         .runtime
-        .observe_committed_dispatch_outbox(&receipt)
-        .expect("the Query provider can read its current Relational owner view")
-        .expect("the declared effect committed one outbox row");
+        .with_application_advancement(&crate::support::request_scope(), |phase| {
+            world
+                .fixture
+                .world
+                .runtime
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+                .expect("the Query provider can read its current Relational owner view")
+                .expect("the declared effect committed one outbox row")
+        })
+        .expect("installed host call opens");
 
     let mut expected_payload = Vec::with_capacity(24);
     expected_payload.extend_from_slice(&world.fixture.estate.get().to_be_bytes());
@@ -52,7 +59,12 @@ fn another_runtime_without_the_exact_commit_cannot_observe_a_receipts_committed_
             .fixture
             .world
             .runtime
-            .observe_committed_dispatch_outbox(&receipt),
+            .with_application_advancement(&crate::support::request_scope(), |phase| stranger
+                .fixture
+                .world
+                .runtime
+                .observe_committed_dispatch_outbox(&phase, &receipt))
+            .expect("installed host call opens"),
         Err(BankCommittedDispatchOutboxReadDenial::ExactCommitUnavailable)
     );
 }

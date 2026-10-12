@@ -6,7 +6,9 @@ use super::super::adapters::{CompletingExternalTransport, ReplacementPredicate};
 use super::super::courtroom_lifecycle::assert_conditional_resources_empty;
 use super::super::world::{self, CourtroomWorld};
 
-pub(crate) fn application_commits_relational_and_signal_in_one_world_publication() {
+pub(crate) fn application_commits_relational_and_signal_in_one_world_publication(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut world = CourtroomWorld::publish("blocked");
     let transport = Arc::new(CompletingExternalTransport::default());
     world
@@ -16,20 +18,30 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
     let branch = world.application.current_world();
     let before = world
         .application
-        .on_branch(branch)
-        .select()
-        .unwrap()
-        .product()
-        .selected_commit()
-        .clone();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("installed host call opens");
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(warm) = world
         .application
-        .on_branch(branch)
-        .select()
-        .unwrap()
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe()
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(request_execution, &world.clock)
+                .unwrap()
+        })
+        .expect("installed host call opens")
+        .observe(request_execution)
     else {
         panic!("the predecessor definition must warm on the selected product")
     };
@@ -68,7 +80,10 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
         .take_performed_relational_product_change()
         .expect("fresh combined publication retains one Relational delivery");
     assert_eq!(performed.product_commit(), &composite_commit);
-    let selected = world.application.on_branch(branch).select().unwrap();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.application.on_branch(branch).select(&phase).unwrap())
+        .expect("installed host call opens");
     let delivery = world
         .application
         .with_application_advancement(&world::request_scope(), |phase| {
@@ -88,12 +103,17 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
     world.clock_control.push(3, 11);
     let execution = world
         .application
-        .on_branch(branch)
-        .select()
-        .unwrap()
-        .conditional_clock(&world.clock)
-        .unwrap()
-        .observe();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .unwrap()
+                .conditional_clock(request_execution, &world.clock)
+                .unwrap()
+        })
+        .expect("installed host call opens")
+        .observe(request_execution);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(execution) =
         execution
     else {

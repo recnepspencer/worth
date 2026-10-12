@@ -310,3 +310,17 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/
 
 # Owned assessment-phase reports are read by this exact test adapter.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/parallel_history/assessment_trace.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/generated_materialization/typed_reconstruction_preserves_query_authority.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query/src/effect_lifecycle/tests/execution/execution/dropped_mutation_settlement_recovers_by_commit_id_and_reopens_th.rs
+workspaces/worth-query/crates/worth-query-execution/ crates/worth-server/tests/operation_scheduler_phase_eight/refused_basis_read.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query-bank-world/crates/bank-server/tests/ordinary_mutations/posting_lease.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/lifecycle/supersession_retires_pending_predecessor.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/parameter_entry/src/parameter_invariant/lease_tests.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/discontinuity/forked_branch.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/exhausted_index/advance_observation.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/runtime_world_branching/conditional_clock_observation_preserves_real_snapshot_capacity_d.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/temporal_integrity_lease.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/conditional_clock_observation_preserves_real_snapshot_capacity_d.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/selected_product_lifecycle/retained_read_defers_component_cleanup_and_preserves_retry_autho.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query/src/domain_installation/installation_state/substrate_compilation/invariant/lease_tests.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-ui/crates/worth-ui-query-binding/src/product_projection/status_integrity/lease_tests.rs

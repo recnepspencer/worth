@@ -42,6 +42,7 @@ where
         Spec,
     >(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
             Schema,
@@ -69,7 +70,7 @@ where
             instance.definition_entity_id(),
             instance.definition_content_identity().clone(),
         );
-        let (mut compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(
+        let (mut compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(execution,
                 self.lease.handle(),
                 self.lease.snapshot(),
                 &layout,
@@ -88,8 +89,8 @@ where
                 .maximum_retained_transitions_per_instance(),
         )
         .unwrap_or(usize::MAX);
-        let mut observed = self.lease.handle().with_runtime(|runtime| {
-            super::super::workflow_instance_observation::observe_workflow_instance(
+        let mut observed = self.lease.handle().with_runtime(execution, |runtime| {
+            super::super::workflow_instance_observation::observe_workflow_instance(execution,
                 self.lease.handle(),
                 runtime,
                 self.lease.snapshot(),
@@ -113,6 +114,7 @@ where
         )?;
         let input_request = self.admission.publication_request();
         let inputs = inputs::observe(
+            execution,
             &compiled,
             &layout,
             &self.lease.layout,
@@ -142,8 +144,9 @@ where
         let older_settlement = latest
             .is_some_and(|transition| transition.settlement().occurrence() > required.occurrence());
         let settled = if older_settlement {
-            self.lease.handle().with_runtime(|runtime| {
+            self.lease.handle().with_runtime(execution, |runtime| {
                 observed.ensure_history(
+                    execution,
                     self.lease.handle(),
                     runtime,
                     self.lease.snapshot(),
@@ -167,8 +170,9 @@ where
         };
         if let Some(settled) = settled {
             let mut settlement_facts = Vec::new();
-            self.lease.handle().with_runtime(|runtime| {
+            self.lease.handle().with_runtime(execution, |runtime| {
                 super::super::workflow_instance_observation::observe_retained_transition(
+                    execution,
                     runtime,
                     self.lease.snapshot(),
                     &layout,
@@ -254,7 +258,7 @@ where
         // A decision recorded before the budget is spent or the deadline
         // passes still replays after it.
         let allowance = match observed.ensure_step_left().and_then(|allowance| {
-            self.bind_workflow_deadline(clock, &layout, instance.entity_id())
+            self.bind_workflow_deadline(execution, clock, &layout, instance.entity_id())
                 .map(|_| allowance)
         }) {
             Ok(allowance) => allowance,
@@ -319,6 +323,7 @@ where
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )?;
         super::assessment::bind_currentness_facts(
+            execution,
             &mut self,
             &inputs.currentness,
             required.node_path(),

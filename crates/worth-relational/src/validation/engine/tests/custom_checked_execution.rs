@@ -160,7 +160,8 @@ fn execute(
         None,
         None,
     );
-    let result = InvariantEngine::new(&runtime).execute_with_lease(request, &lease);
+    let result = InvariantEngine::new(&runtime)
+        .execute(&worth_execution::ExecutionRequest::leased(&lease), request);
     (visits.load(Ordering::SeqCst), result)
 }
 
@@ -197,6 +198,9 @@ fn checked_custom_rule_stops_mid_scan_when_work_is_exhausted() {
 
 #[test]
 fn checked_custom_preparation_reads_declared_structural_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let target = Arc::new(OnceLock::new());
     let preparation_visits = Arc::new(AtomicUsize::new(0));
     let evaluation_visits = Arc::new(AtomicUsize::new(0));
@@ -215,7 +219,7 @@ fn checked_custom_preparation_reads_declared_structural_state() {
             .unwrap(),
         )
         .build();
-    let entity_id = create_entity_of_kind(&runtime, KindId(1), "checked-structural");
+    let entity_id = create_entity_of_kind(execution, &runtime, KindId(1), "checked-structural");
     target.set(entity_id).unwrap();
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
@@ -226,9 +230,13 @@ fn checked_custom_preparation_reads_declared_structural_state() {
         None,
     );
     let result = InvariantEngine::new(&runtime)
-        .execute_with_lease(
+        .execute(
+            &worth_execution::ExecutionRequest::leased(&checked_lease(
+                8 * 1024 * 1024,
+                1_000_000,
+                CancellationToken::new(),
+            )),
             request,
-            &checked_lease(8 * 1024 * 1024, 1_000_000, CancellationToken::new()),
         )
         .expect("checked structural preparation and evaluation succeed");
     assert_eq!(preparation_visits.load(Ordering::SeqCst), 2);
@@ -268,7 +276,8 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
         None,
         None,
     );
-    let result = InvariantEngine::new(&runtime).execute_with_lease(request, &lease);
+    let result = InvariantEngine::new(&runtime)
+        .execute(&worth_execution::ExecutionRequest::leased(&lease), request);
     assert_eq!(preparation_visits.load(Ordering::SeqCst), 2);
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 0);
     assert!(matches!(
@@ -314,7 +323,8 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
         None,
         None,
     );
-    let result = InvariantEngine::new(&runtime).execute_with_lease(request, &lease);
+    let result = InvariantEngine::new(&runtime)
+        .execute(&worth_execution::ExecutionRequest::leased(&lease), request);
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 0);
     assert!(matches!(
         result,
@@ -332,52 +342,4 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
     ));
 }
 
-#[test]
-fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
-    let cancellation = CancellationSource::new();
-    let target = Arc::new(OnceLock::new());
-    let visits = Arc::new(AtomicUsize::new(0));
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(crate::tests::support::test_schema_registry())
-        .custom_invariant(
-            CustomInvariantRegistration::new(CheckedCounterRule {
-                steps: 1_000,
-                visits: Arc::clone(&visits),
-                preparation_visits: Arc::new(AtomicUsize::new(0)),
-                cancellation: Some(cancellation.clone()),
-                preparation_steps: 0,
-                preparation_scratch_bytes: 0,
-                target: Some(Arc::clone(&target)),
-            })
-            .unwrap(),
-        )
-        .build();
-    target
-        .set(create_entity_of_kind(&runtime, KindId(1), "checked-cancel"))
-        .unwrap();
-    let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
-    let request = InvariantExecutionRequest::from_profile_with_contract(
-        InvariantRequestProfile::CommitBoundary,
-        &runtime,
-        InvariantObservation::committed(runtime.storage_access().current_edition()),
-        runtime.current_version_id(),
-        None,
-        None,
-    );
-    let result = InvariantEngine::new(&runtime).execute_with_lease(request, &lease);
-    assert_eq!(visits.load(Ordering::SeqCst), 2);
-    assert!(matches!(
-        result,
-        Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
-                        crate::execution::RelationalExecutionDenialCause::Cancelled
-                    ),
-                    ..
-                },
-                ..
-            }
-        )
-    ));
-}
+mod cancellation;

@@ -14,6 +14,7 @@ use super::activation::{AdmittedDelegation, DelegationAccess};
 use crate::{estate_progression::BankEstateProgressionDenial, BankIdentityRuntime};
 
 pub(super) fn authorize_target(
+    phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     runtime: &BankIdentityRuntime,
     access: DelegationAccess,
     operation: &WorthQueryInstalledApplicationOperation<
@@ -33,6 +34,7 @@ pub(super) fn authorize_target(
             runtime
                 .application_runtime()
                 .authorize_capability_delegation(
+                    &phase,
                     access,
                     &target,
                     operation,

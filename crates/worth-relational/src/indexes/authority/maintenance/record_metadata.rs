@@ -14,22 +14,24 @@ pub(super) struct RelationMetadata {
 }
 
 pub(super) fn entity_kind(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView<'_>>,
     id: EntityId,
     work: &mut MaintenanceWork,
 ) -> Result<Option<KindId>, Denial> {
     let Some(view) = view else { return Ok(None) };
     if !view.is_exact_basis() {
-        return Ok(reads::entity(Some(view), id, work)?.map(|r| r.kind.kind_id));
+        return Ok(reads::entity(execution, Some(view), id, work)?.map(|r| r.kind.kind_id));
     }
     work.read()?;
     work.prepare(view.exact_entity_state_read_work_bound().unwrap(), 0)?;
     Ok(view
-        .with_exact_entity_state(id, |metadata, _| metadata.kind_id)
+        .with_exact_entity_state(execution, id, |metadata, _| metadata.kind_id)
         .expect("exact basis checked"))
 }
 
 pub(super) fn relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: Option<&VisibilityProjectionView<'_>>,
     id: RelationId,
     work: &mut MaintenanceWork,
@@ -37,7 +39,7 @@ pub(super) fn relation(
     let Some(view) = view else { return Ok(None) };
     if !view.is_exact_basis() {
         return Ok(
-            reads::relation(Some(view), id, work)?.map(|r| RelationMetadata {
+            reads::relation(execution, Some(view), id, work)?.map(|r| RelationMetadata {
                 id: r.relation_id,
                 kind: r.kind.kind_id,
                 source: r.source,

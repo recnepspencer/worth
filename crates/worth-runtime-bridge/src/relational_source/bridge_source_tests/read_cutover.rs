@@ -24,14 +24,15 @@ fn a_retained_observation_reads_its_own_root_after_the_branch_moves_on() {
     let host_request = crate::policy::BridgeExecutionPolicyBaseline::operational()
         .serial_request(worth_execution::CancellationToken::new(), None);
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let execution = &resource_request;
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(&resource_request, &runtime, "before");
     let storm = BranchId("storm".to_owned());
     fork_branch(&runtime, storm.clone(), &BranchId("main".to_owned()));
     let identity = runtime.branch_identity(&storm).unwrap();
     let (_, before_basis) = runtime.observe_branch(&identity).unwrap();
-    rename_on_branch(&runtime, entity, "after", storm);
+    rename_on_branch(execution, &runtime, entity, "after", storm);
     let (_, after_basis) = runtime.observe_branch(&identity).unwrap();
 
     let source =
@@ -57,6 +58,7 @@ fn a_retained_observation_reads_its_own_root_after_the_branch_moves_on() {
 }
 
 fn rename_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     entity: EntityId,
     name: &str,
@@ -78,12 +80,7 @@ fn rename_on_branch(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    transaction.commit(execution, runtime).unwrap();
 }
 
 fn read_name(

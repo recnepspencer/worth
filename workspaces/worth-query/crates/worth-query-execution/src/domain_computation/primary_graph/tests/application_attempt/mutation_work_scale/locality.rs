@@ -65,14 +65,48 @@ fn run_locality(count: usize) -> LocalityRun {
     let world = installed_authorization_world(true);
     let installation = installation_start.elapsed();
     let population_start = Instant::now();
-    grow_unrelated_accounts(&world, count);
+    world
+        .application
+        .with_host_advancement(|phase| {
+            grow_unrelated_accounts(
+                &phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .unwrap(),
+                &world,
+                count,
+            );
+        })
+        .expect("the fixture population owns its host call");
     let population = population_start.elapsed();
 
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let source_query_before = source_query_work(&world, &principal, &request);
-    let unrelated = resolved_account(&world, "unrelated", &request);
-    let program = admitted_program(&world, &principal, &unrelated, &request, "local-edit");
+    let (principal, source_query_before, program) = world
+        .application
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+
+            let source_query_before =
+                source_query_work(phase_custody, &world, &principal, &request);
+            let unrelated = resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "unrelated",
+                &request,
+            );
+            let program = admitted_program(
+                &phase_custody.phase_for_application(&world.application),
+                &world,
+                &principal,
+                &unrelated,
+                &request,
+                "local-edit",
+            );
+            (principal, source_query_before, program)
+        })
+        .expect("the fixture preparation owns its host call");
     let local_edit_start = Instant::now();
     let outcome = world.application.compare_and_commit_application(
         program,
@@ -88,7 +122,12 @@ fn run_locality(count: usize) -> LocalityRun {
         .expect("the local edit carries native mutation work");
     let work = LocalWork {
         source_query_before,
-        source_query_after: source_query_work(&world, &principal, &request),
+        source_query_after: world
+            .application
+            .with_host_advancement(|phase| {
+                source_query_work(&phase.test_host_request(), &world, &principal, &request)
+            })
+            .expect("the fixture source read owns its host call"),
         mutation_decision_facts: mutation.decision_fact_count(),
         mutation_proposed_facts: mutation.proposed_fact_count(),
         mutation_invariant_work: mutation.invariant_work_units(),
@@ -104,6 +143,7 @@ fn run_locality(count: usize) -> LocalityRun {
 }
 
 fn source_query_work(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         IdentityExecutionSchema,
@@ -112,7 +152,7 @@ fn source_query_work(
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> usize {
-    let account = resolved_account(world, "open", request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     let query = world
         .application
         .installed_schema()
@@ -120,8 +160,9 @@ fn source_query_work(
         .expect("the source query is installed");
     let access = WorthQueryApplicationQueryAccessContext::new(principal, &account);
     let plan = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .admit_application_query(
+            &phase_custody.phase_for_application(&world.application),
             &query,
             &access,
             ApplicationQueryParameterSet::new()
@@ -136,7 +177,10 @@ fn source_query_work(
         .expect("the source query admits at every population scale");
     let result = world
         .application
-        .execute_application_query_one_shot(plan)
+        .execute_application_query_one_shot(
+            &phase_custody.phase_for_application(&world.application),
+            plan,
+        )
         .expect("the source query executes at every population scale");
     assert_eq!(result.rows().len(), 1);
     assert_eq!(result.rows()[0].status(), "open");

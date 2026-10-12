@@ -75,15 +75,16 @@ pub(super) fn aftermath_causality_create_intent(
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation) fn resolve_aftermath_causality_at_basis(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         pending: &WorthQueryPendingAftermathCausality,
         outcome_identity: Option<WorthQueryApplicationCommitOutcomeIdentity>,
     ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial>
     {
         let layout = self.graph.layout.provider_aftermath_causality().clone();
-        self.graph.with_runtime_mut(|runtime| {
+        self.graph.with_runtime_mut(execution, |runtime| {
             self.graph
-                .ensure_primary_indexes_for_basis(runtime, basis)
+                .ensure_primary_indexes_for_basis(execution, runtime, basis)
                 .map_err(aftermath_index_currency_denial)?;
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
                 .map_err(|denial| aftermath_snapshot_denial(denial.into()))?;
@@ -94,7 +95,7 @@ impl WorthQueryPrimaryGraphProvider {
                 pending,
                 outcome_identity,
             }
-            .resolve();
+            .resolve(execution, );
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             resolution.map_err(Into::into)
         })
@@ -105,6 +106,7 @@ impl WorthQueryPrimaryGraphProvider {
     /// retire.
     pub(in crate::domain_computation::primary_graph) fn resolve_aftermath_causality_in_snapshot(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -114,7 +116,7 @@ impl WorthQueryPrimaryGraphProvider {
     {
         let layout = self.graph.layout.provider_aftermath_causality().clone();
         self.graph
-            .ensure_primary_indexes_for_basis(runtime, basis)
+            .ensure_primary_indexes_for_basis(execution, runtime, basis)
             .map_err(aftermath_index_currency_denial)?;
         WorthQueryAftermathCausalityRead {
             runtime,
@@ -123,7 +125,7 @@ impl WorthQueryPrimaryGraphProvider {
             pending,
             outcome_identity,
         }
-        .resolve()
+        .resolve(execution)
         .map_err(Into::into)
     }
 }
@@ -176,11 +178,14 @@ struct WorthQueryAftermathCausalityRead<'a> {
 }
 
 impl WorthQueryAftermathCausalityRead<'_> {
-    fn resolve(&self) -> Result<Option<WorthQueryCommittedAftermathCausality>, &'static str> {
-        let Some(entity_id) = self.lookup_entity()? else {
+    fn resolve(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<WorthQueryCommittedAftermathCausality>, &'static str> {
+        let Some(entity_id) = self.lookup_entity(execution)? else {
             return Ok(None);
         };
-        let (created_at, values) = self.read_record(entity_id)?;
+        let (created_at, values) = self.read_record(execution, entity_id)?;
         if values
             .iter()
             .zip(self.expected_values(&values).iter())
@@ -204,6 +209,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
 
     fn lookup_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<worth_relational::facade::identity::EntityId>, &'static str> {
         let request = BoundedEntityFieldLookupRequest::new(
             self.snapshot.clone(),
@@ -217,7 +223,11 @@ impl WorthQueryAftermathCausalityRead<'_> {
         let lookup = self
             .runtime
             .index_access()
-            .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+            .execute_bounded_entity_field_lookup(
+                request,
+                BoundedIndexParityMode::Production,
+                execution,
+            )
             .map_err(|_| "aftermath causality index lookup failed")?;
         if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
             return Err("aftermath causality key is not unique");
@@ -227,6 +237,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
 
     fn read_record(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: worth_relational::facade::identity::EntityId,
     ) -> Result<AftermathCausalityRecord, &'static str> {
         let fields = required_fields(self.layout)?;
@@ -238,9 +249,9 @@ impl WorthQueryAftermathCausalityRead<'_> {
             )]);
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot)
+            .project_snapshot(self.snapshot, execution)
             .and_then(|view| {
-                view.entity_record_with_projection_scope(entity_id, scope, |record| {
+                view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
                     (record.kind_id() == self.layout.entity_kind
                         && record.lifecycle() == RecordLifecycleState::Live)
                         .then(|| {

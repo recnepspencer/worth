@@ -50,15 +50,18 @@ fn raw_interned_string(value: &InternedString) -> Option<&str> {
 
 #[test]
 fn entity_kind_scans_can_be_partition_scoped_without_cross_partition_leakage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let left = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-    let _right = create_entity_in_partition(&runtime, "right-a", PartitionId(11));
+    let left = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+    let _right = create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
     let version_id = runtime.history().latest_commit().unwrap().version_id;
 
     let scoped = runtime
         .read_truth()
-        .project_historical_version(version_id)
-        .entities_in::<NamedEntityProjection>(PartitionId(7));
+        .project_historical_version(execution, version_id)
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(7));
 
     assert_eq!(scoped.len(), 1);
     assert_eq!(scoped[0].entity_id, left);
@@ -69,22 +72,25 @@ fn entity_kind_scans_can_be_partition_scoped_without_cross_partition_leakage() {
 
 #[test]
 fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let ordered = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let ordered_a = create_entity_in_partition(&ordered, "a", PartitionId(3));
-    let ordered_b = create_entity_in_partition(&ordered, "b", PartitionId(3));
+    let ordered_a = create_entity_in_partition(execution, &ordered, "a", PartitionId(3));
+    let ordered_b = create_entity_in_partition(execution, &ordered, "b", PartitionId(3));
 
     let reversed = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let reversed_b = create_entity_in_partition(&reversed, "b", PartitionId(3));
-    let reversed_a = create_entity_in_partition(&reversed, "a", PartitionId(3));
+    let reversed_b = create_entity_in_partition(execution, &reversed, "b", PartitionId(3));
+    let reversed_a = create_entity_in_partition(execution, &reversed, "a", PartitionId(3));
 
     let ordered_records = ordered
         .read_truth()
-        .project_historical_version(ordered.current_version_id())
-        .entities_in::<NamedEntityProjection>(PartitionId(3));
+        .project_historical_version(execution, ordered.current_version_id())
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(3));
     let reversed_records = reversed
         .read_truth()
-        .project_historical_version(reversed.current_version_id())
-        .entities_in::<NamedEntityProjection>(PartitionId(3));
+        .project_historical_version(execution, reversed.current_version_id())
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(3));
 
     assert_eq!(
         ordered_records
@@ -103,8 +109,8 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
     assert_eq!(
         ordered
             .read_truth()
-            .project_historical_version(ordered.current_version_id())
-            .entities_in::<NamedEntityProjection>(PartitionId(3))
+            .project_historical_version(execution, ordered.current_version_id())
+            .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
             .iter()
             .map(|record| record.entity_id)
             .collect::<Vec<_>>(),
@@ -118,19 +124,25 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
 
 #[test]
 fn entity_kind_scans_preserve_historical_partition_visibility() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let baseline = create_entity_outcome_on_branch(&runtime, "base", BranchId("main".to_string()));
+    let baseline =
+        create_entity_outcome_on_branch(execution, &runtime, "base", BranchId("main".to_string()));
     let main_entity = changed_entities(&baseline)[0];
-    let left = create_entity_in_partition(&runtime, "left", PartitionId(17));
+    let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(17));
     let historical_version = runtime.history().latest_commit().unwrap().version_id;
-    let _other_partition = create_entity_in_partition(&runtime, "other", PartitionId(23));
-    let _update = update_entity(&runtime, main_entity, "base-updated");
-    let _later_left = create_entity_in_partition(&runtime, "left-later", PartitionId(17));
+    let _other_partition =
+        create_entity_in_partition(execution, &runtime, "other", PartitionId(23));
+    let _update = update_entity(execution, &runtime, main_entity, "base-updated");
+    let _later_left =
+        create_entity_in_partition(execution, &runtime, "left-later", PartitionId(17));
 
     let historical = runtime
         .read_truth()
-        .project_historical_version(historical_version)
-        .entities_in::<NamedEntityProjection>(PartitionId(17));
+        .project_historical_version(execution, historical_version)
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(17));
 
     assert_eq!(historical.len(), 1);
     assert_eq!(historical[0].entity_id, left);

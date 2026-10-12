@@ -41,8 +41,11 @@ impl<'a, T> WorthQueryWorkspaceLiveReadIntentAuthoring<'a, T> {
         self.review()?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -105,8 +108,11 @@ impl<'a> WorthQueryWorkspaceLiveReadIntentAdmissionReview<'a> {
         })
     }
 
-    pub fn execute(self) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -138,8 +144,11 @@ impl<'a> WorthQueryAdmittedWorkspaceLiveReadIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryLiveReadResult, WorthQueryRuntimeError> {
         self.workspace
-            .execute_bound_live_read_execution(self.execution_binding)
+            .execute_bound_live_read_execution(execution, self.execution_binding)
     }
 }

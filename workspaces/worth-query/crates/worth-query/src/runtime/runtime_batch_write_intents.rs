@@ -68,6 +68,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn execute_authoritative_mutation_batch_execution_binding(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryAuthoritativeMutationBatchExecutionBinding,
     ) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Write)?;
@@ -84,6 +85,7 @@ impl WorthQueryRuntime {
             binding_digest: binding.binding_digest().to_string(),
         };
         self.execute_authoritative_write_batch_direct(
+            execution,
             handoff.commands().to_vec(),
             handoff.graph_composition_breadth().clone(),
             handoff.graph_composition_program().clone(),

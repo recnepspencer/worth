@@ -20,6 +20,7 @@ pub(super) fn read_scope_identity<
     PrincipalIdentity,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
@@ -57,12 +58,12 @@ pub(super) fn read_scope_identity<
         .ok_or_else(|| projection_denial(identity.result_path()))?;
     let view = runtime
         .read_truth()
-        .project_snapshot(plan.basis.snapshot_handle())
+        .project_snapshot(plan.basis.snapshot_handle(), execution)
         .ok_or_else(|| projection_denial(identity.result_path()))?;
     let projection_fields = computation.projection_fields();
     let scope = ProjectionAspectScope::fields(identity.aspect_key().clone(), projection_fields);
     let value = view
-        .entity_record_with_projection_scope(plan.scope.entity_id(), scope, |record| {
+        .entity_record_with_projection_scope(execution, plan.scope.entity_id(), scope, |record| {
             (record.kind_id() == expected_kind && record.lifecycle() == RecordLifecycleState::Live)
                 .then(|| {
                     record

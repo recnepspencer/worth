@@ -7,19 +7,23 @@ use super::super::installed_operation_fixture::{
 };
 
 pub(super) fn admitted_receipt(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     scenario: EvidenceScenario,
     redaction: domain::WorthQueryArtifactRedactionPosture,
 ) -> OwnedExecutionReceipt {
-    execute_receipt(evidence_workspace(name, scenario, redaction).unwrap())
+    execute_receipt(evidence_workspace(request_execution, name, scenario, redaction).unwrap())
 }
 
 pub(super) fn admitted_receipt_with_governance(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     scenario: EvidenceScenario,
     governance: EvidenceGovernance,
 ) -> OwnedExecutionReceipt {
-    execute_receipt(evidence_workspace_with_governance(name, scenario, governance).unwrap())
+    execute_receipt(
+        evidence_workspace_with_governance(request_execution, name, scenario, governance).unwrap(),
+    )
 }
 
 fn execute_receipt(mut workspace: runtime::WorthQueryWorkspace) -> OwnedExecutionReceipt {
@@ -81,10 +85,12 @@ impl<T> ExecutionReceiptOwner for TypedExecutionReceiptOwner<T> {
 }
 
 pub(super) fn denied_execution(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     scenario: EvidenceScenario,
 ) -> domain::WorthQueryBoundExecutionDenial {
     let mut workspace = evidence_workspace(
+        request_execution,
         name,
         scenario,
         domain::WorthQueryArtifactRedactionPosture::NotRequired,
@@ -112,6 +118,7 @@ pub(super) fn denied_execution(
 }
 
 pub(super) fn settled_honest_execution(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> domain::WorthQuerySettledDomainProjection<
     GeometryDomain,
@@ -120,6 +127,7 @@ pub(super) fn settled_honest_execution(
     worth_query::facade::foundation::ObservationLaneWitness,
 > {
     let mut workspace = evidence_workspace(
+        request_execution,
         name,
         EvidenceScenario::Honest,
         domain::WorthQueryArtifactRedactionPosture::NotRequired,

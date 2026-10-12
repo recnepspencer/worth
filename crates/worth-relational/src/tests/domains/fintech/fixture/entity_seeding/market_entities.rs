@@ -10,10 +10,12 @@ use super::super::MARKET_PARTITION;
 use super::bulk_create::bulk_create_entities;
 
 pub(super) fn seed_instruments(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-instruments",
         MARKET_PARTITION,
@@ -48,10 +50,12 @@ pub(super) fn seed_instruments(
 }
 
 pub(super) fn seed_market_points(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     case_seeds: &[FintechCaseSeed],
 ) -> Vec<EntityId> {
     bulk_create_entities(
+        execution,
         runtime,
         "seed-market",
         MARKET_PARTITION,

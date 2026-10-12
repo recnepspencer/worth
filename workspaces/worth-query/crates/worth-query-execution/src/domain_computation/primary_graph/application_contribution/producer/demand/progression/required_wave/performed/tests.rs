@@ -19,12 +19,16 @@ use worth_relational::facade::identity::{EntityId, PartitionId};
 
 #[test]
 fn refused_registration_capacity_does_not_select_a_member_twice_in_one_advance() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     with_committed_own_write(|world, receipt, _, resources| {
-        assert_refused_registration_remains_performed(world, receipt, resources);
+        assert_refused_registration_remains_performed(&resource_request, world, receipt, resources);
     });
 }
 
 fn assert_refused_registration_remains_performed(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     resources: crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
@@ -32,6 +36,7 @@ fn assert_refused_registration_remains_performed(
     let runtime = &world.application;
     let mut admission = runtime.demand_request_admission();
     let (shared, positioned) = super::super::selection::select_required_basis(
+        request_execution,
         runtime,
         runtime.current_world(),
         &mut admission,
@@ -66,6 +71,7 @@ fn assert_refused_registration_remains_performed(
     // must still leave this member eligible for its first publication.
     let _abandoned = performed
         .fresh(
+            request_execution,
             &key,
             source.clone(),
             &DecisionInput::Selected(&input),
@@ -75,6 +81,7 @@ fn assert_refused_registration_remains_performed(
         .expect("an unperformed member is Fresh");
     if let Some(permission) = performed
         .fresh(
+            request_execution,
             &key,
             source.clone(),
             &DecisionInput::Selected(&input),
@@ -115,6 +122,7 @@ fn assert_refused_registration_remains_performed(
     }
     if performed
         .fresh(
+            request_execution,
             &key,
             source.clone(),
             &DecisionInput::Selected(&input),
@@ -132,6 +140,7 @@ fn assert_refused_registration_remains_performed(
     // A later advancement has a new record and may try this member again.
     assert!(PerformedMembers::start()
         .fresh(
+            request_execution,
             &key,
             source,
             &DecisionInput::Selected(&input),
@@ -143,6 +152,9 @@ fn assert_refused_registration_remains_performed(
 
 #[test]
 fn a_ready_and_its_successor_share_one_performed_member() {
+    let host_request = crate::bridge_host_request::serial_request();
+    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+
     for (producer, grant_from_predecessor) in ["test producer", "replacement producer"]
         .into_iter()
         .flat_map(|producer| [false, true].map(|predecessor| (producer, predecessor)))
@@ -151,6 +163,7 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             let runtime = &world.application;
             let mut admission = runtime.demand_request_admission();
             let (shared, positioned) = super::super::selection::select_required_basis(
+                &resource_request,
                 runtime,
                 runtime.current_world(),
                 &mut admission,
@@ -189,6 +202,7 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             let mut performed = PerformedMembers::start();
             let permission = performed
                 .fresh(
+                    &resource_request,
                     &selected,
                     source.clone(),
                     &DecisionInput::Selected(&input),
@@ -214,6 +228,7 @@ fn a_ready_and_its_successor_share_one_performed_member() {
                 assert!(
                     performed
                         .fresh(
+                            &resource_request,
                             lookup,
                             source.clone(),
                             &DecisionInput::Selected(&input),
@@ -233,6 +248,7 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             );
             assert!(performed
                 .fresh(
+                    &resource_request,
                     &independent,
                     source.clone(),
                     &DecisionInput::Selected(&input),
@@ -298,6 +314,7 @@ fn a_ready_and_its_successor_share_one_performed_member() {
                 assert!(
                     performed
                         .fresh(
+                            &resource_request,
                             lookup,
                             source.clone(),
                             &DecisionInput::Selected(&input),
@@ -320,6 +337,7 @@ fn a_ready_and_its_successor_share_one_performed_member() {
             };
             assert!(performed
                 .fresh(
+                    &resource_request,
                     lookup,
                     changed_source,
                     &DecisionInput::Selected(&input),

@@ -15,7 +15,9 @@ use crate::workflow::{
 };
 use worth_relational::facade::history::BranchId;
 
-pub(super) fn conflict_inspection_lane() -> WorkflowCertificationLane {
+pub(super) fn conflict_inspection_lane(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorkflowCertificationLane {
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -49,7 +51,7 @@ pub(super) fn conflict_inspection_lane() -> WorkflowCertificationLane {
         ),
     )
     .expect("conflict inspection declaration should admit");
-    let inspection_artifact = source_addition_inspection_artifact();
+    let inspection_artifact = source_addition_inspection_artifact(request_execution);
     let inspection =
         inspect_merge_conflicts(&inspection_declaration, &lowered, &inspection_artifact)
             .expect("inspection should succeed");
@@ -75,7 +77,9 @@ pub(super) fn conflict_inspection_lane() -> WorkflowCertificationLane {
     lane
 }
 
-pub(super) fn denied_conflict_inspection_lane() -> WorkflowCertificationLane {
+pub(super) fn denied_conflict_inspection_lane(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorkflowCertificationLane {
     let preflight = execution_preflights::direct_runtime_preflight();
     let binding = bind_workflow_context(WorkflowBindingSource::RuntimePreflight(&preflight))
         .expect("runtime binding should admit");
@@ -109,8 +113,8 @@ pub(super) fn denied_conflict_inspection_lane() -> WorkflowCertificationLane {
         ),
     )
     .expect("conflict inspection declaration should admit");
-    let inspection_artifact = deleted_vs_modified_inspection_artifact();
-    let topology_artifact = topology_region_conflict_inspection_artifact();
+    let inspection_artifact = deleted_vs_modified_inspection_artifact(request_execution);
+    let topology_artifact = topology_region_conflict_inspection_artifact(request_execution);
     let inspection =
         inspect_merge_conflicts(&inspection_declaration, &lowered, &inspection_artifact)
             .expect("inspection should succeed");

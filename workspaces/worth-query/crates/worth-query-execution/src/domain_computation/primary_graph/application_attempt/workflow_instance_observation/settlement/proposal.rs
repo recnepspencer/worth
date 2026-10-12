@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::workflow::instance::WorkflowTransi
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_workflow_proposal_identity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -26,15 +27,18 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
 > {
     let direction = WorthQueryApplicationAdjacencyDirection::Outgoing;
     let mut facts = Vec::new();
-    super::observe_retained_transition(runtime, snapshot, layout, transition, &mut facts)?;
+    super::observe_retained_transition(
+        execution, runtime, snapshot, layout, transition, &mut facts,
+    )?;
     let relations = observe_adjacency(
         runtime,
+        execution,
         snapshot,
         layout.transition_proposal_relation,
         transition.entity(),
         direction,
         2,
-    )
+    )?
     .ok_or_else(|| denial("workflow proposal relation is unavailable"))?;
     let [relation] = relations.as_slice() else {
         return Err(denial(
@@ -50,8 +54,15 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
     });
     let proposal = relation.to;
     let kind = layout.proposal.entity_kind;
-    let value = observe_field_value(runtime, snapshot, proposal, kind, &layout.proposal.identity)
-        .ok_or_else(|| denial("workflow proposal identity is unavailable"))?;
+    let value = observe_field_value(
+        runtime,
+        execution,
+        snapshot,
+        proposal,
+        kind,
+        &layout.proposal.identity,
+    )
+    .ok_or_else(|| denial("workflow proposal identity is unavailable"))?;
     let AspectValue::String(InternedString::Raw(identity)) = &value else {
         return Err(denial("workflow proposal identity has the wrong type"));
     };

@@ -68,9 +68,17 @@ fn bridge_projection_for(
 
 #[test]
 fn runtime_state_and_inspection_project_async_result_state_parity() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.async-state", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.async-state",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     let (basis_identity, checkpoint_identity) =
         live_subscription_async_identity(&runtime, view.name());
@@ -128,9 +136,7 @@ fn runtime_state_and_inspection_project_async_result_state_parity() {
             )
             .expect("async result state should project");
         let state =
-            <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-                &view, &runtime,
-            )
+            <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
             .expect("state should snapshot");
         let inspection = runtime
             .inspect_live_view_explanation(&view)
@@ -145,13 +151,26 @@ fn runtime_state_and_inspection_project_async_result_state_parity() {
 
 #[test]
 fn runtime_async_result_state_preserves_runtime_and_replay_parity() {
-    let mut runtime_a = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime_a = stateful_bridge_task_runtime(request_execution);
     let view_a: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime_a
-        .declare_live_view("tasks.async-replay", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.async-replay",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("first live view should declare");
-    let mut runtime_b = stateful_bridge_task_runtime();
+    let mut runtime_b = stateful_bridge_task_runtime(request_execution);
     let view_b: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime_b
-        .declare_live_view("tasks.async-replay", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.async-replay",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("second live view should declare");
 
     let (basis_a, checkpoint_a) = live_subscription_async_identity(&runtime_a, view_a.name());
@@ -172,16 +191,12 @@ fn runtime_async_result_state_preserves_runtime_and_replay_parity() {
         replay_state.result_state_for_reporting()
     );
     assert_eq!(
-        <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-            &view_a, &runtime_a,
-        )
+        <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view_a, request_execution, &runtime_a)
         .expect("runtime-backed state should snapshot")
         .async_result_state()
         .expect("runtime-backed async result state should exist")
         .result_state_for_reporting(),
-        <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-            &view_b, &runtime_b,
-        )
+        <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view_b, request_execution, &runtime_b)
         .expect("replayed state should snapshot")
         .async_result_state()
         .expect("replayed async result state should exist")
@@ -191,9 +206,17 @@ fn runtime_async_result_state_preserves_runtime_and_replay_parity() {
 
 #[test]
 fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mismatch() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.async-drift", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.async-drift",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     let (basis_identity, checkpoint_identity) =
         live_subscription_async_identity(&runtime, view.name());
@@ -260,9 +283,7 @@ fn runtime_async_result_state_fails_closed_for_generation_drift_and_preview_mism
         other => panic!("expected preview mismatch denial, got {other:?}"),
     }
 
-    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(
-        &view, &runtime,
-    )
+    let state = <&WorthQueryLiveView<WorthQueryUnrefinedLiveShape> as WorthQueryRuntimeStateTarget>::into_state_snapshot(&view, request_execution, &runtime)
     .expect("state should snapshot");
     let inspection = runtime
         .inspect_live_view_explanation(&view)

@@ -27,6 +27,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         permission: PreparedApplicationQueryPermission<
             'a,
             Schema,
@@ -94,6 +95,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             admission,
         )?;
         let indexes = ensure_selected_read_indexes_admitted(
+            execution,
             graph,
             query,
             basis.selected_product().relational_basis(),

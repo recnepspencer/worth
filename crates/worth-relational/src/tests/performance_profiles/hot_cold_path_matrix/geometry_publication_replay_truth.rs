@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(suite: &'static str) {
+pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let geometry_rich_publication_samples = capture_perf_samples(
         suite,
         "geometry_rich_publication_hot_vs_replay_truth",
@@ -10,19 +13,24 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(suite: &'sta
             );
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
-            let source = create_entity_outcome(&runtime, "hot-cold-geometry-rich-source");
-            let middle = create_entity_outcome(&runtime, "hot-cold-geometry-rich-middle");
-            let target = create_entity_outcome(&runtime, "hot-cold-geometry-rich-target");
+            let source =
+                create_entity_outcome(execution, &runtime, "hot-cold-geometry-rich-source");
+            let middle =
+                create_entity_outcome(execution, &runtime, "hot-cold-geometry-rich-middle");
+            let target =
+                create_entity_outcome(execution, &runtime, "hot-cold-geometry-rich-target");
             let source_entity = changed_entities(&source)[0];
             let middle_entity = changed_entities(&middle)[0];
             let target_entity = changed_entities(&target)[0];
             create_relation_outcome(
+                execution,
                 &runtime,
                 source_entity,
                 middle_entity,
                 "hot-cold-geometry-rich-link-a",
             );
             create_relation_outcome(
+                execution,
                 &runtime,
                 middle_entity,
                 target_entity,
@@ -32,6 +40,7 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(suite: &'sta
             runtime.performance_access().reset_counters();
             let hot_commit_started_at = Instant::now();
             let hot_commit = update_entity(
+                execution,
                 &runtime,
                 middle_entity,
                 "hot-cold-geometry-rich-middle-updated",
@@ -57,7 +66,10 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(suite: &'sta
                         .read_truth()
                         .plan_query_packet(&snapshot, hot_packet)
                         .expect("planned hot rich geometry query"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("hot rich geometry query outcome");
             let hot_query_micros = hot_query_started_at.elapsed().as_micros();
             let (hot_diagnostic_artifact_count, hot_detailed_trace_entries) =
@@ -80,19 +92,23 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(suite: &'sta
             let recover_started_at = Instant::now();
             recovered
                 .durability_recovery()
-                .recover(plan)
+                .recover(execution, plan)
                 .expect("geometry rich hot/cold recovery");
             let recover_micros = recover_started_at.elapsed().as_micros();
 
             let replay_started_at = Instant::now();
             let replay = recovered
                 .replay_authority()
-                .replay_commit(RelationalReplayRequest {
-                    commit_id: hot_commit.commit.commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                });
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: hot_commit.commit.commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
             let recovered_snapshot = recovered.visibility_authority().snapshot();
@@ -113,7 +129,10 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(suite: &'sta
                         .read_truth()
                         .plan_query_packet(&recovered_snapshot, cold_packet)
                         .expect("planned cold rich geometry query"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("cold rich geometry query outcome");
             let cold_query_micros = cold_query_started_at.elapsed().as_micros();
 

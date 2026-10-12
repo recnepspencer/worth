@@ -27,6 +27,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Scope,
     >(
         &'read self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         retained: &mut WorthQuerySelectedProductOperation<'runtime, Schema>,
         query: &'read WorthQueryInstalledApplicationQuery<
             Schema,
@@ -58,6 +59,12 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryRetainedBatchQueryAdmissionDenial,
     > {
+        let request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorthQueryRetainedBatchQueryAdmissionDenial::Admission(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name()))),
+        };
+        let execution = &request;
+
         use WorthQueryRetainedBatchQueryAdmissionDenial::{Admission, Resource};
         let unavailable = || {
             WorthQueryApplicationQueryAdmissionDenial::new(
@@ -91,6 +98,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let product = retained.product().retained_clone();
         let mut plan = application
             .admit_application_query(
+                execution,
                 query,
                 access,
                 parameters,

@@ -321,3 +321,74 @@ fn an_unclosed_comparison_cannot_hide_a_generic_alias_read() {
         assert_raw_kind_diagnostics(source, 1);
     }
 }
+
+#[test]
+fn closed_angles_in_a_macro_cannot_hide_a_generic_alias_read() {
+    for source in [
+        "type Id<T> = T; fn f() { tokens!(a < b, Id::<ExecutionAllocationDenialKind>::Cancelled > c => value); }",
+        "type Id<T> = T; fn f() { tokens!(a < b, c > Id::<ExecutionAllocationDenialKind>::Cancelled => value); }",
+        "type Id<T> = T; fn f() { tokens!(Vec<u8> Id::<ExecutionAllocationDenialKind>::Cancelled => value); }",
+    ] {
+        assert_raw_kind_diagnostics(source, 1);
+    }
+}
+
+#[test]
+fn qualified_self_trait_projection_in_a_macro_is_refused() {
+    // A literal raw ident followed by closing angles and :: cannot see this
+    // projection: the trait name occurs between the raw ident and the member.
+    assert_raw_kind_diagnostics(
+        "fn f() { tokens!(<ExecutionAllocationDenialKind as Id>::Out => value); }",
+        1,
+    );
+}
+
+#[test]
+fn marked_frames_find_every_reviewed_raw_kind_read() {
+    let bodies = [
+        "a < b, <Vec<RAW> as IntoIterator>::Item => value",
+        "a < b, Id::<Id<RAW>>::Cancelled => value",
+        "Vec<Id::<RAW>::Cancelled> => value",
+        "x <RAW as Id>::Out => value",
+        "Id::<RAW>::Cancelled::* => value",
+        "<fn() -> RAW as Id>::Out => value",
+        "<Arr<RAW, 3> as Id>::Out => value",
+        "x <RAW as Id>::Out y <RAW as Id>::Out => value",
+    ];
+    // Evaluate the whole table before asserting, so red evidence names every
+    // missing shape rather than stopping at the first regression.
+    let counts: Vec<_> = bodies
+        .iter()
+        .map(|body| {
+            let source = format!("type Id<T> = T; fn f() {{ tokens!({body}); }}")
+                .replace("RAW", "ExecutionAllocationDenialKind");
+            check_graphs("crates/consumer", &[graph(&source)]).len()
+        })
+        .collect();
+    assert_eq!(counts, vec![1; bodies.len()], "{bodies:#?}");
+}
+
+#[test]
+fn a_macro_comparison_without_a_raw_kind_mention_is_clean() {
+    assert_raw_kind_diagnostics("fn f() { tokens!(a < b, c > d); }", 0);
+}
+
+#[test]
+fn macro_frames_resolve_alias_mentions_and_carry_nested_group_marks() {
+    for source in [
+        "type Kinds = Vec<ExecutionAllocationDenialKind>; fn f() { tokens!(Kinds::new() => value); }",
+        "mod kinds { type Kinds = Vec<ExecutionAllocationDenialKind>; } fn f() { tokens!(<kinds::Kinds as Id>::Out => value); }",
+        "type Kinds = Vec<ExecutionAllocationDenialKind>; fn f() { tokens!(<fn((Kinds)) as Id>::Out => value); }",
+    ] {
+        assert_raw_kind_diagnostics(source, 1);
+    }
+}
+
+#[test]
+fn groups_under_an_open_angle_keep_the_syntax_visitors_refusals() {
+    let counts = [
+        "fn f() { tokens!(a < b; { type K = ExecutionAllocationDenialKind; }); }",
+        "fn f() { tokens!(a < b; { impl LocalTrait for ExecutionAllocationDenialKind { fn stopped(self) -> bool { matches!(self, Self::Cancelled) } } }); }",
+    ].map(|source| check_graphs("crates/consumer", &[graph(source)]).len());
+    assert_eq!(counts, [1, 1]);
+}

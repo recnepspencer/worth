@@ -1,3 +1,5 @@
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,

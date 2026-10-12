@@ -8,10 +8,16 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn foreign_runtime_rejects_an_other_runtime_delta() {
-    let (mut owner, owner_lease, owner_peer) = shared_native_leases("invalidation-runtime-owner");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut owner, owner_lease, owner_peer) =
+        shared_native_leases(request_execution, "invalidation-runtime-owner");
     consume_empty_epoch(&mut owner, &owner_lease, &owner_peer);
     owner
-        .insert("Vertex", |mutation| mutation.aspect("identity.id", "owner"))
+        .insert(request_execution, "Vertex", |mutation| {
+            mutation.aspect("identity.id", "owner")
+        })
         .unwrap();
     let delta = owner_lease
         .consumer_invalidation_delta(owner_lease.drain(&mut owner).unwrap())
@@ -19,7 +25,7 @@ fn foreign_runtime_rejects_an_other_runtime_delta() {
     let _ = owner_peer.drain(&mut owner).unwrap();
 
     let (mut foreign, foreign_lease, foreign_peer) =
-        shared_native_leases("invalidation-runtime-foreign");
+        shared_native_leases(request_execution, "invalidation-runtime-foreign");
     consume_empty_epoch(&mut foreign, &foreign_lease, &foreign_peer);
     let stopped = match foreign_lease.admit_consumer_invalidation_delta(delta, &foreign) {
         Err(stopped) => stopped,
@@ -37,6 +43,9 @@ fn foreign_runtime_rejects_an_other_runtime_delta() {
 
 #[test]
 fn different_declared_access_capability_rejects_the_delta() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
@@ -50,11 +59,11 @@ fn different_declared_access_capability_rejects_the_delta() {
             domain::WorthQueryConsumerSupportDimension::DependencyImpact,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("invalidation-declaration-drift")
+        .workspace(request_execution, "invalidation-declaration-drift")
         .unwrap();
     let id = match settle_native(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("id projection did not promote"),
@@ -65,7 +74,7 @@ fn different_declared_access_capability_rejects_the_delta() {
     };
     let derived = match settle_native_derived(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("derived projection did not promote"),
@@ -77,7 +86,7 @@ fn different_declared_access_capability_rejects_the_delta() {
     assert!(id.drain(&mut workspace).unwrap().delivery().is_empty());
     assert!(derived.drain(&mut workspace).unwrap().delivery().is_empty());
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "id-change")
         })
         .unwrap();
@@ -96,6 +105,9 @@ fn different_declared_access_capability_rejects_the_delta() {
 
 #[test]
 fn installation_drift_rejects_and_retains_the_exact_delta() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
@@ -109,11 +121,11 @@ fn installation_drift_rejects_and_retains_the_exact_delta() {
             domain::WorthQueryConsumerSupportDimension::DependencyImpact,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .controlled_workspace("invalidation-stale-generation")
+        .controlled_workspace(request_execution, "invalidation-stale-generation")
         .unwrap();
     let live = match settle_native(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("stale-generation subject did not promote"),
@@ -126,7 +138,7 @@ fn installation_drift_rejects_and_retains_the_exact_delta() {
     };
     assert!(lease.drain(&mut workspace).unwrap().delivery().is_empty());
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "before-drift")
         })
         .unwrap();
@@ -148,10 +160,14 @@ fn installation_drift_rejects_and_retains_the_exact_delta() {
 
 #[test]
 fn superseded_epoch_rejects_old_authority_and_fresh_foundational_materialization() {
-    let (mut workspace, subject, candidate) = shared_native_leases("invalidation-stale-epoch");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, subject, candidate) =
+        shared_native_leases(request_execution, "invalidation-stale-epoch");
     consume_empty_epoch(&mut workspace, &subject, &candidate);
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "epoch-one")
         })
         .unwrap();
@@ -168,7 +184,7 @@ fn superseded_epoch_rejects_old_authority_and_fresh_foundational_materialization
     };
 
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "epoch-two")
         })
         .unwrap();

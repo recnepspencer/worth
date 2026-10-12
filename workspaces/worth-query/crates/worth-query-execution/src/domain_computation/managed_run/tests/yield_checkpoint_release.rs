@@ -29,8 +29,10 @@ fn suspension_and_execution_destructor_panics_are_independently_contained() {
     ] {
         let (running, graph) =
             managed_graph_run_with_provider(WorthQueryOperationGraphAccess::Observe, provider, resource_request);
+    let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
-            .begin_graph_execution(execution,
+            .begin_graph_execution(&installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -38,7 +40,7 @@ fn suspension_and_execution_destructor_panics_are_independently_contained() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("double-panic provider did not pause"),
         };
@@ -109,9 +111,11 @@ fn execution_destructor_panic_releases_returned_checkpoint_with_exact_dispositio
                 YieldProvider::checkpoint_and_execution_drop_panic(checkpoint_drop_panics),
                 resource_request,
             );
+            let installed_running_phase = execution.phase_for_direct(&running);
+
             let active = running
                 .begin_graph_execution(
-                    execution,
+                    &installed_running_phase,
                     &graph,
                     WorthQueryManagedGraphCallRequest::new(
                         WorthQueryGraphProviderCallKind::Observe,
@@ -119,7 +123,7 @@ fn execution_destructor_panic_releases_returned_checkpoint_with_exact_dispositio
                     ),
                 )
                 .unwrap();
-            let paused = match active.advance(execution) {
+            let paused = match active.advance(&installed_running_phase) {
                 WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
                 _ => panic!("execution-drop-panic provider did not pause"),
             };
@@ -190,9 +194,11 @@ fn checkpoint_probe_failure_preserves_its_own_release_disposition() {
                 provider,
                 resource_request,
             );
+            let installed_running_phase = execution.phase_for_direct(&running);
+
             let active = running
                 .begin_graph_execution(
-                    execution,
+                    &installed_running_phase,
                     &graph,
                     WorthQueryManagedGraphCallRequest::new(
                         WorthQueryGraphProviderCallKind::Observe,
@@ -200,7 +206,7 @@ fn checkpoint_probe_failure_preserves_its_own_release_disposition() {
                     ),
                 )
                 .unwrap();
-            let paused = match active.advance(execution) {
+            let paused = match active.advance(&installed_running_phase) {
                 WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
                 _ => panic!("checkpoint probe provider did not pause"),
             };
@@ -243,9 +249,11 @@ fn direct_cleanup_contains_and_reports_checkpoint_destructor_panic() {
             YieldProvider::checkpoint_drop_panic(),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -253,7 +261,7 @@ fn direct_cleanup_contains_and_reports_checkpoint_destructor_panic() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("drop-panic provider did not pause"),
         };
@@ -334,9 +342,11 @@ fn workflow_cleanup_returns_recovery_required_after_checkpoint_destructor_panic(
             resources,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "stage",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -345,7 +355,7 @@ fn workflow_cleanup_returns_recovery_required_after_checkpoint_destructor_panic(
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow drop-panic provider did not pause"),
         };

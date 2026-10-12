@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) fn publish_authorization_world(
-    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    phase: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     prepared: PreparedAuthorizationWorld,
 ) -> AuthorizationWorld {
     let PreparedAuthorizationWorld {

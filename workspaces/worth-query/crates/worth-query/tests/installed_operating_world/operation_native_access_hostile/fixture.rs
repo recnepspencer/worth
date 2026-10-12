@@ -69,7 +69,10 @@ impl domain::WorthQueryDomainOperationExecutor<GeometryDomain, CollectionRead, R
     }
 }
 
-pub(super) fn collection_workspace(name: &str) -> runtime::WorthQueryWorkspace {
+pub(super) fn collection_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> runtime::WorthQueryWorkspace {
     let mut semantics = semantic_closure(
         canonical_collection_bundle("Vertex"),
         domain::WorthQuerySupportRequirement::Required,
@@ -117,7 +120,7 @@ pub(super) fn collection_workspace(name: &str) -> runtime::WorthQueryWorkspace {
             ReadFamily,
             CollectionReadExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
         .unwrap()
 }
 

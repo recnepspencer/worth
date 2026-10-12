@@ -96,13 +96,14 @@ pub(super) fn preserved_outputs_remain_read_only(
     drop(performed);
     let before = source_version(request);
     let source = observed_source(request, "anchor-b");
-    match application
-        .on_branch(branch)
-        .select()
-        .unwrap()
-        .suspend_current_generated_output::<PlanarFinalPreserveProducer<ConsumerSchema>>(
-            scope, source,
-        ) {
+    let selected = application
+        .with_host_advancement(|host_phase| {
+            application.on_branch(branch).select(&host_phase).unwrap()
+        })
+        .expect("installed host call opens");
+    match selected.suspend_current_generated_output::<PlanarFinalPreserveProducer<ConsumerSchema>>(
+        scope, source,
+    ) {
         Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             WorthQueryGeneratedOutputSuspensionDenial::NoGeneratedPayload,
         )) => {}

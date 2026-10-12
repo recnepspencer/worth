@@ -148,7 +148,9 @@ where
 
     fn start_required_outputs_in_advancement(
         self,
-        _phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
         application: &worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: WorthQueryOutputDemandControls,
@@ -168,6 +170,7 @@ where
             )
             .and_then(|()| {
                 application.validate_discovered_program_source::<Root>(
+                    phase,
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     &self.prepared,
                     &self.receipt,

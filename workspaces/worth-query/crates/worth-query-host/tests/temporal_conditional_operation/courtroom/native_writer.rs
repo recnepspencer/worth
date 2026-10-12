@@ -9,9 +9,11 @@ use super::super::world::{request_scope, CourtroomWorld};
 /// A commit made by an ordinary native Relational writer, never by Query,
 /// reaches the pending conditional operation through the one canonical
 /// subscription and is reconsidered against the new truth.
-pub fn native_writer_commit_reconsiders_a_suppressed_wake() {
+pub fn native_writer_commit_reconsiders_a_suppressed_wake(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let world = CourtroomWorld::publish("blocked");
-    let suppressed = observe(&world);
+    let suppressed = observe(request_execution, &world);
     assert_eq!(
         suppressed.committed_operation_count(),
         0,
@@ -25,15 +27,18 @@ pub fn native_writer_commit_reconsiders_a_suppressed_wake() {
         wake_evidence(&suppressed)
     );
 
-    world.application.publish_native_field_write_for_test(
-        world.application.current_world(),
-        world.intent_record_identity(),
-        IntentGateField::reference(),
-        "ready".to_string(),
-        &request_scope(),
-    );
+    world
+        .application
+        .publish_native_field_write_for_test(
+            world.application.current_world(),
+            world.intent_record_identity(),
+            IntentGateField::reference(),
+            "ready".to_string(),
+            &request_scope(),
+        )
+        .expect("the fixture native write performs");
 
-    let mut reconsidered = observe(&world);
+    let mut reconsidered = observe(request_execution, &world);
     assert_eq!(
         reconsidered.authoritative_commit_count(),
         1,
@@ -66,11 +71,13 @@ pub fn native_writer_commit_reconsiders_a_suppressed_wake() {
 /// between two observations, with one relevant change inside that gap. The
 /// observation heals in place, rebuilding from truth without a reinstall, and
 /// still acts on the relevant change.
-pub fn busy_branch_heals_a_lagging_cursor_inside_observation() {
+pub fn busy_branch_heals_a_lagging_cursor_inside_observation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     // Strictly more than the installation's retained positions (128).
     const UNRELATED_COMMITS: u64 = 130;
     let world = CourtroomWorld::publish_with_unrelated_rows("blocked", 1);
-    let suppressed = observe(&world);
+    let suppressed = observe(request_execution, &world);
     assert_eq!(
         suppressed.retained_suppressed_wake_count(),
         1,
@@ -80,35 +87,47 @@ pub fn busy_branch_heals_a_lagging_cursor_inside_observation() {
     let branch = world.application.current_world();
     let unrelated = world
         .application
-        .on_branch(branch)
-        .select()
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            UnrelatedValueField::reference(),
-            0,
-            &request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Certification,
-        )
-        .expect("the unrelated row must remain exactly resolvable")
-        .relational_record_identity_parts();
-    world.application.publish_native_field_write_for_test(
-        branch,
-        world.intent_record_identity(),
-        IntentGateField::reference(),
-        "ready".to_string(),
-        &request_scope(),
-    );
-    for value in 1..=UNRELATED_COMMITS {
-        world.application.publish_native_field_write_for_test(
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&phase)
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    UnrelatedValueField::reference(),
+                    0,
+                    &request_scope(),
+                    primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+                )
+                .expect("the unrelated row must remain exactly resolvable")
+                .relational_record_identity_parts()
+        })
+        .expect("installed host call opens");
+    world
+        .application
+        .publish_native_field_write_for_test(
             branch,
-            unrelated,
-            UnrelatedValueField::reference(),
-            value,
+            world.intent_record_identity(),
+            IntentGateField::reference(),
+            "ready".to_string(),
             &request_scope(),
-        );
+        )
+        .expect("the fixture native write performs");
+    for value in 1..=UNRELATED_COMMITS {
+        world
+            .application
+            .publish_native_field_write_for_test(
+                branch,
+                unrelated,
+                UnrelatedValueField::reference(),
+                value,
+                &request_scope(),
+            )
+            .expect("the fixture native write performs");
     }
 
-    let healed = raw_observe(&world);
+    let healed = raw_observe(request_execution, &world);
     let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(healed) = healed
     else {
         panic!(

@@ -252,8 +252,11 @@ mod tests {
 
     #[test]
     fn lineage_admission_rejects_tampered_transition_digest() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = runtime_with_test_schema();
-        let entity = create_entity(&runtime, "replace-me");
+        let entity = create_entity(execution, &runtime, "replace-me");
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
         txn.push_batch(
             WorkerIntentBatch::new("rewrite").push(MutationIntent::Entity(
@@ -292,9 +295,12 @@ mod tests {
 
     #[test]
     fn provenance_admission_rejects_tampered_worker_evidence() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = runtime_with_test_schema();
-        let source = create_entity(&runtime, "source");
-        let target = create_entity(&runtime, "target");
+        let source = create_entity(execution, &runtime, "source");
+        let target = create_entity(execution, &runtime, "target");
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
         txn.push_batch(
             WorkerIntentBatch::new("worker-a").push(MutationIntent::Create(

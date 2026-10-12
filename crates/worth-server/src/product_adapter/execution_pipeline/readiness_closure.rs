@@ -124,12 +124,24 @@ fn close_query_derived_product_readiness(
         &workspace,
         &downstream_delivery_contract,
     );
+    let snapshot = workspace
+        .with_advancement(|phase| workspace.snapshot_identity(&phase))
+        .map_err(|denial| {
+            WorthServerProductOperationSurfaceDenial::new(
+                WorthServerProductOperationSurfaceDenialCode::ReadinessDenied,
+                format!("snapshot readiness was refused: {denial:?}"),
+            )
+        })?
+        .map_err(|denial| {
+            WorthServerProductOperationSurfaceDenial::new(
+                WorthServerProductOperationSurfaceDenialCode::ReadinessDenied,
+                format!("snapshot readiness was refused: {denial:?}"),
+            )
+        })?;
     let precondition_posture = WorthServerProductBasisPrecondition::evaluate(
         declaration.operation_name(),
         admission.operation_request().identity().basis_digest(),
-        &workspace
-            .snapshot_identity()
-            .terminal_projection_for_reporting(),
+        &snapshot.terminal_projection_for_reporting(),
     )
     .map(WorthServerOperationPreconditionPosture::ProductBasis)
     .map_err(WorthServerProductOperationSurfaceDenial::from_readiness_denial)?;

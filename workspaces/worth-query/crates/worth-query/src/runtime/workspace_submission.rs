@@ -17,18 +17,20 @@ impl<'a> WorthQueryWorkspaceSubmissionLane<'a> {
 
     pub fn submit(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
-        self.runtime.write(command)
+        self.runtime.write(execution, command)
     }
 
     pub fn submit_with_inspection(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         command: WorthQueryWriteCommand,
     ) -> Result<(WorthQueryWriteReceipt, WorthQueryWriteReceiptInspection), WorthQueryRuntimeError>
     {
-        let receipt = self.runtime.write(command)?;
-        let inspection = match self.runtime.inspect(&receipt)? {
+        let receipt = self.runtime.write(execution, command)?;
+        let inspection = match self.runtime.inspect(execution, &receipt)? {
             WorthQueryInspection::WriteReceipt(inspection) => inspection,
             other => panic!("expected write receipt inspection, got {other:?}"),
         };
@@ -37,13 +39,15 @@ impl<'a> WorthQueryWorkspaceSubmissionLane<'a> {
 
     pub fn submit_batch(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryWriteCommand>,
     ) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
-        self.runtime.write_batch_intent(commands).execute()
+        self.runtime.write_batch_intent(commands).execute(execution)
     }
 
     pub fn submit_batch_with_inspection(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commands: Vec<WorthQueryWriteCommand>,
     ) -> Result<
         (
@@ -52,8 +56,11 @@ impl<'a> WorthQueryWorkspaceSubmissionLane<'a> {
         ),
         WorthQueryRuntimeError,
     > {
-        let receipt = self.runtime.write_batch_intent(commands).execute()?;
-        let inspection = match self.runtime.inspect(&receipt)? {
+        let receipt = self
+            .runtime
+            .write_batch_intent(commands)
+            .execute(execution)?;
+        let inspection = match self.runtime.inspect(execution, &receipt)? {
             WorthQueryInspection::BatchWriteReceipt(inspection) => inspection,
             other => panic!("expected batch write receipt inspection, got {other:?}"),
         };
@@ -62,26 +69,33 @@ impl<'a> WorthQueryWorkspaceSubmissionLane<'a> {
 
     pub fn submit_batch_builder(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         builder: WorthQueryMutationBatchBuilder,
     ) -> Result<super::WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
-        self.submit_batch(builder.finish()?)
+        self.submit_batch(execution, builder.finish()?)
     }
 
     pub fn submit_intent(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
-        self.runtime.execute_intent(declaration)
+        self.runtime.execute_intent(execution, declaration)
     }
 
     pub fn submit_effect_intent<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         effect: &WorthQueryEffectHandle<T>,
         strategy_version: impl Into<String>,
         input_contract: impl Into<String>,
     ) -> Result<WorthQueryEffectIntentReceipt, WorthQueryRuntimeError> {
-        self.runtime
-            .execute_next_effect_write_intent(effect, strategy_version, input_contract)
+        self.runtime.execute_next_effect_write_intent(
+            execution,
+            effect,
+            strategy_version,
+            input_contract,
+        )
     }
 
     pub fn write_intent(

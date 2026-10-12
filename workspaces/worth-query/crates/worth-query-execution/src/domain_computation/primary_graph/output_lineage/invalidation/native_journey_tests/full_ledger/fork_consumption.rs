@@ -12,8 +12,25 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         maximum_retained_bytes: MAXIMUM_RETAINED_BYTES,
         ..defaults
     });
-    let entity = resolved_account(&world, "open", &live_scope()).entity_id();
-    let unrelated = resolved_account(&world, "unrelated", &live_scope()).entity_id();
+    world.application.with_host_advancement(|phase| {
+ let custody = phase.test_host_request();
+ let phase_custody = &custody;
+ let execution = &phase_custody.borrowed_request_for_test();
+
+    let entity = resolved_account(
+        &(phase_custody).test_host_request(),
+        &world,
+        "open",
+        &live_scope(),
+    )
+    .entity_id();
+    let unrelated = resolved_account(
+        &(phase_custody).test_host_request(),
+        &world,
+        "unrelated",
+        &live_scope(),
+    )
+    .entity_id();
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
@@ -29,13 +46,15 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         .field_locator(status.entity(), status.aspect(), status.field())
         .unwrap()
         .clone();
-    let (_, product, _) = world.selected_product().into_parts();
+    let (_, product, _) = world
+        .selected_product(&(phase_custody).test_host_request())
+        .into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
     };
     let fork = BranchId("full-ledger-new-branch".to_owned());
-    let (old_handle, old, root) = handle.with_runtime_mut(|runtime| {
+    let (old_handle, old, root) = handle.with_runtime_mut(execution, |runtime| {
         let (_, source) = runtime.observe_fork_source(runtime.main_branch_identity().branch_id()).unwrap();
         runtime.fork_branch(fork.clone(), source).unwrap();
         let basis = runtime.admit_branch_basis(&runtime.branch_identity(&fork).unwrap()).unwrap();
@@ -43,10 +62,10 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         let old = Arc::new(runtime.read_truth().positioned_snapshot(&old_handle).unwrap());
         let source = SemanticSource { runtime_authority: world.application.runtime.authority_identity().as_u64(), schema: world.application.installed_schema.binding_identity(), scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity), output_binding: OutputBindingIdentity::declared("StatusOutput") };
         let identity = RecordedSettlementIdentity::retain(&source, coordinate, 0);
-        let facts = crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([field_fact(runtime, &old_handle, entity, status)])).for_comparison().unwrap();
+        let facts = crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([field_fact(execution, runtime, &old_handle, entity, status)])).for_comparison().unwrap();
         // Real Native source/output facts, read and fully compared before the fork's first write.
         let witness = super::super::request_recording::account_witness(&world, runtime, &old_handle, entity);
-        let current = ConsumedOutputEvidence::verify_at_observation(&identity, &facts, &[], Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::CheckpointRestore), &witness, owner, runtime, &old_handle, &old, &mut owner.edit_admission()).unwrap();
+        let current = ConsumedOutputEvidence::verify_at_observation(execution, &identity, &facts, &[], Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::CheckpointRestore), &witness, owner, runtime, &old_handle, &old, &mut owner.edit_admission()).unwrap();
         assert_eq!(current, ConsumedOutputVerification::Current);
         let root = ConsumedOutputEvidence::restored_with_witness_for_test(owner, identity, Arc::clone(facts.facts()), Arc::clone(&old), witness);
         (old_handle, old, root)
@@ -57,8 +76,8 @@ pub(super) fn restored_root_consumption_and_later_writes() {
             MAXIMUM_RETAINED_BYTES - owner.resources.retained_capacity_bytes(),
         )
         .unwrap();
-    handle.with_runtime_mut(|runtime| {
-        publish_on_fork(runtime, &fork, unrelated, label.clone(), "first-fork-write");
+    handle.with_runtime_mut(execution, |runtime| {
+        publish_on_fork(execution, runtime, &fork, unrelated, label.clone(), "first-fork-write");
         assert!(owner.resources.retained_capacity_bytes() <= MAXIMUM_RETAINED_BYTES);
         assert!(matches!(
             owner
@@ -70,9 +89,13 @@ pub(super) fn restored_root_consumption_and_later_writes() {
     drop(held);
     // The production consumer precommit path re-establishes the restored root.
     // Its read basis is old; that basis must never select the minting head.
-    root.establish_restored_before_commit(&handle.source_owner, &mut owner.edit_admission())
-        .unwrap();
-    handle.with_runtime_mut(|runtime| {
+    root.establish_restored_before_commit(
+        execution,
+        &handle.source_owner,
+        &mut owner.edit_admission(),
+    )
+    .unwrap();
+    handle.with_runtime_mut(execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.branch_identity(&fork).unwrap())
             .unwrap();
@@ -84,6 +107,7 @@ pub(super) fn restored_root_consumption_and_later_writes() {
         assert_ne!(old.root_id(), selected.root_id());
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(
+                execution,
                 std::slice::from_ref(&root),
                 owner,
                 runtime,
@@ -95,22 +119,25 @@ pub(super) fn restored_root_consumption_and_later_writes() {
             ConsumedOutputVerification::Current,
             "the unrelated write did not change the restored root"
         );
-        publish_on_fork(runtime, &fork, unrelated, label.clone(), "consumer-commit");
+        publish_on_fork(execution, runtime, &fork, unrelated, label.clone(), "consumer-commit");
         publish_on_fork(
-            runtime,
+            execution, runtime,
             &fork,
             unrelated,
             label.clone(),
             "later-fork-write-one",
         );
-        publish_on_fork(runtime, &fork, unrelated, label, "later-fork-write-two");
+        publish_on_fork(execution, runtime, &fork, unrelated, label, "later-fork-write-two");
         assert!(owner.resources.retained_capacity_bytes() <= MAXIMUM_RETAINED_BYTES);
         runtime.snapshots().release_snapshot(&snapshot).unwrap();
         runtime.snapshots().release_snapshot(&old_handle).unwrap();
     });
+
+ }).expect("the native journey owns its installed host call")
 }
 
 fn publish_on_fork(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     fork: &BranchId,
     entity: EntityId,
@@ -138,12 +165,11 @@ fn publish_on_fork(
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let outcome = runtime.publication_port().compare_and_publish(candidate);
+    let outcome = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate);
     let RelationalPublicationOutcome::Performed(performed) = outcome else {
         panic!("{value} must publish, including the consumer and both later writes: {outcome:?}");
     };

@@ -93,17 +93,18 @@ impl WorthQueryIntentAdmissionRepresentativeFamilyReport {
 }
 
 pub fn worth_query_intent_admission_representative_family_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryIntentAdmissionRepresentativeFamilyReport {
     let basis = certified_basis_observation_intent_fixture();
-    let effect = certified_effect_intent_fixture();
+    let effect = certified_effect_intent_fixture(execution);
     let projection_admitted = certified_projection_consumption_admitted_fixture();
     let projection_warning = certified_projection_consumption_warning_fixture();
     let basis_bundle = certify_basis_lifecycle();
     let projection_bundle = certify_projection_consumption_closeout_core();
     let deferred = certified_deferred_intent_fixture();
     let unsupported = certified_unsupported_intent_fixture();
-    let inspection = certified_inspection_advisory_redaction_fixture();
-    let routing = certified_routing_intent_fixture();
+    let inspection = certified_inspection_advisory_redaction_fixture(execution);
+    let routing = certified_routing_intent_fixture(execution);
 
     let rows = vec![
         representative_row(

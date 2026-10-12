@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_retention_pass_drift_stability(suite: &'static str) {
+pub(super) fn certify_retention_pass_drift_stability(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let retention_pass_drift_samples =
         capture_perf_samples(suite, "retention_pass_drift_stability", || {
             let runtime =
@@ -14,9 +17,10 @@ pub(super) fn certify_retention_pass_drift_stability(suite: &'static str) {
 
             runtime.performance_access().reset_counters();
             for index in 0..ITERATIONS {
-                let created = create_entity_outcome(&runtime, &format!("retention-drift-{index}"));
+                let created =
+                    create_entity_outcome(execution, &runtime, &format!("retention-drift-{index}"));
                 let entity = changed_entities(&created)[0];
-                let deleted = delete_entity(&runtime, entity);
+                let deleted = delete_entity(execution, &runtime, entity);
                 assert!(runtime
                     .visibility_authority()
                     .release_snapshot(&created.snapshot)

@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn truth_sequence_overflow_is_rejected_before_publication_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let before_cells = runtime.history.branch_cells_snapshot();
     let before_catalog = runtime.history.catalog_len();
@@ -25,10 +28,7 @@ fn truth_sequence_overflow_is_rejected_before_publication_effects() {
         )
         .expect("test staging stays within configured resource budgets");
     let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("sequence overflow must be a typed publication denial");
 
     match &error {

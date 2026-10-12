@@ -11,8 +11,15 @@ use crate::tests::support::*;
 
 #[test]
 fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut observation_runtime = runtime_with_test_schema();
-    create_entity(&observation_runtime, "observation-capacity-anchor");
+    create_entity(
+        execution,
+        &observation_runtime,
+        "observation-capacity-anchor",
+    );
     let observation_identity = observation_runtime.main_branch_identity();
     observation_runtime.set_retention_capacity_for_test(1, 8);
     assert_eq!(
@@ -29,7 +36,11 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
     );
 
     let mut transaction_runtime = runtime_with_test_schema();
-    create_entity(&transaction_runtime, "transaction-capacity-anchor");
+    create_entity(
+        execution,
+        &transaction_runtime,
+        "transaction-capacity-anchor",
+    );
     transaction_runtime.set_retention_capacity_for_test(2, 8);
     let transaction_identity = transaction_runtime.main_branch_identity();
     let (_, transaction_basis) = transaction_runtime
@@ -53,7 +64,7 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
     );
 
     let mut candidate_runtime = runtime_with_test_schema();
-    create_entity(&candidate_runtime, "candidate-capacity-anchor");
+    create_entity(execution, &candidate_runtime, "candidate-capacity-anchor");
     candidate_runtime.set_retention_capacity_for_test(3, 8);
     let candidate_identity = candidate_runtime.main_branch_identity();
     let (_, candidate_basis) = candidate_runtime
@@ -72,10 +83,7 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
     assert!(matches!(
-        candidate_runtime.prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        ),
+        candidate_runtime.prepare_branch_transaction(execution, transaction),
         Err(TransactionCommitError::PublicationDeferred {
             deferred: RelationalPublicationDeferred::RetentionBackpressure,
             ..
@@ -96,10 +104,7 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
         .begin_branch_transaction(&replacement_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     let replacement = candidate_runtime
-        .prepare_branch_transaction(
-            replacement,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, replacement)
         .unwrap();
     candidate_runtime
         .discard_prepared_candidate(replacement)
@@ -108,8 +113,11 @@ fn live_obligation_capacity_denies_each_public_acquisition_without_residue() {
 
 #[test]
 fn pending_delete_reserves_its_retired_name_before_other_deletions_consume_capacity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    create_entity(&runtime, "pending-delete-capacity-anchor");
+    create_entity(execution, &runtime, "pending-delete-capacity-anchor");
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
@@ -136,8 +144,11 @@ fn pending_delete_reserves_its_retired_name_before_other_deletions_consume_capac
 
 #[test]
 fn head_and_retirement_capacity_fail_before_reference_movement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut fork_runtime = runtime_with_test_schema();
-    create_entity(&fork_runtime, "fork-capacity-anchor");
+    create_entity(execution, &fork_runtime, "fork-capacity-anchor");
     fork_runtime.set_retention_capacity_for_test(1, 8);
     let (_, source) = fork_runtime
         .observe_fork_source(&BranchId("main".to_owned()))
@@ -153,7 +164,11 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         .is_err());
 
     let mut publication_runtime = runtime_with_test_schema();
-    create_entity(&publication_runtime, "publication-capacity-anchor");
+    create_entity(
+        execution,
+        &publication_runtime,
+        "publication-capacity-anchor",
+    );
     publication_runtime.set_retention_capacity_for_test(4, 0);
     let identity = publication_runtime.main_branch_identity();
     let (_, basis) = publication_runtime.observe_branch(&identity).unwrap();
@@ -170,15 +185,12 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         )
         .unwrap();
     let candidate = publication_runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     assert!(matches!(
         publication_runtime
             .publication_port()
-            .compare_and_publish(candidate),
+            .compare_and_publish(execution, candidate),
         crate::mvcc::RelationalPublicationOutcome::Deferred(
             RelationalPublicationDeferred::RetentionBackpressure
         )
@@ -202,17 +214,14 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         .begin_branch_transaction(&replacement_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
     let replacement = publication_runtime
-        .prepare_branch_transaction(
-            replacement,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, replacement)
         .unwrap();
     publication_runtime
         .discard_prepared_candidate(replacement)
         .unwrap();
 
     let mut deletion_runtime = runtime_with_test_schema();
-    create_entity(&deletion_runtime, "deletion-capacity-anchor");
+    create_entity(execution, &deletion_runtime, "deletion-capacity-anchor");
     let (_, source) = deletion_runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
@@ -236,8 +245,11 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
 
 #[test]
 fn capacity_consumed_after_preparation_defers_next_basis_before_movement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    create_entity(&runtime, "post-candidate-capacity-anchor");
+    create_entity(execution, &runtime, "post-candidate-capacity-anchor");
     runtime.set_retention_capacity_for_test(4, 8);
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
@@ -254,15 +266,14 @@ fn capacity_consumed_after_preparation_defers_next_basis_before_movement() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     let external = runtime.retain_component_basis(&basis).unwrap();
 
     assert!(matches!(
-        runtime.publication_port().compare_and_publish(candidate),
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate),
         crate::mvcc::RelationalPublicationOutcome::Deferred(
             RelationalPublicationDeferred::RetentionBackpressure
         )
@@ -281,6 +292,9 @@ fn capacity_consumed_after_preparation_defers_next_basis_before_movement() {
 
 #[test]
 fn prepared_root_cost_is_observational_and_system_publication_remains_current() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::AiWorkflow)
         .schema_registry(test_schema_registry())
@@ -305,17 +319,15 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
     assert_eq!(
         test_owner_main_basis(&runtime).unwrap().descriptor(),
         before.descriptor()
     );
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("a prepared system-allocated root must publish");
     };
@@ -331,8 +343,8 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
     assert_eq!(entities.len(), 1);
     let records = runtime
         .read_truth()
-        .project_historical_version(committed.commit.version_id)
-        .all_authoritative_entity_records();
+        .project_historical_version(execution, committed.commit.version_id)
+        .all_authoritative_entity_records(execution);
     let record = records
         .iter()
         .find(|record| record.entity_id == entities[0])

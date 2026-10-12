@@ -3,6 +3,8 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_replay_recovery_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "replay_recovery_matrix";
 
     let durable_replay_samples = capture_perf_samples(
@@ -10,20 +12,24 @@ fn perf_replay_recovery_matrix() {
         "durable_replay_lineage_basis",
         || {
             let runtime = persisted_runtime_with_test_schema();
-            create_entity_outcome(&runtime, "source");
-            let second = create_entity_outcome(&runtime, "target");
+            create_entity_outcome(execution, &runtime, "source");
+            let second = create_entity_outcome(execution, &runtime, "target");
             let replay_commit_id = second.commit.commit_id;
 
             runtime.performance_access().reset_counters();
             let replay_started_at = Instant::now();
             let outcome = runtime
                 .replay_authority()
-                .replay_commit(RelationalReplayRequest {
-                    commit_id: replay_commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                });
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: replay_commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 
@@ -73,12 +79,12 @@ fn perf_replay_recovery_matrix() {
     let checkpoint_recovery_samples =
         capture_perf_samples(suite, "checkpoint_recover_suffix_replay", || {
             let runtime = persisted_runtime_with_test_schema();
-            create_entity_outcome(&runtime, "source");
+            create_entity_outcome(execution, &runtime, "source");
             runtime
                 .durability_authority()
                 .checkpoint()
                 .expect("checkpoint");
-            let second = create_entity_outcome(&runtime, "target");
+            let second = create_entity_outcome(execution, &runtime, "target");
             let tail_commit_id = second.commit.commit_id;
 
             let recovery_plan = runtime.durability().recovery_plan(
@@ -90,18 +96,22 @@ fn perf_replay_recovery_matrix() {
             let recovery_started_at = Instant::now();
             let outcome = recovered
                 .durability_recovery()
-                .recover(recovery_plan)
+                .recover(execution, recovery_plan)
                 .expect("recover plan");
             let recovery_micros = recovery_started_at.elapsed().as_micros();
             let replay_started_at = Instant::now();
             let replay = recovered
                 .replay_authority()
-                .replay_commit(RelationalReplayRequest {
-                    commit_id: tail_commit_id,
-                    branch_id: BranchId("main".to_string()),
-                    execution_mode: ReplayExecutionMode::SerialDeterministic,
-                    verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-                });
+                .replay_commit(
+                    RelationalReplayRequest {
+                        commit_id: tail_commit_id,
+                        branch_id: BranchId("main".to_string()),
+                        execution_mode: ReplayExecutionMode::SerialDeterministic,
+                        verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+                    },
+                    execution,
+                )
+                .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let elapsed_micros = recovery_micros + replay_commit_micros;
             let counters = recovered.performance_access().counters();

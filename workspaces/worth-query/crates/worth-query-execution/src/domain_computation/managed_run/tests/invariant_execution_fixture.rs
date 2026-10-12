@@ -119,7 +119,7 @@ pub(super) struct InvariantExecutionObservation {
 }
 
 pub(super) fn execute_invariant(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
@@ -139,7 +139,7 @@ pub(super) fn execute_invariant(
 }
 
 pub(super) fn execute_invariant_with_request(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,
     slot: &str,
@@ -182,7 +182,7 @@ pub(super) fn execute_invariant_with_request(
 }
 
 pub(super) fn admit_progression(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     state: Arc<Mutex<ProvisionalProviderState>>,
     requirements: Vec<WorthQueryInstalledInvariantExecutionRequirement>,

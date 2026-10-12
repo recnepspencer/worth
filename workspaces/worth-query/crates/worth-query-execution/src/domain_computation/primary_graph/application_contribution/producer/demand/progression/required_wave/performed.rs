@@ -92,6 +92,7 @@ impl PerformedMembers {
         Schema: ApplicationSchema + 'static,
     >(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         key: &WorthQueryOutputDemandKey,
         source: WorthQueryObservedSourceEpoch,
         runtime: &DecisionInput<'_, '_, '_, Schema>,
@@ -115,7 +116,9 @@ impl PerformedMembers {
                 true
             } else {
                 match &entry.input {
-                    CapturedDecisionInput::Accepted(input) => runtime.changed(input, admission)?,
+                    CapturedDecisionInput::Accepted(input) => {
+                        runtime.changed(request_execution, input, admission)?
+                    }
                     CapturedDecisionInput::Withheld | CapturedDecisionInput::Uncaptured => false,
                 }
             };
@@ -194,13 +197,15 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> {
     fn changed(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: &AcceptedCurrentCandidate,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<bool, ProducerExecutionStop> {
         let graph = &self.runtime.primary_provider.graph;
         graph
-            .with_runtime(|runtime| {
+            .with_runtime(request_execution, |runtime| {
                 input.decision_input_changed_at(
+                    request_execution,
                     &graph.source_owner.invalidation_owner,
                     runtime,
                     self.shared.selected().application_basis().snapshot_handle(),

@@ -14,18 +14,26 @@ use crate::ordinary::read::{
 
 #[test]
 fn installed_live_checkpoint_resume_and_close_preserve_the_package_witness() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let expected = handle.authority_witness().witness_identity().clone();
     let mut workspace = runtime.workspace("installed-domain-live").unwrap();
-    let live = open_live(&handle, &mut workspace, "installed.identity");
+    let live = open_live(
+        request_execution,
+        &handle,
+        &mut workspace,
+        "installed.identity",
+    );
     assert_eq!(
         live.installation_receipt()
             .installed_authority()
             .witness_identity(),
         &expected
     );
-    assert_live_projection(&live, &mut workspace, &expected);
+    assert_live_projection(request_execution, &live, &mut workspace, &expected);
     let continuation = match live.checkpoint(&mut workspace) {
         WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(continuation) => continuation,
         _ => panic!("installed live checkpoint must succeed"),
@@ -49,7 +57,7 @@ fn installed_live_checkpoint_resume_and_close_preserve_the_package_witness() {
         &expected
     );
     let resumed = resumed.into_handle();
-    assert_live_projection(&resumed, &mut workspace, &expected);
+    assert_live_projection(request_execution, &resumed, &mut workspace, &expected);
     let closed = match resumed.close(&mut workspace) {
         WorthQueryInstalledDomainLiveCloseOutcome::Closed(receipt) => receipt,
         _ => panic!("installed live close must succeed"),
@@ -65,19 +73,32 @@ fn installed_live_checkpoint_resume_and_close_preserve_the_package_witness() {
 
 #[test]
 fn installed_live_projection_rejects_an_equivalent_foreign_installation() {
-    let owner = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = installed_runtime(request_execution);
     let owner_handle = owner.domain(InstalledDomain).unwrap();
     let owner_witness = owner_handle.authority_witness().witness_identity().clone();
     let mut owner_workspace = owner.workspace("installed-live-projection-owner").unwrap();
-    let owner_live = open_live(&owner_handle, &mut owner_workspace, "installed.owner");
+    let owner_live = open_live(
+        request_execution,
+        &owner_handle,
+        &mut owner_workspace,
+        "installed.owner",
+    );
 
-    let foreign = installed_runtime();
+    let foreign = installed_runtime(request_execution);
     let foreign_handle = foreign.domain(InstalledDomain).unwrap();
     let mut foreign_workspace = foreign
         .workspace("installed-live-projection-foreign")
         .unwrap();
-    let foreign_live = open_live(&foreign_handle, &mut foreign_workspace, "installed.foreign");
-    let foreign_read = match foreign_live.read(&mut foreign_workspace) {
+    let foreign_live = open_live(
+        request_execution,
+        &foreign_handle,
+        &mut foreign_workspace,
+        "installed.foreign",
+    );
+    let foreign_read = match foreign_live.read(request_execution, &mut foreign_workspace) {
         Ok(read) => read,
         Err(_) => panic!("foreign live read must succeed in its owning workspace"),
     };
@@ -108,12 +129,20 @@ fn installed_live_projection_rejects_an_equivalent_foreign_installation() {
 
 #[test]
 fn foreign_runtime_live_resume_retains_the_continuation_for_its_owner() {
-    let owner = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = installed_runtime(request_execution);
     let handle = owner.domain(InstalledDomain).unwrap();
     let mut owner_workspace = owner.workspace("installed-domain-live-owner").unwrap();
-    let foreign = installed_runtime();
+    let foreign = installed_runtime(request_execution);
     let mut foreign_workspace = foreign.workspace("installed-domain-live-foreign").unwrap();
-    let live = open_live(&handle, &mut owner_workspace, "installed.foreign-resume");
+    let live = open_live(
+        request_execution,
+        &handle,
+        &mut owner_workspace,
+        "installed.foreign-resume",
+    );
     let continuation = match live.checkpoint(&mut owner_workspace) {
         WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(continuation) => continuation,
         _ => panic!("installed live checkpoint must succeed"),
@@ -141,10 +170,18 @@ fn foreign_runtime_live_resume_retains_the_continuation_for_its_owner() {
 
 #[test]
 fn generation_turnover_prevents_live_continuation_revival() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let mut workspace = runtime.workspace("installed-domain-live-stale").unwrap();
-    let live = open_live(&handle, &mut workspace, "installed.stale-resume");
+    let live = open_live(
+        request_execution,
+        &handle,
+        &mut workspace,
+        "installed.stale-resume",
+    );
     let continuation = match live.checkpoint(&mut workspace) {
         WorthQueryInstalledDomainLiveCheckpointOutcome::Checkpointed(continuation) => continuation,
         _ => panic!("installed live checkpoint must succeed"),
@@ -166,6 +203,7 @@ fn generation_turnover_prevents_live_continuation_revival() {
 }
 
 fn open_live(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     handle: &crate::domain_installation::WorthQueryInstalledDomainHandle<InstalledDomain>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     name: &'static str,
@@ -174,7 +212,7 @@ fn open_live(
         .live(name, identity_read)
         .unwrap()
         .using(current())
-        .open(workspace)
+        .open(request_execution, workspace)
         .unwrap()
     {
         WorthQueryInstalledDomainLiveOpenOutcome::Opened(handle) => handle,
@@ -185,11 +223,12 @@ fn open_live(
 }
 
 fn assert_live_projection(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     live: &crate::domain_installation::WorthQueryInstalledDomainLiveHandle<InstalledDomain>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     expected_witness: &crate::WorthQueryEvidenceIdentity,
 ) {
-    let read = match live.read(workspace) {
+    let read = match live.read(request_execution, workspace) {
         Ok(read) => read,
         Err(_) => panic!("installed live read must succeed"),
     };

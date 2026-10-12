@@ -7,10 +7,11 @@
 //! answers is decided only by the value in front of it.
 
 use worth_query_host::facade::application_invariants::{
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
-    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantRule,
-    WorthQueryApplicationInvariantSchemaResolver, WorthQueryApplicationInvariantVerdict,
+    CustomInvariantLeaseBudget, WorthQueryApplicationInvariantContext,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantExecutionError,
+    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantPreparationError,
+    WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantSchemaResolver,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
 };
 
 use super::schema::{Document, DocumentRetentionField, DocumentRetentionSchema};
@@ -58,6 +59,37 @@ pub fn resolve_second_rule(
 impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRetentionV1Rule {
     type Scope = TouchedDocuments;
 
+    fn supports_checked_preparation(&self) -> bool {
+        true
+    }
+    fn prepare_scope_checked(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, DocumentRetentionSchema>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        Some(plan_touched_documents(
+            planner,
+            &self.retention_days,
+            Some(budget),
+        ))
+    }
+    fn evaluate_checked(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, DocumentRetentionSchema>,
+        scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+    > {
+        Some(evaluate_retention(
+            context,
+            &self.retention_days,
+            scope,
+            budget,
+            |value| value <= V1_CEILING,
+        ))
+    }
+
     fn prepare_scope(
         &self,
         planner: &mut worth_query_host::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner<
@@ -66,7 +98,7 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
             DocumentRetentionSchema,
         >,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        plan_touched_documents(planner, &self.retention_days)
+        plan_touched_documents(planner, &self.retention_days, None)
     }
 
     fn evaluate(
@@ -87,6 +119,37 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
 impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRetentionV2Rule {
     type Scope = TouchedDocuments;
 
+    fn supports_checked_preparation(&self) -> bool {
+        true
+    }
+    fn prepare_scope_checked(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, DocumentRetentionSchema>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        Some(plan_touched_documents(
+            planner,
+            &self.retention_days,
+            Some(budget),
+        ))
+    }
+    fn evaluate_checked(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, DocumentRetentionSchema>,
+        scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+    > {
+        Some(evaluate_retention(
+            context,
+            &self.retention_days,
+            scope,
+            budget,
+            |value| (V2_FLOOR..=V2_CEILING).contains(&value),
+        ))
+    }
+
     fn prepare_scope(
         &self,
         planner: &mut worth_query_host::facade::application_invariants::WorthQueryApplicationInvariantScopePlanner<
@@ -95,7 +158,7 @@ impl WorthQueryApplicationInvariantRule<DocumentRetentionSchema> for DocumentRet
             DocumentRetentionSchema,
         >,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
-        plan_touched_documents(planner, &self.retention_days)
+        plan_touched_documents(planner, &self.retention_days, None)
     }
 
     fn evaluate(
@@ -129,12 +192,33 @@ fn plan_touched_documents(
         DocumentRetentionSchema,
     >,
     retention_days: &DocumentRetentionBinding,
+    budget: Option<&dyn CustomInvariantLeaseBudget>,
 ) -> Result<TouchedDocuments, WorthQueryApplicationInvariantPreparationError> {
+    if budget.is_some_and(|budget| !budget.checkpoint(0)) {
+        return Err(WorthQueryApplicationInvariantPreparationError::new(
+            "caller stopped",
+        ));
+    }
     let proposed = planner.proposed();
     let documents = proposed
         .touched_entities(retention_days)
         .map_err(|error| WorthQueryApplicationInvariantPreparationError::new(error.to_string()))?;
+    // This framework-produced vector becomes the rule's retained scope only
+    // after its storage is admitted by the caller's preparation budget.
+    let bytes = (documents.capacity() as u64).saturating_mul(std::mem::size_of::<
+        WorthQueryApplicationInvariantEntity<DocumentRetentionSchema, Document>,
+    >() as u64);
+    if budget.is_some_and(|budget| !budget.claim_result(bytes)) {
+        return Err(WorthQueryApplicationInvariantPreparationError::new(
+            "caller stopped",
+        ));
+    }
     for document in &documents {
+        if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+            return Err(WorthQueryApplicationInvariantPreparationError::new(
+                "caller stopped",
+            ));
+        }
         proposed.field(retention_days, document).map_err(|error| {
             WorthQueryApplicationInvariantPreparationError::new(error.to_string())
         })?;
@@ -157,4 +241,36 @@ fn proposed_retentions(
             })
         })
         .collect()
+}
+
+/// Checked evaluation streams values instead of allocating another value vector.
+fn evaluate_retention(
+    context: &WorthQueryApplicationInvariantContext<'_, '_, DocumentRetentionSchema>,
+    retention_days: &DocumentRetentionBinding,
+    scope: &TouchedDocuments,
+    budget: &dyn CustomInvariantLeaseBudget,
+    admits: impl Fn(u64) -> bool,
+) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError> {
+    if !budget.checkpoint(0) {
+        return Err(WorthQueryApplicationInvariantExecutionError::new(
+            "caller stopped",
+        ));
+    }
+    for document in scope {
+        if !budget.checkpoint(1) {
+            return Err(WorthQueryApplicationInvariantExecutionError::new(
+                "caller stopped",
+            ));
+        }
+        let value = context
+            .proposed()
+            .field(retention_days, document)
+            .map_err(|error| {
+                WorthQueryApplicationInvariantExecutionError::new(error.to_string())
+            })?;
+        if !value.is_some_and(&admits) {
+            return Ok(WorthQueryApplicationInvariantVerdict::Violation);
+        }
+    }
+    Ok(WorthQueryApplicationInvariantVerdict::Pass)
 }

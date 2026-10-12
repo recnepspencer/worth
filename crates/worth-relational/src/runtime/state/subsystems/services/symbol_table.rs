@@ -108,6 +108,7 @@ impl RuntimeSymbolTable {
             .collect();
     }
 
+    #[cfg(test)]
     pub(crate) fn resolve(&self, symbol: Symbol) -> Option<String> {
         self.state
             .read()

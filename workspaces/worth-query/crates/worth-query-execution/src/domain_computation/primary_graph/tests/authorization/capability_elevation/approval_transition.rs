@@ -36,8 +36,20 @@ pub(super) type Access = WorthQueryAdmittedApplicationCapabilityAccess<
 #[test]
 fn exact_request_approval_reobserves_lifecycle_and_commits_two_derived_effects() {
     let (world, request, requested) = requested_world(CapabilityElevationScenario::Active);
-    let approver = authenticated(&world, "bob", &request);
-    let program = materialize_exact_approval(&world, &request, requested);
+    let approver = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            materialize_exact_approval(&host_custody, &world, &request, requested)
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryElevationApprovalOutcome::Approved(approved) = world
         .application
@@ -63,70 +75,33 @@ fn requester_and_conflicted_approver_cannot_enter_approval_progression() {
         ),
     ] {
         let (world, request, _requested) = requested_world(scenario);
-        let principal = authenticated(&world, subject, &request);
-        let denial = approval_access(&world, &principal, &request)
-            .err()
-            .expect("actor policy must deny before lifecycle authority");
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                authenticated(&host_custody, &world, subject, &request)
+            })
+            .expect("the fixture read owns its installed host call");
+        let denial = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                approval_access(&host_custody, &world, &principal, &request)
+                    .err()
+                    .expect("actor policy must deny before lifecycle authority")
+            })
+            .expect("the fixture read owns its installed host call");
         assert_eq!(denial.kind(), expected);
         assert!(denial.identity().is_some());
         assert_eq!(denial.causes(), [expected]);
     }
 }
 
-#[test]
-fn approval_after_the_exact_request_window_returns_the_request_receipt() {
-    let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
-    world
-        .authorization_time
-        .script(std::iter::repeat_n(time(100), 12));
-    let request = live_scope();
-    let requested = super::request_support::commit_exact_request(&world, &request);
-    super::request_support::resolve_exact_request_identities(&world, &request);
-    world.authorization_time.script([time(106), time(106)]);
-    let approver = authenticated(&world, "bob", &request);
-    let access = approval_access(&world, &approver, &request).unwrap();
-    let denial = world
-        .application
-        .authorize_elevation_approval(
-            requested,
-            access,
-            &approval_operation(&world),
-            Default::default(),
-        )
-        .err()
-        .expect("approval after expiry must return the request receipt");
-    assert_eq!(
-        denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationExpired
-    );
-    assert_eq!(
-        denial.into_requested().elevation_identity(),
-        &string("elevation-2")
-    );
-}
+#[path = "approval_transition/approval_after_the_exact_request_window_returns_the_request_rece.rs"]
+mod approval_after_the_exact_request_window_returns_the_request_rece;
 
-#[test]
-fn approval_command_cannot_select_a_different_elevation_subject() {
-    let (world, request, requested) = requested_world(CapabilityElevationScenario::Active);
-    let approver = authenticated(&world, "bob", &request);
-    let access = approval_access_for_elevation(&world, &approver, &request, "elevation-1")
-        .expect("the approver independently holds command authority for elevation-1");
-
-    let denial = world
-        .application
-        .authorize_elevation_approval(
-            requested,
-            access,
-            &approval_operation(&world),
-            Default::default(),
-        )
-        .err()
-        .expect("command authority for another subject must not consume this request");
-    assert_eq!(
-        denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected
-    );
-}
+#[path = "approval_transition/approval_command_cannot_select_a_different_elevation_subject.rs"]
+mod approval_command_cannot_select_a_different_elevation_subject;
 
 pub(super) fn requested_world(
     scenario: CapabilityElevationScenario,
@@ -155,16 +130,24 @@ pub(super) fn requested_world_with_input(
 }
 
 pub(super) fn authenticated(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     subject: &str,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Authenticated {
+    let borrowed_execution = phase_custody.borrowed_request_for_test();
+    let execution = &borrowed_execution;
+
     let external = world.authenticate(subject, Duration::from_secs(60), request);
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_authenticated_principal(
+            &phase_custody.phase_for_application(&world.application),
             &world.binding,
             &external,
             request,
@@ -174,15 +157,23 @@ pub(super) fn authenticated(
 }
 
 pub(super) fn approval_access(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<Access, crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial>
 {
-    approval_access_for_elevation(world, principal, request, "elevation-2")
+    approval_access_for_elevation(
+        &(phase_custody).test_host_request(),
+        world,
+        principal,
+        request,
+        "elevation-2",
+    )
 }
 
 fn approval_access_for_elevation(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &Authenticated,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -197,15 +188,18 @@ fn approval_access_for_elevation(
             ApproveCapabilityElevationOperation::reference(),
         )
         .unwrap();
-    world.selected_product().admit_capability_access(
-        principal,
-        &capability,
-        ApproveElevationInput {
-            account: "account-1".to_owned(),
-            elevation: elevation.to_owned(),
-        },
-        request,
-    )
+    world
+        .selected_product(phase_custody)
+        .admit_capability_access(
+            &phase_custody.phase_for_application(&world.application),
+            principal,
+            &capability,
+            ApproveElevationInput {
+                account: "account-1".to_owned(),
+                elevation: elevation.to_owned(),
+            },
+            request,
+        )
 }
 
 pub(super) fn approval_operation(
@@ -307,7 +301,18 @@ pub(super) fn approve_exact_request(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requested: WorthQueryRequestedElevation,
 ) -> WorthQueryApprovedElevation {
-    let program = materialize_exact_approval(world, request, requested);
+    let program = world
+        .application
+        .with_application_advancement(request, |phase| {
+            let phase_custody = phase.test_host_request();
+            materialize_exact_approval(
+                &(phase_custody).test_host_request(),
+                world,
+                request,
+                requested,
+            )
+        })
+        .expect("the approval materialization owns its host call");
     match world
         .application
         .compare_and_commit_elevation_approval(program, idempotency(172, 172))
@@ -318,6 +323,7 @@ pub(super) fn approve_exact_request(
 }
 
 pub(super) fn materialize_exact_approval(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     requested: WorthQueryRequestedElevation,
@@ -327,16 +333,23 @@ pub(super) fn materialize_exact_approval(
     ApproveElevationInput,
     Account,
 > {
-    let approver = authenticated(world, "bob", request);
-    let access = approval_access(world, &approver, request).unwrap();
+    let approver = authenticated(phase_custody, world, "bob", request);
+    let access = approval_access(phase_custody, world, &approver, request).unwrap();
     let operation = approval_operation(world);
     let admission = world
         .application
-        .authorize_elevation_approval(requested, access, &operation, Default::default())
+        .authorize_elevation_approval(
+            &phase_custody.phase_for_application(&world.application),
+            requested,
+            access,
+            &operation,
+            Default::default(),
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, _| seal_approval_facts(reader),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -346,12 +359,14 @@ pub(super) fn materialize_exact_approval(
     world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

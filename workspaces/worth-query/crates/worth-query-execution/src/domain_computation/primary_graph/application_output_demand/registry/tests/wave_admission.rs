@@ -21,19 +21,29 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
         );
     let selected = world
         .application
-        .runtime
-        .primary_graph()
-        .unwrap()
-        .with_runtime(|runtime| {
-            let basis = runtime
-                .admit_branch_basis(&runtime.main_branch_identity())
-                .unwrap();
-            let snapshot = runtime
-                .snapshots()
-                .snapshot_for_observation(&basis.observation())
-                .unwrap();
-            Arc::new(runtime.read_truth().positioned_snapshot(&snapshot).unwrap())
-        });
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .runtime
+                .primary_graph()
+                .unwrap()
+                .with_runtime(
+                    &phase
+                        .execution_request_for(&world.application.product_runtime)
+                        .unwrap(),
+                    |runtime| {
+                        let basis = runtime
+                            .admit_branch_basis(&runtime.main_branch_identity())
+                            .unwrap();
+                        let snapshot = runtime
+                            .snapshots()
+                            .snapshot_for_observation(&basis.observation())
+                            .unwrap();
+                        Arc::new(runtime.read_truth().positioned_snapshot(&snapshot).unwrap())
+                    },
+                )
+        })
+        .expect("the wave-admission proof owns its request");
     let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
     let consumed = ConsumedOutputEvidence::retained_for_test(
         &owner,

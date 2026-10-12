@@ -113,6 +113,8 @@ fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
         let execution = phase;
 
         let (mut running, graph) = workflow_session_run("workflow-session", resource_request);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         {
             let plan = running
                 .admit_stage_provider_execution_plan("stage", &graph)
@@ -120,7 +122,7 @@ fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
             assert_eq!(plan.contract().scope().stage_identity(), Some("stage"));
             assert_eq!(plan.contract().read_closure(), ["managed-graph:project"]);
             let outcome = plan
-                .readmit(execution)
+                .readmit(&installed_running_phase)
                 .expect("workflow plan should readmit")
                 .prepare()
                 .expect("workflow session should prepare")

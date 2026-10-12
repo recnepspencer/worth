@@ -20,7 +20,10 @@ fn runtime_evidence_identity_surface_is_exported_through_public_facades() {
 
 #[test]
 fn support_matrix_and_state_snapshot_emit_canonical_evidence_tokens() {
-    let runtime = bridge_backed_runtime_with_support(intent_support_profile());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = bridge_backed_runtime_with_support(request_execution, intent_support_profile());
     let workspace =
         WorthQueryWorkspace::new("evidence-identity-support", runtime).expect("workspace builds");
     let matrix = workspace.public_support_matrix();

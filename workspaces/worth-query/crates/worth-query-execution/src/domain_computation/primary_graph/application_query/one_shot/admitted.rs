@@ -16,6 +16,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
@@ -34,7 +35,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let spent = OneShotReadWorkObservation::new();
         let mut plan = plan;
         admit_one_shot_entry(&plan, admission)?;
-        validate_one_shot_plan(self, &plan).map_err(WorthQueryAdmittedOneShotStop::Execution)?;
+        validate_one_shot_plan(execution, self, &plan)
+            .map_err(WorthQueryAdmittedOneShotStop::Execution)?;
         let result_buffer = reserve_one_shot_result_buffer(self, &plan)
             .map_err(WorthQueryAdmittedOneShotStop::Execution)?;
         let custody = custody_work::RetainedCustodyWork::of(
@@ -47,6 +49,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         .ok_or(WorthQueryAdmittedOneShotStop::WorkCounterOverflow)?;
         let (raw, authorization_work, read_proof, reservation) =
             match execute_selected_authorized_read(
+                execution,
                 self,
                 &mut plan,
                 admission,

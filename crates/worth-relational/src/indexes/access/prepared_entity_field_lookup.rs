@@ -60,7 +60,10 @@ impl IndexAccess<'_> {
         index: DerivedIndexId,
         kind: KindId,
         locator: &AspectFieldLocator,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PreparedEntityFieldLookup, BoundedEntityFieldLookupDenial> {
+        crate::execution::check_request(execution)
+            .map_err(|cause| denied(Denial::Execution(cause), index))?;
         if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
             return Err(denied(Denial::SnapshotUnavailable, index));
         }
@@ -112,11 +115,14 @@ impl IndexAccess<'_> {
         value: &AspectValue,
         limit: usize,
         parity: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut check_live: impl FnMut() -> Result<(), E>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         if prepared.runtime_identity != self.runtime.runtime_instance_id() {
             return Err(Stop::ExactBasisRequired);
         }
+        crate::execution::check_request(execution)
+            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), prepared.index_id())))?;
         check_live().map_err(Stop::Admission)?;
         if limit == 0 || limit == usize::MAX {
             return Err(Stop::Lookup(denied(
@@ -127,7 +133,9 @@ impl IndexAccess<'_> {
         self.runtime
             .performance_access()
             .count_query_index_attempt();
-        self.collect_prepared_entity_field_lookup(prepared, value, limit, parity, check_live)
+        self.collect_prepared_entity_field_lookup(
+            prepared, value, limit, parity, execution, check_live,
+        )
     }
 
     pub(super) fn collect_prepared_entity_field_lookup<E>(
@@ -136,9 +144,12 @@ impl IndexAccess<'_> {
         value: &AspectValue,
         limit: usize,
         parity: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut check_live: impl FnMut() -> Result<(), E>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
+        crate::execution::check_request(execution)
+            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), prepared.index_id())))?;
         check_live().map_err(Stop::Admission)?;
         let DerivedIndexEntries::EntityField(entries) = &prepared.generation.entries else {
             unreachable!("prepared generation is an entity field index")
@@ -147,8 +158,10 @@ impl IndexAccess<'_> {
             prepared,
             value,
             check_live: &mut check_live,
+            execution,
         };
         let (candidates, examined, overflowed) = collect(
+            execution,
             entries.get(&key),
             prepared.index_id(),
             prepared.kind,
@@ -165,6 +178,7 @@ impl IndexAccess<'_> {
         );
         if parity == BoundedIndexParityMode::Certification {
             super::prepared_field_certification::certify(
+                execution,
                 self.runtime,
                 prepared,
                 value,
@@ -176,24 +190,38 @@ impl IndexAccess<'_> {
                 .performance_access()
                 .count_query_index_parity_verification();
         }
+        crate::execution::check_request(execution)
+            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), prepared.index_id())))?;
         check_live().map_err(Stop::Admission)?;
         self.runtime.performance_access().count_query_index_path();
         Ok(outcome)
     }
 }
 
-struct PreparedCollectionRead<'a, F> {
+struct PreparedCollectionRead<'a, 'request, 'authority, F> {
+    execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
     prepared: &'a PreparedEntityFieldLookup,
     value: &'a AspectValue,
     check_live: &'a mut F,
 }
 impl<E, F: FnMut() -> Result<(), E>> EntityFieldCollectionRead<E>
-    for PreparedCollectionRead<'_, F>
+    for PreparedCollectionRead<'_, '_, '_, F>
 {
     fn prepare_results(&mut self, _: usize) -> Result<(), Stop<E>> {
+        crate::execution::check_request(self.execution).map_err(|cause| {
+            Stop::Lookup(denied(Denial::Execution(cause), self.prepared.index_id()))
+        })?;
         (self.check_live)().map_err(Stop::Admission)
     }
-    fn compare(&mut self, entity: EntityId, _: usize) -> Result<Option<(KindId, bool)>, Stop<E>> {
+    fn compare(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+        _: usize,
+    ) -> Result<Option<(KindId, bool)>, Stop<E>> {
+        crate::execution::check_request(execution).map_err(|cause| {
+            Stop::Lookup(denied(Denial::Execution(cause), self.prepared.index_id()))
+        })?;
         (self.check_live)().map_err(Stop::Admission)?;
         Ok(
             crate::indexes::projected_field_values::exact_entity_field_matches(

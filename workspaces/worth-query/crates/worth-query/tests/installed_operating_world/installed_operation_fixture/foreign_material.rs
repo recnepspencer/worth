@@ -178,14 +178,17 @@ impl domain::WorthQueryDomainOperationExecutor<GeometryDomain, ReadVertex, ReadF
         domain::WorthQueryOperationExecutionMaterial<read::WorthQueryReadCompletion>,
         domain::WorthQueryOperationExecutorFailure,
     > {
+        let context_execution = context.execution_request();
+        let request_execution = &context_execution;
         let _owner_completion = context.execute_installed_read(owner_workspace)?;
-        let mut foreign = workspace("foreign-material-source", false).map_err(|error| {
-            domain::WorthQueryOperationExecutorFailure::new(
-                domain::WorthQueryOperationFailureClass::Dependency,
-                format!("{error:?}"),
-            )
-        })?;
-        let completion = execute_reconstructed_read_for_sabotage(&mut foreign)?;
+        let mut foreign =
+            workspace(request_execution, "foreign-material-source", false).map_err(|error| {
+                domain::WorthQueryOperationExecutorFailure::new(
+                    domain::WorthQueryOperationFailureClass::Dependency,
+                    format!("{error:?}"),
+                )
+            })?;
+        let completion = execute_reconstructed_read_for_sabotage(request_execution, &mut foreign)?;
         Ok(domain::WorthQueryOperationExecutionMaterial::new(
             completion,
             input.state,
@@ -194,6 +197,7 @@ impl domain::WorthQueryDomainOperationExecutor<GeometryDomain, ReadVertex, ReadF
 }
 
 pub fn foreign_material_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -212,10 +216,11 @@ pub fn foreign_material_workspace(
             ReadFamily,
             CountVerticesExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 pub fn mismatched_read_plan_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -234,10 +239,11 @@ pub fn mismatched_read_plan_workspace(
             ReadFamily,
             CountVerticesExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 pub fn missing_read_execution_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -251,10 +257,11 @@ pub fn missing_read_execution_workspace(
             ReadFamily,
             MissingReadExecutionExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 pub fn mismatched_cost_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -273,10 +280,11 @@ pub fn mismatched_cost_workspace(
             ReadFamily,
             CountVerticesExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 pub fn mismatched_determinism_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<
     runtime::WorthQueryWorkspace,
@@ -295,5 +303,5 @@ pub fn mismatched_determinism_workspace(
             ReadFamily,
             CountVerticesExecutor,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }

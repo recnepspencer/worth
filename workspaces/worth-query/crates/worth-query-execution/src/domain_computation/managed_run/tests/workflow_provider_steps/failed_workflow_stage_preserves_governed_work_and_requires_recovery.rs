@@ -35,9 +35,11 @@ fn failed_workflow_stage_preserves_governed_work_and_requires_recovery() {
             WorthQueryOperationGraphAccess::Project,
         );
         let running = admitted_workflow(&runtime, &operation, resources, resource_request);
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "stage",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -46,7 +48,7 @@ fn failed_workflow_stage_preserves_governed_work_and_requires_recovery() {
                 ),
             )
             .expect("installed stage resources should start the provider call");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("failed workflow provider advanced the managed lane"),
         };

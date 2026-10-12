@@ -18,6 +18,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn project_snapshot_admitted<Stop>(
         &self,
         handle: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut admit: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<
         Option<VisibilityProjectionView<'runtime>>,
@@ -47,6 +48,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             u64::try_from(bytes).map_err(|_| Denial::AccountingOverflow)?,
         )
         .map_err(Denial::Admission)?;
-        Ok(self.project_snapshot(handle))
+        Ok(self.project_snapshot(handle, execution))
     }
 }

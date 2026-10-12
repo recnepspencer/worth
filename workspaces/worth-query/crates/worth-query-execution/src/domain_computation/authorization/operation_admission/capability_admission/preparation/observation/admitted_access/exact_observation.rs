@@ -46,6 +46,7 @@ pub(in crate::domain_computation::authorization) struct WorthQueryExactCapabilit
 }
 
 pub(super) fn with_exact_observation<Schema, Capability, Operation, Input, Output>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     observe: impl FnOnce(&WorthQueryExactCapabilityObservation<'_, Schema>) -> Output,
@@ -75,7 +76,7 @@ where
     let snapshot = access.graph_work.mutation_snapshot()?;
     let handle = access.graph_work.mutation_handle()?;
     let resolution = graph.retain_entity_resolution_context();
-    Some(handle.with_runtime(|relational| {
+    Some(handle.with_runtime(execution, |relational| {
         observe(&WorthQueryExactCapabilityObservation {
             runtime,
             relational,
@@ -121,39 +122,55 @@ where
 
     fn resolve_request<Scope, Context>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         projection: &ApplicationCapabilityRequestProjection<Schema, Scope, Context>,
     ) -> Result<
         WorthQueryResolvedCapabilityRequest<Schema, Scope>,
         WorthQueryOperationAuthorizationDenial,
     > {
-        let truth = self.resolution_truth(projection.resource().field())?;
-        resolve_capability_request(&truth, &self.runtime.installed_schema, projection)
+        let truth = self.resolution_truth(execution, projection.resource().field())?;
+        resolve_capability_request(
+            execution,
+            &truth,
+            &self.runtime.installed_schema,
+            projection,
+        )
     }
 
     fn resolve_selector(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         selector: &ErasedApplicationCapabilityEntitySelector,
     ) -> Result<WorthQueryResolvedEntity, WorthQueryOperationAuthorizationDenial> {
-        let truth = self.resolution_truth(selector.field())?;
-        resolve_erased_selector(&truth, &self.runtime.installed_schema, selector)
+        let truth = self.resolution_truth(execution, selector.field())?;
+        resolve_erased_selector(execution, &truth, &self.runtime.installed_schema, selector)
     }
 
     fn resolve_lifecycle_field(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: &ApplicationCapabilityFieldBinding,
         value: AspectValue,
     ) -> Result<WorthQueryResolvedEntity, WorthQueryOperationAuthorizationDenial> {
-        self.resolution_truth(field.field())?
-            .resolve(field.entity(), field.aspect(), field.field(), value)
+        self.resolution_truth(execution, field.field())?
+            .resolve(
+                execution,
+                field.entity(),
+                field.aspect(),
+                field.field(),
+                value,
+            )
             .map_err(|_| denial(field.field()))
     }
 
     fn resolution_truth(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
     ) -> Result<WorthQueryEntityResolutionTruth<'_>, WorthQueryOperationAuthorizationDenial> {
         self.resolution
             .at_snapshot(
+                execution,
                 self.relational,
                 self.snapshot,
                 WorthQueryPrincipalResolutionMode::Ordinary,

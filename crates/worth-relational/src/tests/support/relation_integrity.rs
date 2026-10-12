@@ -74,6 +74,7 @@ pub(crate) fn endpoint_deletion_runtime(
 }
 
 pub(crate) fn create_endpoint_deletion_relation_fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
 ) -> (
@@ -81,8 +82,8 @@ pub(crate) fn create_endpoint_deletion_relation_fixture(
     crate::facade::identity::EntityId,
     RelationId,
 ) {
-    let source = create_entity(runtime, "source");
-    let target = create_entity(runtime, "target");
-    let relation = create_relation(runtime, source, target, client_key);
+    let source = create_entity(execution, runtime, "source");
+    let target = create_entity(execution, runtime, "target");
+    let relation = create_relation(execution, runtime, source, target, client_key);
     (source, target, relation)
 }

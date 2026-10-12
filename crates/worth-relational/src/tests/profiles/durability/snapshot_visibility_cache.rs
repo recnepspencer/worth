@@ -3,6 +3,9 @@ use crate::tests::support::*;
 
 #[test]
 fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .visibility_cache_policy(VisibilityCachePolicy {
@@ -14,12 +17,16 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
-    let second = create_entity_outcome(&runtime, "second");
+    let first = create_entity_outcome(execution, &runtime, "first");
+    let second = create_entity_outcome(execution, &runtime, "second");
 
     runtime.performance_access().reset_counters();
-    let _ = runtime.read_truth().read_version(first.version_id);
-    let _ = runtime.read_truth().read_version(first.version_id);
+    let _ = runtime
+        .read_truth()
+        .read_version(execution, first.version_id);
+    let _ = runtime
+        .read_truth()
+        .read_version(execution, first.version_id);
     let stats = runtime.storage_access().storage_stats();
     let counters = runtime.performance_access().counters();
 
@@ -33,6 +40,9 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
 
 #[test]
 fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .visibility_cache_policy(VisibilityCachePolicy {
@@ -44,10 +54,10 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
+    let first = create_entity_outcome(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&first)[0];
-    let _updated = update_entity(&runtime, entity, "first-updated");
+    let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
     let read_path = runtime
         .read_truth()
@@ -63,7 +73,10 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
                 == &RelationalDiagnosticValue::Bool(false)
     }));
 
-    let read = runtime.read_truth().read_snapshot(&snapshot).unwrap();
+    let read = runtime
+        .read_truth()
+        .read_snapshot(&snapshot, execution)
+        .unwrap();
     let inspection = runtime.read_truth().inspect_snapshot(&snapshot).unwrap();
     let stats = runtime.storage_access().storage_stats();
 
@@ -80,11 +93,17 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
         .visibility_authority()
         .release_snapshot(&snapshot)
         .is_ok());
-    assert!(runtime.read_truth().read_snapshot(&snapshot).is_none());
+    assert!(runtime
+        .read_truth()
+        .read_snapshot(&snapshot, execution)
+        .is_none());
 }
 
 #[test]
 fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .visibility_cache_policy(VisibilityCachePolicy {
@@ -96,14 +115,20 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
+    let first = create_entity_outcome(execution, &runtime, "first");
     let snapshot = runtime.visibility_authority().snapshot();
     let entity = changed_entities(&first)[0];
-    let _updated = update_entity(&runtime, entity, "first-updated");
+    let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
     runtime.performance_access().reset_counters();
-    let _ = runtime.read_truth().read_snapshot(&snapshot).unwrap();
-    let _ = runtime.read_truth().read_snapshot(&snapshot).unwrap();
+    let _ = runtime
+        .read_truth()
+        .read_snapshot(&snapshot, execution)
+        .unwrap();
+    let _ = runtime
+        .read_truth()
+        .read_snapshot(&snapshot, execution)
+        .unwrap();
 
     let stats = runtime.storage_access().storage_stats();
     let counters = runtime.performance_access().counters();
@@ -119,6 +144,9 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
 
 #[test]
 fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .visibility_cache_policy(VisibilityCachePolicy {
@@ -130,16 +158,22 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
         })
         .build();
 
-    let first = create_entity_outcome(&runtime, "first");
-    let second = create_entity_outcome(&runtime, "second");
-    let third = create_entity_outcome(&runtime, "third");
+    let first = create_entity_outcome(execution, &runtime, "first");
+    let second = create_entity_outcome(execution, &runtime, "second");
+    let third = create_entity_outcome(execution, &runtime, "third");
 
     assert_recent_version_admission_candidate(&runtime, first.version_id);
 
     runtime.performance_access().reset_counters();
-    let _ = runtime.read_truth().read_version(first.version_id);
-    let _ = runtime.read_truth().read_version(second.version_id);
-    let _ = runtime.read_truth().read_version(second.version_id);
+    let _ = runtime
+        .read_truth()
+        .read_version(execution, first.version_id);
+    let _ = runtime
+        .read_truth()
+        .read_version(execution, second.version_id);
+    let _ = runtime
+        .read_truth()
+        .read_version(execution, second.version_id);
     let stats = runtime.storage_access().storage_stats();
     let counters = runtime.performance_access().counters();
 
@@ -159,18 +193,21 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
 
 #[test]
 fn heavy_profiles_keep_recent_visibility_cache_small_under_sustained_history_reads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::ChipSimulation)
         .schema_registry(test_schema_registry())
         .build();
     let mut versions = Vec::new();
     for index in 0..6 {
-        versions.push(create_entity_outcome(&runtime, &format!("e{index}")).version_id);
+        versions.push(create_entity_outcome(execution, &runtime, &format!("e{index}")).version_id);
     }
 
     runtime.performance_access().reset_counters();
     for version_id in &versions[..versions.len() - 1] {
-        let _ = runtime.read_truth().read_version(*version_id);
+        let _ = runtime.read_truth().read_version(execution, *version_id);
     }
     let stats = runtime.storage_access().storage_stats();
 

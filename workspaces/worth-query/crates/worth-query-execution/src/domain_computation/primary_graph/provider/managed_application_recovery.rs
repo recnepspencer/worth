@@ -177,7 +177,7 @@ where
     where Input: Clone + Send + Sync + 'static,
     {
         use WorthQueryManagedApplicationRecoveryDenial as Denial;
-        phase
+        let request = phase
             .execution_request_for(&self.product_runtime)
             .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
         {
@@ -292,14 +292,17 @@ where
                         }
                     };
                     let publication_failure =
-                        publish_recovered(&self.primary_provider, session).err();
+                        publish_recovered(&request, &self.primary_provider, session).err();
                     guard.finish();
                     let prior_cleanup_failure = self
                         .release_product_publication_recovery(recovery.clone(), 0)
                         .err();
                     drop(coordination);
-                    let read =
-                        self.resolve_admitted_application_idempotency(admission, idempotency);
+                    let read = self.resolve_admitted_application_idempotency(
+                        phase,
+                        admission,
+                        idempotency,
+                    );
                     Ok((
                         WorthQueryManagedApplicationRecoveryOutcome::Performed(
                             WorthQueryManagedApplicationRecoveryPerformed {

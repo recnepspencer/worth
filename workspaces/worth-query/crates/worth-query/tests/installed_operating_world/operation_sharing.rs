@@ -13,16 +13,19 @@ pub(super) type SettledProjection = domain::WorthQuerySettledDomainProjection<
 
 #[test]
 fn live_owner_and_current_candidate_become_two_move_only_leases() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("projection-sharing-live-current")
+        .workspace(request_execution, "projection-sharing-live-current")
         .unwrap();
     let live = match settle(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("subject projection did not promote"),
@@ -80,16 +83,19 @@ fn live_owner_and_current_candidate_become_two_move_only_leases() {
 
 #[test]
 fn live_owner_can_enter_the_same_managed_lease_lifecycle_without_a_candidate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("projection-sharing-singleton")
+        .workspace(request_execution, "projection-sharing-singleton")
         .unwrap();
     let live = match settle(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("singleton projection did not promote"),
@@ -119,16 +125,19 @@ fn live_owner_can_enter_the_same_managed_lease_lifecycle_without_a_candidate() {
 
 #[test]
 fn one_owner_drain_and_one_maintenance_receipt_fan_out_to_both_exact_leases() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("projection-sharing-fanout")
+        .workspace(request_execution, "projection-sharing-fanout")
         .unwrap();
     let live = match settle(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("fanout subject did not promote"),
@@ -153,7 +162,7 @@ fn one_owner_drain_and_one_maintenance_receipt_fan_out_to_both_exact_leases() {
     assert_eq!(empty_subject.counters().this_lease_semantic_delivery, 0);
 
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "shared-live-update")
         })
         .unwrap();
@@ -190,17 +199,23 @@ fn one_owner_drain_and_one_maintenance_receipt_fan_out_to_both_exact_leases() {
 
 #[test]
 fn foreign_workspace_cannot_release_a_runtime_affine_lease() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut owner = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("projection-sharing-owner")
+        .workspace(request_execution, "projection-sharing-owner")
         .unwrap();
     let mut foreign = configured_runtime()
-        .workspace("projection-sharing-foreign")
+        .workspace(request_execution, "projection-sharing-foreign")
         .unwrap();
-    let live = match settle(&mut owner).into_lifecycle().promote(&mut owner) {
+    let live = match settle(&mut owner)
+        .into_lifecycle()
+        .promote(request_execution, &mut owner)
+    {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("foreign-release subject did not promote"),
     };
@@ -244,16 +259,19 @@ fn foreign_workspace_cannot_release_a_runtime_affine_lease() {
 
 #[test]
 fn dropped_peer_is_reaped_from_a_pending_epoch_and_last_drop_closes_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace("projection-sharing-drop-reap")
+        .workspace(request_execution, "projection-sharing-drop-reap")
         .unwrap();
     let live = match settle(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("drop-reap subject did not promote"),
@@ -287,7 +305,7 @@ fn dropped_peer_is_reaped_from_a_pending_epoch_and_last_drop_closes_once() {
         .unwrap();
     drop(subject);
     workspace
-        .insert("Vertex", |mutation| {
+        .insert(request_execution, "Vertex", |mutation| {
             mutation.aspect("identity.id", "reap-trigger")
         })
         .unwrap();
@@ -298,17 +316,20 @@ fn dropped_peer_is_reaped_from_a_pending_epoch_and_last_drop_closes_once() {
 
 #[test]
 fn failed_last_close_retains_the_exact_lease_and_backend_until_retry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = configured_runtime()
         .consumer_support_posture(
             domain::WorthQueryConsumerSupportDimension::Sharing,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
         .fail_next_live_closes(1)
-        .workspace("projection-sharing-close-retry")
+        .workspace(request_execution, "projection-sharing-close-retry")
         .unwrap();
     let live = match settle(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("close-retry subject did not promote"),

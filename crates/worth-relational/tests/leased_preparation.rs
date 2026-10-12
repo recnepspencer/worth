@@ -84,7 +84,7 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
         .schema_registry(support::demo_schema_registry())
         .build();
 
-    let attempt = |work_ceiling: u64, validation_only: bool| {
+    let attempt = |work_ceiling: u64, validation_only: bool, publish: bool| {
         let lease = authority()
             .request_lease(lease_request_with_work(
                 4 * 1024 * 1024,
@@ -113,11 +113,24 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
             .expect("entity intent stages");
         if validation_only {
             runtime
-                .validate_branch_transaction_with_lease(transaction, &lease)
+                .validate_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
+                    transaction,
+                )
+                .map(|_| ())
+        } else if publish {
+            runtime
+                .commit_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
+                    transaction,
+                )
                 .map(|_| ())
         } else {
             runtime
-                .prepare_branch_transaction_with_lease(transaction, &lease)
+                .prepare_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
+                    transaction,
+                )
                 .map(|candidate| {
                     runtime
                         .preparation_port()
@@ -130,10 +143,10 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
     let minimum_work = |validation_only| {
         let mut denied = 0;
         let mut admitted = 1_000_000;
-        attempt(admitted, validation_only).expect("generous lease succeeds");
+        attempt(admitted, validation_only, false).expect("generous lease succeeds");
         while denied + 1 < admitted {
             let trial = denied + (admitted - denied) / 2;
-            match attempt(trial, validation_only) {
+            match attempt(trial, validation_only, false) {
                 Ok(()) => admitted = trial,
                 Err(TransactionCommitError::Execution { denial, .. })
                     if denial.kind == CommitExecutionDenialKind::Cause(Cause::WorkExhausted) =>
@@ -152,9 +165,9 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
         full_preparation_work > validation_work,
         "later packet maps must spend work beyond validation"
     );
-    attempt(validation_work, true).expect("validation fits its minimum work lease");
+    attempt(validation_work, true, false).expect("validation fits its minimum work lease");
     assert!(matches!(
-        attempt(validation_work, false),
+        attempt(validation_work, false, false),
         Err(TransactionCommitError::Execution {
             denial: worth_relational::facade::transactions::CommitExecutionDenial {
                 kind: CommitExecutionDenialKind::Cause(Cause::WorkExhausted),
@@ -163,16 +176,42 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
             ..
         })
     ));
+    let head_before = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap()
+        .0;
+    // The same one-entity validation ceiling cannot fund later packet work
+    // when the ordinary commit also attempts publication.
+    assert!(matches!(
+        attempt(validation_work, false, true),
+        Err(TransactionCommitError::Execution {
+            denial: worth_relational::facade::transactions::CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(Cause::WorkExhausted),
+                ..
+            },
+            ..
+        })
+    ));
+    assert_eq!(
+        runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap()
+            .0,
+        head_before
+    );
 }
 
 #[test]
 fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _serial = serial();
     let authority = authority();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
         .build();
-    let (created, _) = support::create_entity(&runtime, "leased-seed");
+    let (created, _) = support::create_entity(execution, &runtime, "leased-seed");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "leased.entity.name".to_owned(),
@@ -186,14 +225,18 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         branch_id: BranchId("main".to_owned()),
         index_ids: vec![index.index_id],
     };
-    let serial = runtime.index_authority().build_for_commit(request.clone());
+    let serial = runtime
+        .index_authority()
+        .build_for_commit(execution, request.clone());
     assert!(serial.execution_denial.is_none());
     let lease = authority
         .request_lease(lease_request(32 * 1024 * 1024, CancellationToken::new()))
         .expect("generous lease is admitted");
-    let parallel = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request.clone(), &lease);
+    let parallel = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        request.clone(),
+        &lease,
+    );
     assert!(parallel.execution_denial.is_none());
     assert_eq!(serial.generations.len(), 1);
     assert_eq!(
@@ -209,9 +252,11 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let cancelled_lease = authority
         .request_lease(lease_request(32 * 1024 * 1024, cancelled.token()))
         .expect("cancelled request still receives a lease for typed execution stop");
-    let stopped_index = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request.clone(), &cancelled_lease);
+    let stopped_index = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&cancelled_lease),
+        request.clone(),
+        &cancelled_lease,
+    );
     assert_eq!(
         stopped_index.execution_denial.map(|denial| denial.kind),
         Some(DerivedIndexExecutionDenialKind::Cause(Cause::Cancelled))
@@ -237,9 +282,11 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let small_lease = authority
         .request_lease(small_request)
         .expect("zero-memory policy is admitted");
-    let exhausted_index = runtime
-        .index_authority()
-        .build_for_commit_with_lease(request, &small_lease);
+    let exhausted_index = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(&small_lease),
+        request,
+        &small_lease,
+    );
     let Some(DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
         requested,
         admitted: 0,
@@ -272,7 +319,10 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
         )
         .expect("entity intent stages");
     let error = runtime
-        .prepare_branch_transaction_with_lease(transaction, &cancelled_lease)
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(&cancelled_lease),
+            transaction,
+        )
         .expect_err("cancelled lease prevents preparation");
     assert!(matches!(
         error,
@@ -295,3 +345,6 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
 
 #[path = "leased_preparation/bulk_creation.rs"]
 mod bulk_creation;
+
+#[path = "relational_certification/test_execution_policy.rs"]
+mod test_execution_policy;

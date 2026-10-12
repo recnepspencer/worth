@@ -42,8 +42,11 @@ impl<'a> WorthQueryRuntimeWriteBatchIntentAuthoring<'a> {
         })
     }
 
-    pub fn execute(self) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
-        self.review()?.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
+        self.review()?.admit()?.execute(execution)
     }
 }
 
@@ -84,11 +87,14 @@ impl<'a> WorthQueryAdmittedRuntimeWriteBatchIntent<'a> {
         &self.handoff
     }
 
-    pub fn execute(self) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryBatchWriteReceipt, WorthQueryRuntimeError> {
         let binding = self
             .runtime
             .prepare_authoritative_mutation_batch_execution_binding(self.handoff);
         self.runtime
-            .execute_authoritative_mutation_batch_execution_binding(binding)
+            .execute_authoritative_mutation_batch_execution_binding(execution, binding)
     }
 }

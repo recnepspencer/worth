@@ -290,6 +290,7 @@ where
     /// authority that issued it.
     pub(super) fn run_again(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -316,7 +317,7 @@ where
             .commit_authority()
             .clone();
         runtime.advance_retained_with_commit_authority(
-            phase, demand, principal, request, branch, authority, admission, performed,
+            execution, phase, demand, principal, request, branch, authority, admission, performed,
         )
     }
 }

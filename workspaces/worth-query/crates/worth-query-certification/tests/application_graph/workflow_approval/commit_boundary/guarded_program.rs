@@ -11,31 +11,45 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
     let scope = request_scope();
     let external = authenticate_operator(runtime.installed_schema(), &scope);
     let selected = runtime
-        .on_branch(branch)
-        .select()
-        .expect("branch must select");
+        .with_host_advancement(|host_phase| {
+            runtime
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("branch must select")
+        })
+        .expect("installed host call opens");
     let principal_binding = runtime
         .installed_schema()
         .principal_binding(
             super::super::super::document_retention_model::schema::DocumentPrincipalBinding::reference(),
         )
         .expect("principal binding must install");
-    let principal = selected
-        .resolve_authenticated_principal(
-            &principal_binding,
-            &external,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("operator must resolve");
-    let document = selected
-        .resolve_entity(
-            DocumentIdentityField::reference(),
-            DOCUMENT_IDENTITY.to_owned(),
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("document must resolve");
+    let principal = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &host_phase,
+                    &principal_binding,
+                    &external,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("operator must resolve")
+        })
+        .expect("installed host call opens");
+    let document = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    DocumentIdentityField::reference(),
+                    DOCUMENT_IDENTITY.to_owned(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("document must resolve")
+        })
+        .expect("installed host call opens");
     let operation = runtime
         .installed_schema()
         .installed_operation(SetRetention::reference())
@@ -45,15 +59,20 @@ fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_au
         retention_days: SEED_RETENTION + 1,
     };
     let candidate = |key: u64| {
-        let admission = selected
-            .authorize_operation(
-                &principal,
-                &document,
-                &operation,
-                Default::default(),
-                &scope,
-            )
-            .expect("ordinary operation admission must succeed");
+        let admission = application
+            .with_host_advancement(|host_phase| {
+                selected
+                    .authorize_operation(
+                        &host_phase,
+                        &principal,
+                        &document,
+                        &operation,
+                        Default::default(),
+                        &scope,
+                    )
+                    .expect("ordinary operation admission must succeed")
+            })
+            .expect("installed host call opens");
         let HandlerResult::Completed(completed) = runtime
             .with_application_advancement(&scope, |phase| {
                 runtime.execute_mutation_handler::<ReviewedSetRetentionBinding>(

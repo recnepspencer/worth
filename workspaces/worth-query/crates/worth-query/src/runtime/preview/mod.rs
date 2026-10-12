@@ -64,12 +64,13 @@ pub struct WorthQueryPreviewSession<'a> {
 
 impl<'a> WorthQueryPreviewSession<'a> {
     pub(super) fn new(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         label: WorthQuerySessionLabel,
         runtime: &'a mut WorthQueryRuntime,
         effect_policy: WorthQueryEffectPolicy,
         basis_admission: WorthQueryPreviewBasisAdmission,
     ) -> Self {
-        let basis_snapshot_identity = runtime.current_snapshot_identity();
+        let basis_snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
         Self {
             label,
             runtime,

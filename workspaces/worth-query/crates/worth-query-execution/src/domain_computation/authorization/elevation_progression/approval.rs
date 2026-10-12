@@ -1,3 +1,4 @@
+mod replay;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::{
@@ -82,10 +83,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Only returns an exact committed replay. A fresh approval cannot leave
-    /// this path as an admitted operation when its original support is stale.
-    pub fn replay_elevation_approval_after_fresh_denial<Capability, Operation, Input>(
+    pub fn authorize_elevation_approval<Capability, Operation, Input>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         requested: WorthQueryRequestedElevation,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -94,50 +94,40 @@ where
             Operation,
             <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
         >,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<
-        WorthQueryElevationApprovalOutcome,
-        (
-            Option<WorthQueryApplicationIdempotencyResolutionDenial>,
-            WorthQueryRequestedElevation,
-        ),
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryElevationApprovalAuthorizationDenial,
     >
     where
         Operation: ApplicationOperationMarkerIdentity<Schema>,
-        Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+        Input: 'static,
     {
-        let draft = match bind_approval(self, &requested, &access, operation) {
-            Ok(draft) => draft,
-            Err(_) => return Err((None, requested)),
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(approval_denial(requested, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
         };
-        let admission = match progress_capability_operation(
-            self,
+        self.authorize_elevation_approval_with_request(
+            &execution,
+            requested,
             access,
             operation,
             preconditions,
-            WorthQueryCapabilityOperationProgression::ElevationLifecycle,
-        ) {
-            Ok(admission) => admission,
-            Err(_) => return Err((None, requested)),
-        };
-        let mut admission = admission
-            .bind_elevation_approval(draft.bind(requested))
-            .map_err(|(_, binding)| (None, binding.into_requested()))?;
-        match self.resolve_admitted_elevation_approval_replay(&mut admission, idempotency) {
-            Ok(Some(outcome)) => Ok(outcome),
-            Ok(None) => Err((
-                None,
-                admission
-                    .take_elevation_approval_binding()
-                    .expect("the replay probe retains its approval binding")
-                    .into_requested(),
-            )),
-            Err((denial, requested)) => Err((Some(denial), requested)),
-        }
+        )
     }
 
-    pub fn authorize_elevation_approval<Capability, Operation, Input>(
+    pub(in crate::domain_computation) fn authorize_elevation_approval_with_request<
+        Capability,
+        Operation,
+        Input,
+    >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut requested: WorthQueryRequestedElevation,
         mut access: WorthQueryAdmittedApplicationCapabilityAccess<
             Schema,
@@ -165,20 +155,22 @@ where
         Input: ApplicationCapabilityRequest<Schema, Capability>,
         Input: 'static,
     {
-        let draft = match bind_approval(self, &requested, &access, operation) {
+        let draft = match bind_approval(execution, self, &requested, &access, operation) {
             Ok(draft) => draft,
             Err(denial) => return Err(approval_denial(requested, denial)),
         };
-        let support_sample = match refresh_exact_support(self, &mut requested, &mut access) {
-            Ok(sample) => sample,
-            Err(denial) => return Err(approval_denial(requested, denial)),
-        };
+        let support_sample =
+            match refresh_exact_support(execution, self, &mut requested, &mut access) {
+                Ok(sample) => sample,
+                Err(denial) => return Err(approval_denial(requested, denial)),
+            };
         if let Err(denial) =
             validate_approval_time(requested.binding(), &support_sample, operation.operation())
         {
             return Err(approval_denial(requested, denial));
         }
         let admission = match progress_capability_operation(
+            execution,
             self,
             access,
             operation,
@@ -195,6 +187,7 @@ where
 }
 
 fn bind_approval<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     requested: &WorthQueryRequestedElevation,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
@@ -224,7 +217,7 @@ where
         .definition()
         .ok_or_else(|| approval_rejected(installed.contract().name()))?;
     let (elevation, review) =
-        resolve_approval_entities(runtime, access, installed, requested_binding)?;
+        resolve_approval_entities(execution, runtime, access, installed, requested_binding)?;
     Ok(WorthQueryElevationApprovalDraft {
         elevation,
         review,
@@ -245,6 +238,7 @@ where
 }
 
 fn resolve_approval_entities<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -257,6 +251,7 @@ where
     let elevation = selected_elevation_entity(access, installed)
         .ok_or_else(|| approval_rejected(installed.contract().name()))?;
     let resolved_elevation = resolve_elevation_identity(
+        execution,
         runtime,
         access,
         requested.capability_identity(),
@@ -265,6 +260,7 @@ where
     )
     .ok_or_else(|| approval_rejected(installed.contract().name()))?;
     let review = resolve_review_identity(
+        execution,
         runtime,
         access,
         requested.capability_identity(),

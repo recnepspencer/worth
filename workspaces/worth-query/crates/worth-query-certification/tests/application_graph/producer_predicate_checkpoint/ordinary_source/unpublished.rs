@@ -32,6 +32,9 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RequiredRecoveryP
 
 #[test]
 fn initial_required_partial_recovers_original_demand_without_handler_reexecution() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     // Reserved only for ordinary handler observations; operation semantics are unchanged.
     const RETENTION: u64 = 19;
     reset_candidate_count(RETENTION);
@@ -57,7 +60,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     let mut recovery = {
         let scope = request_scope();
         let principal = authenticate_operator(host.installed_schema(), &scope);
-        host.fail_next_durable_append_for_test();
+        host.fail_next_durable_append_for_test(request_execution);
         match host
             .request(&principal, &scope)
             .mutate(intent.clone())

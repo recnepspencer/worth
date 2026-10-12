@@ -18,6 +18,7 @@ use worth_relational::facade::identity::{EntityId, KindId};
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn reconstruct_cold_definition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -35,6 +36,7 @@ pub(super) fn reconstruct_cold_definition(
     WorthQueryApplicationAttemptDenial,
 > {
     let observed = observe_publication_header(
+        execution,
         runtime,
         snapshot,
         layout,
@@ -47,9 +49,11 @@ pub(super) fn reconstruct_cold_definition(
     let definition = observed.definition;
     let lineage = observed.lineage;
     let mut facts = observed.facts;
-    let revisions =
-        observe_publication_revisions(runtime, snapshot, layout, definition, None, &mut facts)?;
+    let revisions = observe_publication_revisions(
+        execution, runtime, snapshot, layout, definition, None, &mut facts,
+    )?;
     let start_node = exact_adjacent(
+        execution,
         runtime,
         snapshot,
         layout.definition_start_relation,
@@ -59,6 +63,7 @@ pub(super) fn reconstruct_cold_definition(
         &mut facts,
     )?;
     let nodes = adjacency(
+        execution,
         runtime,
         snapshot,
         layout.definition_node_relation,
@@ -79,6 +84,7 @@ pub(super) fn reconstruct_cold_definition(
     let mut compiled_nodes = Vec::with_capacity(nodes.len());
     for node in &nodes {
         compiled_nodes.push(node::compile_node(
+            execution,
             runtime,
             snapshot,
             layout,
@@ -95,6 +101,7 @@ pub(super) fn reconstruct_cold_definition(
     }
     let node_membership: HashSet<_> = nodes.iter().copied().collect();
     let connections = adjacency(
+        execution,
         runtime,
         snapshot,
         layout.definition_connection_relation,
@@ -111,6 +118,7 @@ pub(super) fn reconstruct_cold_definition(
     let mut compiled_connections = Vec::with_capacity(connections.len());
     for connection in &connections {
         compiled_connections.push(connection::compile_connection(
+            execution,
             runtime,
             snapshot,
             layout,

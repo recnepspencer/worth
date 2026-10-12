@@ -9,7 +9,10 @@ use crate::signal_compatibility_orchestration::WorthQuerySignalCompatibilityOrch
 
 #[test]
 fn compatible_only_orchestration_matches_retained_signal_truth() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let expected = handle
         .signal_compatibility(WorthQueryDeclarationSignalCompatibilityInput::enveloped(
             envelope(&handle, "face-a"),
@@ -36,7 +39,10 @@ fn compatible_only_orchestration_matches_retained_signal_truth() {
 
 #[test]
 fn bridge_request_path_matches_explicit_continuation_preparation_posture() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let compatibility = handle.signal_compatibility_checked(
         WorthQueryDeclarationSignalCompatibilityInput::enveloped(envelope(&handle, "face-a")),
     );

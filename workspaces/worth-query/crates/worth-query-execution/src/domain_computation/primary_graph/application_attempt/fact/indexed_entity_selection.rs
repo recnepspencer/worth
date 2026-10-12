@@ -31,6 +31,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryIndexedSelection
 
 pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selection(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     index_id: DerivedIndexId,
     entity_kind: KindId,
@@ -40,6 +41,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryIndexedSelectionRefusal> {
     observe_checked(
         runtime,
+        execution,
         snapshot,
         index_id,
         entity_kind,
@@ -54,6 +56,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_entity_selec
 /// no fact: a merge's unique lookup reads the candidates only.
 pub(in crate::domain_computation::primary_graph) fn observe_indexed_candidates(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     index_id: DerivedIndexId,
     entity_kind: KindId,
@@ -63,6 +66,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_candidates(
 ) -> Result<Vec<EntityId>, WorthQueryIndexedSelectionRefusal> {
     bounded_entity_field_selection(
         runtime,
+        execution,
         snapshot,
         index_id,
         entity_kind,
@@ -83,6 +87,7 @@ fn selection_refusal(denial: IndexedSelectionReobserveDenial) -> WorthQueryIndex
 
 fn observe_checked(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     index_id: DerivedIndexId,
     entity_kind: KindId,
@@ -92,6 +97,7 @@ fn observe_checked(
 ) -> Result<WorthQueryApplicationObservedFact, IndexedSelectionReobserveDenial> {
     let outcome = bounded_entity_field_selection(
         runtime,
+        execution,
         snapshot,
         index_id,
         entity_kind,
@@ -113,6 +119,7 @@ fn observe_checked(
 
 pub(super) fn remains_equal(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     index_id: DerivedIndexId,
     definition: &std::sync::Arc<DerivedIndexDefinition>,
@@ -121,24 +128,34 @@ pub(super) fn remains_equal(
     value: &AspectValue,
     candidate_limit: usize,
     expected: &[EntityId],
-) -> bool {
-    bounded_entity_field_selection(
+) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+    match bounded_entity_field_selection(
         runtime,
+        execution,
         snapshot,
         index_id,
         entity_kind,
         locator,
         value,
         candidate_limit,
-    )
-    .is_ok_and(|current| {
-        current.retain_definition().as_ref() == definition.as_ref()
-            && current.candidate_entity_ids() == expected
-    })
+    ) {
+        Ok(current) => Ok(current.retain_definition().as_ref() == definition.as_ref()
+            && current.candidate_entity_ids() == expected),
+        Err(IndexedSelectionReobserveDenial::Lookup(
+            BoundedEntityFieldLookupDenialKind::Execution(cause),
+        )) => Err(
+            super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                cause,
+                "indexed selection comparison",
+            ),
+        ),
+        Err(_) => Ok(false),
+    }
 }
 
 fn bounded_entity_field_selection(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     index_id: DerivedIndexId,
     entity_kind: KindId,
@@ -157,7 +174,7 @@ fn bounded_entity_field_selection(
     .map_err(|denial| IndexedSelectionReobserveDenial::Lookup(denial.kind()))?;
     let outcome = runtime
         .index_access()
-        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production, execution)
         .map_err(|denial| IndexedSelectionReobserveDenial::Lookup(denial.kind()))?;
     if outcome.overflowed() {
         Err(IndexedSelectionReobserveDenial::Overflow)
@@ -169,6 +186,7 @@ fn bounded_entity_field_selection(
 pub(in crate::domain_computation::primary_graph) fn reobserve(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     remaining_work: &mut usize,
 ) -> Result<WorthQueryApplicationObservedFact, IndexedSelectionReobserveDenial> {
@@ -185,6 +203,7 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
     };
     let outcome = bounded_current_selection(
         runtime,
+        execution,
         snapshot,
         *index_id,
         *entity_kind,
@@ -211,6 +230,7 @@ pub(in crate::domain_computation::primary_graph) fn reobserve(
 /// original completeness contract. Sparse postings spend only examined rows.
 fn bounded_current_selection(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     index_id: DerivedIndexId,
     entity_kind: KindId,
@@ -249,9 +269,11 @@ fn bounded_current_selection(
         )
         .map_err(|denial| IndexedSelectionReobserveDenial::Lookup(denial.kind()))?
     };
-    let observed = runtime
-        .index_access()
-        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production);
+    let observed = runtime.index_access().execute_bounded_entity_field_lookup(
+        request,
+        BoundedIndexParityMode::Production,
+        execution,
+    );
     let examined = match &observed {
         Ok(outcome) => outcome.examined_entry_count(),
         Err(denial) => denial.examined_entry_count(),
@@ -269,6 +291,7 @@ fn bounded_current_selection(
 pub(in crate::domain_computation::primary_graph) fn currentness_with_remaining(
     fact: &WorthQueryApplicationObservedFact,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     remaining_work: &mut usize,
 ) -> Result<bool, super::WorthQuerySourceCurrentnessFailure> {
@@ -287,6 +310,7 @@ pub(in crate::domain_computation::primary_graph) fn currentness_with_remaining(
     };
     let outcome = bounded_current_selection(
         runtime,
+        execution,
         snapshot,
         *index_id,
         *entity_kind,

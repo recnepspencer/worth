@@ -27,7 +27,7 @@ fn runtime_bridge_relational_source_exposes_latest_publication_bundle_authoritat
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "alice");
+    create_entity_outcome(&execution, &runtime, "alice");
 
     let bundle = runtime
         .publication()
@@ -106,12 +106,7 @@ fn partition_source_filters_the_real_commit_and_retains_exact_partition_provenan
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let committed = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(&execution, &runtime).unwrap();
     let secondary = committed
         .changed_records
         .iter()
@@ -189,7 +184,7 @@ fn runtime_bridge_relational_source_drives_public_bridge_delivery_with_canonical
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = runtime_with_test_schema();
-    create_entity_outcome(&runtime, "alice");
+    create_entity_outcome(&execution, &runtime, "alice");
 
     let bundle = runtime
         .publication()
@@ -267,7 +262,9 @@ fn runtime_bridge_replays_historical_commit_after_newer_publication_arrives() {
             .expect("test graph role");
     let historical_commit = {
         let runtime = runtime.lock().expect("test runtime lock");
-        create_entity_outcome(&runtime, "alice").commit.clone()
+        create_entity_outcome(&execution, &runtime, "alice")
+            .commit
+            .clone()
     };
     let branch_identity = runtime
         .lock()
@@ -303,11 +300,8 @@ fn runtime_bridge_replays_historical_commit_after_newer_publication_arrives() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("second commit should publish");
+        txn.commit(&execution, &runtime)
+            .expect("second commit should publish");
     }
     let historical_commit_identity = RelationalCommittedPatchRequest::new(
         TruthCommitIdentity::from_relational_commit_id(historical_commit_id.0),

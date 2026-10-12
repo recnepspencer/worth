@@ -24,31 +24,64 @@ const LIVE: KindId = KindId::new(2);
 /// that read a full lineage.
 #[test]
 fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = capacity_runtime();
-    let [lineage, first, second] = commit_entities(&mut runtime, ["lineage", "first", "second"]);
-    let read = commit_live(&mut runtime, "first-live", first, lineage);
-    let expected = incoming(&runtime, &read.snapshot, lineage);
+    let [lineage, first, second] =
+        commit_entities(execution, &mut runtime, ["lineage", "first", "second"]);
+    let read = commit_live(execution, &mut runtime, "first-live", first, lineage);
+    let expected = incoming(execution, &runtime, &read.snapshot, lineage);
     assert_eq!(expected.len(), 1);
     assert!(remains_equal(
         &runtime,
+        execution,
         &read.snapshot,
         LIVE,
         lineage,
         2,
         &expected
-    ));
+    )
+    .unwrap());
     assert!(
-        !remains_equal(&runtime, &read.snapshot, LIVE, lineage, 1, &expected),
+        !remains_equal(
+            &runtime,
+            execution,
+            &read.snapshot,
+            LIVE,
+            lineage,
+            1,
+            &expected
+        )
+        .unwrap(),
         "a membership that already fills the lineage admits no start",
     );
 
-    let raced = commit_live(&mut runtime, "second-live", second, lineage);
+    let raced = commit_live(execution, &mut runtime, "second-live", second, lineage);
     assert!(
-        !remains_equal(&runtime, &raced.snapshot, LIVE, lineage, 2, &expected),
+        !remains_equal(
+            &runtime,
+            execution,
+            &raced.snapshot,
+            LIVE,
+            lineage,
+            2,
+            &expected
+        )
+        .unwrap(),
         "a start that read one member cannot commit once another joined",
     );
     assert!(
-        !remains_equal(&runtime, &raced.snapshot, LIVE, lineage, 8, &expected),
+        !remains_equal(
+            &runtime,
+            execution,
+            &raced.snapshot,
+            LIVE,
+            lineage,
+            8,
+            &expected
+        )
+        .unwrap(),
         "the raced membership differs however much room is left",
     );
     for snapshot in [&read.snapshot, &raced.snapshot] {
@@ -57,18 +90,21 @@ fn a_membership_that_gained_an_instance_or_is_full_is_not_current() {
 }
 
 fn incoming(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     lineage: EntityId,
 ) -> Vec<WorthQueryApplicationObservedRelation> {
     observe_adjacency(
         runtime,
+        execution,
         snapshot,
         LIVE,
         lineage,
         WorthQueryApplicationAdjacencyDirection::Incoming,
         8,
     )
+    .unwrap()
     .expect("the fixture membership is readable")
 }
 
@@ -101,6 +137,7 @@ fn capacity_runtime() -> RelationalRuntime {
 }
 
 fn commit_entities<const N: usize>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     keys: [&str; N],
 ) -> [EntityId; N] {
@@ -117,7 +154,7 @@ fn commit_entities<const N: usize>(
             fields: AspectFieldPatch::default(),
         }))
     });
-    let committed = commit(runtime, "entities", intents);
+    let committed = commit(execution, runtime, "entities", intents);
     let issued = created.map(|created| {
         committed
             .created_entity(&created)
@@ -128,12 +165,14 @@ fn commit_entities<const N: usize>(
 }
 
 fn commit_live(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     key: &str,
     instance: EntityId,
     lineage: EntityId,
 ) -> CommitResult {
     commit(
+        execution,
         runtime,
         key,
         [MutationIntent::Create(CreateIntent::Relation(
@@ -150,6 +189,7 @@ fn commit_live(
 }
 
 fn commit<const N: usize>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     intents: [MutationIntent; N],
@@ -172,9 +212,6 @@ fn commit<const N: usize>(
         )
         .expect("the fixture batch stages");
     transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("the fixture commits")
 }

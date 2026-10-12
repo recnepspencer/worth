@@ -18,10 +18,11 @@ use super::read_composition_runtime::{
 };
 
 pub(in crate::runtime) fn execute_runtime_current_read_graph(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryExecutedReadGraph, WorthQueryReadDenial> {
-    let materialized = materialize_current_read_input(runtime, read_graph)?;
+    let materialized = materialize_current_read_input(execution, runtime, read_graph)?;
     let receipt = crate::runtime::WorthQueryReadReceipt::from_materialized_rows(
         read_graph,
         materialized.snapshot_identity,
@@ -41,11 +42,12 @@ pub(in crate::runtime) fn execute_runtime_current_read_graph(
 }
 
 pub(in crate::runtime) fn execute_runtime_current_count_graph(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryExecutedCountGraph, WorthQueryReadDenial> {
     ensure_count_aggregate_plan(read_graph)?;
-    let materialized = materialize_current_read_input(runtime, read_graph)?;
+    let materialized = materialize_current_read_input(execution, runtime, read_graph)?;
     let count = u64::try_from(materialized.rows.len()).map_err(|_| {
         WorthQueryReadDenial::new(
             WorthQueryReadDenialKind::ExecutionDenied,
@@ -78,15 +80,16 @@ struct WorthQueryCurrentReadMaterialization {
 }
 
 fn materialize_current_read_input(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryCurrentReadMaterialization, WorthQueryReadDenial> {
-    let admitted = admit_current_read_execution(runtime, read_graph)?;
+    let admitted = admit_current_read_execution(execution, runtime, read_graph)?;
     let snapshot_evidence_identity = admitted.snapshot_identity.evidence_identity();
     let mut graph_read_access_recorder =
         WorthQueryGraphReadAccessExecutionRecorder::entered_executor();
     let (rows, maintenance_source_rows, records_examined_count) =
-        materialize_read_rows(runtime, read_graph)?.into_parts();
+        materialize_read_rows(execution, runtime, read_graph)?.into_parts();
     graph_read_access_recorder.record_materialized_rows(rows.len());
     let fact_posture =
         materialized_fact_posture_for_read_graph(runtime, read_graph, &snapshot_evidence_identity);
@@ -107,10 +110,11 @@ struct WorthQueryCurrentReadExecutionAdmission {
 }
 
 fn admit_current_read_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryRuntime,
     read_graph: &WorthQueryReadGraph,
 ) -> Result<WorthQueryCurrentReadExecutionAdmission, WorthQueryReadDenial> {
-    let snapshot_identity = runtime.current_snapshot_identity();
+    let snapshot_identity = runtime.current_snapshot_identity_with_request(execution);
     let identity = crate::basis::ResolvedSnapshotIdentity::new(
         BasisAuthorityFamily::Runtime,
         None,

@@ -145,8 +145,10 @@ pub(super) fn installed_application_query() -> WorthQueryInstalledApplicationQue
     .unwrap()
 }
 
-pub(super) fn mature_family() -> WorthQueryReadFamily {
-    workspace("application-query-equivalence")
+pub(super) fn mature_family(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryReadFamily {
+    workspace(request_execution, "application-query-equivalence")
         .define_read_family("application-query-equivalence", |read| {
             read.local_collection(
                 "Account",
@@ -180,8 +182,10 @@ pub(super) fn mature_family() -> WorthQueryReadFamily {
         .unwrap()
 }
 
-pub(super) fn mature_flat_family() -> WorthQueryReadFamily {
-    workspace("application-query-equivalence-flat")
+pub(super) fn mature_flat_family(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryReadFamily {
+    workspace(request_execution, "application-query-equivalence-flat")
         .define_read_family("application-query-equivalence-flat", |read| {
             read.local_collection(
                 "Account",

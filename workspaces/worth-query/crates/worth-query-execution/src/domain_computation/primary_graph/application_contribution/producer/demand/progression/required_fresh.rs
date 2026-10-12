@@ -54,14 +54,27 @@ where
         FamilySourceQuery<Schema, Family>: 'static,
         WorthQueryAdmittedOutputDemand<Schema, Family>: Send + Sync,
     {
+        let execution = phase
+            .execution_request_for(&self.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "advancement phase",
+                )
+            })?;
         let mut slot = PreparedRequiredFreshSlot::<Schema, Family>::prepare(
             &self.output_demands,
             claim,
             installed,
             admission,
         )?;
-        let mut successor =
-            self.admit_required_fresh_successor::<Family>(&fresh, shared, slot.claim(), admission)?;
+        let mut successor = self.admit_required_fresh_successor::<Family>(
+            &execution,
+            &fresh,
+            shared,
+            slot.claim(),
+            admission,
+        )?;
         // The mode was prepared from this exact claim before registration. It
         // must be on the real admitted demand before any scheduling or effect.
         slot.bind_admitted(&mut successor);
@@ -160,6 +173,7 @@ where
     /// the predecessor and advanced or refused that demand.
     pub(super) fn admit_required_fresh_successor<Family>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh: &FreshOutputDisclosure<
             FamilySourceQuery<Schema, Family>,
             FamilySourceValue<Schema, Family>,
@@ -199,6 +213,7 @@ where
             claim.interest(),
         );
         self.admit_output_demand_with_source_admitted::<Family>(
+            &execution,
             fresh.value(),
             retained_source,
             None,

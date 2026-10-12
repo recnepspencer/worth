@@ -260,7 +260,7 @@ fn direct_admission_fixture_with_provider(
     let attempt = runtime
         .start_direct_resource_attempt(&bound, plan)
         .expect("fixture resource attempt must start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let managed = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&bound, attempt, lower.read_request(), resource_request)

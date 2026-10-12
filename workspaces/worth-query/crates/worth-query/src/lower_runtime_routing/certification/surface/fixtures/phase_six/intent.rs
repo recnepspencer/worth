@@ -12,8 +12,10 @@ use crate::runtime::{WorthQueryIntentDeclaration, WorthQueryIntentInput};
 
 use super::super::{RepresentativeArtifacts, WorthQueryLowerRuntimeRepresentativeEvidenceSource};
 
-pub(crate) fn representative_runtime_intent_authority_row() -> RepresentativeArtifacts {
-    let receipt = certification_intent_receipt();
+pub(crate) fn representative_runtime_intent_authority_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let receipt = certification_intent_receipt(execution);
     route_planned_row(
         WorthQueryLowerRuntimeSeamKey::RuntimeIntentAuthorityAdapter,
         "Runtime intent authority seam",
@@ -46,8 +48,10 @@ pub(crate) fn representative_runtime_intent_authority_row() -> RepresentativeArt
     )
 }
 
-pub(crate) fn representative_intent_runtime_execution_row() -> RepresentativeArtifacts {
-    let receipt = certification_intent_receipt();
+pub(crate) fn representative_intent_runtime_execution_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let receipt = certification_intent_receipt(execution);
     route_planned_row(
         WorthQueryLowerRuntimeSeamKey::IntentRuntimeExecution,
         "Intent runtime execution",
@@ -76,23 +80,28 @@ pub(crate) fn representative_intent_runtime_execution_row() -> RepresentativeArt
     )
 }
 
-fn certification_intent_receipt() -> crate::runtime::WorthQueryIntentReceipt {
-    let mut runtime = certification_runtime();
+fn certification_intent_receipt(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::runtime::WorthQueryIntentReceipt {
+    let mut runtime = certification_runtime(execution);
     runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "lower-runtime-certification-intent",
-            "Task",
-            "v1",
-            "lower-runtime-certification-intent-input",
-            WorthQueryIntentInput::object([
-                ("collection", WorthQueryIntentInput::string("Task")),
-                (
-                    "entity_identity",
-                    WorthQueryIntentInput::string("intent-task-1"),
-                ),
-                ("title", WorthQueryIntentInput::string("Intent fixture")),
-            ]),
-        ))
+        .execute_intent(
+            execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "lower-runtime-certification-intent",
+                "Task",
+                "v1",
+                "lower-runtime-certification-intent-input",
+                WorthQueryIntentInput::object([
+                    ("collection", WorthQueryIntentInput::string("Task")),
+                    (
+                        "entity_identity",
+                        WorthQueryIntentInput::string("intent-task-1"),
+                    ),
+                    ("title", WorthQueryIntentInput::string("Intent fixture")),
+                ]),
+            ),
+        )
         .expect("intent runtime fixture should execute")
 }
 

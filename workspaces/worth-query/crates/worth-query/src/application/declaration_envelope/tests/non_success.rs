@@ -10,7 +10,10 @@ use super::support::{
 
 #[test]
 fn deferred_receipts_become_deferred_envelopes() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.envelope_routes_checked(WorthQueryDeclarationEnvelopeInput::receipt_checked(
         handle.receipt_routes_checked(
@@ -36,7 +39,10 @@ fn deferred_receipts_become_deferred_envelopes() {
 
 #[test]
 fn denied_envelopes_preserve_route_and_receipt_denial_layers() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.envelope_routes_checked(WorthQueryDeclarationEnvelopeInput::receipt_checked(
         handle.receipt_routes_checked(
@@ -61,7 +67,10 @@ fn denied_envelopes_preserve_route_and_receipt_denial_layers() {
 
 #[test]
 fn failed_receipts_remain_distinct_from_denied_envelopes() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.envelope_routes_checked(WorthQueryDeclarationEnvelopeInput::receipt_checked(
         handle.receipt_routes_checked(
@@ -87,7 +96,10 @@ fn failed_receipts_remain_distinct_from_denied_envelopes() {
 
 #[test]
 fn unsupported_successful_receipt_kinds_preserve_receipt_boundary_denial() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.envelope_routes_checked(WorthQueryDeclarationEnvelopeInput::receipt_checked(
         handle.receipt_routes_checked(
@@ -118,7 +130,10 @@ fn unsupported_successful_receipt_kinds_preserve_receipt_boundary_denial() {
 
 #[test]
 fn distinct_denial_topology_changes_envelope_digest() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     let route_denied = match handle.envelope_routes_checked(
         WorthQueryDeclarationEnvelopeInput::receipt_checked(handle.receipt_routes_checked(

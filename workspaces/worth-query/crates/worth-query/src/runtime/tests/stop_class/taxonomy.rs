@@ -5,9 +5,14 @@ use super::completeness_support::{
 
 #[test]
 fn runtime_stop_class_taxonomy_covers_representative_runtime_error_variants() {
-    for error in representative_runtime_stop_errors() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    for error in representative_runtime_stop_errors(request_execution) {
         match error.stop_class() {
-            WorthQueryStopClass::InstalledDomainAuthorityDenied { .. }
+            WorthQueryStopClass::Advancement { .. }
+            | WorthQueryStopClass::ForeignPhase { .. }
+            | WorthQueryStopClass::InstalledDomainAuthorityDenied { .. }
             | WorthQueryStopClass::MissingRuntimeComponent { .. }
             | WorthQueryStopClass::ExistingTruthAssertionDenied { .. }
             | WorthQueryStopClass::ExistingTruthProbeDenied { .. }

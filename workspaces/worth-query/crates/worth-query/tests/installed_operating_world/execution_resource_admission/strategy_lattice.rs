@@ -10,6 +10,9 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn asynchronous_strategy_and_live_capacity_shortfall_defer_with_distinct_causes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let asynchronous = envelope(
         100,
         100,
@@ -18,6 +21,7 @@ fn asynchronous_strategy_and_live_capacity_shortfall_defer_with_distinct_causes(
         safe_point("async-chunk"),
     );
     let (workspace, _) = resource_admission_workspace(
+        request_execution,
         "resource-async-required",
         contract([strategy("async", asynchronous.clone())]),
         support(asynchronous),
@@ -62,6 +66,7 @@ fn asynchronous_strategy_and_live_capacity_shortfall_defer_with_distinct_causes(
         safe_point("pressure-chunk"),
     );
     let (workspace, _) = resource_admission_workspace(
+        request_execution,
         "resource-backpressured",
         contract([strategy("wide", installed_envelope)]),
         support(live_support),
@@ -94,6 +99,9 @@ fn asynchronous_strategy_and_live_capacity_shortfall_defer_with_distinct_causes(
 
 #[test]
 fn named_degradation_is_explicit_and_cannot_satisfy_exact_support_silently() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let exact = envelope(
         100,
         100,
@@ -109,6 +117,7 @@ fn named_degradation_is_explicit_and_cannot_satisfy_exact_support_silently() {
         safe_point("degraded-chunk"),
     );
     let (workspace, _) = resource_admission_workspace(
+        request_execution,
         "resource-named-degradation",
         contract([
             strategy("exact", exact),
@@ -154,6 +163,9 @@ fn named_degradation_is_explicit_and_cannot_satisfy_exact_support_silently() {
 
 #[test]
 fn provider_access_allocator_and_safe_point_mismatches_never_fallback() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use installed::operation::WorthQueryExecutionResourceAdmissionDenialKind as Kind;
 
     for (ordinal, provider, access, allocator, expected) in [
@@ -187,6 +199,7 @@ fn provider_access_allocator_and_safe_point_mismatches_never_fallback() {
             safe_point("mismatch-chunk"),
         );
         let (workspace, _) = resource_admission_workspace(
+            request_execution,
             &format!("resource-provider-mismatch-{ordinal}"),
             contract([strategy("required", installed_envelope.clone())]),
             support_with_requirements(installed_envelope, provider, access, allocator),
@@ -229,6 +242,7 @@ fn provider_access_allocator_and_safe_point_mismatches_never_fallback() {
         safe_point("other-safe-point"),
     );
     let (workspace, _) = resource_admission_workspace(
+        request_execution,
         "resource-safe-point-mismatch",
         contract([strategy("required", installed_envelope)]),
         support(support_envelope),
@@ -257,6 +271,9 @@ fn provider_access_allocator_and_safe_point_mismatches_never_fallback() {
 
 #[test]
 fn workflow_operation_and_stage_support_snapshots_include_only_causal_graph_roles() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let conditional = domain::WorthQueryPortableConditionalNodeDeclaration::declare(
         "resource-stage-local-support",
@@ -285,8 +302,12 @@ fn workflow_operation_and_stage_support_snapshots_include_only_causal_graph_role
     .output_relationship(domain::WorthQueryOutputRelationship::IsWorkflowStageOutput)
     .finish()
     .unwrap();
-    let workspace =
-        conditional_workflow_workspace("resource-stage-local-support", conditional).unwrap();
+    let workspace = conditional_workflow_workspace(
+        request_execution,
+        "resource-stage-local-support",
+        conditional,
+    )
+    .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let admitted = workspace
         .observe_operating_world(workspace.current_world())

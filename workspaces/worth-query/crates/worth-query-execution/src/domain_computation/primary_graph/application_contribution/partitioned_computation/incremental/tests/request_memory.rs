@@ -35,14 +35,51 @@ fn declared_bytes() -> u64 {
 fn under(memory: u64) -> [Attempt; 2] {
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
-    [
-        RuntimeWorldExecutionPlacement::Leased {
-            authority: query_test_execution_authority_for_test(),
-            policy: policy(memory),
-        },
-        RuntimeWorldExecutionPlacement::Serial(policy(memory)),
-    ]
-    .map(|placement| attempt_placed(&world, &installed, None, &live_scope(), placement))
+    [false, true].map(|serial| {
+        let placement = |memory| {
+            if serial {
+                RuntimeWorldExecutionPlacement::Serial(policy(memory))
+            } else {
+                RuntimeWorldExecutionPlacement::Leased {
+                    authority: query_test_execution_authority_for_test(),
+                    policy: policy(memory),
+                }
+            }
+        };
+        // The existing reservation denial observes remaining room without holding
+        // bytes, as in tree_admission. Run the same fixture with ample room first.
+        let unconstrained = 1 << 30;
+        let mut held = None;
+        let baseline = projected_attempt::attempt_admitted_placed_observing(
+            &world,
+            &installed,
+            None,
+            &live_scope(),
+            placement(unconstrained),
+            |execution| {
+                let Err(Resource::MemoryLimit {
+                    admitted,
+                    level: OWN_POLICY,
+                    ..
+                }) = execution.reserve(u64::MAX)
+                else {
+                    panic!("the finite request policy reports its remaining room");
+                };
+                held = Some(unconstrained - admitted);
+            },
+        );
+        assert!(baseline.outcome.is_ok(), "unconstrained fixture completes");
+        let held = held.expect("observed before the first computation charge");
+        eprintln!("projection holds {held} request bytes before computation (serial={serial})");
+        projected_attempt::attempt_admitted_placed_observing(
+            &world,
+            &installed,
+            None,
+            &live_scope(),
+            placement(held + memory),
+            |_| {},
+        )
+    })
 }
 
 /// Every refusal here is the request's policy, leased or serial.

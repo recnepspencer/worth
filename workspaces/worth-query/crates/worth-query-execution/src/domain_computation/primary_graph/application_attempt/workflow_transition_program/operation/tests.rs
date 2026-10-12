@@ -40,26 +40,53 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
         .install_external_effect_transport(transport.clone())
         .expect("the recovery transport installs once");
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "second-recoverable-commit", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(
+                &(phase).test_host_request(),
+                &world,
+                "second-recoverable-commit",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(ExactStatusRetentionOperation::reference())
         .expect("the recoverable operation is installed");
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .expect("current truth admits recovery for both commits");
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .expect("current truth admits recovery for both commits")
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let first = recover(&world, &first_receipt, &admission);
-    let second = recover(&world, &second_receipt, &admission);
+    let first = world
+        .application
+        .with_host_advancement(|phase| recover(&phase, &world, &first_receipt, &admission))
+        .expect("the fixture read owns its installed host call");
+    let second = world
+        .application
+        .with_host_advancement(|phase| recover(&phase, &world, &second_receipt, &admission))
+        .expect("the fixture read owns its installed host call");
     assert_eq!(transport.0.load(Ordering::Acquire), 2);
     assert!(operation_receipt_requires_recovery(&first_receipt));
 
@@ -94,6 +121,7 @@ fn workflow_operation_custody_requires_the_exact_same_runtime_commit_proof() {
 }
 
 fn recover(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld,
     receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
@@ -113,7 +141,7 @@ fn recover(
         .expect("current truth admits exact recovery authority");
     let redispatch = world
         .application
-        .redispatch_admitted_external_effect(&handle, &authority, admission)
+        .redispatch_admitted_external_effect(phase_custody, &handle, &authority, admission)
         .expect("the handle's committed outbox is re-dispatched");
     safe_retry_recovery_handle(handle, &authority, redispatch)
         .expect("completed re-dispatch mints the safe-retry proof")

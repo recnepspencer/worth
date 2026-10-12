@@ -106,7 +106,9 @@ pub use request_execution::{
 };
 
 #[cfg(test)]
-pub(crate) use request_execution::{drain_test_advancement_observations, with_test_advancement};
+pub(crate) use request_execution::{
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
+};
 
 pub use request_execution::with_bootstrap_advancement;
 

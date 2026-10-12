@@ -25,12 +25,16 @@ fn representative_surface_runtime_backed_seams_match_real_boundary_artifact_cons
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
-    let surface = worth_query_lower_runtime_representative_surface(resource_request);
-    let compose_row = representative_compose_read_row();
-    let read_family_row = representative_execute_read_family_row();
-    let read_family_basis_row = representative_execute_read_family_in_basis_context_row();
-    let runtime_current_row = representative_runtime_current_read_graph_row();
-    let runtime_basis_row = representative_runtime_basis_context_read_graph_row();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let surface = worth_query_lower_runtime_representative_surface(request_execution);
+    let compose_row = representative_compose_read_row(request_execution);
+    let read_family_row = representative_execute_read_family_row(request_execution);
+    let read_family_basis_row =
+        representative_execute_read_family_in_basis_context_row(request_execution);
+    let runtime_current_row = representative_runtime_current_read_graph_row(request_execution);
+    let runtime_basis_row = representative_runtime_basis_context_read_graph_row(request_execution);
     let live_row = representative_live_view_schema_row();
     let source_row = representative_live_view_source_row();
     let public_live_row = representative_public_live_view_declaration_row();
@@ -43,17 +47,19 @@ fn representative_surface_runtime_backed_seams_match_real_boundary_artifact_cons
     let subscription_readmission_row =
         representative_basis_subscription_readmission_row(resource_request);
     let historical_row = representative_historical_bridge_lowering_row(resource_request);
-    let mutation_row = representative_effect_relational_mutation_row();
-    let merge_row = representative_effect_relational_merge_row();
-    let writeback_row = representative_effect_bridge_writeback_row();
+    let mutation_row = representative_effect_relational_mutation_row(request_execution);
+    let merge_row = representative_effect_relational_merge_row(request_execution);
+    let writeback_row = representative_effect_bridge_writeback_row(request_execution);
     let write_row = representative_write_authority_row();
     let signal_row = representative_signal_invalidation_row();
-    let runtime_intent_authority_row = representative_runtime_intent_authority_row();
-    let intent_runtime_execution_row = representative_intent_runtime_execution_row();
-    let query_receipt_row = representative_projection_query_receipts_row();
+    let runtime_intent_authority_row =
+        representative_runtime_intent_authority_row(request_execution);
+    let intent_runtime_execution_row =
+        representative_intent_runtime_execution_row(request_execution);
+    let query_receipt_row = representative_projection_query_receipts_row(request_execution);
     let relational_row = representative_projection_relational_row();
     let bridge_row = representative_projection_bridge_row(resource_request);
-    let causal_row = representative_causal_bridge_materialization_row();
+    let causal_row = representative_causal_bridge_materialization_row(request_execution);
     let frontier_row = representative_frontier_evidence_row();
 
     assert_eq!(

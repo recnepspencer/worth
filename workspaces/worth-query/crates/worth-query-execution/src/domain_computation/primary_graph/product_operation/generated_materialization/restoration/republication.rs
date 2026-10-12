@@ -26,6 +26,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// continue. It is recorded as a restored row, Fresh until verified.
     pub(super) fn record_restored_generated_output(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &ProductBranchObservation,
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         producer: ProducerQualification,
@@ -33,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let graph = &self.primary_provider.graph;
         let owner = &graph.source_owner.invalidation_owner;
         let mut admission = owner.edit_admission();
-        let sealed = graph.with_runtime_mut(|runtime| {
+        let sealed = graph.with_runtime_mut(execution, |runtime| {
             let prepared = PreparedNativeOutputWitness::prepare_republication(
                 &correspondence,
                 &graph.layout,
@@ -45,7 +46,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .snapshots()
                 .snapshot_for_observation(&observation.basis().relational_basis().observation())
                 .ok()?;
-            let witness = prepared.finish(&correspondence, runtime, &committed);
+            let witness = prepared.finish(execution, &correspondence, runtime, &committed);
             let read_basis = runtime.read_truth().positioned_snapshot(&committed).ok();
             crate::relational_snapshot_release::release_query_snapshot(runtime, &committed);
             witness.zip(read_basis)

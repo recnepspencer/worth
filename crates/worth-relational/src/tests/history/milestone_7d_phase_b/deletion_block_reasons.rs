@@ -11,12 +11,16 @@ use crate::tests::support::{
 
 #[test]
 fn lowered_plan_preserves_source_deleted_target_live_block_reason() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     assert_blocked_deletion_lowering(
+        execution,
         &mut runtime,
         entity,
         LoweredMergeBlockedReason::SourceDeletedTargetLive,
@@ -27,13 +31,23 @@ fn lowered_plan_preserves_source_deleted_target_live_block_reason() {
 
 #[test]
 fn lowered_plan_preserves_source_live_target_deleted_block_reason() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity_on_branch(&runtime, entity, "shared", BranchId("feature".to_string()));
-    delete_entity(&runtime, entity);
+    update_entity_on_branch(
+        execution,
+        &runtime,
+        entity,
+        "shared",
+        BranchId("feature".to_string()),
+    );
+    delete_entity(execution, &runtime, entity);
 
     assert_blocked_deletion_lowering(
+        execution,
         &mut runtime,
         entity,
         LoweredMergeBlockedReason::SourceLiveTargetDeleted,
@@ -44,13 +58,17 @@ fn lowered_plan_preserves_source_live_target_deleted_block_reason() {
 
 #[test]
 fn lowered_plan_preserves_deleted_vs_modified_block_reason() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, entity, "main-modified");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    update_entity(execution, &runtime, entity, "main-modified");
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     assert_blocked_deletion_lowering(
+        execution,
         &mut runtime,
         entity,
         LoweredMergeBlockedReason::DeletedVsModified,
@@ -60,6 +78,7 @@ fn lowered_plan_preserves_deleted_vs_modified_block_reason() {
 }
 
 fn assert_blocked_deletion_lowering(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
     entity: crate::facade::identity::EntityId,
     blocked_reason: LoweredMergeBlockedReason,
@@ -69,6 +88,7 @@ fn assert_blocked_deletion_lowering(
     let artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),

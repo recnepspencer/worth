@@ -134,9 +134,13 @@ impl HistoryCourt {
         let history = self.history;
         let native_scope = self
             .application
-            .runtime()
-            .capture_certification_cost_scope(self.application.current_world())
-            .expect("the measured branch must remain admitted");
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .runtime()
+                    .capture_certification_cost_scope(&host_phase, self.application.current_world())
+                    .expect("the measured branch must remain admitted")
+            })
+            .expect("installed host call opens");
         let progress = self
             .application
             .runtime()
@@ -161,9 +165,13 @@ impl HistoryCourt {
             .workflow_compilation_reuse_counters();
         let native = self
             .application
-            .runtime()
-            .observe_certification_cost(&native_scope)
-            .expect("native owners must remain inspectable");
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .runtime()
+                    .observe_certification_cost(&host_phase, &native_scope)
+                    .expect("native owners must remain inspectable")
+            })
+            .expect("installed host call opens");
         let native_delta = native.relational().sharing_cost_delta();
         // History behind each settled publication retires, so World holds
         // the same commits however many samples publish.
@@ -297,9 +305,17 @@ fn workflow_history_reconstruction_denies_work_and_memory_exhaustion_without_eff
             .workflow_instance_progress_counters();
         let scope = court
             .application
-            .runtime()
-            .capture_certification_cost_scope(court.application.current_world())
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                court
+                    .application
+                    .runtime()
+                    .capture_certification_cost_scope(
+                        &host_phase,
+                        court.application.current_world(),
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         for _ in 0..2 {
             let denial = match propose_authoring_instance(
                 &court.application,
@@ -326,9 +342,14 @@ fn workflow_history_reconstruction_denies_work_and_memory_exhaustion_without_eff
         }
         let cost = court
             .application
-            .runtime()
-            .observe_certification_cost(&scope)
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                court
+                    .application
+                    .runtime()
+                    .observe_certification_cost(&host_phase, &scope)
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         assert_eq!(
             cost.world_history_before().installed_commits(),
             cost.world_history_after().installed_commits()

@@ -4,7 +4,12 @@ use super::*;
 use std::sync::{Arc, OnceLock};
 
 impl ModelRun {
-    pub fn publish(&mut self, amount: Option<u64>, signal: bool) {
+    pub fn publish(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        amount: Option<u64>,
+        signal: bool,
+    ) {
         let policy = match self.court.world.execution_placement() {
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
             | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
@@ -25,6 +30,7 @@ impl ModelRun {
         let token = RuntimeWorldCancellationSource::new().token();
         let candidate = amount.map(|amount| {
             self.court.records.candidate(
+                request_execution,
                 head.basis().relational_basis(),
                 "grain",
                 &amount.to_string(),
@@ -54,7 +60,9 @@ impl ModelRun {
                 // This isolated sequential branch has exactly one writer. Read
                 // the real settled Relational occurrence, never a predicted basis.
                 let basis = runtime.observe_branch(&branch).unwrap().1;
-                records.set(self.court.records.read(&basis)).unwrap();
+                records
+                    .set(self.court.records.read(request_execution, &basis))
+                    .unwrap();
                 tx.mark_changed(nodes.source, INPUT)?;
                 let routed_version = tx.read(nodes.route, &|view| nodes.evaluate(view))?;
                 assert_eq!(
@@ -79,9 +87,9 @@ impl ModelRun {
         drop(done.consume());
         self.heads.insert("work".into(), self.court.observe(&head));
         drop(head);
-        self.check();
+        self.check(request_execution);
     }
-    pub fn cancel(&mut self) {
+    pub fn cancel(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
         let policy = match self.court.world.execution_placement() {
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
             | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
@@ -97,8 +105,10 @@ impl ModelRun {
 
         self.steps.push("prepare/cancel".into());
         self.model.prepare(0, "work");
-        let prepared = self.court.prepare_cargo(&self.heads["work"], "3");
-        self.check();
+        let prepared = self
+            .court
+            .prepare_cargo(request_execution, &self.heads["work"], "3");
+        self.check(request_execution);
         let source = RuntimeWorldCancellationSource::new();
         source.cancel();
         self.model.finish_attempt(0);
@@ -110,9 +120,9 @@ impl ModelRun {
         assert!(
             matches!(outcome, RuntimeWorldPublicationOutcome::NoEffect(no) if no.cause() == NoEffectCause::CancelledBeforeEffect)
         );
-        self.check();
+        self.check(request_execution);
     }
-    pub fn stale(&mut self) {
+    pub fn stale(&mut self, request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
         let policy = match self.court.world.execution_placement() {
             worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
             | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
@@ -128,9 +138,11 @@ impl ModelRun {
 
         self.steps.push("reserve stale contender".into());
         self.model.prepare(0, "work");
-        let prepared = self.court.prepare_cargo(&self.heads["work"], "2");
-        self.check();
-        self.publish(Some(7), false);
+        let prepared = self
+            .court
+            .prepare_cargo(request_execution, &self.heads["work"], "2");
+        self.check(request_execution);
+        self.publish(request_execution, Some(7), false);
         self.steps.push("execute stale contender".into());
         self.model.finish_attempt(0);
         let outcome = self.court.world.publication_port().execute_without_signal(
@@ -141,14 +153,19 @@ impl ModelRun {
         assert!(
             matches!(outcome, RuntimeWorldPublicationOutcome::NoEffect(no) if no.cause() == NoEffectCause::StaleExpectedProductHead)
         );
-        self.check();
+        self.check(request_execution);
     }
-    pub fn partial_cleanup(&mut self) {
+    pub fn partial_cleanup(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         self.steps
             .push("Relational effect with Signal denial".into());
         self.model.prepare(0, "work");
         self.model.partial(0, "work");
-        let effects = self.court.partial_after_relational(&self.heads["work"]);
+        let effects = self
+            .court
+            .partial_after_relational(request_execution, &self.heads["work"]);
         let handle = effects.recovery_handle();
         let keys = [
             RuntimeWorldRetentionKey::relational(effects.successor_basis().unwrap()),
@@ -158,24 +175,28 @@ impl ModelRun {
         assert_eq!(
             self.court
                 .records
-                .read(effects.successor_basis().unwrap().relational_basis())
+                .read(
+                    request_execution,
+                    effects.successor_basis().unwrap().relational_basis()
+                )
                 .records["grain"],
             "5"
         );
         self.observer.check_unpublished(
+            request_execution,
             &self.court,
             &self.model,
             self.model.partials[&0],
             &effects,
         );
-        self.check();
+        self.check(request_execution);
         self.steps.push("cleanup-only continuation".into());
         self.court
             .world
             .recovery_port()
             .continue_effects(effects)
             .unwrap();
-        self.check();
+        self.check(request_execution);
         self.steps.push("release partial".into());
         let unpublished = self.model.cleanup(0);
         self.court
@@ -183,7 +204,7 @@ impl ModelRun {
             .recovery_port()
             .release_effects(&handle, 0)
             .unwrap();
-        self.check();
+        self.check(request_execution);
         self.steps.push("reclaim unpublished successor".into());
         assert!(self.model.reclaim(unpublished));
         let identity = self.observer.commit(unpublished);
@@ -203,6 +224,6 @@ impl ModelRun {
             .lifecycle_port()
             .reclaim_retention(&keys, 2)
             .unwrap();
-        self.check();
+        self.check(request_execution);
     }
 }

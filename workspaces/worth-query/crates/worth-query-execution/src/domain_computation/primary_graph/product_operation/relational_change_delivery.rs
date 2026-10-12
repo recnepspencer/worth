@@ -26,15 +26,20 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     > {
         use WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind;
 
-        if let Err(cause) = phase.execution_request_for(&self.application().product_runtime) {
-            return Err(
-                WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
-                    Kind::ExecutionRequest(cause.into()),
-                    "delivery phase belongs to another installed runtime",
-                    change,
-                ),
-            );
-        }
+        let request_execution =
+            match phase.execution_request_for(&self.application().product_runtime) {
+                Ok(request) => request,
+                Err(cause) => {
+                    return Err(
+                        WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
+                            Kind::ExecutionRequest(cause.into()),
+                            "delivery phase belongs to another installed runtime",
+                            change,
+                        ),
+                    );
+                }
+            };
+        let execution = &request_execution;
         if change.product_branch_identity() != self.product().branch_identity()
             || change.product_commit() != self.product().selected_commit()
         {
@@ -46,7 +51,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 ),
             );
         }
-        let truth = match crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::retain_selected(self) {
+        let truth = match crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::retain_selected(execution, self) {
             Ok(truth) => truth,
             Err(denial) => {
                 return Err(WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
@@ -76,7 +81,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut installed = operation.lock_operation();
-        if let Err(denial) = installed.select_product_binding(&bridge, self.application(), &truth) {
+        if let Err(denial) =
+            installed.select_product_binding(execution, &bridge, self.application(), &truth)
+        {
             return Err(
                 WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
                     Kind::ConditionalProductAdmission,

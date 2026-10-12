@@ -4,7 +4,10 @@ use super::execution::settled_honest_execution;
 
 #[test]
 fn settled_cost_snapshot_exports_exact_distinct_domain_counter_rows() {
-    let settled = settled_honest_execution("domain-evidence-cost");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let settled = settled_honest_execution(request_execution, "domain-evidence-cost");
     let snapshot = settled.consumption_cost_snapshot();
 
     for (name, expected) in [

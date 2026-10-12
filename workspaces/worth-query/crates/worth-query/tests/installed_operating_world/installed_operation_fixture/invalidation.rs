@@ -17,6 +17,7 @@ pub(crate) type InvalidationLease = domain::WorthQuerySharedLiveProjectionLease<
 >;
 
 pub(crate) fn shared_native_leases(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> (
     runtime::WorthQueryWorkspace,
@@ -24,12 +25,14 @@ pub(crate) fn shared_native_leases(
     InvalidationLease,
 ) {
     shared_native_leases_with_invalidation(
+        request_execution,
         name,
         domain::WorthQueryConsumerSupportPosture::Supported,
     )
 }
 
 pub(crate) fn shared_native_leases_with_invalidation(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     invalidation: domain::WorthQueryConsumerSupportPosture,
 ) -> (
@@ -50,11 +53,11 @@ pub(crate) fn shared_native_leases_with_invalidation(
             domain::WorthQueryConsumerSupportDimension::DependencyImpact,
             domain::WorthQueryConsumerSupportPosture::Supported,
         )
-        .workspace(name)
+        .workspace(request_execution, name)
         .unwrap();
     let live = match settle_native(&mut workspace)
         .into_lifecycle()
-        .promote(&mut workspace)
+        .promote(request_execution, &mut workspace)
     {
         domain::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("native subject did not promote"),

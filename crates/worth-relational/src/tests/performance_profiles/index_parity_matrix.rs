@@ -3,13 +3,15 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_index_parity_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "index_parity_matrix";
 
     let warm_generation_samples =
         capture_perf_samples(suite, "entity_field_equals_warm_generation", || {
             let runtime = runtime_with_test_schema();
-            let alpha = create_entity_outcome(&runtime, "alpha");
-            let _beta = create_entity_outcome(&runtime, "beta");
+            let alpha = create_entity_outcome(execution, &runtime, "alpha");
+            let _beta = create_entity_outcome(execution, &runtime, "beta");
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "entity.name.lookup".to_string(),
@@ -20,13 +22,14 @@ fn perf_index_parity_matrix() {
             });
 
             let build_started_at = Instant::now();
-            let build = runtime
-                .index_authority()
-                .build_for_commit(DerivedIndexBuildRequest {
+            let build = runtime.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
                     source_commit_id: alpha.commit.commit_id,
                     branch_id: BranchId("main".to_string()),
                     index_ids: vec![index.index_id],
-                });
+                },
+            );
             let build_micros = build_started_at.elapsed().as_micros();
             assert!(build.failed_indexes.is_empty());
 
@@ -48,7 +51,9 @@ fn perf_index_parity_matrix() {
                         )
                         .expect("warm entity query plan"),
                     IndexParityMode::CertificationParity,
+                    execution,
                 )
+                .expect("request remains live")
                 .expect("warm entity index query outcome");
             let query_micros = query_started_at.elapsed().as_micros();
 
@@ -102,7 +107,7 @@ fn perf_index_parity_matrix() {
         "entity_field_equals_build_failed_storage_read",
         || {
             let runtime = runtime_with_test_schema();
-            let alpha = create_entity_outcome(&runtime, "alpha");
+            let alpha = create_entity_outcome(execution, &runtime, "alpha");
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "entity.name.lookup".to_string(),
@@ -111,13 +116,14 @@ fn perf_index_parity_matrix() {
                 },
                 branch_scoped: false,
             });
-            let build = runtime
-                .index_authority()
-                .build_for_commit(DerivedIndexBuildRequest {
+            let build = runtime.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
                     source_commit_id: alpha.commit.commit_id,
                     branch_id: BranchId("main".to_string()),
                     index_ids: vec![index.index_id],
-                });
+                },
+            );
             assert!(build.failed_indexes.is_empty());
             runtime
                 .indexes
@@ -144,7 +150,9 @@ fn perf_index_parity_matrix() {
                         )
                         .expect("storage-read entity query plan"),
                     IndexParityMode::ProductionAdmissibility,
+                    execution,
                 )
+                .expect("request remains live")
                 .expect("storage-read entity index query outcome");
             let query_micros = query_started_at.elapsed().as_micros();
 
@@ -195,7 +203,7 @@ fn perf_index_parity_matrix() {
     let persisted_recovery_samples =
         capture_perf_samples(suite, "persisted_recovery_generation_parity", || {
             let runtime = persisted_runtime_with_test_schema();
-            let alpha = create_entity_outcome(&runtime, "alpha");
+            let alpha = create_entity_outcome(execution, &runtime, "alpha");
             let index = runtime.index_authority().register(DerivedIndexDefinition {
                 index_id: DerivedIndexId(0),
                 name: "entity.name.lookup".to_string(),
@@ -204,13 +212,14 @@ fn perf_index_parity_matrix() {
                 },
                 branch_scoped: false,
             });
-            let build = runtime
-                .index_authority()
-                .build_for_commit(DerivedIndexBuildRequest {
+            let build = runtime.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
                     source_commit_id: alpha.commit.commit_id,
                     branch_id: BranchId("main".to_string()),
                     index_ids: vec![index.index_id],
-                });
+                },
+            );
             assert!(build.failed_indexes.is_empty());
 
             let original = runtime
@@ -229,12 +238,17 @@ fn perf_index_parity_matrix() {
                         )
                         .expect("original persisted plan"),
                     IndexParityMode::CertificationParity,
+                    execution,
                 )
+                .expect("request remains live")
                 .expect("original persisted query outcome");
 
             let recover_started_at = Instant::now();
-            let (_recovery, recovered) =
-                checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+            let (_recovery, recovered) = checkpoint_and_recover_with(
+                execution,
+                &runtime,
+                persisted_runtime_with_test_schema,
+            );
             let recover_micros = recover_started_at.elapsed().as_micros();
             let recovered_snapshot = recovered.visibility_authority().snapshot();
 
@@ -256,7 +270,9 @@ fn perf_index_parity_matrix() {
                         )
                         .expect("recovered persisted plan"),
                     IndexParityMode::CertificationParity,
+                    execution,
                 )
+                .expect("request remains live")
                 .expect("recovered persisted query outcome");
             let query_micros = query_started_at.elapsed().as_micros();
 

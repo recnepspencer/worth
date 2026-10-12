@@ -2,10 +2,13 @@ use super::*;
 
 #[test]
 fn planned_query_execution_supports_entity_kind_scans_through_reducer_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let left = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-    let _other_left = create_entity_in_partition(&runtime, "left-b", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right-a", PartitionId(11));
+    let left = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+    let _other_left = create_entity_in_partition(execution, &runtime, "left-b", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -35,7 +38,9 @@ fn planned_query_execution_supports_entity_kind_scans_through_reducer_path() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.complexity.packet_count, 2);
@@ -48,9 +53,12 @@ fn planned_query_execution_supports_entity_kind_scans_through_reducer_path() {
 
 #[test]
 fn planned_query_execution_reports_non_zero_packet_items_for_kind_scans() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let _left = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-    let _right = create_entity_in_partition(&runtime, "right-a", PartitionId(11));
+    let _left = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+    let _right = create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -81,7 +89,9 @@ fn planned_query_execution_reports_non_zero_packet_items_for_kind_scans() {
         .expect("planned query packet");
     let _ = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
     let counters = runtime.performance_access().counters();
 
@@ -91,13 +101,17 @@ fn planned_query_execution_reports_non_zero_packet_items_for_kind_scans() {
 
 #[test]
 fn planned_query_execution_supports_relation_kind_scans_through_reducer_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
-    let third = create_entity_in_partition(&runtime, "third", PartitionId(11));
-    let first_relation = create_relation_in_partition(&runtime, left, right, "r1", PartitionId(7));
+    let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
+    let third = create_entity_in_partition(execution, &runtime, "third", PartitionId(11));
+    let first_relation =
+        create_relation_in_partition(execution, &runtime, left, right, "r1", PartitionId(7));
     let second_relation =
-        create_relation_in_partition(&runtime, right, third, "r2", PartitionId(11));
+        create_relation_in_partition(execution, &runtime, right, third, "r2", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -125,7 +139,9 @@ fn planned_query_execution_supports_relation_kind_scans_through_reducer_path() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.complexity.packet_count, 2);

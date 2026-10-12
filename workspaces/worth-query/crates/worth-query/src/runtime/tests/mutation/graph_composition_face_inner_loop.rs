@@ -1,21 +1,29 @@
 use super::super::support::*;
 
-fn face_loop_runtime() -> WorthQueryRuntime {
-    stateful_bridge_runtime_with_collections(&[
-        "Loop",
-        "HalfEdge",
-        "FaceLoopRelation",
-        "LoopHalfEdgeRelation",
-    ])
+fn face_loop_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_runtime_with_collections(
+        request_execution,
+        &[
+            "Loop",
+            "HalfEdge",
+            "FaceLoopRelation",
+            "LoopHalfEdgeRelation",
+        ],
+    )
 }
 
 #[test]
 fn compose_graph_supports_face_inner_loop_insertion_with_full_resolution_map() {
-    let mut workspace = face_loop_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = face_loop_runtime(request_execution)
         .workspace("topology.graph-composition-face-inner-loop")
         .expect("workspace should open");
     let loops: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("topology.face-inner-loop-loops", |q| {
+        .live_view(request_execution, "topology.face-inner-loop-loops", |q| {
             q.from("Loop")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -31,56 +39,76 @@ fn compose_graph_supports_face_inner_loop_insertion_with_full_resolution_map() {
         })
         .expect("loop live view should declare");
     let half_edges: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("topology.face-inner-loop-half-edges", |q| {
-            q.from("HalfEdge")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                )
-                .schema_basis("topology-face-inner-loop-half-edges")
-        })
+        .live_view(
+            request_execution,
+            "topology.face-inner-loop-half-edges",
+            |q| {
+                q.from("HalfEdge")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("kind", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                    )
+                    .schema_basis("topology-face-inner-loop-half-edges")
+            },
+        )
         .expect("half-edge live view should declare");
     let face_loops: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("topology.face-inner-loop-face-loops", |q| {
-            q.from("FaceLoopRelation")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("face", "id").unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("loop", "id").unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("role", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("face", "id").unwrap(),
-                )
-                .schema_basis("topology-face-inner-loop-face-loops")
-        })
+        .live_view(
+            request_execution,
+            "topology.face-inner-loop-face-loops",
+            |q| {
+                q.from("FaceLoopRelation")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("face", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("loop", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("role", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("face", "id")
+                            .unwrap(),
+                    )
+                    .schema_basis("topology-face-inner-loop-face-loops")
+            },
+        )
         .expect("face-loop live view should declare");
     let loop_edges: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("topology.face-inner-loop-loop-edges", |q| {
-            q.from("LoopHalfEdgeRelation")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("loop", "id").unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("half_edge", "id")
+        .live_view(
+            request_execution,
+            "topology.face-inner-loop-loop-edges",
+            |q| {
+                q.from("LoopHalfEdgeRelation")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("loop", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("half_edge", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "position", "ordinal",
+                        )
                         .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("position", "ordinal")
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts(
+                            "position", "ordinal",
+                        )
                         .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("position", "ordinal")
-                        .unwrap(),
-                )
-                .schema_basis("topology-face-inner-loop-loop-edges")
-        })
+                    )
+                    .schema_basis("topology-face-inner-loop-loop-edges")
+            },
+        )
         .expect("loop-edge live view should declare");
 
     let receipt = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let inner_loop = graph.insert_entity("draft-loop", "Loop", |loop_entity| {
                 loop_entity
                     .set_aspect(
@@ -243,10 +271,10 @@ fn compose_graph_supports_face_inner_loop_insertion_with_full_resolution_map() {
         program.steps()[3].kind(),
         WorthQueryGraphCompositionProgramStepKind::RelationDeclaration
     );
-    let loop_rows = workspace.read(&loops);
-    let mut half_edge_rows = workspace.read(&half_edges);
-    let face_loop_rows = workspace.read(&face_loops);
-    let loop_edge_rows = workspace.read(&loop_edges);
+    let loop_rows = workspace.read(request_execution, &loops);
+    let mut half_edge_rows = workspace.read(request_execution, &half_edges);
+    let face_loop_rows = workspace.read(request_execution, &face_loops);
+    let loop_edge_rows = workspace.read(request_execution, &loop_edges);
     half_edge_rows.sort_by(|left, right| {
         test_native_string_value(left, "identity.id")
             .cmp(&test_native_string_value(right, "identity.id"))
@@ -288,7 +316,10 @@ fn compose_graph_supports_face_inner_loop_insertion_with_full_resolution_map() {
         loop_edge_half_edge_ids.contains(&test_native_entity_ref_value(&second_half_edge_identity))
     );
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             assert_eq!(
                 inspection

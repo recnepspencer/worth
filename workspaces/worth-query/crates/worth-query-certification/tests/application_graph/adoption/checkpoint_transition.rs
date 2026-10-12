@@ -22,9 +22,15 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
         RetentionVerdict::Performed(3)
     );
     let (source, sections) = host
-        .runtime()
-        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .capture_application_checkpoint_with_sections(
+                    &host_phase,
+                    CapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(sections.accepted_output_count(), 0);
     drop(host);
     let mut authored = false;
@@ -83,9 +89,12 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
     )
     .unwrap();
     let source = host
-        .runtime()
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(host);
     let migrated = installation::in_memory_rostered_program_from_checkpoint_with_transition(
         validated_second_program(),
@@ -114,20 +123,27 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
     )
     .expect("target v2 rule accepts both retained and created values in the activation candidate");
     let selected = migrated
-        .runtime()
-        .on_branch(migrated.current_world())
-        .select()
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            migrated
+                .runtime()
+                .on_branch(migrated.current_world())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(
         selected.inspect_selected_program().unwrap().revision(),
         validated_second_program().revision()
     );
-    assert!(selected
-        .resolve_entity(
-            DocumentIdentityField::reference(),
-            "migration-positive".to_owned(),
-            &crate::document_retention_model::operator_identity::request_scope(),
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
-        )
-        .is_ok());
+    assert!(migrated
+        .with_host_advancement(|host_phase| selected
+            .resolve_entity(
+                &host_phase,
+                DocumentIdentityField::reference(),
+                "migration-positive".to_owned(),
+                &crate::document_retention_model::operator_identity::request_scope(),
+                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary
+            )
+            .is_ok())
+        .expect("installed host call opens"));
 }

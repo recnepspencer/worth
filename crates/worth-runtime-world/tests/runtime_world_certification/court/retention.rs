@@ -2,6 +2,9 @@ use super::*;
 use std::num::NonZeroUsize;
 #[test]
 fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplification() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let court = CompositeSupplyChainCourt::compile();
     let root = court.bootstrap();
     let inspection = court.world.inspection_port();
@@ -32,7 +35,7 @@ fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplificat
             .dependencies(),
         before
     );
-    let prepared = court.prepare_cargo(&root, "5");
+    let prepared = court.prepare_cargo(execution, &root, "5");
     assert_eq!(
         inspection.recovery_snapshot().unwrap().reserved(),
         1,
@@ -85,6 +88,8 @@ fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplificat
 }
 #[test]
 fn full_history_denies_before_owner_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let court = CompositeSupplyChainCourt::compile_config(true, budgets::limited(1, 8));
     let root = court.bootstrap();
     let before = court
@@ -93,9 +98,10 @@ fn full_history_denies_before_owner_publication() {
         .observe_branch(&court.records.runtime.main_branch_identity())
         .unwrap()
         .0;
-    let candidate = court
-        .records
-        .candidate(root.basis().relational_basis(), "grain", "5");
+    let candidate =
+        court
+            .records
+            .candidate(execution, root.basis().relational_basis(), "grain", "5");
     let denied = court
         .world
         .publication_port()

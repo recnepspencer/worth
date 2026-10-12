@@ -51,7 +51,7 @@ fn rejects_mint(name: &str) {
         found
             .iter()
             .any(|denial| denial.subject().contains("src/lib.rs")
-                && denial.message().contains("SerialRequest")),
+                && denial.code() == crate::diagnostics::DiagnosticCode::Bc7008RequestConstruction),
         "{name} admitted a Query-path mint: {found:?}"
     );
 }
@@ -184,4 +184,48 @@ fn a_missing_declared_host_is_stale_and_an_unreadable_crate_fails_closed() {
     let found = super::enforce_request_constructor_denials(root, &[rule]);
     assert_eq!(found.len(), 1);
     assert!(found[0].message().contains("could not be read"));
+}
+
+#[test]
+fn relational_constructor_fence_refuses_mints_and_accepts_the_borrowed_twin() {
+    let rule = rule("worth-relational");
+    assert!(check_graphs(
+        &[graph(
+            "fn seam(request: &ExecutionRequest) { consume(request); }",
+            None
+        )],
+        &rule
+    )
+    .is_empty());
+    assert!(check_graphs(
+        &[graph(
+            "fn seam(leased: Lease) { Other::serial(); Other::leased(); use_lease(leased); }",
+            None
+        )],
+        &rule
+    )
+    .is_empty());
+    rejects_mint("worth-relational");
+    for source in [
+        "fn seam(request: &ExecutionRequest, backing: &Backing) { ExecutionRequest::serial(backing); }",
+        "fn seam(request: &ExecutionRequest, backing: &Backing) { ExecutionRequest::leased(backing); }",
+        "use worth_execution::ExecutionRequest as Alias; fn seam() { let constructor = Alias::serial; }",
+        "type Alias<'a> = ExecutionRequest<'a, 'a>; fn seam() { let constructor = Alias::leased; }",
+        "macro_rules! mint { () => { ExecutionRequest::leased(backing) } }",
+        "use worth_execution::ExecutionRequest as Request; use Request as Alias; fn seam() { let constructor = Alias::serial; }",
+        "use worth_execution::ExecutionRequest as r#Alias; fn seam() { let constructor = r#Alias::r#serial; }",
+        "fn seam() { let constructor = <ExecutionRequest<'_, '_>>::leased; }",
+        "macro_rules! mint { () => { <ExecutionRequest<'_, '_>>::leased(backing) } }",
+    ] {
+        let found = check_graphs(&[graph(source, None)], &rule);
+        assert!(found.iter().any(|stop| stop.code() == crate::diagnostics::DiagnosticCode::Bc7008RequestConstruction), "admitted {source}: {found:?}");
+    }
+    assert!(check_graphs(
+        &[graph(
+            "#[cfg(test)] fn test_setup() { ExecutionRequest::serial(backing); }",
+            None
+        )],
+        &rule
+    )
+    .is_empty());
 }

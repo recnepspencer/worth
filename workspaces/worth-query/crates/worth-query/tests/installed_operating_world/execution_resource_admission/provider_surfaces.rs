@@ -13,6 +13,9 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn conditional_provider_mismatch_denies_before_provider_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = node(
         "resource-conditional-provider",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
@@ -21,6 +24,7 @@ fn conditional_provider_mismatch_denies_before_provider_contact() {
     let installation = conditional_installation(&declaration);
     let contacts = Arc::new(AtomicUsize::new(0));
     let workspace = conditional_workspace_with(
+        request_execution,
         "resource-conditional-provider-mismatch",
         declaration,
         installation,
@@ -58,8 +62,12 @@ fn conditional_provider_mismatch_denies_before_provider_contact() {
 
 #[test]
 fn parallel_provider_mismatch_denies_before_provider_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     let workspace = workflow_workspace_with_parallel_provider(
+        request_execution,
         "resource-parallel-provider-mismatch",
         ResourceParallelProvider {
             support: mismatched_fixture_support(),

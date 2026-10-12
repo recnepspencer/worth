@@ -106,7 +106,10 @@ fn commit_probe(probe: Probe) -> Outcome {
         .unwrap()
         .0;
     let error = runtime
-        .prepare_branch_transaction_with_lease(transaction(&runtime, "custom-target"), &lease)
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(&lease),
+            transaction(&runtime, "custom-target"),
+        )
         .expect_err("custom preparation refused");
     assert!(matches!(error, TransactionCommitError::Execution { .. }));
     let stop = super::super::transaction_commit_stop(error);

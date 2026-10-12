@@ -16,8 +16,11 @@ use crate::tests::support::*;
 
 #[test]
 fn historical_lineage_resolution_follows_replace_events() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -45,12 +48,7 @@ fn historical_lineage_resolution_follows_replace_events() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
     let resolution =
         runtime
             .lineage_access()
@@ -84,10 +82,13 @@ fn historical_lineage_resolution_follows_replace_events() {
     assert_eq!(
         runtime
             .lineage_access()
-            .graph(LineageGraphRequest {
-                branch_id: BranchId("main".to_string()),
-                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-            })
+            .graph(
+                execution,
+                LineageGraphRequest {
+                    branch_id: BranchId("main".to_string()),
+                    traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+                }
+            )
             .events
             .iter()
             .filter(|event| event.commit.commit_id == outcome.commit.commit_id)
@@ -98,8 +99,11 @@ fn historical_lineage_resolution_follows_replace_events() {
 
 #[test]
 fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "failed-lineage-source");
+    let created = create_entity_outcome(execution, &runtime, "failed-lineage-source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -107,10 +111,13 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
         .expect("source lineage")
         .lineage_id();
     let failed_commit_id = runtime.history.preview_next_commit_id();
-    let before = runtime.lineage_access().graph(LineageGraphRequest {
-        branch_id: BranchId("main".to_owned()),
-        traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-    });
+    let before = runtime.lineage_access().graph(
+        execution,
+        LineageGraphRequest {
+            branch_id: BranchId("main".to_owned()),
+            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+        },
+    );
 
     runtime.durability.arm_append_failure_for_test();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -135,10 +142,7 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
         )
         .expect("test staging stays within configured resource budgets");
     let durability_deferred = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("an unacknowledged performed movement is a typed error");
     assert!(matches!(
         durability_deferred,
@@ -152,10 +156,13 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
         failed_commit_id
     );
 
-    let after_failure = runtime.lineage_access().graph(LineageGraphRequest {
-        branch_id: BranchId("main".to_owned()),
-        traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-    });
+    let after_failure = runtime.lineage_access().graph(
+        execution,
+        LineageGraphRequest {
+            branch_id: BranchId("main".to_owned()),
+            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+        },
+    );
     assert_eq!(after_failure.nodes.len(), before.nodes.len());
     assert_eq!(after_failure.events.len(), before.events.len() + 2);
     assert_eq!(
@@ -181,8 +188,11 @@ fn failed_durable_append_cannot_misreport_a_performed_owner_commit() {
 
 #[test]
 fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -192,7 +202,7 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
 
     for index in 0..6 {
         let label = format!("unrelated-{index}");
-        let _ = create_entity_outcome(&runtime, &label);
+        let _ = create_entity_outcome(execution, &runtime, &label);
     }
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -215,19 +225,17 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _ = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _ = txn.commit(execution, &runtime).unwrap();
 
     let total_branch_events = runtime
         .lineage_access()
-        .graph(LineageGraphRequest {
-            branch_id: BranchId("main".to_string()),
-            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        })
+        .graph(
+            execution,
+            LineageGraphRequest {
+                branch_id: BranchId("main".to_string()),
+                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+            },
+        )
         .metrics
         .event_count;
 
@@ -247,8 +255,11 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
 
 #[test]
 fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "source");
+    let created = create_entity_outcome(execution, &runtime, "source");
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
@@ -276,12 +287,7 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let replacement = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let replacement = txn.commit(execution, &runtime).unwrap();
     let history = runtime
         .lineage_access()
         .entity_aspect_history(

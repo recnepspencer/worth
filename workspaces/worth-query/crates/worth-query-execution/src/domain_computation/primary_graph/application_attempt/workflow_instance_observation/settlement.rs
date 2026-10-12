@@ -1,3 +1,5 @@
+mod membership;
+pub(in crate::domain_computation::primary_graph) use membership::recover_settled_live_membership;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
@@ -31,6 +33,7 @@ use value::{
 };
 
 pub(super) fn observe_settled_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -42,7 +45,7 @@ pub(super) fn observe_settled_transition(
         entity_id: transition,
         kind,
     });
-    exact(
+    exact(execution,
         runtime,
         snapshot,
         transition,
@@ -54,6 +57,7 @@ pub(super) fn observe_settled_transition(
         facts,
     )?;
     let occurrence = exact_u64(
+        execution,
         runtime,
         snapshot,
         transition,
@@ -62,6 +66,7 @@ pub(super) fn observe_settled_transition(
         facts,
     )?;
     let outcome = decode_transition_outcome(exact_u64(
+        execution,
         runtime,
         snapshot,
         transition,
@@ -71,6 +76,7 @@ pub(super) fn observe_settled_transition(
     )?)
     .ok_or_else(|| denial("workflow transition outcome is unsupported"))?;
     let operation_receipt_identity = optional_identity(
+        execution,
         runtime,
         snapshot,
         transition,
@@ -79,6 +85,7 @@ pub(super) fn observe_settled_transition(
         facts,
     )?;
     let nodes = adjacency_with_kind(
+        execution,
         runtime,
         snapshot,
         layout.transition_node_relation,
@@ -99,13 +106,21 @@ pub(super) fn observe_settled_transition(
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_retained_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     locator: WorkflowTransitionLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
-    let observed = observe_settled_transition(runtime, snapshot, layout, locator.entity(), facts)?;
+    let observed = observe_settled_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        locator.entity(),
+        facts,
+    )?;
     if observed != locator.settlement() {
         return Err(denial("retained workflow transition locator changed"));
     }
@@ -113,6 +128,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
 }
 
 pub(super) fn observe_assessment_evidence(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -120,6 +136,7 @@ pub(super) fn observe_assessment_evidence(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<ObservedWorkflowAssessmentEvidence>, WorthQueryApplicationAttemptDenial> {
     let evidence = adjacency_with_kind(
+        execution,
         runtime,
         snapshot,
         layout.transition_assessment_evidence_relation,
@@ -141,7 +158,7 @@ pub(super) fn observe_assessment_evidence(
         entity_id: evidence,
         kind,
     });
-    exact(
+    exact(execution,
         runtime,
         snapshot,
         evidence,
@@ -153,6 +170,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let identity = observed_text(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -164,9 +182,10 @@ pub(super) fn observe_assessment_evidence(
         &layout.assessment_evidence.producer,
         &layout.assessment_evidence.family,
     ] {
-        observed_text(runtime, snapshot, evidence, kind, locator, facts)?;
+        observed_text(execution, runtime, snapshot, evidence, kind, locator, facts)?;
     }
     let source_identity = observed_text(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -175,6 +194,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let publication_identity = observed_text(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -183,6 +203,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let output_content_identity = observed_text(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -191,6 +212,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let program_revision = observed_optional_text(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -199,6 +221,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let proposal_identity = observed_text(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -207,6 +230,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let partition = observed_u64(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -215,6 +239,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let slot = observed_u64(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -223,6 +248,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let generation = observed_u64(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -231,6 +257,7 @@ pub(super) fn observe_assessment_evidence(
         facts,
     )?;
     let retained_bytes = observed_u64(
+        execution,
         runtime,
         snapshot,
         evidence,
@@ -247,6 +274,7 @@ pub(super) fn observe_assessment_evidence(
         identity,
         retained_bytes,
         query: observed_text(
+            execution,
             runtime,
             snapshot,
             evidence,
@@ -255,6 +283,7 @@ pub(super) fn observe_assessment_evidence(
             facts,
         )?,
         parameter_type: observed_text(
+            execution,
             runtime,
             snapshot,
             evidence,
@@ -263,6 +292,7 @@ pub(super) fn observe_assessment_evidence(
             facts,
         )?,
         result_type: observed_text(
+            execution,
             runtime,
             snapshot,
             evidence,
@@ -271,6 +301,7 @@ pub(super) fn observe_assessment_evidence(
             facts,
         )?,
         binding: observed_text(
+            execution,
             runtime,
             snapshot,
             evidence,
@@ -279,6 +310,7 @@ pub(super) fn observe_assessment_evidence(
             facts,
         )?,
         passing: observed_bool(
+            execution,
             runtime,
             snapshot,
             evidence,
@@ -287,6 +319,7 @@ pub(super) fn observe_assessment_evidence(
             facts,
         )?,
         coverage_identity: observed_text(
+            execution,
             runtime,
             snapshot,
             evidence,
@@ -301,82 +334,4 @@ pub(super) fn observe_assessment_evidence(
         output_content_identity,
         program_revision,
     }))
-}
-
-pub(in crate::domain_computation::primary_graph) fn recover_settled_live_membership(
-    runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    layout: &WorthQueryWorkflowLayout,
-    transition: EntityId,
-    expected_identity: &str,
-    expected_occurrence: u64,
-) -> Result<(RelationId, Vec<WorthQueryApplicationObservedFact>), WorthQueryApplicationAttemptDenial>
-{
-    let kind = layout.transition.entity_kind;
-    let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
-        entity_id: transition,
-        kind,
-    }];
-    exact(
-        runtime,
-        snapshot,
-        transition,
-        kind,
-        &layout.transition.identity,
-        text(expected_identity.to_owned()),
-        &mut facts,
-    )?;
-    for (locator, expected) in [
-        (
-            &layout.transition.protocol_version,
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
-        ),
-        (&layout.transition.occurrence, expected_occurrence),
-        (
-            &layout.transition.outcome,
-            encode_transition_outcome(ApplicationWorkflowControlOutcome::Completed),
-        ),
-    ] {
-        exact(
-            runtime,
-            snapshot,
-            transition,
-            kind,
-            locator,
-            AspectValue::UInt64(expected),
-            &mut facts,
-        )?;
-    }
-    let partition = exact_u64(
-        runtime,
-        snapshot,
-        transition,
-        kind,
-        &layout.transition.live_membership_partition,
-        &mut facts,
-    )?;
-    let slot = exact_u64(
-        runtime,
-        snapshot,
-        transition,
-        kind,
-        &layout.transition.live_membership_slot,
-        &mut facts,
-    )?;
-    let generation = exact_u64(
-        runtime,
-        snapshot,
-        transition,
-        kind,
-        &layout.transition.live_membership_generation,
-        &mut facts,
-    )?;
-    let partition = u32::try_from(partition)
-        .map_err(|_| denial("settled live-membership partition is invalid"))?;
-    let generation = u32::try_from(generation)
-        .map_err(|_| denial("settled live-membership generation is invalid"))?;
-    Ok((
-        RelationId::new(PartitionId::new(partition), slot, generation),
-        facts,
-    ))
 }

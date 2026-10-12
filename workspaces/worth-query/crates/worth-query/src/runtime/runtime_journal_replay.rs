@@ -3,13 +3,14 @@ use super::*;
 impl WorthQueryRuntime {
     pub fn replay_journal_segment(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: WorthQueryJournalReplayRequest,
     ) -> Result<WorthQueryJournalReplayOutcome, WorthQueryRuntimeError> {
         self.admit_facade_family(WorthQueryRuntimeFacadeFamily::Replay)?;
         self.journal_replay
             .replay(
                 request,
-                &self.current_snapshot_identity(),
+                &self.current_snapshot_identity_with_request(execution),
                 journal_replay::published_artifact_replay_digest(
                     &self.published_artifact_diagnostics(),
                 ),
@@ -33,9 +34,10 @@ impl WorthQueryRuntime {
 impl WorthQueryWorkspace {
     pub fn replay_journal_segment(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: WorthQueryJournalReplayRequest,
     ) -> Result<WorthQueryJournalReplayOutcome, WorthQueryRuntimeError> {
-        self.runtime.replay_journal_segment(request)
+        self.runtime.replay_journal_segment(execution, request)
     }
 
     pub fn journal_replay_diagnostics(&self) -> WorthQueryJournalReplayDiagnostics {

@@ -88,49 +88,67 @@ impl FinancialCourtroomWorld {
         let external = block_on(authentication.authenticate((), &request)).unwrap();
         let principal = self
             .application
-            .on_branch(self.application.current_world())
-            .select()
-            .expect("the selected product branch remains admitted")
-            .resolve_authenticated_principal(
-                &schema
-                    .principal_binding(FinancialPrincipalBinding::reference())
-                    .unwrap(),
-                &external,
-                &request,
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&host_phase)
+                    .expect("the selected product branch remains admitted")
+                    .resolve_authenticated_principal(
+                        &host_phase,
+                        &schema
+                            .principal_binding(FinancialPrincipalBinding::reference())
+                            .unwrap(),
+                        &external,
+                        &request,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let record = self
             .application
-            .on_branch(self.application.current_world())
-            .select()
-            .expect("the selected product branch remains admitted")
-            .resolve_entity(
-                MarketIdentityField::reference(),
-                record_identity.to_string(),
-                &request,
-                primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&host_phase)
+                    .expect("the selected product branch remains admitted")
+                    .resolve_entity(
+                        &host_phase,
+                        MarketIdentityField::reference(),
+                        record_identity.to_string(),
+                        &request,
+                        primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let admission = self
             .application
-            .on_branch(self.application.current_world())
-            .select()
-            .unwrap()
-            .authorize_operation(
-                &principal,
-                &record,
-                &schema
-                    .installed_operation(AmendMarket::reference())
-                    .unwrap(),
-                Default::default(),
-                &request,
-            )
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                self.application
+                    .on_branch(self.application.current_world())
+                    .select(&host_phase)
+                    .unwrap()
+                    .authorize_operation(
+                        &host_phase,
+                        &principal,
+                        &record,
+                        &schema
+                            .installed_operation(AmendMarket::reference())
+                            .unwrap(),
+                        Default::default(),
+                        &request,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let (_, projection, _) = self
+            .application
+            .with_host_advancement(|host_phase| {
+                self
             .invariant
             .project_admitted_operation(
-                &admission,
+                &host_phase, &admission,
                 |reader, scope| {
                     reader
                         .decision_field(scope, MarketRevisionField::reference())
@@ -166,21 +184,28 @@ impl FinancialCourtroomWorld {
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
-            .into_parts();
+            .into_parts()
+            })
+            .expect("installed host call opens");
         let reads = self
             .application
+            .with_host_advancement(|host_phase| {
+                self
+            .application
             .begin_projected_application_read_attempt(
-                admission,
+                &host_phase, admission,
                 projection,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
-            .unwrap();
-        let mut effects = reads
+            .unwrap()
+            })
+            .expect("installed host call opens");
+        let mut effects = self.application.with_host_advancement(|host_phase| reads
             .complete_projected_dependencies(
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                &host_phase, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap()
-            .begin_effect_program();
+            .begin_effect_program()).expect("installed host call opens");
         let record = effects.existing_entity(&record).unwrap();
         effects
             .write_field(

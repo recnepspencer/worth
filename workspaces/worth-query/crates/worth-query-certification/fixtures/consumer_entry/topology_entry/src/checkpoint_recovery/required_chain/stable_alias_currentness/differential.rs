@@ -72,9 +72,11 @@ fn seeded_native_source_edits_agree_with_plain_model_and_full_output_verificatio
                 model_y[index] = replacement;
             }
 
-            let before = request.retain_read().unwrap();
+            let before =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
             let settled = settle_anchor(&request, &application, seed, step + 1);
-            let after = request.retain_read().unwrap();
+            let after =
+                crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
             assert_eq!(
                 settled.producer_contacts_in_this_demand(),
                 usize::from(changes_input),

@@ -18,7 +18,10 @@ use super::support::{
 
 #[test]
 fn runtime_family_signal_compatibility_is_compatible_before_preparation() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let support = handle.signal_compatibility_support::<super::support::Input<RuntimeFamily>>();
     let support_summary = support
         .rows()
@@ -59,7 +62,10 @@ fn runtime_family_signal_compatibility_is_compatible_before_preparation() {
 
 #[test]
 fn prepare_runtime_continuation_from_target_keeps_execution_explicit() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -89,7 +95,10 @@ fn prepare_runtime_continuation_from_target_keeps_execution_explicit() {
 
 #[test]
 fn target_and_context_preparation_converge_for_equivalent_runtime_meaning() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let from_target =
         handle.prepare_continuation_from_target_checked(target_request::<RuntimeFamily>(
             &handle,
@@ -120,7 +129,10 @@ fn target_and_context_preparation_converge_for_equivalent_runtime_meaning() {
 
 #[test]
 fn continuation_prepare_proof_exposes_target_specific_witnesses() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let proof = handle.prepare_continuation_from_target_proof(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -146,7 +158,10 @@ fn continuation_prepare_proof_exposes_target_specific_witnesses() {
 
 #[test]
 fn preparation_keeps_current_historical_and_preview_truth_distinct() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
 
     let current = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,

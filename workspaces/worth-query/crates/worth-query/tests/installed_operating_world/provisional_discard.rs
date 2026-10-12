@@ -16,7 +16,11 @@ fn discard_intent(input: &str) -> domain::WorthQueryNormalizedWorkflowIntent {
 
 #[test]
 fn provisional_discard_consumes_only_an_effect_free_provisional_trace() {
-    let mut workspace = provisional_workflow_workspace("provisional-discard").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        provisional_workflow_workspace(request_execution, "provisional-discard").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let trace = workspace
         .prepare_mutation_operating_world(workspace.current_world())

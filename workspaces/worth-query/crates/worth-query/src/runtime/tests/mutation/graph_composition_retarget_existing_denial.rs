@@ -1,15 +1,18 @@
 use super::super::support::*;
 
-fn task_relation_runtime() -> WorthQueryRuntime {
-    stateful_bridge_runtime_with_collections(&["TaskRelation"])
+fn task_relation_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    stateful_bridge_runtime_with_collections(request_execution, &["TaskRelation"])
 }
 
 fn seed_relation_binding(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     workspace_name: &str,
 ) -> WorthQueryExistingTruthTargetBinding {
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view(workspace_name, |q| {
+        .live_view(request_execution, workspace_name, |q| {
             q.from("TaskRelation")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -27,7 +30,7 @@ fn seed_relation_binding(
         })
         .expect("relation live view should declare");
     let seed = workspace
-        .insert("TaskRelation", |relation| {
+        .insert(request_execution, "TaskRelation", |relation| {
             relation
                 .set_aspect(
                     test_aspect_touch("identity.id"),
@@ -62,16 +65,20 @@ fn seed_relation_binding(
 
 #[test]
 fn compose_graph_denies_existing_target_retarget_with_split_successor_continuity() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.graph-composition-retarget-split-denial")
         .expect("runtime should open a named workspace");
     let binding = seed_relation_binding(
+        request_execution,
         &mut workspace,
         "tasks-graph-composition-retarget-split-denial-relations",
     );
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.retarget_existing(binding, |relation| {
                 relation
                     .continuity_split_successors(
@@ -114,16 +121,20 @@ fn compose_graph_denies_existing_target_retarget_with_split_successor_continuity
 
 #[test]
 fn compose_graph_denies_existing_target_retarget_without_rebind_intent() {
-    let mut workspace = task_relation_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_relation_runtime(request_execution)
         .workspace("tasks.graph-composition-retarget-denial")
         .expect("runtime should open a named workspace");
     let binding = seed_relation_binding(
+        request_execution,
         &mut workspace,
         "tasks-graph-composition-retarget-denial-relations",
     );
 
     let error = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             graph.retarget_existing(binding, |relation| {
                 relation.existing_entity_identity(
                     test_aspect_touch("target.id"),

@@ -16,6 +16,7 @@ use super::ObservedDelegationTransition;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn observe_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -61,12 +62,14 @@ pub(super) fn observe_transition(
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
-    let evidence = relational.observe_authorization(plan).map_err(|_| {
-        denial(
-            WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
-            installed.contract().name(),
-        )
-    })?;
+    let evidence = relational
+        .observe_authorization(plan, execution)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                installed.contract().name(),
+            )
+        })?;
     let [narrowing, link] = evidence.paths() else {
         return Err(invalid_policy(installed.contract().name()));
     };

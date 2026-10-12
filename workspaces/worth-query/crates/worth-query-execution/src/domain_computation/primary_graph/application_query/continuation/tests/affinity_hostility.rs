@@ -8,11 +8,32 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAppli
 #[test]
 fn changed_parameter_denies_before_basis_acquisition() {
     let context = ContinuationTestContext::new(Duration::from_secs(60));
-    let continuation = context.issue();
+    let continuation = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.issue(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
     let acquisitions = context.basis_acquisitions();
     let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
 
-    let denial = context.readmit_denial(continuation, "account-2", &request, 1, 10_000);
+    let denial = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.readmit_denial(
+                &host_custody,
+                continuation,
+                "account-2",
+                &request,
+                1,
+                10_000,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         denial,
@@ -25,12 +46,33 @@ fn changed_parameter_denies_before_basis_acquisition() {
 #[test]
 fn stale_installed_generation_denies_before_basis_reacquisition() {
     let mut context = ContinuationTestContext::new(Duration::from_secs(60));
-    let continuation = context.issue();
+    let continuation = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.issue(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
     let acquisitions = context.basis_acquisitions();
     context.advance_installation();
     let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
 
-    let denial = context.readmit_denial(continuation, "account-1", &request, 1, 10_000);
+    let denial = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.readmit_denial(
+                &host_custody,
+                continuation,
+                "account-1",
+                &request,
+                1,
+                10_000,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         denial,
@@ -45,12 +87,33 @@ fn stale_installed_generation_denies_before_basis_reacquisition() {
 #[test]
 fn wrong_provider_descriptor_denies_before_fresh_admission() {
     let context = ContinuationTestContext::new(Duration::from_secs(60));
-    let mut continuation = context.issue();
+    let mut continuation = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.issue(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
     continuation.provider_identity.push_str(".foreign");
     let acquisitions = context.basis_acquisitions();
     let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
 
-    let denial = context.readmit_denial(continuation, "account-1", &request, 1, 10_000);
+    let denial = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.readmit_denial(
+                &host_custody,
+                continuation,
+                "account-1",
+                &request,
+                1,
+                10_000,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         denial,
@@ -63,13 +126,34 @@ fn wrong_provider_descriptor_denies_before_fresh_admission() {
 #[test]
 fn changed_continuation_contract_denies_as_stale_meaning() {
     let context = ContinuationTestContext::new(Duration::from_secs(60));
-    let mut continuation = context.issue();
+    let mut continuation = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.issue(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
     continuation.continuation_contract_digest =
         worth_foundational::facade::CanonicalDigestId::new([0xCC; 32]);
     let acquisitions = context.basis_acquisitions();
     let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
 
-    let denial = context.readmit_denial(continuation, "account-1", &request, 1, 10_000);
+    let denial = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.readmit_denial(
+                &host_custody,
+                continuation,
+                "account-1",
+                &request,
+                1,
+                10_000,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(
         denial,
@@ -82,7 +166,14 @@ fn changed_continuation_contract_denies_as_stale_meaning() {
 #[test]
 fn retained_and_disposed_tokens_own_no_runtime_resource_types() {
     let context = ContinuationTestContext::new(Duration::from_secs(60));
-    let continuation = context.issue();
+    let continuation = context
+        .world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            context.issue(&host_custody)
+        })
+        .expect("the fixture read owns its installed host call");
     context.assert_resource_baseline();
     drop(continuation);
     context.assert_resource_baseline();

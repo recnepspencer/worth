@@ -2,6 +2,9 @@ use super::*;
 use worth_signal::facade::branch::validate_signal_branch_name;
 #[test]
 fn unrelated_signal_branch_progresses_at_each_owner_park() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for boundary in [
         Boundary::OwnerLifecycleAdmission,
         Boundary::BranchRegistryLookup,
@@ -40,8 +43,8 @@ fn unrelated_signal_branch_progresses_at_each_owner_park() {
         };
         let first = signal_prepared(&court, &root, &token);
         let second = signal_prepared(&court, &other, &token);
-        let mut first_context = court.context(&root);
-        let mut second_context = court.context(&other);
+        let mut first_context = court.context(request_execution, &root);
+        let mut second_context = court.context(request_execution, &other);
         let control = court.signal.owner_operation_control_for_test().unwrap();
         let port = court.world.publication_port();
         let second_port = port.clone();

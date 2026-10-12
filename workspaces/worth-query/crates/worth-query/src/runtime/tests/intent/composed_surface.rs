@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_preview_and_intents() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = test_product_runtime_builder()
         .schema_adapter(TestSchemaAdapter)
         .source_adapter(TestSourceAdapter::default())
@@ -14,10 +17,11 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.deep-runtime",
             task_live_request(),
             task_schema(),
@@ -25,6 +29,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
         .expect("live view should install a subscription");
     let titles = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.deep.titles", test_aspect_touches(["title"]))
                 .depends_on_live(&live)
                 .produces(test_aspect_touches(["title.summary"])),
@@ -33,6 +38,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
         .expect("source computed should declare");
     let readiness = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new(
                 "computed.deep.readiness",
                 test_aspect_touches(["title.summary"]),
@@ -63,6 +69,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
     let (preview_evidence, preview_outcome) = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("deep runtime preview"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )
@@ -71,19 +78,22 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
         preview.use_computed(&titles);
         preview.use_computed(&readiness);
         preview
-            .use_effect(&effect)
+            .use_effect(request_execution, &effect)
             .expect("sandboxed preview should bind pending-intent effect");
         preview
-            .write(insert_command(
-                "Task",
-                [
-                    ("identity.id", test_string_aspect_value("preview-deep-task")),
-                    (
-                        "title.value",
-                        test_string_aspect_value("Preview-only deep task"),
-                    ),
-                ],
-            ))
+            .write(
+                request_execution,
+                insert_command(
+                    "Task",
+                    [
+                        ("identity.id", test_string_aspect_value("preview-deep-task")),
+                        (
+                            "title.value",
+                            test_string_aspect_value("Preview-only deep task"),
+                        ),
+                    ],
+                ),
+            )
             .expect("preview write should route only preview evidence");
         (
             preview.preview_execution_evidence().to_vec(),
@@ -120,7 +130,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
         .is_empty());
     assert_eq!(
         runtime
-            .read_derived_result(&readiness)
+            .read_derived_result(request_execution, &readiness)
             .expect("readiness materialization should execute")
             .row_count(),
         0
@@ -131,16 +141,19 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
         .is_empty());
 
     let receipt = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "deep-authoritative-reconcile",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([
-                ("entity", "intent-task-1"),
-                ("title", "Committed deep title"),
-            ]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "deep-authoritative-reconcile",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([
+                    ("entity", "intent-task-1"),
+                    ("title", "Committed deep title"),
+                ]),
+            ),
+        )
         .expect("authoritative intent should execute");
 
     assert_eq!(
@@ -182,7 +195,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
     assert_eq!(live_batches[0].patch_group_width(), 1);
 
     let readiness_inspection = runtime
-        .inspect_derived_view(&readiness)
+        .inspect_derived_view(request_execution, &readiness)
         .expect("readiness computed should inspect");
     assert_eq!(
         readiness_inspection.upstream_derived_views(),
@@ -196,7 +209,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
     assert_eq!(readiness_inspection.pending_incremental_patch_count(), 1);
 
     let effect_inspection = runtime
-        .inspect_effect(&effect)
+        .inspect_effect(request_execution, &effect)
         .expect("pending effect should inspect");
     assert_eq!(
         effect_inspection.condition_descriptor(),
@@ -224,7 +237,12 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
     );
 
     let effect_intent = runtime
-        .execute_next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            request_execution,
+            &effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("effect-triggered intent should use the same intent authority path");
     assert_eq!(
         effect_intent.intent_receipt().source_lane(),
@@ -267,6 +285,7 @@ fn composed_runtime_surface_proves_facade_handles_stay_proof_bearing_across_prev
     let branch_receipt = {
         let mut branch = runtime
             .branch_with_options(
+                request_execution,
                 test_session_label("deep runtime branch"),
                 WorthQueryBranchOptions::sandboxed_write_intent(),
             )

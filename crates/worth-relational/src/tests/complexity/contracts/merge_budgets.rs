@@ -8,11 +8,15 @@ use crate::tests::support::{
 
 #[test]
 fn complexity_budget_merge_planning_reports_request_shaped_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "main-value");
+    update_entity(execution, &runtime, shared, "main-value");
     update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "feature-value",
@@ -22,11 +26,14 @@ fn complexity_budget_merge_planning_reports_request_shaped_work() {
     runtime.performance_access().reset_counters();
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(crate::merge::data::MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            BranchId("feature".to_string()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            crate::merge::data::MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("merge planning artifact");
 
     let counters = runtime.performance_access().counters();
@@ -72,8 +79,11 @@ fn complexity_budget_merge_planning_reports_request_shaped_work() {
 
 #[test]
 fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "main-anchor");
+    create_entity(execution, &runtime, "main-anchor");
     create_branch_from_main(&runtime, "feature");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
         &runtime,
@@ -96,24 +106,24 @@ fn complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutati
     )
     .expect("test staging stays within configured resource budgets");
     let feature_only = changed_entities(
-        &txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("feature-only create"),
+        &txn.commit(execution, &runtime)
+            .expect("feature-only create"),
     )[0];
 
     let prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge execution");
 
     runtime.performance_access().reset_counters();
     let outcome = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
     let counters = runtime.performance_access().counters();
 

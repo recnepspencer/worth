@@ -1,10 +1,12 @@
 use super::super::super::support::*;
 
 pub(in super::super) fn temporal_public_family_admission_error(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     reason: &str,
 ) -> WorthQueryRuntimeError {
     bridge_runtime_with_support(
+        request_execution,
         WorthQueryRuntimeSupportProfile::scaffold_backend_profile().with_family_support(
             WorthQueryRuntimeFamilySupport::supported_with_teaching_posture_and_reason(
                 WorthQueryRuntimeFacadeFamily::Temporal,

@@ -1,3 +1,4 @@
+use super::expected_counters::expected_workflow_yield_counters;
 use super::*;
 
 pub(super) fn measured_workflow_target(unrelated_width: usize) -> stats_alloc::Stats {

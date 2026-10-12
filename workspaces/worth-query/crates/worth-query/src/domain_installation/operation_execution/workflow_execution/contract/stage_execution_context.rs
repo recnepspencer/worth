@@ -1,3 +1,5 @@
+#[path = "stage_execution_context/request_denial.rs"]
+mod request_denial;
 use super::{
     workflow_stage_lineage::lineage_traversal, WorthQueryBoundGraphExecutionReceipt,
     WorthQueryWorkflowEffectEvidence, WorthQueryWorkflowPredecessorReceipt,
@@ -219,6 +221,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
         command: crate::runtime::WorthQueryWriteCommand,
         workspace: &mut WorthQueryWorkflowStageWorkspace<'_>,
     ) -> Result<WorthQueryWorkflowEffectEvidence, WorthQueryWorkflowStageEffectDenial> {
+        let request_execution = &self.execution;
         if !self
             .stage
             .semantics()
@@ -229,8 +232,14 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
         }
         let execution = workspace
             .workspace
-            .execute_ordinary_authoritative_mutation(command, false)
-            .map_err(|error| WorthQueryWorkflowStageEffectDenial::Runtime(format!("{error:?}")))?;
+            .execute_ordinary_authoritative_mutation(request_execution, command, false)
+            .map_err(|error| {
+                if workspace.request_denial.is_none() {
+                    workspace.request_denial =
+                        request_denial::native(&error, self.stage.identity()).map(Box::new);
+                }
+                WorthQueryWorkflowStageEffectDenial::Runtime(format!("{error:?}"))
+            })?;
         let evidence = WorthQueryWorkflowEffectEvidence::runtime_mutation(
             execution.into_receipt(),
             &self.effect_workflow_binding,
@@ -248,6 +257,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
         crate::ordinary::read::WorthQueryReadCompletion,
         WorthQueryWorkflowStageExecutorFailure,
     > {
+        let execution = &self.execution;
         let role_is_admitted = self
             .stage
             .semantics()
@@ -281,7 +291,7 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
         declaration
             .clone_for_installed_execution()
             .using(crate::ordinary::read::current())
-            .run(workspace.workspace)
+            .run(execution, workspace.workspace)
             .into_result()
             .map_err(|stop| {
                 WorthQueryWorkflowStageExecutorFailure::new(

@@ -3,7 +3,10 @@ use std::collections::BTreeSet;
 
 #[test]
 fn intent_admission_certification_bundle_assembles_phase_six_foundation_artifacts() {
-    let bundle = certify_intent_admission();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let bundle = certify_intent_admission(request_execution);
     let required_outputs = worth_query_intent_admission_required_certification_outputs();
     let closeout_extension_outputs = worth_query_intent_admission_closeout_extension_outputs();
     let output_manifest = worth_query_intent_admission_certification_output_manifest();

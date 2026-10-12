@@ -1,3 +1,5 @@
+mod call_completion;
+use call_completion::{complete_call, complete_workflow_memory_call};
 use std::sync::Mutex;
 
 use super::*;
@@ -192,8 +194,10 @@ fn provider_start_failure_preserves_escaped_arena_recovery() {
             },
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let failure = match running.begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -333,47 +337,6 @@ fn workflow_cleanup_retries_each_live_provider_arena_before_completion() {
         assert!(cleanup.inspection().resources_released());
         assert_eq!(cleanup.inspection().released_reservation_count(), 3);
     });
-}
-
-fn complete_call(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-
-    running: WorthQueryRunningDirectRun,
-    graph: &WorthQueryInstalledGraphParticipationAuthority,
-    scope: &str,
-) -> WorthQueryRunningDirectRun {
-    let active = running
-        .begin_graph_execution(
-            execution,
-            graph,
-            WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
-        )
-        .expect("provider call should start");
-    match active.advance(execution) {
-        WorthQueryDirectGraphStepOutcome::Completed(completion) => completion.into_running(),
-        _ => panic!("escaping-memory provider did not complete"),
-    }
-}
-
-fn complete_workflow_memory_call(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-
-    running: crate::domain_computation::WorthQueryRunningWorkflowRun,
-    graph: &WorthQueryInstalledGraphParticipationAuthority,
-    scope: &str,
-) -> crate::domain_computation::WorthQueryRunningWorkflowRun {
-    let active = running
-        .begin_stage_graph_execution(
-            execution,
-            "stage",
-            graph,
-            WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
-        )
-        .expect("workflow memory provider call should start");
-    match active.advance(execution) {
-        WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion.into_running(),
-        _ => panic!("workflow memory provider did not complete"),
-    }
 }
 
 fn step_failure(

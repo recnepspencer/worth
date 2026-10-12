@@ -18,9 +18,14 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
     let world = installation::install(foreign);
     let selected = world
         .application
-        .on_branch(world.application.current_world())
-        .select()
-        .expect("the installed program occurrence selects");
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(world.application.current_world())
+                .select(&host_phase)
+                .expect("the installed program occurrence selects")
+        })
+        .expect("installed host call opens");
     let actual_program = selected
         .inspect_selected_program()
         .expect("the native activation resolves its rostered program");

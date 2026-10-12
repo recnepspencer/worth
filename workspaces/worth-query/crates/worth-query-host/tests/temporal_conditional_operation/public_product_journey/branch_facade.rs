@@ -22,7 +22,12 @@ pub(crate) fn creates_and_selects_all_component_postures() {
     });
 
     for branch in [reuse_both, fork_relational, fork_signal, fork_both] {
-        let selected = world.application.on_branch(branch).select().unwrap();
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                world.application.on_branch(branch).select(&phase).unwrap()
+            })
+            .expect("installed host call opens");
         assert_eq!(selected.product().product_branch(), branch.id());
     }
 
@@ -41,9 +46,14 @@ pub(crate) fn creates_and_selects_all_component_postures() {
     ] {
         let closed = world
             .application
-            .on_branch(branch)
-            .close()
-            .expect("each public creation posture must cleanly close");
+            .with_host_advancement(|phase| {
+                world
+                    .application
+                    .on_branch(branch)
+                    .close(&phase)
+                    .expect("each public creation posture must cleanly close")
+            })
+            .expect("installed host call opens");
         assert_eq!(
             closed.retired_component_count(),
             expected_retired_components
@@ -61,9 +71,14 @@ fn create(
 ) -> WorthQueryProductBranch {
     world
         .application
-        .branches()
-        .fork(source)
-        .components(choose)
-        .create()
-        .unwrap()
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(source)
+                .components(choose)
+                .create(&phase)
+                .unwrap()
+        })
+        .expect("installed host call opens")
 }

@@ -7,6 +7,7 @@ use super::{
 impl WorthQueryWorkspace {
     pub(crate) fn open_declared_live_graph<T>(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         read_graph: WorthQueryReadGraph,
         authority: &super::WorthQueryGraphReadAccessAuthorityContext,
@@ -16,20 +17,22 @@ impl WorthQueryWorkspace {
         let family = WorthQueryReadFamily::new_kernel_only("declared_live_resource", read_graph);
         self.read_family_intent_in_graph_read_authority(&family, authority)
             .admit()?
-            .open_managed_live(name)
+            .open_managed_live(request_execution, name)
     }
 
     pub(crate) fn open_admitted_live_binding<T>(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         binding: crate::intent_admission::WorthQueryReadExecutionBinding,
     ) -> Result<super::WorthQueryLiveView<T>, WorthQueryRuntimeError> {
         self.runtime
-            .declare_live_view_from_read_binding(name, binding)
+            .declare_live_view_from_read_binding(request_execution, name, binding)
     }
 
     pub(crate) fn execute_declared_read_graph_in_authority(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         read_graph: WorthQueryReadGraph,
         authority: &super::WorthQueryGraphReadAccessAuthorityContext,
     ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
@@ -37,11 +40,12 @@ impl WorthQueryWorkspace {
             .admit_facade_family(super::WorthQueryRuntimeFacadeFamily::Read)?;
         let family = WorthQueryReadFamily::new_kernel_only("declared_read", read_graph);
         self.read_family_intent_in_graph_read_authority(&family, authority)
-            .execute()
+            .execute(execution)
     }
 
     pub(crate) fn execute_declared_read_graph_in_basis_context(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         read_graph: WorthQueryReadGraph,
         context: &crate::query_context::ScopedQueryBasisContext,
     ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
@@ -49,11 +53,12 @@ impl WorthQueryWorkspace {
             .admit_facade_family(super::WorthQueryRuntimeFacadeFamily::Read)?;
         let family = WorthQueryReadFamily::new_kernel_only("declared_historical_read", read_graph);
         self.read_family_in_basis_context_intent(&family, context)
-            .execute()
+            .execute(execution)
     }
 
     pub(crate) fn execute_declared_count_graph_in_authority(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         read_graph: WorthQueryReadGraph,
         authority: &super::WorthQueryGraphReadAccessAuthorityContext,
     ) -> Result<WorthQueryCountResult, WorthQueryRuntimeError> {
@@ -62,11 +67,12 @@ impl WorthQueryWorkspace {
         let family = WorthQueryReadFamily::new_kernel_only("declared_count", read_graph);
         self.read_family_intent_in_graph_read_authority(&family, authority)
             .admit()?
-            .execute_count()
+            .execute_count(execution)
     }
 
     pub(crate) fn compose_read(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: impl FnOnce(
             WorthQueryReadBuilder,
         ) -> Result<WorthQueryReadGraph, super::WorthQueryReadDenial>,
@@ -76,7 +82,7 @@ impl WorthQueryWorkspace {
         let read_graph = declaration(WorthQueryReadBuilder::new())
             .map_err(WorthQueryRuntimeError::ReadCompositionDenied)?;
         let family = WorthQueryReadFamily::new_kernel_only("composed_read", read_graph);
-        self.read_family_intent(&family).execute()
+        self.read_family_intent(&family).execute(execution)
     }
 
     pub(crate) fn define_read_family(
@@ -98,16 +104,18 @@ impl WorthQueryWorkspace {
 
     pub(crate) fn execute_read_family(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         family: &WorthQueryReadFamily,
     ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
         self.runtime
             .admit_facade_family(super::WorthQueryRuntimeFacadeFamily::Read)?;
-        self.read_family_intent(family).execute()
+        self.read_family_intent(family).execute(execution)
     }
 
     #[cfg(test)]
     pub(crate) fn execute_read_family_with_access_plan(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         family: &WorthQueryReadFamily,
         graph_read_access_plan: super::WorthQueryAdmittedGraphReadAccessPlan,
     ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
@@ -127,18 +135,19 @@ impl WorthQueryWorkspace {
             handoff,
             graph_read_access_plan,
         )?;
-        self.execute_bound_read_execution(binding)
+        self.execute_bound_read_execution(request_execution, binding)
     }
 
     pub(crate) fn execute_read_family_in_basis_context(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         family: &WorthQueryReadFamily,
         context: &crate::query_context::ScopedQueryBasisContext,
     ) -> Result<WorthQueryReadResult, WorthQueryRuntimeError> {
         self.runtime
             .admit_facade_family(super::WorthQueryRuntimeFacadeFamily::Read)?;
         self.read_family_in_basis_context_intent(family, context)
-            .execute()
+            .execute(execution)
     }
 
     pub fn explain_graph_read_access_shape(
@@ -258,11 +267,12 @@ impl WorthQueryWorkspace {
 
     pub(crate) fn inspect<'a, T>(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: T,
     ) -> Result<WorthQueryInspection, WorthQueryRuntimeError>
     where
         T: Into<WorthQueryInspectionTarget<'a>>,
     {
-        self.runtime.inspect(target)
+        self.runtime.inspect(execution, target)
     }
 }

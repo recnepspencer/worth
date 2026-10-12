@@ -17,7 +17,11 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access_cost_mo
 
 #[test]
 fn closeout_matrix_certifies_representative_access_postures() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     assert_posture(
+        request_execution,
         "closeout.matrix.inline",
         |workspace| projection_only_family(workspace, "closeout-inline"),
         WorthQueryGraphReadAccessAdmissionPosture::InlineIndexed,
@@ -25,8 +29,10 @@ fn closeout_matrix_certifies_representative_access_postures() {
         None,
     );
 
-    let mut traversal_workspace =
-        default_graph_support_workspace("graph-read-access.closeout.matrix.traversal");
+    let mut traversal_workspace = default_graph_support_workspace(
+        request_execution,
+        "graph-read-access.closeout.matrix.traversal",
+    );
     let traversal = graph_access_family(&mut traversal_workspace, "closeout-traversal");
     assert_admission_posture(
         &admission_for_family(&mut traversal_workspace, &traversal),
@@ -36,6 +42,7 @@ fn closeout_matrix_certifies_representative_access_postures() {
     );
 
     let mut ephemeral_workspace = workspace_with_graph_support(
+        request_execution,
         "graph-read-access.closeout.matrix.ephemeral",
         profile_with_ephemeral_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
@@ -50,6 +57,7 @@ fn closeout_matrix_certifies_representative_access_postures() {
     );
 
     assert_posture(
+        request_execution,
         "closeout.matrix.budget-denied",
         |workspace| dense_traversal_family(workspace, "closeout-budget-denied"),
         WorthQueryGraphReadAccessAdmissionPosture::Denied,
@@ -58,6 +66,7 @@ fn closeout_matrix_certifies_representative_access_postures() {
     );
 
     assert_support_profile_posture(
+        request_execution,
         profile_without_graph_support(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
         ),
@@ -67,6 +76,7 @@ fn closeout_matrix_certifies_representative_access_postures() {
     );
 
     assert_support_profile_posture(
+        request_execution,
         profile_with_graph_support_temporarily_unavailable(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
         ),
@@ -76,6 +86,7 @@ fn closeout_matrix_certifies_representative_access_postures() {
     );
 
     assert_support_profile_posture(
+        request_execution,
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
         ),
@@ -85,6 +96,7 @@ fn closeout_matrix_certifies_representative_access_postures() {
     );
 
     assert_support_profile_posture(
+        request_execution,
         profile_requiring_graph_access_capability_registration(
             WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency,
         ),
@@ -96,7 +108,13 @@ fn closeout_matrix_certifies_representative_access_postures() {
 
 #[test]
 fn closeout_matrix_every_requirement_has_case_and_support_owner() {
-    let mut workspace = workspace("graph-read-access.closeout.matrix.requirements");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.closeout.matrix.requirements",
+    );
     let family = simple_traversal_family(&mut workspace, "closeout-requirements");
     let admission = admission_for_family(&mut workspace, &family);
 
@@ -119,6 +137,7 @@ fn closeout_matrix_every_requirement_has_case_and_support_owner() {
 }
 
 fn assert_posture(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     family: impl FnOnce(
         &mut crate::runtime::WorthQueryWorkspace,
@@ -127,7 +146,7 @@ fn assert_posture(
     expected_denial: Option<WorthQueryGraphReadAccessDenialKind>,
     expected_suggested_posture: Option<WorthQueryGraphReadAccessAdmissionPosture>,
 ) {
-    let mut workspace = workspace(workspace_name);
+    let mut workspace = workspace(request_execution, workspace_name);
     let family = family(&mut workspace);
     assert_admission_posture(
         &admission_for_family(&mut workspace, &family),
@@ -138,13 +157,17 @@ fn assert_posture(
 }
 
 fn assert_support_profile_posture(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     support_profile: crate::runtime::WorthQueryRuntimeSupportProfile,
     expected_posture: WorthQueryGraphReadAccessAdmissionPosture,
     expected_denial: Option<WorthQueryGraphReadAccessDenialKind>,
     expected_suggested_posture: Option<WorthQueryGraphReadAccessAdmissionPosture>,
 ) {
-    let mut workspace =
-        workspace_with_graph_support("graph-read-access.closeout.matrix.support", support_profile);
+    let mut workspace = workspace_with_graph_support(
+        request_execution,
+        "graph-read-access.closeout.matrix.support",
+        support_profile,
+    );
     let family = simple_traversal_family(&mut workspace, "closeout-support-posture");
     assert_admission_posture(
         &admission_for_family(&mut workspace, &family),

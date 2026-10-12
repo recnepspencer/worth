@@ -82,8 +82,10 @@ fn governed_provider_start_classifies_denial_and_panic_before_execution() {
             StartProvider(StartBehavior::Deny),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let denial = match running.begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -106,8 +108,9 @@ fn governed_provider_start_classifies_denial_and_panic_before_execution() {
             StartProvider(StartBehavior::Panic),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
         let panic = match running.begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -141,9 +144,11 @@ fn active_abandonment_releases_start_retention_and_preserves_peak_evidence() {
             StartProvider(StartBehavior::Retain),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,

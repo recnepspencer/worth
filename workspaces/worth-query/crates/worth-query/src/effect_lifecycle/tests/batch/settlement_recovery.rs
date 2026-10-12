@@ -12,8 +12,16 @@ use super::super::support::{
 
 #[test]
 fn performed_batch_returns_settlement_deferred_without_denial_telemetry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
-    let entity_id = create_entity(&mut runtime, "batch-before", BranchId("main".to_string()));
+    let entity_id = create_entity(
+        request_execution,
+        &mut runtime,
+        "batch-before",
+        BranchId("main".to_string()),
+    );
     let baseline_published_snapshots = runtime
         .storage_access()
         .storage_stats()
@@ -33,7 +41,10 @@ fn performed_batch_returns_settlement_deferred_without_denial_telemetry() {
     runtime.fail_next_durable_append_for_test();
 
     let stop = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect_err("performed batch must require settlement");
     let deferred = stop
         .settlement_deferred()
@@ -67,8 +78,12 @@ fn performed_batch_returns_settlement_deferred_without_denial_telemetry() {
 
 #[test]
 fn dropped_batch_settlement_recovers_by_commit_id_and_reopens_the_route() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = relational_runtime_with_intent_strategy();
     let entity_id = create_entity(
+        request_execution,
         &mut runtime,
         "batch-abandon-before",
         BranchId("main".to_string()),
@@ -92,7 +107,10 @@ fn dropped_batch_settlement_recovers_by_commit_id_and_reopens_the_route() {
     runtime.fail_next_durable_append_for_test();
 
     let stop = lowered
-        .execute_with(EffectExecutionAuthority::relational(&mut runtime))
+        .execute_with(
+            request_execution,
+            EffectExecutionAuthority::relational(&mut runtime),
+        )
         .expect_err("performed batch exposes deferred settlement");
     let commit_id = stop
         .settlement_deferred()
@@ -124,6 +142,7 @@ fn dropped_batch_settlement_recovers_by_commit_id_and_reopens_the_route() {
         baseline
     );
     create_entity(
+        request_execution,
         &mut runtime,
         "after-dropped-batch-settlement-repair",
         BranchId("main".to_string()),

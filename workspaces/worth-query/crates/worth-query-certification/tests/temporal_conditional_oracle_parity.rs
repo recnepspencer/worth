@@ -7,6 +7,8 @@ mod contract;
 mod courtroom_support;
 #[path = "../../worth-query-host/tests/temporal_conditional_operation/schema.rs"]
 mod schema;
+#[path = "support/execution_policy.rs"]
+mod test_request_policy;
 #[allow(dead_code)]
 #[path = "../../worth-query-host/tests/temporal_conditional_operation/world.rs"]
 mod world;
@@ -61,8 +63,11 @@ impl Case {
 
 #[test]
 fn host_and_internal_conditional_oracle_agree_across_phase_nine_matrix() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for case in Case::ALL {
-        assert_case(case);
+        assert_case(request_execution, case);
     }
 }
 
@@ -125,19 +130,21 @@ fn temporal_conditional_identity_has_no_private_digest_engine() {
     }
 }
 
-fn assert_case(case: Case) {
+fn assert_case(request_execution: &worth_execution::ExecutionRequest<'_, '_>, case: Case) {
     match case {
-        Case::Satisfied | Case::Due => assert_computed_changed(CourtroomWorld::publish("ready")),
+        Case::Satisfied | Case::Due => {
+            assert_computed_changed(request_execution, CourtroomWorld::publish("ready"))
+        }
         Case::Unsatisfied => {
             let world = CourtroomWorld::publish("blocked");
-            let receipt = observe(&world);
+            let receipt = observe(request_execution, &world);
             assert_oracle(SignalClass::SuppressedBeforeCompute, &receipt);
             assert_eq!(world.contacts.snapshot(), (1, 0, 0, 0));
         }
         Case::Failed => {
             let world = CourtroomWorld::publish("ready");
             world.predicate_panic.set(true);
-            let receipt = observe(&world);
+            let receipt = observe(request_execution, &world);
             assert_eq!(receipt.failed_operation_count(), 0);
             let [lineage] = receipt.execution_provenance() else {
                 panic!("failed lineage")
@@ -148,7 +155,7 @@ fn assert_case(case: Case) {
         Case::Future => {
             let mut world = CourtroomWorld::publish("ready");
             world.clock_control.push(1, 4);
-            assert_no_effect(&mut world);
+            assert_no_effect(request_execution, &mut world);
         }
         Case::Cancelled | Case::Completed => {
             let mut world = CourtroomWorld::publish("ready");
@@ -158,48 +165,64 @@ fn assert_case(case: Case) {
                 "completed"
             };
             world.amend_intent(2, lifecycle, "ready");
-            assert_no_effect(&mut world);
+            assert_no_effect(request_execution, &mut world);
         }
         Case::Superseded => {
             let mut world = CourtroomWorld::publish("ready");
             world.supersede_intent(2, 5, "active", "successor", "ready");
-            assert_computed_changed(world);
+            assert_computed_changed(request_execution, world);
         }
         Case::DuplicateClock => {
             let world = CourtroomWorld::publish("ready");
             let product = world.application.current_world();
             let mut clock = world
                 .application
-                .on_branch(product)
-                .select()
-                .unwrap()
-                .conditional_clock(&world.clock)
-                .unwrap();
-            let ClockOutcome::Accepted(receipt) = clock.observe() else {
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .on_branch(product)
+                        .select(&host_phase)
+                        .unwrap()
+                        .conditional_clock(request_execution, &world.clock)
+                        .unwrap()
+                })
+                .expect("installed host call opens");
+            let ClockOutcome::Accepted(receipt) = clock.observe(request_execution) else {
                 panic!("the first exact-lane observation must be accepted")
             };
             assert_oracle(SignalClass::ComputedChanged, &receipt);
             world.clock_control.push(1, 10);
-            assert!(matches!(clock.observe(), ClockOutcome::Duplicate(_)));
+            assert!(matches!(
+                clock.observe(request_execution),
+                ClockOutcome::Duplicate(_)
+            ));
         }
         Case::ReorderedClock => {
             let world = CourtroomWorld::publish("ready");
             let product = world.application.current_world();
             let mut clock = world
                 .application
-                .on_branch(product)
-                .select()
-                .unwrap()
-                .conditional_clock(&world.clock)
-                .unwrap();
-            let ClockOutcome::Accepted(receipt) = clock.observe() else {
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .on_branch(product)
+                        .select(&host_phase)
+                        .unwrap()
+                        .conditional_clock(request_execution, &world.clock)
+                        .unwrap()
+                })
+                .expect("installed host call opens");
+            let ClockOutcome::Accepted(receipt) = clock.observe(request_execution) else {
                 panic!("the first exact-lane observation must be accepted")
             };
             assert_oracle(SignalClass::ComputedChanged, &receipt);
             world.clock_control.push(2, 9);
-            assert!(matches!(clock.observe(), ClockOutcome::Reordered));
+            assert!(matches!(
+                clock.observe(request_execution),
+                ClockOutcome::Reordered
+            ));
         }
-        Case::ProviderReplaced => assert_provider_replacement(),
+        Case::ProviderReplaced => assert_provider_replacement(request_execution),
         Case::GenerationChanged => {
             let mut world = CourtroomWorld::publish("ready");
             let successor = std::sync::Arc::new(world.installation.successor_generation());
@@ -207,7 +230,11 @@ fn assert_case(case: Case) {
             assert_eq!(
                 world
                     .application
-                    .reinstall_conditional_runtime_for_installation(successor, product)
+                    .reinstall_conditional_runtime_for_installation(
+                        request_execution,
+                        successor,
+                        product
+                    )
                     .unwrap_err()
                     .kind(),
                 InstallationDenial::RebindRequired
@@ -216,8 +243,11 @@ fn assert_case(case: Case) {
     }
 }
 
-fn assert_computed_changed(world: CourtroomWorld) {
-    let receipt = observe(&world);
+fn assert_computed_changed(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: CourtroomWorld,
+) {
+    let receipt = observe(request_execution, &world);
     assert_oracle(SignalClass::ComputedChanged, &receipt);
     assert_authoritative_value(&world, IntentEffectField::reference(), {
         let [lineage] = receipt.execution_provenance() else {
@@ -232,8 +262,11 @@ fn assert_computed_changed(world: CourtroomWorld) {
     });
 }
 
-fn assert_no_effect(world: &mut CourtroomWorld) {
-    let receipt = observe(world);
+fn assert_no_effect(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &mut CourtroomWorld,
+) {
+    let receipt = observe(request_execution, world);
     assert_eq!(receipt.committed_operation_count(), 0);
     assert!(receipt.execution_provenance().is_empty());
     assert_authoritative_value(world, IntentEffectField::reference(), "pending".to_string());
@@ -264,16 +297,19 @@ fn assert_oracle(
     }
 }
 
-fn assert_provider_replacement() {
+fn assert_provider_replacement(request_execution: &worth_execution::ExecutionRequest<'_, '_>) {
     let incumbent = CourtroomWorld::publish("ready");
     let replacement = CourtroomWorld::publish_replacement("ready");
     assert!(replacement
         .application
-        .on_branch(replacement.application.current_world())
-        .select()
-        .unwrap()
-        .conditional_clock(&incumbent.clock)
-        .is_err());
+        .with_host_advancement(|host_phase| replacement
+            .application
+            .on_branch(replacement.application.current_world())
+            .select(&host_phase)
+            .unwrap()
+            .conditional_clock(request_execution, &incumbent.clock)
+            .is_err())
+        .expect("installed host call opens"));
     drop(incumbent);
-    assert_computed_changed(replacement);
+    assert_computed_changed(request_execution, replacement);
 }

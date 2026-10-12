@@ -34,6 +34,7 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
 
     fn compare_decision_fact(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
@@ -45,10 +46,9 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
                 .observed_fact_and_product(session, evidence.locator().identity())
                 .ok_or_else(provider_rejected)?
         };
-        let fresh = self
-            .graph
-            .with_runtime_mut(|runtime| fact_basis.remains_equal_in(runtime))
-            .map_err(snapshot_read_set_failure)?;
+        let fresh = self.graph.with_runtime_mut(execution, |runtime| {
+            fact_basis.remains_equal_in(execution, runtime)
+        })?;
         admission.observe_current_version(if fresh {
             evidence.physical_version_evidence().to_owned()
         } else {
@@ -57,7 +57,7 @@ impl WorthQueryDecisionFactProvider for Arc<WorthQueryPrimaryGraphProvider> {
     }
 }
 
-fn snapshot_read_set_failure(
+pub(super) fn snapshot_read_set_failure(
     denial: crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial,
 ) -> WorthQueryDecisionReadSetFailure {
     let kind = match denial {
@@ -88,4 +88,25 @@ fn provider_rejected() -> WorthQueryDecisionReadSetFailure {
         crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ProviderRejected,
         "primary provider has no exact session-owned application fact",
     )
+}
+
+pub(in crate::domain_computation::primary_graph::provider) fn fact_read_set_failure(
+    denial: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+) -> WorthQueryDecisionReadSetFailure {
+    use crate::domain_computation::{
+        primary_graph::WorthQueryApplicationAttemptDenialKind as Attempt,
+        WorthQueryDecisionReadSetDenialKind as Kind,
+    };
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+    let kind = match denial.kind() {
+        Attempt::ExecutionRequest(kind) => Kind::ExecutionRequest(kind),
+        Attempt::Cancelled => Kind::RequestInterrupted(Interruption::Cancelled),
+        Attempt::DeadlineExceeded => Kind::RequestInterrupted(Interruption::DeadlineExceeded),
+        _ => Kind::ProviderRejected,
+    };
+    let failure = WorthQueryDecisionReadSetFailure::new(kind, denial.to_string());
+    match denial.into_native_query_read_stop() {
+        Some(stop) => failure.with_native_query_read_stop(*stop),
+        None => failure,
+    }
 }

@@ -11,6 +11,9 @@ use std::sync::atomic::Ordering;
 use worth_proof::TransitionOutcome;
 #[test]
 fn external_atomic_resource_admission_preserves_present_support_and_capacity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let envelope = domain::WorthQueryExecutionResourceEnvelope::atomic(
         Scale::selective().with(Axis::CandidateItems, 3),
         Limits::selective().with(Dimension::RetainedBytes, 17),
@@ -39,7 +42,8 @@ fn external_atomic_resource_admission_preserves_present_support_and_capacity() {
         capacity.clone(),
     );
     let (mut workspace, contacts) =
-        resource_admission_workspace("external-atomic", contract, support).unwrap();
+        resource_admission_workspace(request_execution, "external-atomic", contract, support)
+            .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let first = workspace
         .observe_operating_world(workspace.current_world())

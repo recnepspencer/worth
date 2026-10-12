@@ -55,6 +55,7 @@ pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> Relat
 }
 
 pub(super) fn execute_strategy_commit(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     request: NativeStrategyCommitRequest,
     target_branch: Option<BranchId>,
@@ -79,7 +80,7 @@ pub(super) fn execute_strategy_commit(
     };
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
     runtime
         .snapshots()
@@ -101,9 +102,9 @@ pub(super) fn execute_strategy_commit(
         .lower_execution_with_input(runtime, &request, &execution, transaction_validation_input)
         .expect("lowered strategy plan");
     let validated = authority
-        .validate_lowered_plan(runtime, lowered)
+        .validate_lowered_plan(request_execution, runtime, lowered)
         .expect("validated strategy plan");
     authority
-        .execute_validated_commit(runtime, validated)
+        .execute_validated_commit(request_execution, runtime, validated)
         .expect("strategy commit")
 }

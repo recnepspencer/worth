@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::WorthQueryInboundReceiptPosture;
 #[test]
 fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_turns_over() {
     let world = installed_world();
-    let dispatch = world.commit_dispatch(51, "route-observed-notice");
+    let dispatch = { world.commit_dispatch(51, "route-observed-notice") };
     let outbox = dispatch.dispatch_outbox().unwrap();
     let owner = &world
         .application
@@ -85,7 +85,7 @@ fn performed_completion_reaches_the_canonical_subscription_once_and_terminal_tur
         1,
         "delivered terminal no longer pins the accepted slot",
     );
-    let next = world.commit_dispatch(52, "after-route-turnover");
+    let next = { world.commit_dispatch(52, "after-route-turnover") };
     let next_outbox = next.dispatch_outbox().unwrap();
     assert_eq!(
         world

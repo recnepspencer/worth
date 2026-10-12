@@ -183,6 +183,14 @@ where
         request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "producer advancement phase",
+                )
+            })?;
         let (required_output, ready_backing) = required_output.into_parts();
         if !edition.admits_binding::<Schema, Binding>() {
             return Err(denial(
@@ -201,6 +209,7 @@ where
             })?;
         let outcome = match input {
             ValidatedOutputDisclosure::Fresh(proof) => execute_fresh::<Schema, Binding>(
+                &execution,
                 phase,
                 runtime,
                 principal,
@@ -229,6 +238,7 @@ where
                     .into());
                 }
                 let fresh = readmit_source::<Schema, Binding>(
+                    &execution,
                     runtime,
                     principal,
                     request_scope,
@@ -239,6 +249,7 @@ where
                     edition,
                 )?;
                 execute_fresh::<Schema, Binding>(
+                    &execution,
                     phase,
                     runtime,
                     principal,

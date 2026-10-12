@@ -2,7 +2,10 @@ use super::super::support::*;
 
 #[test]
 fn effect_declaration_rejects_missing_triggers_before_registration() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let missing = WorthQueryEffectDeclaration::deliver(
         "ui.missing",
         WorthQueryEffectTrigger::live_view_name("tasks.missing", test_aspect_touches(["title"])),
@@ -28,9 +31,13 @@ fn effect_declaration_rejects_missing_triggers_before_registration() {
 
 #[test]
 fn effect_declaration_rejects_truth_delivery_without_intent_boundary() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),

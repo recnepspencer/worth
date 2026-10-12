@@ -12,7 +12,11 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn five_relationships_are_distinct_pair_bound_decisions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = support_dimension_workspace(
+        request_execution,
         "operation-compatibility",
         domain::WorthQueryConsumerSupportDimension::Sharing,
         domain::WorthQueryConsumerSupportPosture::Supported,
@@ -39,8 +43,11 @@ fn five_relationships_are_distinct_pair_bound_decisions() {
 
 #[test]
 fn foreign_runtime_is_denied_before_operational_work() {
-    let owner = workspace("operation-compatibility-owner", false).unwrap();
-    let foreign = workspace("operation-compatibility-foreign", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = workspace(request_execution, "operation-compatibility-owner", false).unwrap();
+    let foreign = workspace(request_execution, "operation-compatibility-foreign", false).unwrap();
     let owner_bound = bind(&owner, &owner.domain(GeometryDomain).unwrap());
     let foreign_bound = bind(&foreign, &foreign.domain(GeometryDomain).unwrap());
 
@@ -58,13 +65,20 @@ fn foreign_runtime_is_denied_before_operational_work() {
 
 #[test]
 fn a_wrong_basis_is_rejected_before_a_bound_capability_can_exist() {
-    let workspace = workspace("operation-compatibility-basis", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution, "operation-compatibility-basis", false).unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let branch = workspace
-        .branches()
-        .fork(workspace.current_world())
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
+        .with_advancement(|phase| {
+            workspace
+                .branches()
+                .fork(workspace.current_world())
+                .components(|components| components.reuse_exact_relational_basis().fork_signal())
+                .create(&phase)
+        })
+        .expect("installed host call opens")
         .unwrap();
     let denial = match workspace
         .observe_operating_world(branch)
@@ -85,7 +99,11 @@ fn a_wrong_basis_is_rejected_before_a_bound_capability_can_exist() {
 
 #[test]
 fn rebuilt_indexes_do_not_change_the_authority_oracle() {
-    let mut workspace = workspace("operation-compatibility-rebuild", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workspace(request_execution, "operation-compatibility-rebuild", false).unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let before = bind(&workspace, &installed);
     assert!(workspace
@@ -101,8 +119,11 @@ fn rebuilt_indexes_do_not_change_the_authority_oracle() {
 
 #[test]
 fn rebind_requires_a_stale_subject_and_current_same_runtime_successor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut controlled = configured_runtime()
-        .controlled_workspace("operation-compatibility-rebind")
+        .controlled_workspace(request_execution, "operation-compatibility-rebind")
         .unwrap();
     let prior_domain = controlled.domain(GeometryDomain).unwrap();
     let subject = bind(&controlled, &prior_domain);
@@ -135,7 +156,12 @@ fn rebind_requires_a_stale_subject_and_current_same_runtime_successor() {
     );
     subject.rebind_with(&candidate, receipt.clone()).unwrap();
 
-    let foreign = workspace("operation-compatibility-rebind-foreign", false).unwrap();
+    let foreign = workspace(
+        request_execution,
+        "operation-compatibility-rebind-foreign",
+        false,
+    )
+    .unwrap();
     let foreign_bound = bind(&foreign, &foreign.domain(GeometryDomain).unwrap());
     let denial = subject.rebind_with(&foreign_bound, receipt).unwrap_err();
     assert_eq!(
@@ -147,7 +173,11 @@ fn rebind_requires_a_stale_subject_and_current_same_runtime_successor() {
 
 #[test]
 fn conditional_rebind_reinstalls_through_successor_owners() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut controlled = conditional_controlled_workspace(
+        request_execution,
         "operation-compatibility-conditional-rebind",
         node(
             "conditional-rebind-node",
@@ -183,7 +213,11 @@ fn conditional_rebind_reinstalls_through_successor_owners() {
 
 #[test]
 fn one_field_conditional_drift_returns_the_exact_owner_dimension() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let left = conditional_workspace(
+        request_execution,
         "operation-compatibility-conditional-left",
         node(
             "compatibility-node",
@@ -193,6 +227,7 @@ fn one_field_conditional_drift_returns_the_exact_owner_dimension() {
     )
     .unwrap();
     let right = conditional_workspace(
+        request_execution,
         "operation-compatibility-conditional-right",
         node(
             "compatibility-node",

@@ -105,8 +105,10 @@ pub(super) fn reduce_inner<E>(
         }
     }
     if strategy.serial_selection_reason.is_some() {
+        // Strategy selection is diagnostic metadata, not invariant work.
+        // It still consults the caller and claims the storage it retains.
         check(
-            1,
+            0,
             (std::mem::size_of::<PreparationFailureClass>() as u64).saturating_mul(2),
         )?;
         preparation_failures.push(PreparationFailureClass::SerialStrategySelected);

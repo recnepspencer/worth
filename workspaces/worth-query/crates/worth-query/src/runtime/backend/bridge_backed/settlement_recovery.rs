@@ -4,6 +4,7 @@ use super::WorthQueryBridgeBackedRuntimeBackend;
 impl WorthQuerySettlementRecoveryBackend for WorthQueryBridgeBackedRuntimeBackend {
     fn repair_deferred_branch_merge_settlement(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         deferred: &crate::ordinary::workflow::WorthQueryBranchMergeSettlementDeferred,
     ) -> Result<
         worth_relational::facade::history::RelationalCommitReceipt,
@@ -13,13 +14,16 @@ impl WorthQuerySettlementRecoveryBackend for WorthQueryBridgeBackedRuntimeBacken
         self.relational_runtime
             .as_mut()
             .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
-            .execute_mutation(|runtime| runtime.repair_deferred_publication_settlement(settlement))
+            .execute_mutation(execution, |runtime| {
+                runtime.repair_deferred_publication_settlement(settlement)
+            })
             .map_err(crate::runtime::WorthQuerySettlementRepairError::PrimaryGraphIndexRefresh)?
             .map_err(Into::into)
     }
 
     fn repair_pending_branch_merge_settlement(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: worth_relational::facade::history::CommitId,
     ) -> Result<
         worth_relational::facade::history::RelationalCommitReceipt,
@@ -28,7 +32,9 @@ impl WorthQuerySettlementRecoveryBackend for WorthQueryBridgeBackedRuntimeBacken
         self.relational_runtime
             .as_mut()
             .ok_or(crate::runtime::WorthQuerySettlementRepairError::RelationalOwnerUnavailable)?
-            .execute_mutation(|runtime| runtime.repair_pending_publication_settlement(commit_id))
+            .execute_mutation(execution, |runtime| {
+                runtime.repair_pending_publication_settlement(commit_id)
+            })
             .map_err(crate::runtime::WorthQuerySettlementRepairError::PrimaryGraphIndexRefresh)?
             .map_err(Into::into)
     }

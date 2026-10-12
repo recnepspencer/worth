@@ -8,81 +8,20 @@ use crate::runtime::{
     WorthQueryReadScopeClass, WorthQueryRuntimeError,
 };
 
-#[test]
-fn compose_read_executes_operator_owned_frontier_search_detail() {
-    let mut workspace = read_runtime()
-        .workspace("runtime.read-composition.operator-frontier-search-detail")
-        .expect("read-backed runtime should open a workspace");
-
-    let result = workspace
-        .compose_read(|read| {
-            read.explicit_broad_search_frontier_detail(
-                "user",
-                searchable_expanded_frontier_manager_schema(),
-                [manager_relation_name(), mentor_relation_name()],
-                2,
-                |query| {
-                    query
-                        .project(
-                            AspectFieldSelector::new("identity", "id")
-                                .expect("identity projection should build"),
-                        )
-                        .project(
-                            AspectFieldSelector::new("profile", "display_name")
-                                .expect("name projection should build"),
-                        )
-                        .where_equal(
-                            EqualityPredicate::new(
-                                "profile",
-                                "display_name",
-                                WorthQueryPredicateOperand::string("Ada".to_string()),
-                            )
-                            .expect("equality predicate should build"),
-                        )
-                },
-                |shape| {
-                    shape
-                        .field(
-                            AuthoredResultShapeField::new("identity", "id", "id")
-                                .expect("identity result-shape field should build"),
-                        )
-                        .field(
-                            AuthoredResultShapeField::new(
-                                "profile",
-                                "display_name",
-                                "display_name",
-                            )
-                            .expect("name result-shape field should build"),
-                        )
-                },
-            )
-        })
-        .expect("operator-owned frontier search detail should execute");
-
-    assert!(!result.rows().is_empty());
-    assert_eq!(
-        result.receipt().scope_class(),
-        &WorthQueryReadScopeClass::ExplicitBroadSearch
-    );
-    assert_eq!(
-        result.receipt().built_in_operator_coverage(),
-        [WorthQueryReadBuiltInOperator::FrontierSearch]
-    );
-    assert_descriptor_admitted_synthetic_runtime_relationship_proof(
-        &result,
-        3,
-        &bounded_ancestor_synthetic_runtime_surfaces(),
-    );
-}
+#[path = "frontier_search/compose_read_executes_operator_owned_frontier_search_detail.rs"]
+mod compose_read_executes_operator_owned_frontier_search_detail;
 
 #[test]
 fn compose_read_executes_operator_owned_frontier_search_collection() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-search-collection")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_collection(
                 "user",
                 searchable_expanded_frontier_manager_schema(),
@@ -140,12 +79,15 @@ fn compose_read_executes_operator_owned_frontier_search_collection() {
 
 #[test]
 fn compose_read_denies_frontier_search_without_predicate() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-search-no-predicate")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_detail(
                 "user",
                 expanded_frontier_manager_schema(),
@@ -182,12 +124,15 @@ fn compose_read_denies_frontier_search_without_predicate() {
 
 #[test]
 fn compose_read_denies_frontier_search_without_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-search-empty")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_detail(
                 "user",
                 searchable_expanded_frontier_manager_schema(),
@@ -233,12 +178,15 @@ fn compose_read_denies_frontier_search_without_relations() {
 
 #[test]
 fn compose_read_denies_frontier_search_with_zero_depth() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-search-zero-depth")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_detail(
                 "user",
                 searchable_expanded_frontier_manager_schema(),
@@ -286,12 +234,15 @@ fn compose_read_denies_frontier_search_with_zero_depth() {
 
 #[test]
 fn compose_read_denies_frontier_search_with_duplicate_relations() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-search-duplicate")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_collection(
                 "user",
                 searchable_expanded_frontier_manager_schema(),
@@ -339,12 +290,15 @@ fn compose_read_denies_frontier_search_with_duplicate_relations() {
 
 #[test]
 fn compose_read_denies_frontier_search_with_degenerate_frontier_shape() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.operator-frontier-search-degenerate")
         .expect("read-backed runtime should open a workspace");
 
     let error = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_frontier_detail(
                 "user",
                 searchable_expanded_frontier_manager_schema(),

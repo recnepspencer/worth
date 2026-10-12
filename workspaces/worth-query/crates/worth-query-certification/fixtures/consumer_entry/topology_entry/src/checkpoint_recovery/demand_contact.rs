@@ -39,8 +39,12 @@ fn restored_output_retains_its_resource_profile_without_provider_contact() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let restored = support::install_with_demand_profile(
@@ -71,8 +75,12 @@ fn restored_output_denies_smaller_host_work_without_provider_contact_or_effects(
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
 
     super::super::producer::reset_provider_contacts();
@@ -87,7 +95,7 @@ fn restored_output_denies_smaller_host_work_without_provider_contact_or_effects(
     );
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&restored, &request).unwrap();
     let output = PlanarOutputRead {
         body_key: "final:anchor-a".to_owned(),
     };
@@ -107,7 +115,7 @@ fn restored_output_denies_smaller_host_work_without_provider_contact_or_effects(
                 && cause.subject() == "worth.query.certification.planar-initial.v1"
     ));
     assert_eq!(super::super::producer::provider_contacts(), 0);
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&restored, &request).unwrap();
     let after_output = request.query(output).execute().unwrap();
     assert_eq!(before.selected_commit(), after.selected_commit());
     assert_eq!(before_output.rows(), after_output.rows());
@@ -124,8 +132,12 @@ fn restored_final_output_keeps_original_create_producer_and_zero_contact() {
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let restored = install(Some(checkpoint));

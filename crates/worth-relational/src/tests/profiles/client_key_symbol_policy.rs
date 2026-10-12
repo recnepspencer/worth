@@ -32,27 +32,33 @@ fn client_key_symbol_policy_interns_client_keys_before_merge() {
 
 #[test]
 fn client_key_symbol_policy_skips_symbol_table_snapshot_refresh_when_no_raw_keys_are_present() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
         .build();
-    let entity = create_entity(&runtime, "stable-key");
+    let entity = create_entity(execution, &runtime, "stable-key");
     let before = runtime.config().identity.symbol_table.clone();
 
-    let _ = update_entity(&runtime, entity, "updated-aspect");
+    let _ = update_entity(execution, &runtime, entity, "updated-aspect");
 
     assert_eq!(runtime.config().identity.symbol_table, before);
 }
 
 #[test]
 fn client_key_symbol_policy_incrementally_merges_new_snapshot_entries_in_sorted_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
         .build();
 
-    let _ = create_entity(&runtime, "beta");
-    let _ = create_entity(&runtime, "alpha");
+    let _ = create_entity(execution, &runtime, "beta");
+    let _ = create_entity(execution, &runtime, "alpha");
 
     assert_eq!(
         runtime

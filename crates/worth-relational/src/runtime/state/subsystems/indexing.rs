@@ -7,6 +7,8 @@ mod admitted_selection;
 mod discard;
 pub(crate) use admitted_selection::ExactLookupInputs;
 mod generation_catalog;
+#[cfg(test)]
+mod query_generation_routing;
 use generation_catalog::GenerationCatalog;
 
 use crate::history::data::{BranchId, CommitId};
@@ -210,13 +212,6 @@ impl IndexingSubsystem {
             .collect()
     }
 
-    pub(crate) fn generation(
-        &self,
-        id: DerivedIndexGenerationId,
-    ) -> Option<Arc<DerivedIndexGeneration>> {
-        self.state.read().generations.generation(id)
-    }
-
     pub(crate) fn latest_generation(
         &self,
         index: DerivedIndexId,
@@ -249,23 +244,6 @@ impl IndexingSubsystem {
             .read()
             .generations
             .published_for_commit(index, branch, commit, version)
-    }
-
-    pub(crate) fn candidate_generation(
-        &self,
-        index: DerivedIndexId,
-        branch: Option<&BranchId>,
-        version: VersionId,
-        schema: SchemaVersionId,
-    ) -> Option<Arc<DerivedIndexGeneration>> {
-        self.state
-            .read()
-            .generations
-            .candidate(index, branch, version, schema)
-    }
-
-    pub(crate) fn any_generation_at_or_before(&self, version: VersionId) -> bool {
-        self.state.read().generations.any_at_or_before(version)
     }
 
     pub(crate) fn all_generations(&self) -> Vec<Arc<DerivedIndexGeneration>> {

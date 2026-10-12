@@ -12,7 +12,10 @@ use super::support::{
 
 #[test]
 fn stale_basis_stops_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -37,7 +40,10 @@ fn stale_basis_stops_before_later_work() {
 
 #[test]
 fn basis_mismatch_prescribes_basis_refresh_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(
         target_request::<HistoricalFamily>(&handle, "face-a", historical_truth_view_request()),
     ) {
@@ -61,7 +67,10 @@ fn basis_mismatch_prescribes_basis_refresh_before_later_work() {
 
 #[test]
 fn lower_binding_mismatch_prescribes_proof_inspection_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(
         target_request::<HistoricalFamily>(&handle, "face-a", historical_truth_view_request()),
     ) {
@@ -94,7 +103,10 @@ fn lower_binding_mismatch_prescribes_proof_inspection_before_later_work() {
 
 #[test]
 fn authority_mismatch_prescribes_proof_inspection_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -123,7 +135,10 @@ fn authority_mismatch_prescribes_proof_inspection_before_later_work() {
 
 #[test]
 fn async_request_drift_prescribes_context_rebind_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -149,7 +164,10 @@ fn async_request_drift_prescribes_context_rebind_before_later_work() {
 
 #[test]
 fn replay_drift_prescribes_basis_refresh_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(
         target_request::<HistoricalFamily>(&handle, "face-a", historical_truth_view_request()),
     ) {
@@ -172,7 +190,10 @@ fn replay_drift_prescribes_basis_refresh_before_later_work() {
 
 #[test]
 fn policy_remask_drift_prescribes_support_check_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",
@@ -197,7 +218,10 @@ fn policy_remask_drift_prescribes_support_check_before_later_work() {
 
 #[test]
 fn preview_residue_prescribes_explicit_handoff_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<PreviewFamily>(
         &handle,
         "face-a",
@@ -226,7 +250,10 @@ fn preview_residue_prescribes_explicit_handoff_before_later_work() {
 
 #[test]
 fn stale_completion_prescribes_basis_refresh_before_later_work() {
-    let (workspace, handle) = admitted_workspace("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (workspace, handle) = admitted_workspace(request_execution, "main");
     let prepared = match handle.prepare_continuation_from_target(target_request::<RuntimeFamily>(
         &handle,
         "face-a",

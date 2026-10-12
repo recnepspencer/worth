@@ -14,22 +14,28 @@ use crate::runtime::{
 
 #[test]
 fn managed_live_open_preserves_one_shot_meaning_and_authority_journey() {
-    let mut workspace = task_workspace("managed-live-parity");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-parity");
     workspace
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("First")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("First")),
+                ],
+            ),
+        )
         .expect("seed write should execute");
-    let one_shot = one_shot_task_result(&mut workspace);
+    let one_shot = one_shot_task_result(request_execution, &mut workspace);
 
     let opened = match declare_live("tasks.managed", task_collection_read)
         .expect("managed task live declaration should build")
         .using(current())
-        .open(&mut workspace)
+        .open(request_execution, &mut workspace)
     {
         WorthQueryLiveOpenOutcome::Opened(opened) => opened,
         WorthQueryLiveOpenOutcome::Stopped(stop) => {
@@ -41,7 +47,7 @@ fn managed_live_open_preserves_one_shot_meaning_and_authority_journey() {
     };
     let live = opened
         .handle()
-        .read(&mut workspace)
+        .read(request_execution, &mut workspace)
         .expect("managed live read should execute");
 
     assert_eq!(live.rows(), one_shot.rows());
@@ -75,16 +81,22 @@ fn managed_live_declaration_rejects_an_empty_resource_name_before_runtime_contac
 
 #[test]
 fn managed_live_resource_routes_admitted_deltas_and_suppresses_irrelevant_updates() {
-    let mut workspace = task_workspace("managed-live-delivery");
-    let handle = open_task_resource(&mut workspace, "tasks.delivery");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-delivery");
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.delivery");
     let insert = workspace
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("First")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("First")),
+                ],
+            ),
+        )
         .expect("insert should route through managed resource");
     assert_eq!(
         handle
@@ -96,18 +108,21 @@ fn managed_live_resource_routes_admitted_deltas_and_suppresses_irrelevant_update
     );
     assert_eq!(
         handle
-            .read(&mut workspace)
+            .read(request_execution, &mut workspace)
             .expect("live result should remain readable after insert")
             .rows(),
-        one_shot_task_result(&mut workspace).rows()
+        one_shot_task_result(request_execution, &mut workspace).rows()
     );
 
     workspace
-        .write(test_update_string_aspect_command(
-            insert.deltas()[0].entity_identity.clone(),
-            "description.value",
-            "irrelevant",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                insert.deltas()[0].entity_identity.clone(),
+                "description.value",
+                "irrelevant",
+            ),
+        )
         .expect("irrelevant update should execute");
     assert!(handle
         .drain(&mut workspace)
@@ -115,18 +130,21 @@ fn managed_live_resource_routes_admitted_deltas_and_suppresses_irrelevant_update
         .is_empty());
     assert_eq!(
         handle
-            .read(&mut workspace)
+            .read(request_execution, &mut workspace)
             .expect("suppressed update must preserve live meaning")
             .rows(),
-        one_shot_task_result(&mut workspace).rows()
+        one_shot_task_result(request_execution, &mut workspace).rows()
     );
 
     workspace
-        .write(test_update_string_aspect_command(
-            insert.deltas()[0].entity_identity.clone(),
-            "title.value",
-            "Renamed",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                insert.deltas()[0].entity_identity.clone(),
+                "title.value",
+                "Renamed",
+            ),
+        )
         .expect("projected update should execute");
     let delivery = handle
         .drain(&mut workspace)
@@ -142,18 +160,21 @@ fn managed_live_resource_routes_admitted_deltas_and_suppresses_irrelevant_update
     assert_eq!(maintenance_work.live_view_update_count(), 1);
     assert_eq!(
         handle
-            .read(&mut workspace)
+            .read(request_execution, &mut workspace)
             .expect("updated live result should remain readable")
             .rows(),
-        one_shot_task_result(&mut workspace).rows()
+        one_shot_task_result(request_execution, &mut workspace).rows()
     );
 }
 
 #[test]
 fn managed_live_close_detaches_shared_consumers_and_removes_final_resource() {
-    let mut workspace = task_workspace("managed-live-shared-close");
-    let first = open_task_resource(&mut workspace, "tasks.first");
-    let second = open_task_resource(&mut workspace, "tasks.second");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-shared-close");
+    let first = open_task_resource(request_execution, &mut workspace, "tasks.first");
+    let second = open_task_resource(request_execution, &mut workspace, "tasks.second");
 
     let first_close = closed(first.close(&mut workspace));
     assert!(!first_close.lane_terminal());
@@ -181,13 +202,16 @@ fn managed_live_close_detaches_shared_consumers_and_removes_final_resource() {
         .is_err());
 
     let write = workspace
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("After close")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("After close")),
+                ],
+            ),
+        )
         .expect("write after close should execute without orphan delivery");
     assert!(write
         .terminal_affected_live_view_ids_projection()
@@ -196,12 +220,15 @@ fn managed_live_close_detaches_shared_consumers_and_removes_final_resource() {
 
 #[test]
 fn managed_live_handle_cannot_close_a_resource_in_another_workspace() {
-    let mut owner = task_workspace("managed-live-owner");
-    let mut unrelated = task_workspace("managed-live-unrelated");
-    let handle = open_task_resource(&mut owner, "tasks.same-name");
-    let unrelated_handle = open_task_resource(&mut unrelated, "tasks.same-name");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    assert!(handle.read(&mut unrelated).is_err());
+    let mut owner = task_workspace(request_execution, "managed-live-owner");
+    let mut unrelated = task_workspace(request_execution, "managed-live-unrelated");
+    let handle = open_task_resource(request_execution, &mut owner, "tasks.same-name");
+    let unrelated_handle = open_task_resource(request_execution, &mut unrelated, "tasks.same-name");
+
+    assert!(handle.read(request_execution, &mut unrelated).is_err());
     assert!(handle.drain(&mut unrelated).is_err());
     assert!(handle.observe(&mut unrelated).is_err());
     let handle = match handle.close(&mut unrelated) {
@@ -210,19 +237,22 @@ fn managed_live_handle_cannot_close_a_resource_in_another_workspace() {
             panic!("unrelated workspace must not close another workspace's resource")
         }
     };
-    assert!(handle.read(&mut owner).is_ok());
+    assert!(handle.read(request_execution, &mut owner).is_ok());
     assert!(closed(handle.close(&mut owner)).lane_terminal());
     assert!(closed(unrelated_handle.close(&mut unrelated)).lane_terminal());
 }
 
 #[test]
 fn managed_live_resource_names_are_unique_before_a_second_subscription_is_opened() {
-    let mut workspace = task_workspace("managed-live-name-uniqueness");
-    let handle = open_task_resource(&mut workspace, "tasks.unique");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_workspace(request_execution, "managed-live-name-uniqueness");
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.unique");
     let second = declare_live("tasks.unique", task_collection_read)
         .expect("second declaration authors the same requested resource name")
         .using(current())
-        .open(&mut workspace);
+        .open(request_execution, &mut workspace);
 
     match second {
         WorthQueryLiveOpenOutcome::Stopped(stop) => {
@@ -237,21 +267,24 @@ fn managed_live_resource_names_are_unique_before_a_second_subscription_is_opened
             panic!("duplicate managed resource name must be denied")
         }
     }
-    assert!(handle.read(&mut workspace).is_ok());
+    assert!(handle.read(request_execution, &mut workspace).is_ok());
     assert!(closed(handle.close(&mut workspace)).lane_terminal());
 }
 
 #[test]
 fn failed_backend_close_preserves_the_managed_resource_for_retry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = complete_backend_from_parts_builder()
         .source_adapter(TestSourceAdapter::fail_close())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("close-failing runtime should build");
     let mut workspace = runtime
         .workspace("managed-live-close-retry")
         .expect("close-failing workspace should open");
-    let handle = open_task_resource(&mut workspace, "tasks.close-retry");
+    let handle = open_task_resource(request_execution, &mut workspace, "tasks.close-retry");
 
     let handle = match handle.close(&mut workspace) {
         WorthQueryManagedLiveCloseOutcome::Stopped(stop) => stop.into_handle(),
@@ -260,7 +293,7 @@ fn failed_backend_close_preserves_the_managed_resource_for_retry() {
         }
     };
 
-    assert!(handle.read(&mut workspace).is_ok());
+    assert!(handle.read(request_execution, &mut workspace).is_ok());
     assert!(handle.drain(&mut workspace).is_ok());
     assert!(workspace
         .resolve_live_artifact_target("tasks.close-retry")
@@ -298,32 +331,37 @@ pub(super) fn task_collection_read<Output>(
     )
 }
 
-pub(super) fn task_workspace(name: &str) -> WorthQueryWorkspace {
-    stateful_bridge_task_runtime()
+pub(super) fn task_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> WorthQueryWorkspace {
+    stateful_bridge_task_runtime(request_execution)
         .workspace(name)
         .expect("task workspace should open")
 }
 
 pub(super) fn one_shot_task_result(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
 ) -> crate::runtime::WorthQueryReadResult {
     declare(task_collection_read)
         .expect("one-shot parity read should declare")
         .using(current())
-        .run(workspace)
+        .run(request_execution, workspace)
         .into_result()
         .expect("one-shot parity read should execute")
         .into_result()
 }
 
 pub(super) fn open_task_resource(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     name: &str,
 ) -> WorthQueryManagedLiveHandle {
     match declare_live(name, task_collection_read)
         .expect("managed task resource should declare")
         .using(current())
-        .open(workspace)
+        .open(request_execution, workspace)
     {
         WorthQueryLiveOpenOutcome::Opened(opened) => opened.into_handle(),
         WorthQueryLiveOpenOutcome::Stopped(stop) => {

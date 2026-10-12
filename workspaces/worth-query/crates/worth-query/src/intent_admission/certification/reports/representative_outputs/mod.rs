@@ -28,8 +28,9 @@ impl WorthQueryIntentAdmissionRepresentativeOutputReport {
 }
 
 pub fn worth_query_intent_admission_representative_output_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryIntentAdmissionRepresentativeOutputReport {
-    let fixtures = RepresentativeOutputFixtures::load();
+    let fixtures = RepresentativeOutputFixtures::load(execution);
     let eligibility = fixtures.eligibility();
     let outputs = representative_outputs(&fixtures, &eligibility);
     let report_digest = digest_output_rows(&outputs);

@@ -18,7 +18,10 @@ use super::domain::{admitted_handle, AdmittedFamily, Input};
 
 #[test]
 fn ordinary_checked_and_proof_surfaces_converge_on_one_envelope() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     let ordinary = handle
         .orchestrate_declaration_entry(Input::<AdmittedFamily>::new("edge:42"))
@@ -46,7 +49,10 @@ fn ordinary_checked_and_proof_surfaces_converge_on_one_envelope() {
 
 #[test]
 fn proof_surface_records_the_full_envelope_ceiling_sequence() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let proof = handle.orchestrate_declaration_entry_proof(Input::<AdmittedFamily>::new("edge:42"));
     let stages = proof.stage_records();
 
@@ -134,7 +140,10 @@ fn proof_surface_records_the_full_envelope_ceiling_sequence() {
 
 #[test]
 fn canonical_lowering_tracks_publication_identity_across_exposure_levels() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let world_basis = handle.retained_world_basis();
 
     let ordinary = worth_query_lower_declaration_entry_orchestration_on_handle(

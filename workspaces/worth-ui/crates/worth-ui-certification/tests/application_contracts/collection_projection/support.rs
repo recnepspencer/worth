@@ -169,8 +169,12 @@ impl CollectionProjectionWorld {
         let entity = self.entities.remove(index);
         let identity = self.identities.remove(index);
         self.workspace
-            .delete(entity)
-            .expect("QP04 collection deletion");
+            .with_execution_request_mut(|execution, workspace| {
+                workspace
+                    .delete(execution, entity)
+                    .expect("QP04 collection deletion")
+            })
+            .expect("workspace host call opens");
         self.expected.remove(&identity);
         identity
     }
@@ -192,11 +196,15 @@ impl CollectionProjectionWorld {
 
     pub(super) fn refresh_receipt(&mut self) -> UiCollectionProjectionRefreshReceipt {
         match self
-            .live
-            .as_mut()
-            .expect("live collection owner")
-            .refresh(&mut self.workspace)
-            .expect("QP04 real Query refresh")
+            .workspace
+            .with_execution_request_mut(|execution, workspace| {
+                self.live
+                    .as_mut()
+                    .expect("live collection owner")
+                    .refresh(execution, workspace)
+                    .expect("QP04 real Query refresh")
+            })
+            .expect("workspace host call opens")
         {
             UiCollectionProjectionRefreshOutcome::Applied(receipt) => receipt,
             UiCollectionProjectionRefreshOutcome::NoSemanticDelivery => {

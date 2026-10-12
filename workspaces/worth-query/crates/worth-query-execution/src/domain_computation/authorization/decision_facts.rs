@@ -140,39 +140,41 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
 
     pub(in crate::domain_computation) fn validate_currentness_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
     ) -> Result<(), super::WorthQueryOperationAuthorizationDenialKind> {
-        if !self.principal_remains_current_in(runtime, snapshot) {
+        if !self.principal_remains_current_in(execution, runtime, snapshot) {
             return Err(super::WorthQueryOperationAuthorizationDenialKind::StalePrincipal);
         }
-        self.decisions_remain_current_in(runtime, snapshot, bridge)
+        self.decisions_remain_current_in(execution, runtime, snapshot, bridge)
             .then_some(())
             .ok_or(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization)
     }
 
     pub(super) fn principal_remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
-        principal(self).remains_current_in(runtime, snapshot)
+        principal(self).remains_current_in(execution, runtime, snapshot)
     }
 
     pub(super) fn decisions_remain_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
     ) -> bool {
         match self {
             Self::Capability(authorization) => authorization
-                .validate_currentness_in(runtime, snapshot, bridge)
+                .validate_currentness_in(execution, runtime, snapshot, bridge)
                 .is_ok(),
-            Self::Principal(_) | Self::Abilities { .. } => {
-                decisions(self).all(|fact| fact.remains_current_in(runtime, snapshot, bridge))
-            }
+            Self::Principal(_) | Self::Abilities { .. } => decisions(self)
+                .all(|fact| fact.remains_current_in(execution, runtime, snapshot, bridge)),
         }
     }
 
@@ -300,20 +302,23 @@ impl WorthQueryObservedCommitBasis {
 
     pub(super) fn principal_remains_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> bool {
-        self.principal.remains_current_in(runtime, snapshot)
+        self.principal
+            .remains_current_in(execution, runtime, snapshot)
     }
 
     pub(super) fn decisions_remain_current_in(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
     ) -> bool {
         self.decisions
             .iter()
-            .all(|fact| fact.remains_current_in(runtime, snapshot, bridge))
+            .all(|fact| fact.remains_current_in(execution, runtime, snapshot, bridge))
     }
 }

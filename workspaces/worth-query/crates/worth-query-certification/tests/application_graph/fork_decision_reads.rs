@@ -91,12 +91,16 @@ fn fork_of(
     branch: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     application
-        .runtime()
-        .branches()
-        .fork(branch)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the fork publishes")
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(branch)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the fork publishes")
+        })
+        .expect("installed host call opens")
 }
 
 /// Commits an unrelated edit so the branch reads at a version newer than every

@@ -2,9 +2,13 @@ use super::*;
 
 #[test]
 fn computed_dependency_admission_rejects_missing_or_cyclic_upstream_views() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let missing_live = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.missing-live", touches(["title"]))
                 .depends_on_live_name_from_workspace_declaration("tasks.not-declared"),
             TitleListMaintainer,
@@ -19,6 +23,7 @@ fn computed_dependency_admission_rejects_missing_or_cyclic_upstream_views() {
 
     let missing = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.missing", touches(["title.summary"]))
                 .depends_on_derived_name_from_workspace_declaration("computed.unknown"),
             SummaryMaintainer,
@@ -33,6 +38,7 @@ fn computed_dependency_admission_rejects_missing_or_cyclic_upstream_views() {
 
     let first = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.first", touches(["title"]))
                 .produces(touches(["title.summary"])),
             TitleListMaintainer,
@@ -40,6 +46,7 @@ fn computed_dependency_admission_rejects_missing_or_cyclic_upstream_views() {
         .expect("first computed should declare");
     let second = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.second", touches(["title.summary"]))
                 .depends_on_derived(&first)
                 .produces(touches(["validation.state"])),
@@ -49,6 +56,7 @@ fn computed_dependency_admission_rejects_missing_or_cyclic_upstream_views() {
 
     let cycle = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.first", touches(["validation.state"]))
                 .depends_on_derived(&second),
             SummaryMaintainer,

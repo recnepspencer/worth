@@ -7,8 +7,11 @@ use worth_execution::{
 
 #[test]
 fn carried_request_cancellation_refuses_a_prepared_relational_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
-    let prepared = prepare_relational(&fixture, &owner, &expected, "request-cancelled");
+    let prepared = prepare_relational(execution, &fixture, &owner, &expected, "request-cancelled");
     let cancellation = CancellationSource::new();
     cancellation.cancel();
     let request = SerialRequest::from_memory(
@@ -30,8 +33,11 @@ fn carried_request_cancellation_refuses_a_prepared_relational_publication() {
 
 #[test]
 fn carried_request_deadline_stays_distinct_from_cancellation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
-    let prepared = prepare_relational(&fixture, &owner, &expected, "request-deadline");
+    let prepared = prepare_relational(execution, &fixture, &owner, &expected, "request-deadline");
     let request = SerialRequest::from_memory(
         SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
         CancellationToken::new(),
@@ -51,8 +57,11 @@ fn carried_request_deadline_stays_distinct_from_cancellation() {
 
 #[test]
 fn the_same_request_door_completes_prepared_publication_when_admitted() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
-    let prepared = prepare_relational(&fixture, &owner, &expected, "request-admitted");
+    let prepared = prepare_relational(execution, &fixture, &owner, &expected, "request-admitted");
     let request = SerialRequest::from_memory(
         SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
         CancellationToken::new(),
@@ -68,11 +77,20 @@ fn the_same_request_door_completes_prepared_publication_when_admitted() {
 
 #[test]
 fn fully_spent_scope_still_publishes_when_no_charge_was_refused() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_execution::{ExecutionScan, ExecutionWorkCeiling, MapKernelFailure, ScanOutcome};
     use worth_foundational::PartitionIdentity;
 
     let (fixture, owner, expected) = setup();
-    let prepared = prepare_relational(&fixture, &owner, &expected, "request-spent-exactly");
+    let prepared = prepare_relational(
+        execution,
+        &fixture,
+        &owner,
+        &expected,
+        "request-spent-exactly",
+    );
     let serial = SerialRequest::from_memory(
         SerialMemoryBudget::from_policy(&owner.state.execution.request_policy()),
         CancellationToken::new(),

@@ -9,11 +9,13 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_path() {
-    let host_request = crate::bridge_host_request::serial_request();
-    let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let resource_request = *request_execution;
 
     let partition = worth_foundational::facade::TruthPartitionRole::new("model-main").unwrap();
     let workspace = conditional_workspace(
+        request_execution,
         "partition-correspondence",
         node(
             "partition-node",
@@ -65,7 +67,7 @@ fn partition_dependency_crosses_the_real_relational_source_and_signal_delivery_p
             vec![target],
         )
         .unwrap();
-    let (bridge, request) = correspondence_bridge(registration);
+    let (bridge, request) = correspondence_bridge(request_execution, registration);
     {
         let mut graph_binding = bridge.bind_signal_graph(&mut signal_graph).unwrap();
 

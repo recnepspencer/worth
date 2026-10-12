@@ -56,11 +56,14 @@ fn full_substrate_package() -> WorthQueryDomainPackage<InstalledDomain> {
 
 #[test]
 fn installed_package_compiles_every_semantic_family_before_runtime_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = complete_query_owned_backend_from_parts_builder()
         .domain_package(full_substrate_package())
         .unwrap()
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .unwrap();
     let receipt = runtime
         .domain_installation_receipt(InstalledDomain)
@@ -114,12 +117,15 @@ fn installed_package_compiles_every_semantic_family_before_runtime_publication()
 
 #[test]
 fn installed_invariants_cannot_be_bypassed_with_an_explicit_relational_runtime() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let result = WorthQueryRuntime::builder(test_product_world_resources())
         .domain_package(full_substrate_package())
         .unwrap()
         .relational_runtime(RelationalRuntimeApi::builder().build())
         .build_backend_from_parts()
-        .build();
+        .build(request_execution);
     let error = result
         .err()
         .expect("a package-compiled invariant must conflict with a separately supplied runtime");
@@ -134,11 +140,14 @@ fn installed_invariants_cannot_be_bypassed_with_an_explicit_relational_runtime()
 
 #[test]
 fn rebuilt_execution_index_reproduces_resolution_denial_and_diagnostic_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = complete_query_owned_backend_from_parts_builder()
         .domain_package(full_substrate_package())
         .unwrap()
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .unwrap();
     let handle = runtime.domain(InstalledDomain).unwrap();
     let authority = WorthQueryGraphReadAccessAuthorityContext::runtime_current_compatibility();

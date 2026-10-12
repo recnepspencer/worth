@@ -47,7 +47,9 @@ use strategy_runtime::*;
 #[test]
 pub(super) fn milestone_8_5_kubernetes_style_intent_commit_certification_proves_staged_controller_outcomes(
 ) {
-    let certification = stage_sequence::run_kubernetes_style_certification();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let certification = stage_sequence::run_kubernetes_style_certification(execution);
     assert!(!certification.overlap_conflict.conflict.records.is_empty());
     assert!(!certification
         .narrowed_non_conflict

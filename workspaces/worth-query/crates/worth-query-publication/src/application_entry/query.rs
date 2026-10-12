@@ -123,9 +123,9 @@ where
             .map_err(WorthQueryApplicationRequestQueryDenial::ExecutionRequest)?
     }
 
-    pub(in crate::application_entry) fn execute_in_advancement(
+    pub fn execute_in_advancement(
         self,
-        _phase: &AdvancementPhase<'_>,
+        phase: &AdvancementPhase<'_>,
     ) -> Result<
         WorthQueryPublishedApplicationResult<
             <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
@@ -165,18 +165,19 @@ where
         let selected = self
             .application
             .on_branch(self.branch)
-            .select()
+            .select(phase)
             .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?;
         let retained = match self.retained.as_ref() {
             Some(observation) => Some(
                 self.application
-                    .select_application_read_observation(observation)
+                    .select_application_read_observation(phase, observation)
                     .map_err(WorthQueryApplicationRequestQueryDenial::ProductSelection)?,
             ),
             None => None,
         };
         let principal = selected
             .resolve_authenticated_principal(
+                phase,
                 binding.principal_binding(),
                 self.principal,
                 self.scope,
@@ -187,6 +188,7 @@ where
             scope_binding.into_field_parts(principal.principal_identity());
         let scope = selected
             .resolve_entity(
+                phase,
                 scope_field,
                 scope_value,
                 self.scope,
@@ -202,20 +204,25 @@ where
             WorthQueryProductQueryControls::new(maximum_results, maximum_work, self.scope);
         let plan = match retained {
             Some(retained) => selected.admit_retained_application_query(
+                phase,
                 retained,
                 binding.query(),
                 &access,
                 parameters,
                 controls,
             ),
-            None => {
-                selected.admit_application_query(binding.query(), &access, parameters, controls)
-            }
+            None => selected.admit_application_query(
+                phase,
+                binding.query(),
+                &access,
+                parameters,
+                controls,
+            ),
         }
         .map_err(WorthQueryApplicationRequestQueryDenial::Admission)?;
         let result = self
             .application
-            .execute_application_query_one_shot(plan)
+            .execute_application_query_one_shot(phase, plan)
             .map_err(WorthQueryApplicationRequestQueryDenial::Execution)?;
         Ok(publish_application_result(result.into_admitted_disclosed()))
     }

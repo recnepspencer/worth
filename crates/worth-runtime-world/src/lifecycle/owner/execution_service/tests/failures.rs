@@ -131,7 +131,13 @@ fn missing_signal_sibling_after_relational_movement_retains_exact_progress() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let prepared = prepare_both_owners(&fixture, &owner, &expected, "missing-signal-sibling");
+    let prepared = prepare_both_owners(
+        &execution,
+        &fixture,
+        &owner,
+        &expected,
+        "missing-signal-sibling",
+    );
     let cancellation = RuntimeWorldCancellationSource::new();
     let mut context = ();
     let record = retained(RuntimeWorldOwnerExecutionService::execute_with_signal(

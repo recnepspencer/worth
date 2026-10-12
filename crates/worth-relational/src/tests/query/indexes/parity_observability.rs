@@ -2,10 +2,14 @@ use super::*;
 
 #[test]
 fn derived_index_contract_failure_unknown_index_keeps_truth_reads_correct() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let outcome = create_entity_outcome(&runtime, "main-a");
+    let outcome = create_entity_outcome(execution, &runtime, "main-a");
     let snapshot = runtime.visibility_authority().snapshot();
     let storage_only = execute_explicit_query(
+        execution,
         &runtime,
         &snapshot,
         "entities",
@@ -22,15 +26,18 @@ fn derived_index_contract_failure_unknown_index_keeps_truth_reads_correct() {
                 vec![RecordRef::Entity(changed_entities(&outcome)[0])],
             ),
             IndexParityMode::ProductionAdmissibility,
+            execution,
         )
+        .expect("request remains live")
         .unwrap();
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: outcome.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![DerivedIndexId(999)],
-        });
+        },
+    );
     let storage_read_after = runtime
         .index_access()
         .execute_query_plan_with_index_parity(
@@ -41,7 +48,9 @@ fn derived_index_contract_failure_unknown_index_keeps_truth_reads_correct() {
                 vec![RecordRef::Entity(changed_entities(&outcome)[0])],
             ),
             IndexParityMode::ProductionAdmissibility,
+            execution,
         )
+        .expect("request remains live")
         .unwrap();
 
     assert_eq!(build.failed_indexes, vec![DerivedIndexId(999)]);
@@ -55,8 +64,11 @@ fn derived_index_contract_failure_unknown_index_keeps_truth_reads_correct() {
 
 #[test]
 fn derived_index_contract_certification_mode_emits_stable_parity_digest() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let outcome = create_entity_outcome(&runtime, "main-a");
+    let outcome = create_entity_outcome(execution, &runtime, "main-a");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.global".to_string(),
@@ -65,13 +77,14 @@ fn derived_index_contract_certification_mode_emits_stable_parity_digest() {
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: outcome.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -92,11 +105,17 @@ fn derived_index_contract_certification_mode_emits_stable_parity_digest() {
 
     let first = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan.clone(), IndexParityMode::CertificationParity)
+        .execute_query_plan_with_index_parity(
+            plan.clone(),
+            IndexParityMode::CertificationParity,
+            execution,
+        )
+        .expect("request remains live")
         .expect("first parity outcome");
     let second = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity)
+        .execute_query_plan_with_index_parity(plan, IndexParityMode::CertificationParity, execution)
+        .expect("request remains live")
         .expect("second parity outcome");
 
     assert_eq!(first.access_path, second.access_path);
@@ -105,8 +124,11 @@ fn derived_index_contract_certification_mode_emits_stable_parity_digest() {
 
 #[test]
 fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
+    let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(9),
         name: "entity.name.sampled".to_string(),
@@ -115,13 +137,14 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let snapshot = runtime.visibility_authority().snapshot();
@@ -164,7 +187,9 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
                 .plan_query_packet(&snapshot, sampled_packet.clone())
                 .expect("sampled plan"),
             IndexParityMode::SampledParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("sampled outcome");
     let sampled_repeat = runtime
         .index_access()
@@ -174,7 +199,9 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
                 .plan_query_packet(&snapshot, sampled_packet)
                 .expect("sampled plan repeat"),
             IndexParityMode::SampledParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("sampled repeat outcome");
     let unsampled = runtime
         .index_access()
@@ -184,7 +211,9 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
                 .plan_query_packet(&snapshot, unsampled_packet)
                 .expect("unsampled plan"),
             IndexParityMode::SampledParity,
+            execution,
         )
+        .expect("request remains live")
         .expect("unsampled outcome");
     let counters = runtime.performance_access().counters();
 
@@ -208,12 +237,15 @@ fn derived_index_contract_sampled_parity_is_bounded_and_deterministic() {
 
 #[test]
 fn derived_index_contract_runtime_drop_releases_index_scratch_hints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime_id;
     {
         let runtime = runtime_with_index_field_aspects();
         runtime_id = runtime.runtime_instance_id();
-        let _alpha_a = create_entity_outcome(&runtime, "alpha");
-        let _alpha_b = create_entity_outcome(&runtime, "alpha");
+        let _alpha_a = create_entity_outcome(execution, &runtime, "alpha");
+        let _alpha_b = create_entity_outcome(execution, &runtime, "alpha");
         let index = runtime.index_authority().register(DerivedIndexDefinition {
             index_id: DerivedIndexId(77),
             name: "entity.name.drop-release".to_string(),
@@ -227,13 +259,14 @@ fn derived_index_contract_runtime_drop_releases_index_scratch_hints() {
             .latest_commit()
             .expect("latest commit")
             .commit_id;
-        let build = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
+        let build = runtime.index_authority().build_for_commit(
+            execution,
+            DerivedIndexBuildRequest {
                 source_commit_id: latest_commit_id,
                 branch_id: BranchId("main".to_string()),
                 index_ids: vec![index.index_id],
-            });
+            },
+        );
         assert!(build.failed_indexes.is_empty());
 
         let snapshot = runtime.visibility_authority().snapshot();
@@ -268,7 +301,9 @@ fn derived_index_contract_runtime_drop_releases_index_scratch_hints() {
                         .plan_query_packet(&snapshot, packet.clone())
                         .expect("query plan"),
                     IndexParityMode::ProductionAdmissibility,
+                    execution,
                 )
+                .expect("request remains live")
                 .expect("query outcome");
         }
 
@@ -283,89 +318,5 @@ fn derived_index_contract_runtime_drop_releases_index_scratch_hints() {
     );
 }
 
-#[test]
-fn derived_index_contract_index_counters_track_attempts_paths_and_rejections() {
-    let runtime = runtime_with_index_field_aspects();
-    let alpha = create_entity_outcome(&runtime, "alpha");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.lookup".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
-            source_commit_id: alpha.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            index_ids: vec![index.index_id],
-        });
-    assert!(build.failed_indexes.is_empty());
-    runtime.performance_access().reset_counters();
-
-    let snapshot = runtime.visibility_authority().snapshot();
-    let context = runtime
-        .read_truth()
-        .query_plan_context(&snapshot)
-        .expect("query plan context");
-    let success_packet = crate::facade::query::PlannedQueryPacket {
-        label: "entity-name-equals".to_string(),
-        context_id: context.clone(),
-        scope: crate::facade::query::QueryScope::EntityFieldEquals {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            value: string_aspect_value("alpha"),
-            partition_scope: None,
-        },
-        locality: crate::facade::query::QueryLocalityClass::CrossPartitionTraversal,
-        ordering: crate::facade::query::QueryOrderingContract::CanonicalEntityIdOrder,
-        access_contract: QueryAccessContract::DerivedIndexWithStorageParity,
-        execution_shape: crate::facade::query::QueryExecutionShape::BulkPacketized,
-        reduction: crate::facade::query::ReductionDiscipline::DeterministicMerge,
-        plan_key: crate::facade::query::DeterministicQueryPlanKey(1003),
-        target_count_hint: 0,
-    };
-    runtime
-        .index_access()
-        .execute_query_plan_with_index_parity(
-            runtime
-                .read_truth()
-                .plan_query_packet(&snapshot, success_packet)
-                .expect("success plan"),
-            IndexParityMode::CertificationParity,
-        )
-        .expect("success outcome");
-
-    let rejection_packet = crate::facade::query::PlannedQueryPacket {
-        label: "entity-name-equals-rejected".to_string(),
-        context_id: context,
-        scope: crate::facade::query::QueryScope::EntityKindScan {
-            kind_id: KindId(1),
-            partition_scope: None,
-        },
-        locality: crate::facade::query::QueryLocalityClass::CrossPartitionTraversal,
-        ordering: crate::facade::query::QueryOrderingContract::CanonicalEntityIdOrder,
-        access_contract: QueryAccessContract::DerivedIndexWithStorageParity,
-        execution_shape: crate::facade::query::QueryExecutionShape::BulkPacketized,
-        reduction: crate::facade::query::ReductionDiscipline::DeterministicMerge,
-        plan_key: crate::facade::query::DeterministicQueryPlanKey(1004),
-        target_count_hint: 0,
-    };
-    runtime
-        .index_access()
-        .execute_query_plan_with_index_parity(
-            runtime
-                .read_truth()
-                .plan_query_packet(&snapshot, rejection_packet)
-                .expect("rejection plan"),
-            IndexParityMode::ProductionAdmissibility,
-        )
-        .expect("rejection outcome");
-
-    let counters = runtime.performance_access().counters();
-    assert_eq!(counters.query_index_attempt_count, 2);
-    assert_eq!(counters.query_index_path_count, 1);
-    assert_eq!(counters.query_index_rejection_count, 1);
-    assert_eq!(counters.query_index_parity_verification_count, 1);
-}
+#[path = "parity_observability/path_counters.rs"]
+mod path_counters;

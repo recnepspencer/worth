@@ -55,6 +55,7 @@ impl VisibilityReadContext<'_> {
     /// before asking the unchanged positioned-snapshot owner to resolve them.
     /// The registry, rather than caller-supplied branch text, supplies the
     /// exact owned branch width. Snapshot IDs cannot be reused after release.
+    /// Metadata read: one selected root and route position, with no row iteration; no execution request is needed.
     pub fn positioned_snapshot_admitted<Stop>(
         &self,
         handle: &SnapshotHandle,
@@ -98,6 +99,7 @@ impl VisibilityReadContext<'_> {
 
     /// Resolve the selected snapshot root first, then its canonical stream position.
     /// This never admits a write basis or substitutes the current branch head.
+    /// Metadata read: one selected root and route position, with no row iteration; no execution request is needed.
     pub fn positioned_snapshot(
         &self,
         handle: &SnapshotHandle,

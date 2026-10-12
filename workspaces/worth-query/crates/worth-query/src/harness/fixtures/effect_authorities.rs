@@ -53,6 +53,7 @@ pub(crate) fn relational_runtime_with_intent_strategy() -> RelationalRuntime {
 }
 
 pub(crate) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     name: &str,
     branch: BranchId,
@@ -83,10 +84,7 @@ pub(crate) fn create_entity(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("seed commit should succeed");
     let entity = outcome
         .changed_records
@@ -104,6 +102,7 @@ pub(crate) fn create_entity(
 }
 
 pub(crate) fn update_entity_name(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     entity_id: worth_relational::facade::identity::EntityId,
     name: &str,
@@ -133,10 +132,7 @@ pub(crate) fn update_entity_name(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            runtime,
-            worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("intervening update should succeed");
     let commit_id = outcome.outcome().commit.commit_id;
     runtime
@@ -324,48 +320,8 @@ fn stable_fixture_position(namespace: &str, evidence: &str) -> u64 {
     acc
 }
 
-impl SnapshotReadSource for TestBridgeSource {
-    fn open_snapshot(
-        &self,
-        identity: &TruthSnapshotIdentity,
-        _execution: worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Box<dyn TruthSnapshotReader>, RelationalBridgeSourceError> {
-        Ok(Box::new(TestSnapshotReader {
-            identity: identity.clone(),
-        }))
-    }
-}
-
-#[derive(Clone, Debug)]
-struct TestSnapshotReader {
-    identity: TruthSnapshotIdentity,
-}
-
-impl TruthSnapshotReader for TestSnapshotReader {
-    fn snapshot_identity(&self) -> TruthSnapshotIdentity {
-        self.identity.clone()
-    }
-
-    fn read_packet(
-        &self,
-        request: &SnapshotReadPacket,
-        _execution: ExecutionRequest<'_, '_>,
-    ) -> Result<SnapshotReadPacketResult, BridgeSnapshotReadError> {
-        Ok(SnapshotReadPacketResult::new(
-            self.identity.clone(),
-            request
-                .reads()
-                .iter()
-                .map(|read| {
-                    SnapshotReadRecord::for_request(
-                        read,
-                        worth_foundational::facade::AspectValue::Null,
-                    )
-                })
-                .collect(),
-        ))
-    }
-}
+#[path = "effect_authorities/snapshot_reader.rs"]
+mod snapshot_reader;
 
 #[derive(Clone, Debug)]
 struct TestBridgeSink;

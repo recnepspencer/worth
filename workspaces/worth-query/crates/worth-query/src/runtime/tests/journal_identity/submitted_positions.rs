@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn submitted_write_receipt_carries_typed_committed_journal_position() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.journal-position.single")
         .expect("task runtime should open a named workspace");
     let command = WorthQueryAspectMutationBuilder::new()
@@ -19,7 +22,7 @@ fn submitted_write_receipt_carries_typed_committed_journal_position() {
     let receipt = workspace
         .submissions()
         .expect("submission lane should be admitted")
-        .submit(command)
+        .submit(request_execution, command)
         .expect("submission should commit");
     let position = receipt.journal_position();
 
@@ -37,8 +40,13 @@ fn submitted_write_receipt_carries_typed_committed_journal_position() {
 
 #[test]
 fn submitted_schedule_records_monotonic_positions_and_stable_replay() {
-    let first_run = submitted_schedule_positions("tasks.journal-position.replay-a");
-    let second_run = submitted_schedule_positions("tasks.journal-position.replay-b");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first_run =
+        submitted_schedule_positions(request_execution, "tasks.journal-position.replay-a");
+    let second_run =
+        submitted_schedule_positions(request_execution, "tasks.journal-position.replay-b");
 
     assert_eq!(first_run.ordinals, vec![1, 2, 3]);
     assert_eq!(first_run.ordinals, second_run.ordinals);
@@ -54,14 +62,20 @@ fn submitted_schedule_records_monotonic_positions_and_stable_replay() {
 
 #[test]
 fn journal_identity_certification_closes_only_with_real_inventory_and_schedule_evidence() {
-    let first_run = submitted_schedule_positions("tasks.journal-position.certification-a");
-    let second_run = submitted_schedule_positions("tasks.journal-position.certification-b");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first_run =
+        submitted_schedule_positions(request_execution, "tasks.journal-position.certification-a");
+    let second_run =
+        submitted_schedule_positions(request_execution, "tasks.journal-position.certification-b");
     let first_schedule = first_run.position_schedule();
     let second_schedule = second_run.position_schedule();
     let inventory = journal_identity_inventory_evidence();
     let schedule =
         WorthQueryJournalIdentityScheduleEvidence::derive(&first_schedule, &second_schedule);
-    let replay = super::super::journal_identity_support::journal_replay_surface_evidence();
+    let replay =
+        super::super::journal_identity_support::journal_replay_surface_evidence(request_execution);
     let certification = WorthQueryJournalIdentityCertification::from_evidence(
         inventory.clone(),
         schedule.clone(),
@@ -98,7 +112,7 @@ fn journal_identity_certification_closes_only_with_real_inventory_and_schedule_e
     let truth_mismatch = WorthQueryJournalIdentityCertification::from_evidence(
         journal_identity_inventory_evidence(),
         WorthQueryJournalIdentityScheduleEvidence::derive(&first_schedule, &second_schedule),
-        super::super::journal_identity_support::journal_replay_surface_evidence()
+        super::super::journal_identity_support::journal_replay_surface_evidence(request_execution)
             .with_truth_mismatch_for_sabotage(),
     );
     assert_eq!(
@@ -109,8 +123,13 @@ fn journal_identity_certification_closes_only_with_real_inventory_and_schedule_e
 
 #[test]
 fn batch_receipt_carries_component_journal_positions_in_order() {
-    let (positions, inspection_identities) =
-        submitted_batch_positions_with_inspection("tasks.journal-position.batch");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (positions, inspection_identities) = submitted_batch_positions_with_inspection(
+        request_execution,
+        "tasks.journal-position.batch",
+    );
 
     assert_eq!(positions.ordinals, vec![1, 2, 3]);
     assert_eq!(positions.unique_identity_count(), 3);
@@ -119,16 +138,20 @@ fn batch_receipt_carries_component_journal_positions_in_order() {
 
 #[test]
 fn preview_receipt_carries_preview_journal_position_without_commit_collision() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let (first_receipt, second_receipt) = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("journal-preview"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )
             .expect("preview session should admit");
         let first_receipt = preview
-            .insert("Task", |task| {
+            .insert(request_execution, "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
                     test_authored_string_aspect_value("preview-task"),
@@ -140,7 +163,7 @@ fn preview_receipt_carries_preview_journal_position_without_commit_collision() {
             })
             .expect("preview insert should stage");
         let second_receipt = preview
-            .insert("Task", |task| {
+            .insert(request_execution, "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
                     test_authored_string_aspect_value("preview-task-2"),

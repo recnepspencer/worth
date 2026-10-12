@@ -15,9 +15,11 @@ fn direct_yield_exposes_one_cross_owner_authority_chain() {
             YieldProvider::installed(5),
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -25,7 +27,7 @@ fn direct_yield_exposes_one_cross_owner_authority_chain() {
                 ),
             )
             .expect("yield evidence provider should begin");
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("yield evidence provider did not pause"),
         };

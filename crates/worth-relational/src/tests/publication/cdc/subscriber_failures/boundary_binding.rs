@@ -6,8 +6,11 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_stream_rejects_checkpoint_with_mismatched_authoritative_boundary_binding() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     install_schema_version(&mut runtime, SchemaVersionId(2));
     let mut txn = {
@@ -25,12 +28,7 @@ fn subscriber_stream_rejects_checkpoint_with_mismatched_authoritative_boundary_b
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _ = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _ = txn.commit(execution, &runtime).unwrap();
 
     let batch = runtime
         .publication()

@@ -23,6 +23,7 @@ const TIMELINE: ApplicationCapabilityValidityTimeline =
 
 /// The total deadline, in milliseconds, the definition declares.
 pub(super) fn definition_deadline(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -30,6 +31,7 @@ pub(super) fn definition_deadline(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
     positive_field(
+        execution,
         (runtime, snapshot),
         (definition, layout.definition.entity_kind),
         &layout.definition.total_deadline_milliseconds,
@@ -40,6 +42,7 @@ pub(super) fn definition_deadline(
 
 /// The Unix-epoch millisecond the instance's lineage must finish by.
 pub(super) fn instance_deadline(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
@@ -47,6 +50,7 @@ pub(super) fn instance_deadline(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
     positive_field(
+        execution,
         (runtime, snapshot),
         (instance, layout.instance.entity_kind),
         &layout.instance.deadline,
@@ -92,14 +96,15 @@ impl<Schema, Operation, Input, Scope, Phase>
     /// and keeps it so the provider checks it again at commit.
     pub(super) fn bind_workflow_deadline(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         clock: &WorthQueryRuntimeClock,
         layout: &WorthQueryWorkflowLayout,
         instance: EntityId,
     ) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
         let snapshot = self.lease.snapshot();
         let mut facts = Vec::with_capacity(1);
-        let deadline = self.lease.handle().with_runtime(|runtime| {
-            instance_deadline(runtime, snapshot, layout, instance, &mut facts)
+        let deadline = self.lease.handle().with_runtime(execution, |runtime| {
+            instance_deadline(execution, runtime, snapshot, layout, instance, &mut facts)
         })?;
         self.append_completed_facts(
             facts,
@@ -114,13 +119,14 @@ impl<Schema, Operation, Input, Scope, Phase>
 }
 
 fn positive_field(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     (runtime, snapshot): (&RelationalRuntime, &SnapshotHandle),
     (entity_id, kind): (EntityId, KindId),
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
     malformed: &'static str,
 ) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
-    match observe_field_value(runtime, snapshot, entity_id, kind, locator) {
+    match observe_field_value(runtime, execution, snapshot, entity_id, kind, locator) {
         None => {
             facts.push(WorthQueryApplicationObservedFact::AbsentField {
                 entity_id,

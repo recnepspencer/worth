@@ -64,4 +64,6 @@ pub mod facade;
 mod tests;
 
 #[cfg(test)]
+mod test_execution_policy;
+#[cfg(test)]
 use worth_harness::facade::process_deadline;

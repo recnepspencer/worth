@@ -4,6 +4,9 @@ use super::*;
 
 #[test]
 fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut court = CompositeSupplyChainCourt::compile();
     let policy = match court.world.execution_placement() {
         worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
@@ -51,7 +54,9 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
         "bootstrap: zero Signal movement"
     );
     assert_eq!(
-        court.records.read(root.basis().relational_basis()),
+        court
+            .records
+            .read(request_execution, root.basis().relational_basis()),
         expected.records,
         "oracle: root records"
     );
@@ -63,9 +68,12 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
         .unwrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let port = court.world.publication_port();
-    let candidate = court
-        .records
-        .candidate(root.basis().relational_basis(), "grain", "5");
+    let candidate = court.records.candidate(
+        request_execution,
+        root.basis().relational_basis(),
+        "grain",
+        "5",
+    );
     let intent =
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(candidate);
@@ -99,7 +107,9 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
     expected.change("grain", "5");
     let updated = court.observe(&root);
     assert_eq!(
-        court.records.read(updated.basis().relational_basis()),
+        court
+            .records
+            .read(request_execution, updated.basis().relational_basis()),
         expected.records,
         "oracle: exact successor cargo"
     );
@@ -122,7 +132,9 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
         .unwrap();
     let mut context = RoutingContext {
         records: std::sync::Arc::new(std::sync::OnceLock::from(
-            court.records.read(updated.basis().relational_basis()),
+            court
+                .records
+                .read(request_execution, updated.basis().relational_basis()),
         )),
     };
     let nodes = court.nodes;
@@ -156,7 +168,9 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
     );
     let final_head = court.observe(&updated);
     assert_eq!(
-        court.records.read(final_head.basis().relational_basis()),
+        court
+            .records
+            .read(request_execution, final_head.basis().relational_basis()),
         expected.records
     );
     assert_ne!(
@@ -191,6 +205,9 @@ fn bootstrap_and_real_component_publications_match_independent_cargo_oracle() {
 
 #[test]
 fn combined_publication_routes_actual_settled_relational_successor() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (amount, include_steel) in [("5", true), ("9", true), ("9", false)] {
         let mut court = CompositeSupplyChainCourt::compile_with_steel(include_steel);
         let policy = match court.world.execution_placement() {
@@ -223,9 +240,12 @@ fn combined_publication_routes_actual_settled_relational_successor() {
                 .links
                 .remove(&("manifest".into(), "steel".into()));
         }
-        let candidate = court
-            .records
-            .candidate(root.basis().relational_basis(), "grain", amount);
+        let candidate = court.records.candidate(
+            request_execution,
+            root.basis().relational_basis(),
+            "grain",
+            amount,
+        );
         let token = RuntimeWorldCancellationSource::new().token();
         let port = court.world.publication_port();
         let intent =
@@ -250,7 +270,9 @@ fn combined_publication_routes_actual_settled_relational_successor() {
                 .observe_branch(&court.records.runtime.main_branch_identity())
                 .unwrap()
                 .1;
-            input.set(court.records.read(&basis)).unwrap();
+            input
+                .set(court.records.read(request_execution, &basis))
+                .unwrap();
             relational_input = Some(basis.admission_identity().clone());
             tx.mark_changed(nodes.source, INPUT)?;
             let versions = tx.read_many(&[nodes.route], &|view| nodes.evaluate(view))?;
@@ -295,7 +317,9 @@ fn combined_publication_routes_actual_settled_relational_successor() {
             "combined World binds directly observed Signal successor"
         );
         assert_eq!(
-            court.records.read(head.basis().relational_basis()),
+            court
+                .records
+                .read(request_execution, head.basis().relational_basis()),
             oracle.records
         );
         drop((root, head, receipt, reference, direct));

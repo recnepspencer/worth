@@ -165,11 +165,36 @@ fn mutation_work(
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
-    grow_unrelated_accounts(&world, unrelated_accounts);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program = admitted_program(&world, &principal, &account, &request, "scale-committed");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            grow_unrelated_accounts(
+                &phase_custody.borrowed_request_for_test(),
+                &world,
+                unrelated_accounts,
+            );
+            let request = live_scope();
+            let principal =
+                authenticated_principal(&(phase_custody).test_host_request(), &world, &request);
+            let account = resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "open",
+                &request,
+            );
+            let program = admitted_program(
+                &phase_custody.phase_for_application(&world.application),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "scale-committed",
+            );
+            program
+        })
+        .expect("the fixture preparation owns its host call");
     commit_work(&world, program, idempotency_key)
 }
 
@@ -178,11 +203,17 @@ fn no_demand_mutation_work(
     idempotency_key: u8,
 ) -> super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
-    let program = no_demand_mutation_program(&world, wide);
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            no_demand_mutation_program(&phase.test_host_request(), &world, wide)
+        })
+        .expect("the fixture preparation owns its host call");
     commit_work(&world, program, idempotency_key)
 }
 
 fn no_demand_mutation_program(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &super::super::fixture::AuthorizationWorld,
     wide: bool,
 ) -> crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<
@@ -192,16 +223,22 @@ fn no_demand_mutation_program(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
+    let account = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "open",
+        &request,
+    );
     let operation = world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            &phase_custody.phase_for_application(&world.application),
             &principal,
             &account,
             &operation,
@@ -209,10 +246,18 @@ fn no_demand_mutation_program(
             &request,
         )
         .unwrap();
-    let other = wide.then(|| resolved_account(world, "unrelated", &request));
+    let other = wide.then(|| {
+        resolved_account(
+            &(phase_custody).test_host_request(),
+            world,
+            "unrelated",
+            &request,
+        )
+    });
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, projected| {
                 reader
@@ -234,6 +279,7 @@ fn no_demand_mutation_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -241,6 +287,7 @@ fn no_demand_mutation_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -283,7 +330,11 @@ fn commit_work(
         .clone()
 }
 
-fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, count: usize) {
+fn grow_unrelated_accounts(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &super::super::fixture::AuthorizationWorld,
+    count: usize,
+) {
     if count == 0 {
         return;
     }
@@ -336,6 +387,6 @@ fn grow_unrelated_accounts(world: &super::super::fixture::AuthorizationWorld, co
                 })))
             },
         );
-        super::super::fixture::publish_relational_mutation(world, batch);
+        super::super::fixture::publish_relational_mutation(execution, world, batch);
     }
 }

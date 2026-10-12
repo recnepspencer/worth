@@ -54,9 +54,14 @@ mod phases;
 pub(in crate::runtime::tests) fn intent_runtime_with_authority<
     T: WorthQueryIntentAuthorityAdapter + 'static,
 >(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     authority: T,
 ) -> WorthQueryRuntime {
-    bridge_runtime_with_support_and_intent_authority(intent_support_profile(), authority)
+    bridge_runtime_with_support_and_intent_authority(
+        request_execution,
+        intent_support_profile(),
+        authority,
+    )
 }
 
 fn trace_stages(
@@ -65,12 +70,17 @@ fn trace_stages(
     envelope.rows().iter().map(|row| row.stage()).collect()
 }
 
-fn read_runtime() -> WorthQueryRuntime {
-    bridge_runtime_with_support(WorthQueryRuntimeSupportProfile::bridge_backed(
-        "test-subscription-activation",
-        "test-preview-basis",
-        "test-inspector-evidence",
-    ))
+fn read_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
+    bridge_runtime_with_support(
+        request_execution,
+        WorthQueryRuntimeSupportProfile::bridge_backed(
+            "test-subscription-activation",
+            "test-preview-basis",
+            "test-inspector-evidence",
+        ),
+    )
 }
 
 fn manager_schema() -> QuerySchemaView {

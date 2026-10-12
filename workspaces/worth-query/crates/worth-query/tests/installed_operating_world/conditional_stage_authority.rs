@@ -7,6 +7,9 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn workflow_stage_dependency_resolves_only_through_its_exact_stage_location() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = dependency(domain::WorthQuerySemanticLocality::SourceRecord);
     let stage_node = domain::WorthQueryPortableConditionalNodeDeclaration::declare(
         "publish-when-changed",
@@ -35,7 +38,8 @@ fn workflow_stage_dependency_resolves_only_through_its_exact_stage_location() {
     .output_relationship(domain::WorthQueryOutputRelationship::IsWorkflowStageOutput)
     .finish()
     .unwrap();
-    let workspace = conditional_workflow_workspace("stage-authority", stage_node).unwrap();
+    let workspace =
+        conditional_workflow_workspace(request_execution, "stage-authority", stage_node).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let operating_world = workspace
         .observe_operating_world(workspace.current_world())

@@ -19,18 +19,27 @@ use crate::tests::support::{
 };
 
 fn prepared_merge_promoted_to_deleted_on_both_sides(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut crate::facade::runtime::RelationalRuntime,
 ) -> crate::facade::merge::PreparedMergeExecution {
-    create_entity(&*runtime, "root");
+    create_entity(execution, &*runtime, "root");
     create_branch_from_main(runtime, "feature");
-    create_entity_outcome_on_branch(runtime, "feature-only", BranchId("feature".to_string()));
+    create_entity_outcome_on_branch(
+        execution,
+        runtime,
+        "feature-only",
+        BranchId("feature".to_string()),
+    );
 
     let mut prepared = runtime
-        .prepare_merge_execution(MergeExecutionRequest {
-            target_branch: BranchId("main".to_string()),
-            source_branch: BranchId("feature".to_string()),
-            merge_intent: MergeIntent::ReconcileIntoTarget,
-        })
+        .prepare_merge_execution(
+            execution,
+            MergeExecutionRequest {
+                target_branch: BranchId("main".to_string()),
+                source_branch: BranchId("feature".to_string()),
+                merge_intent: MergeIntent::ReconcileIntoTarget,
+            },
+        )
         .expect("prepared merge");
 
     {
@@ -74,8 +83,11 @@ fn prepared_merge_promoted_to_deleted_on_both_sides(
 
 #[test]
 fn promoted_deleted_on_both_sides_compiles_to_an_explicit_executable_record_variant() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let prepared = prepared_merge_promoted_to_deleted_on_both_sides(&mut runtime);
+    let prepared = prepared_merge_promoted_to_deleted_on_both_sides(execution, &mut runtime);
 
     let plan = prepared.bound_executable_plan();
     assert_eq!(plan.record_plans.len(), 1);
@@ -104,8 +116,11 @@ fn promoted_deleted_on_both_sides_compiles_to_an_explicit_executable_record_vari
 
 #[test]
 fn promoted_deleted_on_both_sides_derives_zero_mutation_intent_execution_plan() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let prepared = prepared_merge_promoted_to_deleted_on_both_sides(&mut runtime);
+    let prepared = prepared_merge_promoted_to_deleted_on_both_sides(execution, &mut runtime);
 
     let plan = prepared.bind_mutation_plan_for_test(TransactionId(701));
 
@@ -136,11 +151,14 @@ fn promoted_deleted_on_both_sides_derives_zero_mutation_intent_execution_plan() 
 
 #[test]
 fn promoted_deleted_on_both_sides_executes_through_authoritative_merge_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = persisted_runtime_with_test_schema();
-    let prepared = prepared_merge_promoted_to_deleted_on_both_sides(&mut runtime);
+    let prepared = prepared_merge_promoted_to_deleted_on_both_sides(execution, &mut runtime);
 
     let merge = runtime
-        .execute_prepared_merge(prepared)
+        .execute_prepared_merge(execution, prepared)
         .expect("executed prepared merge");
     let replay = runtime.replay();
     let envelope = replay
@@ -221,15 +239,19 @@ fn promoted_deleted_on_both_sides_executes_through_authoritative_merge_publicati
 #[test]
 fn real_feature_branch_delete_after_main_delete_is_authorable_and_classifies_as_deleted_on_both_sides(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    delete_entity(&runtime, entity);
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    delete_entity(execution, &runtime, entity);
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let artifact = runtime
         .merge()
         .inspect_planning_scope(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),
@@ -261,9 +283,12 @@ fn real_feature_branch_delete_after_main_delete_is_authorable_and_classifies_as_
 
 #[test]
 fn branch_local_delete_allowance_does_not_make_same_branch_stale_delete_legal() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
-    delete_entity(&runtime, entity);
+    let entity = create_entity(execution, &runtime, "shared");
+    delete_entity(execution, &runtime, entity);
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         WorkerIntentBatch::new("stale-delete").push(MutationIntent::Entity(
@@ -273,10 +298,7 @@ fn branch_local_delete_allowance_does_not_make_same_branch_stale_delete_legal() 
     )
     .expect("test staging stays within configured resource budgets");
 
-    match txn.commit(
-        &runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    ) {
+    match txn.commit(execution, &runtime) {
         Err(TransactionCommitError::Conflict { error, .. }) => {
             assert_eq!(
                 error.code(),

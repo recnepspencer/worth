@@ -25,8 +25,11 @@ fn missing_source_denial_leaves_registry_and_catalog_unchanged() {
 
 #[test]
 fn root_owned_artifact_keeps_fork_available_when_catalog_accelerator_is_missing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let commit = create_entity_outcome(&runtime, "fork-source");
+    let commit = create_entity_outcome(execution, &runtime, "fork-source");
     let source = BranchId("main".to_owned());
     let target = BranchId("missing-artifact-target".to_owned());
     let (_, basis) = runtime

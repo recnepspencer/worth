@@ -22,7 +22,10 @@ use super::publication::TestOwner;
 /// counts, and derived next actions, and it survives the close that named it.
 #[test]
 fn close_exposes_every_retained_record_in_its_terminal_report() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
     let owner = race.owner;
     let handle = race.retained.recovery_handle();
     let expected_actions = race.retained.next_actions().to_vec();
@@ -82,7 +85,11 @@ fn close_exposes_every_retained_record_in_its_terminal_report() {
 /// A completed publication does not make its predecessor history reclaimable.
 #[test]
 fn close_preserves_history_and_retained_record_component_pins() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let race = resolve_one_race_after_a_completed_publication(
+        execution,
         CompositeLateCancellationPosture::NotRequested,
     );
     let owner = race.owner;
@@ -128,7 +135,10 @@ fn close_preserves_history_and_retained_record_component_pins() {
 /// a total that counted the pins differently.
 #[test]
 fn close_reports_a_pre_movement_loser_as_its_pin_pair_plus_its_recovery_slot() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
     assert_eq!(race.retained.successor_commit(), None);
     assert_eq!(race.retained.live_obligation_count(), 3);
 
@@ -155,7 +165,10 @@ fn close_reports_a_pre_movement_loser_as_its_pin_pair_plus_its_recovery_slot() {
 /// report row could name it.
 #[test]
 fn close_admits_no_operation_between_its_ledger_check_and_its_state_flip() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
     let owner = race.owner;
 
     // Park a close inside its own window: it takes the operation ledger, drains,
@@ -247,7 +260,10 @@ fn close_reports_a_pending_record_as_a_reserved_component_pair() {
 /// close refuses. The retained record it leaves behind is enumerated instead.
 #[test]
 fn close_denies_only_an_undrainable_critical_section() {
-    let race = resolve_one_race(CompositeLateCancellationPosture::NotRequested);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let race = resolve_one_race(execution, CompositeLateCancellationPosture::NotRequested);
     let ResolvedRace {
         owner, retained, ..
     } = race;

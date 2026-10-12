@@ -2,9 +2,12 @@ use super::*;
 
 #[test]
 fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let left = create_entity_in_partition(&runtime, "left-a", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right-a", PartitionId(11));
+    let left = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -38,7 +41,9 @@ fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.complexity.packet_count, 2);
@@ -55,6 +60,9 @@ fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer
 
 #[test]
 fn planned_query_execution_aspect_filter_requires_projected_authoritative_presence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
@@ -63,7 +71,12 @@ fn planned_query_execution_aspect_filter_requires_projected_authoritative_presen
         field_key("status"),
     ));
     let runtime = fixture.build_runtime();
-    create_entity_in_partition(&runtime, "declared-without-status", PartitionId(7));
+    create_entity_in_partition(
+        execution,
+        &runtime,
+        "declared-without-status",
+        PartitionId(7),
+    );
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -97,7 +110,9 @@ fn planned_query_execution_aspect_filter_requires_projected_authoritative_presen
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.result.entities.len(), 0);
@@ -106,6 +121,9 @@ fn planned_query_execution_aspect_filter_requires_projected_authoritative_presen
 
 #[test]
 fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(aspect_key("name"), field_key("name")),
@@ -114,8 +132,8 @@ fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
         ..AspectSchemaFixture::default()
     }
     .build_runtime();
-    let matched = create_entity_with_summary_title(&runtime, "matched", "visible-title");
-    create_entity_in_partition(&runtime, "missing-summary", PartitionId(7));
+    let matched = create_entity_with_summary_title(execution, &runtime, "matched", "visible-title");
+    create_entity_in_partition(execution, &runtime, "missing-summary", PartitionId(7));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -149,7 +167,9 @@ fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(
@@ -165,13 +185,17 @@ fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
 
 #[test]
 fn planned_query_execution_supports_aspect_filtered_relation_scans_through_reducer_path() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
-    let third = create_entity_in_partition(&runtime, "third", PartitionId(11));
-    let first_relation = create_relation_in_partition(&runtime, left, right, "r1", PartitionId(7));
+    let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
+    let third = create_entity_in_partition(execution, &runtime, "third", PartitionId(11));
+    let first_relation =
+        create_relation_in_partition(execution, &runtime, left, right, "r1", PartitionId(7));
     let second_relation =
-        create_relation_in_partition(&runtime, right, third, "r2", PartitionId(11));
+        create_relation_in_partition(execution, &runtime, right, third, "r2", PartitionId(11));
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -205,7 +229,9 @@ fn planned_query_execution_supports_aspect_filtered_relation_scans_through_reduc
         .expect("planned query packet");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("query execution outcome");
 
     assert_eq!(outcome.complexity.packet_count, 2);
@@ -221,6 +247,7 @@ fn planned_query_execution_supports_aspect_filtered_relation_scans_through_reduc
 }
 
 fn create_entity_with_summary_title(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     summary_title: &str,
@@ -253,11 +280,5 @@ fn create_entity_with_summary_title(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(
-        &txn.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )[0]
+    changed_entities(&txn.commit(execution, runtime).unwrap())[0]
 }

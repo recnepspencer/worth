@@ -12,6 +12,7 @@ use crate::domain_installation::{
 /// Builds test declaration authority through the same package/install/lookup path
 /// available to external consumers.
 pub(crate) fn installed_declaration_context<D, C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     marker: D,
     context: C,
     declaration_families: impl IntoIterator<Item = WorthQueryDomainDeclarationFamilyDefinition>,
@@ -20,11 +21,13 @@ where
     D: WorthQueryDomainEntryMarker + 'static,
     C: WorthQueryDomainOperatingContext<D>,
 {
-    let (_, context) = installed_declaration_workspace(marker, context, declaration_families);
+    let (_, context) =
+        installed_declaration_workspace(request_execution, marker, context, declaration_families);
     context
 }
 
 pub(crate) fn installed_declaration_context_with_contributions<D, C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     marker: D,
     context: C,
     declaration_families: impl IntoIterator<Item = WorthQueryDomainDeclarationFamilyDefinition>,
@@ -37,6 +40,7 @@ where
     C: WorthQueryDomainOperatingContext<D>,
 {
     let (_, context) = installed_declaration_workspace_with_contributions(
+        request_execution,
         marker,
         context,
         declaration_families,
@@ -46,6 +50,7 @@ where
 }
 
 pub(crate) fn installed_declaration_workspace<D, C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     marker: D,
     context: C,
     declaration_families: impl IntoIterator<Item = WorthQueryDomainDeclarationFamilyDefinition>,
@@ -57,10 +62,17 @@ where
     D: WorthQueryDomainEntryMarker + 'static,
     C: WorthQueryDomainOperatingContext<D>,
 {
-    installed_declaration_workspace_with_contributions(marker, context, declaration_families, [])
+    installed_declaration_workspace_with_contributions(
+        request_execution,
+        marker,
+        context,
+        declaration_families,
+        [],
+    )
 }
 
 pub(crate) fn installed_declaration_workspace_with_contributions<D, C>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     marker: D,
     context: C,
     declaration_families: impl IntoIterator<Item = WorthQueryDomainDeclarationFamilyDefinition>,
@@ -101,7 +113,10 @@ where
     let workspace = in_memory_test_runtime()
         .with_schema(schema)
         .domain_package(package)
-        .workspace(format!("{}.workspace", marker.domain_key()))
+        .workspace(
+            request_execution,
+            format!("{}.workspace", marker.domain_key()),
+        )
         .expect("test domain package should install");
     let context = workspace
         .domain(marker)

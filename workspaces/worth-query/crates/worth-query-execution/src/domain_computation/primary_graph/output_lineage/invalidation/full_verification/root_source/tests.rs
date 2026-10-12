@@ -12,15 +12,26 @@ use crate::domain_computation::primary_graph::{
 
 #[test]
 fn retained_source_must_include_every_registered_upstream_edge() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .expect("installed host call opens");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected.resolve_entity(
+                &phase,
+                AccountStatus::reference(),
+                "open".to_owned(),
+                &live_scope(),
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+        })
+        .expect("installed host call opens")
         .unwrap()
         .entity_id();
     let (_, product, _) = selected.into_parts();
@@ -49,7 +60,7 @@ fn retained_source_must_include_every_registered_upstream_edge() {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let basis = runtime
             .admit_branch_basis(&runtime.main_branch_identity())
             .unwrap();

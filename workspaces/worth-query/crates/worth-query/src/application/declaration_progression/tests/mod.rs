@@ -9,7 +9,10 @@ use fixtures::{admitted_handle, legal, progressed, AdmittedFamily, Declaration};
 
 #[test]
 fn admitted_progression_yields_proof_bearing_artifact() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let world_basis = handle.retained_world_basis();
     let progressed = handle
         .progress_declaration(legal(
@@ -39,7 +42,10 @@ fn admitted_progression_yields_proof_bearing_artifact() {
 
 #[test]
 fn recipe_lane_matches_convenience_lane() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let legal = legal(&handle, Declaration::<AdmittedFamily>::new("edge:42"));
     let recipe = handle.declaration_progression_recipe(legal);
     assert_eq!(recipe.stage(), RecipeStageKind::Unresolved);

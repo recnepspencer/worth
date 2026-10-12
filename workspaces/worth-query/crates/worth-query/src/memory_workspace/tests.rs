@@ -12,6 +12,9 @@ mod native_contracts;
 
 #[test]
 fn memory_workspace_insert_aspects_tracks_changed_paths() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = WorthQueryMemoryWorkspace::collection(
         "Task",
         [
@@ -22,12 +25,15 @@ fn memory_workspace_insert_aspects_tracks_changed_paths() {
     .expect("memory workspace should build");
 
     let receipt = workspace
-        .insert_aspects(vec![
-            WorthQueryAuthoredAspectMutation::new(touch("identity.id"), text("task-1"))
-                .expect("identity aspect"),
-            WorthQueryAuthoredAspectMutation::new(touch("title.value"), text("First task"))
-                .expect("title aspect"),
-        ])
+        .insert_aspects(
+            request_execution,
+            vec![
+                WorthQueryAuthoredAspectMutation::new(touch("identity.id"), text("task-1"))
+                    .expect("identity aspect"),
+                WorthQueryAuthoredAspectMutation::new(touch("title.value"), text("First task"))
+                    .expect("title aspect"),
+            ],
+        )
         .expect("insert should succeed");
 
     assert_eq!(receipt.deltas.len(), 1);
@@ -36,20 +42,25 @@ fn memory_workspace_insert_aspects_tracks_changed_paths() {
         receipt.deltas[0].admitted_touched_aspects(),
         &[touch("identity.id"), touch("title.value")]
     );
-    assert_eq!(workspace.entities().unwrap().len(), 1);
+    assert_eq!(workspace.entities(request_execution).unwrap().len(), 1);
 }
 
 #[test]
 fn runtime_receipt_identities_reject_equal_raw_projections_as_current_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace =
         WorthQueryMemoryWorkspace::collection("Task", [aspect("identity.id", "identity.id")])
             .expect("memory workspace should build");
     let receipt = workspace
-        .insert_aspects(vec![WorthQueryAuthoredAspectMutation::new(
-            touch("identity.id"),
-            text("task-1"),
+        .insert_aspects(
+            request_execution,
+            vec![
+                WorthQueryAuthoredAspectMutation::new(touch("identity.id"), text("task-1"))
+                    .expect("identity aspect"),
+            ],
         )
-        .expect("identity aspect")])
         .expect("insert should succeed");
 
     let copied_commit = WorthQueryCommitIdentity::from_relational_commit_id(
@@ -81,10 +92,13 @@ fn runtime_receipt_identities_reject_equal_raw_projections_as_current_authority(
 
 #[test]
 fn empty_runtime_snapshot_is_current_but_public_empty_projection_is_not() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace =
         WorthQueryMemoryWorkspace::collection("Task", [aspect("identity.id", "identity.id")])
             .expect("memory workspace should build");
-    let current = workspace.snapshot_identity();
+    let current = workspace.snapshot_identity(request_execution);
     let copied_projection = WorthQuerySnapshotIdentity::empty_relational_state();
 
     assert!(current.is_same_current_identity_as(&current.clone()));
@@ -93,6 +107,9 @@ fn empty_runtime_snapshot_is_current_but_public_empty_projection_is_not() {
 
 #[test]
 fn memory_workspace_update_and_delete_preserve_entity_lifecycle() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = WorthQueryMemoryWorkspace::collection(
         "Task",
         [
@@ -103,17 +120,21 @@ fn memory_workspace_update_and_delete_preserve_entity_lifecycle() {
     .expect("memory workspace should build");
 
     let insert = workspace
-        .insert_aspects(vec![
-            WorthQueryAuthoredAspectMutation::new(touch("identity.id"), text("task-1"))
-                .expect("identity aspect"),
-            WorthQueryAuthoredAspectMutation::new(touch("title.value"), text("First task"))
-                .expect("title aspect"),
-        ])
+        .insert_aspects(
+            request_execution,
+            vec![
+                WorthQueryAuthoredAspectMutation::new(touch("identity.id"), text("task-1"))
+                    .expect("identity aspect"),
+                WorthQueryAuthoredAspectMutation::new(touch("title.value"), text("First task"))
+                    .expect("title aspect"),
+            ],
+        )
         .expect("seed insert should succeed");
     let entity_identity = insert.deltas[0].entity_identity.clone();
 
     let update = workspace
         .update_aspects(
+            request_execution,
             entity_identity.clone(),
             vec![
                 WorthQueryAuthoredAspectMutation::new(touch("title.value"), text("Updated task"))
@@ -127,11 +148,12 @@ fn memory_workspace_update_and_delete_preserve_entity_lifecycle() {
         &[touch("title.value")]
     );
     assert_eq!(
-        workspace.entities().unwrap()[0].scalar_value_at(&field_path("title.value")),
+        workspace.entities(request_execution).unwrap()[0]
+            .scalar_value_at(&field_path("title.value")),
         Some(&text("Updated task"))
     );
     assert_eq!(
-        workspace.entities().unwrap()[0].aspect_value(
+        workspace.entities(request_execution).unwrap()[0].aspect_value(
             &worth_foundational::facade::AspectKey::new("title")
                 .expect("title should be an aspect key"),
         ),
@@ -139,32 +161,38 @@ fn memory_workspace_update_and_delete_preserve_entity_lifecycle() {
     );
 
     let delete = workspace
-        .delete(entity_identity)
+        .delete(request_execution, entity_identity)
         .expect("delete should succeed");
     assert_eq!(delete.deltas[0].kind, WorthQueryMutationKind::Deleted);
-    assert!(workspace.entities().unwrap().is_empty());
+    assert!(workspace.entities(request_execution).unwrap().is_empty());
 }
 
 #[test]
 fn memory_workspace_matches_declared_aspects_with_native_touches() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace =
         WorthQueryMemoryWorkspace::collection("Task", [aspect("title", "title.value")])
             .expect("memory workspace should build");
 
     workspace
-        .insert_aspects(vec![WorthQueryAuthoredAspectMutation::new(
-            touch("title.value"),
-            text("Native match"),
+        .insert_aspects(
+            request_execution,
+            vec![
+                WorthQueryAuthoredAspectMutation::new(touch("title.value"), text("Native match"))
+                    .expect("title field touch"),
+            ],
         )
-        .expect("title field touch")])
         .expect("field touch should match whole-aspect declaration natively");
 
     assert_eq!(
-        workspace.entities().unwrap()[0].scalar_value_at(&field_path("title.value")),
+        workspace.entities(request_execution).unwrap()[0]
+            .scalar_value_at(&field_path("title.value")),
         Some(&text("Native match"))
     );
     assert_eq!(
-        workspace.entities().unwrap()[0].aspect_value(
+        workspace.entities(request_execution).unwrap()[0].aspect_value(
             &worth_foundational::facade::AspectKey::new("title")
                 .expect("title should be an aspect key"),
         ),

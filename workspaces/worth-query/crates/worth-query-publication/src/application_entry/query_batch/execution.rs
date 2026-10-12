@@ -9,6 +9,7 @@ use worth_query_execution::facade::primary_graph::{
 };
 
 pub(super) fn execute<Schema: ApplicationSchema, Intent: ApplicationQueryIntent<Schema>>(
+phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     bounded: WorthQueryApplicationBoundedQueryBatchRequest<'_, '_, '_, Schema, Intent>,
 ) -> Result<crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
     <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
@@ -35,11 +36,11 @@ where
     let selected = request
         .application
         .on_branch(request.branch)
-        .select()
+        .select(phase)
         .map_err(|cause| item(0, ItemDenial::ProductSelection(cause)))?;
     let mut retained = request
         .application
-        .select_application_read_observation(&request.observation)
+        .select_application_read_observation(phase, &request.observation)
         .map_err(|cause| item(0, ItemDenial::ProductSelection(cause)))?;
     let vector_bytes = request.intents.len().checked_mul(
         std::mem::size_of::<WorthQueryAdmittedDisclosedApplicationResult<
@@ -60,6 +61,7 @@ where
         let scope_binding = intent.into_scope();
         let principal = selected
             .resolve_authenticated_principal(
+                phase,
                 binding.principal_binding(),
                 request.principal,
                 request.scope,
@@ -69,6 +71,7 @@ where
         let (field, value) = scope_binding.into_field_parts(principal.principal_identity());
         let scope = selected
             .resolve_entity(
+                phase,
                 field,
                 value,
                 request.scope,
@@ -85,6 +88,7 @@ where
         );
         let plan = selected
             .admit_retained_application_query_from_selection(
+                phase,
                 &mut retained,
                 binding.query(),
                 &access,
@@ -102,7 +106,7 @@ where
             })?;
         let result = request
             .application
-            .execute_application_query_one_shot_in_batch(plan, &admission)
+            .execute_application_query_one_shot_in_batch(phase, plan, &admission)
             .map_err(|cause| match cause {
                 WorthQueryApplicationBatchReadDenial::Resource(denial) => {
                     resource(Some(index), denial)

@@ -21,15 +21,23 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn branch_traversal_enumerates_edges_from_the_selected_immutable_root() {
-    let (world, baseline) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &baseline);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &baseline);
     let edge = edge_movement(&world.handles, &baseline);
     let child_snapshot = fork_from_main(&world.runtime, "storm");
-    assert_ancestor_edge_is_visible(&world.runtime, &child_snapshot, &edge);
-    publish_main_rewire(&world.runtime, &edge);
+    assert_ancestor_edge_is_visible(execution, &world.runtime, &child_snapshot, &edge);
+    publish_main_rewire(execution, &world.runtime, &edge);
     let main_snapshot = current_snapshot(&world.runtime, "main");
-    assert_main_edge_is_visible(&world.runtime, &main_snapshot, &edge);
-    assert_child_retains_ancestor_and_rejects_main_edge(&world.runtime, &child_snapshot, &edge);
+    assert_main_edge_is_visible(execution, &world.runtime, &main_snapshot, &edge);
+    assert_child_retains_ancestor_and_rejects_main_edge(
+        execution,
+        &world.runtime,
+        &child_snapshot,
+        &edge,
+    );
 }
 
 fn edge_movement(
@@ -52,16 +60,19 @@ fn edge_movement(
 }
 
 fn assert_ancestor_edge_is_visible(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     edge: &EdgeMovement,
 ) {
     let outgoing = traverse(
+        execution,
         runtime,
         snapshot,
         edge.ancestor_probe(Direction::Outgoing, 1),
     );
     let incoming = traverse(
+        execution,
         runtime,
         snapshot,
         edge.ancestor_probe(Direction::Incoming, 2),
@@ -70,7 +81,11 @@ fn assert_ancestor_edge_is_visible(
     assert!(incoming.relations.contains(&edge.ancestor_tuple()));
 }
 
-fn publish_main_rewire(runtime: &RelationalRuntime, edge: &EdgeMovement) {
+fn publish_main_rewire(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    edge: &EdgeMovement,
+) {
     let intent = UpdateRelationEndpointsIntent {
         relation_id: edge.relation_id,
         kind_id: edge.kind_id,
@@ -80,31 +95,45 @@ fn publish_main_rewire(runtime: &RelationalRuntime, edge: &EdgeMovement) {
     let batch = WorkerIntentBatch::new("phase5-adversarial-main-edge-rewire").push(
         MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(intent)),
     );
-    commit_branch_batch(runtime, BranchId("main".to_owned()), batch);
+    commit_branch_batch(execution, runtime, BranchId("main".to_owned()), batch);
 }
 
 fn assert_main_edge_is_visible(
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    edge: &EdgeMovement,
-) {
-    let outgoing = traverse(runtime, snapshot, edge.main_probe(Direction::Outgoing, 3));
-    let incoming = traverse(runtime, snapshot, edge.main_probe(Direction::Incoming, 4));
-    assert!(outgoing.relations.contains(&edge.main_tuple()));
-    assert!(incoming.relations.contains(&edge.main_tuple()));
-}
-
-fn assert_child_retains_ancestor_and_rejects_main_edge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     edge: &EdgeMovement,
 ) {
     let outgoing = traverse(
+        execution,
+        runtime,
+        snapshot,
+        edge.main_probe(Direction::Outgoing, 3),
+    );
+    let incoming = traverse(
+        execution,
+        runtime,
+        snapshot,
+        edge.main_probe(Direction::Incoming, 4),
+    );
+    assert!(outgoing.relations.contains(&edge.main_tuple()));
+    assert!(incoming.relations.contains(&edge.main_tuple()));
+}
+
+fn assert_child_retains_ancestor_and_rejects_main_edge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    edge: &EdgeMovement,
+) {
+    let outgoing = traverse(
+        execution,
         runtime,
         snapshot,
         edge.ancestor_probe(Direction::Outgoing, 5),
     );
     let incoming = traverse(
+        execution,
         runtime,
         snapshot,
         edge.ancestor_probe(Direction::Incoming, 6),
@@ -112,10 +141,20 @@ fn assert_child_retains_ancestor_and_rejects_main_edge(
     assert!(outgoing.relations.contains(&edge.ancestor_tuple()));
     assert!(incoming.relations.contains(&edge.ancestor_tuple()));
 
-    let main_source = traverse(runtime, snapshot, edge.main_probe(Direction::Outgoing, 7));
+    let main_source = traverse(
+        execution,
+        runtime,
+        snapshot,
+        edge.main_probe(Direction::Outgoing, 7),
+    );
     assert!(main_source.entities.contains(&edge.main_source));
     assert!(!main_source.contains_relation(edge.relation_id));
-    let main_target = traverse(runtime, snapshot, edge.main_probe(Direction::Incoming, 8));
+    let main_target = traverse(
+        execution,
+        runtime,
+        snapshot,
+        edge.main_probe(Direction::Incoming, 8),
+    );
     assert!(main_target.entities.contains(&edge.main_target));
     assert!(!main_target.contains_relation(edge.relation_id));
 }
@@ -193,6 +232,7 @@ impl TraversalObservation {
 }
 
 fn traverse(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     probe: TraversalProbe,
@@ -220,7 +260,9 @@ fn traverse(
         .expect("root-qualified traversal plan is admitted");
     let outcome = runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("root-qualified traversal executes");
     TraversalObservation {
         entities: outcome

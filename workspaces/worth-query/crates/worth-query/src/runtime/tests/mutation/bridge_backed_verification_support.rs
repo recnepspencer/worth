@@ -1,7 +1,10 @@
 use super::super::support::*;
 
-fn task_relation_runtime() -> WorthQueryRuntime {
+fn task_relation_runtime(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> WorthQueryRuntime {
     stateful_bridge_runtime_with_support(
+        request_execution,
         &["Task", "TaskRelation"],
         admitted_profile("direct_entity_identity")
             .with_bridge_backed_verification_support(

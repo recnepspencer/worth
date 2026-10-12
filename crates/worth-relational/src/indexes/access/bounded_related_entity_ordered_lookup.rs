@@ -18,6 +18,7 @@ impl IndexAccess<'_> {
         &self,
         request: BoundedRelatedEntityOrderedLookupRequest,
         parity_mode: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BoundedRelatedEntityOrderedLookupOutcome, BoundedRelatedEntityOrderedLookupDenial>
     {
         let runtime = self.runtime;
@@ -30,7 +31,7 @@ impl IndexAccess<'_> {
         })?;
         let projection = runtime
             .read_truth()
-            .project_snapshot(&snapshot)
+            .project_snapshot(&snapshot, execution)
             .ok_or_else(|| {
                 denial(
                     BoundedRelatedEntityOrderedLookupDenialKind::SnapshotUnavailable,
@@ -46,10 +47,10 @@ impl IndexAccess<'_> {
             prepared.contract.ordering(),
             &request,
         )?;
-        verify_entries(&source, &prepared.contract, &page.rows)?;
+        verify_entries(execution, &source, &prepared.contract, &page.rows)?;
         let outcome = outcome_from_page(prepared.generation_id, page, parity_mode);
         if parity_mode == BoundedIndexParityMode::Certification {
-            certify_storage_parity(&source, &prepared.contract, &outcome)?;
+            certify_storage_parity(execution, &source, &prepared.contract, &outcome)?;
             runtime
                 .performance_access()
                 .count_query_index_parity_verification();
@@ -251,13 +252,14 @@ fn outcome_from_page(
 }
 
 fn verify_entries(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
     contract: &RelatedLookupContract<'_>,
     entries: &[RelatedEntityOrderingEntry],
 ) -> Result<(), BoundedRelatedEntityOrderedLookupDenial> {
     for entry in entries {
         let relation = projection
-            .with_relation(entry.relation_id(), Clone::clone)
+            .with_relation(execution, entry.relation_id(), Clone::clone)
             .ok_or_else(|| corrupt(contract.request))?;
         let (observed_parent, observed_child) = match contract.parent_endpoint {
             RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
@@ -266,7 +268,7 @@ fn verify_entries(
         if relation.kind.kind_id != contract.relation_kind
             || observed_parent != contract.parent
             || observed_child != entry.child_entity_id()
-            || projection.with_entity(observed_child, |record| record.kind.kind_id)
+            || projection.with_entity(execution, observed_child, |record| record.kind.kind_id)
                 != Some(contract.child_kind)
         {
             return Err(corrupt(contract.request));
@@ -276,6 +278,7 @@ fn verify_entries(
             .iter()
             .map(|field| {
                 super::super::projected_field_values::entity_aspect_field_ordering_value(
+                    execution,
                     projection,
                     observed_child,
                     field.locator(),
@@ -296,11 +299,13 @@ fn verify_entries(
 }
 
 fn certify_storage_parity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &super::super::projected_field_values::IndexProjectionSource<'_, '_>,
     contract: &RelatedLookupContract<'_>,
     indexed: &BoundedRelatedEntityOrderedLookupOutcome,
 ) -> Result<(), BoundedRelatedEntityOrderedLookupDenial> {
     let storage = build_related_entity_ordering_index(
+        execution,
         projection,
         &RelatedEntityOrderingProjection::new(
             contract.relation_kind,

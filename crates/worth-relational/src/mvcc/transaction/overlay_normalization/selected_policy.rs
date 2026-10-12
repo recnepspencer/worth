@@ -18,7 +18,8 @@ fn request(memory: u64) -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, 1),
+            // This allocation witness had an unbounded serial commit request.
+            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), memory, u64::MAX),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -186,7 +187,10 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
     assert_eq!(transaction.last_merged_plan.as_ref(), Some(&plan));
     drop(stopped);
     let committed = transaction
-        .commit(&runtime, Policy::Execution(&parent))
+        .commit(
+            &worth_execution::ExecutionRequest::leased(&parent),
+            &runtime,
+        )
         .unwrap();
     assert_eq!(changed_entities(&committed).len(), 1);
     assert_ne!(runtime.observe_branch(&identity).unwrap().0, head);

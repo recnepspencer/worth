@@ -40,132 +40,45 @@ impl WorthQueryApplicationOutputRole for RetainedAccount {
     const NAME: &'static str = "retained-account";
 }
 
-#[test]
-fn response_loss_and_interleaving_preserve_one_preimage_and_outbox_bundle() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let unrelated = resolved_account(&world, "unrelated", &request);
-    let selected = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    let commit_count = || {
-        world
-            .application
-            .primary_provider
-            .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
-    };
-    let baseline = commit_count();
-    let first = retained_status_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "frozen",
-        RetentionMutationBreadth::Narrow,
-    );
-    let retry = retained_status_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "frozen",
-        RetentionMutationBreadth::Narrow,
-    );
-    let interleaved = retained_status_program(
-        &world,
-        &principal,
-        &unrelated,
-        &request,
-        "changed-between",
-        RetentionMutationBreadth::Narrow,
-    );
-
-    let readmitted_interleave = retained_status_program(
-        &world,
-        &principal,
-        &unrelated,
-        &request,
-        "changed-between",
-        RetentionMutationBreadth::Narrow,
-    );
-
-    world.faults.lose_next_commit_response();
-    let outcome = world.application.compare_and_commit_application(
-        first,
-        idempotency(81, 82),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    let WorthQueryApplicationCommitOutcome::Committed(original) = outcome else {
-        panic!("response-loss recovery must return the authoritative commit: {outcome:?}");
-    };
-    let after_original = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    assert_ne!(after_original.selected_commit(), selected.selected_commit());
-    assert_eq!(commit_count(), baseline + 1);
-    let outcome = world.application.compare_and_commit_application(
-        interleaved,
-        idempotency(83, 84),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    let WorthQueryApplicationCommitOutcome::Committed(interleave_receipt) = outcome else {
-        panic!("independent retained decision must commit: {outcome:?}");
-    };
-    assert_eq!(commit_count(), baseline + 2);
-    assert_retained_status(&interleave_receipt, "unrelated");
-
-    assert!(matches!(
-        world.application.compare_and_commit_application(
-            readmitted_interleave,
-            idempotency(83, 84),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation
-        ),
-        WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
-    ));
-    assert_eq!(commit_count(), baseline + 2);
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
-        world.application.compare_and_commit_application(
-            retry,
-            idempotency(81, 82),
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-    else {
-        panic!("later equivalent resolution must reopen the original evidence");
-    };
-
-    assert!(recovered.is_same_authoritative_commit(&original));
-    assert_eq!(recovered.mutation_work(), original.mutation_work());
-    assert_eq!(recovered.dispatch_outbox(), original.dispatch_outbox());
-    assert_eq!(recovered.retained_preimage(), original.retained_preimage());
-    assert_eq!(original.terminal().attempt_resources_released(), Some(true));
-    assert_eq!(recovered.terminal().attempt_resources_released(), None);
-    assert!(recovered.dispatch_outbox().is_some());
-    assert_retained_status(&recovered, "open");
-    assert_eq!(commit_count(), baseline + 2);
-}
+#[path = "preimage_evidence/response_loss_and_interleaving_preserve_one_preimage_and_outbox.rs"]
+mod response_loss_and_interleaving_preserve_one_preimage_and_outbox;
 
 #[test]
 fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_axes() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let first_account = resolved_account(&world, "open", &request);
-    let later_account = resolved_account(&world, "unrelated", &request);
-    let first = retained_status_program(
-        &world,
-        &principal,
-        &first_account,
-        &request,
-        "first-commit",
-        RetentionMutationBreadth::Narrow,
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first_account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let later_account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            retained_status_program(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &first_account,
+                &request,
+                "first-commit",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let first_outcome = world.application.compare_and_commit_application(
         first,
         idempotency(85, 86),
@@ -179,22 +92,34 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
         "first exact-evidence commit failed: {first_outcome:?}"
     );
 
-    let later = retained_status_program(
-        &world,
-        &principal,
-        &later_account,
-        &request,
-        "later-commit",
-        RetentionMutationBreadth::Narrow,
-    );
-    let retry = retained_status_program(
-        &world,
-        &principal,
-        &later_account,
-        &request,
-        "later-commit",
-        RetentionMutationBreadth::Narrow,
-    );
+    let later = world
+        .application
+        .with_host_advancement(|phase| {
+            retained_status_program(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &later_account,
+                &request,
+                "later-commit",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            retained_status_program(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &later_account,
+                &request,
+                "later-commit",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Committed(later_receipt) =
         world.application.compare_and_commit_application(
             later,
@@ -238,19 +163,21 @@ fn later_commit_recovery_selects_exact_evidence_and_rejects_foreign_reference_ax
 
 #[test]
 fn demanded_work_tracks_real_multi_intent_and_target_breadth() {
-    let narrow = demanded_mutation_work(RetentionMutationBreadth::Narrow, 91);
-    let wide = demanded_mutation_work(RetentionMutationBreadth::CrossRecordLabel, 92);
+    {
+        let narrow = demanded_mutation_work(RetentionMutationBreadth::Narrow, 91);
+        let wide = demanded_mutation_work(RetentionMutationBreadth::CrossRecordLabel, 92);
 
-    assert_eq!(narrow.preimage_demanded_loci_examined(), 1);
-    assert_eq!(wide.preimage_demanded_loci_examined(), 1);
-    assert_eq!(narrow.preimage_mutation_targets_materialized(), 1);
-    assert_eq!(wide.preimage_mutation_targets_materialized(), 2);
-    assert_eq!(narrow.preimage_decision_facts_examined(), 3);
-    assert_eq!(wide.preimage_decision_facts_examined(), 4);
-    assert_eq!(narrow.preimage_candidates_materialized(), 1);
-    assert_eq!(wide.preimage_candidates_materialized(), 2);
-    assert_eq!(narrow.preimage_validated_intents_examined(), 3);
-    assert_eq!(wide.preimage_validated_intents_examined(), 4);
+        assert_eq!(narrow.preimage_demanded_loci_examined(), 1);
+        assert_eq!(wide.preimage_demanded_loci_examined(), 1);
+        assert_eq!(narrow.preimage_mutation_targets_materialized(), 1);
+        assert_eq!(wide.preimage_mutation_targets_materialized(), 2);
+        assert_eq!(narrow.preimage_decision_facts_examined(), 3);
+        assert_eq!(wide.preimage_decision_facts_examined(), 4);
+        assert_eq!(narrow.preimage_candidates_materialized(), 1);
+        assert_eq!(wide.preimage_candidates_materialized(), 2);
+        assert_eq!(narrow.preimage_validated_intents_examined(), 3);
+        assert_eq!(wide.preimage_validated_intents_examined(), 4);
+    }
 }
 
 fn demanded_mutation_work(
@@ -259,10 +186,43 @@ fn demanded_mutation_work(
 ) -> crate::domain_computation::primary_graph::provider::WorthQueryPrimaryMutationWorkEvidence {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let program =
-        retained_status_program(&world, &principal, &account, &request, "frozen", breadth);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            authenticated_principal(&(phase_custody).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            resolved_account(
+                &(phase_custody).test_host_request(),
+                &world,
+                "open",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase.test_host_request();
+
+            retained_status_program(
+                phase_custody,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "frozen",
+                breadth,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let outcome = world.application.compare_and_commit_application(
         program,
         idempotency(key, key),
@@ -299,6 +259,7 @@ pub(in crate::domain_computation::primary_graph) enum RetentionMutationBreadth {
 }
 
 pub(in crate::domain_computation::primary_graph) fn retained_status_program(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &AuthorizationWorld,
     principal: &WorthQueryAuthenticatedPrincipal<IdentityExecutionSchema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<IdentityExecutionSchema, Account>,
@@ -317,8 +278,9 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .installed_operation(ExactStatusRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            &phase_custody.phase_for_application(&world.application),
             principal,
             account,
             &operation,
@@ -326,11 +288,18 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
             request,
         )
         .unwrap();
-    let other = matches!(breadth, RetentionMutationBreadth::CrossRecordLabel)
-        .then(|| resolved_account(world, "unrelated", request));
+    let other = matches!(breadth, RetentionMutationBreadth::CrossRecordLabel).then(|| {
+        resolved_account(
+            &(phase_custody).test_host_request(),
+            world,
+            "unrelated",
+            request,
+        )
+    });
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, projected| {
                 reader
@@ -355,6 +324,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -362,6 +332,7 @@ pub(in crate::domain_computation::primary_graph) fn retained_status_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

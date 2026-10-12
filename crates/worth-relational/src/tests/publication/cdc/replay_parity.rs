@@ -2,9 +2,12 @@ use crate::tests::support::*;
 
 #[test]
 fn subscriber_stream_matches_patch_stream_for_committed_history() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let _ = create_entity_outcome(&runtime, "a");
-    let _ = create_entity_outcome(&runtime, "b");
+    let _ = create_entity_outcome(execution, &runtime, "a");
+    let _ = create_entity_outcome(execution, &runtime, "b");
 
     let patch_batch = runtime
         .publication()
@@ -23,11 +26,14 @@ fn subscriber_stream_matches_patch_stream_for_committed_history() {
 
 #[test]
 fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "a");
+    let first = create_entity_outcome(execution, &runtime, "a");
     runtime.durability_authority().checkpoint().unwrap();
-    let _second = create_entity_outcome(&runtime, "b");
-    let _third = create_entity_outcome(&runtime, "c");
+    let _second = create_entity_outcome(execution, &runtime, "b");
+    let _third = create_entity_outcome(execution, &runtime, "c");
 
     assert!(runtime
         .history_authority()
@@ -47,7 +53,7 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
     let mut recovered = persisted_runtime_with_test_schema();
     recovered
         .durability_recovery()
-        .recover(recovery_plan)
+        .recover(execution, recovery_plan)
         .unwrap();
     let recovered_patch_batch = recovered
         .publication()
@@ -62,11 +68,14 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
 
 #[test]
 fn subscriber_stream_keeps_patch_parity_when_later_retained_envelope_is_missing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
     runtime.durability_authority().checkpoint().unwrap();
-    let second = create_entity_outcome(&runtime, "b");
-    let _third = create_entity_outcome(&runtime, "c");
+    let second = create_entity_outcome(execution, &runtime, "b");
+    let _third = create_entity_outcome(execution, &runtime, "c");
 
     assert!(runtime
         .history_authority()

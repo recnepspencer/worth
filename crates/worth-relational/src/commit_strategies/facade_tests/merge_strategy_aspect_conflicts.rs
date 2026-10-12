@@ -2,6 +2,9 @@ use super::native_strategy_fixtures::*;
 
 #[test]
 fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conflict() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let aspect_descriptor = AspectFieldReconciliationStrategy::descriptor(CommitStrategyId(91));
     let replica_descriptor = ReplicaConvergenceStrategy::descriptor(CommitStrategyId(92));
     let registry = AspectSchemaFixture {
@@ -37,7 +40,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             &replica_descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch =
         crate::tests::support::create_branch_from_main(&runtime, "feature-aspects");
 
@@ -66,7 +69,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
         let snapshot = runtime.visibility_authority().snapshot();
         let execution = runtime
             .commit_strategies()
-            .execute(&request, &snapshot)
+            .execute(&request, &snapshot, request_execution)
             .expect("aspect execution");
         let (transaction_validation_input, mut authority) =
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
@@ -79,10 +82,10 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             )
             .expect("lowered aspect plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated aspect plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("aspect strategy commit");
     }
 
@@ -105,7 +108,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
         let snapshot = runtime.visibility_authority().snapshot();
         let execution = runtime
             .commit_strategies()
-            .execute(&request, &snapshot)
+            .execute(&request, &snapshot, request_execution)
             .expect("replica execution");
         let (transaction_validation_input, mut authority) =
             crate::tests::support::test_owner_strategy_authority(
@@ -121,20 +124,23 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             )
             .expect("lowered replica plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated replica plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("replica strategy commit");
     }
 
     let planning = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            feature_branch,
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            request_execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                feature_branch,
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("merge planning artifact");
 
     let classification = planning
@@ -158,6 +164,9 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
 
 #[test]
 fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_conflict() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let aspect_descriptor = AspectFieldReconciliationStrategy::descriptor(CommitStrategyId(93));
     let registry = AspectSchemaFixture {
         cascade_delete_policy: crate::config::data::CascadeDeletePolicy::CascadeDeleteRelations,
@@ -185,7 +194,7 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
             &aspect_descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "shared");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "shared");
     let feature_branch =
         crate::tests::support::create_branch_from_main(&runtime, "feature-same-aspect");
 
@@ -217,7 +226,7 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
         let snapshot = runtime.visibility_authority().snapshot();
         let execution = runtime
             .commit_strategies()
-            .execute(&request, &snapshot)
+            .execute(&request, &snapshot, request_execution)
             .expect("aspect execution");
         let transaction_validation_input = branch
             .as_ref()
@@ -240,20 +249,23 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
             )
             .expect("lowered aspect plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated aspect plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("aspect strategy commit");
     }
 
     let planning = runtime
         .merge()
-        .inspect_planning_scope(MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            feature_branch,
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            request_execution,
+            MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                feature_branch,
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("merge planning artifact");
 
     let classification = planning

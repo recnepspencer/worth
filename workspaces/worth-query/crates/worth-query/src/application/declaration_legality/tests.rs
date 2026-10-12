@@ -19,7 +19,10 @@ use fixtures::{
 
 #[test]
 fn legal_declaration_review_yields_legality_evidence() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let world_basis = handle.retained_world_basis();
     let declaration = handle
         .declare(Declaration::<LegalFamily>::new("edge:42"))
@@ -59,8 +62,11 @@ fn legal_declaration_review_yields_legality_evidence() {
 
 #[test]
 fn legality_review_rejects_declarations_from_a_different_admitted_world() {
-    let left = admitted_handle("collaborative");
-    let right = admitted_handle("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = admitted_handle(request_execution, "collaborative");
+    let right = admitted_handle(request_execution, "restricted");
     let declaration = left
         .declare(Declaration::<LegalFamily>::new("edge:42"))
         .expect("declaration should admit");
@@ -78,7 +84,10 @@ fn legality_review_rejects_declarations_from_a_different_admitted_world() {
 
 #[test]
 fn legality_review_distinguishes_role_and_surface_failures() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     let bad_role = handle
         .declare(Declaration::<IllegalRoleFamily>::new("edge:42"))
@@ -111,7 +120,10 @@ fn legality_review_distinguishes_role_and_surface_failures() {
 
 #[test]
 fn legality_boundary_can_defer_even_after_family_admission() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let declaration = handle
         .declare(Declaration::<DeferredLegalityFamily>::new("edge:42"))
         .expect("declaration should admit");
@@ -131,7 +143,10 @@ fn legality_boundary_can_defer_even_after_family_admission() {
 
 #[test]
 fn declare_and_review_preserves_admission_vs_legality_split() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     match handle.declare_and_review(Declaration::<DurableAdmissionFamily>::new("edge:42")) {
         Err(WorthQueryDeclarationAdmissionOrLegalityError::Admission(admission)) => {
@@ -153,7 +168,10 @@ fn declare_and_review_preserves_admission_vs_legality_split() {
 
 #[test]
 fn legality_evidence_preserves_masked_aspect_coverage_without_promoting_it_to_reviewed_presence() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let declaration = handle
         .declare(Declaration::<MaskedCoverageFamily>::new("edge:42"))
         .expect("declaration should admit");
@@ -174,7 +192,10 @@ fn legality_evidence_preserves_masked_aspect_coverage_without_promoting_it_to_re
 
 #[test]
 fn temporal_declarations_pass_legality_when_runtime_temporal_support_is_admitted() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let declaration = handle
         .declare(TemporalDeclaration::<TemporalCurrentFamily>::new("edge:42"))
         .expect("temporal declaration should admit canonically");
@@ -187,7 +208,10 @@ fn temporal_declarations_pass_legality_when_runtime_temporal_support_is_admitted
 
 #[test]
 fn temporal_preview_and_historical_truth_basis_remain_typed_legality_denials() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let preview = handle
         .declare(TemporalDeclaration::<TemporalPreviewFamily>::new("edge:42"))
         .expect("temporal preview declaration should admit canonically");
@@ -233,7 +257,10 @@ fn temporal_preview_and_historical_truth_basis_remain_typed_legality_denials() {
 
 #[test]
 fn async_declarations_pass_legality_when_runtime_async_support_is_admitted() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let declaration = handle
         .declare(AsyncDeclaration::<AsyncCurrentFamily>::bridge_blocking(
             "edge:42",
@@ -248,7 +275,10 @@ fn async_declarations_pass_legality_when_runtime_async_support_is_admitted() {
 
 #[test]
 fn async_preview_and_historical_truth_basis_remain_typed_legality_denials() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let preview = handle
         .declare(AsyncDeclaration::<AsyncPreviewFamily>::bridge_blocking(
             "edge:42",
@@ -293,7 +323,10 @@ fn async_preview_and_historical_truth_basis_remain_typed_legality_denials() {
 
 #[test]
 fn async_clause_mismatches_produce_typed_legality_denials_before_progression() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let cases = [
         (
             AsyncDeclaration::<AsyncCurrentFamily>::external_blocking("edge:42"),

@@ -82,6 +82,8 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         runtime: &mut Self::Runtime,
         fixture: &worth_harness::facade::ScenarioFixture<Self::Fixture>,
     ) -> Result<(), Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         if fixture.fixture.entities.is_empty() && fixture.fixture.relations.is_empty() {
             return Ok(());
         }
@@ -92,10 +94,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         )
         .expect("test staging stays within configured resource budgets");
         let outcome = txn
-            .commit(
-                runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, runtime)
             .map_err(commit_error_to_harness_error)?;
         let entity_ids = outcome
             .changed_records
@@ -115,10 +114,7 @@ impl HarnessAdapter for RelationalHarnessAdapter {
                 )
                 .expect("test staging stays within configured resource budgets");
             relation_txn
-                .commit(
-                    runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, runtime)
                 .map_err(commit_error_to_harness_error)?;
         }
         Ok(())
@@ -129,6 +125,8 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         runtime: &mut Self::Runtime,
         batch: &MutationBatch<Self::Mutation>,
     ) -> Result<(), Self::Error> {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
         for operation in &batch.operations {
             let operation: WorkerIntentBatch = operation.clone();
@@ -138,11 +136,8 @@ impl HarnessAdapter for RelationalHarnessAdapter {
             )
             .expect("test staging stays within configured resource budgets");
         }
-        txn.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .map_err(commit_error_to_harness_error)?;
+        txn.commit(execution, runtime)
+            .map_err(commit_error_to_harness_error)?;
         Ok(())
     }
 
@@ -153,7 +148,10 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         request: &ExecutionRequest<Self::TargetId>,
         profile: &ExecutionProfile,
     ) -> Result<RunRecord<Self::TargetId>, Self::Error> {
-        execution::execute_request(self, runtime, fixture, request, profile)
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        execution::execute_request(execution, self, runtime, fixture, request, profile)
     }
 
     fn capture_snapshot(
@@ -163,7 +161,10 @@ impl HarnessAdapter for RelationalHarnessAdapter {
         request: &ExecutionRequest<Self::TargetId>,
         profile: &ExecutionProfile,
     ) -> Result<SnapshotRecord<Self::TargetId>, Self::Error> {
-        snapshot_capture::capture_snapshot(self, runtime, fixture, request, profile)
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        snapshot_capture::capture_snapshot(execution, self, runtime, fixture, request, profile)
     }
 }
 

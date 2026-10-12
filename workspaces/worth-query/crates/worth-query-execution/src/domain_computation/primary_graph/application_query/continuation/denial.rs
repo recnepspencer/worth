@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 /// cancellation, and deadline causes concern this attempt only.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationContinuationDenialKind {
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The continuation belongs to a different plan or runtime.
     ForeignPlan,
     /// The installed query changed since the continuation was issued.

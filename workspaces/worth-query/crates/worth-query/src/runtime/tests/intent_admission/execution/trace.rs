@@ -2,15 +2,21 @@ use super::*;
 
 #[test]
 fn admitted_intent_receipt_exposes_linear_decision_trace() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let receipt = runtime
-        .execute_intent(WorthQueryIntentDeclaration::strategy_commit(
-            "traceable-runtime-intent",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            test_intent_input([("entity", "task-1"), ("title", "Intent committed title")]),
-        ))
+        .execute_intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "traceable-runtime-intent",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                test_intent_input([("entity", "task-1"), ("title", "Intent committed title")]),
+            ),
+        )
         .expect("intent should execute");
     let decision_trace = receipt.decision_trace_envelope();
 
@@ -106,13 +112,17 @@ fn admitted_intent_receipt_exposes_linear_decision_trace() {
 
 #[test]
 fn effect_triggered_trace_eligibility_preserves_write_adjacent_trigger_proof() {
-    let mut runtime = intent_runtime_with_authority(TestIntentAuthority);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = intent_runtime_with_authority(request_execution, TestIntentAuthority);
     let origin_identity = test_write_adjacent_origin_identity(
         WorthQueryEffectWriteAdjacentTriggerClass::RemaskDrift,
         "remask-drift:cause:task-title",
     );
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.trace-follow-on",
             task_live_request(),
             task_schema(),
@@ -133,16 +143,19 @@ fn effect_triggered_trace_eligibility_preserves_write_adjacent_trigger_proof() {
         .expect("remask drift effect should declare");
 
     runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title from remask drift",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title from remask drift",
+            ),
+        )
         .expect("write should queue pending intent");
 
     let receipt = runtime
         .next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
-        .execute()
+        .execute(request_execution)
         .expect("effect-triggered intent should execute");
     let decision_trace = receipt.intent_receipt().decision_trace_envelope();
 

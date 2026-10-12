@@ -14,7 +14,10 @@ use super::support::{
 
 #[test]
 fn declaration_support_evidence_composes_into_readiness() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let evidence = WorthQueryDeclarationEntryContributionEvidenceSet::new(vec![
         WorthQueryDeclarationEntryContributionEvidence::from(admitted_declaration_support(
             "family.readiness.digest",
@@ -38,7 +41,10 @@ fn declaration_support_evidence_composes_into_readiness() {
 
 #[test]
 fn declaration_explanation_evidence_composes_into_unified_inspection() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let envelope = bridge_signal_envelope(&handle, "edge:42");
     let canonical_declaration = envelope
         .foundational_evidence()
@@ -80,7 +86,10 @@ fn declaration_explanation_evidence_composes_into_unified_inspection() {
 
 #[test]
 fn contribution_digest_changes_without_changing_matching_rows() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let envelope = bridge_signal_envelope(&handle, "edge:42");
     let canonical_declaration = envelope
         .foundational_evidence()
@@ -124,7 +133,10 @@ fn contribution_digest_changes_without_changing_matching_rows() {
 
 #[test]
 fn readiness_digest_changes_while_baseline_rows_stay_intact() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let baseline = handle.declaration_entry_readiness::<Input<BridgeSignalFamily>>();
     let composed = handle
         .try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
@@ -148,7 +160,10 @@ fn readiness_digest_changes_while_baseline_rows_stay_intact() {
 
 #[test]
 fn declaration_workflow_evidence_composes_when_admitted_plan_scope_is_present() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let plan = admitted_plan();
     let inspection = handle
         .inspect_declaration_entry(
@@ -179,7 +194,10 @@ fn declaration_workflow_evidence_composes_when_admitted_plan_scope_is_present() 
 
 #[test]
 fn admitted_plan_bound_categories_compose_with_retained_plan_scope() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let plan = admitted_plan();
     let readiness = handle
         .try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
@@ -218,7 +236,10 @@ fn admitted_plan_bound_categories_compose_with_retained_plan_scope() {
 
 #[test]
 fn lower_runtime_bound_categories_compose_with_retained_lower_runtime_scope() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let lower_runtime = lower_runtime_envelope("lower-runtime:edge:42");
     let inspection = handle
         .inspect_declaration_entry(

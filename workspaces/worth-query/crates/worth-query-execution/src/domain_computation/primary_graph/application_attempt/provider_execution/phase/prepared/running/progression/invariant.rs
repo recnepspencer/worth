@@ -7,6 +7,7 @@ use graph::application_attempt::WorthQueryApplicationCommitDenialStage as Denial
 use graph::WorthQueryApplicationCommitDenial as Denial;
 
 pub(super) fn progress_invariant_candidate<'run>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
     fresh: crate::domain_computation::WorthQueryFreshDecisionReadSet,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -57,7 +58,11 @@ pub(super) fn progress_invariant_candidate<'run>(
             crate::domain_computation::provider_session::check_invariant_request_live(Some(request))
         })
         .and_then(|()| {
-            provider.admit_primary_candidate(inspection.provider_session_view(), allocation_policy)
+            provider.admit_primary_candidate(
+                execution,
+                inspection.provider_session_view(),
+                allocation_policy,
+            )
         });
     match candidate {
         Ok(()) => (),

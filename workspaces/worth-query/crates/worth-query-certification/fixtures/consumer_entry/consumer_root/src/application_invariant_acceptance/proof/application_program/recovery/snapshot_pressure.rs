@@ -54,7 +54,11 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
     let mut retained = Vec::new();
     let mut exhausted = false;
     for _ in 0..64 {
-        match request.retain_read() {
+        match world
+            .application
+            .with_host_advancement(|host_phase| request.retain_read(&host_phase))
+            .expect("installed host call opens")
+        {
             Ok(observation) => retained.push(observation),
             Err(error) => {
                 assert!(

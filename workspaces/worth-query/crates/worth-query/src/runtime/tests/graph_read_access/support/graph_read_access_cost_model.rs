@@ -11,9 +11,12 @@ use crate::runtime::{
 
 use crate::runtime::tests::graph_read_access::support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
-pub fn workspace(name: &str) -> WorthQueryWorkspace {
+pub fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> WorthQueryWorkspace {
     PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace(name)
         .expect("runtime should open workspace")
 }

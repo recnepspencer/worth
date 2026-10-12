@@ -20,6 +20,52 @@ where
         PrincipalIdentityBinding,
     >(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        installed_binding: &WorthQueryInstalledPrincipalBinding<
+            Schema,
+            Binding,
+            Mapping,
+            Principal,
+            PrincipalIdentity,
+            PrincipalIdentityBinding,
+        >,
+        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        scope: &WorthQueryRequestScope,
+        mode: WorthQueryPrincipalResolutionMode,
+    ) -> Result<
+        WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        WorthQueryPrincipalResolutionDenial,
+    >
+    where
+        PrincipalIdentityBinding: ApplicationIdentityScalarValueBinding<Value = PrincipalIdentity>,
+        PrincipalIdentity: 'static,
+    {
+        let execution = phase
+            .execution_request_for(&self.application().product_runtime)
+            .map_err(|_| {
+                resolution_denial(
+                    WorthQueryPrincipalResolutionDenialKind::ForeignPhase,
+                    installed_binding.binding(),
+                )
+            })?;
+        self.resolve_authenticated_principal_with_request(
+            &execution,
+            installed_binding,
+            external,
+            scope,
+            mode,
+        )
+    }
+
+    pub(in crate::domain_computation) fn resolve_authenticated_principal_with_request<
+        Binding,
+        Mapping,
+        Principal,
+        PrincipalIdentity,
+        PrincipalIdentityBinding,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed_binding: &WorthQueryInstalledPrincipalBinding<
             Schema,
             Binding,
@@ -66,14 +112,19 @@ where
             )
         })?;
         let handle = graph.integration_handle();
-        let evidence = handle.with_runtime_mut(|relational| {
+        let evidence = handle.with_runtime_mut(execution, |relational| {
             handle
-                .ensure_primary_indexes_for_basis(relational, self.product().relational_basis())
+                .ensure_primary_indexes_for_basis(
+                    execution,
+                    relational,
+                    self.product().relational_basis(),
+                )
                 .map_err(|denial| {
                     principal_index_currency_denial(denial, installed_binding.binding())
                 })?;
             resolve_at_snapshot(
                 relational,
+                execution,
                 self.application_basis().snapshot_handle(),
                 &WorthQueryPrincipalSnapshotResolution {
                     binding: installed_binding.binding(),
@@ -92,6 +143,27 @@ where
 
     pub fn validate_authenticated_principal<Principal, PrincipalIdentity>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
+        let execution = phase
+            .execution_request_for(&self.application().product_runtime)
+            .map_err(|_| {
+                resolution_denial(
+                    WorthQueryPrincipalResolutionDenialKind::ForeignPhase,
+                    principal.binding(),
+                )
+            })?;
+        self.validate_authenticated_principal_with_request(&execution, principal, scope)
+    }
+
+    pub(in crate::domain_computation) fn validate_authenticated_principal_with_request<
+        Principal,
+        PrincipalIdentity,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         scope: &WorthQueryRequestScope,
     ) -> Result<(), WorthQueryPrincipalResolutionDenial> {
@@ -119,11 +191,16 @@ where
                     )
                 })?;
         let handle = graph.integration_handle();
-        handle.with_runtime_mut(|relational| {
+        handle.with_runtime_mut(execution, |relational| {
             handle
-                .ensure_primary_indexes_for_basis(relational, self.product().relational_basis())
+                .ensure_primary_indexes_for_basis(
+                    execution,
+                    relational,
+                    self.product().relational_basis(),
+                )
                 .map_err(|denial| principal_index_currency_denial(denial, principal.binding()))?;
             validate_freshness_at_snapshot(
+                execution,
                 relational,
                 self.application_basis().snapshot_handle(),
                 principal,

@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_chip_global_step_endurance(suite: &'static str) {
+pub(super) fn certify_chip_global_step_endurance(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let chip_global_step_endurance_samples =
         capture_perf_samples(suite, "chip_global_step_endurance", || {
             let mut runtime =
@@ -13,6 +16,7 @@ pub(super) fn certify_chip_global_step_endurance(suite: &'static str) {
             let drivers = (0..8)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("chip-global-driver-{index}"),
                         PartitionId(930 + index as u32),
@@ -22,6 +26,7 @@ pub(super) fn certify_chip_global_step_endurance(suite: &'static str) {
             let sinks = (0..64)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("chip-global-sink-{index}"),
                         PartitionId(950 + (index % 8) as u32),
@@ -33,6 +38,7 @@ pub(super) fn certify_chip_global_step_endurance(suite: &'static str) {
                 for fanout in 0..8 {
                     let sink = sinks[index * 8 + fanout];
                     create_relation_in_partition(
+                        execution,
                         &runtime,
                         *driver,
                         sink,
@@ -43,6 +49,7 @@ pub(super) fn certify_chip_global_step_endurance(suite: &'static str) {
             }
             for index in 0..(sinks.len() - 1) {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     sinks[index],
                     sinks[index + 1],
@@ -64,7 +71,12 @@ pub(super) fn certify_chip_global_step_endurance(suite: &'static str) {
             for step in 0..ITERATIONS {
                 let driver = drivers[step % drivers.len()];
                 let update_started_at = Instant::now();
-                let _ = update_entity(&runtime, driver, &format!("chip-global-driver-step-{step}"));
+                let _ = update_entity(
+                    execution,
+                    &runtime,
+                    driver,
+                    &format!("chip-global-driver-step-{step}"),
+                );
                 let update_micros = update_started_at.elapsed().as_micros();
                 total_update_micros += update_micros;
 

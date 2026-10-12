@@ -32,21 +32,25 @@ use super::super::{
 };
 
 pub(super) fn select_exact_grant(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
     request: &WorthQueryRetainedCapabilityRequest,
     sample: &WorthQueryRuntimeTimeSample,
 ) -> Result<SelectedCapabilityGrant, WorthQueryOperationAuthorizationDenial> {
-    let lookup = lookup_candidate_grants(relational, snapshot.clone(), installed, request)?;
+    let lookup =
+        lookup_candidate_grants(execution, relational, snapshot.clone(), installed, request)?;
     let paths = prepare_candidate_paths(installed, request, sample, lookup.candidate_entity_ids())?;
-    let evidence = observe_candidate_paths(relational, snapshot, installed, request, paths)?;
+    let evidence =
+        observe_candidate_paths(execution, relational, snapshot, installed, request, paths)?;
     let grant = selected_grant(installed, &evidence)?;
     let work = selection_work(&lookup, evidence.counters());
     Ok(SelectedCapabilityGrant { grant, work })
 }
 
 fn lookup_candidate_grants(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -65,7 +69,11 @@ fn lookup_candidate_grants(
     .map_err(|_| invalid_policy(installed.contract().name()))?;
     let lookup = relational
         .index_access()
-        .execute_bounded_relation_join_lookup(lookup_request, BoundedIndexParityMode::Production)
+        .execute_bounded_relation_join_lookup(
+            lookup_request,
+            BoundedIndexParityMode::Production,
+            execution,
+        )
         .map_err(|_| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
@@ -109,6 +117,7 @@ fn prepare_candidate_paths(
 }
 
 fn observe_candidate_paths(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -128,12 +137,14 @@ fn observe_candidate_paths(
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
-    relational.observe_authorization(plan).map_err(|_| {
-        denial(
-            WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
-            installed.contract().name(),
-        )
-    })
+    relational
+        .observe_authorization(plan, execution)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                installed.contract().name(),
+            )
+        })
 }
 
 fn selected_grant(

@@ -77,6 +77,49 @@ where
 {
     pub fn authorize_elevation_close<Capability, Operation, Input>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        approved: WorthQueryApprovedElevation,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryElevationCloseAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+        Input: 'static,
+    {
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(close_denial(approved, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+        };
+        self.authorize_elevation_close_with_request(
+            &execution,
+            approved,
+            access,
+            operation,
+            preconditions,
+        )
+    }
+
+    pub(in crate::domain_computation) fn authorize_elevation_close_with_request<
+        Capability,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         approved: WorthQueryApprovedElevation,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
         operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
@@ -104,6 +147,7 @@ where
             Err(denial) => return Err(close_denial(approved, denial)),
         };
         let admission = match progress_capability_operation(
+            execution,
             self,
             access,
             operation,

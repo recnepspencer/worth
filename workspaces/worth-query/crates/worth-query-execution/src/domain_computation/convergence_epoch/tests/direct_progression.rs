@@ -15,6 +15,9 @@ fn real_installed_direct_authorities_progress_to_converged_and_cleanup() {
         let execution = phase;
 
         let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
+
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        let execution = &installed_fixture_phase;
         let started = match epoch.begin_iteration(
             execution,
             WorthQueryManagedGraphCallRequest::new(
@@ -83,26 +86,34 @@ fn same_semantic_candidate_in_real_direct_peers_has_distinct_occurrences() {
 }
 
 fn start_direct_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     scope: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryStartedDirectConvergenceIteration {
     let epoch = direct_epoch_fixture(FixtureDisposition::Converged, resource_request);
-    epoch
-        .begin_iteration(
-            execution,
+    {
+        let installed_fixture_phase = epoch.fixture_phase(execution);
+        epoch.begin_iteration(
+            &installed_fixture_phase,
             WorthQueryManagedGraphCallRequest::new(WorthQueryGraphProviderCallKind::Observe, scope),
         )
-        .unwrap_or_else(|_| panic!("real direct peer must begin"))
+    }
+    .unwrap_or_else(|_| panic!("real direct peer must begin"))
 }
 
 fn complete_direct_peer(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     started: WorthQueryStartedDirectConvergenceIteration,
 ) -> String {
-    let outcome = match started.advance(execution) {
-        WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
-        _ => panic!("real direct peer must complete"),
+    let outcome = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = started.fixture_phase(execution);
+            started.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectConvergenceStepOutcome::Completed(outcome) => outcome,
+            _ => panic!("real direct peer must complete"),
+        }
     };
     let terminal = match outcome {
         WorthQueryDirectConvergenceIterationOutcome::Converged(terminal) => terminal,
@@ -134,6 +145,8 @@ fn epoch_owned_iteration_bound_terminalizes_continue_as_exhausted() {
 
         let mut epoch = direct_epoch_fixture(FixtureDisposition::Continue, resource_request);
         for ordinal in 1..=3 {
+            let installed_fixture_phase = epoch.fixture_phase(execution);
+            let execution = &installed_fixture_phase;
             let started = match epoch.begin_iteration(
                 execution,
                 WorthQueryManagedGraphCallRequest::new(

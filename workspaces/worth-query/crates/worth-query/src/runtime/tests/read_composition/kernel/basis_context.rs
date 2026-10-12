@@ -28,14 +28,17 @@ use crate::runtime::{
 
 #[test]
 fn execute_read_family_in_basis_context_preserves_current_context_receipt() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-current-basis-context")
         .expect("read-backed runtime should open a workspace");
     let family = identity_read_family(&mut workspace, "current-context-family");
     let context = current_context_for_family(&family, "snapshot-current-context");
 
     let result = workspace
-        .execute_read_family_in_basis_context(&family, &context)
+        .execute_read_family_in_basis_context(request_execution, &family, &context)
         .expect("basis-context read-family execution should succeed");
 
     assert_eq!(result.receipt().query_digest(), context.query_digest());
@@ -53,14 +56,17 @@ fn execute_read_family_in_basis_context_preserves_current_context_receipt() {
 
 #[test]
 fn execute_read_family_in_basis_context_preserves_branch_context_receipt() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-branch-basis-context")
         .expect("read-backed runtime should open a workspace");
     let family = identity_read_family(&mut workspace, "branch-context-family");
     let context = branch_context_for_family(&family, "branch:snapshot-family");
 
     let result = workspace
-        .execute_read_family_in_basis_context(&family, &context)
+        .execute_read_family_in_basis_context(request_execution, &family, &context)
         .expect("branch basis-context read-family execution should succeed");
 
     assert_eq!(context.family(), &QueryContextFamily::BranchHead);
@@ -75,14 +81,17 @@ fn execute_read_family_in_basis_context_preserves_branch_context_receipt() {
 
 #[test]
 fn execute_read_family_in_basis_context_preserves_unbound_historical_context_receipt() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-historical-basis-context")
         .expect("read-backed runtime should open a workspace");
     let family = identity_read_family(&mut workspace, "historical-context-family");
     let context = retained_historical_context_for_family(&family, "history:snapshot-family");
 
     let result = workspace
-        .execute_read_family_in_basis_context(&family, &context)
+        .execute_read_family_in_basis_context(request_execution, &family, &context)
         .expect("historical basis-context read-family execution should succeed");
 
     assert_eq!(context.family(), &QueryContextFamily::HistoricalSnapshot);
@@ -97,17 +106,20 @@ fn execute_read_family_in_basis_context_preserves_unbound_historical_context_rec
 
 #[test]
 fn execute_read_family_in_basis_context_materializes_runtime_rows_for_bound_historical_snapshot() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-bound-historical-basis-context")
         .expect("read-backed runtime should open a workspace");
     let family = identity_read_family(&mut workspace, "bound-historical-context-family");
-    let snapshot_identity = workspace.snapshot_identity();
+    let snapshot_identity = workspace.snapshot_identity_with_request(request_execution);
     let snapshot_evidence_identity = snapshot_identity.evidence_identity();
     let context =
         retained_historical_context_for_family(&family, snapshot_evidence_identity.as_str());
 
     let result = workspace
-        .execute_read_family_in_basis_context(&family, &context)
+        .execute_read_family_in_basis_context(request_execution, &family, &context)
         .expect("workspace-bound historical basis-context read-family execution should succeed");
 
     assert_eq!(context.family(), &QueryContextFamily::HistoricalSnapshot);
@@ -122,14 +134,17 @@ fn execute_read_family_in_basis_context_materializes_runtime_rows_for_bound_hist
 
 #[test]
 fn execute_read_family_in_basis_context_preserves_preview_derived_context_receipt() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-preview-basis-context")
         .expect("read-backed runtime should open a workspace");
     let family = identity_read_family(&mut workspace, "preview-context-family");
     let context = preview_derived_context_for_family(&family, "preview-context-family");
 
     let result = workspace
-        .execute_read_family_in_basis_context(&family, &context)
+        .execute_read_family_in_basis_context(request_execution, &family, &context)
         .expect("preview-derived basis-context read-family execution should succeed");
 
     assert_eq!(
@@ -147,7 +162,10 @@ fn execute_read_family_in_basis_context_preserves_preview_derived_context_receip
 
 #[test]
 fn execute_read_family_in_basis_context_denies_query_digest_substitution() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-basis-context-substitution")
         .expect("read-backed runtime should open a workspace");
     let requested_family = identity_read_family(&mut workspace, "requested-family");
@@ -155,7 +173,11 @@ fn execute_read_family_in_basis_context_denies_query_digest_substitution() {
     let unrelated_context = current_context_for_family(&unrelated_family, "snapshot-unrelated");
 
     let error = workspace
-        .execute_read_family_in_basis_context(&requested_family, &unrelated_context)
+        .execute_read_family_in_basis_context(
+            request_execution,
+            &requested_family,
+            &unrelated_context,
+        )
         .expect_err("mismatched basis contexts must deny before execution");
 
     match error {
@@ -196,45 +218,9 @@ fn identity_read_family(
         .expect("read family should define")
 }
 
-fn profile_read_family(
-    workspace: &mut WorthQueryWorkspace,
-    family_name: &str,
-) -> WorthQueryReadFamily {
-    workspace
-        .define_read_family(family_name, |read| {
-            read.local_detail(
-                "user",
-                manager_schema(),
-                |query| {
-                    query
-                        .project(
-                            AspectFieldSelector::new("identity", "id")
-                                .expect("identity projection should build"),
-                        )
-                        .project(
-                            AspectFieldSelector::new("profile", "display_name")
-                                .expect("profile projection should build"),
-                        )
-                },
-                |shape| {
-                    shape
-                        .field(
-                            AuthoredResultShapeField::new("identity", "id", "id")
-                                .expect("identity result-shape field should build"),
-                        )
-                        .field(
-                            AuthoredResultShapeField::new(
-                                "profile",
-                                "display_name",
-                                "display_name",
-                            )
-                            .expect("profile result-shape field should build"),
-                        )
-                },
-            )
-        })
-        .expect("profile read family should define")
-}
+#[path = "basis_context/profile_read_family.rs"]
+mod profile_read_family;
+use profile_read_family::profile_read_family;
 
 fn current_context_for_family(
     family: &WorthQueryReadFamily,

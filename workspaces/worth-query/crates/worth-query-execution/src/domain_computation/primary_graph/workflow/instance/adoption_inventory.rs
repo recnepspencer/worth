@@ -50,39 +50,44 @@ struct ReadTransition {
 }
 
 pub(in crate::domain_computation::primary_graph) fn read_live_instances(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &mut WorkflowAdoptionTruth<'_>,
     layout: &WorthQueryWorkflowLayout,
     branch_occurrence: u64,
 ) -> Result<Vec<WorkflowLiveInstance>, WorkflowAdoptionReadDenial> {
     let mut instances = Vec::new();
-    for membership in truth.relations_of_kind(layout.live_instance_lineage_relation)? {
+    for membership in truth.relations_of_kind(execution, layout.live_instance_lineage_relation)? {
         let instance = membership.source;
         let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: instance };
-        let record = truth.entity(instance, layout.instance.entity_kind)?;
-        if record.u64(&layout.instance.protocol_version)? != WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
+        let record = truth.entity(execution, instance, layout.instance.entity_kind)?;
+        if record.u64(execution, &layout.instance.protocol_version)?
+            != WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
         {
             return Err(unreadable);
         }
-        if record.u64(&layout.instance.branch_occurrence)? != branch_occurrence {
+        if record.u64(execution, &layout.instance.branch_occurrence)? != branch_occurrence {
             continue;
         }
-        if record.u64(&layout.instance.state)? != WorkflowInstanceState::Ready.persisted_tag() {
+        if record.u64(execution, &layout.instance.state)?
+            != WorkflowInstanceState::Ready.persisted_tag()
+        {
             return Err(unreadable);
         }
-        record.text(&layout.instance.program_revision)?;
-        let owner_custody = record.optional_text(&layout.instance.owner_custody)?;
-        let definition = truth.single_target(instance, layout.instance_definition_relation)?;
+        record.text(execution, &layout.instance.program_revision)?;
+        let owner_custody = record.optional_text(execution, &layout.instance.owner_custody)?;
+        let definition =
+            truth.single_target(execution, instance, layout.instance_definition_relation)?;
         let mut transitions = Vec::new();
         let mut owner_custody_pending = owner_custody.is_some();
-        for relation in truth.outgoing(instance, layout.instance_transition_relation)? {
-            let read = read_transition(truth, layout, relation.target)?;
+        for relation in truth.outgoing(execution, instance, layout.instance_transition_relation)? {
+            let read = read_transition(execution, truth, layout, relation.target)?;
             if owner_custody.as_deref() == Some(read.identity.as_str()) {
                 owner_custody_pending = false;
             }
             transitions.push(read.inventoried);
         }
         let inherits_effects = !truth
-            .outgoing(instance, layout.instance_prior_effect_relation)?
+            .outgoing(execution, instance, layout.instance_prior_effect_relation)?
             .is_empty();
         instances.push(WorkflowLiveInstance {
             instance,
@@ -99,23 +104,26 @@ pub(in crate::domain_computation::primary_graph) fn read_live_instances(
 }
 
 fn read_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &mut WorkflowAdoptionTruth<'_>,
     layout: &WorthQueryWorkflowLayout,
     transition: EntityId,
 ) -> Result<ReadTransition, WorkflowAdoptionReadDenial> {
     let unreadable = WorkflowAdoptionReadDenial::UnreadableEntity { entity: transition };
-    let record = truth.entity(transition, layout.transition.entity_kind)?;
-    if record.u64(&layout.transition.protocol_version)? != WORKFLOW_FACT_PROTOCOL_VERSION {
+    let record = truth.entity(execution, transition, layout.transition.entity_kind)?;
+    if record.u64(execution, &layout.transition.protocol_version)? != WORKFLOW_FACT_PROTOCOL_VERSION
+    {
         return Err(unreadable);
     }
-    let identity = record.text(&layout.transition.identity)?;
-    let occurrence = record.u64(&layout.transition.occurrence)?;
-    let outcome = super::decode_transition_outcome(record.u64(&layout.transition.outcome)?)
-        .ok_or(unreadable)?;
+    let identity = record.text(execution, &layout.transition.identity)?;
+    let occurrence = record.u64(execution, &layout.transition.occurrence)?;
+    let outcome =
+        super::decode_transition_outcome(record.u64(execution, &layout.transition.outcome)?)
+            .ok_or(unreadable)?;
     let receipted = record
-        .optional_text(&layout.transition.operation_receipt_identity)?
+        .optional_text(execution, &layout.transition.operation_receipt_identity)?
         .is_some();
-    let node = truth.single_target(transition, layout.transition_node_relation)?;
+    let node = truth.single_target(execution, transition, layout.transition_node_relation)?;
     Ok(ReadTransition {
         inventoried: WorkflowInventoriedTransition {
             node,

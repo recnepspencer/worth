@@ -125,7 +125,8 @@ fn a_demand_at_an_older_observation_ignores_later_commits() {
     for index in 0..rings.len() {
         court.demand_ring(&mut rings, index, "before the edit");
     }
-    let retained = court.request.retain_read().unwrap();
+    let retained =
+        crate::checkpoint_recovery::support::retain_read(court.application, court.request).unwrap();
     let older = rings.clone();
 
     let at = "while the retained observation is the head";
@@ -201,7 +202,8 @@ fn an_observation_below_the_window_never_settles_on_an_older_pinned_output() {
     let mut rings: Vec<Ring> = (0..3).map(Ring::seeded).collect();
     Reading::decisions();
     court.demand_ring(&mut rings, 0, "before any edit");
-    let first = court.request.retain_read().unwrap();
+    let first =
+        crate::checkpoint_recovery::support::retain_read(court.application, court.request).unwrap();
     let first_ring = rings[0].clone();
 
     let at = "after the first edit";
@@ -219,7 +221,8 @@ fn an_observation_below_the_window_never_settles_on_an_older_pinned_output() {
     );
     settles_on!(court, pinned_b, rings[0].key("b"), first_ring.b_length, at);
     court.demand_ring(&mut rings, 0, at);
-    let second = court.request.retain_read().unwrap();
+    let second =
+        crate::checkpoint_recovery::support::retain_read(court.application, court.request).unwrap();
     let second_ring = rings[0].clone();
     settle_at(&court, &second, &second_ring, at);
 

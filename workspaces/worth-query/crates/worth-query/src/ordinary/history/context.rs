@@ -34,9 +34,12 @@ impl WorthQueryHistoricalContext {
 
 /// Capture the runtime's currently retained snapshot as an explicit
 /// historical basis. The captured identity is checked again at execution.
-pub fn at(workspace: &WorthQueryWorkspace) -> WorthQueryHistoricalContext {
+pub fn at(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace: &WorthQueryWorkspace,
+) -> WorthQueryHistoricalContext {
     WorthQueryHistoricalContext {
         workspace_name: workspace.name().to_string(),
-        snapshot_identity: workspace.snapshot_identity(),
+        snapshot_identity: workspace.snapshot_identity_with_request(execution),
     }
 }

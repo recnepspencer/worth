@@ -13,7 +13,10 @@ use crate::application::WorthQueryDeclarationFamilyMarker;
 
 #[test]
 fn equivalent_async_authoring_forms_share_canonical_identity() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let left = handle
         .declare(AsyncResourceReadDeclaration::new(
             "edge:42",
@@ -46,7 +49,10 @@ fn equivalent_async_authoring_forms_share_canonical_identity() {
 
 #[test]
 fn async_source_family_changes_mutate_declaration_identity_explicitly() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let bridge = handle
         .declare(AsyncResourceReadDeclaration::new(
             "edge:42",
@@ -75,7 +81,10 @@ fn async_source_family_changes_mutate_declaration_identity_explicitly() {
 
 #[test]
 fn async_request_identity_changes_mutate_declaration_identity_explicitly() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let left = handle
         .declare(AsyncResourceReadDeclaration::new(
             "edge:42",
@@ -104,7 +113,10 @@ fn async_request_identity_changes_mutate_declaration_identity_explicitly() {
 
 #[test]
 fn async_loading_and_failure_posture_changes_mutate_declaration_identity_explicitly() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let blocking = handle
         .declare(AsyncResourceReadDeclaration::new(
             "edge:42",
@@ -151,7 +163,10 @@ fn async_loading_and_failure_posture_changes_mutate_declaration_identity_explici
 
 #[test]
 fn async_clause_accessors_retain_normalized_request_meaning() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let declaration = handle
         .declare(AsyncResourceReadDeclaration::new(
             "edge:42",
@@ -207,7 +222,10 @@ fn async_clause_accessors_retain_normalized_request_meaning() {
 
 #[test]
 fn async_and_temporal_clauses_compose_into_canonical_identity() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
     let plain_async = handle
         .declare(AsyncResourceReadDeclaration::new(
             "edge:42",
@@ -244,7 +262,10 @@ fn async_and_temporal_clauses_compose_into_canonical_identity() {
 
 #[test]
 fn async_clauses_fail_closed_without_family_opt_in() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
 
     match handle.declare_checked(AsyncUnsupportedSplitEdgeDeclaration::new(
         "edge:42",
@@ -274,7 +295,10 @@ fn async_clauses_fail_closed_without_family_opt_in() {
 
 #[test]
 fn async_declaration_families_can_fail_closed_as_deferred_debt() {
-    let handle = admitted_handle(GeometryOperatingContext::collaborative());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, GeometryOperatingContext::collaborative());
 
     match handle.declare_checked(DeferredAsyncResourceReadDeclaration::new(
         "edge:42",

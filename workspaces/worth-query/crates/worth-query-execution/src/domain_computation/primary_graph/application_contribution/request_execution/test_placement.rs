@@ -304,58 +304,57 @@ pub fn bound_advancement_requests_on_this_thread_for_test(
     REQUEST_BUDGET.replace(budget)
 }
 
+/// The host call uses exactly the computation fixture's declared budget.
 #[cfg(test)]
-mod scope_tests {
-    use super::*;
-    use crate::domain_computation::execution_observation::WorthQueryExecutionObservation as Observation;
-    #[test]
-    fn unwinding_clears_placement_and_budget_before_the_thread_is_reused() {
-        assert!(std::panic::catch_unwind(|| {
-            let _guard = Observation::install_on_this_thread();
-            place_managed_computations_on_this_thread_for_test(
-                WorthQueryExecutionPlacementForTest::Serial,
-            );
-            bound_advancement_requests_on_this_thread_for_test(Some(ExecutionBudget::new(
-                NonZeroUsize::MIN,
-                7,
-                9,
-            )));
-            panic!("exercise placement cleanup");
-        })
-        .is_err());
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
-        assert!(REQUEST_BUDGET.get().is_none());
-    }
-    #[test]
-    fn dropping_an_older_guard_cannot_clear_a_newer_guards_placement() {
-        let outer = Observation::install_on_this_thread();
-        place_managed_computations_on_this_thread_for_test(
-            WorthQueryExecutionPlacementForTest::Serial,
-        );
-        let inner = Observation::install_on_this_thread();
-        let leased = WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN);
-        place_managed_computations_on_this_thread_for_test(leased);
-        drop(outer);
-        assert_eq!(PLACEMENT.get(), leased);
-        drop(inner);
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
-    }
-    #[test]
-    fn an_inner_guard_restores_only_a_still_owned_outer_placement() {
-        let outer = Observation::install_on_this_thread();
-        place_managed_computations_on_this_thread_for_test(
-            WorthQueryExecutionPlacementForTest::Serial,
-        );
-        let inner = Observation::install_on_this_thread();
-        place_managed_computations_on_this_thread_for_test(
-            WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN),
-        );
-        drop(inner);
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::Serial);
-        drop(outer);
-        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
+pub(in crate::domain_computation::primary_graph) struct FixturePlacement {
+    _observation: crate::domain_computation::execution_observation::WorthQueryExecutionObservation,
+    placement: WorthQueryExecutionPlacementForTest,
+    budget: Option<worth_foundational::ExecutionBudget>,
+}
+
+#[cfg(test)]
+impl FixturePlacement {
+    pub(in crate::domain_computation::primary_graph) fn enter(
+        placement: RuntimeWorldExecutionPlacement<'_>,
+    ) -> Self {
+        use self::{
+            bound_advancement_requests_on_this_thread_for_test as bound,
+            place_managed_computations_on_this_thread_for_test as place,
+            WorthQueryExecutionPlacementForTest as Placement,
+        };
+        let observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
+        let (chosen, policy) = match placement {
+            RuntimeWorldExecutionPlacement::Serial(policy) => (Placement::Serial, policy),
+            RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
+                (Placement::Leased(policy.budget().max_workers()), policy)
+            }
+        };
+        let prior = place(chosen);
+        if prior != Placement::World {
+            place(prior);
+        }
+        Self {
+            _observation: observation,
+            placement: prior,
+            budget: bound(Some(policy.budget())),
+        }
     }
 }
+
+#[cfg(test)]
+impl Drop for FixturePlacement {
+    fn drop(&mut self) {
+        use self::{
+            bound_advancement_requests_on_this_thread_for_test as bound,
+            place_managed_computations_on_this_thread_for_test as place,
+        };
+        bound(self.budget);
+        place(self.placement);
+    }
+}
+
+#[cfg(test)]
+mod scope_tests;
 
 #[cfg(test)]
 mod certification_tests;

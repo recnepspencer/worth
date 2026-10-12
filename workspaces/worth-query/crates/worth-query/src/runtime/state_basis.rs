@@ -20,6 +20,7 @@ use crate::evidence_identity::{
 impl WorthQueryRuntimeStateTarget for &WorthQueryAdmittedWorldBasis {
     fn into_state_snapshot(
         self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryRuntime,
     ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
         runtime
@@ -43,6 +44,7 @@ macro_rules! impl_scoped_basis_state_target {
         impl WorthQueryRuntimeStateTarget for &$target {
             fn into_state_snapshot(
                 self,
+                _execution: &worth_execution::ExecutionRequest<'_, '_>,
                 _runtime: &WorthQueryRuntime,
             ) -> Result<WorthQueryRuntimeStateSnapshot, WorthQueryRuntimeError> {
                 Ok(scoped_basis_snapshot(self, $label))

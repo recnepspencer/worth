@@ -29,7 +29,10 @@ fn sibling_publication_substitution_denies_before_transport() {
         let transport = CountingTransport(AtomicUsize::new(0));
         let substituted = world
             .application
-            .observe_committed_dispatch_outbox(&first)
+            .observe_committed_dispatch_outbox(
+                &active_phase.phase_for_application(&world.application),
+                &first,
+            )
             .unwrap()
             .unwrap()
             .with_product_publication_for_test(second.committed_product_publication().clone());
@@ -50,7 +53,8 @@ fn sibling_publication_substitution_denies_before_transport() {
 
         assert_eq!(
             world.application.perform_committed_external_dispatch(
-                phase,
+                &phase.borrowed_request_for_test(),
+                &phase.phase_for_application(&world.application),
                 &transport,
                 substituted,
                 &crate::domain_computation::primary_graph::tests::fixture::live_scope()

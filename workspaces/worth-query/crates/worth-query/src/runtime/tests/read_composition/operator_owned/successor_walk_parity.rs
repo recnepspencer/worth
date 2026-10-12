@@ -6,12 +6,15 @@ use crate::runtime::{WorthQueryReadBuiltInOperator, WorthQueryReadScopeClass};
 
 #[test]
 fn compose_read_successor_walk_detail_matches_open_coded_anchored_detail_query_semantics() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.successor-walk-parity-detail")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_successor_walk_detail(
                 "user",
                 expanded_manager_schema(),
@@ -48,7 +51,7 @@ fn compose_read_successor_walk_detail_matches_open_coded_anchored_detail_query_s
         .expect("operator-owned successor walk detail should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_detail(
                 "user",
                 expanded_manager_schema(),
@@ -116,12 +119,15 @@ fn compose_read_successor_walk_detail_matches_open_coded_anchored_detail_query_s
 
 #[test]
 fn compose_read_successor_walk_collection_matches_open_coded_anchored_collection_query_semantics() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.successor-walk-parity-collection")
         .expect("read-backed runtime should open a workspace");
 
     let operator_owned = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_successor_walk_collection(
                 "user",
                 expanded_manager_schema(),
@@ -162,7 +168,7 @@ fn compose_read_successor_walk_collection_matches_open_coded_anchored_collection
         .expect("operator-owned successor walk collection should execute");
 
     let open_coded = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.anchored_collection(
                 "user",
                 expanded_manager_schema(),

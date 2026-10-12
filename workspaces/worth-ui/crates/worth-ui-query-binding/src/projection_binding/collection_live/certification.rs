@@ -25,30 +25,34 @@ impl UiLiveCollectionProjection {
         &mut self,
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> (QueryPatch, QueryPatch) {
-        let delivery = self
-            .lease
-            .drain(workspace)
-            .expect("certification collection delivery drains");
-        let delta = self
-            .lease
-            .consumer_invalidation_delta(delivery)
-            .expect("certification collection delta derives");
-        let admitted = self
-            .lease
-            .admit_consumer_invalidation_delta(delta, workspace)
-            .unwrap_or_else(|stop| {
-                panic!(
-                    "certification collection invalidation stopped: {:?}",
-                    stop.kind()
+        workspace
+            .with_execution_request_mut(|request_execution, workspace| {
+                let delivery = self
+                    .lease
+                    .drain(workspace)
+                    .expect("certification collection delivery drains");
+                let delta = self
+                    .lease
+                    .consumer_invalidation_delta(delivery)
+                    .expect("certification collection delta derives");
+                let admitted = self
+                    .lease
+                    .admit_consumer_invalidation_delta(delta, workspace)
+                    .unwrap_or_else(|stop| {
+                        panic!(
+                            "certification collection invalidation stopped: {:?}",
+                            stop.kind()
+                        )
+                    });
+                self.consumer
+                    .bind_shared_target(&admitted, workspace)
+                    .expect("certification consumer binds");
+                (
+                    required_patch(request_execution, &mut self.consumer, &admitted, workspace),
+                    required_patch(request_execution, &mut self.consumer, &admitted, workspace),
                 )
-            });
-        self.consumer
-            .bind_shared_target(&admitted, workspace)
-            .expect("certification consumer binds");
-        (
-            required_patch(&mut self.consumer, &admitted, workspace),
-            required_patch(&mut self.consumer, &admitted, workspace),
-        )
+            })
+            .expect("fixture workspace host call opens")
     }
 
     pub(crate) fn certification_plan_patch_for_target(
@@ -56,35 +60,44 @@ impl UiLiveCollectionProjection {
         target: &mut Self,
         workspace: &mut runtime::WorthQueryWorkspace,
     ) -> (QueryPatch, QueryPatch, QueryPatch) {
-        let delivery = self
-            .lease
-            .drain(workspace)
-            .expect("certification shared delivery drains");
-        let delta = self
-            .lease
-            .consumer_invalidation_delta(delivery)
-            .expect("certification shared delta derives");
-        let admitted = self
-            .lease
-            .admit_consumer_invalidation_delta(delta, workspace)
-            .unwrap_or_else(|stop| {
-                panic!(
-                    "certification shared invalidation stopped: {:?}",
-                    stop.kind()
+        workspace
+            .with_execution_request_mut(|request_execution, workspace| {
+                let delivery = self
+                    .lease
+                    .drain(workspace)
+                    .expect("certification shared delivery drains");
+                let delta = self
+                    .lease
+                    .consumer_invalidation_delta(delivery)
+                    .expect("certification shared delta derives");
+                let admitted = self
+                    .lease
+                    .admit_consumer_invalidation_delta(delta, workspace)
+                    .unwrap_or_else(|stop| {
+                        panic!(
+                            "certification shared invalidation stopped: {:?}",
+                            stop.kind()
+                        )
+                    });
+                self.consumer
+                    .bind_shared_target(&admitted, workspace)
+                    .expect("source consumer binds shared target");
+                target
+                    .consumer
+                    .bind_shared_target(&admitted, workspace)
+                    .expect("target consumer binds shared target");
+                (
+                    required_patch(request_execution, &mut self.consumer, &admitted, workspace),
+                    required_patch(request_execution, &mut self.consumer, &admitted, workspace),
+                    required_patch(
+                        request_execution,
+                        &mut target.consumer,
+                        &admitted,
+                        workspace,
+                    ),
                 )
-            });
-        self.consumer
-            .bind_shared_target(&admitted, workspace)
-            .expect("source consumer binds shared target");
-        target
-            .consumer
-            .bind_shared_target(&admitted, workspace)
-            .expect("target consumer binds shared target");
-        (
-            required_patch(&mut self.consumer, &admitted, workspace),
-            required_patch(&mut self.consumer, &admitted, workspace),
-            required_patch(&mut target.consumer, &admitted, workspace),
-        )
+            })
+            .expect("fixture workspace host call opens")
     }
 
     #[allow(
@@ -167,11 +180,12 @@ impl UiLiveCollectionProjection {
 }
 
 fn required_patch(
+    request_execution: &worth_runtime_bridge::facade::ExecutionRequest<'_, '_>,
     consumer: &mut collection::WorthQueryCollectionConsumerWindow,
     admitted: &observation::WorthQueryAdmittedConsumerInvalidation<'_>,
     workspace: &runtime::WorthQueryWorkspace,
 ) -> QueryPatch {
-    match consumer.plan_patch(admitted, workspace) {
+    match consumer.plan_patch(request_execution, admitted, workspace) {
         collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
         collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(stop) => {
             panic!(

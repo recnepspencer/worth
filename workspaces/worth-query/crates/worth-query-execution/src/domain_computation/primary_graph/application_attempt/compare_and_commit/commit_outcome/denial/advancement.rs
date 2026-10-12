@@ -16,10 +16,6 @@ impl Stop {
                 crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::NestedAdvancementOpening,
                 None, None, "second advancement opening refused",
             ),
-            Self::ForeignPhase => Denial::execution_resource(
-                crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase,
-                None, None, "advancement belongs to another installed runtime",
-            ),
             Self::NestedStopped => Denial::execution_nested_stopped(None, "request admission stopped"),
             // The body may already have published. Admission cannot promise
             // a pre-effect denial after an unwind outside a checked pattern.

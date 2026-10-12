@@ -18,6 +18,7 @@ where
         Scope,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
@@ -37,7 +38,7 @@ where
         if let Err(denial) = prepared.validate_approval_descriptor() {
             return WorkflowProgressOutcome::AuthenticationDenied(denial);
         }
-        match prepared.resolve_transition_replay(self, idempotency) {
+        match prepared.resolve_transition_replay(execution, self, idempotency) {
             Ok(Some(outcome)) => return outcome,
             Ok(None) => {}
             Err(denial) => return WorkflowProgressOutcome::IdempotencyDenied(denial),
@@ -163,6 +164,7 @@ where
                 idempotency.bind_workflow_support(identity)
             });
         let outcome = self.compare_and_commit_application_for_program_action(
+            execution,
             phase,
             &presented,
             program,
@@ -171,20 +173,25 @@ where
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
         let projected = match outcome.landed() {
-            Ok((receipt, replayed)) => self.primary_provider.graph.with_runtime(|runtime| {
-                project(
-                    runtime,
-                    receipt,
-                    transition_identity,
-                    transition_identity_locator,
-                    node_path,
-                    terminal,
-                    assessment,
-                    approval,
-                    operation_receipt_identity,
-                    replayed,
-                )
-            }),
+            Ok((receipt, replayed)) => {
+                self.primary_provider
+                    .graph
+                    .with_runtime(execution, |runtime| {
+                        project(
+                            execution,
+                            runtime,
+                            receipt,
+                            transition_identity,
+                            transition_identity_locator,
+                            node_path,
+                            terminal,
+                            assessment,
+                            approval,
+                            operation_receipt_identity,
+                            replayed,
+                        )
+                    })
+            }
             Err(uncommitted) => WorkflowProgressOutcome::Application(uncommitted),
         };
         if let (Some(progress_update), WorkflowProgressOutcome::Completed(performed)) =
@@ -211,6 +218,7 @@ where
 }
 
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn project(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     receipt: super::super::super::WorthQueryApplicationCommitReceipt,
     transition_identity: String,
@@ -269,10 +277,12 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         None => None,
     };
     let approval = match approval {
-        Some(approval) => match project_approval(runtime, &receipt, transition, approval) {
-            Some(approval) => Some(approval),
-            None => return WorkflowProgressOutcome::ProjectionDenied(receipt),
-        },
+        Some(approval) => {
+            match project_approval(execution, runtime, &receipt, transition, approval) {
+                Some(approval) => Some(approval),
+                None => return WorkflowProgressOutcome::ProjectionDenied(receipt),
+            }
+        }
         None => None,
     };
     WorkflowProgressOutcome::Completed(PerformedWorkflowTransition {
@@ -288,6 +298,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
 }
 
 fn project_approval(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     receipt: &super::super::super::WorthQueryApplicationCommitReceipt,
     transition: worth_relational::facade::identity::EntityId,
@@ -336,13 +347,17 @@ fn project_approval(
     // main's edition.
     let committed = runtime
         .read_truth()
-        .try_project_historical_version(receipt.committed_changes().commit_reference().version_id)
+        .try_project_historical_version(
+            execution,
+            receipt.committed_changes().commit_reference().version_id,
+        )
         .ok()?;
     // One unit for the adjacency list and two per expected relation: an
     // unexpected extra relation exhausts the bound and fails closed.
     let exact_targets = |kind, from, expected: usize| {
         committed
             .bounded_outgoing_relations_for_frontier(
+                execution,
                 &std::collections::BTreeSet::from([from]),
                 kind,
                 expected.saturating_mul(2).saturating_add(1),

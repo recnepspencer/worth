@@ -41,8 +41,11 @@ impl<'a> WorthQueryRuntimeExistingTruthProbeIntentAuthoring<'a> {
         self.review()?.admit()
     }
 
-    pub fn execute(self) -> Result<WorthQueryExistingTruthProbeResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryExistingTruthProbeResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -105,8 +108,11 @@ impl<'a> WorthQueryRuntimeExistingTruthProbeIntentAdmissionReview<'a> {
         })
     }
 
-    pub fn execute(self) -> Result<WorthQueryExistingTruthProbeResult, WorthQueryRuntimeError> {
-        self.admit()?.execute()
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryExistingTruthProbeResult, WorthQueryRuntimeError> {
+        self.admit()?.execute(execution)
     }
 }
 
@@ -138,8 +144,11 @@ impl<'a> WorthQueryAdmittedRuntimeExistingTruthProbeIntent<'a> {
         &self.execution_binding
     }
 
-    pub fn execute(self) -> Result<WorthQueryExistingTruthProbeResult, WorthQueryRuntimeError> {
+    pub fn execute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<WorthQueryExistingTruthProbeResult, WorthQueryRuntimeError> {
         self.runtime
-            .execute_existing_truth_probe_execution_binding(self.execution_binding)
+            .execute_existing_truth_probe_execution_binding(execution, self.execution_binding)
     }
 }

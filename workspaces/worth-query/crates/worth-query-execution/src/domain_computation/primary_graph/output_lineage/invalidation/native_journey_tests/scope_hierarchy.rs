@@ -15,20 +15,29 @@ const DEPTH: usize = 6;
 
 #[test]
 fn a_deep_native_leaf_has_identical_work_with_eight_or_sixty_four_sibling_subtrees() {
-    let mut counts = None;
-    for siblings in [8, 64] {
-        let observed = run(siblings);
-        assert_eq!(
-            *counts.get_or_insert(observed),
-            observed,
-            "the leaf's logical work depends on its ancestor path, not the sibling population"
-        );
+    {
+        let mut counts = None;
+        for siblings in [8, 64] {
+            let observed = run(siblings);
+            assert_eq!(
+                *counts.get_or_insert(observed),
+                observed,
+                "the leaf's logical work depends on its ancestor path, not the sibling population"
+            );
+        }
     }
 }
 
 fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
     let world = installed_authorization_world(true);
-    let (_, product, _) = world.selected_product().into_parts();
+    world.application.with_host_advancement(|phase| {
+ let custody = phase.test_host_request();
+ let phase_custody = &custody;
+ let execution = &phase_custody.borrowed_request_for_test();
+
+    let (_, product, _) = world
+        .selected_product(&(phase_custody).test_host_request())
+        .into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
         generation: product.observation().reference_generation().get(),
@@ -53,7 +62,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
     let identity = locator(i.entity(), i.aspect(), i.field());
     let status = locator(s.entity(), s.aspect(), s.field());
     let label = locator(l.entity(), l.aspect(), l.field());
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(execution, |runtime| {
         let refs: Vec<_> = (0..(siblings + 1) * DEPTH).map(|n| CreatedEntityRef {
             partition_id: PartitionId::main(), kind_id: kind,
             client_key: ClientKey::raw(format!("scope-tree-{n}")),
@@ -69,7 +78,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
                 ])),
             })))
         });
-        let committed = write_batch(runtime, batch);
+        let committed = write_batch(execution, runtime, batch);
         let entities: Vec<_> = refs.iter().map(|r| committed.created_entity(r).unwrap()).collect();
         release_test_commit_snapshot(runtime, &committed);
         let (before_handle, before) = snapshot(runtime);
@@ -90,7 +99,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
                 work_membership: Some(Arc::clone(&members[n].1)),
                 identity: Arc::clone(&outputs[n]),
                 facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false,
-                    if leaf { Arc::from([field_fact(runtime, &before_handle, entities[n], label.clone())]) } else { Arc::from([]) }),
+                    if leaf { Arc::from([field_fact(execution, runtime, &before_handle, entities[n], label.clone())]) } else { Arc::from([]) }),
                 output_facts: None, read_basis: before.clone(), stale_at_read_basis: OrdSet::new(), requirement: None,
                 upstream: if leaf { OrdSet::new() } else { OrdSet::unit(Arc::clone(&outputs[n - 1])) },
             }, &mut owner.edit_admission()).unwrap();
@@ -103,7 +112,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
             }
             assert!(registries[n].next_required_work(owner, &mut owner.edit_admission()).unwrap().is_none());
         }
-        write_field(runtime, entities[0], label, "after");
+        write_field(execution, runtime, entities[0], label, "after");
         let (after_handle, after) = snapshot(runtime);
         let report = owner.native_marking_report(&after, &mut owner.edit_admission()).unwrap().unwrap();
         let NativeMarkingPrecision::Exact(counts) = report.precision else { panic!("the declared Native leaf touch is exact") };
@@ -125,4 +134,6 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
         for snapshot in [before_handle, after_handle] { runtime.snapshots().release_snapshot(&snapshot).unwrap(); }
         counts
     })
+
+ }).expect("the native journey owns its installed host call")
 }

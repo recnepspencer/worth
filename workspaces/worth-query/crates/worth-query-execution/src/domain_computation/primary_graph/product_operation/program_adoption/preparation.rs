@@ -210,6 +210,7 @@ impl WorthQueryPreparedBranchAdoption {
 }
 
 pub(super) fn prepare<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
@@ -222,6 +223,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
     state::prepare(
+        execution,
         phase,
         selected,
         target,
@@ -234,6 +236,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
 }
 
 pub(super) fn workflow_inventory<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
     expected_requirements: &WorthQueryProgramAdoptionRequirements,
@@ -242,7 +245,13 @@ pub(super) fn workflow_inventory<Schema: ApplicationSchema>(
     crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowAdoptionInventory,
     WorthQueryBranchAdoptionPreparationDenial,
 > {
-    workflow::inventory(selected, target, expected_requirements, maximum_work_units)
+    workflow::inventory(
+        execution,
+        selected,
+        target,
+        expected_requirements,
+        maximum_work_units,
+    )
 }
 
 pub(super) fn requirements<Schema: ApplicationSchema>(

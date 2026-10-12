@@ -85,16 +85,18 @@ impl WorthQueryWorkflowApprovalDependencies {
 
     pub(in crate::domain_computation) fn delegation_target_support_matches(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         current: &super::WorthQueryAuthorizationDecisionFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-    ) -> bool {
-        self.support.as_ref().is_some_and(|expected| {
-            current
-                .retained_durable_dependencies()
-                .is_ok_and(|observed| {
-                    expected.matches_with_retained_activation(&observed, runtime, snapshot)
-                })
-        })
+    ) -> Result<bool, worth_execution::MapKernelStop> {
+        execution.check_live()?;
+        let Some(expected) = &self.support else {
+            return Ok(false);
+        };
+        let Ok(observed) = current.retained_durable_dependencies() else {
+            return Ok(false);
+        };
+        expected.matches_with_retained_activation(execution, &observed, runtime, snapshot)
     }
 }

@@ -1,6 +1,7 @@
 use super::*;
 
 pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     _permit: super::super::delegation_admission::WorthQueryCapabilityObservationPermit,
     session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
@@ -27,7 +28,14 @@ pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
         sample,
         exact_grant,
     )?;
-    let evidence = observe_exact_policy(relational, snapshot.clone(), installed, request, paths)?;
+    let evidence = observe_exact_policy(
+        execution,
+        relational,
+        snapshot.clone(),
+        installed,
+        request,
+        paths,
+    )?;
     let dependency_identity = *evidence.observation_identity().bytes();
     let observation = bridge_observation::lower_upper_bound_observation(
         installed,
@@ -43,9 +51,11 @@ pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
             installed.contract().name(),
         ));
     }
-    let expiry = expiry::observe_grant_expiry(relational, &snapshot, installed, observed_grant)?;
+    let expiry =
+        expiry::observe_grant_expiry(execution, relational, &snapshot, installed, observed_grant)?;
     Ok(WorthQueryObservedCapabilityDecision::new(
         WorthQueryAuthorizationDecisionFact::from_capability_observation(
+            execution,
             WorthQueryAuthorizationDecisionPermit::new(),
             session_identity,
             relational,

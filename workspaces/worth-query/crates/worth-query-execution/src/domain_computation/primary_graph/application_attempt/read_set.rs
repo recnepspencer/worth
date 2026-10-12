@@ -129,6 +129,7 @@ where
 {
     pub fn begin_application_read_attempt<Operation, Input, Scope>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope>,
@@ -162,7 +163,8 @@ where
                     admission.operation(),
                 )
             })?;
-        let source_facts = SourceFacts::Admitted(validate_source_facts(&mut admission, &lease)?);
+        let source_facts =
+            SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
         Ok(WorthQueryApplicationReadAttempt {
             admission,
             lease,
@@ -210,6 +212,40 @@ where
     /// ```
     pub fn begin_projected_application_read_attempt<Operation, Input, Scope>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryApplicationReadAttempt<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            WorthQueryProjectedApplicationMutation,
+        >,
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let phase_request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+        };
+        let execution = &phase_request;
+        self.begin_projected_application_read_attempt_with_request(
+            execution,
+            admission,
+            projection,
+            allocation_policy,
+        )
+    }
+
+    pub(in crate::domain_computation) fn begin_projected_application_read_attempt_with_request<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -264,7 +300,7 @@ where
                 )
             })?;
         let mut admission = admission;
-        let admitted_source_facts = validate_source_facts(&mut admission, &lease)?;
+        let admitted_source_facts = validate_source_facts(execution, &mut admission, &lease)?;
         let source_facts = merge_source_facts(
             admitted_source_facts,
             dependent_source_facts,
@@ -292,66 +328,7 @@ where
     }
 }
 
-impl<Schema, Operation, Input, Scope, Phase>
-    WorthQueryApplicationReadAttempt<Schema, Operation, Input, Scope, Phase>
-{
-    pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
-        &self,
-        field: ApplicationFieldRef<
-            Schema,
-            Entity,
-            Aspect,
-            Field,
-            Value,
-            Write,
-            EqualityPredicate,
-            Unit,
-        >,
-        value: Value,
-    ) -> Result<
-        WorthQueryApplicationEntityIdentity<Schema, Entity>,
-        WorthQueryApplicationAttemptDenial,
-    >
-    where
-        Field: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
-        Write: WritePosture,
-        Unit: ApplicationFieldUnit,
-    {
-        let value = Field::Binding::encode(&value).map_err(|_| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue,
-                field.field(),
-            )
-        })?;
-        let resolved = self
-            .lease
-            .handle()
-            .with_runtime(|runtime| {
-                self.entity_resolution
-                    .at_snapshot(
-                        runtime,
-                        self.lease.snapshot(),
-                        WorthQueryPrincipalResolutionMode::Ordinary,
-                    )
-                    .and_then(|truth| {
-                        truth.resolve(field.entity(), field.aspect(), field.field(), value)
-                    })
-            })
-            .map_err(|_| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
-                    field.field(),
-                )
-            })?;
-        if !self.read_scope.admits(resolved.entity_id()) {
-            return Err(denial(
-                WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
-                field.entity(),
-            ));
-        }
-        Ok(resolved.into_application_identity())
-    }
-}
+mod entity_resolution;
 
 fn denial(
     kind: WorthQueryApplicationAttemptDenialKind,

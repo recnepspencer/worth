@@ -1,6 +1,7 @@
 use super::*;
 
 pub(super) fn change_input(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &application_installation::WorthQueryProgramApplicationRuntime<
         TemporalHostSchema,
         TemporalInstallationProgram,
@@ -18,38 +19,59 @@ pub(super) fn change_input(
     let authentication = admit_identity_adapter(schema);
     let request = request_scope();
     let external = block_on(authentication.authenticate((), &request)).unwrap();
-    let selected = application.on_branch(branch).select().unwrap();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &principal_binding,
-            &external,
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let intent = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_string(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let selected = application
+        .with_host_advancement(|host_phase| {
+            application.on_branch(branch).select(&host_phase).unwrap()
+        })
+        .expect("installed host call opens");
+    let principal = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &host_phase,
+                    &principal_binding,
+                    &external,
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let intent = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_string(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let operation = schema
         .installed_operation(AmendTemporal::reference())
         .unwrap();
-    let admission = selected
-        .authorize_operation(
-            &principal,
-            &intent,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let (_, projection, _) = invariant
+    let admission = application
+        .with_host_advancement(|host_phase| {
+            selected
+                .authorize_operation(
+                    &host_phase,
+                    &principal,
+                    &intent,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let (_, projection, _) = application
+        .with_host_advancement(|host_phase| {
+            invariant
         .project_admitted_operation(
-            &admission,
+            &host_phase, &admission,
             |reader, scope| {
                 reader
                     .decision_field(scope, IntentRevisionField::reference())
@@ -70,20 +92,31 @@ pub(super) fn change_input(
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
-        .into_parts();
+        .into_parts()
+        })
+        .expect("installed host call opens");
     let reads = application
+        .with_host_advancement(|phase| {
+            application
         .begin_projected_application_read_attempt(
-            admission,
+            &phase, admission,
             projection,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies(
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
         .unwrap()
-        .begin_effect_program();
+        })
+        .expect("installed host call opens");
+    let mut effects = application
+        .with_host_advancement(|host_phase| {
+            reads
+                .complete_projected_dependencies(
+                    &host_phase,
+                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .begin_effect_program()
+        })
+        .expect("installed host call opens");
     let intent = effects.existing_entity(&intent).unwrap();
     effects
         .write_field(&intent, IntentRevisionField::reference(), 2_u64)
@@ -119,6 +152,7 @@ pub(super) fn change_input(
         .transaction()
         .apply(admitted)
         .commit_for_program(
+            request_execution,
             application
                 .admit_program_operation::<AmendTemporal>()
                 .unwrap(),

@@ -167,7 +167,7 @@ enum Stage {
 }
 
 fn discard_at_stage(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     stage: Stage,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {
@@ -194,7 +194,7 @@ fn discard_at_stage(
 }
 
 fn abandon_at_stage(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     stage: Stage,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) {

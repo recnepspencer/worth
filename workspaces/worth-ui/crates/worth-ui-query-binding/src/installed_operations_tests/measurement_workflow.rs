@@ -10,9 +10,12 @@ use worth_foundational::facade::{AspectValue, CanonicalF32};
 use worth_query::facade::domain;
 #[test]
 fn registered_snapshot_and_recording_workflow_execute_real_query_mechanics() {
-    let mut workspace = installed_builder()
-        .workspace("worth-ui-installed-operations")
-        .expect("Worth UI operation executors should install");
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder()
+                .workspace(execution, "worth-ui-installed-operations")
+                .expect("Worth UI operation executors should install")
+        });
     let installed = workspace
         .worth_ui()
         .expect("Worth UI domain should install");
@@ -103,9 +106,12 @@ fn registered_snapshot_and_recording_workflow_execute_real_query_mechanics() {
 
 #[test]
 fn recording_workflow_rejects_invalid_value_without_a_partial_write() {
-    let mut workspace = installed_builder()
-        .workspace("worth-ui-recording-atomic-denial")
-        .unwrap();
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder()
+                .workspace(execution, "worth-ui-recording-atomic-denial")
+                .unwrap()
+        });
     let installed = workspace.worth_ui().unwrap();
     let run = workspace
         .prepare_mutation_operating_world(workspace.current_world())

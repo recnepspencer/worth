@@ -2,7 +2,15 @@ use super::*;
 
 #[test]
 fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
-    let mut workspace = workspace("installed-public-facade-single-root", false).unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "installed-public-facade-single-root",
+        false,
+    )
+    .unwrap();
     let domain = workspace.domain(GeometryDomain).unwrap();
     let root = workspace
         .observe_operating_world(workspace.current_world())
@@ -40,7 +48,12 @@ fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
         .unwrap();
     assert!(snapshot.native_value(&native_key, 0).is_ok());
 
-    let mut collection_workspace = matrix_workspace("installed-public-facade-collection", 3, false);
+    let mut collection_workspace = matrix_workspace(
+        request_execution,
+        "installed-public-facade-collection",
+        3,
+        false,
+    );
     let collection_domain = collection_workspace.domain(GeometryDomain).unwrap();
     let collection_root = collection_workspace
         .observe_operating_world(collection_workspace.current_world())
@@ -105,7 +118,7 @@ fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
         .unwrap();
     let promoted = match live_projection
         .into_lifecycle()
-        .promote(&mut collection_workspace)
+        .promote(request_execution, &mut collection_workspace)
     {
         installed::observation::WorthQueryProjectionPromotionOutcome::Promoted(live) => live,
         _ => panic!("ordinary facade did not promote the current projection"),
@@ -126,6 +139,7 @@ fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
         .delivery()
         .is_empty());
     insert_matrix_value(
+        request_execution,
         &mut collection_workspace,
         3,
         matrix_value_with_order(3, "public-facade-invalidation"),
@@ -139,7 +153,7 @@ fn bound_operations_drive_native_live_invalidation_collection_and_disposal() {
     consumer
         .bind_shared_target(&admitted, &collection_workspace)
         .unwrap();
-    let patch = match consumer.plan_patch(&admitted, &collection_workspace) {
+    let patch = match consumer.plan_patch(request_execution, &admitted, &collection_workspace) {
         installed::collection::WorthQueryCollectionDeliveryOutcome::Patch(patch) => patch,
         installed::collection::WorthQueryCollectionDeliveryOutcome::NoDelivery(denial) => {
             panic!("semantic invalidation produced no collection patch: {denial:?}")

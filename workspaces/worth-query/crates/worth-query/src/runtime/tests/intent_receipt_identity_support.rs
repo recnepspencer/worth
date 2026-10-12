@@ -1,12 +1,14 @@
 use super::support::*;
 
 pub(super) fn declare_identity_effect(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut WorthQueryRuntime,
     live_name: &str,
     effect_name: &str,
 ) -> WorthQueryEffectHandle<WorthQueryUnrefinedLiveShape> {
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             live_name,
             task_live_request(),
             task_schema(),

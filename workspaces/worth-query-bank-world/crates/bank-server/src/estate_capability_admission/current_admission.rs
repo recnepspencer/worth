@@ -29,9 +29,21 @@ fn active_bank_grant_mints_only_a_current_move_only_access_proof() {
         )
         .unwrap();
     let request = request_scope();
-    let selected = fixture.runtime.select_current_product().unwrap();
-    let access = selected
-        .admit_capability_access(principal.query(), &capability, view_action(), &request)
+    let selected =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.select_current_product(phase)
+        })
+        .unwrap();
+    let access =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            selected.admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                view_action(),
+                &request,
+            )
+        })
         .unwrap();
 
     assert_eq!(access.operation(), "ViewRestrictedEstateOperation");
@@ -107,19 +119,22 @@ fn view_denial(
             ViewRestrictedEstateOperation::reference(),
         )
         .unwrap();
-    fixture
-        .runtime
-        .select_current_product()
-        .unwrap()
-        .admit_capability_access(
-            principal.query(),
-            &capability,
-            view_action(),
-            &request_scope(),
-        )
-        .err()
-        .expect("the hostile grant should deny")
-        .kind()
+    crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+        fixture
+            .runtime
+            .select_current_product(phase)
+            .unwrap()
+            .admit_capability_access(
+                phase,
+                principal.query(),
+                &capability,
+                view_action(),
+                &request_scope(),
+            )
+    })
+    .err()
+    .expect("the hostile grant should deny")
+    .kind()
 }
 
 pub(super) fn view_action() -> EstateAction {

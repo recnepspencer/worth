@@ -12,9 +12,13 @@ use super::{ValidatedMutationTouch, ValidatedMutationTouches};
 
 #[test]
 fn create_and_update_project_exact_entity_touch_loci() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let existing = create_entity(&runtime, "existing");
+    let existing = create_entity(execution, &runtime, "existing");
     let projected = project(validate(
+        execution,
         &runtime,
         [
             MutationIntent::Create(CreateIntent::Entity(entity_spec("created"))),
@@ -41,12 +45,16 @@ fn create_and_update_project_exact_entity_touch_loci() {
 
 #[test]
 fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let new_target = create_entity(&runtime, "new-target");
-    let relation = create_relation(&runtime, source, old_target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let old_target = create_entity(execution, &runtime, "old-target");
+    let new_target = create_entity(execution, &runtime, "new-target");
+    let relation = create_relation(execution, &runtime, source, old_target, "edge");
     let projected = project(validate(
+        execution,
         &runtime,
         [
             MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent {
@@ -77,6 +85,7 @@ fn delete_and_endpoint_rewrite_preserve_unlink_and_link_meaning() {
 }
 
 fn validate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     intents: impl IntoIterator<Item = MutationIntent>,
 ) -> crate::mvcc::ValidatedRelationalProposal {
@@ -92,10 +101,7 @@ fn validate(
         )
         .expect("test staging stays within configured resource budgets");
     transaction
-        .validate(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .validate(execution, runtime)
         .expect("owner validates touch projection fixture")
 }
 

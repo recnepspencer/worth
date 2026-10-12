@@ -2,6 +2,9 @@ use super::native_strategy_fixtures::*;
 
 #[test]
 fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = strategy_descriptor();
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
@@ -28,7 +31,7 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
     let snapshot: SnapshotHandle = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy executes against committed basis");
     let commit = {
         let (transaction_validation_input, mut authority) =
@@ -42,21 +45,25 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
             )
             .expect("lowered strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated lowered strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated strategy commit executed")
     };
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: commit.publication().envelope.branch_context.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: commit.publication().envelope.branch_context.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            request_execution,
+        )
+        .unwrap();
 
     assert!(
         replay.failure.is_none(),
@@ -73,6 +80,9 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
 
 #[test]
 fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(61));
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
@@ -84,7 +94,7 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             &descriptor,
         ))
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -112,7 +122,7 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
     let snapshot: SnapshotHandle = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("strategy executes against committed basis");
     let commit = {
         let (transaction_validation_input, mut authority) =
@@ -126,16 +136,16 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             )
             .expect("lowered strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated strategy commit executed")
     };
 
     let current = runtime
         .read_truth()
-        .read_version(runtime.current_version_id());
+        .read_version(request_execution, runtime.current_version_id());
     assert_eq!(
         read_entity_name(current.get_entity(entity).expect("committed entity")),
         Some("after".into())
@@ -154,12 +164,16 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: commit.publication().envelope.branch_context.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: commit.publication().envelope.branch_context.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            request_execution,
+        )
+        .unwrap();
 
     assert!(
         replay.failure.is_none(),
@@ -176,6 +190,9 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
 
 #[test]
 fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_and_replays() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(CommitStrategyId(62));
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
@@ -187,7 +204,7 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
         )
         .build();
-    let entity = crate::tests::support::create_entity(&runtime, "before");
+    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let original_lineage = runtime
         .lineage_access()
         .for_record(entity)
@@ -212,7 +229,7 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
     let snapshot: SnapshotHandle = runtime.visibility_authority().snapshot();
     let execution = runtime
         .commit_strategies()
-        .execute(&request, &snapshot)
+        .execute(&request, &snapshot, request_execution)
         .expect("replacement strategy executes against committed basis");
     let commit = {
         let (transaction_validation_input, mut authority) =
@@ -226,15 +243,15 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             )
             .expect("lowered replacement strategy plan");
         let validated = authority
-            .validate_lowered_plan(&runtime, lowered)
+            .validate_lowered_plan(request_execution, &runtime, lowered)
             .expect("validated replacement strategy plan");
         authority
-            .execute_validated_commit(&runtime, validated)
+            .execute_validated_commit(request_execution, &runtime, validated)
             .expect("validated replacement strategy commit executed")
     };
     let current = runtime
         .read_truth()
-        .read_version(runtime.current_version_id());
+        .read_version(request_execution, runtime.current_version_id());
     let replacement_record = changed_entities(&commit)
         .into_iter()
         .find_map(|entity_id| current.get_entity(entity_id).cloned())
@@ -291,12 +308,16 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: commit.publication().envelope.branch_context.clone(),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: commit.publication().envelope.branch_context.clone(),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            request_execution,
+        )
+        .unwrap();
 
     assert!(
         replay.failure.is_none(),

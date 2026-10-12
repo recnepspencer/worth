@@ -18,13 +18,14 @@ pub(super) enum WorthQuerySettlementReentry {
 }
 
 pub(super) fn repair<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     deferred: WorthQueryApplicationSettlementDeferred,
 ) -> WorthQuerySettlementReentry
 where
     Schema: worth_query_installation::facade::ApplicationSchema,
 {
-    match runtime.recover_deferred_application_settlement(&deferred) {
+    match runtime.recover_deferred_application_settlement(execution, &deferred) {
         Err(WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(kind)) => {
             WorthQuerySettlementReentry::ExecutionDenied(deferred, kind)
         }

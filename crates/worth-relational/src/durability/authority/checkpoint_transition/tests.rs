@@ -8,9 +8,11 @@ use crate::publication::data::DeferredPublicationSettlementError;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
 
-fn recovered_world() -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority) {
+fn recovered_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority) {
     let source = persisted_runtime_with_test_schema();
-    create_entity(&source, "checkpoint-predecessor");
+    create_entity(execution, &source, "checkpoint-predecessor");
     let checkpoint = source
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -18,12 +20,16 @@ fn recovered_world() -> (RelationalRuntime, RecoveredRelationalRuntimeAuthority)
     let mut target = persisted_runtime_with_test_schema();
     let (_, authority) = target
         .durability_recovery()
-        .restore_native_checkpoint_with_authority(&checkpoint)
+        .restore_native_checkpoint_with_authority(execution, &checkpoint)
         .unwrap();
     (target, authority)
 }
 
-fn candidate(runtime: &RelationalRuntime, name: &str) -> PreparedRelationalCommitCandidate {
+fn candidate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    name: &str,
+) -> PreparedRelationalCommitCandidate {
     let mut transaction = test_owner_begin_transaction_for_main(runtime);
     transaction
         .push_batch(
@@ -32,10 +38,7 @@ fn candidate(runtime: &RelationalRuntime, name: &str) -> PreparedRelationalCommi
         )
         .unwrap();
     runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap()
 }
 
@@ -48,14 +51,17 @@ fn main_basis(runtime: &RelationalRuntime) -> crate::branch::AdmittedRelationalB
 
 #[test]
 fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for admit_successor in [true, false] {
-        let (mut runtime, authority) = recovered_world();
+        let (mut runtime, authority) = recovered_world(execution);
         let predecessor = main_basis(&runtime);
         let count = runtime.history().immutable_commit_count();
-        let prepared = candidate(&runtime, "acknowledged-successor");
+        let prepared = candidate(execution, &runtime, "acknowledged-successor");
         let transition = runtime
             .durability_recovery()
-            .commit_checkpoint_transition(authority, prepared)
+            .commit_checkpoint_transition(execution, authority, prepared)
             .unwrap();
         let expected_receipt = runtime
             .history()
@@ -96,21 +102,30 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
 
 #[test]
 fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for foreign_recovery in [true, false] {
-        let (mut runtime, authority) = recovered_world();
-        let (foreign, foreign_authority) = recovered_world();
+        let (mut runtime, authority) = recovered_world(execution);
+        let (foreign, foreign_authority) = recovered_world(execution);
         let before = main_basis(&runtime).descriptor().clone();
         let before_foreign = main_basis(&foreign).descriptor().clone();
         let count = runtime.history().immutable_commit_count();
         let foreign_count = foreign.history().immutable_commit_count();
         let (supplied_authority, prepared) = if foreign_recovery {
-            (foreign_authority, candidate(&runtime, "foreign-authority"))
+            (
+                foreign_authority,
+                candidate(execution, &runtime, "foreign-authority"),
+            )
         } else {
-            (authority, candidate(&foreign, "foreign-candidate"))
+            (
+                authority,
+                candidate(execution, &foreign, "foreign-candidate"),
+            )
         };
         let TransitionError::Refused(refusal) = runtime
             .durability_recovery()
-            .commit_checkpoint_transition(supplied_authority, prepared)
+            .commit_checkpoint_transition(execution, supplied_authority, prepared)
             .unwrap_err()
         else {
             panic!("foreign ownership must refuse before publication")
@@ -135,10 +150,10 @@ fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
                 refusal.denial(),
                 Denial::ForeignCandidateRuntime { .. }
             ));
-            let retry = candidate(&runtime, "retry-after-foreign-candidate");
+            let retry = candidate(execution, &runtime, "retry-after-foreign-candidate");
             let acknowledged = runtime
                 .durability_recovery()
-                .commit_checkpoint_transition(refusal.into_authority(), retry)
+                .commit_checkpoint_transition(execution, refusal.into_authority(), retry)
                 .unwrap();
             assert!(acknowledged
                 .into_parts()
@@ -151,17 +166,22 @@ fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
 
 #[test]
 fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for stale_candidate in [true, false] {
-        let (mut runtime, authority) = recovered_world();
+        let (mut runtime, authority) = recovered_world(execution);
         let predecessor = main_basis(&runtime);
-        let early = stale_candidate.then(|| candidate(&runtime, "prepared-before-movement"));
-        create_entity(&runtime, "ordinary-movement");
-        let prepared = early.unwrap_or_else(|| candidate(&runtime, "prepared-after-movement"));
+        let early =
+            stale_candidate.then(|| candidate(execution, &runtime, "prepared-before-movement"));
+        create_entity(execution, &runtime, "ordinary-movement");
+        let prepared =
+            early.unwrap_or_else(|| candidate(execution, &runtime, "prepared-after-movement"));
         let before = main_basis(&runtime).descriptor().clone();
         let count = runtime.history().immutable_commit_count();
         let TransitionError::Refused(refusal) = runtime
             .durability_recovery()
-            .commit_checkpoint_transition(authority, prepared)
+            .commit_checkpoint_transition(execution, authority, prepared)
             .unwrap_err()
         else {
             panic!("movement must refuse without performing another commit")
@@ -181,12 +201,15 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
 
 #[test]
 fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
-    let (mut runtime, authority) = recovered_world();
-    let prepared = candidate(&runtime, "deferred-transition");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut runtime, authority) = recovered_world(execution);
+    let prepared = candidate(execution, &runtime, "deferred-transition");
     runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
-        .commit_checkpoint_transition(authority, prepared)
+        .commit_checkpoint_transition(execution, authority, prepared)
         .unwrap_err()
     else {
         panic!("the performed transition must retain its deferred native settlement")
@@ -253,12 +276,15 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
 
 #[test]
 fn repair_carries_performed_successor_even_after_owner_repair_and_later_movement() {
-    let (mut runtime, authority) = recovered_world();
-    let prepared = candidate(&runtime, "captured-successor");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut runtime, authority) = recovered_world(execution);
+    let prepared = candidate(execution, &runtime, "captured-successor");
     runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
-        .commit_checkpoint_transition(authority, prepared)
+        .commit_checkpoint_transition(execution, authority, prepared)
         .unwrap_err()
     else {
         panic!("append fault must retain a performed transition")
@@ -268,7 +294,7 @@ fn repair_carries_performed_successor_even_after_owner_repair_and_later_movement
     let receipt = runtime
         .repair_deferred_publication_settlement(&settlement)
         .unwrap();
-    create_entity(&runtime, "later-ordinary-movement");
+    create_entity(execution, &runtime, "later-ordinary-movement");
     let current = main_basis(&runtime);
     assert_ne!(current.descriptor(), performed_basis.descriptor());
     let count = runtime.history().immutable_commit_count();

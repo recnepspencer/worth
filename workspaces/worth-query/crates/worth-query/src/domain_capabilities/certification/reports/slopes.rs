@@ -68,10 +68,13 @@ impl WorthQueryDomainCapabilitySlopeReport {
 }
 
 pub fn worth_query_domain_capability_slope_report(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     representative: &WorthQueryDomainCapabilityRepresentativeReport,
 ) -> WorthQueryDomainCapabilitySlopeReport {
     let installation =
-        crate::domain_capabilities::certification::install_domain_capability_certification();
+        crate::domain_capabilities::certification::install_domain_capability_certification(
+            execution,
+        );
     worth_query_domain_capability_slope_report_in(representative, installation.contributions())
 }
 
@@ -135,8 +138,11 @@ mod tests {
 
     #[test]
     fn slope_report_reuses_representative_widths() {
-        let representative = worth_query_domain_capability_representative_report();
-        let slopes = worth_query_domain_capability_slope_report(&representative);
+        let host_request = crate::test_execution_policy::serial_request();
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+        let representative = worth_query_domain_capability_representative_report(request_execution);
+        let slopes = worth_query_domain_capability_slope_report(request_execution, &representative);
 
         assert_eq!(slopes.counter_snapshot().contribution_width(), 7);
         assert!(slopes.counter_snapshot().trace_width() >= representative.trace_width());

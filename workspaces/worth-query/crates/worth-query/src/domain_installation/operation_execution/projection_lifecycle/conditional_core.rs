@@ -46,7 +46,7 @@ pub(super) fn evaluate_fresh_lifecycle_conditionals<
     identity_family: &'static str,
 ) -> Result<WorthQueryLifecycleConditionalCoreReady, WorthQueryLifecycleConditionalCoreStop> {
     let attempt = NEXT_PROJECTION_LIFECYCLE_ATTEMPT.fetch_add(1, Ordering::Relaxed);
-    let snapshot = workspace.snapshot_identity();
+    let snapshot = workspace.snapshot_identity_with_request(&execution);
     let operational_identity =
         lifecycle_identity(source, workspace, &snapshot, attempt, identity_family);
     let resource_name = format!("worth-query-installed-projection-{operational_identity}");

@@ -43,11 +43,44 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
     ] {
         let world = installed_delegated_capability_world();
         world.authorization_time.script([time(100)]);
-        break_narrowing_axis(&world, axis);
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                break_narrowing_axis(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    axis,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
         let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                authenticated_principal(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
 
-        let Err(denial) = admitted_capability_access(&world, &principal, &request, 100) else {
+        let Err(denial) = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                admitted_capability_access(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    &principal,
+                    &request,
+                    100,
+                )
+            })
+            .expect("the fixture read owns its installed host call")
+        else {
             panic!("a widened delegated grant must mint no access authority");
         };
         assert_eq!(
@@ -58,9 +91,13 @@ fn every_stored_narrowing_axis_is_enforced_by_production_admission() {
     }
 }
 
-fn break_narrowing_axis(world: &super::super::fixture::AuthorizationWorld, axis: NarrowingAxis) {
+fn break_narrowing_axis(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &super::super::fixture::AuthorizationWorld,
+    axis: NarrowingAxis,
+) {
     if matches!(axis, NarrowingAxis::RelatedRelationship) {
-        replace_parent_related_relationship(world);
+        replace_parent_related_relationship(phase_custody, world);
         return;
     }
     let (field, value, grant) = match axis {
@@ -115,17 +152,37 @@ fn break_narrowing_axis(world: &super::super::fixture::AuthorizationWorld, axis:
         ),
         NarrowingAxis::RelatedRelationship => unreachable!("handled above"),
     };
-    update_grant_field(world, grant, field, value);
+    update_grant_field(phase_custody, world, grant, field, value);
 }
 
-fn replace_parent_related_relationship(world: &super::super::fixture::AuthorizationWorld) {
-    let parent = grant(world, "capability-parent");
+fn replace_parent_related_relationship(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &super::super::fixture::AuthorizationWorld,
+) {
+    let parent = grant(
+        &(phase_custody).test_host_request(),
+        &phase_custody.borrowed_request_for_test(),
+        world,
+        "capability-parent",
+    );
     replace_relation_target(
+        &(phase_custody).test_host_request(),
+        &phase_custody.borrowed_request_for_test(),
         world,
         relation_kind(world, CapabilityRelated::reference().name()),
         parent,
-        account(world, "account-2"),
-        account(world, "account-1"),
+        account(
+            &(phase_custody).test_host_request(),
+            &phase_custody.borrowed_request_for_test(),
+            world,
+            "account-2",
+        ),
+        account(
+            &(phase_custody).test_host_request(),
+            &phase_custody.borrowed_request_for_test(),
+            world,
+            "account-1",
+        ),
         "parent-wider-related-relationship",
     );
 }

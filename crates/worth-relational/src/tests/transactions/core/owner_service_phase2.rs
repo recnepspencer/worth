@@ -8,13 +8,16 @@ const CLOSE_START_ACK_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[test]
 fn phase2_ports_are_cloneable_sendable_and_shared_borrow_services() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn assert_clone_send_sync<T: Clone + Send + Sync>() {}
 
     assert_clone_send_sync::<crate::facade::mvcc::RelationalPreparationPort>();
     assert_clone_send_sync::<crate::facade::branch::RelationalForkPort>();
 
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase2-port-anchor");
+    create_entity(execution, &runtime, "phase2-port-anchor");
     let preparation = runtime.preparation_port();
     let forking = runtime.fork_port();
     let _preparation_clone = preparation.clone();
@@ -27,8 +30,11 @@ fn phase2_ports_are_cloneable_sendable_and_shared_borrow_services() {
 
 #[test]
 fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase2-preparation-anchor");
+    create_entity(execution, &runtime, "phase2-preparation-anchor");
     fork_from_main(&runtime, "paused-preparation");
     fork_from_main(&runtime, "progressing-preparation");
 
@@ -65,7 +71,9 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
     let preparation = runtime.preparation_port();
     let paused_port = preparation.clone();
     let paused_thread = std::thread::spawn(move || {
-        paused_port.prepare_branch_transaction(paused_transaction, Allocation::SystemAllocation)
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+        paused_port.prepare_branch_transaction(execution, paused_transaction)
     });
 
     reached.wait();
@@ -74,7 +82,7 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
         "branch A remains paused in preparation"
     );
     let progressing_candidate = preparation
-        .prepare_branch_transaction(progressing_transaction, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, progressing_transaction)
         .expect("branch B prepares while branch A is paused");
     assert!(
         !paused_thread.is_finished(),
@@ -106,8 +114,11 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
 
 #[test]
 fn paused_fork_does_not_block_an_unrelated_fork() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase2-fork-anchor");
+    create_entity(execution, &runtime, "phase2-fork-anchor");
     fork_from_main(&runtime, "paused-fork-source");
     fork_from_main(&runtime, "progressing-fork-source");
     let paused_source_branch = BranchId("paused-fork-source".to_owned());
@@ -159,8 +170,11 @@ fn paused_fork_does_not_block_an_unrelated_fork() {
 
 #[test]
 fn fork_basis_return_holds_owner_admission_across_post_install_close_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "post-install-close-anchor");
+    create_entity(execution, &runtime, "post-install-close-anchor");
     let port = runtime.fork_port();
     let (_, source) = port
         .observe_fork_source(&BranchId("main".to_owned()))
@@ -202,8 +216,11 @@ fn fork_basis_return_holds_owner_admission_across_post_install_close_boundary() 
 
 #[test]
 fn concurrent_duplicate_fork_has_one_winner_and_no_second_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase2-duplicate-fork-anchor");
+    create_entity(execution, &runtime, "phase2-duplicate-fork-anchor");
     let source_branch = BranchId("main".to_owned());
     let port = runtime.fork_port();
     let (_, first_source) = port
@@ -264,8 +281,11 @@ fn concurrent_duplicate_fork_has_one_winner_and_no_second_target() {
 
 #[test]
 fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase2-symbol-sharing-anchor");
+    create_entity(execution, &runtime, "phase2-symbol-sharing-anchor");
     fork_from_main(&runtime, "symbol-sharing-a");
     fork_from_main(&runtime, "symbol-sharing-b");
     let preparation = runtime.preparation_port();
@@ -287,10 +307,10 @@ fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
         .expect("second symbol transaction stages");
 
     let first_candidate = cloned_preparation
-        .prepare_branch_transaction(first, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, first)
         .expect("port clone prepares the first symbol");
     let second_candidate = preparation
-        .prepare_branch_transaction(second, Allocation::SystemAllocation)
+        .prepare_branch_transaction(execution, second)
         .expect("original port prepares the second symbol");
     let symbols = runtime.config().identity.symbol_table;
     let first_symbol = symbols
@@ -314,40 +334,6 @@ fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
     preparation
         .discard_prepared_candidate(second_candidate)
         .expect("second candidate discards through the shared owner");
-}
-
-#[test]
-fn phase2_ports_deny_after_their_runtime_owner_closes() {
-    let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase2-owner-close-anchor");
-    let mut transaction = begin_transaction(&runtime, "main");
-    transaction
-        .push_batch(
-            batch_create("phase2-owner-close-write"),
-            Allocation::SystemAllocation,
-        )
-        .expect("owner-close transaction stages");
-    let preparation = runtime.preparation_port();
-    let forking = runtime.fork_port();
-    let (_, source) = forking
-        .observe_fork_source(&BranchId("main".to_owned()))
-        .expect("source observes before owner close");
-    let runtime_instance_id = runtime.runtime_instance_id();
-    drop(runtime);
-
-    assert!(matches!(
-        preparation.prepare_branch_transaction(transaction, Allocation::SystemAllocation,),
-        Err(crate::transactions::data::TransactionCommitError::PublicationDenied {
-            denial: crate::mvcc::RelationalPublicationDenial::OwnerUnavailable {
-                runtime_instance_id: observed,
-            },
-            ..
-        }) if observed == runtime_instance_id
-    ));
-    assert!(matches!(
-        forking.fork_branch(BranchId("owner-closed-target".to_owned()), source),
-        Err(crate::branch::RelationalForkDenial::OwnerUnavailable)
-    ));
 }
 
 fn fork_from_main(runtime: &crate::runtime::RelationalRuntime, target: &str) {
@@ -393,3 +379,6 @@ fn begin_transaction_with_control(
         )
         .expect("controlled branch transaction")
 }
+
+#[path = "owner_service_phase2/closed_owner.rs"]
+mod closed_owner;

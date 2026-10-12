@@ -2,6 +2,9 @@ use super::fixtures::*;
 
 #[test]
 fn aspect_traces_and_diagnostics_are_stable_across_serial_and_leased_preparation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let serial_diagnostics = RelationalDiagnosticsProfile {
         detailed_traces_enabled: true,
         ..RelationalDiagnosticsProfile::default()
@@ -21,9 +24,12 @@ fn aspect_traces_and_diagnostics_are_stable_across_serial_and_leased_preparation
         .diagnostics(serial_diagnostics.clone())
         .build();
 
-    let serial_outcome = create_entity_outcome(&serial, "trace-stable");
-    let staged_outcome =
-        create_entity_outcome_with_lease(&staged, "trace-stable", &test_execution_lease());
+    let serial_outcome = create_entity_outcome(execution, &serial, "trace-stable");
+    let staged_outcome = create_entity_outcome(
+        &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
+        &staged,
+        "trace-stable",
+    );
 
     assert_eq!(
         serial_outcome.aspect_evaluation_traces(),
@@ -76,13 +82,16 @@ fn aspect_relevant_diagnostics(
 
 #[test]
 fn geometry_operational_hot_path_policy_suppresses_detailed_traces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::GeometryKernel)
         .schema_registry(test_schema_registry())
         .diagnostics(RelationalDiagnosticsProfile::geometry_operational_hot_path())
         .build();
 
-    let _ = create_entity_outcome(&runtime, "geometry-hot-policy");
+    let _ = create_entity_outcome(execution, &runtime, "geometry-hot-policy");
     let diagnostics = runtime.publication().diagnostics();
 
     assert!(diagnostics.artifacts().iter().any(|artifact| {
@@ -97,13 +106,16 @@ fn geometry_operational_hot_path_policy_suppresses_detailed_traces() {
 
 #[test]
 fn chip_rich_certification_policy_keeps_detailed_traces_available() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::ChipSimulation)
         .schema_registry(test_schema_registry())
         .diagnostics(RelationalDiagnosticsProfile::chip_rich_certification())
         .build();
 
-    let _ = create_entity_outcome(&runtime, "chip-rich-policy");
+    let _ = create_entity_outcome(execution, &runtime, "chip-rich-policy");
     let diagnostics = runtime.publication().diagnostics();
 
     assert!(diagnostics.artifacts().iter().any(|artifact| {

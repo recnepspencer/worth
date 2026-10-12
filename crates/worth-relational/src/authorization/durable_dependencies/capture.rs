@@ -19,6 +19,7 @@ use super::{
 
 pub(super) fn capture(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     evidence: &RelationalAuthorizationObservationEvidence,
 ) -> Result<RelationalAuthorizationDurableDependencies, Denial> {
     if evidence.snapshot().runtime_instance_id != runtime.runtime_instance_id() {
@@ -26,7 +27,7 @@ pub(super) fn capture(
     }
     let view = runtime
         .read_truth()
-        .project_snapshot(evidence.snapshot())
+        .project_snapshot(evidence.snapshot(), execution)
         .ok_or(Denial::SnapshotUnavailable)?;
     if !view.is_exact_basis() {
         return Err(Denial::InexactSnapshot);
@@ -36,8 +37,8 @@ pub(super) fn capture(
     }
     let mut remaining = MAXIMUM_AUTHORIZATION_DEPENDENCIES;
     let mut string_bytes = 0usize;
-    let principal = capture_entity(&view, evidence.principal(), &mut remaining)?;
-    let scope = capture_entity(&view, evidence.scope(), &mut remaining)?;
+    let principal = capture_entity(execution, &view, evidence.principal(), &mut remaining)?;
+    let scope = capture_entity(execution, &view, evidence.scope(), &mut remaining)?;
     let mut paths = Vec::with_capacity(evidence.paths().len());
     for path in evidence.paths() {
         if !path.exhaustive() || path.matched() != path.witness().is_some() {
@@ -51,12 +52,12 @@ pub(super) fn capture(
         let entities = path
             .entities()
             .iter()
-            .map(|&entity| capture_entity(&view, entity, &mut remaining))
+            .map(|&entity| capture_entity(execution, &view, entity, &mut remaining))
             .collect::<Result<Vec<_>, _>>()?;
         let relations = path
             .relations()
             .iter()
-            .map(|&relation| capture_relation(&view, relation, &mut remaining))
+            .map(|&relation| capture_relation(execution, &view, relation, &mut remaining))
             .collect::<Result<Vec<_>, _>>()?;
         let adjacencies = path
             .adjacency_lists()
@@ -73,6 +74,7 @@ pub(super) fn capture(
                 };
                 let revision = view
                     .bounded_adjacency_structural_revision(
+                        execution,
                         dependency.entity(),
                         dependency.relation_kind(),
                         direction,
@@ -118,7 +120,7 @@ pub(super) fn capture(
                     locator.field_path().clone(),
                 );
                 let revision = view
-                    .entity_field_revision(*entity, &authoritative_locator)
+                    .entity_field_revision(execution, *entity, &authoritative_locator)
                     .ok_or(Denial::DependencyUnavailable)?;
                 Ok(FieldDependency {
                     entity: *entity,
@@ -149,22 +151,29 @@ pub(super) fn capture(
 }
 
 pub(super) fn capture_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
     remaining: &mut usize,
 ) -> Result<EntityDependency, Denial> {
     consume(remaining)?;
-    view.entity_record_with_projection_scope(entity, ProjectionAspectScope::empty(), |record| {
-        (record.lifecycle() == RecordLifecycleState::Live).then_some(EntityDependency {
-            entity,
-            kind: record.kind_id(),
-            created_at: record.created_at_version(),
-        })
-    })
+    view.entity_record_with_projection_scope(
+        execution,
+        entity,
+        ProjectionAspectScope::empty(),
+        |record| {
+            (record.lifecycle() == RecordLifecycleState::Live).then_some(EntityDependency {
+                entity,
+                kind: record.kind_id(),
+                created_at: record.created_at_version(),
+            })
+        },
+    )
     .ok_or(Denial::DependencyUnavailable)
 }
 
 pub(super) fn capture_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     relation: RelationId,
     remaining: &mut usize,
@@ -190,16 +199,21 @@ pub(super) fn capture_relation(
                 .ok_or(Denial::DependencyUnavailable)?,
         )
         .ok_or(Denial::DependencyUnavailable)?;
-    view.relation_record_with_projection_scope(relation, ProjectionAspectScope::empty(), |record| {
-        (record.lifecycle() == RecordLifecycleState::Live).then_some(RelationDependency {
-            relation,
-            kind: record.kind_id(),
-            created_at: arena.created_at_for_slot(relation.slot_index())?,
-            structural_revision: latest.effective_at,
-            source: record.source(),
-            target: record.target(),
-        })
-    })
+    view.relation_record_with_projection_scope(
+        execution,
+        relation,
+        ProjectionAspectScope::empty(),
+        |record| {
+            (record.lifecycle() == RecordLifecycleState::Live).then_some(RelationDependency {
+                relation,
+                kind: record.kind_id(),
+                created_at: arena.created_at_for_slot(relation.slot_index())?,
+                structural_revision: latest.effective_at,
+                source: record.source(),
+                target: record.target(),
+            })
+        },
+    )
     .ok_or(Denial::DependencyUnavailable)
 }
 

@@ -5,6 +5,7 @@ use crate::tests::support::{capture_aspect_truth_bundle, checkpoint_and_recover_
 use super::artifacts::MergeExecutionCertificationArtifacts;
 
 pub(super) fn certify_merge_execution_with_recovery<F>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     merge: &crate::facade::merge::MergeExecutionOutcome,
     recovered_factory: F,
@@ -16,34 +17,37 @@ where
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)
         .expect("canonical merge envelope");
-    let truth_bundle = capture_aspect_truth_bundle(runtime, &[], &[], &[]);
+    let truth_bundle = capture_aspect_truth_bundle(execution, runtime, &[], &[], &[]);
     let direct_rebuild_plan = runtime.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,
     );
     runtime
-        .rebuild_runtime_from_plan(direct_rebuild_plan)
+        .rebuild_runtime_from_plan(execution, direct_rebuild_plan)
         .unwrap_or_else(|error| panic!("direct replay rebuild failed: {error:?}"));
-    let replay =
-        runtime
-            .replay_authority()
-            .replay_commit(crate::facade::replay::RelationalReplayRequest {
+    let replay = runtime
+        .replay_authority()
+        .replay_commit(
+            crate::facade::replay::RelationalReplayRequest {
                 commit_id: merge.commit.commit.commit_id,
                 branch_id: BranchId("main".to_string()),
                 execution_mode: crate::facade::replay::ReplayExecutionMode::SerialDeterministic,
                 verification_mode:
                     crate::facade::replay::ReplayVerificationMode::AuditRecoveryVerification,
-            });
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         replay.failure.is_none(),
         "replay certification failure: {replay:?}"
     );
 
-    let (_recovery, recovered) = checkpoint_and_recover_with(runtime, recovered_factory);
+    let (_recovery, recovered) = checkpoint_and_recover_with(execution, runtime, recovered_factory);
     let recovered_envelope = recovered
         .replay()
         .canonical_commit_envelope(merge.commit.commit.commit_id)
         .expect("recovered merge envelope");
-    let recovered_truth_bundle = capture_aspect_truth_bundle(&recovered, &[], &[], &[]);
+    let recovered_truth_bundle = capture_aspect_truth_bundle(execution, &recovered, &[], &[], &[]);
 
     let recovery_envelope_matches = envelope == recovered_envelope;
     let recovery_truth_matches = truth_bundle.visible_truth == recovered_truth_bundle.visible_truth;

@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::provider::{
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn committed_dispatch_outbox_for_correlation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         correlation: &ExternalEffectCorrelationIdentity,
     ) -> Result<WorthQueryCommittedDispatchOutboxObservation, Denial> {
         let outstanding = self.outstanding_dispatch.posture(correlation);
@@ -48,6 +49,7 @@ impl WorthQueryPrimaryGraphProvider {
             return Err(Denial::RecordMismatch);
         }
         let owner = self.observe_expected(
+            execution,
             &binding,
             committed.commit_reference(),
             committed.runtime_instance_id(),

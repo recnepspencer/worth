@@ -11,7 +11,10 @@ use super::domain::{
 
 #[test]
 fn route_plans_expose_route_scoped_aspect_contract_fit_and_publication() {
-    let plan = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let plan = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<AspectRichRouteFamily>::new(
             "edge:42",
         ))
@@ -42,7 +45,10 @@ fn route_plans_expose_route_scoped_aspect_contract_fit_and_publication() {
 
 #[test]
 fn route_planning_denies_when_required_aspects_are_missing() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.plan_routes_checked(route_input(
         &handle,
@@ -60,7 +66,10 @@ fn route_planning_denies_when_required_aspects_are_missing() {
 
 #[test]
 fn route_planning_denies_when_aspect_contract_conflicts_with_coverage() {
-    let handle = admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "primary");
 
     match handle.plan_routes_checked(route_input(
         &handle,
@@ -78,12 +87,15 @@ fn route_planning_denies_when_aspect_contract_conflicts_with_coverage() {
 
 #[test]
 fn route_plan_digest_changes_when_route_scoped_aspect_truth_changes() {
-    let aspectful = admitted_handle("primary")
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let aspectful = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<AspectRichRouteFamily>::new(
             "edge:42",
         ))
         .unwrap_or_else(|_| panic!("aspect-rich route plan should succeed"));
-    let plain = admitted_handle("primary")
+    let plain = admitted_handle(request_execution, "primary")
         .declare_review_progress_describe_and_plan(RouteInput::<RelationalRouteFamily>::new(
             "edge:42",
         ))

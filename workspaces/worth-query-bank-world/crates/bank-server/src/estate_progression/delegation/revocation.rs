@@ -74,6 +74,7 @@ impl std::error::Error for BankCapabilityRevocationProjectionDenial {}
 impl BankIdentityRuntime {
     pub fn revoke_estate_capability_with_key(
         &self,
+
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         key: &BankIdempotencyKey,
@@ -94,7 +95,7 @@ impl BankIdentityRuntime {
                     RevokeEstateCapabilityOperation,
                     EstateCase,
                 >::default(),
-                |admission| self.materialize_capability_revocation(admission, grant),
+                |phase, admission| self.materialize_capability_revocation(phase, admission, grant),
             )
         {
             Ok(outcome) => Ok(outcome.into()),
@@ -111,6 +112,7 @@ impl BankIdentityRuntime {
     #[cfg(test)]
     fn admit_capability_revocation(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         request: &WorthQueryRequestScope,
@@ -124,17 +126,17 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
         let selected = self
-            .select_current_product()
+            .select_current_product(phase)
             .map_err(BankEstateProgressionDenial::from_product_selection)?;
         let access = selected
-            .admit_capability_access(principal.query(), &capability, action, request)
+            .admit_capability_access(phase, principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let operation = application
             .installed_schema()
             .installed_operation(RevokeEstateCapabilityOperation::reference())
             .map_err(BankEstateProgressionDenial::from_operation_installation)?;
         application
-            .authorize_capability_revocation(
+            .authorize_capability_revocation(phase,
                 access,
                 &capability,
                 &operation,
@@ -149,12 +151,14 @@ impl BankIdentityRuntime {
 
     fn materialize_capability_revocation(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         admission: AdmittedCapabilityRevocation,
         expected_grant: CapabilityGrantId,
     ) -> Result<CapabilityRevocationProgram, BankEstateProgressionDenial> {
         let projected = self
             .invariant_projection()
             .project_admitted_operation(
+                phase,
                 &admission,
                 |reader, estate| project_active_estate_grant(reader, estate, expected_grant),
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -165,16 +169,22 @@ impl BankIdentityRuntime {
         let reads = self
             .application_runtime()
             .begin_projected_application_read_attempt(
+                phase,
                 admission,
                 projection,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         let grant = reads
-            .resolve_entity(CapabilityGrantIdentityField::reference(), expected_grant)
+            .resolve_entity(
+                phase,
+                CapabilityGrantIdentityField::reference(),
+                expected_grant,
+            )
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         reads
             .complete_projected_dependencies(
+                phase,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(BankEstateProgressionDenial::from_attempt)?

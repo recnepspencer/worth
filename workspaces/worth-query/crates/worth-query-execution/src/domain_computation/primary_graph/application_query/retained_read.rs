@@ -97,6 +97,22 @@ where
 {
     pub fn select_application_read_observation(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        observation: &WorthQueryApplicationReadObservation,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        let execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(WorthQueryProductBranchAdmissionDenial::ForeignPhase),
+        };
+        self.select_application_read_observation_with_request(&execution, observation)
+    }
+
+    pub(in crate::domain_computation) fn select_application_read_observation_with_request(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &WorthQueryApplicationReadObservation,
     ) -> Result<
         WorthQuerySelectedProductOperation<'_, Schema>,
@@ -110,6 +126,6 @@ where
         let product = self
             .product_runtime
             .lease_from_observation(observation.product.observation().clone())?;
-        self.on_product(product)
+        self.on_product(execution, product)
     }
 }

@@ -13,7 +13,10 @@ use super::support::{
 
 #[test]
 fn subject_aware_readiness_rejects_mismatched_declaration_digest() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let error = match handle.try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
         WorthQueryDeclarationEntryReadinessRequest::base()
             .for_retained_subject(
@@ -40,8 +43,11 @@ fn subject_aware_readiness_rejects_mismatched_declaration_digest() {
 
 #[test]
 fn subject_aware_readiness_rejects_wrong_handle_subject() {
-    let source = handle("source");
-    let target = handle("target");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let source = handle(request_execution, "source");
+    let target = handle(request_execution, "target");
     let error = match target.try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
         WorthQueryDeclarationEntryReadinessRequest::base().for_retained_subject(
             WorthQueryDeclarationEntryRetainedSubjectInput::envelope_checked(
@@ -62,7 +68,10 @@ fn subject_aware_readiness_rejects_wrong_handle_subject() {
 
 #[test]
 fn workflow_and_plan_bound_evidence_fail_closed() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let declaration_digest = bridge_signal_envelope(&handle, "edge:42")
         .declaration_digest()
         .to_string();
@@ -113,7 +122,10 @@ fn workflow_and_plan_bound_evidence_fail_closed() {
 
 #[test]
 fn admitted_plan_bound_evidence_rejects_mismatched_retained_plan_scope() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let retained_plan = admitted_plan();
     let evidence_plan = admitted_branch_plan("branch:mismatched-plan");
     let error = match handle.try_declaration_entry_readiness::<Input<BridgeSignalFamily>>(
@@ -143,7 +155,10 @@ fn admitted_plan_bound_evidence_rejects_mismatched_retained_plan_scope() {
 
 #[test]
 fn lower_runtime_bound_evidence_rejects_mismatched_retained_lower_runtime_scope() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let retained_lower_runtime = lower_runtime_envelope("lower-runtime:retained");
     let evidence_lower_runtime = lower_runtime_envelope("lower-runtime:evidence");
     let error = match handle.inspect_declaration_entry(

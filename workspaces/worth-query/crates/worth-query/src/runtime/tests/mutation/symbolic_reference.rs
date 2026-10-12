@@ -1,131 +1,14 @@
 use super::super::support::*;
 
-#[test]
-fn mixed_batch_symbolic_and_existing_targets_preserve_distinct_evidence() {
-    let mut workspace = stateful_bridge_task_runtime()
-        .workspace("tasks.mixed-target-batch")
-        .expect("task runtime should open a named workspace");
-    let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.mixed-target-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-mixed-target-table")
-        })
-        .expect("live view should declare");
-
-    let seed = workspace
-        .insert("Task", |task| {
-            task.set_aspect(
-                test_aspect_touch("identity.id"),
-                test_authored_string_aspect_value("task-existing"),
-            )
-            .set_aspect(
-                test_aspect_touch("title.value"),
-                test_authored_string_aspect_value("Existing"),
-            )
-        })
-        .expect("seed insert should execute");
-    let existing_binding = WorthQueryExistingTruthTargetBinding::direct_entity(
-        crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
-            crate::runtime::WorthQueryExistingTruthBindingAuthorityLabel::new(
-                "authority:task-existing",
-            )
-            .expect("existing-truth authority label"),
-        )
-        .expect("existing-truth authority identity"),
-        seed.deltas()[0].entity_identity.clone(),
-    )
-    .expect("existing binding should build")
-    .in_target_collection("Task")
-    .expect("existing binding collection should build");
-    let symbolic = WorthQuerySymbolicTargetReference::new("draft-task")
-        .expect("symbolic reference should build")
-        .in_target_collection("Task")
-        .expect("symbolic reference collection should build");
-
-    let receipt = workspace
-        .batch(|batch| {
-            batch
-                .insert_symbolic("draft-task", "Task", |task| {
-                    task.set_aspect(
-                        test_aspect_touch("identity.id"),
-                        test_authored_string_aspect_value("task-draft"),
-                    )
-                    .set_aspect(
-                        test_aspect_touch("title.value"),
-                        test_authored_string_aspect_value("Draft"),
-                    )
-                })
-                .update_symbolic(symbolic.clone(), |task| {
-                    task.set_aspect(
-                        test_aspect_touch("title.value"),
-                        test_authored_string_aspect_value("Draft renamed"),
-                    )
-                })
-                .update_existing(existing_binding, |task| {
-                    task.set_aspect(
-                        test_aspect_touch("title.value"),
-                        test_authored_string_aspect_value("Existing renamed"),
-                    )
-                })
-        })
-        .expect("mixed target batch should execute");
-    let inspection = workspace.inspect(&receipt).expect("batch should inspect");
-
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .existing_truth_binding_count(),
-        1
-    );
-    assert_eq!(
-        receipt
-            .batch_mutation_evidence()
-            .symbolic_target_reference_count(),
-        1
-    );
-
-    match inspection {
-        WorthQueryInspection::BatchWriteReceipt(inspection) => {
-            assert_eq!(
-                inspection
-                    .batch_mutation_evidence()
-                    .symbolic_target_reference_count(),
-                1
-            );
-            assert_eq!(
-                inspection.component_operations()[1]
-                    .symbolic_target_reference_evidence()
-                    .expect("symbolic component should retain symbolic evidence")
-                    .symbol()
-                    .as_str(),
-                "draft-task"
-            );
-            assert_eq!(
-                inspection.component_operations()[2]
-                    .existing_truth_binding_evidence()
-                    .expect("existing component should retain existing-target evidence")
-                    .authoritative_identity()
-                    .as_str(),
-                "authority:task-existing"
-            );
-        }
-        other => panic!("expected batch inspection, got {other:?}"),
-    }
-}
+#[path = "symbolic_reference/mixed_batch_symbolic_and_existing_targets_preserve_distinct_evid.rs"]
+mod mixed_batch_symbolic_and_existing_targets_preserve_distinct_evid;
 
 #[test]
 fn symbolic_target_reference_denies_missing_same_batch_target() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.symbolic-denial")
         .expect("task runtime should open a named workspace");
     let symbolic = WorthQuerySymbolicTargetReference::new("missing-task")
@@ -134,7 +17,7 @@ fn symbolic_target_reference_denies_missing_same_batch_target() {
         .expect("symbolic reference collection should build");
 
     let error = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch.update_symbolic(symbolic, |task| {
                 task.set_aspect(
                     test_aspect_touch("title.value"),
@@ -158,7 +41,10 @@ fn symbolic_target_reference_denies_missing_same_batch_target() {
 
 #[test]
 fn symbolic_target_reference_denies_collection_mismatch_with_native_target_identity() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.symbolic-collection-mismatch")
         .expect("task runtime should open a named workspace");
     let symbolic = WorthQuerySymbolicTargetReference::new("draft-task")
@@ -167,7 +53,7 @@ fn symbolic_target_reference_denies_collection_mismatch_with_native_target_ident
         .expect("symbolic reference collection should build");
 
     let error = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert_symbolic("draft-task", "Task", |task| {
                     task.set_aspect(
@@ -199,12 +85,15 @@ fn symbolic_target_reference_denies_collection_mismatch_with_native_target_ident
 
 #[test]
 fn preview_batch_symbolic_target_preserves_symbolic_evidence() {
-    let runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = stateful_bridge_task_runtime(request_execution);
     let mut workspace = runtime
         .workspace("tasks.preview-symbolic")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.preview-symbolic-table", |q| {
+        .live_view(request_execution, "tasks.preview-symbolic-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -221,10 +110,10 @@ fn preview_batch_symbolic_target_preserves_symbolic_evidence() {
         .expect("live view should declare");
 
     let mut preview = workspace
-        .preview(test_session_label("symbolic-preview"))
+        .preview(request_execution, test_session_label("symbolic-preview"))
         .expect("preview should open");
     let receipt = preview
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert_symbolic("draft-task", "Task", |task| {
                     task.set_aspect(
@@ -269,7 +158,10 @@ fn preview_batch_symbolic_target_preserves_symbolic_evidence() {
 
 #[test]
 fn symbolic_aspect_reference_requires_batch_context() {
-    let mut workspace = stateful_bridge_task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_edge_runtime(request_execution)
         .workspace("tasks.symbolic-aspect-single")
         .expect("runtime should open a named workspace");
     let command = WorthQueryAspectMutationBuilder::new()
@@ -290,7 +182,7 @@ fn symbolic_aspect_reference_requires_batch_context() {
         .expect("insert command should build");
 
     let error = workspace
-        .write(command)
+        .write(request_execution, command)
         .expect_err("symbolic aspect references must fail closed outside batch execution");
 
     match error {
@@ -306,11 +198,14 @@ fn symbolic_aspect_reference_requires_batch_context() {
 
 #[test]
 fn symbolic_aspect_reference_resolves_same_batch_created_entity_identity() {
-    let mut workspace = stateful_bridge_task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_edge_runtime(request_execution)
         .workspace("tasks.symbolic-aspect-batch")
         .expect("runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.symbolic-aspect-tasks", |q| {
+        .live_view(request_execution, "tasks.symbolic-aspect-tasks", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -326,7 +221,7 @@ fn symbolic_aspect_reference_resolves_same_batch_created_entity_identity() {
         })
         .expect("task live view should declare");
     let edges: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.symbolic-aspect-edges", |q| {
+        .live_view(request_execution, "tasks.symbolic-aspect-edges", |q| {
             q.from("TaskEdge")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("edge", "kind").unwrap(),
@@ -349,7 +244,7 @@ fn symbolic_aspect_reference_resolves_same_batch_created_entity_identity() {
         .expect("edge live view should declare");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert_symbolic("draft-task", "Task", |task| {
                     task.set_aspect(
@@ -382,7 +277,7 @@ fn symbolic_aspect_reference_resolves_same_batch_created_entity_identity() {
     let draft_identity = receipt.write_receipts()[0].deltas()[0]
         .entity_identity
         .clone();
-    let edge_rows = workspace.read(&edges);
+    let edge_rows = workspace.read(request_execution, &edges);
     assert_eq!(edge_rows.len(), 1);
     let expected_source = test_native_entity_ref_value(&draft_identity);
     let expected_target = test_native_entity_ref_value(&test_entity_identity("task-existing"));

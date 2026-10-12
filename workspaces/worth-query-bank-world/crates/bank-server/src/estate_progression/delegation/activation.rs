@@ -68,6 +68,7 @@ impl BankIdentityRuntime {
     #[cfg(test)]
     fn admit_delegation(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         child: EstateCapabilityDelegationRequest,
@@ -82,16 +83,16 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
         let selected = self
-            .select_current_product()
+            .select_current_product(phase)
             .map_err(BankEstateProgressionDenial::from_product_selection)?;
         let access = selected
-            .admit_capability_access(principal.query(), &capability, action, request)
+            .admit_capability_access(phase, principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let operation = application
             .installed_schema()
             .installed_operation(DelegateEstateCapabilityOperation::reference())
             .map_err(BankEstateProgressionDenial::from_operation_installation)?;
-        authorize_target(self, access, &operation, child)
+        authorize_target(phase, self, access, &operation, child)
     }
 
     fn execute_delegation_target(
@@ -119,7 +120,7 @@ impl BankIdentityRuntime {
                             DelegateEstateCapabilityOperation,
                             EstateCase,
                         >::default(),
-                        |admission| self.materialize_delegation(admission, child),
+                        |phase, admission| self.materialize_delegation(phase, admission, child),
                     )
             }};
         }
@@ -237,12 +238,14 @@ impl BankIdentityRuntime {
 
     fn materialize_delegation(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         admission: AdmittedDelegation,
         child: EstateCapabilityDelegationRequest,
     ) -> Result<DelegationProgram, BankEstateProgressionDenial> {
         let projected = self
             .invariant_projection()
             .project_admitted_operation(
+                phase,
                 &admission,
                 |reader, estate| project_delegation(reader, estate, child),
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -253,6 +256,7 @@ impl BankIdentityRuntime {
         let reads = self
             .application_runtime()
             .begin_projected_application_read_attempt(
+                phase,
                 admission,
                 projection,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -260,9 +264,11 @@ impl BankIdentityRuntime {
             .map_err(BankEstateProgressionDenial::from_attempt)?;
         reads
             .complete_projected_dependencies(
+                phase,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )?
             .materialize_capability_delegation_program(
+                phase,
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .map_err(BankEstateProgressionDenial::from_attempt)

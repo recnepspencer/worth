@@ -40,7 +40,7 @@ fn response_loss_retry_performs_no_second_managed_application_attempt() {
         .application
         .install_external_effect_transport(transport.clone())
         .unwrap();
-    let original = commit_response_lost(&world, &transport);
+    let original = { commit_response_lost(&world, &transport) };
     retry_without_managed_work(&world, &transport, &original);
     consume_armed_session_and_invariant_sentinels(&world);
     assert_unseen_commit_uses_the_managed_path(&world);
@@ -51,16 +51,43 @@ fn commit_response_lost(
     transport: &CompletingTransport,
 ) -> WorthQueryApplicationCommitReceipt {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
-    let original = retained_status_program(
-        world,
-        &principal,
-        &account,
-        &request,
-        "response-lost",
-        RetentionMutationBreadth::Narrow,
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request(),
+                world,
+                "open",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let original = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            retained_status_program(
+                &(phase_custody).test_host_request(),
+                world,
+                &principal,
+                &account,
+                &request,
+                "response-lost",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     world.faults.lose_next_commit_response();
     let before_commit = world.application.application_attempt_work_for_test();
     let WorthQueryApplicationCommitOutcome::Committed(original) =
@@ -93,16 +120,43 @@ fn retry_without_managed_work(
     original: &WorthQueryApplicationCommitReceipt,
 ) {
     let retry_request = live_scope();
-    let retry_principal = authenticated_principal(world, &retry_request);
-    let retry_account = resolved_account(world, "response-lost", &retry_request);
-    let retry = retained_status_program(
-        world,
-        &retry_principal,
-        &retry_account,
-        &retry_request,
-        "response-lost",
-        RetentionMutationBreadth::Narrow,
-    );
+    let retry_principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(&(phase_custody).test_host_request(), world, &retry_request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request(),
+                world,
+                "response-lost",
+                &retry_request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            retained_status_program(
+                &(phase_custody).test_host_request(),
+                world,
+                &retry_principal,
+                &retry_account,
+                &retry_request,
+                "response-lost",
+                RetentionMutationBreadth::Narrow,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     world.faults.reject_next_session_prepare();
     world.faults.skip_next_invariant_owner_execution();
     let before_retry = world.application.application_attempt_work_for_test();
@@ -133,15 +187,42 @@ fn retry_without_managed_work(
 
 fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let probe_account = resolved_account(world, "unrelated", &request);
-    let rejected_session = admitted_program(
-        world,
-        &principal,
-        &probe_account,
-        &request,
-        "session-sentinel",
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let probe_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request(),
+                world,
+                "unrelated",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let rejected_session = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            admitted_program(
+                phase_custody,
+                world,
+                &principal,
+                &probe_account,
+                &request,
+                "session-sentinel",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Denied(session_denial) =
         world.application.compare_and_commit_application(
             rejected_session,
@@ -156,15 +237,42 @@ fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
         WorthQueryApplicationCommitDenialStage::ProviderPlan
     );
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let probe_account = resolved_account(world, "unrelated", &request);
-    let rejected_invariant = admitted_program(
-        world,
-        &principal,
-        &probe_account,
-        &request,
-        "invariant-sentinel",
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let probe_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request(),
+                world,
+                "unrelated",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let rejected_invariant = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            admitted_program(
+                phase_custody,
+                world,
+                &principal,
+                &probe_account,
+                &request,
+                "invariant-sentinel",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Denied(invariant_denial) =
         world.application.compare_and_commit_application(
             rejected_invariant,
@@ -182,15 +290,42 @@ fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
 
 fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let probe_account = resolved_account(world, "unrelated", &request);
-    let positive_control = admitted_program(
-        world,
-        &principal,
-        &probe_account,
-        &request,
-        "positive-control",
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let probe_account = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            resolved_account(
+                &(phase_custody).test_host_request(),
+                world,
+                "unrelated",
+                &request,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let positive_control = world
+        .application
+        .with_host_advancement(|phase| {
+            let phase_custody = &phase;
+
+            admitted_program(
+                phase_custody,
+                world,
+                &principal,
+                &probe_account,
+                &request,
+                "positive-control",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let before_control = world.application.application_attempt_work_for_test();
     assert!(matches!(
         world.application.compare_and_commit_application(

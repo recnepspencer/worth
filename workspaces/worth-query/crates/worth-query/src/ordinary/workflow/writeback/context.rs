@@ -31,10 +31,11 @@ impl WorthQueryWritebackContextStop {
 }
 
 pub fn writeback(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &WorthQueryWorkspace,
 ) -> Result<WorthQueryWritebackContext, WorthQueryWritebackContextStop> {
     let authority = workspace
-        .capture_ordinary_writeback_authority()
+        .capture_ordinary_writeback_authority(execution)
         .map_err(|error| WorthQueryWritebackContextStop {
             error,
             counters: WorthQueryWorkflowCounters::context_checked(),

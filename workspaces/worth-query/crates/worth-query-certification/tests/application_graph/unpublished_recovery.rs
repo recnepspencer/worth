@@ -40,6 +40,9 @@ fn intent(retention_days: u64) -> SetRetentionIntent {
 
 #[test]
 fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handler() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     // This value is reserved here for the fixture's real decision/candidate observers.
     const RETENTION: u64 = 18;
     reset_candidate_count(RETENTION);
@@ -52,7 +55,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let before = observe_head(runtime, branch).selected_commit().clone();
     let key = 0xaced_1801;
 
-    runtime.fail_next_durable_append_for_test();
+    runtime.fail_next_durable_append_for_test(request_execution);
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(branch)

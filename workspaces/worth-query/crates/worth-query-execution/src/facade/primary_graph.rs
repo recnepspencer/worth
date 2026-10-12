@@ -324,3 +324,5 @@ pub use crate::domain_computation::execution_observation::WorthQueryExecutionObs
 pub use worth_runtime_bridge::facade::{
     BridgeConditionalDenialKind, BridgeCorrespondenceDeliveryStop,
 };
+
+pub use crate::domain_computation::primary_graph::principal_target_reads_on_this_thread_for_test;

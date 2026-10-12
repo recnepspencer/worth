@@ -23,6 +23,7 @@ pub struct WorthQueryWorkflowDefinitionPublicationAdapter;
 impl WorthQueryWorkflowDefinitionPublicationAdapter {
     #[doc(hidden)]
     pub fn prepare<Schema, Capability, Operation, Input, Scope, Spec>(
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
         expected_predecessor: WorkflowDefinitionExpectedPredecessor,
@@ -37,7 +38,14 @@ impl WorthQueryWorkflowDefinitionPublicationAdapter {
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        let phase_request = match phase.execution_request_for(&selected.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(WorkflowDefinitionPreparationDenial::Attempt(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "workflow-phase"))),
+        };
+        let execution = &phase_request;
+
         selected.prepare_workflow_publication::<Capability, Operation, Input, Scope, Spec>(
+            execution,
             contract,
             expected_predecessor,
             admission,
@@ -57,6 +65,25 @@ impl WorthQueryWorkflowDefinitionPublicationAdapter {
         Operation: 'static,
         Input: Clone + Send + Sync + 'static,
     {
-        runtime.compare_and_commit_workflow_definition_publication(phase, prepared, idempotency)
+        let phase_request =
+            match phase.execution_request_for(&runtime.product_runtime) {
+                Ok(request) => request,
+                Err(cause) => return WorkflowDefinitionPublicationOutcome::Application(
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                        cause,
+                    )
+                    .into_commit_outcome()
+                    .landed()
+                    .expect_err("a foreign phase cannot commit"),
+                ),
+            };
+        let execution = &phase_request;
+
+        runtime.compare_and_commit_workflow_definition_publication(
+            execution,
+            phase,
+            prepared,
+            idempotency,
+        )
     }
 }

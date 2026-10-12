@@ -2,9 +2,13 @@ use super::super::support::*;
 
 #[test]
 fn runtime_surfaces_authority_lanes_on_public_handles_and_receipts() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.authority",
             task_live_request(),
             task_schema(),
@@ -12,22 +16,26 @@ fn runtime_surfaces_authority_lanes_on_public_handles_and_receipts() {
         .expect("live view should declare");
     let derived = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("task_titles.authority", test_aspect_touches(["title"])),
             TitleListMaintainer,
         )
         .expect("derived view should declare");
 
     let receipt = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Authority lane task"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Authority lane task"),
+                    ),
+                ],
+            ),
+        )
         .expect("insert should write");
     let patches = runtime.drain_derived_patches(&derived);
     let inspector = runtime.inspect_receipt(&receipt);
@@ -56,9 +64,12 @@ fn runtime_surfaces_authority_lanes_on_public_handles_and_receipts() {
 
 #[test]
 fn preview_defaults_to_derive_only_effect_policy_but_keeps_explicit_writes_preview_local() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let mut preview = runtime
-        .preview(test_session_label("default policy"))
+        .preview(request_execution, test_session_label("default policy"))
         .expect("preview session should be admitted");
 
     assert_eq!(preview.effect_policy(), WorthQueryEffectPolicy::DeriveOnly);
@@ -92,16 +103,19 @@ fn preview_defaults_to_derive_only_effect_policy_but_keeps_explicit_writes_previ
     ));
 
     let preview_receipt = preview
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Preview-local task"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Preview-local task"),
+                    ),
+                ],
+            ),
+        )
         .expect("explicit preview write should stage");
     assert_eq!(
         preview_receipt.authority_lane(),
@@ -116,9 +130,13 @@ fn preview_defaults_to_derive_only_effect_policy_but_keeps_explicit_writes_previ
 
 #[test]
 fn sandboxed_preview_policy_admits_only_sandboxed_write_intents() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let preview = runtime
         .preview_with_options(
+            request_execution,
             test_session_label("sandboxed writes"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
@@ -154,9 +172,13 @@ fn sandboxed_preview_policy_admits_only_sandboxed_write_intents() {
 
 #[test]
 fn derive_only_preview_denies_operation_write_effects() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -171,10 +193,14 @@ fn derive_only_preview_denies_operation_write_effects() {
         .expect("operation ref should build");
 
     let mut preview = runtime
-        .preview(test_session_label("derive-only operation"))
+        .preview(
+            request_execution,
+            test_session_label("derive-only operation"),
+        )
         .expect("preview session should be admitted");
     let error = preview
         .run_operation(
+            request_execution,
             operation,
             vec![WorthQueryOperationInput::new(
                 "title",

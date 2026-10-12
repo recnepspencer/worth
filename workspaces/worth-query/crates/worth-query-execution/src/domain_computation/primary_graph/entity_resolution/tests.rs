@@ -18,87 +18,131 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
     let first_graph = first.application.runtime.primary_graph().unwrap();
     let second_graph = second.application.runtime.primary_graph().unwrap();
     let installed = first_graph.retain_entity_resolution_context();
-    let first_product = first.selected_product();
-    let first_version = first_graph.integration_handle().with_runtime_mut(|_| {
-        first_product
-            .application_basis()
-            .snapshot_handle()
-            .version_id()
-    });
-
-    let second_product = second.selected_product();
-    second_graph
-        .integration_handle()
-        .with_runtime_mut(|runtime| {
-            let snapshot = second_product.application_basis().snapshot_handle();
-            assert_eq!(snapshot.version_id(), first_version);
-            let denial = match installed.at_snapshot(
-                runtime,
-                snapshot,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            ) {
-                Ok(_) => panic!("foreign runtime truth entered entity resolution"),
-                Err(denial) => denial,
-            };
-            assert_eq!(
-                denial.kind(),
-                WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth
+    let first_version = first
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let first_product = first.selected_product(
+                &(host_custody.phase_for_application(&first.application)).test_host_request(),
             );
-        });
+            let first_version =
+                first_graph
+                    .integration_handle()
+                    .with_runtime_mut(&borrowed_execution, |_| {
+                        first_product
+                            .application_basis()
+                            .snapshot_handle()
+                            .version_id()
+                    });
+
+            first_version
+        })
+        .expect("the source version read owns its host call");
+    second
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            let second_product = second.selected_product(
+                &(host_custody.phase_for_application(&second.application)).test_host_request(),
+            );
+            second_graph
+                .integration_handle()
+                .with_runtime_mut(&borrowed_execution, |runtime| {
+                    let snapshot = second_product.application_basis().snapshot_handle();
+                    assert_eq!(snapshot.version_id(), first_version);
+                    let denial = match installed.at_snapshot(
+                        execution,
+                        runtime,
+                        snapshot,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    ) {
+                        Ok(_) => panic!("foreign runtime truth entered entity resolution"),
+                        Err(denial) => denial,
+                    };
+                    assert_eq!(
+                        denial.kind(),
+                        WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth
+                    );
+                });
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
 fn rebuilt_index_generation_preserves_stable_entity_meaning() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let identity = world
+    world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let graph = world.application.runtime.primary_graph().unwrap();
-    let installed = graph.retain_entity_resolution_context();
-    let selected = world.selected_product();
-    let index_id = graph
-        .layout()
-        .equality_field("Account", "AccountPolicy", "AccountStatus")
-        .and_then(|field| field.equality_index_id)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            let borrowed_execution = host_custody.borrowed_request_for_test();
+            let execution = &borrowed_execution;
+            let identity = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &host_custody.phase_for_application(&world.application),
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let graph = world.application.runtime.primary_graph().unwrap();
+            let installed = graph.retain_entity_resolution_context();
+            let selected = world.selected_product(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+            );
+            let index_id = graph
+                .layout()
+                .equality_field("Account", "AccountPolicy", "AccountStatus")
+                .and_then(|field| field.equality_index_id)
+                .unwrap();
 
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let head = runtime
-            .history()
-            .historical_latest_commit()
-            .unwrap()
-            .clone();
-        let build = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
-                source_commit_id: head.commit_id,
-                branch_id: primary_relational_branch_id(),
-                index_ids: vec![index_id],
-            });
-        assert!(build.failed_indexes.is_empty());
-        assert_ne!(
-            build.generations[0].generation_id,
-            identity.identity_index_generation()
-        );
-        let snapshot = selected.application_basis().snapshot_handle();
-        let truth = installed
-            .at_snapshot(
-                runtime,
-                snapshot,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        truth.validate_entity_freshness(&identity).unwrap();
-    });
+            graph
+                .integration_handle()
+                .with_runtime_mut(&borrowed_execution, |runtime| {
+                    let head = runtime
+                        .history()
+                        .historical_latest_commit()
+                        .unwrap()
+                        .clone();
+                    let build = runtime.index_authority().build_for_commit(
+                        execution,
+                        DerivedIndexBuildRequest {
+                            source_commit_id: head.commit_id,
+                            branch_id: primary_relational_branch_id(),
+                            index_ids: vec![index_id],
+                        },
+                    );
+                    assert!(build.failed_indexes.is_empty());
+                    assert_ne!(
+                        build.generations[0].generation_id,
+                        identity.identity_index_generation()
+                    );
+                    let snapshot = selected.application_basis().snapshot_handle();
+                    let truth = installed
+                        .at_snapshot(
+                            execution,
+                            runtime,
+                            snapshot,
+                            WorthQueryPrincipalResolutionMode::Ordinary,
+                        )
+                        .unwrap();
+                    truth
+                        .validate_entity_freshness(execution, &identity)
+                        .unwrap();
+                });
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 #[test]
@@ -106,14 +150,20 @@ fn installed_context_derives_binding_layout_and_index_from_its_graph() {
     let world = installed_authorization_world(true);
     let graph = world.application.runtime.primary_graph().unwrap();
     let installed = graph.retain_entity_resolution_context();
-    let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
+    world.application.with_host_advancement(|phase| {
+let host_custody = phase.test_host_request();
+let borrowed_execution = host_custody.borrowed_request_for_test();
+let execution = &borrowed_execution;
+let selected = world.selected_product(
+            &(host_custody.phase_for_application(&world.application)).test_host_request(),
+        );
+        graph.integration_handle().with_runtime_mut(&borrowed_execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
         let truth = installed
-            .at_snapshot(runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)
+            .at_snapshot(execution, runtime, snapshot, WorthQueryPrincipalResolutionMode::Ordinary)
             .unwrap();
         let resolved = truth
-            .resolve(
+            .resolve(execution,
                 "Account",
                 "AccountPolicy",
                 "AccountStatus",
@@ -124,4 +174,6 @@ fn installed_context_derives_binding_layout_and_index_from_its_graph() {
         assert_eq!(typed.binding_identity(), graph.binding_identity());
         assert_eq!(typed.identity_index_id(), graph.layout().equality_field("Account", "AccountPolicy", "AccountStatus").unwrap().equality_index_id.unwrap());
     });
+
+}).expect("the fixture block owns its installed host call")
 }

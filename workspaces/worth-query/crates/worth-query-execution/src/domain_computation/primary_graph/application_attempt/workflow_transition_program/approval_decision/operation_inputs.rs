@@ -4,6 +4,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn observe_operation_approval_inputs(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
     layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -23,6 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
     WorthQueryApplicationAttemptDenial,
 > {
     let observed = inputs::observe(
+        execution,
         compiled,
         layout,
         graph_layout,
@@ -45,8 +47,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt::workflow_t
         .iter()
         .map(|entry| entry.evidence.entity)
         .collect::<Vec<_>>();
-    let authority = handle.with_runtime(|runtime| {
+    let authority = handle.with_runtime(execution, |runtime| {
         super::super::super::workflow_instance_observation::observe_retained_approval_binding(
+            execution,
             runtime,
             snapshot,
             layout,

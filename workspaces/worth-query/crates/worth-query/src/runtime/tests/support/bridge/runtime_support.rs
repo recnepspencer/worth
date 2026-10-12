@@ -54,55 +54,69 @@ pub(in crate::runtime::tests) fn test_product_world_resources() -> WorthQueryPro
 }
 
 pub(in crate::runtime::tests) fn bridge_backed_runtime_with_support(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: WorthQueryRuntimeSupportProfile,
 ) -> WorthQueryRuntime {
-    bridge_backed_runtime_with_support_and_intent_authority(profile, TestIntentAuthority)
+    bridge_backed_runtime_with_support_and_intent_authority(
+        request_execution,
+        profile,
+        TestIntentAuthority,
+    )
 }
 
 pub(in crate::runtime::tests) fn bridge_runtime_with_support(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: WorthQueryRuntimeSupportProfile,
 ) -> WorthQueryRuntime {
-    bridge_backed_runtime_with_support(profile)
+    bridge_backed_runtime_with_support(request_execution, profile)
 }
 
 pub(in crate::runtime::tests) fn bridge_backed_runtime_with_support_and_intent_authority<
     T: WorthQueryIntentAuthorityAdapter + 'static,
 >(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: WorthQueryRuntimeSupportProfile,
     intent_authority: T,
 ) -> WorthQueryRuntime {
     bridge_backed_runtime_builder(profile)
         .intent_authority(intent_authority)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("complete bridge-backed runtime test support should build")
 }
 
 pub(in crate::runtime::tests) fn bridge_runtime_with_support_and_intent_authority<
     T: WorthQueryIntentAuthorityAdapter + 'static,
 >(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: WorthQueryRuntimeSupportProfile,
     intent_authority: T,
 ) -> WorthQueryRuntime {
-    bridge_backed_runtime_with_support_and_intent_authority(profile, intent_authority)
+    bridge_backed_runtime_with_support_and_intent_authority(
+        request_execution,
+        profile,
+        intent_authority,
+    )
 }
 
 pub(in crate::runtime::tests) fn bridge_backed_runtime_with_existing_truth_verification(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: WorthQueryRuntimeSupportProfile,
     adapter: TestExistingTruthVerificationAdapter,
 ) -> WorthQueryRuntime {
     bridge_backed_runtime_builder(profile)
         .existing_truth_verification(adapter)
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("complete bridge-backed runtime test support should build")
 }
 
 pub(in crate::runtime::tests) fn bridge_runtime_with_support_and_existing_truth_verification(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: WorthQueryRuntimeSupportProfile,
     adapter: TestExistingTruthVerificationAdapter,
 ) -> WorthQueryRuntime {
-    bridge_backed_runtime_with_existing_truth_verification(profile, adapter)
+    bridge_backed_runtime_with_existing_truth_verification(request_execution, profile, adapter)
 }
 
 pub(in crate::runtime::tests) fn intent_support_profile() -> WorthQueryRuntimeSupportProfile {

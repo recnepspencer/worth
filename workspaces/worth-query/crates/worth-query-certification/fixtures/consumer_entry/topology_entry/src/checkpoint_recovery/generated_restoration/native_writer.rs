@@ -15,25 +15,30 @@ fn a_refresh_that_must_switch_producers_preserves_the_live_output() {
     let ring = ring(&request);
 
     let branch = application.current_world();
-    let record = application
-        .on_branch(branch)
-        .select()
-        .unwrap()
-        .resolve_entity(
-            BodyKey::reference::<CheckpointSchema>(),
-            ring[1].0.clone(),
+    let record = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .on_branch(branch)
+            .select(phase)
+            .unwrap()
+            .resolve_entity(
+                phase,
+                BodyKey::reference::<CheckpointSchema>(),
+                ring[1].0.clone(),
+                &scope,
+                primary_graph::WorthQueryPrincipalResolutionMode::Certification,
+            )
+            .unwrap()
+            .relational_record_identity_parts()
+    });
+    application
+        .publish_native_field_write_for_test(
+            branch,
+            record,
+            Length::reference::<CheckpointSchema>(),
+            length(44),
             &scope,
-            primary_graph::WorthQueryPrincipalResolutionMode::Certification,
         )
-        .unwrap()
-        .relational_record_identity_parts();
-    application.publish_native_field_write_for_test(
-        branch,
-        record,
-        Length::reference::<CheckpointSchema>(),
-        length(44),
-        &scope,
-    );
+        .expect("the fixture native writer host policy admits its call");
 
     assert_eq!(redemanded(&request, &application), (Posture::Performed, 1));
     assert_eq!(super::ring(&request), ring);

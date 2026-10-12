@@ -9,10 +9,13 @@ use crate::tests::support::*;
 
 #[test]
 fn crossed_boundary_collection_deduplicates_without_losing_first_seen_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let first = create_entity_outcome(&runtime, "a");
-    let second = create_entity_outcome(&runtime, "b");
-    let third = create_entity_outcome(&runtime, "c");
+    let first = create_entity_outcome(execution, &runtime, "a");
+    let second = create_entity_outcome(execution, &runtime, "b");
+    let third = create_entity_outcome(execution, &runtime, "c");
 
     let fingerprint_a = SchemaBoundaryFingerprint::new([1_u8; 32]);
     let fingerprint_b = SchemaBoundaryFingerprint::new([2_u8; 32]);

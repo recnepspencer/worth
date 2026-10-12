@@ -20,6 +20,7 @@ where
 {
     pub(crate) fn admit_application_historical_basis(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         read: WorthQueryApplicationHistoricalRead,
         request: &WorthQueryRequestScope,
     ) -> Result<
@@ -27,8 +28,8 @@ where
         WorthQueryApplicationQueryAdmissionDenial,
     > {
         validate_truth_view_request(request)?;
-        let basis = self.admit_historical_execution_basis(read.into_source())?;
-        let lease = super::super::admission::register_basis(self, basis)?;
+        let basis = self.admit_historical_execution_basis(execution, read.into_source())?;
+        let lease = super::super::admission::register_basis(execution, self, basis)?;
         validate_truth_view_request(request)?;
         Ok(WorthQueryApplicationHistoricalBasis {
             lease,
@@ -38,6 +39,7 @@ where
 
     fn admit_historical_execution_basis(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: WorthQueryApplicationHistoricalReadSource,
     ) -> Result<
         worth_relational::facade::branch::AdmittedRelationalBranchBasis,
@@ -80,17 +82,20 @@ where
                 let basis = self
                     .primary_provider
                     .graph
-                    .with_runtime(|runtime| {
+                    .with_runtime(request_execution, |runtime| {
                         runtime.readmit_retained_branch_basis(&descriptor, retention.lease())
                     })
                     .map_err(super::super::map_basis_denial)?;
-                let selected_commit = self.primary_provider.graph.with_runtime(|runtime| {
-                    runtime
-                        .history()
-                        .branch_head_for_observation(&basis.observation())
-                        .ok()
-                        .flatten()
-                });
+                let selected_commit =
+                    self.primary_provider
+                        .graph
+                        .with_runtime(request_execution, |runtime| {
+                            runtime
+                                .history()
+                                .branch_head_for_observation(&basis.observation())
+                                .ok()
+                                .flatten()
+                        });
                 if selected_commit.as_ref() != Some(&commit) {
                     return Err(denial(
                         WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,

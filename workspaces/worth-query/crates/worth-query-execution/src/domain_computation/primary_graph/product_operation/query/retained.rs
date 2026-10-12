@@ -63,6 +63,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         Input,
     >(
         self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         retained: WorthQuerySelectedProductOperation<'runtime, Schema>,
         query: &'runtime WorthQueryInstalledApplicationQuery<
             Schema,
@@ -102,10 +103,17 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
+        let request = match phase.execution_request_for(&self.application().product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let (application, controls) =
             self.retained_query_controls(retained, query.name(), controls)?;
-        application
-            .admit_governed_application_query(query, access, capability, parameters, controls)
+        application.admit_governed_application_query(
+            execution, query, access, capability, parameters, controls,
+        )
     }
 }
 
@@ -130,14 +138,27 @@ mod tests {
         let world = installed_authorization_world(true);
         let application = &world.application;
         let root = application.current_world();
-        let sibling = application
-            .branches()
-            .fork(root)
-            .components(|components| components.reuse_exact_relational_basis().fork_signal())
-            .create()
-            .expect("a distinct sibling branch should exist");
-        let security = application.on_branch(sibling).select().unwrap();
-        let retained = application.on_branch(root).select().unwrap();
+        let sibling = world
+            .application
+            .with_host_advancement(|phase| {
+                application
+                    .branches()
+                    .fork(root)
+                    .components(|components| {
+                        components.reuse_exact_relational_basis().fork_signal()
+                    })
+                    .create(&phase)
+                    .expect("a distinct sibling branch should exist")
+            })
+            .expect("the fixture read owns its installed host call");
+        let security = world
+            .application
+            .with_host_advancement(|phase| application.on_branch(sibling).select(&phase).unwrap())
+            .expect("the fixture read owns its installed host call");
+        let retained = world
+            .application
+            .with_host_advancement(|phase| application.on_branch(root).select(&phase).unwrap())
+            .expect("the fixture read owns its installed host call");
         let scope = live_scope();
         let controls = WorthQueryProductQueryControls::new(
             NonZeroUsize::new(1).unwrap(),

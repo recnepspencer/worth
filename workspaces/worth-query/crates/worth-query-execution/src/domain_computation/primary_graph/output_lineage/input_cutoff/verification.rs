@@ -89,6 +89,7 @@ impl RetainedInputCutoffCandidate {
     /// require proof at this exact native root. The candidate's own dirty marks remain intact.
     pub(in crate::domain_computation::primary_graph) fn verify_for_reuse<'selected>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh_key: PreparedInputReuseKey,
         fresh_context: PreparedDecisionReuseContext,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
@@ -100,6 +101,7 @@ impl RetainedInputCutoffCandidate {
     ) -> Result<InputCutoffDecision<'selected>, InputCutoffVerificationStop> {
         let (snapshot, selected) = basis.in_runtime(runtime, admission)?;
         let verified = self.eligible_for_reuse(
+            execution,
             &fresh_key,
             &fresh_context,
             matched_predecessors,
@@ -136,6 +138,7 @@ impl RetainedInputCutoffCandidate {
 
     fn eligible_for_reuse(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         fresh_key: &PreparedInputReuseKey,
         fresh_context: &PreparedDecisionReuseContext,
         matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
@@ -209,6 +212,7 @@ impl RetainedInputCutoffCandidate {
                 // Source input equality does not prove handler facts equal.
                 // A changed own decision may remove the old consumed edges.
                 match ConsumedOutputEvidence::own_evidence_is_current(
+                    execution,
                     &facts[..count],
                     self.consumed_outputs(),
                     witness,
@@ -263,9 +267,16 @@ impl RetainedInputCutoffCandidate {
             SourceSettlementCurrentness::Foreign => return Ok(None),
         }
         let current = if verify_full_prefix {
-            marked_facts_permit_reuse(facts.iter().take(count), runtime, snapshot, currentness)?
+            marked_facts_permit_reuse(
+                execution,
+                facts.iter().take(count),
+                runtime,
+                snapshot,
+                currentness,
+            )?
         } else if let Some(ordinals) = dirty_prefix {
             marked_facts_permit_reuse(
+                execution,
                 ordinals
                     .iter()
                     .take_while(|ordinal| **ordinal < count)
@@ -281,6 +292,7 @@ impl RetainedInputCutoffCandidate {
             return Ok(None);
         }
         match ConsumedOutputEvidence::verify_many_with_admission(
+            execution,
             verified_consumed
                 .as_deref()
                 .unwrap_or_else(|| self.consumed_outputs()),
@@ -316,7 +328,7 @@ impl RetainedInputCutoffCandidate {
                 ));
             }
         }
-        if !witness.unchanged_in(runtime, snapshot, admission)? {
+        if !witness.unchanged_in(execution, runtime, snapshot, admission)? {
             return Ok(None);
         }
         Ok(Some(VerifiedDependencies {
@@ -331,12 +343,13 @@ impl RetainedInputCutoffCandidate {
 /// output, so it answers `false` and the demand executes fresh instead of
 /// stopping; every other stop stays a stop.
 fn marked_facts_permit_reuse<'fact>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     currentness: &mut InvalidationEditAdmission,
 ) -> Result<bool, InputCutoffVerificationStop> {
-    match facts_are_current(facts, runtime, snapshot, currentness) {
+    match facts_are_current(execution, facts, runtime, snapshot, currentness) {
         Ok(current) => Ok(current),
         Err(
             InputCutoffVerificationStop::WorkExhausted
@@ -352,6 +365,7 @@ fn marked_facts_permit_reuse<'fact>(
 /// Re-verifies marked facts, or the full-verification prefix, on the
 /// host-bounded source-currentness allowance.
 fn facts_are_current<'fact>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
@@ -359,20 +373,20 @@ fn facts_are_current<'fact>(
 ) -> Result<bool, InputCutoffVerificationStop> {
     for fact in facts {
         currentness.charge_external_work(1)?;
-        if !fact_is_current(fact, runtime, snapshot, currentness)? {
+        if !fact_is_current(execution, fact, runtime, snapshot, currentness)? {
             return Ok(false);
         }
     }
     Ok(true)
 }
-
 fn fact_is_current(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, InputCutoffVerificationStop> {
-    match fact.source_currentness_in(runtime, snapshot, admission)? {
+    match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
         Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
         Err(WorthQuerySourceCurrentnessFailure::Unavailable) => Ok(false),
         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
@@ -380,7 +394,6 @@ fn fact_is_current(
         }
     }
 }
-
 mod matched_roots;
 mod pending_upstream;
 #[cfg(test)]

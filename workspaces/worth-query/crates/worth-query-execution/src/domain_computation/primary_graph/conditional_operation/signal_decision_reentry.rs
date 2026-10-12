@@ -44,6 +44,7 @@ impl WorthQueryConditionalTruthBasis {
     }
 
     pub(in crate::domain_computation::primary_graph) fn retain_selected<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
             Schema,
@@ -52,7 +53,7 @@ impl WorthQueryConditionalTruthBasis {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        Ok(Self::from_selected(selected.retain_selection()?))
+        Ok(Self::from_selected(selected.retain_selection(execution)?))
     }
 
     pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> &TruthSnapshotIdentity {

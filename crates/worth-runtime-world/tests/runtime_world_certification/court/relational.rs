@@ -42,6 +42,8 @@ fn patch(value: &str) -> AspectFieldPatch {
 }
 impl CargoRecords {
     pub fn install(include_steel: bool) -> Self {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let mut registry = RelationalSchemaRegistry::new();
         for (kind, name) in [(1, "port"), (2, "voyage"), (3, "manifest"), (4, "cargo")] {
             registry = registry
@@ -104,10 +106,7 @@ impl CargoRecords {
             )
             .expect("component owner: stage entity");
             let result = tx
-                .commit(
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit(execution, &runtime)
                 .expect("component owner: install entity");
             let id = result
                 .changed_records
@@ -149,16 +148,14 @@ impl CargoRecords {
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("component owner: stage route link");
-            tx.commit(
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("component owner: install route link");
+            tx.commit(execution, &runtime)
+                .expect("component owner: install route link");
         }
         Self { runtime, ids }
     }
     pub fn read(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
     ) -> super::observation::SupplyChainObservation {
         let pinned = self
@@ -170,7 +167,7 @@ impl CargoRecords {
             let read = self
                 .runtime
                 .read_truth()
-                .read_snapshot(&pinned)
+                .read_snapshot(&pinned, execution)
                 .expect("observation: relational read");
             let names: BTreeMap<_, _> = self
                 .ids
@@ -218,11 +215,13 @@ impl CargoRecords {
     }
     pub fn candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         name: &str,
         value: &str,
     ) -> PreparedRelationalCommitCandidate {
         self.candidate_with_control(
+            execution,
             basis,
             name,
             value,
@@ -231,6 +230,7 @@ impl CargoRecords {
     }
     pub fn candidate_with_control(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         name: &str,
         value: &str,
@@ -256,10 +256,7 @@ impl CargoRecords {
         .expect("component owner: stage update");
         self.runtime
             .preparation_port()
-            .prepare_branch_transaction(
-                tx,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, tx)
             .expect("component owner: prepare update")
     }
 }

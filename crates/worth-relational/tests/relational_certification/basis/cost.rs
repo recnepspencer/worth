@@ -3,7 +3,10 @@ use worth_relational::facade::branch::RelationalBranchBasisDenial;
 
 #[test]
 fn basis_and_external_retention_work_is_counted_exactly() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let runtime = world.runtime;
     let baseline = runtime.branch_basis_cost_counters();
     let identity = runtime.main_branch_identity();
@@ -19,7 +22,7 @@ fn basis_and_external_retention_work_is_counted_exactly() {
     );
 
     let readmitted = runtime.readmit_branch_basis(&descriptor).unwrap();
-    let foreign = certified_supply_chain_world(SupplyChainScale::court())
+    let foreign = certified_supply_chain_world(execution, SupplyChainScale::court())
         .0
         .runtime;
     assert!(matches!(
@@ -56,8 +59,11 @@ fn basis_and_external_retention_work_is_counted_exactly() {
 
 #[test]
 fn immutable_component_basis_future_holder_fanout_is_exact_through_1024() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for holder_count in [1_u64, 64, 1_024] {
-        let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+        let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
         let runtime = world.runtime;
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();

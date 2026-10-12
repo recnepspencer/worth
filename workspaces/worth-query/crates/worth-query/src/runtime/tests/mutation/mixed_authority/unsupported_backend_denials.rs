@@ -2,11 +2,17 @@ use super::*;
 
 #[test]
 fn existing_truth_cluster_unsupported_backend_denials_remain_typed_and_distinct() {
-    let runtime = bridge_runtime_with_support(WorthQueryRuntimeSupportProfile::bridge_backed(
-        "test-subscription-activation",
-        "test-preview-basis",
-        "test-inspector-evidence",
-    ));
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = bridge_runtime_with_support(
+        request_execution,
+        WorthQueryRuntimeSupportProfile::bridge_backed(
+            "test-subscription-activation",
+            "test-preview-basis",
+            "test-inspector-evidence",
+        ),
+    );
     let mut workspace = runtime
         .workspace("tasks.existing-truth-cluster-unsupported")
         .expect("workspace should open");
@@ -20,7 +26,11 @@ fn existing_truth_cluster_unsupported_backend_denials_remain_typed_and_distinct(
         .expect("binding should build");
 
     let probe_error = workspace
-        .probe_existing(binding.clone(), test_aspect_touches(["title.value"]))
+        .probe_existing(
+            request_execution,
+            binding.clone(),
+            test_aspect_touches(["title.value"]),
+        )
         .expect_err("unsupported backend probe should deny");
     match probe_error {
         WorthQueryRuntimeError::ExistingTruthProbeDenied(denial) => {
@@ -33,7 +43,7 @@ fn existing_truth_cluster_unsupported_backend_denials_remain_typed_and_distinct(
     }
 
     let verify_error = workspace
-        .verify_existing(binding.clone(), |task| {
+        .verify_existing(request_execution, binding.clone(), |task| {
             task.set_aspect(
                 test_aspect_touch("title.value"),
                 test_authored_string_aspect_value("Seed title"),
@@ -52,6 +62,7 @@ fn existing_truth_cluster_unsupported_backend_denials_remain_typed_and_distinct(
 
     let update_error = workspace
         .update_existing_verified(
+            request_execution,
             binding.clone(),
             |task| {
                 task.set_aspect(
@@ -79,6 +90,7 @@ fn existing_truth_cluster_unsupported_backend_denials_remain_typed_and_distinct(
 
     let delete_error = workspace
         .delete_existing_verified(
+            request_execution,
             binding,
             |task| {
                 task.set_aspect(

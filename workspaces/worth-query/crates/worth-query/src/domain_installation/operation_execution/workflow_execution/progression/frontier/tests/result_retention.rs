@@ -3,8 +3,12 @@ use super::{domain, effects, inputs, phased_workflow, start};
 
 #[test]
 fn failure_retains_only_the_canonical_prefix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
-    let mut workspace = phased_workflow::phased_workspace("phase-result-retention");
+    let mut workspace =
+        phased_workflow::phased_workspace(request_execution, "phase-result-retention");
     let mut run = start(&mut workspace);
     let owner = workspace.advancement_owner();
     owner.with_advancement(|phase| {
@@ -46,16 +50,21 @@ fn failure_retains_only_the_canonical_prefix() {
 
 #[test]
 fn missing_predecessor_authority_remains_a_typed_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     for invalid_index in [false, true] {
-        let mut workspace = phased_workflow::phased_workspace("phase-missing-predecessor");
+        let mut workspace =
+            phased_workflow::phased_workspace(request_execution, "phase-missing-predecessor");
         let mut run = start(&mut workspace);
         if invalid_index {
             run.receipt_index.insert("start".into(), usize::MAX);
         } else {
             run.receipt_index.remove("start");
         }
-        let mut ordinary_workspace = phased_workflow::phased_workspace("phase-missing-predecessor");
+        let mut ordinary_workspace =
+            phased_workflow::phased_workspace(request_execution, "phase-missing-predecessor");
         let mut ordinary = start(&mut ordinary_workspace);
         if invalid_index {
             ordinary.receipt_index.insert("start".into(), usize::MAX);

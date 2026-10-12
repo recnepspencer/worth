@@ -102,6 +102,7 @@ impl WorthQueryCapabilityContextKey {
 }
 
 pub(super) fn resolve_capability_request<Schema, Scope, Context>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &WorthQueryEntityResolutionTruth<'_>,
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     projection: &ApplicationCapabilityRequestProjection<Schema, Scope, Context>,
@@ -112,18 +113,20 @@ pub(super) fn resolve_capability_request<Schema, Scope, Context>(
 where
     Schema: ApplicationSchema,
 {
-    let resource = resolve_selector(truth, schema, projection.resource())?;
+    let resource = resolve_selector(execution, truth, schema, projection.resource())?;
     let elevation = projection
         .elevation_selector()
         .map(|selector| {
-            resolve_erased_selector(truth, schema, selector).map(|resolved| resolved.entity_id())
+            resolve_erased_selector(execution, truth, schema, selector)
+                .map(|resolved| resolved.entity_id())
         })
         .transpose()?;
     let related = projection
         .related()
         .map(|related| {
             let selector = related.selector();
-            resolve_erased_selector(truth, schema, selector).map(|resolved| resolved.entity_id())
+            resolve_erased_selector(execution, truth, schema, selector)
+                .map(|resolved| resolved.entity_id())
         })
         .transpose()?;
     let mut context = BTreeMap::new();
@@ -133,7 +136,7 @@ where
         if selector.entity() != slot.entity() {
             return Err(denial(slot.slot()));
         }
-        let evidence = resolve_erased_selector(truth, schema, selector)?;
+        let evidence = resolve_erased_selector(execution, truth, schema, selector)?;
         let key = WorthQueryCapabilityContextKey {
             context: slot.context().to_string(),
             context_type: slot.context_identity().as_str().to_string(),
@@ -154,6 +157,7 @@ where
 }
 
 pub(super) fn resolve_erased_selector<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &WorthQueryEntityResolutionTruth<'_>,
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     selector: &ErasedApplicationCapabilityEntitySelector,
@@ -161,10 +165,11 @@ pub(super) fn resolve_erased_selector<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    resolve_selector(truth, schema, selector)
+    resolve_selector(execution, truth, schema, selector)
 }
 
 fn resolve_selector<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     truth: &WorthQueryEntityResolutionTruth<'_>,
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     selector: &impl WorthQueryCapabilityEntitySelector,
@@ -199,6 +204,7 @@ where
     }
     truth
         .resolve(
+            execution,
             selector.entity(),
             selector.aspect(),
             selector.field(),

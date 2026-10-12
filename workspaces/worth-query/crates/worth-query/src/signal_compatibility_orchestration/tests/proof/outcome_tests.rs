@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn proof_stops_at_compatibility_when_no_bridge_request_is_supplied() {
-    let handle = proof_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = proof_handle(request_execution, "main");
     let proof =
         handle.orchestrate_signal_compatibility_proof(orchestration_input(&handle, "face-a"));
 
@@ -21,8 +24,11 @@ fn proof_stops_at_compatibility_when_no_bridge_request_is_supplied() {
 
 #[test]
 fn wrong_world_is_preserved_through_signal_orchestration() {
-    let left = proof_handle("left");
-    let right = proof_handle("right");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = proof_handle(request_execution, "left");
+    let right = proof_handle(request_execution, "right");
     let outcome = right.orchestrate_signal_compatibility(orchestration_input(&left, "face-a"));
     assert!(matches!(
         outcome,
@@ -32,8 +38,11 @@ fn wrong_world_is_preserved_through_signal_orchestration() {
 
 #[test]
 fn ordinary_outcome_keeps_signal_checked_topology_visible() {
-    let left = proof_handle("left");
-    let right = proof_handle("right");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = proof_handle(request_execution, "left");
+    let right = proof_handle(request_execution, "right");
     match right.orchestrate_signal_compatibility_outcome(orchestration_input(&left, "face-a")) {
         WorthQueryOrdinaryOutcome::WrongWorld(posture) => {
             assert_eq!(
@@ -55,7 +64,10 @@ fn ordinary_outcome_keeps_signal_checked_topology_visible() {
 
 #[test]
 fn ordinary_outcome_keeps_deferred_distinct() {
-    let handle = proof_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = proof_handle(request_execution, "main");
     match handle.orchestrate_signal_compatibility_outcome(local_input::<DeferredSignalInput>(
         &handle,
         "face-deferred",
@@ -67,7 +79,10 @@ fn ordinary_outcome_keeps_deferred_distinct() {
 
 #[test]
 fn ordinary_outcome_keeps_unsupported_distinct() {
-    let handle = proof_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = proof_handle(request_execution, "main");
     match handle.orchestrate_signal_compatibility_outcome(local_input::<UnsupportedSignalInput>(
         &handle,
         "face-unsupported",
@@ -79,7 +94,10 @@ fn ordinary_outcome_keeps_unsupported_distinct() {
 
 #[test]
 fn ordinary_outcome_keeps_basis_mismatch_distinct() {
-    let handle = admitted_basis_mismatch_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_basis_mismatch_handle(request_execution);
     match handle
         .orchestrate_signal_compatibility_outcome(basis_mismatch_input(&handle, "face-basis"))
     {
@@ -90,8 +108,11 @@ fn ordinary_outcome_keeps_basis_mismatch_distinct() {
 
 #[test]
 fn ordinary_outcome_keeps_wrong_handle_distinct() {
-    let left = proof_handle("shared");
-    let right = admitted_same_world_different_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = proof_handle(request_execution, "shared");
+    let right = admitted_same_world_different_handle(request_execution);
     match right.orchestrate_signal_compatibility_outcome(orchestration_input(&left, "face-handle"))
     {
         WorthQueryOrdinaryOutcome::WrongHandle(posture) => {

@@ -1,4 +1,6 @@
 //! Move-only recovery state for Query publication after Relational movement.
+mod aggregate_projection;
+use aggregate_projection::publish_aggregate_projection;
 
 use std::sync::Arc;
 
@@ -145,17 +147,19 @@ impl WorthQueryPrimaryGraphProvider {
 
     pub(in crate::domain_computation::primary_graph) fn install_and_publish_application(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         reservation: WorthQueryApplicationPublicationRecoveryReservation,
         pending: WorthQueryPendingApplicationPublication,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
         let occurrence = pending.product_incarnation();
         reservation.install(pending);
-        self.resume_pending_application_publication(runtime, occurrence)
+        self.resume_pending_application_publication(execution, runtime, occurrence)
     }
 
     pub(in crate::domain_computation::primary_graph) fn resume_pending_application_publication(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<(), WorthQueryProviderSessionFailure> {
@@ -169,7 +173,7 @@ impl WorthQueryPrimaryGraphProvider {
         };
         let result = slot
             .with_pending(|pending| {
-                let result = resume(self, runtime, pending);
+                let result = resume(execution, self, runtime, pending);
                 if result.is_err() {
                     pending.release_before(runtime);
                 }
@@ -188,6 +192,7 @@ impl WorthQueryPrimaryGraphProvider {
 }
 
 fn resume(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
@@ -209,12 +214,13 @@ fn resume(
             )
             .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired)
         })?;
-    let result = publish_with_snapshot(provider, runtime, pending, &after, commit_id);
+    let result = publish_with_snapshot(execution, provider, runtime, pending, &after, commit_id);
     crate::relational_snapshot_release::release_query_snapshot(runtime, &after);
     result
 }
 
 fn publish_with_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
     runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
     pending: &mut WorthQueryPendingApplicationPublication,
@@ -239,12 +245,12 @@ fn publish_with_snapshot(
                 .map_err(basis_retention_failure)?,
         );
     }
-    publish_aggregate_projection(provider, runtime, pending, after);
+    publish_aggregate_projection(execution, provider, runtime, pending, after);
     provider
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)
         .map_err(bridge_head_failure)?;
-    aftermath::seal(provider, runtime, pending, after)?;
+    aftermath::seal(execution, provider, runtime, pending, after)?;
     #[cfg(test)]
     if provider.take_panicked_pending_application_publication() {
         panic!("injected unwind after performed World publication reached terminal cutover");
@@ -319,7 +325,7 @@ fn publish_with_snapshot(
         let failure_membership = work_membership.clone();
         let owner = &provider.graph.source_owner.invalidation_owner;
         let admission = &mut pending.publication_admission;
-        let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(
+        let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution,
             owner,
             &completed,
             recorded.as_ref().expect("performed lineage was recorded").computation_source,
@@ -371,26 +377,4 @@ fn publish_with_snapshot(
         .unwrap_or_else(|poisoned| poisoned.into_inner())
         .record(completed);
     Ok(settled)
-}
-
-fn publish_aggregate_projection(
-    provider: &WorthQueryPrimaryGraphProvider,
-    runtime: &mut worth_relational::facade::runtime::RelationalRuntime,
-    pending: &mut WorthQueryPendingApplicationPublication,
-    after: &worth_relational::facade::snapshots::SnapshotHandle,
-) {
-    if pending.aggregate_published {
-        return;
-    }
-    let mut aggregates = provider
-        .graph
-        .aggregate_projections
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    if let Some(before) = pending.before.as_ref() {
-        aggregates.refresh_after_commit(runtime, before, after, pending.committed.patch());
-    } else {
-        aggregates.recover_after_commit(after.version_id());
-    }
-    pending.aggregate_published = true;
 }

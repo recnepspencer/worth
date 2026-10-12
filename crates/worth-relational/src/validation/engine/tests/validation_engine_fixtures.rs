@@ -184,6 +184,7 @@ pub(super) fn runtime_with_acyclicity_and_connectivity() -> RelationalRuntime {
 }
 
 pub(super) fn create_entity_of_kind(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     kind_id: KindId,
     client_key: &str,
@@ -202,10 +203,7 @@ pub(super) fn create_entity_of_kind(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("entity creation must succeed");
     outcome
         .changed_records
@@ -218,6 +216,7 @@ pub(super) fn create_entity_of_kind(
 }
 
 pub(super) fn create_relation_of_kind(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     kind_id: KindId,
     source: crate::identity::data::EntityId,
@@ -240,10 +239,7 @@ pub(super) fn create_relation_of_kind(
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, runtime)
         .expect("relation creation must succeed");
     outcome
         .changed_records
@@ -302,6 +298,7 @@ pub(super) fn runtime_with_summary_title_commit_boundary_uniqueness() -> Relatio
 }
 
 pub(super) fn commit_entity_with_summary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     title: &str,
@@ -339,8 +336,5 @@ pub(super) fn commit_entity_with_summary(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    txn.commit(execution, runtime)
 }

@@ -22,6 +22,7 @@ where
         QueryResult,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: worth_relational::facade::snapshots::SnapshotHandle,
@@ -41,6 +42,7 @@ where
             return Ok(Vec::new());
         };
         self.observe_query_authorization_requirement(
+            execution,
             session_identity,
             runtime,
             snapshot,

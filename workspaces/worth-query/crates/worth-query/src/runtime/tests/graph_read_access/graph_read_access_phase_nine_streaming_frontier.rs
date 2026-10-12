@@ -12,7 +12,13 @@ use support::aspect_touch as touch;
 
 #[test]
 fn frontier_read_admits_streaming_plan_before_execution() {
-    let mut workspace = workspace("graph-read-access.phase-nine.plan-visible");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-nine.plan-visible",
+    );
     let family = frontier_search_family(&mut workspace, "phase-nine-plan-visible");
     let review = workspace
         .read_family_intent(&family)
@@ -51,13 +57,24 @@ fn frontier_read_admits_streaming_plan_before_execution() {
 
 #[test]
 fn streaming_execution_receipt_pages_result_with_cursor_identity() {
-    let mut workspace = workspace("graph-read-access.phase-nine.receipt-pages");
-    let identities = seed_active_users(&mut workspace, "phase-nine-receipt", 3);
-    seed_frontier_edges(&mut workspace, "phase-nine-receipt", &identities);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-nine.receipt-pages",
+    );
+    let identities = seed_active_users(request_execution, &mut workspace, "phase-nine-receipt", 3);
+    seed_frontier_edges(
+        request_execution,
+        &mut workspace,
+        "phase-nine-receipt",
+        &identities,
+    );
     let family = frontier_search_family(&mut workspace, "phase-nine-receipt-pages");
     let result = workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect("streaming frontier read should execute");
     let access_plan = result
         .receipt()
@@ -114,7 +131,13 @@ fn streaming_execution_receipt_pages_result_with_cursor_identity() {
 
 #[test]
 fn streaming_cursor_session_denies_replay_and_skipped_sequence() {
-    let receipt = seeded_streaming_receipt("graph-read-access.phase-nine.cursor-session");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let receipt = seeded_streaming_receipt(
+        request_execution,
+        "graph-read-access.phase-nine.cursor-session",
+    );
     let first_cursor = receipt
         .page_receipts()
         .first()
@@ -155,7 +178,13 @@ fn streaming_cursor_session_denies_replay_and_skipped_sequence() {
 
 #[test]
 fn dense_broad_read_remains_denied_instead_of_streaming_magic() {
-    let mut workspace = workspace("graph-read-access.phase-nine.dense-denied");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-nine.dense-denied",
+    );
     let family = dense_traversal_family(&mut workspace, "phase-nine-dense-denied");
     let review = workspace
         .read_family_intent(&family)
@@ -175,11 +204,17 @@ fn dense_broad_read_remains_denied_instead_of_streaming_magic() {
 
 #[test]
 fn ordinary_inline_read_does_not_emit_streaming_receipt() {
-    let mut workspace = workspace("graph-read-access.phase-nine.inline-no-streaming");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-nine.inline-no-streaming",
+    );
     let family = projection_only_family(&mut workspace, "phase-nine-inline-no-streaming");
     let result = workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect("inline read should execute");
 
     assert!(result.receipt().graph_read_streaming_receipt().is_none());
@@ -193,14 +228,22 @@ fn ordinary_inline_read_does_not_emit_streaming_receipt() {
     );
 }
 
-fn seeded_streaming_receipt(workspace_name: &str) -> WorthQueryGraphReadStreamingReceipt {
-    let mut workspace = workspace(workspace_name);
-    let identities = seed_active_users(&mut workspace, workspace_name, 3);
-    seed_frontier_edges(&mut workspace, workspace_name, &identities);
+fn seeded_streaming_receipt(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    workspace_name: &str,
+) -> WorthQueryGraphReadStreamingReceipt {
+    let mut workspace = workspace(request_execution, workspace_name);
+    let identities = seed_active_users(request_execution, &mut workspace, workspace_name, 3);
+    seed_frontier_edges(
+        request_execution,
+        &mut workspace,
+        workspace_name,
+        &identities,
+    );
     let family = frontier_search_family(&mut workspace, workspace_name);
     workspace
         .read_family_intent(&family)
-        .execute()
+        .execute(request_execution)
         .expect("streaming frontier read should execute")
         .receipt()
         .graph_read_streaming_receipt()
@@ -209,6 +252,7 @@ fn seeded_streaming_receipt(workspace_name: &str) -> WorthQueryGraphReadStreamin
 }
 
 fn seed_active_users(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     prefix: &str,
     count: usize,
@@ -216,7 +260,7 @@ fn seed_active_users(
     let mut identities = Vec::with_capacity(count);
     for index in 0..count {
         let receipt = workspace
-            .insert("user", |user| {
+            .insert(request_execution, "user", |user| {
                 user.set_aspect(
                     touch("identity.id"),
                     authored_text(format!("{prefix}-{index}")),
@@ -234,6 +278,7 @@ fn seed_active_users(
 }
 
 fn seed_frontier_edges(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut crate::runtime::WorthQueryWorkspace,
     prefix: &str,
     identities: &[crate::memory_workspace::WorthQueryEntityIdentity],
@@ -241,7 +286,7 @@ fn seed_frontier_edges(
     for relation in ["manager", "mentor"] {
         for index in 0..2 {
             workspace
-                .insert(relation, |edge| {
+                .insert(request_execution, relation, |edge| {
                     edge.set_aspect(
                         touch("identity.id"),
                         authored_text(format!("{prefix}-{relation}-{index}")),

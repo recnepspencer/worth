@@ -16,11 +16,11 @@ struct ForeignRead {
     relation: RelationId,
 }
 
-fn foreign_read() -> ForeignRead {
+fn foreign_read(execution: &worth_execution::ExecutionRequest<'_, '_>) -> ForeignRead {
     let owner = runtime_with_test_schema();
-    let entity = create_entity(&owner, "source");
-    let target = create_entity(&owner, "target");
-    let relation = create_relation(&owner, entity, target, "link");
+    let entity = create_entity(execution, &owner, "source");
+    let target = create_entity(execution, &owner, "target");
+    let relation = create_relation(execution, &owner, entity, target, "link");
     let observation = observe(&owner, "main").observation();
     ForeignRead {
         owner,
@@ -33,7 +33,10 @@ fn foreign_read() -> ForeignRead {
 
 #[test]
 fn an_exact_entity_read_refuses_a_foreign_observation() {
-    let read = foreign_read();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let read = foreign_read(execution);
 
     assert!(read
         .owner
@@ -50,7 +53,10 @@ fn an_exact_entity_read_refuses_a_foreign_observation() {
 
 #[test]
 fn an_exact_relation_read_refuses_a_foreign_observation() {
-    let read = foreign_read();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let read = foreign_read(execution);
 
     assert!(read
         .owner
@@ -67,7 +73,10 @@ fn an_exact_relation_read_refuses_a_foreign_observation() {
 
 #[test]
 fn a_record_history_read_refuses_a_foreign_observation() {
-    let read = foreign_read();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let read = foreign_read(execution);
 
     assert!(read
         .owner
@@ -84,7 +93,10 @@ fn a_record_history_read_refuses_a_foreign_observation() {
 
 #[test]
 fn a_lineage_visibility_read_refuses_a_foreign_observation() {
-    let read = foreign_read();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let read = foreign_read(execution);
     let lineages = read
         .owner
         .record_history_at_observation(&read.observation, read.entity)

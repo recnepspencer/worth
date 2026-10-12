@@ -2,7 +2,10 @@ use super::super::super::support::*;
 
 #[test]
 fn runtime_public_support_gate_keeps_support_gated_rows_fail_closed_for_ordinary_dx() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.support-gated-invariant")
         .expect("task runtime should open a named workspace");
     let matrix = workspace.public_support_matrix();
@@ -50,7 +53,10 @@ fn runtime_public_support_gate_keeps_support_gated_rows_fail_closed_for_ordinary
 
 #[test]
 fn runtime_public_mutation_surface_report_lists_only_live_lower_level_command_surfaces() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.mutation-surface")
         .expect("task runtime should open a named workspace");
     let report = workspace.public_mutation_surface_report();

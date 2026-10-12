@@ -9,9 +9,12 @@ use crate::tests::support::*;
 /// Dropping it may record abandonment and nothing else.
 #[test]
 fn dropping_the_performed_witness_leaves_settlement_recoverable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "abandoned-witness-anchor");
-    let performed = perform_main_write(&runtime, "abandoned-witness");
+    create_entity(execution, &runtime, "abandoned-witness-anchor");
+    let performed = perform_main_write(execution, &runtime, "abandoned-witness");
     let commit_id = performed.canonical_commit().commit.commit_id;
     let record = runtime
         .publication_binding()
@@ -38,10 +41,7 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
         )
         .unwrap();
     assert!(runtime
-        .prepare_branch_transaction(
-            blocked,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, blocked)
         .unwrap_err()
         .detail()
         .contains("requires explicit owner settlement"));
@@ -58,7 +58,7 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
         "repair without a witness closes the published snapshot it opened"
     );
 
-    let child = create_entity_outcome(&runtime, "child-after-abandoned-witness");
+    let child = create_entity_outcome(execution, &runtime, "child-after-abandoned-witness");
     assert_eq!(child.commit.parents, vec![commit_id]);
     assert_eq!(durable_appends(&runtime, commit_id), 1);
     release_test_commit_snapshot(&runtime, &child);
@@ -68,9 +68,12 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
 /// and appends nothing.
 #[test]
 fn repeated_terminal_settlement_returns_one_receipt_and_one_durable_append() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "repeated-settlement-anchor");
-    let performed = perform_main_write(&runtime, "repeated-settlement");
+    create_entity(execution, &runtime, "repeated-settlement-anchor");
+    let performed = perform_main_write(execution, &runtime, "repeated-settlement");
     let commit_id = performed.canonical_commit().commit.commit_id;
     let settled = runtime
         .settle_performed_publication(performed)
@@ -95,9 +98,12 @@ fn repeated_terminal_settlement_returns_one_receipt_and_one_durable_append() {
 /// whichever runs second observes the terminal answer instead of repeating it.
 #[test]
 fn repair_and_witness_settlement_execute_exactly_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "single-execution-anchor");
-    let performed = perform_main_write(&runtime, "single-execution");
+    create_entity(execution, &runtime, "single-execution-anchor");
+    let performed = perform_main_write(execution, &runtime, "single-execution");
     let commit_id = performed.canonical_commit().commit.commit_id;
 
     let repaired = runtime
@@ -117,7 +123,7 @@ fn repair_and_witness_settlement_execute_exactly_once() {
         "two settlement callers produce exactly one durable append"
     );
 
-    let child = create_entity_outcome(&runtime, "child-after-single-execution");
+    let child = create_entity_outcome(execution, &runtime, "child-after-single-execution");
     assert_eq!(child.commit.parents, vec![commit_id]);
     release_test_commit_snapshot(&runtime, &settled);
     release_test_commit_snapshot(&runtime, &child);
@@ -127,9 +133,12 @@ fn repair_and_witness_settlement_execute_exactly_once() {
 /// an unbounded registry behind a dead runtime.
 #[test]
 fn owner_loss_retires_every_pending_settlement_exactly_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "owner-loss-settlement-anchor");
-    let performed = perform_main_write(&runtime, "owner-loss-settlement");
+    create_entity(execution, &runtime, "owner-loss-settlement-anchor");
+    let performed = perform_main_write(execution, &runtime, "owner-loss-settlement");
     drop(performed);
     let binding = runtime.publication_binding();
     assert!(!binding.settlement_admission_is_closed());
@@ -157,12 +166,15 @@ fn owner_loss_retires_every_pending_settlement_exactly_once() {
 /// no-movement path, so the settlement record must survive it.
 #[test]
 fn interruption_after_movement_retains_its_pending_settlement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for interruption in [
         RelationalOperationInterruption::Cancelled,
         RelationalOperationInterruption::TimedOut,
     ] {
         let runtime = runtime_with_test_schema();
-        create_entity(&runtime, "post-movement-interruption-anchor");
+        create_entity(execution, &runtime, "post-movement-interruption-anchor");
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let control = RelationalOperationControl::uninterrupted()
@@ -185,17 +197,15 @@ fn interruption_after_movement_retains_its_pending_settlement() {
             )
             .unwrap();
         let candidate = runtime
-            .prepare_branch_transaction(
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .unwrap();
         let reference_before = runtime
             .branch_reference_state(&BranchId("main".to_owned()))
             .unwrap();
 
-        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-            runtime.publication_port().compare_and_publish(candidate)
+        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
         else {
             panic!("late interruption cannot erase performed movement");
         };
@@ -231,9 +241,12 @@ fn interruption_after_movement_retains_its_pending_settlement() {
 /// close the published snapshot that witness is still owed.
 #[test]
 fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "live-witness-repair-anchor");
-    let performed = perform_main_write(&runtime, "live-witness-repair");
+    create_entity(execution, &runtime, "live-witness-repair-anchor");
+    let performed = perform_main_write(execution, &runtime, "live-witness-repair");
     let commit_id = performed.canonical_commit().commit.commit_id;
     let occupied_before = runtime
         .preparation_runtime_snapshot()
@@ -270,7 +283,7 @@ fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
     assert!(
         runtime
             .read_truth()
-            .read_snapshot(&settled.snapshot)
+            .read_snapshot(&settled.snapshot, execution)
             .is_some(),
         "durability repair may not close a snapshot its live witness still owns"
     );
@@ -303,6 +316,7 @@ fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
 }
 
 fn perform_main_write(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
 ) -> crate::mvcc::PerformedRelationalCommit {
@@ -314,12 +328,12 @@ fn perform_main_write(
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
-    match runtime.publication_port().compare_and_publish(candidate) {
+    match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("an uncontended candidate performs: {outcome:?}"),
     }

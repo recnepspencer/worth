@@ -193,7 +193,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                         ))
                     }
                 };
-                let selected = match self.application.on_branch(self.branch).select() {
+                let selected = match self.application.on_branch(self.branch).select(&phase, ) {
                     Ok(selected) => selected,
                     Err(denial) => {
                         return Err(Failure::retained(
@@ -202,7 +202,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                         ))
                     }
                 };
-                let principal = match selected.resolve_authenticated_principal(
+                let principal = match selected.resolve_authenticated_principal(&phase,
                     &principal_binding,
                     self.principal,
                     self.scope,
@@ -238,7 +238,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 };
                 let idempotency = workflow.binding();
                 let publication = program_publication_access();
-                let mut access = match selected.admit_encoded_capability_access(
+                let mut access = match selected.admit_encoded_capability_access(&phase,
                     &publication,
                     &principal,
                     &capability,
@@ -265,7 +265,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                         ))
                     }
                 };
-                let mut admission = match self.application.authorize_mandatory_review(
+                let mut admission = match self.application.authorize_mandatory_review(&phase,
                     mandatory,
                     access,
                     &operation,
@@ -281,7 +281,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                 };
                 if let Some(outcome) = self
                     .application
-                    .resolve_admitted_mandatory_review_replay(&mut admission, idempotency)
+                    .resolve_admitted_mandatory_review_replay(&phase, &mut admission, idempotency)
                     .map_err(|(denial, mandatory)| {
                         Failure::retained(Denial::IdempotencyResolution(denial), mandatory)
                     })?
@@ -289,15 +289,15 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     return Ok(outcome);
                 }
                 let projected = invariant_projection
-                    .project_admitted_operation(&admission, project, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+                    .project_admitted_operation(&phase, &admission, project, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|denial| Failure::consumed(Denial::Projection(denial)))?;
                 let (decision, projection, _) = projected.into_parts();
                 decision.map_err(|denial| Failure::consumed(Denial::Decision(denial)))?;
                 let program = self
                     .application
-                    .begin_projected_application_read_attempt(admission, projection, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+                    .begin_projected_application_read_attempt(&phase, admission, projection, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
-                    .complete_projected_dependencies(worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
+                    .complete_projected_dependencies(&phase, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
                     .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?
                     .materialize_mandatory_review_program()
                     .map_err(|denial| Failure::consumed(Denial::Attempt(denial)))?;

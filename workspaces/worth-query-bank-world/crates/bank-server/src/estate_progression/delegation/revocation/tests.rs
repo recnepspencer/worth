@@ -16,9 +16,15 @@ fn generic_program_cannot_bypass_the_installed_revocation_action() {
     let fixture = revocation_world("capability-revocation-generic-bypass");
     let specialist = fixture.authenticate();
     let action = revocation_action();
-    let admission = fixture
-        .runtime
-        .admit_capability_revocation(&specialist, action, &request_scope())
+    let admission =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.admit_capability_revocation(
+                phase,
+                &specialist,
+                action,
+                &request_scope(),
+            )
+        })
         .expect("the exact command and target should admit specialized revocation");
     let program = generic_empty_program(&fixture.runtime, admission, GRANT);
     let outcome = fixture
@@ -47,13 +53,22 @@ fn target_status_drift_after_materialization_stales_provider_commit() {
     let fixture = revocation_world("capability-revocation-provider-currentness");
     let specialist = fixture.authenticate();
     let action = revocation_action();
-    let admission = fixture
-        .runtime
-        .admit_capability_revocation(&specialist, action, &request_scope())
+    let admission =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture.runtime.admit_capability_revocation(
+                phase,
+                &specialist,
+                action,
+                &request_scope(),
+            )
+        })
         .expect("the exact command should admit while the target is active");
-    let program = fixture
-        .runtime
-        .materialize_capability_revocation(admission, GRANT)
+    let program =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .materialize_capability_revocation(phase, admission, GRANT)
+        })
         .expect("the exact Active -> Revoked program should materialize");
 
     let drift = fixture
@@ -142,35 +157,42 @@ fn generic_empty_program(
     EstateAction,
     EstateCase,
 > {
-    let projected = runtime
-        .invariant_projection()
-        .project_admitted_operation(
+    let projected = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime.invariant_projection().project_admitted_operation(
+            phase,
             &admission,
             |reader, estate| project_active_estate_grant(reader, estate, grant),
             ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap();
+    })
+    .unwrap();
     let (result, projection, _) = projected.into_parts();
     result.unwrap();
-    let reads = runtime
-        .application_runtime()
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    reads
-        .resolve_entity(CapabilityGrantIdentityField::reference(), grant)
-        .unwrap();
-    reads
-        .complete_projected_dependencies(
+    let reads = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime
+            .application_runtime()
+            .begin_projected_application_read_attempt(
+                phase,
+                admission,
+                projection,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+    })
+    .unwrap();
+    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        reads.resolve_entity(phase, CapabilityGrantIdentityField::reference(), grant)
+    })
+    .unwrap();
+    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        reads.complete_projected_dependencies(
+            phase,
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap()
-        .begin_effect_program()
-        .finish()
-        .unwrap()
+    })
+    .unwrap()
+    .begin_effect_program()
+    .finish()
+    .unwrap()
 }
 
 fn revocation_world(

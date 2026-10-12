@@ -1,6 +1,7 @@
 //! Public leased preparation probes, isolated by process because execution
 //! admits exactly one physical authority for a process lifetime. Query's other
 //! unit-test owners have their own authority; this scope cannot replace it.
+mod native_read_stops;
 use crate::domain_computation::primary_graph::application_attempt::{
     provider_compare_denial::{control_stopped_outcome, provider_compare_denied},
     WorthQueryApplicationCommitDenialKind as Kind, WorthQueryProviderProgressionOutcome as Outcome,
@@ -140,7 +141,12 @@ pub(super) fn transaction(
 
 fn check_requests(request: LeaseRequest, check: impl Fn(Outcome)) {
     let lease = authority().request_lease(request).unwrap();
-    check_lease(&lease, |outcome, _| check(outcome));
+    let host = crate::test_request_policy::serial_request();
+    check_lease(
+        &worth_execution::ExecutionRequest::serial(&host),
+        &lease,
+        |outcome, _| check(outcome),
+    );
 }
 
 fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
@@ -157,18 +163,20 @@ fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
     })
 }
 
-fn check_lease(lease: &worth_execution::ExecutionResourceLease<'_>, check: impl Fn(Outcome, u32)) {
+fn check_lease(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lease: &worth_execution::ExecutionResourceLease<'_>,
+    check: impl Fn(Outcome, u32),
+) {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
         .build();
     let created = transaction(&runtime, "source")
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .unwrap();
     let index = related_index(&runtime);
     let index = runtime.index_authority().build_for_commit_with_lease(
+        &worth_execution::ExecutionRequest::leased(lease),
         DerivedIndexBuildRequest {
             source_commit_id: created.commit.commit_id,
             branch_id: BranchId("main".to_owned()),
@@ -197,7 +205,10 @@ fn check_lease(lease: &worth_execution::ExecutionResourceLease<'_>, check: impl 
         .unwrap()
         .0;
     let error = runtime
-        .prepare_branch_transaction_with_lease(transaction(&runtime, "target"), lease)
+        .prepare_branch_transaction(
+            &worth_execution::ExecutionRequest::leased(lease),
+            transaction(&runtime, "target"),
+        )
         .expect_err("commit preparation refused");
     assert!(matches!(error, TransactionCommitError::Execution { .. }));
     let stop = super::transaction_commit_stop(error);
@@ -310,8 +321,10 @@ fn healthy_fixture_completes_both_leased_preparations() {
                 .build();
             let created = transaction(&runtime, "source")
                 .commit(
+                    &worth_execution::ExecutionRequest::serial(
+                        &crate::test_request_policy::serial_request(),
+                    ),
                     &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
             let index = related_index(&runtime);
@@ -319,6 +332,7 @@ fn healthy_fixture_completes_both_leased_preparations() {
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))
                 .unwrap();
             let outcome = runtime.index_authority().build_for_commit_with_lease(
+                &worth_execution::ExecutionRequest::leased(&lease),
                 DerivedIndexBuildRequest {
                     source_commit_id: created.commit.commit_id,
                     branch_id: BranchId("main".to_owned()),
@@ -335,7 +349,10 @@ fn healthy_fixture_completes_both_leased_preparations() {
                 .unwrap()
                 .0;
             let _prepared = runtime
-                .prepare_branch_transaction_with_lease(transaction(&runtime, "target"), &lease)
+                .prepare_branch_transaction(
+                    &worth_execution::ExecutionRequest::leased(&lease),
+                    transaction(&runtime, "target"),
+                )
                 .expect("the same fixture admits ordinary leased preparation");
             assert_eq!(
                 runtime

@@ -152,6 +152,7 @@ impl WorthQueryObservedCapabilitySeed {
 }
 
 pub(super) fn observe_capability_policy(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     _permit: super::delegation_admission::WorthQueryCapabilityObservationPermit,
     session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
@@ -169,6 +170,7 @@ pub(super) fn observe_capability_policy(
         installed.elevation().is_some(),
     )?;
     let (exact_grant, mut preparatory_relational_work) = resolve_exact_grant(
+        execution,
         relational,
         snapshot.clone(),
         installed,
@@ -178,7 +180,14 @@ pub(super) fn observe_capability_policy(
     )?;
     let paths =
         path_preparation::prepare_exact_policy_paths(installed, request, sample, exact_grant)?;
-    let evidence = observe_exact_policy(relational, snapshot.clone(), installed, request, paths)?;
+    let evidence = observe_exact_policy(
+        execution,
+        relational,
+        snapshot.clone(),
+        installed,
+        request,
+        paths,
+    )?;
     let bridge_evidence = evaluate_exact_policy(bridge, installed, request, &evidence)?;
     let grant = extract_exact_grant(installed, &evidence)?;
     if exact_grant != grant {
@@ -187,10 +196,11 @@ pub(super) fn observe_capability_policy(
             installed.contract().name(),
         ));
     }
-    let expiry = expiry::observe_grant_expiry(relational, &snapshot, installed, grant)?;
+    let expiry = expiry::observe_grant_expiry(execution, relational, &snapshot, installed, grant)?;
     expiry::add_observation_work(&mut preparatory_relational_work);
     Ok(WorthQueryObservedCapabilityDecision {
         decision: WorthQueryAuthorizationDecisionFact::from_capability_observation(
+            execution,
             WorthQueryAuthorizationDecisionPermit::new(),
             session_identity,
             relational,
@@ -215,6 +225,7 @@ pub(super) fn observe_capability_policy(
 }
 
 fn resolve_exact_grant(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -230,14 +241,15 @@ fn resolve_exact_grant(
 > {
     match exact_grant {
         Some(grant) => Ok((grant, Default::default())),
-        None => {
-            grant_selection::select_exact_grant(relational, snapshot, installed, request, sample)
-                .map(grant_selection::SelectedCapabilityGrant::into_parts)
-        }
+        None => grant_selection::select_exact_grant(
+            execution, relational, snapshot, installed, request, sample,
+        )
+        .map(grant_selection::SelectedCapabilityGrant::into_parts),
     }
 }
 
 fn observe_exact_policy(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     relational: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: worth_relational::facade::snapshots::SnapshotHandle,
     installed: &WorthQueryInstalledCapabilityPlan,
@@ -258,7 +270,7 @@ fn observe_exact_policy(
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
     relational
-        .observe_authorization(observation_plan)
+        .observe_authorization(observation_plan, execution)
         .map_err(|_| {
             WorthQueryOperationAuthorizationDenial::new(
                 WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,

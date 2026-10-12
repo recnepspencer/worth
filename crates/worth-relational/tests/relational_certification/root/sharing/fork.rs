@@ -4,8 +4,11 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn phase5_fork_observation_reports_shared_root_and_distinct_cells() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
+    assert_oracle_matches(execution, &world, &expected);
     fork_from_main(&world.runtime, "storm");
     fork_from_main(&world.runtime, "maintenance");
 
@@ -50,7 +53,10 @@ fn phase5_fork_observation_reports_shared_root_and_distinct_cells() {
 #[test]
 #[ignore = "scheduled maximum-scale fork slope"]
 fn phase5_standard_fork_copy_slope_is_flat_through_4096_forks() {
-    let samples = standard_fanout_samples(&[1, 64, 4_096]);
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let samples = standard_fanout_samples(execution, &[1, 64, 4_096]);
     assert_eq!(
         samples
             .iter()
@@ -72,9 +78,12 @@ struct ForkFanoutSample {
     fork_materialized_authoritative_bytes: u64,
 }
 
-fn standard_fanout_samples(fanouts: &[u32]) -> Vec<ForkFanoutSample> {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::standard());
-    assert_oracle_matches(&world, &expected);
+fn standard_fanout_samples(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    fanouts: &[u32],
+) -> Vec<ForkFanoutSample> {
+    let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::standard());
+    assert_oracle_matches(execution, &world, &expected);
     let mut branches = vec![world.runtime.main_branch_identity()];
     let mut samples = Vec::with_capacity(fanouts.len());
     for ordinal in 0..*fanouts.last().expect("at least one fan-out sample") {

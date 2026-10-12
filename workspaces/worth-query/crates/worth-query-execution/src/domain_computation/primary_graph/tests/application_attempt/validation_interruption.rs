@@ -28,9 +28,31 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         Some(Instant::now() + Duration::from_secs(30)),
         source.token(),
     );
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let rejected = admitted_program(&world, &principal, &account, &request, "after-staging");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let rejected = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "after-staging",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     // This observer cancels the actual admitted request after push_batch succeeds.
     // It neither injects a failure nor bypasses the provider's validator.
     world.faults.cancel_next_staged_validation(source);
@@ -60,10 +82,32 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         0
     );
     let fresh = live_scope();
-    let unchanged = resolved_account(&world, "open", &fresh);
+    let unchanged = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &fresh)
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(unchanged.entity_id(), account.entity_id());
-    let principal = authenticated_principal(&world, &fresh);
-    let retry = admitted_program(&world, &principal, &unchanged, &fresh, "after-staging");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &fresh)
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &unchanged,
+                &fresh,
+                "after-staging",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(
         matches!(
             world.application.compare_and_commit_application(
@@ -75,6 +119,16 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
         ),
         "cancelled attempt must not consume its key"
     );
-    let landed = resolved_account(&world, "after-staging", &live_scope());
+    let landed = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(
+                &(phase).test_host_request(),
+                &world,
+                "after-staging",
+                &live_scope(),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(landed.entity_id(), account.entity_id());
 }

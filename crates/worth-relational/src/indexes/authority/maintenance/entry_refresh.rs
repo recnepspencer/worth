@@ -20,6 +20,7 @@ pub(super) fn empty_entries(kind: &DerivedIndexKind) -> DerivedIndexEntries {
 }
 
 pub(super) fn update_entries(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     definition: &DerivedIndexDefinition,
     entries: &mut DerivedIndexEntries,
     changes: &ChangeRouting,
@@ -37,6 +38,7 @@ pub(super) fn update_entries(
             },
             DerivedIndexEntries::RelatedEntityOrdering(entries),
         ) => ordering::refresh(
+            execution,
             entries,
             (*relation_kind, *parent_endpoint, *child_kind, ordering),
             changes,
@@ -45,7 +47,7 @@ pub(super) fn update_entries(
             work,
         ),
         (DerivedIndexKind::RelationJoin(join), DerivedIndexEntries::RelationJoin(entries)) => {
-            join::refresh(entries, *join, changes, before, after, work)
+            join::refresh(execution, entries, *join, changes, before, after, work)
         }
         _ => Err(DerivedIndexMaintenanceDenialKind::GenerationKindMismatch(
             definition.index_id,

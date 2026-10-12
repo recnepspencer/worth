@@ -48,7 +48,7 @@ impl WorthQueryOutputDemandInterest {
             settled: false, admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
             retained_program_basis: None, progression_provenance: Default::default(),
             required_continuations: Default::default(), unpublished_selected_checkpoint: None,
-            interest: Some(self), settled_at_observation: None,
+            interest: Some(self), settled_at_observation: None, terminal_caller_denial: None,
         };
         let bytes = std::mem::size_of::<TypedRequiredSuccessor<Schema, Family>>();
         let capacity = registry
@@ -84,51 +84,59 @@ fn observed_account_source() -> crate::domain_computation::primary_graph::WorthQ
     let world = fixture::installed_authorization_world(true);
     let request = fixture::live_scope();
     let external = world.authenticate("alice", std::time::Duration::from_secs(60), &request);
-    let product = world.selected_product();
-    let principal = product
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let product = world.selected_product(&phase.test_host_request());
+            let principal = product
         .resolve_authenticated_principal(
+            &phase,
             &world.binding,
             &external,
             &request,
             crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let account = product
+            let account = product
         .resolve_entity(
+            &phase,
             fixture::AccountStatus::reference(),
             "open".to_owned(),
             &request,
             crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
         )
         .unwrap();
-    let query = world
-        .application
-        .installed_schema()
-        .installed_query_binding::<fixture::TestAccountSourceBinding>()
-        .unwrap()
-        .into_query();
-    let access =
+            let query = world
+                .application
+                .installed_schema()
+                .installed_query_binding::<fixture::TestAccountSourceBinding>()
+                .unwrap()
+                .into_query();
+            let access =
         crate::domain_computation::primary_graph::WorthQueryApplicationQueryAccessContext::new(
             &principal, &account,
         );
-    let plan = product
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new()
-                .bind(fixture::status_parameter(), "open".to_owned())
-                .unwrap(),
-            crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
-                std::num::NonZeroUsize::new(10).unwrap(),
-                std::num::NonZeroUsize::new(10_000).unwrap(),
-                &request,
-            ),
-        )
-        .unwrap();
-    world
-        .application
-        .execute_application_query_one_shot(plan)
-        .unwrap()
-        .observed_sources()[0]
-        .clone()
+            let plan = product
+                .admit_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new()
+                        .bind(fixture::status_parameter(), "open".to_owned())
+                        .unwrap(),
+                    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
+                        std::num::NonZeroUsize::new(10).unwrap(),
+                        std::num::NonZeroUsize::new(10_000).unwrap(),
+                        &request,
+                    ),
+                )
+                .unwrap();
+            world
+                .application
+                .execute_application_query_one_shot(&phase, plan)
+                .unwrap()
+                .observed_sources()[0]
+                .clone()
+        })
+        .expect("the typed frame source owns its host request")
 }

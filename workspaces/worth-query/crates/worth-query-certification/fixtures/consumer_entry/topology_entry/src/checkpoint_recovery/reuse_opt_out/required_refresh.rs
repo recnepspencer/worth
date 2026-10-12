@@ -31,9 +31,17 @@ fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
         })
         .execute()
         .unwrap();
-    let selected = application
-        .select_output_producer::<PlanarOutputFamily>(&source.observed_sources()[0], "planar", 4096)
-        .unwrap();
+    let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+        application
+            .select_output_producer::<PlanarOutputFamily>(
+                phase,
+                &source.observed_sources()[0],
+                "planar",
+                4096,
+            )
+            .map_err(Box::new)
+    })
+    .unwrap();
     assert_eq!(
         selected.applicability().lifecycle(),
         WorthQueryProducerLifecyclePosture::Preserve
@@ -133,8 +141,12 @@ fn held_required_initial_refreshes_through_preserve_and_reopens_current() {
     ));
     drop(initial);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
     let reopened = install_no_reuse(Some(checkpoint));
     let (scope, principal) = support::authenticate(&reopened);

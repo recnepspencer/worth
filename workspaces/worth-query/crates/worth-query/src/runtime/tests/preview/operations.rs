@@ -3,9 +3,13 @@ use crate::{WorthQueryEvidenceIdentity, WorthQueryEvidenceScope, WorthQueryEvide
 
 #[test]
 fn sandboxed_preview_run_operation_stages_compiled_writes_until_promote() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -22,12 +26,14 @@ fn sandboxed_preview_run_operation_stages_compiled_writes_until_promote() {
     let preview_run = {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("draft create"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )
             .expect("preview session should be admitted");
         let run = preview
             .run_operation(
+                request_execution,
                 operation.clone(),
                 vec![WorthQueryOperationInput::new(
                     "title",
@@ -71,12 +77,14 @@ fn sandboxed_preview_run_operation_stages_compiled_writes_until_promote() {
     {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("promote create"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )
             .expect("preview session should be admitted");
         preview
             .run_operation(
+                request_execution,
                 operation,
                 vec![WorthQueryOperationInput::new(
                     "title",
@@ -84,7 +92,9 @@ fn sandboxed_preview_run_operation_stages_compiled_writes_until_promote() {
                 )],
             )
             .expect("preview operation should stage");
-        let outcome = preview.promote().expect("preview promotion should succeed");
+        let outcome = preview
+            .promote(request_execution)
+            .expect("preview promotion should succeed");
         assert!(outcome.promoted());
         assert_eq!(outcome.write_count(), 1);
         assert_eq!(
@@ -100,12 +110,13 @@ fn sandboxed_preview_run_operation_stages_compiled_writes_until_promote() {
 
     let view = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.after-preview",
             task_live_request(),
             task_schema(),
         )
         .expect("live view should declare");
-    let rows = runtime.read_live(&view);
+    let rows = runtime.read_live(request_execution, &view);
     assert_eq!(rows.len(), 1);
     assert_eq!(
         test_native_string_value(&rows[0], "title.value").as_deref(),
@@ -115,9 +126,13 @@ fn sandboxed_preview_run_operation_stages_compiled_writes_until_promote() {
 
 #[test]
 fn preview_run_operation_discard_keeps_authoritative_state_unchanged() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -134,12 +149,14 @@ fn preview_run_operation_discard_keeps_authoritative_state_unchanged() {
     {
         let mut preview = runtime
             .preview_with_options(
+                request_execution,
                 test_session_label("discard create"),
                 WorthQueryPreviewOptions::sandboxed_write_intent(),
             )
             .expect("preview session should be admitted");
         preview
             .run_operation(
+                request_execution,
                 operation,
                 vec![WorthQueryOperationInput::new(
                     "title",
@@ -153,17 +170,21 @@ fn preview_run_operation_discard_keeps_authoritative_state_unchanged() {
 
     let view = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.after-discard",
             task_live_request(),
             task_schema(),
         )
         .expect("live view should declare");
-    assert!(runtime.read_live(&view).is_empty());
+    assert!(runtime.read_live(request_execution, &view).is_empty());
 }
 
 #[test]
 fn preview_run_operation_rejects_declaration_effects_before_runtime_mutation() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let program =
         WorthQueryProgram::compile(FakeDsl, &FakeSchemaAdapter).expect("fake DSL should compile");
     let installed = runtime
@@ -175,12 +196,14 @@ fn preview_run_operation_rejects_declaration_effects_before_runtime_mutation() {
 
     let mut preview = runtime
         .preview_with_options(
+            request_execution,
             test_session_label("deny declaration effects"),
             WorthQueryPreviewOptions::sandboxed_write_intent(),
         )
         .expect("preview session should be admitted");
     let error = preview
         .run_operation(
+            request_execution,
             operation,
             vec![WorthQueryOperationInput::new(
                 "title",
@@ -204,10 +227,11 @@ fn preview_run_operation_rejects_declaration_effects_before_runtime_mutation() {
 
     let view = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.after-denied-declaration",
             task_live_request(),
             task_schema(),
         )
         .expect("authoritative runtime should remain available after denial");
-    assert!(runtime.read_live(&view).is_empty());
+    assert!(runtime.read_live(request_execution, &view).is_empty());
 }

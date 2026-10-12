@@ -669,6 +669,7 @@ dependencies = [
 name = "worth-query-consumer-root"
 version = "0.0.0"
 dependencies = [
+ "worth-execution",
  "worth-foundational",
  "worth-query-consumer-values",
  "worth-query-decl",
@@ -758,6 +759,8 @@ dependencies = [
 name = "worth-query-parameter-entry"
 version = "0.0.0"
 dependencies = [
+ "worth-execution",
+ "worth-foundational",
  "worth-query-consumer-values",
  "worth-query-decl",
  "worth-query-host",

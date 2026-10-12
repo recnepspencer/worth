@@ -21,16 +21,18 @@ use super::{
     certify_effect_lifecycle_phase4, certify_effect_lifecycle_seeded, EffectLifecyclePhase4LaneKind,
 };
 
-pub fn certify_effect_execution_pipeline() -> EffectExecutionCertificationBundle {
-    let seeded = certify_effect_lifecycle_seeded(17, 12);
-    let phase4 = certify_effect_lifecycle_phase4();
-    let mutation = mutation_receipt_surface();
-    let writeback = writeback_receipt_surface();
-    let batch = batch_receipt_surface();
+pub fn certify_effect_execution_pipeline(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> EffectExecutionCertificationBundle {
+    let seeded = certify_effect_lifecycle_seeded(execution, 17, 12);
+    let phase4 = certify_effect_lifecycle_phase4(execution);
+    let mutation = mutation_receipt_surface(execution);
+    let writeback = writeback_receipt_surface(execution);
+    let batch = batch_receipt_surface(execution);
     let support_matrix = effect_lifecycle_support_matrix();
     let public_surface = effect_lifecycle_public_surface_inventory();
-    let dx = build_closeout_dx(&public_surface);
-    let oracles = build_closeout_oracles();
+    let dx = build_closeout_dx(execution, &public_surface);
+    let oracles = build_closeout_oracles(execution);
     let audits = build_closeout_audits(
         &mutation,
         &writeback,

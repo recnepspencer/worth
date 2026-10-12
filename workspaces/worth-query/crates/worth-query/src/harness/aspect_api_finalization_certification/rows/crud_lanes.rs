@@ -10,37 +10,44 @@ use super::authoring_values::string_aspect_value;
 use super::receipt_digest::write_receipt_digest;
 
 pub(super) fn authoritative_crud_lane(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     entity_id: &str,
     initial_title: &str,
     renamed_title: &str,
 ) -> AspectApiFinalizationCertificationBundle {
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.crud")
         .expect("workspace should open");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> =
-        task_live_view(&mut workspace, "tasks.cert-crud");
+        task_live_view(request_execution, &mut workspace, "tasks.cert-crud");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(identity_id_touch(), string_aspect_value(entity_id))
                 .set_aspect(title_value_touch(), string_aspect_value(initial_title))
         })
         .expect("seed insert should execute");
     let _ = workspace.observe(&live);
     let update = workspace
-        .update(seed.deltas()[0].entity_identity.clone(), |task| {
-            task.set_aspect(title_value_touch(), string_aspect_value(renamed_title))
-        })
+        .update(
+            request_execution,
+            seed.deltas()[0].entity_identity.clone(),
+            |task| task.set_aspect(title_value_touch(), string_aspect_value(renamed_title)),
+        )
         .expect("rename should execute");
     let _patches = workspace.observe(&live);
     let delete = workspace
-        .delete_with(seed.deltas()[0].entity_identity.clone(), |task| {
-            task.touch(title_value_touch())
-        })
+        .delete_with(
+            request_execution,
+            seed.deltas()[0].entity_identity.clone(),
+            |task| task.touch(title_value_touch()),
+        )
         .expect("delete should execute");
-    let state = workspace.state(&delete).expect("state should resolve");
+    let state = workspace
+        .state(request_execution, &delete)
+        .expect("state should resolve");
     let inspection = workspace
-        .inspect(&delete)
+        .inspect(request_execution, &delete)
         .expect("inspection should resolve");
 
     AspectApiFinalizationCertificationBundle {
@@ -76,15 +83,16 @@ pub(super) fn authoritative_crud_lane(
 }
 
 pub(super) fn clear_lane(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     aspect_touch: WorthQueryAspectTouch,
 ) -> AspectApiFinalizationCertificationBundle {
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.clear")
         .expect("workspace should open");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> =
-        task_live_view(&mut workspace, "tasks.cert-clear");
+        task_live_view(request_execution, &mut workspace, "tasks.cert-clear");
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(identity_id_touch(), string_aspect_value("task-1"))
                 .set_aspect(title_value_touch(), string_aspect_value("Buy milk"))
                 .set_aspect(description_value_touch(), string_aspect_value("whole milk"))
@@ -93,14 +101,18 @@ pub(super) fn clear_lane(
     let _ = workspace.observe(&live);
 
     let receipt = workspace
-        .update(seed.deltas()[0].entity_identity.clone(), |task| {
-            task.clear(aspect_touch)
-        })
+        .update(
+            request_execution,
+            seed.deltas()[0].entity_identity.clone(),
+            |task| task.clear(aspect_touch),
+        )
         .expect("clear should execute");
     let patches = workspace.observe(&live);
-    let state = workspace.state(&receipt).expect("state should resolve");
+    let state = workspace
+        .state(request_execution, &receipt)
+        .expect("state should resolve");
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("inspection should resolve");
 
     AspectApiFinalizationCertificationBundle {
@@ -132,7 +144,7 @@ pub(super) fn clear_lane(
         affected_live_view_count: receipt.affected_live_view_targets().len(),
         affected_derived_view_count: receipt.affected_derived_view_targets().len(),
         routed_patch_count: patches.query_delivery_batches.len(),
-        materialized_row_count: workspace.read(&live).len(),
+        materialized_row_count: workspace.read(request_execution, &live).len(),
         preview_residue_count: 0,
     }
 }

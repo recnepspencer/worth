@@ -187,13 +187,14 @@ impl AspectFieldReconciliationStrategy {
 impl CommitStrategyExecutor for AspectFieldReconciliationStrategy {
     fn execute(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
         observation: &StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
         let input = Self::parse_input(request)?;
         let existing_basis = observation
             .visibility()
-            .entity_whole_aspects(input.entity_id, [])?
+            .entity_whole_aspects(execution, input.entity_id, [])?
             .ok_or_else(|| {
                 StrategyExecutorFailure::new(
                     StrategyExecutorFailureClass::DomainRejection,
@@ -211,6 +212,7 @@ impl CommitStrategyExecutor for AspectFieldReconciliationStrategy {
         let existing = observation
             .visibility()
             .entity_whole_aspects(
+                execution,
                 input.entity_id,
                 [input.field_locator.aspect().aspect_key().clone()],
             )?

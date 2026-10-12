@@ -22,8 +22,8 @@ fn phase3_settlement_receivers_take_a_shared_borrow() {
         RelationalRuntime::repair_pending_publication_settlement;
     let _commit: fn(
         &RelationalRuntime,
+        &worth_execution::ExecutionRequest<'_, '_>,
         crate::mvcc::BranchBoundRelationalTransaction,
-        worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<CommitResult, TransactionCommitError> =
         RelationalRuntime::commit_branch_transaction;
 
@@ -61,12 +61,15 @@ fn phase3b_owner_authority_and_owner_services_keep_their_receivers() {
 /// service, and the whole convenience commit path runs through a shared borrow.
 #[test]
 fn phase3_settlement_port_is_a_cloneable_shared_borrow_service() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn assert_clone_send_sync<T: Clone + Send + Sync>() {}
 
     assert_clone_send_sync::<SettlementPort>();
 
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase3-settlement-anchor");
+    create_entity(execution, &runtime, "phase3-settlement-anchor");
     let runtime_shared = &runtime;
     let settlement = runtime_shared.settlement_port();
     let cloned = settlement.clone();
@@ -84,10 +87,7 @@ fn phase3_settlement_port_is_a_cloneable_shared_borrow_service() {
         )
         .expect("test staging stays within configured resource budgets");
     let committed = runtime_shared
-        .commit_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit_branch_transaction(execution, transaction)
         .expect("the convenience commit path settles through a shared borrow");
     assert!(!cloned.retains_pending_settlement(committed.commit.commit_id));
     release_test_commit_snapshot(&runtime, &committed);
@@ -98,9 +98,12 @@ fn phase3_settlement_port_is_a_cloneable_shared_borrow_service() {
 /// addressing freed authority.
 #[test]
 fn phase3_settlement_port_denies_after_its_runtime_owner_closes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase3-owner-close-anchor");
-    let performed = perform_write(&runtime, "main", "phase3-owner-close-write");
+    create_entity(execution, &runtime, "phase3-owner-close-anchor");
+    let performed = perform_write(execution, &runtime, "main", "phase3-owner-close-write");
     let commit_id = performed.canonical_commit().commit.commit_id;
     let settlement = runtime.settlement_port();
     let runtime_instance_id = runtime.runtime_instance_id();
@@ -131,9 +134,12 @@ fn phase3_settlement_port_denies_after_its_runtime_owner_closes() {
 /// the terminal effect.
 #[test]
 fn phase3_settlement_port_settles_a_performed_publication_from_another_thread() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "phase3-offthread-anchor");
-    let performed = perform_write(&runtime, "main", "phase3-offthread-write");
+    create_entity(execution, &runtime, "phase3-offthread-anchor");
+    let performed = perform_write(execution, &runtime, "main", "phase3-offthread-write");
     let commit_id = performed.canonical_commit().commit.commit_id;
     let settlement = runtime.settlement_port();
     let worker_port = settlement.clone();
@@ -153,7 +159,7 @@ fn phase3_settlement_port_settles_a_performed_publication_from_another_thread() 
             .commit_id,
         commit_id,
     );
-    let child = create_entity_outcome(&runtime, "phase3-child-after-offthread");
+    let child = create_entity_outcome(execution, &runtime, "phase3-child-after-offthread");
     assert_eq!(child.commit.parents, vec![commit_id]);
     release_test_commit_snapshot(&runtime, &settled);
     release_test_commit_snapshot(&runtime, &child);
@@ -164,11 +170,14 @@ fn phase3_settlement_port_settles_a_performed_publication_from_another_thread() 
 /// being borrowed exclusively.
 #[test]
 fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    create_entity(&runtime, "phase3-repair-anchor");
+    create_entity(execution, &runtime, "phase3-repair-anchor");
     let settlement = runtime.settlement_port();
 
-    let performed = perform_write(&runtime, "main", "phase3-route-repair-write");
+    let performed = perform_write(execution, &runtime, "main", "phase3-route-repair-write");
     let route_commit_id = performed.canonical_commit().commit.commit_id;
     runtime.durability.arm_append_failure_for_test();
     let deferred_error = settlement
@@ -184,7 +193,7 @@ fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
     assert_eq!(repaired.commit_id, route_commit_id);
     assert!(!settlement.retains_pending_settlement(route_commit_id));
 
-    let abandoned = perform_write(&runtime, "main", "phase3-identity-repair-write");
+    let abandoned = perform_write(execution, &runtime, "main", "phase3-identity-repair-write");
     let identity_commit_id = abandoned.canonical_commit().commit.commit_id;
     drop(abandoned);
     assert!(settlement.retains_pending_settlement(identity_commit_id));
@@ -194,7 +203,7 @@ fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
     assert_eq!(recovered.commit_id, identity_commit_id);
     assert!(!settlement.retains_pending_settlement(identity_commit_id));
 
-    let child = create_entity_outcome(&runtime, "phase3-child-after-repair");
+    let child = create_entity_outcome(execution, &runtime, "phase3-child-after-repair");
     assert_eq!(child.commit.parents, vec![identity_commit_id]);
     assert_eq!(
         runtime
@@ -217,12 +226,28 @@ fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
 /// gate, leaving the source runtime able to recover by commit identity.
 #[test]
 fn phase3_foreign_settlement_denial_preserves_source_recovery() {
-    let source = persisted_runtime_with_test_schema();
-    create_entity(&source, "phase3-foreign-settlement-source-anchor");
-    let foreign = persisted_runtime_with_test_schema();
-    create_entity(&foreign, "phase3-foreign-settlement-target-anchor");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let performed = perform_write(&source, "main", "phase3-foreign-settlement-write");
+    let source = persisted_runtime_with_test_schema();
+    create_entity(
+        execution,
+        &source,
+        "phase3-foreign-settlement-source-anchor",
+    );
+    let foreign = persisted_runtime_with_test_schema();
+    create_entity(
+        execution,
+        &foreign,
+        "phase3-foreign-settlement-target-anchor",
+    );
+
+    let performed = perform_write(
+        execution,
+        &source,
+        "main",
+        "phase3-foreign-settlement-write",
+    );
     let commit_id = performed.canonical_commit().commit.commit_id;
     let source_durable_before = source.durability().durable_log().len();
     let foreign_durable_before = foreign.durability().durable_log().len();
@@ -267,56 +292,6 @@ fn phase3_foreign_settlement_denial_preserves_source_recovery() {
 /// Deferred repair diagnostics describe the service being asked as expected
 /// and the carrier's source as actual. Rejection must leave the source record
 /// and exact carrier usable for its rightful owner.
-#[test]
-fn phase3_foreign_deferred_repair_reports_affinity_and_preserves_source_recovery() {
-    let source = persisted_runtime_with_test_schema();
-    create_entity(&source, "phase3-foreign-deferred-source-anchor");
-    let foreign = persisted_runtime_with_test_schema();
-    create_entity(&foreign, "phase3-foreign-deferred-target-anchor");
-
-    let performed = perform_write(&source, "main", "phase3-foreign-deferred-write");
-    let commit_id = performed.canonical_commit().commit.commit_id;
-    let source_durable_before = source.durability().durable_log().len();
-    let foreign_durable_before = foreign.durability().durable_log().len();
-    let source_settlement = source.settlement_port();
-    source.durability.arm_append_failure_for_test();
-    let deferred_error = source_settlement
-        .settle_performed_publication(performed)
-        .expect_err("the injected append fault leaves exact deferred repair authority");
-    let deferred = deferred_error
-        .deferred_settlement()
-        .expect("durability deferral carries the performed route");
-
-    match foreign
-        .settlement_port()
-        .repair_deferred_publication_settlement(deferred)
-    {
-        Err(DeferredPublicationSettlementError::ForeignRuntime {
-            expected_runtime_instance_id,
-            actual_runtime_instance_id,
-        }) => {
-            assert_eq!(expected_runtime_instance_id, foreign.runtime_instance_id());
-            assert_eq!(actual_runtime_instance_id, source.runtime_instance_id());
-        }
-        outcome => panic!("foreign deferred repair must return exact affinity: {outcome:?}"),
-    }
-
-    assert_eq!(
-        foreign.durability().durable_log().len(),
-        foreign_durable_before
-    );
-    assert!(source_settlement.retains_pending_settlement(commit_id));
-    let recovered = source_settlement
-        .repair_deferred_publication_settlement(deferred)
-        .expect("the source runtime still owns the exact deferred route");
-    assert_eq!(recovered.commit_id, commit_id);
-    assert_eq!(
-        source.durability().durable_log().len(),
-        source_durable_before + 1
-    );
-    assert!(!source_settlement.retains_pending_settlement(commit_id));
-}
-
 pub(super) fn fork_from_main(runtime: &RelationalRuntime, target: &str) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
@@ -327,6 +302,7 @@ pub(super) fn fork_from_main(runtime: &RelationalRuntime, target: &str) {
 }
 
 fn perform_write(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &str,
     name: &str,
@@ -339,10 +315,11 @@ fn perform_write(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    perform_prepared(runtime, transaction)
+    perform_prepared(execution, runtime, transaction)
 }
 
 pub(super) fn perform_write_with_control(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &str,
     name: &str,
@@ -367,21 +344,25 @@ pub(super) fn perform_write_with_control(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    perform_prepared(runtime, transaction)
+    perform_prepared(execution, runtime, transaction)
 }
 
 fn perform_prepared(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     transaction: crate::mvcc::BranchBoundRelationalTransaction,
 ) -> crate::mvcc::PerformedRelationalCommit {
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
-    match runtime.publication_port().compare_and_publish(candidate) {
+    match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("an uncontended candidate performs: {outcome:?}"),
     }
 }
+
+#[path = "owner_service_phase3/foreign_repair.rs"]
+mod foreign_repair;

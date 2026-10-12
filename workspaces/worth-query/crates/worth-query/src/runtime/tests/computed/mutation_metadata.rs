@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn refresh_fallback_maintainer_receives_retained_mutation_metadata() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     struct MetadataSnapshotMaintainer;
 
     impl WorthQueryDerivedViewMaintainer for MetadataSnapshotMaintainer {
@@ -80,11 +83,11 @@ fn refresh_fallback_maintainer_receives_retained_mutation_metadata() {
             .collect()
     }
 
-    let mut workspace = stateful_bridge_task_runtime()
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("computed.refresh.metadata")
         .expect("task runtime should open a named workspace");
     let tasks: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -101,6 +104,7 @@ fn refresh_fallback_maintainer_receives_retained_mutation_metadata() {
         .expect("task live view should declare");
     let metadata: WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> = workspace
         .computed_view(
+            request_execution,
             WorthQueryDerivedView::new("computed.refresh.metadata", touches(["title"]))
                 .depends_on_live(&tasks)
                 .produces(touches(["summary.metadata"]))
@@ -110,7 +114,7 @@ fn refresh_fallback_maintainer_receives_retained_mutation_metadata() {
         .expect("metadata refresh maintainer should declare");
 
     let receipt = workspace
-        .insert("Task", |builder| {
+        .insert(request_execution, "Task", |builder| {
             builder.metadata("author", "worth-topo").set_aspect(
                 touch("title.value"),
                 test_authored_string_aspect_value("Metadata proof"),
@@ -121,7 +125,7 @@ fn refresh_fallback_maintainer_receives_retained_mutation_metadata() {
     assert_eq!(
         retained_value_aspects(
             workspace
-                .materialize_result(&metadata)
+                .materialize_result(request_execution, &metadata)
                 .expect("metadata materialization should execute")
                 .retained_rows(),
         ),

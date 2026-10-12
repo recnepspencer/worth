@@ -13,24 +13,39 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
     let _owner = crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner();
     let world = installed_authorization_world(true);
     let scope = live_scope();
-    let selected = world.selected_product();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
-    let principal = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let root = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let root = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
     let membership_query = world
         .application
@@ -44,22 +59,30 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
         .unwrap();
     let membership = world
         .application
-        .execute_application_query_one_shot(
-            selected
-                .retain_selection()
-                .unwrap()
-                .admit_application_query(
-                    &membership_query,
-                    &access,
-                    ApplicationQueryParameterSet::new(),
-                    current_controls(&scope),
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .execute_application_query_one_shot(
+                    &phase,
+                    selected
+                        .retain_selection(&host_custody.borrowed_request_for_test())
+                        .unwrap()
+                        .admit_application_query(
+                            &phase,
+                            &membership_query,
+                            &access,
+                            ApplicationQueryParameterSet::new(),
+                            current_controls(&scope),
+                        )
+                        .unwrap(),
                 )
-                .unwrap(),
-        )
-        .unwrap();
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let cancelled = CancellationSource::new();
     cancelled.cancel();
-    for workers in [None, Some(1), Some(2), Some(4)] {
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); for workers in [None, Some(1), Some(2), Some(4)] {
         let requests = [
             SerialRequest::from_memory(SerialMemoryBudget::new(0), CancellationToken::new(), None),
             SerialRequest::from_memory(SerialMemoryBudget::new(1 << 20), cancelled.token(), None),
@@ -126,9 +149,9 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                     |_: &String| {
                         prepared += 1;
                         let first = selected
-                            .retain_selection()
+                            .retain_selection(&host_custody.borrowed_request_for_test(), )
                             .unwrap()
-                            .admit_application_query(
+                            .admit_application_query(&phase,
                                 &query,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -136,9 +159,9 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                             )
                             .unwrap();
                         let second = selected
-                            .retain_selection()
+                            .retain_selection(&host_custody.borrowed_request_for_test(), )
                             .unwrap()
-                            .admit_application_query(
+                            .admit_application_query(&phase,
                                 &query,
                                 &access,
                                 ApplicationQueryParameterSet::new(),
@@ -175,5 +198,5 @@ fn zero_memory_cancellation_and_expired_deadline_refuse_before_any_read() {
                 drop(serial.memory().reserve(serial.memory().limit()).unwrap());
             }
         }
-    }
+    } }).expect("the fixture read owns its installed host call")
 }

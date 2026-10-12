@@ -39,8 +39,12 @@ fn refresh_translates_native_update_insert_remove_and_move_with_query_row_identi
     assert_changed_row_cost(&insert, 1);
 
     workspace
-        .delete(between.clone())
-        .expect("delete inserted row");
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .delete(execution, between.clone())
+                .expect("delete inserted row")
+        })
+        .expect("workspace host call opens");
     let remove = applied(&mut live, &mut workspace);
     assert!(changed_values(remove.fact()).is_empty());
     assert!(remove.fact().changes().iter().any(|change| matches!(
@@ -114,7 +118,13 @@ fn refresh_preserves_live_continuation_changes_and_exposes_query_reset() {
     insert_collection_status(&mut workspace, "pulse.bravo", "Bravo");
     let mut live = open(&mut workspace, 1);
 
-    workspace.delete(alpha).expect("delete continuation anchor");
+    workspace
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .delete(execution, alpha)
+                .expect("delete continuation anchor")
+        })
+        .expect("workspace host call opens");
     let shifted = applied(&mut live, &mut workspace);
     assert!(shifted
         .fact()
@@ -152,11 +162,15 @@ fn refresh_reports_empty_drain_without_inventing_semantic_delivery() {
     let mut workspace = collection_projection_workspace();
     insert_collection_status(&mut workspace, "pulse.alpha", "Alpha");
     let mut live = open(&mut workspace, 1);
-    assert!(matches!(
-        live.refresh(&mut workspace)
-            .expect("an empty Query drain is not a refresh error"),
-        UiCollectionProjectionRefreshOutcome::NoSemanticDelivery
-    ));
+    workspace
+        .with_execution_request_mut(|execution, workspace| {
+            assert!(matches!(
+                live.refresh(execution, workspace)
+                    .expect("an empty Query drain is not a refresh error"),
+                UiCollectionProjectionRefreshOutcome::NoSemanticDelivery
+            ))
+        })
+        .expect("workspace host call opens");
 }
 
 #[test]
@@ -206,7 +220,13 @@ fn intent_input_catalog_applies_exact_query_patch_family_without_rebuilding_rows
         )
     );
 
-    workspace.delete(between).expect("delete inserted row");
+    workspace
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .delete(execution, between)
+                .expect("delete inserted row")
+        })
+        .expect("workspace host call opens");
     let remove = applied(&mut live, &mut workspace);
     input = remove
         .fact()
@@ -285,12 +305,19 @@ fn applied(
     live: &mut crate::UiLiveCollectionProjection,
     workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
 ) -> crate::UiCollectionProjectionRefreshReceipt {
-    match live.refresh(workspace).expect("Query refresh pipeline") {
-        UiCollectionProjectionRefreshOutcome::Applied(receipt) => receipt,
-        UiCollectionProjectionRefreshOutcome::NoSemanticDelivery => {
-            panic!("mutation must have a semantic collection effect")
-        }
-    }
+    workspace
+        .with_execution_request_mut(|request_execution, workspace| {
+            match live
+                .refresh(request_execution, workspace)
+                .expect("Query refresh pipeline")
+            {
+                UiCollectionProjectionRefreshOutcome::Applied(receipt) => receipt,
+                UiCollectionProjectionRefreshOutcome::NoSemanticDelivery => {
+                    panic!("mutation must have a semantic collection effect")
+                }
+            }
+        })
+        .expect("fixture workspace host call opens")
 }
 
 fn changed_values(fact: &crate::UiCollectionProjectionFactReceipt) -> Vec<&str> {

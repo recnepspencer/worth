@@ -3,11 +3,14 @@ use super::*;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub(super) fn branches(app: &execution::Application) -> [WorthQueryProductBranch; 2] {
     std::array::from_fn(|_| {
-        app.branches()
-            .fork(app.current_world())
-            .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
-            .create()
-            .unwrap()
+        app.with_host_advancement(|phase| {
+            app.branches()
+                .fork(app.current_world())
+                .components(|parts| parts.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .unwrap()
+        })
+        .expect("the sibling branch owns its host request")
     })
 }
 pub(super) fn assert_stop(

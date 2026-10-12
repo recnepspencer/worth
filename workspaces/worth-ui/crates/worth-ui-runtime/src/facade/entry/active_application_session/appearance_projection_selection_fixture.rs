@@ -277,3 +277,20 @@ pub(super) fn assert_output(
     expected.sort_unstable();
     assert_eq!(observed, expected);
 }
+
+pub(super) fn selection_registration(
+    domain: &worth_ui_query_binding::WorthUiInstalledQueryDomain,
+) -> worth_ui_query_binding::UiCollectionProjectionRegistration {
+    use worth_ui_query_binding::{
+        UiCollectionProjectionRegistration, UiProjectionFieldRequirement,
+    };
+    UiCollectionProjectionRegistration::text(
+        domain.projection_view(PROJECTION).unwrap(),
+        UiProjectionFieldRequirement::identity_id(),
+        [UiProjectionFieldRequirement::query_text_status()],
+        false,
+        false,
+    )
+    .unwrap()
+    .with_unsigned64_application_item_key_field(UiProjectionFieldRequirement::collection_item_key())
+}

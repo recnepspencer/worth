@@ -20,7 +20,13 @@ fn cancellation_between_the_relational_effect_and_the_signal_advance_retains_onl
     );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
-    let prepared = prepare_both_owners(&fixture, &owner, &expected, "cancel-between-owners");
+    let prepared = prepare_both_owners(
+        &execution,
+        &fixture,
+        &owner,
+        &expected,
+        "cancel-between-owners",
+    );
     let (rehearsal, reached) = arm_rehearsal(
         owner.as_ref(),
         ExecutionRehearsalBoundary::BetweenOwnerEffects,
@@ -86,7 +92,7 @@ fn deadline_between_the_relational_effect_and_the_signal_advance_retains_only_th
         expected.clone(),
         CompositePublicationIntent::with_signal(Some(RelationalTransactionIntent::ordinary()))
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate("deadline-between-owners"),
+                fixture.prepare_relational_owner_candidate(&execution, "deadline-between-owners"),
             ),
         &cancellation.token(),
         Some(crate::lifecycle::RuntimeWorldInstant::from_ticks(5)),

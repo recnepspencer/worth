@@ -10,7 +10,10 @@ use crate::future_signal_test_support::{
 
 #[test]
 fn ordinary_prepared_continuation_keeps_future_projection_visible() {
-    let handle = future_signal_admitted_handle("future");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = future_signal_admitted_handle(request_execution, "future");
     let checked = checked_signal_public_posture(
         &handle,
         FutureSignalInput::<OrdinaryFutureSignalFamily>::new("face-a"),
@@ -36,7 +39,10 @@ fn ordinary_prepared_continuation_keeps_future_projection_visible() {
 
 #[test]
 fn temporal_and_async_signal_debt_stop_before_prepared_continuation_exists() {
-    let handle = future_signal_admitted_handle("future-public");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = future_signal_admitted_handle(request_execution, "future-public");
 
     let temporal = prepare_continuation_from_signal_checked_on_handle(
         &handle,

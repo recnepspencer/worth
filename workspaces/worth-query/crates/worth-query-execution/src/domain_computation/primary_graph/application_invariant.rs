@@ -44,6 +44,43 @@ where
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>;
 
+    /// Declare `true` only when both checked hooks below are implemented.
+    /// They must use the supplied caller budget for their bounded work and memory.
+    /// A declaration does not authorize unchecked work, a replacement request,
+    /// or a fallback to the ordinary hooks when that budget refuses.
+    fn supports_checked_preparation(&self) -> bool {
+        false
+    }
+
+    /// Prepare under the supplied budget, returning `Some` for a checked rule.
+    /// Checkpoint on entry and before each unit of work; claim scratch or result
+    /// bytes before growing or retaining your own storage. Stop immediately when
+    /// any claim or checkpoint refuses. The owner retains the typed cause;
+    /// neither `None`, ordinary preparation nor a new budget is a fallback.
+    fn prepare_scope_checked(
+        &self,
+        _planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, Schema>,
+        _budget: &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        None
+    }
+
+    /// Evaluate under the same caller budget, returning `Some` for a checked rule.
+    /// Checkpoint on entry and before each candidate or computation; claim memory
+    /// before growing your own retained storage. A refusal ends evaluation: do
+    /// not continue, report success, call the ordinary hook or mint a request.
+    /// Return an error to exit; the owner's recorded typed stop takes precedence.
+    fn evaluate_checked(
+        &self,
+        _context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,
+        _scope: &Self::Scope,
+        _budget: &dyn worth_relational::facade::runtime::CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+    > {
+        None
+    }
+
     fn evaluate(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, Schema>,

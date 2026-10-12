@@ -11,12 +11,17 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
     world
         .application
         .with_host_advancement(|active_phase| {
+            let host_custody = active_phase.test_host_request();
             let phase = &active_phase;
 
             let running = start(
                 phase,
                 &world,
-                retained_program(&world, "product-owner"),
+                retained_program(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    "product-owner",
+                ),
                 idempotency(193, 194),
             );
             let WorthQueryRunningApplicationCommit {
@@ -35,7 +40,7 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
             let sibling = fork_product(&world, lease.product());
             let sibling = world
                 .application
-                .select_product_branch(&sibling)
+                .select_product_branch(&phase.borrowed_request_for_test(), &sibling)
                 .expect("the exact sibling product remains selectable");
             let (_, sibling_product, sibling_application_basis) = sibling.into_parts();
             drop(sibling_application_basis);
@@ -61,12 +66,17 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
     world
         .application
         .with_host_advancement(|active_phase| {
+            let host_custody = active_phase.test_host_request();
             let phase = &active_phase;
 
             let running = start(
                 phase,
                 &world,
-                retained_program(&world, "product-owner"),
+                retained_program(
+                    &host_custody.phase_for_application(&world.application),
+                    &world,
+                    "product-owner",
+                ),
                 idempotency(195, 196),
             );
             let WorthQueryRunningApplicationCommit {
@@ -124,7 +134,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &a,
-                    retained_program(&a, "readmission-a"),
+                    retained_program(&phase, &a, "readmission-a"),
                     idempotency(181, 181),
                 )
             })
@@ -135,7 +145,7 @@ fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() 
                 start(
                     &phase,
                     &b,
-                    retained_program(&b, "readmission-b"),
+                    retained_program(&phase, &b, "readmission-b"),
                     idempotency(182, 182),
                 )
             })

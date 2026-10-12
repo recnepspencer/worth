@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn binding_proof_exposes_linked_artifacts_and_witness_checks() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let progressed = progressed_route(&handle, "edge-a");
     let proof = handle.bind_route_from_target_proof(WorthQueryResolveRouteFromTargetRequest::new(
         WorthQueryRouteResolverSubject::Progression(progressed.clone()),
@@ -20,7 +23,10 @@ fn binding_proof_exposes_linked_artifacts_and_witness_checks() {
 
 #[test]
 fn binding_digest_changes_when_required_aspect_contract_changes() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let progressed = progressed_route(&handle, "edge-a");
     let exact = handle.bind_route_from_target_proof(WorthQueryResolveRouteFromTargetRequest::new(
         WorthQueryRouteResolverSubject::Progression(progressed.clone()),

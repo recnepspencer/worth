@@ -2,14 +2,18 @@ use super::*;
 
 #[test]
 fn effect_triggered_pending_write_intent_executes_through_intent_authority_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = complete_backend_from_parts_builder()
         .intent_authority(TestIntentAuthority)
         .support_profile(intent_support_profile())
         .build_backend_from_parts()
-        .build()
+        .build(request_execution)
         .expect("intent-capable runtime should build");
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.effect-intent",
             task_live_request(),
             task_schema(),
@@ -24,23 +28,31 @@ fn effect_triggered_pending_write_intent_executes_through_intent_authority_once(
         .expect("write-intent effect should declare");
 
     let write = runtime
-        .write(test_update_string_aspect_command(
-            crate::memory_workspace::admit_authored_entity_label("task-1"),
-            "title.value",
-            "title from write",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                crate::memory_workspace::admit_authored_entity_label("task-1"),
+                "title.value",
+                "title from write",
+            ),
+        )
         .expect("write should route pending effect intent");
     assert_eq!(write.pending_write_intent_count(), 1);
     assert_eq!(
         runtime
-            .inspect_effect(&effect)
+            .inspect_effect(request_execution, &effect)
             .expect("effect should inspect")
             .pending_write_intent_count(),
         1
     );
 
     let effect_intent = runtime
-        .execute_next_effect_write_intent(&effect, "1.0", "effect.intent.input.v1")
+        .execute_next_effect_write_intent(
+            request_execution,
+            &effect,
+            "1.0",
+            "effect.intent.input.v1",
+        )
         .expect("pending effect intent should execute through intent authority");
 
     assert_eq!(effect_intent.effect_name(), "effects.reconcile-title");
@@ -80,7 +92,7 @@ fn effect_triggered_pending_write_intent_executes_through_intent_authority_once(
     assert!(!effect_intent.receipt_digest().is_empty());
 
     let inspected = runtime
-        .inspect_effect(&effect)
+        .inspect_effect(request_execution, &effect)
         .expect("effect should retain only follow-up pending intent");
     assert_eq!(
         inspected.pending_write_intent_count(),
@@ -89,7 +101,7 @@ fn effect_triggered_pending_write_intent_executes_through_intent_authority_once(
     );
 
     let effect_intent_inspection = runtime
-        .inspect_effect_intent_receipt(&effect_intent)
+        .inspect_effect_intent_receipt(request_execution, &effect_intent)
         .expect("effect intent receipt should inspect");
     assert_eq!(
         effect_intent_inspection.effect_name(),
@@ -118,7 +130,7 @@ fn effect_triggered_pending_write_intent_executes_through_intent_authority_once(
     assert!(!effect_intent_inspection.inspection_digest().is_empty());
 
     match runtime
-        .inspect(&effect_intent)
+        .inspect(request_execution, &effect_intent)
         .expect("effect-intent receipt target should inspect")
     {
         WorthQueryInspection::EffectIntentReceipt(inspection) => {

@@ -19,6 +19,7 @@ pub(super) struct CertificationWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for CertificationWriteAuthority {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,

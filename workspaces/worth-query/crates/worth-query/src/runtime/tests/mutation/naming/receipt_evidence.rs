@@ -2,11 +2,14 @@ use super::*;
 
 #[test]
 fn update_existing_preserves_naming_evidence_on_receipt_and_inspection() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.naming-existing")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.naming-existing-table", |q| {
+        .live_view(request_execution, "tasks.naming-existing-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -23,7 +26,7 @@ fn update_existing_preserves_naming_evidence_on_receipt_and_inspection() {
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -61,7 +64,7 @@ fn update_existing_preserves_naming_evidence_on_receipt_and_inspection() {
     .expect("binding collection should build");
 
     let receipt = workspace
-        .update_existing(binding, |task| {
+        .update_existing(request_execution, binding, |task| {
             task.naming_attach_existing_target(
                 attachment_authority.clone(),
                 target_authority.clone(),
@@ -73,7 +76,7 @@ fn update_existing_preserves_naming_evidence_on_receipt_and_inspection() {
         })
         .expect("existing-target naming update should execute");
     let inspection = workspace
-        .inspect(&receipt)
+        .inspect(request_execution, &receipt)
         .expect("naming receipt should inspect");
 
     let naming = receipt
@@ -124,11 +127,14 @@ fn update_existing_preserves_naming_evidence_on_receipt_and_inspection() {
 
 #[test]
 fn batch_naming_evidence_preserves_attach_and_rebind_outcomes() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.naming-batch")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.naming-batch-table", |q| {
+        .live_view(request_execution, "tasks.naming-batch-table", |q| {
             q.from("Task")
                 .select([
                     crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
@@ -145,7 +151,7 @@ fn batch_naming_evidence_preserves_attach_and_rebind_outcomes() {
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-existing"),
@@ -173,7 +179,7 @@ fn batch_naming_evidence_preserves_attach_and_rebind_outcomes() {
         .expect("symbolic collection should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .insert_symbolic("draft-task", "Task", |task| {
                     task.set_aspect(test_aspect_touch("identity.id"), test_authored_string_aspect_value("task-draft"))
@@ -195,7 +201,9 @@ fn batch_naming_evidence_preserves_attach_and_rebind_outcomes() {
                 })
         })
         .expect("naming batch should execute");
-    let inspection = workspace.inspect(&receipt).expect("batch should inspect");
+    let inspection = workspace
+        .inspect(request_execution, &receipt)
+        .expect("batch should inspect");
 
     assert_eq!(receipt.batch_mutation_evidence().naming_mutation_count(), 2);
 

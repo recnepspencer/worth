@@ -8,3 +8,5 @@ mod compat_http_phase_nine_policy_branch_cases;
 mod compat_http_phase_nine_runtime;
 #[path = "support/query_handoff/runtime.rs"]
 mod query_handoff_runtime;
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;

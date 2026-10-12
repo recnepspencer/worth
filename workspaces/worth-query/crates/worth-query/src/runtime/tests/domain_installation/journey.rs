@@ -18,7 +18,10 @@ use crate::tenant_basis::{SchemaVariantSnapshot, TenantBasisEpoch, TenantBinding
 
 #[test]
 fn installed_read_projection_and_receipts_carry_one_authority_witness() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let expected = handle.authority_witness().witness_identity().clone();
     let mut workspace = runtime.workspace("installed-domain-read").unwrap();
@@ -27,7 +30,7 @@ fn installed_read_projection_and_receipts_carry_one_authority_witness() {
         .read(identity_read)
         .unwrap()
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap()
         .into_result()
         .unwrap();
@@ -59,16 +62,19 @@ fn installed_read_projection_and_receipts_carry_one_authority_witness() {
 
 #[test]
 fn foreign_workspace_denies_before_the_ordinary_read_journey_begins() {
-    let owner = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = installed_runtime(request_execution);
     let handle = owner.domain(InstalledDomain).unwrap();
-    let foreign = installed_runtime();
+    let foreign = installed_runtime(request_execution);
     let mut workspace = foreign.workspace("foreign-installed-domain").unwrap();
 
     let stop = handle
         .read(identity_read)
         .unwrap()
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap_err();
     assert_eq!(
         stop.stop().kind(),
@@ -89,7 +95,10 @@ fn foreign_workspace_denies_before_the_ordinary_read_journey_begins() {
 
 #[test]
 fn installed_read_preserves_authority_across_an_ordinary_cross_basis_stop() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let expected = handle.authority_witness().witness_identity().clone();
     let mut workspace = runtime.workspace("installed-domain-cross-basis").unwrap();
@@ -116,7 +125,7 @@ fn installed_read_preserves_authority_across_an_ordinary_cross_basis_stop() {
         .read(identity_read)
         .unwrap()
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap()
         .into_result();
     let Err(stop) = stopped else {
@@ -143,7 +152,10 @@ fn installed_read_preserves_authority_across_an_ordinary_cross_basis_stop() {
 
 #[test]
 fn installed_read_preserves_authority_across_changed_policy_denial() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let expected = handle.authority_witness().witness_identity().clone();
     let mut workspace = runtime
@@ -178,7 +190,7 @@ fn installed_read_preserves_authority_across_changed_policy_denial() {
         .read(identity_read)
         .unwrap()
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap()
         .into_result()
     {
@@ -217,11 +229,14 @@ fn installed_read_preserves_authority_across_changed_policy_denial() {
 
 #[test]
 fn installed_mutation_and_workflow_receipts_retain_the_package_witness() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let expected = handle.authority_witness().witness_identity().clone();
     let mut workspace = runtime.workspace("installed-domain-mutation").unwrap();
-    let context = crate::ordinary::mutation::authoritative(&workspace).unwrap();
+    let context = crate::ordinary::mutation::authoritative(request_execution, &workspace).unwrap();
     let mutation = handle
         .mutation(|builder| {
             builder
@@ -233,7 +248,7 @@ fn installed_mutation_and_workflow_receipts_retain_the_package_witness() {
         })
         .unwrap()
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap();
     let crate::domain_installation::WorthQueryInstalledDomainMutationOutcome::Completed(mutation) =
         mutation
@@ -246,7 +261,8 @@ fn installed_mutation_and_workflow_receipts_retain_the_package_witness() {
     );
 
     let label = WorthQuerySessionLabel::scoped_strs("installed-domain", ["workflow"]).unwrap();
-    let context = crate::ordinary::workflow::preview(&workspace, label.clone()).unwrap();
+    let context =
+        crate::ordinary::workflow::preview(request_execution, &workspace, label.clone()).unwrap();
     let workflow = handle
         .mutation(|builder| {
             builder
@@ -259,7 +275,7 @@ fn installed_mutation_and_workflow_receipts_retain_the_package_witness() {
         .unwrap()
         .workflow(label)
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap();
     let crate::domain_installation::WorthQueryInstalledDomainWorkflowOutcome::Completed(workflow) =
         workflow
@@ -274,7 +290,10 @@ fn installed_mutation_and_workflow_receipts_retain_the_package_witness() {
 
 #[test]
 fn installed_operational_and_rich_inspection_share_operational_evidence() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let expected = handle.authority_witness().witness_identity().clone();
     let mut workspace = runtime.workspace("installed-domain-inspection").unwrap();
@@ -282,7 +301,7 @@ fn installed_operational_and_rich_inspection_share_operational_evidence() {
         .read(identity_read)
         .unwrap()
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap()
         .into_result()
         .unwrap();
@@ -290,7 +309,7 @@ fn installed_operational_and_rich_inspection_share_operational_evidence() {
         .read(identity_read)
         .unwrap()
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .unwrap()
         .into_result()
         .unwrap();

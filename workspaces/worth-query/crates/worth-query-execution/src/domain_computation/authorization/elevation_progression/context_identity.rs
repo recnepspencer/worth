@@ -30,6 +30,7 @@ where
 }
 
 pub(super) fn resolve_elevation_identity<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     capability_identity: [u8; 32],
@@ -41,13 +42,19 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     access
-        .with_exact_observation(runtime, |observation| {
-            observation.resolve_elevation_identity(capability_identity, installed, value.clone())
+        .with_exact_observation(execution, runtime, |observation| {
+            observation.resolve_elevation_identity(
+                execution,
+                capability_identity,
+                installed,
+                value.clone(),
+            )
         })
         .and_then(Result::ok)
 }
 
 pub(super) fn resolve_review_identity<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
     capability_identity: [u8; 32],
@@ -59,8 +66,13 @@ where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     access
-        .with_exact_observation(runtime, |observation| {
-            observation.resolve_review_identity(capability_identity, installed, value.clone())
+        .with_exact_observation(execution, runtime, |observation| {
+            observation.resolve_review_identity(
+                execution,
+                capability_identity,
+                installed,
+                value.clone(),
+            )
         })
         .and_then(Result::ok)
 }

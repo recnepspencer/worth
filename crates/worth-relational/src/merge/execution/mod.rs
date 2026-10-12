@@ -21,6 +21,7 @@ impl<'runtime> MergeAccess<'runtime> {
     #[cfg(test)]
     pub fn prepare_merge_execution(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: MergeExecutionRequest,
     ) -> Result<PreparedMergeExecution, MergeExecutionPreparationError> {
         let source_branch = request.source_branch().clone();
@@ -45,19 +46,21 @@ impl<'runtime> MergeAccess<'runtime> {
                     ),
                     other => MergeExecutionPreparationError::OwnerBinding(other),
                 })?;
-        self.prepare_bound_merge_execution(bound)
+        self.prepare_bound_merge_execution(execution, bound)
     }
 
     #[cfg(not(test))]
     pub fn prepare_merge_execution(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: OwnerBoundMergeExecutionRequest,
     ) -> Result<PreparedMergeExecution, MergeExecutionPreparationError> {
-        self.prepare_bound_merge_execution(request)
+        self.prepare_bound_merge_execution(execution, request)
     }
 
     fn prepare_bound_merge_execution(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: OwnerBoundMergeExecutionRequest,
     ) -> Result<PreparedMergeExecution, MergeExecutionPreparationError> {
         let normalized_request =
@@ -65,9 +68,9 @@ impl<'runtime> MergeAccess<'runtime> {
                 .map_err(crate::merge::data::MergePlanningError::from)
                 .map_err(MergeExecutionPreparationError::Planning)?;
         let lowered_plan = self
-            .lower_planning_scope(normalized_request.clone())
+            .lower_planning_scope(execution, normalized_request.clone())
             .map_err(MergeExecutionPreparationError::Planning)?;
-        let artifact = materialize_planning_artifact(self.runtime, lowered_plan.clone());
+        let artifact = materialize_planning_artifact(execution, self.runtime, lowered_plan.clone());
         let execution_ready_plan = ExecutionReadyLoweredMergePlan::try_from_lowered(
             lowered_plan,
             artifact.schema_snapshot.clone(),
@@ -97,9 +100,10 @@ impl<'runtime> MergeAccess<'runtime> {
 
     pub fn verify_prepared_merge_execution(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         prepared: &PreparedMergeExecution,
     ) -> Result<(), MergeExecutionError> {
-        authority_verification::verify_prepared_merge_execution(self.runtime, prepared)
+        authority_verification::verify_prepared_merge_execution(execution, self.runtime, prepared)
     }
 
     #[cfg(test)]

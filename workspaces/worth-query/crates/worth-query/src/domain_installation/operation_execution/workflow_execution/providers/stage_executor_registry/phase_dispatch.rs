@@ -37,14 +37,26 @@ where
             context.artifact_access_authority(),
         );
         let (input, computed) = slot.into_parts();
-        let mut material = match computed.and_then(|computed| {
+        let applied = computed.and_then(|computed| {
             self.executor.apply(WorthQueryWorkflowStageApplication::new(
                 input,
                 computed,
                 context,
                 &mut workspace,
             ))
-        }) {
+        });
+        if let Some(denial) = workspace.request_denial.take() {
+            let failure = applied.err().unwrap_or_else(|| {
+                WorthQueryWorkflowStageExecutorFailure::new(
+                    crate::domain_installation::WorthQueryOperationFailureClass::Dependency,
+                    "native workflow execution refused its caller request",
+                )
+            });
+            return Err(failure
+                .with_request_denial(denial)
+                .with_executed_effects(workspace.into_executed_effects()));
+        }
+        let mut material = match applied {
             Ok(material) => material,
             Err(failure) => {
                 return Err(failure.with_executed_effects(workspace.into_executed_effects()));

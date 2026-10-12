@@ -114,8 +114,12 @@ impl Reference {
         drop(replay);
         model.applied = self.history.len();
         let native = application
-            .capture_native_truth_checkpoint_for_test()
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                application
+                    .capture_native_truth_checkpoint_for_test(&host_phase)
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         installation::install_variant::<REUSE, WORK, RUNS, MODE>(Some(native), profile, |_| {
             panic!("independent Native model truth does not reseed")
         })

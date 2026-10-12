@@ -7,13 +7,14 @@ use super::{
 };
 
 pub(crate) fn conditional_controlled_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     node: domain::WorthQueryPortableConditionalNodeDeclaration,
 ) -> Result<consumer_kit::WorthQueryControlledTestWorkspace, consumer_kit::WorthQueryTestBackendError>
 {
     let installation = conditional_installation(&node);
     super::conditional_workspace_with_builder(node, installation, DirectConditionalCompute)
-        .controlled_workspace(name)
+        .controlled_workspace(request_execution, name)
 }
 
 pub(crate) struct ConditionalWorkspacePlacement<'a> {
@@ -29,6 +30,7 @@ pub(crate) struct ConditionalDonorWorkspaceScenario<'a, P> {
 }
 
 pub(crate) fn conditional_controlled_workspace_with_donor<P>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     scenario: ConditionalDonorWorkspaceScenario<'_, P>,
 ) -> Result<
     (
@@ -56,8 +58,9 @@ where
         owner_installation,
         DirectConditionalCompute,
     )
-    .controlled_workspace(owner_placement.name)?;
+    .controlled_workspace(request_execution, owner_placement.name)?;
     let donor = conditional_workspace_with(
+        request_execution,
         donor_placement.name,
         node,
         donor_installation,

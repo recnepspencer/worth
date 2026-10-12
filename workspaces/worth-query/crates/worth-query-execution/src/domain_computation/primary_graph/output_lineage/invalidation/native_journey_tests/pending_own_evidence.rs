@@ -13,16 +13,25 @@ use crate::domain_computation::primary_graph::{
 #[test]
 fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() {
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -73,12 +82,12 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         |_| Some(TypeId::of::<()>()),
     )
     .unwrap();
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, label.clone(), "prime");
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); handle.with_runtime_mut(&host_custody.borrowed_request_for_test(), |runtime| {
+        write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
         let a_facts: Arc<[_]> =
-            Arc::from([field_fact(runtime, &before_handle, entity, status.clone())]);
-        let own_fact = field_fact(runtime, &before_handle, entity, label.clone());
+            Arc::from([field_fact(&host_custody.borrowed_request_for_test(), runtime, &before_handle, entity, status.clone())]);
+        let own_fact = field_fact(&host_custody.borrowed_request_for_test(), runtime, &before_handle, entity, label.clone());
         register(
             owner,
             Arc::clone(&a),
@@ -136,7 +145,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         )
         .unwrap()
         .unwrap();
-        write_field(runtime, entity, status, "closed");
+        write_field(&host_custody.borrowed_request_for_test(), runtime, entity, status, "closed");
         let (pending_handle, pending) = snapshot(runtime);
         assert!(matches!(
             owner
@@ -146,7 +155,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         ));
         let mut work = owner.edit_admission();
         assert_eq!(
-            ConsumedOutputEvidence::verify_many_with_admission(
+            ConsumedOutputEvidence::verify_many_with_admission(&host_custody.borrowed_request_for_test(),
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
@@ -159,7 +168,7 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         );
         let mut work = owner.edit_admission();
         assert_eq!(
-            ConsumedOutputEvidence::verify_at_observation(
+            ConsumedOutputEvidence::verify_at_observation(&host_custody.borrowed_request_for_test(),
                 &b,
                 &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([])).for_comparison().unwrap(),
                 &[],
@@ -174,11 +183,11 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
             Ok(ConsumedOutputVerification::ChangedUpstream),
             "the original output witness conclusively rejects the changed output"
         );
-        write_field(runtime, entity, label, "changed-own-field");
+        write_field(&host_custody.borrowed_request_for_test(), runtime, entity, label, "changed-own-field");
         let (changed_handle, changed) = snapshot(runtime);
         let mut work = owner.edit_admission();
         assert_eq!(
-            ConsumedOutputEvidence::verify_many_with_admission(
+            ConsumedOutputEvidence::verify_many_with_admission(&host_custody.borrowed_request_for_test(),
                 std::slice::from_ref(&b_evidence),
                 owner,
                 runtime,
@@ -191,5 +200,5 @@ fn pending_candidate_rejects_changed_own_evidence_without_certifying_upstream() 
         for snapshot in [before_handle, pending_handle, changed_handle] {
             runtime.snapshots().release_snapshot(&snapshot).unwrap();
         }
-    });
+    }) }).expect("the fixture read owns its installed host call");
 }

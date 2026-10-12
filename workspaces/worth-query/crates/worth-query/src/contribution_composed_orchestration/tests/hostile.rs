@@ -12,7 +12,10 @@ use super::support::{admitted_handle, ContributionInput, DeferredContributionInp
 
 #[test]
 fn partial_composition_preserves_admitted_truth_when_later_intent_denies() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let installed_authority = handle.installed_authority().witness_identity().clone();
     let checked = handle.orchestrate_declaration_with_contributions_checked(
         WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-b"))
@@ -65,13 +68,16 @@ fn partial_composition_preserves_admitted_truth_when_later_intent_denies() {
 
 #[test]
 fn package_contribution_policy_denies_before_admission_or_materialization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use crate::contribution_composed_orchestration::{
         WorthQueryContributionComposedIntentClassification,
         WorthQueryContributionComposedIntentStageKind,
         WorthQueryContributionComposedOrchestrationOutcome,
     };
 
-    let handle = super::support::admitted_handle_without_contributions();
+    let handle = super::support::admitted_handle_without_contributions(request_execution);
     let outcome = handle.orchestrate_declaration_with_contributions_checked(
         WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new(
             "policy-denial",
@@ -120,7 +126,10 @@ fn package_contribution_policy_denies_before_admission_or_materialization() {
 
 #[test]
 fn no_admitted_contributions_stay_contribution_owned_denial() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let checked = handle.orchestrate_declaration_with_contributions_checked(
         WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-c"))
             .with_contribution(WorthQueryContributionIntent::support(
@@ -159,7 +168,10 @@ fn no_admitted_contributions_stay_contribution_owned_denial() {
 
 #[test]
 fn declaration_deferred_stays_distinct_on_composed_lane() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let checked = handle.orchestrate_declaration_with_contributions_checked(
         WorthQueryContributionComposedOrchestrationInput::new(DeferredContributionInput::new(
             "face-deferred",
@@ -202,7 +214,10 @@ fn declaration_deferred_stays_distinct_on_composed_lane() {
 
 #[test]
 fn proof_transcript_explains_partial_run() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let proof = handle.orchestrate_declaration_with_contributions_proof(
         WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-proof"))
             .with_contribution(WorthQueryContributionIntent::support(
@@ -258,7 +273,10 @@ fn proof_transcript_explains_partial_run() {
 
 #[test]
 fn empty_contribution_request_is_rejected_as_unsupported() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let checked = handle.orchestrate_declaration_with_contributions_checked(
         WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new("face-empty")),
     );
@@ -271,7 +289,10 @@ fn empty_contribution_request_is_rejected_as_unsupported() {
 
 #[test]
 fn declaration_bound_continuity_is_admitted_on_contribution_composed_lane() {
-    let handle = admitted_handle();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution);
     let composed = match handle.orchestrate_declaration_with_contributions(
         WorthQueryContributionComposedOrchestrationInput::new(ContributionInput::new(
             "face-continuity",

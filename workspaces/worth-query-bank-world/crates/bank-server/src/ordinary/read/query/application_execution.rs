@@ -194,6 +194,7 @@ impl BankReadyQuery<'_, '_, EstateEmergencyAccountDetailsRequest> {
         self,
         approved: &BankApprovedEstateElevation,
         after_admission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccountDetailsHistorical<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,
@@ -213,6 +214,7 @@ impl BankReadyQuery<'_, '_, EstateEmergencyAccountDetailsRequest> {
         approved: &BankApprovedEstateElevation,
         session: &BankPreviewSession,
         after_admission: impl for<'admitted> FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
             BankAdmittedEstateEmergencyAccountDetailsPreview<'admitted>,
         )
             -> Result<Output, BankApplicationQueryDenial>,

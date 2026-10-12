@@ -171,12 +171,16 @@ fn proposal_replay_rejects_a_foreign_branch_instance_reference_before_lookup() {
     ));
     let main = application.runtime().current_world();
     let sibling = application
-        .runtime()
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the sibling branch publishes");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch publishes")
+        })
+        .expect("installed host call opens");
 
     let denial = propose_instance_on_branch(&application, sibling, started.instance().clone(), 433)
         .expect_err("a foreign-branch instance reference must be denied before replay lookup");

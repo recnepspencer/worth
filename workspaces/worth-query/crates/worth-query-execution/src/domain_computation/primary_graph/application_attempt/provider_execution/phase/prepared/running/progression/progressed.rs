@@ -14,6 +14,7 @@ use crate::domain_computation::WorthQueryManagedRunTerminalKind;
 pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution) fn finish_application_commit<
     Schema,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -52,7 +53,7 @@ where
             publication.maintain(application, receipt);
         }
     }
-    application.dispatch_committed_external_effect(phase, committed, &request)
+    application.dispatch_committed_external_effect(execution, phase, committed, &request)
 }
 
 const fn terminal_for(

@@ -14,7 +14,10 @@ use super::support::{admitted_handle, GeometryInput, RequiredIntentGeometryInput
 
 #[test]
 fn helper_grouped_declaration_matches_generic_grouped_path() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let helper_input = handle
         .geometry_helpers()
         .local_neighborhood_for_active_face_selection(GeometryInput::new("face-a"))
@@ -64,7 +67,10 @@ fn helper_grouped_declaration_matches_generic_grouped_path() {
 
 #[test]
 fn grouped_declaration_digest_changes_with_semantic_posture() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let baseline = match worth_query_grouped_declaration_checked_on_handle(
         &handle,
         WorthQueryGroupedDeclarationInput::local_neighborhood(GeometryInput::new("face-a"))
@@ -104,7 +110,10 @@ fn grouped_declaration_digest_changes_with_semantic_posture() {
 
 #[test]
 fn grouped_orchestration_matches_generic_checked_lowering() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let declaration = handle
         .geometry_helpers()
         .declare_local_neighborhood_for_active_face_selection(
@@ -157,7 +166,10 @@ fn grouped_orchestration_matches_generic_checked_lowering() {
 
 #[test]
 fn grouped_route_receipt_and_envelope_preserve_member_aspect_witness() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let declaration = handle
         .geometry_helpers()
         .declare_local_neighborhood_for_active_face_selection(
@@ -195,7 +207,10 @@ fn grouped_route_receipt_and_envelope_preserve_member_aspect_witness() {
 
 #[test]
 fn grouped_contribution_helper_matches_generic_grouped_lowering() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let helper_input = handle
         .geometry_helpers()
         .local_neighborhood_for_active_face_selection(GeometryInput::new("face-a"))
@@ -268,7 +283,10 @@ fn grouped_contribution_helper_matches_generic_grouped_lowering() {
 
 #[test]
 fn grouped_checked_and_proof_preserve_same_member_aspect_witness() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let declaration = handle
         .geometry_helpers()
         .declare_local_neighborhood_for_active_face_selection(
@@ -311,7 +329,10 @@ fn grouped_checked_and_proof_preserve_same_member_aspect_witness() {
 
 #[test]
 fn grouped_member_stop_checked_and_proof_preserve_same_member_witness() {
-    let handle = admitted_handle("main");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "main");
     let declaration = match worth_query_grouped_declaration_checked_on_handle(
         &handle,
         WorthQueryGroupedDeclarationInput::local_neighborhood(RequiredIntentGeometryInput::new(

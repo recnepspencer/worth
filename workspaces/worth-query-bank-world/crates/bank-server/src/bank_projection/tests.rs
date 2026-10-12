@@ -45,18 +45,22 @@ fn bounded_send_projection_rejects_accounting_revision_drift() {
         .unwrap();
     });
 
-    let completed = harness
-        .projection
-        .project_operation::<SendMoneyOperation, _>(
-            |reader| {
-                let source_entity = reader
-                    .resolve_entity(AccountIdentity::reference(), source)
-                    .unwrap();
-                project_send_money_decision(reader, &source_entity, &send(source))
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let completed = crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<SendMoneyOperation, _>(
+                phase,
+                |reader| {
+                    let source_entity = reader
+                        .resolve_entity(AccountIdentity::reference(), source)
+                        .unwrap();
+                    project_send_money_decision(reader, &source_entity, &send(source))
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(Box::new)
+    })
+    .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AccountingRevisionMismatch)
@@ -72,18 +76,22 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
         bind_bank_world_with_estate(graph, &snapshot, &[], &[], None).unwrap();
     });
 
-    let cold = harness
-        .projection
-        .project_operation::<SendMoneyOperation, _>(
-            |reader| {
-                let source_entity = reader
-                    .resolve_entity(AccountIdentity::reference(), source)
-                    .unwrap();
-                project_send_money_decision(reader, &source_entity, &send(source))
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let cold = crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<SendMoneyOperation, _>(
+                phase,
+                |reader| {
+                    let source_entity = reader
+                        .resolve_entity(AccountIdentity::reference(), source)
+                        .unwrap();
+                    project_send_money_decision(reader, &source_entity, &send(source))
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(Box::new)
+    })
+    .unwrap();
     let cold_work = cold.work();
     let projected = cold.into_output().unwrap();
 
@@ -93,18 +101,22 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
     assert_eq!(cold_work.aggregate_cache_hits(), 0);
     assert_eq!(cold_work.aggregate_rebuild_input_rows(), 1);
 
-    let warm = harness
-        .projection
-        .project_operation::<SendMoneyOperation, _>(
-            |reader| {
-                let source_entity = reader
-                    .resolve_entity(AccountIdentity::reference(), source)
-                    .unwrap();
-                project_send_money_decision(reader, &source_entity, &send(source))
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let warm = crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<SendMoneyOperation, _>(
+                phase,
+                |reader| {
+                    let source_entity = reader
+                        .resolve_entity(AccountIdentity::reference(), source)
+                        .unwrap();
+                    project_send_money_decision(reader, &source_entity, &send(source))
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(Box::new)
+    })
+    .unwrap();
     assert_eq!(
         warm.output().as_ref().unwrap().starting_balance(source),
         Some(expected)
@@ -117,17 +129,22 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
     let rebuilt = ProjectionHarness::install(&snapshot, |graph| {
         bind_bank_world_with_estate(graph, &snapshot, &[], &[], None).unwrap();
     });
-    let rebuilt_projection = rebuilt
-        .projection
-        .project_operation::<SendMoneyOperation, _>(
-            |reader| {
-                let source_entity = reader
-                    .resolve_entity(AccountIdentity::reference(), source)
-                    .unwrap();
-                project_send_money_decision(reader, &source_entity, &send(source))
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
+    let rebuilt_projection =
+        crate::test_host_policy::with_phase(rebuilt._runtime.runtime(), |phase| {
+            rebuilt
+                .projection
+                .project_operation::<SendMoneyOperation, _>(
+                    phase,
+                    |reader| {
+                        let source_entity = reader
+                            .resolve_entity(AccountIdentity::reference(), source)
+                            .unwrap();
+                        project_send_money_decision(reader, &source_entity, &send(source))
+                    },
+                    ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .map_err(Box::new)
+        })
         .unwrap();
     assert_eq!(
         rebuilt_projection
@@ -157,18 +174,22 @@ fn bounded_send_projection_rejects_ambiguous_recipient_ownership() {
             .unwrap();
     });
 
-    let completed = harness
-        .projection
-        .project_operation::<SendMoneyOperation, _>(
-            |reader| {
-                let source_entity = reader
-                    .resolve_entity(AccountIdentity::reference(), source)
-                    .unwrap();
-                project_send_money_decision(reader, &source_entity, &send(source))
-            },
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let completed = crate::test_host_policy::with_phase(harness._runtime.runtime(), |phase| {
+        harness
+            .projection
+            .project_operation::<SendMoneyOperation, _>(
+                phase,
+                |reader| {
+                    let source_entity = reader
+                        .resolve_entity(AccountIdentity::reference(), source)
+                        .unwrap();
+                    project_send_money_decision(reader, &source_entity, &send(source))
+                },
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .map_err(Box::new)
+    })
+    .unwrap();
     assert_eq!(
         completed.output().as_ref().err(),
         Some(&BankProjectionDenial::AmbiguousRelation("PersonalOwner"))
@@ -176,7 +197,7 @@ fn bounded_send_projection_rejects_ambiguous_recipient_ownership() {
 }
 
 pub(super) struct ProjectionHarness {
-    _runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
+    pub(super) _runtime: WorthQueryProgramApplicationRuntime<BankSchema, BankApplication>,
     pub(super) projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
 }
 

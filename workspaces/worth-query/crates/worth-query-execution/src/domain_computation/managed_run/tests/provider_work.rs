@@ -137,9 +137,11 @@ fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
             TwoStepProvider,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Project,
@@ -147,11 +149,11 @@ fn bounded_provider_steps_stream_exact_terminal_work_evidence() {
                 ),
             )
             .expect("installed provider anchor should start exact execution");
-        let active = match active.advance(execution) {
+        let active = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Continue(active) => active,
             _ => panic!("first bounded step did not continue"),
         };
-        let pending = match active.advance(execution) {
+        let pending = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::ChunkReady(pending) => pending,
             _ => panic!("second bounded step did not expose its bounded result chunk"),
         };
@@ -242,9 +244,11 @@ fn provider_failure_preserves_governed_work_and_recovery_authority() {
             FailingProvider,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let active = running
             .begin_graph_execution(
-                execution,
+                &installed_running_phase,
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
                     WorthQueryGraphProviderCallKind::Observe,
@@ -252,7 +256,7 @@ fn provider_failure_preserves_governed_work_and_recovery_authority() {
                 ),
             )
             .expect("failing provider should start before its bounded work");
-        let terminal = match active.advance(execution) {
+        let terminal = match active.advance(&installed_running_phase) {
             WorthQueryDirectGraphStepOutcome::Failed(terminal) => terminal,
             _ => panic!("provider failure did not terminalize the managed run"),
         };

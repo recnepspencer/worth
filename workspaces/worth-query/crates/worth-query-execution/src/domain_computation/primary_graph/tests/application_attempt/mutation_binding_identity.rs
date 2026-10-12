@@ -56,7 +56,12 @@ fn a_retry_names_the_same_intent_and_a_changed_input_does_not() {
 fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each_other() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let key = "shared-key".to_owned();
     let input = ProgramRequiredInput::new("open");
     let original = WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
@@ -71,8 +76,18 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
     assert_eq!(original.key_identity(), sibling.key_identity());
     assert_eq!(original.intent_identity(), sibling.intent_identity());
 
-    let account = resolved_account(&world, "open", &request);
-    let first = admitted_program(&world, &principal, &account, &request, "committed");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(&phase, &world, &principal, &account, &request, "committed")
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             first,
@@ -82,8 +97,18 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 
-    let account = resolved_account(&world, "committed", &request);
-    let retry = admitted_program(&world, &principal, &account, &request, "committed");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "committed", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(&phase, &world, &principal, &account, &request, "committed")
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(
         matches!(
             world.application.compare_and_commit_application(
@@ -96,7 +121,12 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
         "the same binding replays its own commit"
     );
 
-    let crossed = admitted_program(&world, &principal, &account, &request, "committed");
+    let crossed = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(&phase, &world, &principal, &account, &request, "committed")
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
             crossed,
@@ -116,23 +146,39 @@ fn two_bindings_sharing_key_namespace_operation_and_input_type_never_replay_each
 fn a_binding_the_schema_never_installed_is_refused_instead_of_panicking() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(ProgramRequiredOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let key = "never-installed".to_owned();
     let input = ProgramRequiredInput::new("open");
     let identities = ApplicationMutationIdentities::<
@@ -174,23 +220,54 @@ fn handler_contact_is_preserved_after_a_later_execution_denial() {
     for status in ["open", "missing"] {
         let world = installed_authorization_world(true);
         let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
-        let account = resolved_account(&world, "open", &request);
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                authenticated_principal(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
+        let account = world
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                resolved_account(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &world,
+                    "open",
+                    &request,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
         let operation = world
             .application
             .installed_schema()
             .installed_operation(ProgramRequiredOperation::reference())
             .unwrap();
         let admission = world
-            .selected_product()
-            .authorize_operation(
-                &principal,
-                &account,
-                &operation,
-                TypedMutationPreconditions::new(),
-                &request,
-            )
-            .unwrap();
+            .application
+            .with_host_advancement(|phase| {
+                let host_custody = phase.test_host_request();
+                world
+                    .selected_product(
+                        &(host_custody.phase_for_application(&world.application))
+                            .test_host_request(),
+                    )
+                    .authorize_operation(
+                        &host_custody.phase_for_application(&world.application),
+                        &principal,
+                        &account,
+                        &operation,
+                        TypedMutationPreconditions::new(),
+                        &request,
+                    )
+                    .unwrap()
+            })
+            .expect("the fixture read owns its installed host call");
         let key = "handler-contact".to_owned();
         let input = ProgramRequiredInput::new(status);
         let identities = Identities::encode(&key, &input).unwrap();

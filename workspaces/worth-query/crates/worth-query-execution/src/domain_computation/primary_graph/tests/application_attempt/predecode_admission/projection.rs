@@ -12,6 +12,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentities;
 
 pub(super) fn with_reader<Output>(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     request: &WorthQueryRequestScope,
     action: impl FnOnce(
@@ -19,7 +20,9 @@ pub(super) fn with_reader<Output>(
     ) -> Output,
 ) -> Output {
     let mut output = None;
-    let sealed = try_with_reader(world, request, |reader| output = Some(action(reader)));
+    let sealed = try_with_reader(phase_custody, world, request, |reader| {
+        output = Some(action(reader))
+    });
     if let Err(denial) = sealed {
         let interruption = request
             .interruption()
@@ -35,22 +38,24 @@ pub(super) fn with_reader<Output>(
 }
 
 pub(super) fn try_with_reader<Output>(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     request: &WorthQueryRequestScope,
     action: impl FnOnce(
         &mut DecisionReader<'_, '_, '_, IdentityExecutionSchema, ProgramRequiredMutationBinding>,
     ) -> Output,
 ) -> Result<Output, crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenial> {
-    let principal = authenticated_principal(world, request);
-    let account = resolved_account(world, "open", request);
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     let operation = world
         .application
         .installed_schema()
         .installed_operation(ProgramRequiredOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            phase_custody,
             &principal,
             &account,
             &operation,
@@ -71,6 +76,7 @@ pub(super) fn try_with_reader<Output>(
     world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, scope| {
                 let mut decision = DecisionReader::new(

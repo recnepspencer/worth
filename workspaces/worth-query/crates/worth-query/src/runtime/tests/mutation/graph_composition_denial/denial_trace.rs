@@ -2,12 +2,15 @@ use super::*;
 
 #[test]
 fn graph_composition_denial_traces_distinguish_symbol_validation_from_lowering_failures() {
-    let mut workspace = task_edge_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = task_edge_runtime(request_execution)
         .workspace("tasks.graph-composition-denial-trace-classes")
         .expect("runtime should open a named workspace");
 
     let duplicate = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let _ = graph.insert_entity("draft-task", "Task", |task| {
                 task.set_aspect(
                     test_aspect_touch("identity.id"),
@@ -33,7 +36,7 @@ fn graph_composition_denial_traces_distinguish_symbol_validation_from_lowering_f
         .expect_err("duplicate symbol declaration should deny");
 
     let unresolved = workspace
-        .compose_graph(|graph| {
+        .compose_graph(request_execution, |graph| {
             let relation = WorthQueryGraphRelationSymbol::new(
                 WorthQuerySymbolicTargetReference::new("leaked-edge")?
                     .in_target_collection("TaskEdge")?,

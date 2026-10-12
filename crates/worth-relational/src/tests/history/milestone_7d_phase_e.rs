@@ -20,11 +20,14 @@ use worth_foundational::facade::AspectKey;
 
 #[test]
 fn inspection_input_round_trips_deleted_vs_modified_without_host_projection() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = persisted_runtime_with_test_schema();
-    let entity = create_entity(&runtime, "shared");
+    let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, entity, "main-modified");
-    delete_entity_on_branch(&runtime, entity, BranchId("feature".to_string()));
+    update_entity(execution, &runtime, entity, "main-modified");
+    delete_entity_on_branch(execution, &runtime, entity, BranchId("feature".to_string()));
 
     let request = MergeExecutionRequest {
         target_branch: BranchId("main".to_string()),
@@ -33,13 +36,13 @@ fn inspection_input_round_trips_deleted_vs_modified_without_host_projection() {
     };
     let planning = runtime
         .merge()
-        .inspect_planning_scope(request.clone().into())
+        .inspect_planning_scope(execution, request.clone().into())
         .expect("planning artifact");
     let input = planning.inspection_input();
     let from_input = RelationalMergeInspectionArtifact::from_input(input.clone());
     let from_access = runtime
         .merge()
-        .inspect_execution_surface(request.clone().into())
+        .inspect_execution_surface(execution, request.clone().into())
         .expect("execution surface");
     let normalized_request = runtime
         .merge()
@@ -69,20 +72,34 @@ fn inspection_input_round_trips_deleted_vs_modified_without_host_projection() {
 
 #[test]
 fn execution_surface_preserves_topology_region_conflict_authority_rows() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_topology_identity_registry(unique_test_store_path(
         "worth-relational-7d-phase-e-topology-inspection",
     ));
-    let source = create_entity(&runtime, "source");
-    let target_a = create_entity(&runtime, "target-a");
-    let target_b = create_entity(&runtime, "target-b");
-    let target_c = create_entity(&runtime, "target-c");
-    let target_d = create_entity(&runtime, "target-d");
-    let relation_a = create_relation(&runtime, source, target_a, "edge-a");
-    let relation_b = create_relation(&runtime, source, target_b, "edge-b");
+    let source = create_entity(execution, &runtime, "source");
+    let target_a = create_entity(execution, &runtime, "target-a");
+    let target_b = create_entity(execution, &runtime, "target-b");
+    let target_c = create_entity(execution, &runtime, "target-c");
+    let target_d = create_entity(execution, &runtime, "target-d");
+    let relation_a = create_relation(execution, &runtime, source, target_a, "edge-a");
+    let relation_b = create_relation(execution, &runtime, source, target_b, "edge-b");
     create_branch_from_main(&runtime, "feature");
-    delete_relation_on_branch(&runtime, relation_a, BranchId("feature".to_string()));
-    delete_relation_on_branch(&runtime, relation_b, BranchId("feature".to_string()));
+    delete_relation_on_branch(
+        execution,
+        &runtime,
+        relation_a,
+        BranchId("feature".to_string()),
+    );
+    delete_relation_on_branch(
+        execution,
+        &runtime,
+        relation_b,
+        BranchId("feature".to_string()),
+    );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_c,
@@ -92,6 +109,7 @@ fn execution_surface_preserves_topology_region_conflict_authority_rows() {
         BranchId("feature".to_string()),
     );
     create_relation_in_partition_on_branch(
+        execution,
         &runtime,
         source,
         target_d,
@@ -104,6 +122,7 @@ fn execution_surface_preserves_topology_region_conflict_authority_rows() {
     let artifact = runtime
         .merge()
         .inspect_execution_surface(
+            execution,
             MergeExecutionRequest {
                 target_branch: BranchId("main".to_string()),
                 source_branch: BranchId("feature".to_string()),

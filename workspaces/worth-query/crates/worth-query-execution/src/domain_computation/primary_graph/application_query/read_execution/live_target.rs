@@ -24,6 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
     Scope,
 >(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -47,6 +48,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
     })?;
     let selection = select_bounded_roots(
         runtime,
+        execution,
         graph,
         &super::read_plan::ReadPlan::of(plan),
         &mut result_buffer,
@@ -61,7 +63,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         plan,
     )?;
     super::interruption::checkpoint(plan.controls.request_scope(), plan.query.name())?;
-    let target = resolve_live_target(runtime, graph, plan, live, target_identity)?;
+    let target = resolve_live_target(runtime, execution, graph, plan, live, target_identity)?;
     super::interruption::checkpoint(plan.controls.request_scope(), plan.query.name())?;
     let target_lookup_work = target.examined_entry_count;
     let collection_selection = match live.target_mode() {
@@ -91,6 +93,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
     };
     let admitted_before_materialization = selection.work_units.saturating_add(target_lookup_work);
     let tree = materialize_result_tree(
+        execution,
         runtime,
         plan.basis.snapshot_handle(),
         graph,
@@ -175,6 +178,7 @@ fn resolve_live_target<
     Scope,
 >(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &WorthQueryAdmittedApplicationQueryPlan<
         '_,
@@ -236,9 +240,10 @@ fn resolve_live_target<
             target.result_path(),
         )
     })?;
-    let lookup =
-        execute_governed_live_target_lookup(runtime, computation, request).map_err(|_| {
-            read_execution_denial(
+    let lookup = execute_governed_live_target_lookup(runtime, execution, computation, request)
+        .map_err(|denial| {
+            super::denial::relational_lookup_denial(
+                denial,
                 WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable,
                 target.result_path(),
             )
@@ -264,13 +269,16 @@ fn resolve_live_target<
 
 fn execute_governed_live_target_lookup(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     _projection: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
     request: BoundedEntityFieldLookupRequest,
 ) -> Result<
     worth_relational::facade::indexes::BoundedEntityFieldLookupOutcome,
     worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
 > {
-    runtime
-        .index_access()
-        .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production)
+    runtime.index_access().execute_bounded_entity_field_lookup(
+        request,
+        BoundedIndexParityMode::Production,
+        execution,
+    )
 }

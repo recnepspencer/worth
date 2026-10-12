@@ -31,7 +31,10 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
         let transport = RetryTransport(AtomicUsize::new(0));
         let original_observation = world
             .application
-            .observe_committed_dispatch_outbox(&receipt)
+            .observe_committed_dispatch_outbox(
+                &active_phase.phase_for_application(&world.application),
+                &receipt,
+            )
             .unwrap()
             .unwrap();
         let retry_observation = original_observation.clone();
@@ -42,7 +45,8 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
         let original = world
             .application
             .perform_committed_external_dispatch(
-                phase,
+                &phase.borrowed_request_for_test(),
+                &phase.phase_for_application(&world.application),
                 &transport,
                 original_observation,
                 &live_scope(),
@@ -51,7 +55,8 @@ fn production_fresh_attempt_operation_distinguishes_safe_redispatch() {
         let retry = world
             .application
             .perform_committed_external_dispatch(
-                phase,
+                &phase.borrowed_request_for_test(),
+                &phase.phase_for_application(&world.application),
                 &transport,
                 retry_observation,
                 &live_scope(),
@@ -79,12 +84,18 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
         let transport = RetryTransport(AtomicUsize::new(0));
         let local = world
             .application
-            .observe_committed_dispatch_outbox(&local_receipt)
+            .observe_committed_dispatch_outbox(
+                &active_phase.phase_for_application(&world.application),
+                &local_receipt,
+            )
             .unwrap()
             .unwrap();
         let foreign = foreign_world
             .application
-            .observe_committed_dispatch_outbox(&foreign_receipt)
+            .observe_committed_dispatch_outbox(
+                &active_phase.phase_for_application(&foreign_world.application),
+                &foreign_receipt,
+            )
             .unwrap()
             .unwrap()
             .with_relational_runtime_instance_for_test(local.relational_runtime_instance_id());
@@ -101,7 +112,8 @@ fn foreign_owner_observation_denies_before_transport_and_preserves_cause() {
 
         assert_eq!(
             world.application.perform_committed_external_dispatch(
-                phase,
+                &phase.borrowed_request_for_test(),
+                &phase.phase_for_application(&world.application),
                 &transport,
                 foreign,
                 &live_scope()
@@ -126,13 +138,17 @@ fn unavailable_runtime_time_is_a_typed_dispatch_preparation_denial() {
         let transport = RetryTransport(AtomicUsize::new(0));
         let observation = world
             .application
-            .observe_committed_dispatch_outbox(&receipt)
+            .observe_committed_dispatch_outbox(
+                &active_phase.phase_for_application(&world.application),
+                &receipt,
+            )
             .unwrap()
             .unwrap();
 
         assert_eq!(
             world.application.perform_committed_external_dispatch(
-                phase,
+                &phase.borrowed_request_for_test(),
+                &phase.phase_for_application(&world.application),
                 &transport,
                 observation,
                 &live_scope()

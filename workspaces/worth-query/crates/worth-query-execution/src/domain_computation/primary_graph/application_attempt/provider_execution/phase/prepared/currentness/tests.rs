@@ -10,17 +10,33 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     let world = fixture::installed_authorization_world(true);
     let request = fixture::live_scope();
-    let principal = attempts::authenticated_principal(&world, &request);
-    let account = attempts::resolved_account(&world, "open", &request);
-    let program = attempts::preimage_evidence::retained_status_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "observation-release",
-        attempts::preimage_evidence::RetentionMutationBreadth::Narrow,
-    )
-    .with_output_demand_observation();
+    let principal = world
+        .application
+        .with_host_advancement(|host_phase| {
+            attempts::authenticated_principal(&host_phase.test_host_request(), &world, &request)
+        })
+        .expect("installed host call opens");
+    let account = world
+        .application
+        .with_host_advancement(|host_phase| {
+            attempts::resolved_account(&host_phase.test_host_request(), &world, "open", &request)
+        })
+        .expect("installed host call opens");
+    let program = world
+        .application
+        .with_host_advancement(|host_phase| {
+            attempts::preimage_evidence::retained_status_program(
+                &host_phase.test_host_request(),
+                &world,
+                &principal,
+                &account,
+                &request,
+                "observation-release",
+                attempts::preimage_evidence::RetentionMutationBreadth::Narrow,
+            )
+            .with_output_demand_observation()
+        })
+        .expect("installed host call opens");
     let WorthQueryApplicationCommitOutcome::Committed(mut receipt) =
         world.application.compare_and_commit_application(
             program,

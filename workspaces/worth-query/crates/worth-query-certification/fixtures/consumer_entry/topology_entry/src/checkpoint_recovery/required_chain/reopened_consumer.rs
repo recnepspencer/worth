@@ -69,8 +69,12 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         scope,
     ));
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
 
     let reopened = support::install_program::<program::ChainProgram>(Some(checkpoint), profile);
@@ -94,7 +98,7 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
         })
         .expect("the reopened downstream discharges its own native prerequisite");
     assert_eq!(renewed.producer_contacts_in_this_demand(), 1);
-    let selected = request.retain_read().unwrap();
+    let selected = crate::checkpoint_recovery::support::retain_read(&reopened, &request).unwrap();
     request
         .at(&selected)
         .require_current_output_demand(&renewed, NonZeroUsize::new(1_000_000).unwrap())
@@ -142,7 +146,7 @@ fn reopened_consumer_renews_a_current_checkpoint_root_without_a_separate_root_de
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let changed = request.retain_read().unwrap();
+    let changed = crate::checkpoint_recovery::support::retain_read(&reopened, &request).unwrap();
     assert!(request
         .at(&changed)
         .require_current_output_demand(&renewed, NonZeroUsize::new(1_000_000).unwrap())

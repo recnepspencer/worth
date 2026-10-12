@@ -4,9 +4,10 @@ use worth_relational::facade::transactions::{CommitResult, WorkerIntentBatch};
 impl WorthQueryMemoryWorkspace {
     pub(super) fn commit_batch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         batch: WorkerIntentBatch,
     ) -> Result<(CommitResult, WorthQuerySnapshotIdentity), WorthQueryWorkspaceError> {
-        self.runtime.with_runtime_mut(|runtime| {
+        self.runtime.with_runtime_mut(execution, |runtime| {
             let branch = runtime.main_branch_identity();
             let basis = runtime
                 .admit_branch_basis(&branch)
@@ -24,7 +25,7 @@ impl WorthQueryMemoryWorkspace {
                 )
                 .map_err(super::transaction_denial::staging)?;
             let result = transaction
-                .commit(runtime, worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,)
+                .commit(execution, runtime)
                 .map_err(super::transaction_denial::commit)?;
             let snapshot = super::runtime_identity::snapshot_identity_from_runtime(runtime);
             super::commit_snapshot_closeout::release_commit_snapshot(runtime, &result.snapshot);

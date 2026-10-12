@@ -38,27 +38,45 @@ fn forbidden_root_guard_influence_denies_before_result_construction() {
         .installed_schema()
         .certification_query(ForbiddenRootGuardQuery::reference())
         .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let denial = context
+    context
         .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            ApplicationQueryParameterSet::<ForbiddenRootGuardQuery>::new(),
-            current_controls(&context.request),
-        )
-        .err()
-        .expect("a guard without row-presence influence must fail admission");
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
 
-    assert_eq!(
-        denial.kind(),
-        WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
-    );
+            let capability = admit_touch_account_capability(
+                &(host_custody.phase_for_application(&context.world.application))
+                    .test_host_request(),
+                &context.world,
+                &context.principal,
+                &context.request,
+            )
+            .unwrap();
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+            let denial = context
+                .world
+                .selected_product(
+                    &(host_custody.phase_for_application(&context.world.application))
+                        .test_host_request(),
+                )
+                .admit_governed_application_query(
+                    &host_custody.phase_for_application(&context.world.application),
+                    &query,
+                    &access,
+                    capability,
+                    ApplicationQueryParameterSet::<ForbiddenRootGuardQuery>::new(),
+                    current_controls(&context.request),
+                )
+                .err()
+                .expect("a guard without row-presence influence must fail admission");
+
+            assert_eq!(
+                denial.kind(),
+                WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
 fn execute_governed_root_guard(label: &str) -> usize {
@@ -69,28 +87,45 @@ fn execute_governed_root_guard(label: &str) -> usize {
         .installed_schema()
         .certification_query(GovernedRootGuardQuery::reference())
         .unwrap();
-    let capability =
-        admit_touch_account_capability(&context.world, &context.principal, &context.request)
-            .unwrap();
-    let access = WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
-    let plan = context
-        .world
-        .selected_product()
-        .admit_governed_application_query(
-            &query,
-            &access,
-            capability,
-            ApplicationQueryParameterSet::<GovernedRootGuardQuery>::new(),
-            current_controls(&context.request),
-        )
-        .unwrap();
-    let result = context
+    context
         .world
         .application
-        .execute_application_query_one_shot(plan)
-        .unwrap();
-    assert!(result.receipt().basis_released());
-    result.rows().len()
+        .with_host_advancement(|phase| {
+            let custody = phase.test_host_request();
+            let phase_custody = &custody;
+            let capability = admit_touch_account_capability(
+                phase_custody,
+                &context.world,
+                &context.principal,
+                &context.request,
+            )
+            .unwrap();
+            let access =
+                WorthQueryApplicationQueryAccessContext::new(&context.principal, &context.account);
+            let plan = context
+                .world
+                .selected_product(phase_custody)
+                .admit_governed_application_query(
+                    &phase_custody.phase_for_application(&context.world.application),
+                    &query,
+                    &access,
+                    capability,
+                    ApplicationQueryParameterSet::<GovernedRootGuardQuery>::new(),
+                    current_controls(&context.request),
+                )
+                .unwrap();
+            let result = context
+                .world
+                .application
+                .execute_application_query_one_shot(
+                    &phase_custody.phase_for_application(&context.world.application),
+                    plan,
+                )
+                .unwrap();
+            assert!(result.receipt().basis_released());
+            result.rows().len()
+        })
+        .expect("the root guard fixture owns its query call")
 }
 
 fn root_guard_context(label: &str) -> RootGuardContext {
@@ -100,28 +135,50 @@ fn root_guard_context(label: &str) -> RootGuardContext {
         .script(vec![UNIX_EPOCH + Duration::from_secs(100); 32]);
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
-    let principal = world
+
+    let (principal, account) = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let account = world
-        .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_request = phase.test_host_request();
+            let phase_custody = &host_request;
+            let borrowed_execution = phase
+                .execution_request_for(world.application.product_runtime())
+                .expect("the fixture lends its installed phase");
+            let execution = &borrowed_execution;
+            let principal = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase_custody.phase_for_application(&world.application),
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+            let account = world
+                .application
+                .select_product_branch(
+                    execution,
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase_custody.phase_for_application(&world.application),
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap();
+
+            (principal, account)
+        })
+        .expect("the read-context fixture owns its identity call");
     RootGuardContext {
         world,
         request,

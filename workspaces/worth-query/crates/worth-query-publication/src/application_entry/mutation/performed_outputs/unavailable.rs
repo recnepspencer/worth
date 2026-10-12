@@ -47,7 +47,7 @@ where Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition
         }
         let (Some(receipt), Some(prepared), Some(root)) = (&self.source_receipt, &self.source_preparation, &mut self.root) else { return Err(Denial::MissingPerformedDelivery); };
         let access = worth_query_execution::publication_boundary::program_publication_access();
-        application.validate_required_program_source::<Root>(&access, prepared, receipt,
+        application.validate_required_program_source::<Root>(&phase, &access, prepared, receipt,
             &self.source_observation.retained, request.principal, request.scope, request.branch)
             .map_err(|d| Denial::Demand(crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(d)))?;
         // Prepare the descriptive receipt before the native terminal transition.

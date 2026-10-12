@@ -152,7 +152,8 @@ mod acknowledgement_basis;
 /// Thaw follows the successor's custody: its caller's continuation, or a
 /// registry frame moved to the advance that requires it. No global sweep runs.
 /// A caller needing work is Pending and is retried by its driving owner.
-pub(in super::super) fn certify_frozen_ready<Schema: ApplicationSchema + 'static>(
+pub(in super::super) fn certify_frozen_ready<'call, Schema: ApplicationSchema + 'static>(
+    execution: &'call worth_execution::ExecutionRequest<'call, 'call>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     request: &WorthQueryRequestScope,
@@ -189,7 +190,7 @@ pub(in super::super) fn certify_frozen_ready<Schema: ApplicationSchema + 'static
     let candidate = candidate.ok().flatten();
     let result = installed.executor.inspect_frozen_ready(
         crate::domain_computation::primary_graph::application_contribution::producer::execution::FrozenInspection {
-            runtime, principal, request, shared: &wave.shared, positioned: &wave.positioned,
+            execution, runtime, principal, request, shared: &wave.shared, positioned: &wave.positioned,
             selected, candidate: candidate.as_ref(), contacts,
         }, admission)
         .map_err(|stop| match stop {

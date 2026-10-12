@@ -10,10 +10,16 @@ use worth_relational::facade::transactions::{
     WorkerIntentBatch,
 };
 pub(in crate::domain_computation::primary_graph) fn evict_index_with_unrelated_write(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     resources: &WorthQueryInvalidationResources,
 ) {
-    let unrelated = resolved_account(world, "unrelated", &live_scope());
+    let unrelated = resolved_account(
+        &(phase_custody).test_host_request(),
+        world,
+        "unrelated",
+        &live_scope(),
+    );
     let graph = world.application.runtime.primary_graph().unwrap();
     let label = AccountLabel::reference();
     let label = graph
@@ -27,6 +33,7 @@ pub(in crate::domain_computation::primary_graph) fn evict_index_with_unrelated_w
         )
         .unwrap();
     publish_relational_mutation(
+        &phase_custody.borrowed_request_for_test(),
         world,
         WorkerIntentBatch::new("unrelated-index-loss").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {

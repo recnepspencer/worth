@@ -207,6 +207,8 @@ fn sealed_plan_prepares_session_binds_work_and_aborts() {
             true,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_direct(&running);
+
         let expected_run = running.identity().to_owned();
         let expected_basis = running
             .provider_plan_bridge_basis()
@@ -229,7 +231,7 @@ fn sealed_plan_prepares_session_binds_work_and_aborts() {
             assert_eq!(plan.contract().effect_closure(), ["mutation"]);
             assert_eq!(plan.counters().authority_checks(), 1);
             let readmitted = plan
-                .readmit(execution)
+                .readmit(&installed_running_phase)
                 .expect("provider should readmit the plan");
             let prepared = readmitted
                 .prepare()
@@ -274,7 +276,7 @@ fn independently_admitted_sessions_carry_distinct_opaque_affinities() {
 }
 
 fn closed_session_affinity(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> WorthQueryProviderSessionAffinityIdentity {
     let (mut running, graph) = session_run(
@@ -356,19 +358,22 @@ pub(super) fn session_run(
 }
 
 pub(super) fn staged_session<'run>(
-    execution: &'run crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &'run crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     running: &'run mut WorthQueryRunningDirectRun,
     graph: &WorthQueryInstalledGraphParticipationAuthority,
 ) -> crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
-    running
-        .admit_provider_execution_plan(graph)
-        .expect("plan admission should succeed")
-        .readmit(execution)
-        .expect("plan readmission should succeed")
-        .prepare()
-        .expect("session preparation should succeed")
-        .bind_reads_and_effects()
+    {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running
+            .admit_provider_execution_plan(graph)
+            .expect("plan admission should succeed")
+            .readmit(&installed_fixture_phase)
+    }
+    .expect("plan readmission should succeed")
+    .prepare()
+    .expect("session preparation should succeed")
+    .bind_reads_and_effects()
 }
 
 pub(super) fn cleanup(running: WorthQueryRunningDirectRun) {

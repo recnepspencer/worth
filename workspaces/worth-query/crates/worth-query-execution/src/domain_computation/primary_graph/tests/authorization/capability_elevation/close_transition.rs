@@ -16,12 +16,37 @@ fn approved_elevation_closes_to_a_linear_review_obligation_and_cuts_active_use()
     world
         .authorization_time
         .script(std::iter::repeat_n(time(100), 24));
-    let requester = super::approval_transition::authenticated(&world, "alice", &request);
-    let active =
-        super::admit(&world, &approved, &requester, &request, Some("elevation-2")).unwrap();
-    let closer = super::approval_transition::authenticated(&world, "bob", &request);
+    let requester = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::approval_transition::authenticated(&host_custody, &world, "alice", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let active = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::admit(
+                &host_custody,
+                &world,
+                &approved,
+                &requester,
+                &request,
+                Some("elevation-2"),
+            )
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let closer = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::approval_transition::authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
 
-    let mandatory = super::terminal_lifecycle_support::close_exact(&world, &request, approved);
+    let mandatory = { super::terminal_lifecycle_support::close_exact(&world, &request, approved) };
 
     assert_eq!(
         mandatory.closure_kind(),
@@ -30,10 +55,20 @@ fn approved_elevation_closes_to_a_linear_review_obligation_and_cuts_active_use()
     assert_eq!(mandatory.closer(), closer.principal_entity_id());
     assert_eq!(mandatory.publication_source().changed_record_count(), 2);
     assert_eq!(mandatory.publication_source().emitted_effect_count(), 0);
-    assert_eq!(
-        super::terminal_state::elevation_status(&world),
-        CapabilityElevationStatus::Revoked
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                super::terminal_state::elevation_status(
+                    &host_custody,
+                    &host_custody.borrowed_request_for_test(),
+                    &world
+                ),
+                CapabilityElevationStatus::Revoked
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
@@ -41,9 +76,20 @@ fn approved_elevation_closes_to_a_linear_review_obligation_and_cuts_active_use()
         .unwrap();
     let denial = world
         .application
-        .authorize_capability_operation(active, &operation, Default::default())
-        .err()
-        .expect("closing must stale already-admitted active use before operation authority");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .authorize_capability_operation(
+                    &host_custody.phase_for_application(&world.application),
+                    active,
+                    &operation,
+                    Default::default(),
+                )
+                .err()
+                .expect("closing must stale already-admitted active use before operation authority")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
@@ -57,16 +103,26 @@ fn query_time_selects_expired_instead_of_accepting_caller_authored_terminal_stat
         .authorization_time
         .script(std::iter::repeat_n(time(106), 16));
 
-    let mandatory = super::terminal_lifecycle_support::close_exact(&world, &request, approved);
+    let mandatory = { super::terminal_lifecycle_support::close_exact(&world, &request, approved) };
 
     assert_eq!(
         mandatory.closure_kind(),
         WorthQueryElevationClosureKind::Expired
     );
-    assert_eq!(
-        super::terminal_state::elevation_status(&world),
-        CapabilityElevationStatus::Expired
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                super::terminal_state::elevation_status(
+                    &host_custody,
+                    &host_custody.borrowed_request_for_test(),
+                    &world
+                ),
+                CapabilityElevationStatus::Expired
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         mandatory.closed_at(),
         &worth_foundational::facade::AspectValue::UInt64(106)
@@ -79,17 +135,30 @@ fn close_command_cannot_select_a_different_elevation_subject() {
     world
         .authorization_time
         .script(std::iter::repeat_n(time(100), 8));
-    let closer = super::approval_transition::authenticated(&world, "bob", &request);
-    let access = super::terminal_lifecycle_support::close_access_with_input(
-        &world,
-        &closer,
-        &request,
-        CloseElevationInput {
-            account: "account-1".to_owned(),
-            elevation: "elevation-1".to_owned(),
-        },
-    )
-    .expect("the closer independently holds command authority for elevation-1");
+    let closer = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::approval_transition::authenticated(&host_custody, &world, "bob", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let access = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::terminal_lifecycle_support::close_access_with_input(
+                &host_custody,
+                &world,
+                &closer,
+                &request,
+                CloseElevationInput {
+                    account: "account-1".to_owned(),
+                    elevation: "elevation-1".to_owned(),
+                },
+            )
+            .expect("the closer independently holds command authority for elevation-1")
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
@@ -98,9 +167,21 @@ fn close_command_cannot_select_a_different_elevation_subject() {
 
     let denial = world
         .application
-        .authorize_elevation_close(approved, access, &operation, Default::default())
-        .err()
-        .expect("command authority for another subject must not close this elevation");
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .authorize_elevation_close(
+                    &host_custody.phase_for_application(&world.application),
+                    approved,
+                    access,
+                    &operation,
+                    Default::default(),
+                )
+                .err()
+                .expect("command authority for another subject must not close this elevation")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.denial().kind(),
         WorthQueryOperationAuthorizationDenialKind::ElevationCloseRejected
@@ -114,8 +195,31 @@ fn exact_relation_set_drift_stales_close_and_returns_approved_authority() {
         .authorization_time
         .script(std::iter::repeat_n(time(100), 16));
     let requester = approved.requester();
-    let program = super::terminal_lifecycle_support::materialize_close(&world, &request, approved);
-    super::mutation::add_self_approver(&world, "elevation-2", requester);
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::terminal_lifecycle_support::materialize_close(
+                &host_custody,
+                &world,
+                &request,
+                approved,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::mutation::add_self_approver(
+                &host_custody,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                "elevation-2",
+                requester,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let outcome = world
         .application
@@ -140,10 +244,21 @@ fn ordinary_commit_cannot_publish_close_lifecycle_authority() {
     world
         .authorization_time
         .script(std::iter::repeat_n(time(100), 16));
-    let ordinary = super::terminal_lifecycle_support::close_reads(&world, &request, approved)
-        .begin_effect_program()
-        .finish()
-        .unwrap();
+    let ordinary = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::terminal_lifecycle_support::close_reads(
+                &host_custody,
+                &world,
+                &request,
+                approved,
+            )
+            .begin_effect_program()
+            .finish()
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(

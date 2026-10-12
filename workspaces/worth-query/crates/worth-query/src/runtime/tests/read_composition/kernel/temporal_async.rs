@@ -52,9 +52,17 @@ fn task_table_read_family(
 
 #[test]
 fn runtime_read_family_receipt_retains_time_only_materialized_fact_posture() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.table", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.table",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     let expected_query_digest = view
         .subscription_installation()
@@ -81,7 +89,7 @@ fn runtime_read_family_receipt_retains_time_only_materialized_fact_posture() {
         &task_live_request()
     );
     let result = workspace
-        .execute_read_family(&family)
+        .execute_read_family(request_execution, &family)
         .expect("read family should execute");
     assert_eq!(
         result.receipt().query_digest(),
@@ -126,9 +134,17 @@ fn runtime_read_family_receipt_retains_time_only_materialized_fact_posture() {
 
 #[test]
 fn runtime_read_family_receipt_retains_async_backed_materialized_fact_posture() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let view: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = runtime
-        .declare_live_view("tasks.async-table", task_live_request(), task_schema())
+        .declare_live_view(
+            request_execution,
+            "tasks.async-table",
+            task_live_request(),
+            task_schema(),
+        )
         .expect("live view should declare");
     let expected_query_digest = view
         .subscription_installation()
@@ -158,7 +174,7 @@ fn runtime_read_family_receipt_retains_async_backed_materialized_fact_posture() 
         &task_live_request()
     );
     let result = workspace
-        .execute_read_family(&family)
+        .execute_read_family(request_execution, &family)
         .expect("read family should execute");
     assert_eq!(
         result.receipt().query_digest(),
@@ -201,7 +217,7 @@ fn runtime_read_family_receipt_retains_async_backed_materialized_fact_posture() 
     );
     assert_eq!(
         workspace
-            .state(&view)
+            .state(request_execution, &view)
             .expect("state should snapshot")
             .async_result_state()
             .expect("async state should remain retained")

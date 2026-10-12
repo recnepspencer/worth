@@ -12,7 +12,11 @@ const ROWS: usize = 32;
 
 #[test]
 fn bulk_and_scalar_lanes_preserve_semantics_basis_and_distinct_physical_work() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-native-parity").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, "artifact-native-parity").unwrap();
     bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -83,7 +87,10 @@ fn bulk_and_scalar_lanes_preserve_semantics_basis_and_distinct_physical_work() {
 
 #[test]
 fn field_slice_and_short_chunks_expose_all_rows_without_continuation_skips() {
-    let (field_probe, field) = run_success("native-field");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (field_probe, field) = run_success(request_execution, "native-field");
     assert_eq!(field.lane(), ArtifactNativeLane::FieldSlice);
     let ArtifactNativeValues::CandidateIds(ids) = field.values() else {
         panic!("field lane did not retain candidate ids");
@@ -105,7 +112,7 @@ fn field_slice_and_short_chunks_expose_all_rows_without_continuation_skips() {
     assert_eq!(field_work.source_bytes, ROWS * 8);
     assert_eq!(field_probe.native_field_slices(), 1);
 
-    let (chunk_probe, chunked) = run_success("native-short-chunks");
+    let (chunk_probe, chunked) = run_success(request_execution, "native-short-chunks");
     assert_eq!(chunked.lane(), ArtifactNativeLane::ChunkedRows);
     assert_candidates(chunked.values());
     let chunk_work = chunked.evidence().counters();
@@ -124,7 +131,11 @@ fn field_slice_and_short_chunks_expose_all_rows_without_continuation_skips() {
 
 #[test]
 fn projection_chunk_width_controls_actual_allocated_capacity() {
-    let (mut workspace, probe) = artifact_move_workspace("artifact-native-memory").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, "artifact-native-memory").unwrap();
     bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -185,7 +196,10 @@ fn projection_chunk_width_controls_actual_allocated_capacity() {
 
 #[test]
 fn opaque_reference_and_content_fields_require_the_declared_native_projection() {
-    let (probe, projected) = run_success("native-provenance");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (probe, projected) = run_success(request_execution, "native-provenance");
     assert_eq!(projected.lane(), ArtifactNativeLane::ProvenanceProjection);
     let ArtifactNativeValues::Signatures(signatures) = projected.values() else {
         panic!("provenance lane did not retain signatures");
@@ -208,7 +222,7 @@ fn opaque_reference_and_content_fields_require_the_declared_native_projection() 
             domain::WorthQueryArtifactNativeAccessDenialKind::FieldSliceDenied,
         ),
     ] {
-        let (probe, denial) = run_denial(mode);
+        let (probe, denial) = run_denial(request_execution, mode);
         assert_eq!(denial.kind(), kind);
         assert_eq!(denial.counters().provider_contacts, 0);
         assert_eq!(probe.native_row_batches(), 0);
@@ -218,6 +232,9 @@ fn opaque_reference_and_content_fields_require_the_declared_native_projection() 
 
 #[test]
 fn layout_bounds_session_and_progress_denials_stop_at_the_responsible_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (mode, kind, provider_contacts, row_counts, row_batches, scalar_calls) in [
         (
             "native-wrong-layout",
@@ -276,7 +293,7 @@ fn layout_bounds_session_and_progress_denials_stop_at_the_responsible_boundary()
             0,
         ),
     ] {
-        let (probe, denial) = run_denial(mode);
+        let (probe, denial) = run_denial(request_execution, mode);
         assert_eq!(denial.kind(), kind, "{mode}");
         assert_eq!(
             denial.counters().provider_contacts,
@@ -291,8 +308,12 @@ fn layout_bounds_session_and_progress_denials_stop_at_the_responsible_boundary()
     }
 }
 
-fn run_success(mode: &str) -> (ArtifactProbe, ArtifactNativeSuccess) {
-    let (mut workspace, probe) = artifact_move_workspace(&format!("artifact-{mode}")).unwrap();
+fn run_success(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    mode: &str,
+) -> (ArtifactProbe, ArtifactNativeSuccess) {
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, &format!("artifact-{mode}")).unwrap();
     bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -308,8 +329,12 @@ fn run_success(mode: &str) -> (ArtifactProbe, ArtifactNativeSuccess) {
     (probe, success)
 }
 
-fn run_denial(mode: &str) -> (ArtifactProbe, ArtifactNativeDenial) {
-    let (mut workspace, probe) = artifact_move_workspace(&format!("artifact-{mode}")).unwrap();
+fn run_denial(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    mode: &str,
+) -> (ArtifactProbe, ArtifactNativeDenial) {
+    let (mut workspace, probe) =
+        artifact_move_workspace(request_execution, &format!("artifact-{mode}")).unwrap();
     let outcome = bind_artifact_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

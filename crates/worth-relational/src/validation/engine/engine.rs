@@ -32,24 +32,16 @@ impl<'runtime> InvariantEngine<'runtime> {
 
     pub(crate) fn execute<'state>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: InvariantExecutionRequest<'state>,
-    ) -> InvariantExecutionResult
-    where
-        'runtime: 'state,
-    {
-        self.execute_inner(request, None)
-            .expect("serial invariant packet plan must be canonical")
-    }
-
-    pub(crate) fn execute_with_lease<'state>(
-        &self,
-        request: InvariantExecutionRequest<'state>,
-        lease: &ExecutionResourceLease<'_>,
     ) -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError>
     where
         'runtime: 'state,
     {
-        self.execute_inner(request, Some(lease))
+        self.execute_inner(
+            request,
+            crate::authority::commit::pipeline::request_lease(execution),
+        )
     }
 
     fn execute_inner<'state>(

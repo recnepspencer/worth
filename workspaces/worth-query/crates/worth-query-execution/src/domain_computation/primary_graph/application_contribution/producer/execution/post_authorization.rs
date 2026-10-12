@@ -57,7 +57,7 @@ where
             SourceQuery<Schema, Binding>,
         >,
 {
-    let execution = phase.execution_for(&runtime.product_runtime).map_err(|_| {
+    let member_execution = phase.execution_for(&runtime.product_runtime).map_err(|_| {
         denial(
             WorthQueryOutputDemandDenialKind::ForeignSettlement,
             Binding::IDENTITY,
@@ -83,5 +83,5 @@ where
         request_admission,
         producer_contacts,
     )?;
-    super::canonical_apply::run_one(plan, execution, request_admission)
+    super::canonical_apply::run_one(plan, member_execution, request_admission)
 }

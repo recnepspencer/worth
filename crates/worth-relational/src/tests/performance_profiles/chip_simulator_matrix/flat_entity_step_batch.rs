@@ -1,6 +1,9 @@
 use super::*;
 
-pub(super) fn certify_flat_entity_step_batch_compile_window(suite: &'static str) {
+pub(super) fn certify_flat_entity_step_batch_compile_window(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    suite: &'static str,
+) {
     let flat_step_batch_samples = capture_perf_samples(
         suite,
         "flat_entity_step_batch_compile_window",
@@ -13,13 +16,19 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(suite: &'static str)
             });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
-            let _source = create_entity_in_partition(&runtime, "chip-batch-driver", PartitionId(7));
+            let _source = create_entity_in_partition(
+                execution,
+                &runtime,
+                "chip-batch-driver",
+                PartitionId(7),
+            );
             let mut partition_targets = BTreeMap::new();
             for partition_offset in 0..8u32 {
                 let partition_id = PartitionId(11 + partition_offset * 2);
                 let targets = (0..8)
                     .map(|index| {
                         create_entity_in_partition(
+                            execution,
                             &runtime,
                             &format!("chip-batch-sink-{}-{index}", partition_id.0),
                             partition_id,
@@ -71,11 +80,8 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(suite: &'static str)
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .expect("test staging stays within configured resource budgets");
-                txn.commit(
-                    &runtime,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .expect("chip flat entity step batch commit")
+                txn.commit(execution, &runtime)
+                    .expect("chip flat entity step batch commit")
             };
             let update_micros = update_started_at.elapsed().as_micros();
             let phase_timing = update.execution().phase_timing.clone();
@@ -112,7 +118,10 @@ pub(super) fn certify_flat_entity_step_batch_compile_window(suite: &'static str)
                         .read_truth()
                         .plan_query_packet(&snapshot, explicit_packet)
                         .expect("planned chip flat batch explicit query"),
+                    execution,
                 )
+                .expect("request remains live")
+                .map(|read| read.outcome)
                 .expect("chip flat batch explicit outcome");
             let explicit_query_micros = explicit_started_at.elapsed().as_micros();
             assert!(runtime

@@ -112,13 +112,14 @@ fn authoritative_locator(
 }
 
 fn revision(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
     planned: &AspectFieldLocator,
     admission: &mut InvalidationEditAdmission,
 ) -> ObservationResult<RelationalFieldRevision> {
     let locator = authoritative_locator(planned, admission)?;
-    view.entity_field_revision_admitted(entity, &locator, |work| {
+    view.entity_field_revision_admitted(execution, entity, &locator, |work| {
         admission.charge_external_work(work)
     })
     .map_err(AdmittedPrincipalObservationStop::Admission)?
@@ -126,6 +127,7 @@ fn revision(
 }
 
 fn selected_value(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     entity: EntityId,
     expected_kind: KindId,
@@ -138,7 +140,7 @@ fn selected_value(
     };
     prepare(admission, read_work, 0)?;
     let result = view
-        .with_exact_entity_state(entity, |metadata, authoritative| {
+        .with_exact_entity_state(execution, entity, |metadata, authoritative| {
             if metadata.kind_id != expected_kind {
                 return Err(AdmittedPrincipalObservationStop::Semantic(wrong_kind));
             }
@@ -204,6 +206,7 @@ fn selected_field_from_aspect(
 }
 
 pub(super) fn observe_mapping(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     candidate: &CheckedMappingCandidate<'_, '_, '_, '_>,
     admission: &mut InvalidationEditAdmission,
 ) -> ObservationResult<WorthQueryPrincipalMappingObservation> {
@@ -218,12 +221,19 @@ pub(super) fn observe_mapping(
     let mapping = candidate.mapping();
     let layout = candidate.resolution().layout;
     let expected_identity = candidate.resolution().expected_identity;
-    let identity_revision = revision(view, mapping, &layout.identity_locator, admission)?;
-    let status_revision = revision(view, mapping, &layout.status_locator, admission)?;
+    let identity_revision = revision(
+        execution,
+        view,
+        mapping,
+        &layout.identity_locator,
+        admission,
+    )?;
+    let status_revision = revision(execution, view, mapping, &layout.status_locator, admission)?;
     // The immediately preceding Native indexed lookup compared the actual
     // identity at this same issued view. Re-read live kind and status, while
     // carrying that checked value into freshness without a second identity get.
     let (metadata, status) = selected_value(
+        execution,
         view,
         mapping,
         layout.mapping_kind,
@@ -260,6 +270,7 @@ pub(super) fn observe_mapping(
 }
 
 pub(super) fn observe_target(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView<'_>,
     mapping: EntityId,
     layout: &WorthQueryPrimaryPrincipalBindingLayout,
@@ -267,6 +278,7 @@ pub(super) fn observe_target(
 ) -> ObservationResult<WorthQueryPrincipalTargetObservation> {
     let mut selected = None;
     view.try_visit_adjacency_ids(
+        execution,
         mapping,
         layout.relation_kind,
         RelationalAdjacencyDirection::Outgoing,
@@ -281,7 +293,9 @@ pub(super) fn observe_target(
                         .exact_relation_metadata_read_work_bound()
                         .ok_or_else(stale)?;
                     prepare(admission, work, 0)?;
-                    let Some(relation) = view.exact_relation_metadata(id).map_err(|_| stale())?
+                    let Some(relation) = view
+                        .exact_relation_metadata(execution, id)
+                        .map_err(|_| stale())?
                     else {
                         return Ok(());
                     };
@@ -303,6 +317,7 @@ pub(super) fn observe_target(
         WorthQueryPrincipalResolutionDenialKind::MissingPrincipalTarget,
     ))?;
     let (principal, principal_identity) = selected_value(
+        execution,
         view,
         relation.target,
         layout.principal_kind,
@@ -311,6 +326,7 @@ pub(super) fn observe_target(
         admission,
     )?;
     let principal_identity_revision = revision(
+        execution,
         view,
         relation.target,
         &layout.principal_identity_locator,
@@ -318,6 +334,7 @@ pub(super) fn observe_target(
     )?;
     let adjacency_revision = view
         .exact_adjacency_structural_revision_admitted(
+            execution,
             mapping,
             layout.relation_kind,
             RelationalAdjacencyDirection::Outgoing,

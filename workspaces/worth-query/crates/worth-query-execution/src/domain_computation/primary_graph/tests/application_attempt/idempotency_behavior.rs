@@ -10,131 +10,47 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::facade::runtime::ExecutionAllocationPolicy;
 
-#[test]
-fn equivalent_retry_recovers_original_receipt_while_intent_drift_is_denied() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let first = admitted_program(&world, &principal, &account, &request, "committed");
-
-    let WorthQueryApplicationCommitOutcome::Committed(mut original) =
-        world.application.compare_and_commit_application(
-            first,
-            idempotency(9, 7),
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-    else {
-        panic!("the first idempotent application attempt must commit");
-    };
-    let mut descriptive_copy = original.clone();
-    assert!(descriptive_copy
-        .take_performed_relational_product_change()
-        .is_none());
-    let performed = original
-        .take_performed_relational_product_change()
-        .expect("the fresh performed publication carries one delivery witness");
-    assert!(original
-        .take_performed_relational_product_change()
-        .is_none());
-
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "committed", &request);
-    let retry = admitted_program(&world, &principal, &account, &request, "committed");
-    let WorthQueryApplicationCommitOutcome::AlreadyCommitted(mut recovered) =
-        world.application.compare_and_commit_application(
-            retry,
-            idempotency(9, 7),
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-    else {
-        panic!("an equivalent retry must recover the original commit");
-    };
-    assert!(recovered.is_same_authoritative_commit(&original));
-    assert_eq!(
-        original.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Executed
-    );
-    assert_eq!(
-        recovered.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-    assert_eq!(recovered.terminal().attempt_resources_released(), None);
-    assert!(recovered
-        .take_performed_relational_product_change()
-        .is_none());
-    let first_root = world
-        .application
-        .granular_invalidation_installation()
-        .retain_product_shared_root();
-    let second_root = world
-        .application
-        .granular_invalidation_installation()
-        .retain_product_shared_root();
-    assert!(first_root.is_same_root_as(&second_root));
-    assert!(first_root.accepts_performed_change(&performed));
-
-    let commit = performed.product_commit().clone();
-    let failed = crate::domain_computation::execution_runtime::product_world::preserve_delivery_authority(
-        worth_proof::TransitionOutcome::Failed(
-            worth_runtime_bridge::facade::BridgeCorrespondenceAdmissionFailure::SourceLoadFailed(worth_runtime_bridge::facade::RelationalBridgeSourceError::new(
-                worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ExternalSourceFailure, "source unavailable",
-            )),
-        ),
-        performed,
-    );
-    assert!(
-        !failed.is_retryable(),
-        "Bridge admission failure is terminal"
-    );
-    let returned = failed
-        .into_undelivered_change()
-        .expect("a Bridge failure must return the exact performed-change authority");
-    assert_eq!(returned.product_commit(), &commit);
-    assert!(first_root.accepts_performed_change(&returned));
-    let deferred =
-        crate::domain_computation::execution_runtime::product_world::preserve_delivery_authority(
-            worth_proof::TransitionOutcome::Deferred(
-                worth_runtime_bridge::facade::BridgeCorrespondenceDeferred::GraphMutationInProgress,
-            ),
-            returned,
-        );
-    assert!(
-        deferred.is_retryable(),
-        "a busy Bridge may admit the same change later"
-    );
-    let returned = deferred
-        .into_undelivered_change()
-        .expect("deferral returns the performed-change authority");
-    assert_eq!(returned.product_commit(), &commit);
-
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "committed", &request);
-    let drift = admitted_program(&world, &principal, &account, &request, "different");
-    let WorthQueryApplicationCommitOutcome::Denied(denial) =
-        world.application.compare_and_commit_application(
-            drift,
-            idempotency(9, 8),
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-    else {
-        panic!("reusing a key for another intent must be denied");
-    };
-    assert_eq!(
-        denial.kind(),
-        crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift
-    );
-}
+#[path = "idempotency_behavior/equivalent_retry_recovers_original_receipt_while_intent_drift_is.rs"]
+mod equivalent_retry_recovers_original_receipt_while_intent_drift_is;
 
 #[test]
 fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_evidence() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let selected_commit = world.selected_product().product().selected_commit().clone();
-    let first = admitted_program(&world, &principal, &account, &request, "committed");
-    let stale_retry = admitted_program(&world, &principal, &account, &request, "committed");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let selected_commit = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("the fixture read owns its installed host call");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(&phase, &world, &principal, &account, &request, "committed")
+        })
+        .expect("the fixture read owns its installed host call");
+    let stale_retry = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(&phase, &world, &principal, &account, &request, "committed")
+        })
+        .expect("the fixture read owns its installed host call");
     let binding = idempotency(93, 93);
 
     let WorthQueryApplicationCommitOutcome::Committed(committed) =
@@ -146,7 +62,16 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
     else {
         panic!("the first application must publish its exact owner evidence");
     };
-    let current_commit = world.selected_product().product().selected_commit().clone();
+    let current_commit = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .product()
+                .selected_commit()
+                .clone()
+        })
+        .expect("the fixture read owns its installed host call");
 
     let outcome = world.application.compare_and_commit_application(
         stale_retry,
@@ -168,9 +93,24 @@ fn equivalent_retry_prepared_at_the_original_product_recovers_exact_owner_eviden
 fn same_caller_intent_cannot_cross_installed_operation_identity() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let first = admitted_program(&world, &principal, &account, &request, "committed");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(&phase, &world, &principal, &account, &request, "committed")
+        })
+        .expect("the fixture read owns its installed host call");
     assert!(matches!(
         world.application.compare_and_commit_application(
             first,
@@ -180,27 +120,43 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
 
-    let account = resolved_account(&world, "committed", &request);
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "committed", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(MultiTouchOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let resolution = world
         .application
-        .resolve_admitted_application_idempotency(&admission, idempotency(10, 10))
-        .unwrap()
-        .into_resolution();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .resolve_admitted_application_idempotency(&phase, &admission, idempotency(10, 10))
+                .unwrap()
+                .into_resolution()
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         resolution,
         WorthQueryApplicationIdempotencyResolution::IntentDrift
@@ -211,9 +167,31 @@ fn same_caller_intent_cannot_cross_installed_operation_identity() {
 fn same_operation_intent_cannot_cross_an_admitted_scope() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let first_account = resolved_account(&world, "open", &request);
-    let first = admitted_program(&world, &principal, &first_account, &request, "first-scope");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first_account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let first = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &first_account,
+                &request,
+                "first-scope",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert!(matches!(
         world.application.compare_and_commit_application(
@@ -223,15 +201,31 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
         ),
         WorthQueryApplicationCommitOutcome::Committed(_)
     ));
-    let principal = authenticated_principal(&world, &request);
-    let second_account = resolved_account(&world, "unrelated", &request);
-    let second = admitted_program(
-        &world,
-        &principal,
-        &second_account,
-        &request,
-        "second-scope",
-    );
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let second_account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "unrelated", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let second = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &second_account,
+                &request,
+                "second-scope",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
             second,
@@ -247,113 +241,8 @@ fn same_operation_intent_cannot_cross_an_admitted_scope() {
     );
 }
 
-#[test]
-fn lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admission() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let first = admitted_program(&world, &principal, &account, &request, "lifecycle");
-    assert!(matches!(
-        world.application.compare_and_commit_application(
-            first,
-            idempotency(12, 12),
-            ExecutionAllocationPolicy::SystemAllocation
-        ),
-        WorthQueryApplicationCommitOutcome::Committed(_)
-    ));
-
-    // The same key already committed, but an ordinary admission holds no
-    // lifecycle binding, so no lifecycle resolver may replay or panic on it.
-    let account = resolved_account(&world, "lifecycle", &request);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(MultiTouchOperation::reference())
-        .unwrap();
-    let mut admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
-    let application = &world.application;
-    assert!(matches!(
-        application.resolve_admitted_elevation_close_replay(&mut admission, idempotency(12, 12)),
-        Ok(None)
-    ));
-    assert!(matches!(
-        application.resolve_admitted_elevation_approval_replay(&mut admission, idempotency(12, 12)),
-        Ok(None)
-    ));
-    assert!(matches!(
-        application.resolve_admitted_mandatory_review_replay(&mut admission, idempotency(12, 12)),
-        Ok(None)
-    ));
-
-    // Nor can an ordinary admission materialize a lifecycle program: each
-    // lane refuses it with the typed transition denial before any effect.
-    let ordinary_reads = || {
-        let operation = application
-            .installed_schema()
-            .installed_operation(super::TouchAccountOperation::reference())
-            .unwrap();
-        let admission = world
-            .selected_product()
-            .authorize_operation(
-                &principal,
-                &account,
-                &operation,
-                Default::default(),
-                &request,
-            )
-            .unwrap();
-        let (_, projection, _) = world
-            .invariant
-            .project_admitted_operation(
-                &admission,
-                |reader, projected| {
-                    reader
-                        .require_decision_field(projected, super::AccountStatus::reference())
-                        .unwrap();
-                },
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .into_parts();
-        application
-            .begin_projected_application_read_attempt(
-                admission,
-                projection,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .complete_projected_dependencies(ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap()
-    };
-    let denials = [
-        ordinary_reads()
-            .materialize_elevation_request_program()
-            .err(),
-        ordinary_reads()
-            .materialize_elevation_approval_program()
-            .err(),
-        ordinary_reads().materialize_elevation_close_program().err(),
-        ordinary_reads()
-            .materialize_mandatory_review_program()
-            .err(),
-    ];
-    for denial in denials {
-        assert_eq!(
-            denial.map(|denial| denial.kind()),
-            Some(WorthQueryApplicationAttemptDenialKind::ElevationTransitionRequired)
-        );
-    }
-}
+#[path = "idempotency_behavior/lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admiss.rs"]
+mod lifecycle_replay_resolvers_have_no_replay_for_an_ordinary_admiss;
 
 #[path = "idempotency_behavior/history_retirement.rs"]
 mod history_retirement;

@@ -41,6 +41,11 @@ edition = "2021"
 }
 
 pub fn write_root_shell(root: &Path, config_body: &str) {
+    write_file(
+        root,
+        ".boundary-check-mock-root",
+        "Declared boundary-check mock root.\n",
+    );
     write_file(root, "cad/docs/worthy-foundations/NAMING.md", "# naming\n");
     // seed_contracts discovers under cad/workspaces; keep an empty lane present.
     fs::create_dir_all(root.join("cad/workspaces")).expect("cad/workspaces");

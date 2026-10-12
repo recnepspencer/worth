@@ -9,6 +9,9 @@ use super::super::lowering::LoweredEffectExecutionPlan;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum EffectExecutionDenialKind {
     AuthorityOverrideRejected,
+    ForeignPhase(
+        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+    ),
     MissingRelationalAuthority,
     MissingBridgeAuthority,
     BridgePolicyAdmissionFailed,
@@ -67,6 +70,7 @@ pub enum EffectExecutionDenialKind {
 impl EffectExecutionDenialKind {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::ForeignPhase(_) => "foreign_advancement_phase",
             Self::AuthorityOverrideRejected => "authority_override_rejected",
             Self::MissingRelationalAuthority => "missing_relational_authority",
             Self::MissingBridgeAuthority => "missing_bridge_authority",

@@ -3,6 +3,9 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_invariant_materialization_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let suite = "invariant_materialization_matrix";
 
     let custom_surface_samples =
@@ -13,6 +16,7 @@ fn perf_invariant_materialization_matrix() {
             let entities = (0..12)
                 .map(|index| {
                     create_entity_in_partition(
+                        execution,
                         &runtime,
                         &format!("invariant-node-{index}"),
                         PartitionId((index % 4) as u32 + 1),
@@ -21,6 +25,7 @@ fn perf_invariant_materialization_matrix() {
                 .collect::<Vec<_>>();
             for index in 0..(entities.len() - 1) {
                 create_relation_in_partition(
+                    execution,
                     &runtime,
                     entities[index],
                     entities[index + 1],
@@ -32,6 +37,7 @@ fn perf_invariant_materialization_matrix() {
             runtime.performance_access().reset_counters();
             let started_at = Instant::now();
             let outcome = create_relation_outcome(
+                execution,
                 &runtime,
                 entities[2],
                 entities[9],

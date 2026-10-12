@@ -3,12 +3,15 @@ use super::*;
 #[test]
 #[ignore = "performance baseline capture; run with -- --ignored --nocapture --test-threads=1"]
 fn perf_snapshot_materialization_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let suite = "snapshot_materialization_matrix";
 
     let snapshot_read_samples = capture_perf_samples(suite, "snapshot_read_view_current", || {
         let runtime = runtime_with_test_schema();
         for index in 0..128 {
             let _ = create_entity_in_partition(
+                execution,
                 &runtime,
                 &format!("entity-{index}"),
                 PartitionId(1 + (index % 4) as u32),
@@ -20,7 +23,7 @@ fn perf_snapshot_materialization_matrix() {
         let started_at = Instant::now();
         let read = runtime
             .read_truth()
-            .read_snapshot(&snapshot)
+            .read_snapshot(&snapshot, execution)
             .expect("snapshot read");
         let elapsed_micros = started_at.elapsed().as_micros();
         let counters = runtime.performance_access().counters();
@@ -53,6 +56,7 @@ fn perf_snapshot_materialization_matrix() {
             let runtime = runtime_with_test_schema();
             for index in 0..96 {
                 let _ = create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("before-{index}"),
                     PartitionId(1 + (index % 3) as u32),
@@ -61,18 +65,24 @@ fn perf_snapshot_materialization_matrix() {
             let pinned_snapshot = runtime.visibility_authority().snapshot();
             for index in 0..24 {
                 let entity_id = create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("after-{index}"),
                     PartitionId(9 + index as u32),
                 );
-                let _ = update_entity(&runtime, entity_id, &format!("after-updated-{index}"));
+                let _ = update_entity(
+                    execution,
+                    &runtime,
+                    entity_id,
+                    &format!("after-updated-{index}"),
+                );
             }
 
             runtime.performance_access().reset_counters();
             let started_at = Instant::now();
             let read = runtime
                 .read_truth()
-                .read_version(pinned_snapshot.version_id);
+                .read_version(execution, pinned_snapshot.version_id);
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 
@@ -104,6 +114,7 @@ fn perf_snapshot_materialization_matrix() {
             let runtime = runtime_with_test_schema();
             for index in 0..128 {
                 let _ = create_entity_in_partition(
+                    execution,
                     &runtime,
                     &format!("projection-{index}"),
                     PartitionId(1 + (index % 4) as u32),
@@ -115,9 +126,9 @@ fn perf_snapshot_materialization_matrix() {
             let started_at = Instant::now();
             let projected = runtime
                 .read_truth()
-                .project_snapshot(&snapshot)
+                .project_snapshot(&snapshot, execution)
                 .expect("projection snapshot")
-                .entities::<EntityIdentityProjection>();
+                .entities::<EntityIdentityProjection>(execution);
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 

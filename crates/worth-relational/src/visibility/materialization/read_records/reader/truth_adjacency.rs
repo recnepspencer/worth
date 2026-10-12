@@ -18,6 +18,7 @@ pub struct AdjacencyTruthReadLimitExceeded {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn outgoing_relations_of_kind_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
@@ -35,6 +36,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn incoming_relations_of_kind_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
@@ -52,6 +54,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn bounded_outgoing_relations_of_kind_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
@@ -68,6 +71,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub fn bounded_incoming_relations_of_kind_at_version(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,

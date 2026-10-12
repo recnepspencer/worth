@@ -260,6 +260,7 @@ impl WorthQueryBranchSetAdoptionCancellation {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn prepare_branch_set_adoption(
         &self,
+
         coverage: WorthQueryOrderedProgramAdoptionCoverage,
         target: &ApplicationProgramRevision,
         maximum_selection_work_per_branch: usize,
@@ -267,7 +268,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionPreparationDenial>
     {
         self.with_application_advancement(request, |phase| {
+            let phase_request =
+                phase
+                    .execution_request_for(&self.product_runtime)
+                    .map_err(|cause| {
+                        WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
+                    })?;
+            let execution = &phase_request;
             let (pending, total_selection_work_units) = self.prepare_branch_set_targets(
+                execution,
                 &phase,
                 &coverage.branches,
                 target,
@@ -293,6 +302,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(super) fn prepare_branch_set_targets(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branches: &[WorthQueryProductBranch],
         target: &ApplicationProgramRevision,
@@ -308,9 +318,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         })?;
         let mut total_selection_work_units = 0usize;
         for &branch in branches {
-            let selected = self.on_branch(branch).select().map_err(|denial| {
-                WorthQueryBranchSetAdoptionPreparationDenial::ProductSelection { branch, denial }
-            })?;
+            let selected = self
+                .on_branch(branch)
+                .select_with_request(execution)
+                .map_err(|denial| {
+                    WorthQueryBranchSetAdoptionPreparationDenial::ProductSelection {
+                        branch,
+                        denial,
+                    }
+                })?;
             let requirements = selected
                 .branch_adoption_requirements(target)
                 .map_err(

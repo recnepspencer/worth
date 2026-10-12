@@ -12,6 +12,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         Unit,
     >(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: ApplicationFieldRef<
             Schema,
             Entity,
@@ -132,6 +133,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .and_then(|()| admission.charge_external_work(copy_work))
             .map_err(|stop| selected_index_admission_denial(stop, field.field()))?;
         self.resolve_encoded_entity_admitted(
+            execution,
             field.entity(),
             field.field(),
             encoded,

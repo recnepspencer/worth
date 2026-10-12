@@ -2,7 +2,10 @@ use super::*;
 
 #[test]
 fn handle_bound_contribution_matches_internal_oracle_and_retains_installed_witnesses() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let contributions = handle.contributions(&runtime).unwrap();
     let declaration = contribution_declaration("installed-authority");
@@ -53,8 +56,11 @@ fn handle_bound_contribution_matches_internal_oracle_and_retains_installed_witne
 
 #[test]
 fn contribution_authority_denies_foreign_targets_and_uninstalled_categories_first() {
-    let left = installed_runtime();
-    let right = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = installed_runtime(request_execution);
+    let right = installed_runtime(request_execution);
     let left_handle = left.domain(InstalledDomain).unwrap();
     let right_handle = right.domain(InstalledDomain).unwrap();
     let declaration = contribution_declaration("foreign-target");
@@ -88,8 +94,11 @@ fn contribution_authority_denies_foreign_targets_and_uninstalled_categories_firs
 
 #[test]
 fn foreign_handle_and_stale_generation_deny_before_contribution_successors_are_issued() {
-    let owner = installed_runtime();
-    let foreign = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let owner = installed_runtime(request_execution);
+    let foreign = installed_runtime(request_execution);
     let owner_handle = owner.domain(InstalledDomain).unwrap();
     let foreign_denial = owner_handle.contributions(&foreign).unwrap_err();
     assert_eq!(
@@ -97,7 +106,7 @@ fn foreign_handle_and_stale_generation_deny_before_contribution_successors_are_i
         WorthQueryDomainHandleDenialKind::ForeignRuntime
     );
 
-    let mut current = installed_runtime();
+    let mut current = installed_runtime(request_execution);
     let stale_handle = current.domain(InstalledDomain).unwrap();
     let stale_surface = stale_handle.contributions(&current).unwrap();
     let stale_generation = stale_handle.installation_generation();
@@ -125,7 +134,10 @@ fn foreign_handle_and_stale_generation_deny_before_contribution_successors_are_i
 
 #[test]
 fn generation_turnover_denies_each_query_owned_contribution_transition() {
-    let mut admission_runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut admission_runtime = installed_runtime(request_execution);
     let admission_handle = admission_runtime.domain(InstalledDomain).unwrap();
     let admission_target = admission_handle
         .contributions(&admission_runtime)
@@ -155,7 +167,7 @@ fn generation_turnover_denies_each_query_owned_contribution_transition() {
         WorthQueryDomainCapabilityProgressionDenialKind::StaleInstallationGeneration
     );
 
-    let mut preparation_runtime = installed_runtime();
+    let mut preparation_runtime = installed_runtime(request_execution);
     let preparation_handle = preparation_runtime.domain(InstalledDomain).unwrap();
     let preparation_target = preparation_handle
         .contributions(&preparation_runtime)
@@ -196,7 +208,10 @@ fn generation_turnover_denies_each_query_owned_contribution_transition() {
 
 #[test]
 fn contribution_target_mismatch_requires_rebind_without_a_ready_successor() {
-    let runtime = installed_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = installed_runtime(request_execution);
     let handle = runtime.domain(InstalledDomain).unwrap();
     let contributions = handle.contributions(&runtime).unwrap();
     let bound_target = contributions

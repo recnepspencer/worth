@@ -44,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryMutationWorkCo
 }
 
 pub(super) fn seal(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
     committed: &mut WorthQueryCommittedApplicationSession,
 ) -> WorthQueryPrimaryGraphCommitEvidence {
@@ -71,8 +72,9 @@ pub(super) fn seal(
         .producer_dependency_identity()
         .is_some();
     let (committed_result, indexed_rebase_width, admission) = committed.rebase_parts();
-    let observed_source_facts = provider.graph.with_runtime(|runtime| {
+    let observed_source_facts = provider.graph.with_runtime(execution, |runtime| {
         postcommit_currentness::rebase_output(
+            execution,
             runtime,
             &committed_result.snapshot,
             prepared_rebase,

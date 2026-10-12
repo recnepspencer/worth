@@ -6,6 +6,9 @@
 /// cannot collapse into one shared string or enum.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryRecoveryHandleDenialKind {
+    CompletionExecutionRequest(
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ),
     RecoveryNotAdmitted,
     /// This authoritative commit already opened its sole recovery handle.
     RecoveryAlreadyMinted,

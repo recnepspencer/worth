@@ -5,7 +5,11 @@ use super::operation_lineage::{bind, execute, intent};
 
 #[test]
 fn certification_replay_reexecutes_the_same_lineage_semantics() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = lineage_workflow_workspace(
+        request_execution,
         "lineage-replay",
         domain::WorthQueryOperationLineageContract::Evolve,
         false,

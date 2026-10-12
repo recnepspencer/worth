@@ -136,7 +136,6 @@ impl WorthQueryOutputDemandDenialKind {
             Denial::Interrupted(interruption) => Self::of_execution_interruption(interruption),
             Denial::Resource(_)
             | Denial::NestedOpening
-            | Denial::ForeignPhase
             | Denial::NestedStopped
             | Denial::Panicked => Self::ExecutionRequest(cause),
         }

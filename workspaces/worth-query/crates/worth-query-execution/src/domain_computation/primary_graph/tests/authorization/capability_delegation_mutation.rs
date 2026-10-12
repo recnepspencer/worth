@@ -49,12 +49,21 @@ pub(super) fn installed_field(
         .clone()
 }
 
-pub(super) fn grant(world: &AuthorizationWorld, key: &str) -> EntityId {
+pub(super) fn grant(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    key: &str,
+) -> EntityId {
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityIdentity::reference(),
             key.to_owned(),
             &live_scope(),
@@ -64,12 +73,21 @@ pub(super) fn grant(world: &AuthorizationWorld, key: &str) -> EntityId {
         .entity_id()
 }
 
-pub(super) fn account(world: &AuthorizationWorld, key: &str) -> EntityId {
+pub(super) fn account(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    key: &str,
+) -> EntityId {
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             AccountIdentity::reference(),
             key.to_owned(),
             &live_scope(),
@@ -80,13 +98,19 @@ pub(super) fn account(world: &AuthorizationWorld, key: &str) -> EntityId {
 }
 
 pub(super) fn update_grant_field(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     key: &str,
     field: AspectFieldLocator,
     value: AspectValue,
 ) {
-    let grant = grant(world, key);
-    mutate(world, |batch| {
+    let grant = grant(
+        &(phase_custody).test_host_request(),
+        &phase_custody.borrowed_request_for_test(),
+        world,
+        key,
+    );
+    mutate(&phase_custody.borrowed_request_for_test(), world, |batch| {
         batch.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
             UpdateEntityFieldsIntent {
                 entity_id: grant,
@@ -96,30 +120,65 @@ pub(super) fn update_grant_field(
     });
 }
 
-pub(super) fn add_parent(world: &AuthorizationWorld, child: &str, parent: &str, key: &str) {
+pub(super) fn add_parent(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    world: &AuthorizationWorld,
+    child: &str,
+    parent: &str,
+    key: &str,
+) {
     create_relation(
+        &phase_custody.borrowed_request_for_test(),
         world,
         relation_kind(world, CapabilityParent::reference().name()),
-        grant(world, child),
-        grant(world, parent),
+        grant(
+            phase_custody,
+            &phase_custody.borrowed_request_for_test(),
+            world,
+            child,
+        ),
+        grant(
+            phase_custody,
+            &phase_custody.borrowed_request_for_test(),
+            world,
+            parent,
+        ),
         key,
     );
 }
 
 pub(super) fn replace_parent(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     child: &str,
     old_parent: &str,
     new_parent: &str,
 ) {
-    let child = grant(world, child);
+    let child = grant(
+        &(phase_custody).test_host_request(),
+        &phase_custody.borrowed_request_for_test(),
+        world,
+        child,
+    );
     let kind = relation_kind(world, CapabilityParent::reference().name());
     replace_relation_target(
+        &(phase_custody).test_host_request(),
+        &phase_custody.borrowed_request_for_test(),
         world,
         kind,
         child,
-        grant(world, old_parent),
-        grant(world, new_parent),
+        grant(
+            &(phase_custody).test_host_request(),
+            &phase_custody.borrowed_request_for_test(),
+            world,
+            old_parent,
+        ),
+        grant(
+            &(phase_custody).test_host_request(),
+            &phase_custody.borrowed_request_for_test(),
+            world,
+            new_parent,
+        ),
         "alternate-parent",
     );
 }
@@ -137,26 +196,32 @@ pub(super) fn relation_kind(world: &AuthorizationWorld, name: &str) -> KindId {
 }
 
 pub(super) fn relation_source(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     kind: KindId,
     target: EntityId,
 ) -> EntityId {
     let graph = world.application.runtime.primary_graph().unwrap();
-    let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
-        let source = runtime
-            .read_truth()
-            .visible_relations_of_kind(kind, snapshot.version_id())
-            .into_iter()
-            .find(|record| record.target == target)
-            .unwrap()
-            .source;
-        source
-    })
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let snapshot = selected.application_basis().snapshot_handle();
+            let source = runtime
+                .read_truth()
+                .visible_relations_of_kind(execution, kind, snapshot.version_id())
+                .into_iter()
+                .find(|record| record.target == target)
+                .unwrap()
+                .source;
+            source
+        })
 }
 
 pub(super) fn replace_relation_source(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     kind: KindId,
     old_source: EntityId,
@@ -164,11 +229,13 @@ pub(super) fn replace_relation_source(
     target: EntityId,
     key: &str,
 ) {
-    let relation = current_relation(world, kind, old_source, target);
-    replace_relation(world, relation, kind, new_source, target, key);
+    let relation = current_relation(phase_custody, execution, world, kind, old_source, target);
+    replace_relation(execution, world, relation, kind, new_source, target, key);
 }
 
 pub(super) fn replace_relation_target(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     kind: KindId,
     source: EntityId,
@@ -176,18 +243,19 @@ pub(super) fn replace_relation_target(
     new_target: EntityId,
     key: &str,
 ) {
-    let relation = current_relation(world, kind, source, old_target);
-    replace_relation(world, relation, kind, source, new_target, key);
+    let relation = current_relation(phase_custody, execution, world, kind, source, old_target);
+    replace_relation(execution, world, relation, kind, source, new_target, key);
 }
 
 pub(super) fn retarget_relation_without_replacing_id(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     relation: RelationId,
     kind: KindId,
     source: EntityId,
     target: EntityId,
 ) {
-    mutate(world, |batch| {
+    mutate(execution, world, |batch| {
         batch.push(MutationIntent::Relation(
             RelationMutationIntent::UpdateEndpoints(UpdateRelationEndpointsIntent {
                 relation_id: relation,
@@ -200,6 +268,8 @@ pub(super) fn retarget_relation_without_replacing_id(
 }
 
 pub(super) fn replace_relation_kind(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     old_kind: KindId,
     new_kind: KindId,
@@ -207,39 +277,51 @@ pub(super) fn replace_relation_kind(
     target: EntityId,
     key: &str,
 ) {
-    let relation = current_relation(world, old_kind, source, target);
-    replace_relation(world, relation, new_kind, source, target, key);
+    let relation = current_relation(
+        &(phase_custody).test_host_request(),
+        execution,
+        world,
+        old_kind,
+        source,
+        target,
+    );
+    replace_relation(execution, world, relation, new_kind, source, target, key);
 }
 
 fn current_relation(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     kind: KindId,
     source: EntityId,
     target: EntityId,
 ) -> RelationId {
     let graph = world.application.runtime.primary_graph().unwrap();
-    let selected = world.selected_product();
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let snapshot = selected.application_basis().snapshot_handle();
-        let relation = runtime
-            .read_truth()
-            .visible_relations_of_kind(kind, snapshot.version_id())
-            .into_iter()
-            .find(|record| record.source == source && record.target == target)
-            .unwrap()
-            .relation_id;
-        relation
-    })
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let snapshot = selected.application_basis().snapshot_handle();
+            let relation = runtime
+                .read_truth()
+                .visible_relations_of_kind(execution, kind, snapshot.version_id())
+                .into_iter()
+                .find(|record| record.source == source && record.target == target)
+                .unwrap()
+                .relation_id;
+            relation
+        })
 }
 
 fn create_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     kind: KindId,
     source: EntityId,
     target: EntityId,
     key: &str,
 ) {
-    mutate(world, |batch| {
+    mutate(execution, world, |batch| {
         batch.push(MutationIntent::Create(CreateIntent::Relation(
             RelationSpec {
                 partition_id: PartitionId::main(),
@@ -254,6 +336,7 @@ fn create_relation(
 }
 
 fn replace_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &AuthorizationWorld,
     relation: RelationId,
     kind: KindId,
@@ -261,7 +344,7 @@ fn replace_relation(
     target: EntityId,
     key: &str,
 ) {
-    mutate(world, |batch| {
+    mutate(execution, world, |batch| {
         batch
             .push(MutationIntent::Relation(RelationMutationIntent::Delete(
                 DeleteRelationIntent {
@@ -281,8 +364,13 @@ fn replace_relation(
     });
 }
 
-fn mutate(world: &AuthorizationWorld, build: impl FnOnce(WorkerIntentBatch) -> WorkerIntentBatch) {
+fn mutate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &AuthorizationWorld,
+    build: impl FnOnce(WorkerIntentBatch) -> WorkerIntentBatch,
+) {
     super::super::fixture::publish_relational_mutation(
+        execution,
         world,
         build(WorkerIntentBatch::new("delegation-hostility")),
     );

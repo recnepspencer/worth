@@ -2,13 +2,17 @@ use super::*;
 
 #[test]
 fn shared_read_context_is_send_sync_and_resolves_in_scoped_thread() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn assert_send_sync<T: Send + Sync>() {}
     assert_send_sync::<crate::runtime::WorthQuerySharedReadContext>();
     assert_send_sync::<crate::runtime::WorthQueryPublishedDerivedArtifactHandle>();
 
-    let (workspace, derived) = shared_read_pinning_workspace("shared-read.phase13.send-sync");
+    let (workspace, derived) =
+        shared_read_pinning_workspace(request_execution, "shared-read.phase13.send-sync");
     let read = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint");
     let serial_binding = read
         .published_derived_artifact(&derived)

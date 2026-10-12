@@ -67,6 +67,7 @@ where
         Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
         Role::Entity: OperationReads<Operation>,
     {
+        let _execution = self.reader.execution;
         self.prior_output_if_present::<PriorBinding, Role>()?
             .ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
@@ -88,6 +89,7 @@ where
         Role: WorthQueryApplicationOutputRole<Schema = Schema, Contract = PriorBinding::Output>,
         Role::Entity: OperationReads<Operation>,
     {
+        let execution = self.reader.execution;
         let role = OutputRoleUse::fixed::<Role>();
         self.admit_prior_entity::<Role::Entity>(Role::NAME)?;
         let Some(correspondence) = self.select_prior_correspondence::<PriorBinding>(Role::NAME)?
@@ -99,7 +101,9 @@ where
             .bound_entity(&role)
             .map_err(|denial| WorthQueryPriorOutputDenial::projection(Role::NAME, denial))?;
         let identity = bound
-            .map(|entity_id| self.live_prior_identity::<Role::Entity>(Role::NAME, entity_id))
+            .map(|entity_id| {
+                self.live_prior_identity::<Role::Entity>(execution, Role::NAME, entity_id)
+            })
             .transpose()?;
         <Role::Cardinality as WorthQueryApplicationOutputCardinality>::read(identity)
             .map(Some)
@@ -131,6 +135,7 @@ where
             WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
         Family::Entity: OperationReads<Operation>,
     {
+        let _execution = self.reader.execution;
         self.prior_output_family_if_present::<PriorBinding, Family>()?
             .ok_or_else(|| {
                 WorthQueryPriorOutputDenial::new(
@@ -159,6 +164,7 @@ where
             WorthQueryApplicationOutputRoleFamily<Schema = Schema, Contract = PriorBinding::Output>,
         Family::Entity: OperationReads<Operation>,
     {
+        let execution = self.reader.execution;
         let prefix = Family::PREFIX;
         self.admit_prior_entity::<Family::Entity>(prefix)?;
         let Some(correspondence) = self.select_prior_correspondence::<PriorBinding>(prefix)? else {
@@ -186,7 +192,7 @@ where
             }
             self.consume_admitted_role_work();
             members.push(WorthQueryPriorOutputFamilyMember {
-                identity: self.live_prior_identity::<Family::Entity>(role, entity)?,
+                identity: self.live_prior_identity::<Family::Entity>(execution, role, entity)?,
                 role: role.to_owned(),
                 published_posture: posture,
                 _binding: PhantomData,
@@ -305,6 +311,7 @@ where
 
     fn live_prior_identity<Entity>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         role: &str,
         entity_id: worth_relational::facade::identity::EntityId,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Entity>, WorthQueryPriorOutputDenial>
@@ -315,9 +322,10 @@ where
             .reader
             .runtime
             .read_truth()
-            .project_snapshot(self.reader.snapshot)
+            .project_snapshot(self.reader.snapshot, execution)
             .and_then(|view| {
                 view.entity_record_with_projection_scope(
+                    execution,
                     entity_id,
                     ProjectionAspectScope::empty(),
                     |record| Some((record.kind_id(), record.lifecycle())),

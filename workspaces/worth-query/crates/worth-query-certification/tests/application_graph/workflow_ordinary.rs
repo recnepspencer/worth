@@ -202,17 +202,21 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
 
     let publish = || {
         runtime
-            .request(&principal, &scope)
-            .mutate(WorkflowDefinitionAuthoringIntent {
-                input: WorkflowDefinitionAuthoringInput {
-                    identity: DOCUMENT_IDENTITY.to_owned(),
-                    retention_days: 8,
-                },
+            .with_host_advancement(|host_phase| {
+                runtime
+                    .request(&principal, &scope)
+                    .mutate(WorkflowDefinitionAuthoringIntent {
+                        input: WorkflowDefinitionAuthoringInput {
+                            identity: DOCUMENT_IDENTITY.to_owned(),
+                            retention_days: 8,
+                        },
+                    })
+                    .workflow(&host_phase, &application, terminal_draft())
+                    .expect("the draft binds to installed support")
+                    .publish(WorkflowDefinitionExpectedPredecessor::Absent)
+                    .idempotency(&key)
             })
-            .workflow(&application, terminal_draft())
-            .expect("the draft binds to installed support")
-            .publish(WorkflowDefinitionExpectedPredecessor::Absent)
-            .idempotency(&key)
+            .expect("installed host call opens")
             .execute()
             .expect("the ordinary publication prepares")
     };
@@ -307,14 +311,18 @@ fn ordinary_publication_rejects_invalid_draft_before_mutation_preparation() {
     .finish()
     .expect("the incomplete draft can be represented");
     let result = runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &application, draft)
         })
-        .workflow(&application, draft);
+        .expect("installed host call opens");
     assert!(matches!(
         result,
         Err(WorthQueryOrdinaryWorkflowPublicationDenial::InvalidDefinition(_))
@@ -329,14 +337,18 @@ fn ordinary_publication_rejects_a_workflow_runtime_from_another_application() {
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let result = runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &foreign, terminal_draft())
         })
-        .workflow(&foreign, terminal_draft());
+        .expect("installed host call opens");
     assert!(matches!(
         result,
         Err(WorthQueryOrdinaryWorkflowPublicationDenial::RuntimeMismatch)

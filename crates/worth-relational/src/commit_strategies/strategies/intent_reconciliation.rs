@@ -235,13 +235,14 @@ impl IntentReconciliationStrategy {
 impl CommitStrategyExecutor for IntentReconciliationStrategy {
     fn execute(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &CanonicalStrategyCommitRequest,
         observation: &StrategyObservationContext<'_>,
     ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
         let input = Self::parse_input(request)?;
         let existing_basis = observation
             .visibility()
-            .entity_whole_aspects(input.entity_id, [])?
+            .entity_whole_aspects(execution, input.entity_id, [])?
             .ok_or_else(|| {
                 StrategyExecutorFailure::new(
                     StrategyExecutorFailureClass::DomainRejection,
@@ -258,7 +259,7 @@ impl CommitStrategyExecutor for IntentReconciliationStrategy {
             .map(|locator| locator.aspect().aspect_key().clone());
         let existing = observation
             .visibility()
-            .entity_whole_aspects(input.entity_id, projected_aspect_keys)?
+            .entity_whole_aspects(execution, input.entity_id, projected_aspect_keys)?
             .expect("entity was visible during strategy basis read");
         let unchanged = desired_aspect_fields.iter().all(|(target, desired_value)| {
             let [_field] = target.field_path().fields() else {

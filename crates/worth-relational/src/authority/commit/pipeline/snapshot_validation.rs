@@ -64,19 +64,20 @@ impl SnapshotValidatedCommitExecution {
 }
 
 pub(super) fn validate_snapshot_publication(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     mut history_bound: HistoryBoundCommitExecution,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<SnapshotValidatedCommitExecution, crate::transactions::data::TransactionCommitError> {
-    enforce_snapshot_invariant(runtime, &mut history_bound, lease, control)?;
+    super::consult_stage(execution, super::CommitStage::Snapshot)?;
+    enforce_snapshot_invariant(runtime, &mut history_bound, execution, control)?;
     Ok(into_snapshot_validated_execution(history_bound))
 }
 
 fn enforce_snapshot_invariant(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     history_bound: &mut HistoryBoundCommitExecution,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<(), crate::transactions::data::TransactionCommitError> {
     let mutated = history_bound.mutated_mut();
@@ -104,7 +105,7 @@ fn enforce_snapshot_invariant(
         merged_plan,
         Some(&proposal_identity),
         prevalidated_snapshot_publication,
-        lease,
+        execution,
         control,
     )?;
     mutated.validated_mut().push_invariant(invariant);

@@ -66,14 +66,19 @@ pub(super) struct BranchReasoningEvidence {
     pub(super) main_head_closure_contains_head: bool,
 }
 
-pub(super) fn run_merge_ready_history_shape_certification() -> MergeReadyHistoryCertificationBundle
-{
+pub(super) fn run_merge_ready_history_shape_certification(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> MergeReadyHistoryCertificationBundle {
     let runtime = persisted_runtime_with_test_schema();
-    let root = create_entity_outcome(&runtime, "root");
-    let linear = create_entity_outcome(&runtime, "linear");
+    let root = create_entity_outcome(execution, &runtime, "root");
+    let linear = create_entity_outcome(execution, &runtime, "linear");
     create_branch_from_main(&runtime, "feature");
-    let feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    let feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
 
     let pre_merge_common_ancestor = runtime
         .history()
@@ -84,15 +89,16 @@ pub(super) fn run_merge_ready_history_shape_certification() -> MergeReadyHistory
         .map(|commit| commit.0);
 
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
-    let post_merge_main = create_entity_outcome(&runtime, "main-post-merge");
-    let replay = replay_merge_ready_commit(&runtime, merge.commit.commit_id);
+    let post_merge_main = create_entity_outcome(execution, &runtime, "main-post-merge");
+    let replay = replay_merge_ready_commit(execution, &runtime, merge.commit.commit_id);
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
     let post_merge_inspection = recovered.history().inspect_merge(
         &BranchId("feature".to_string()),
         &BranchId("main".to_string()),
@@ -207,17 +213,22 @@ fn commit_closure_ids(
 }
 
 fn replay_merge_ready_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: crate::facade::history::CommitId,
 ) -> crate::replay::data::RelationalReplayOutcome {
     runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        })
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap()
 }
 
 fn publication_diagnostics_evidence(runtime: &RelationalRuntime) -> PublicationDiagnosticsEvidence {

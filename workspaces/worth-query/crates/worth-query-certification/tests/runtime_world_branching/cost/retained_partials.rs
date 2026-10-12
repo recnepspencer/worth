@@ -4,7 +4,9 @@ use crate::query_probe::{assert_ordinary_work, read};
 use crate::world::CourtroomWorld;
 use worth_query_host::facade::primary_graph;
 
-pub(crate) fn assert_retained_partial_slopes() {
+pub(crate) fn assert_retained_partial_slopes(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) {
     let mut baseline = None;
     for size in [1, 8, 64] {
         let world = CourtroomWorld::publish("ready");
@@ -13,11 +15,16 @@ pub(crate) fn assert_retained_partial_slopes() {
             .map(|_| {
                 world
                     .application
-                    .branches()
-                    .fork(root)
-                    .components(|components| components.fork_relational().fork_signal())
-                    .create()
-                    .expect("each partial-producing branch must be created")
+                    .with_host_advancement(|host_phase| {
+                        world
+                            .application
+                            .branches()
+                            .fork(root)
+                            .components(|components| components.fork_relational().fork_signal())
+                            .create(&host_phase)
+                            .expect("each partial-producing branch must be created")
+                    })
+                    .expect("installed host call opens")
             })
             .collect::<Vec<_>>();
         let integration = world
@@ -27,7 +34,7 @@ pub(crate) fn assert_retained_partial_slopes() {
         let mut recoveries = Vec::with_capacity(size);
         for (ordinal, branch) in branches.iter().copied().enumerate() {
             integration
-                .execute_mutation_with_index_refresh(|runtime| {
+                .execute_mutation_with_index_refresh(request_execution, |runtime| {
                     runtime.fail_next_durable_append_for_test();
                     Ok::<(), ()>(())
                 })
@@ -83,9 +90,14 @@ pub(crate) fn assert_retained_partial_slopes() {
         for branch in branches {
             let cleanup = world
                 .application
-                .on_branch(branch)
-                .close()
-                .expect("recovery cleanup must reclaim the exact unpublished history child");
+                .with_host_advancement(|host_phase| {
+                    world
+                        .application
+                        .on_branch(branch)
+                        .close(&host_phase)
+                        .expect("recovery cleanup must reclaim the exact unpublished history child")
+                })
+                .expect("installed host call opens");
             assert!(cleanup.is_complete());
         }
     }

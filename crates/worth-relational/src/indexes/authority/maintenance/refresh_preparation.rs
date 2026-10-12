@@ -3,6 +3,7 @@ use super::*;
 impl IndexAuthority<'_> {
     pub(super) fn prepare_refresh(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &DerivedIndexBuildRequest,
         before: Option<&VisibilityProjectionView<'_>>,
         after: &VisibilityProjectionView<'_>,
@@ -200,10 +201,11 @@ impl IndexAuthority<'_> {
                     };
                     if routing.is_none() {
                         *routing = Some(change_routing::ChangeRouting::classify(
-                            changes, old, after, work,
+                            execution, changes, old, after, work,
                         )?);
                     }
                     update_entries(
+                        execution,
                         &definition,
                         &mut entries,
                         routing.as_ref().unwrap(),
@@ -217,6 +219,7 @@ impl IndexAuthority<'_> {
             }
         }
         field::refresh(
+            execution,
             &mut pending_fields,
             patch_changes.as_ref(),
             cold_changes.as_ref(),

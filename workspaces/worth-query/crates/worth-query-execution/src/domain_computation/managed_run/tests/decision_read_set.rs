@@ -134,6 +134,7 @@ impl WorthQueryDecisionFactProvider for DecisionProvider {
 
     fn compare_decision_fact(
         &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _session: WorthQueryProviderSessionView<'_>,
         evidence: WorthQueryDecisionFactEvidenceView<'_>,
         admission: WorthQueryDecisionFactComparisonAdmission,
@@ -189,7 +190,7 @@ fn all_fact_families_capture_canonically_and_compare_without_false_conflicts() {
             assert_eq!(first.identity(), second.identity());
             assert_eq!(first.fact_count(), kinds.len());
             let outcome = reads
-                .compare_decision_read_set(first)
+                .compare_decision_read_set(&phase.borrowed_request_for_test(), first)
                 .expect("unchanged provider facts should compare");
             let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) = outcome else {
                 panic!("unchanged facts must remain fresh");
@@ -242,8 +243,9 @@ fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh(
                         versions.insert(unrelated.to_owned(), changed_index as u64 + 2);
                     }
                 }
-                let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) =
-                    reads.compare_decision_read_set(unchanged).unwrap()
+                let WorthQueryDecisionReadSetFreshnessOutcome::Fresh(fresh) = reads
+                    .compare_decision_read_set(&phase.borrowed_request_for_test(), unchanged)
+                    .unwrap()
                 else {
                     panic!("unrelated semantic drift must remain fresh");
                 };
@@ -260,8 +262,9 @@ fn every_relevant_family_stales_independently_while_unrelated_axes_remain_fresh(
                     .lock()
                     .unwrap()
                     .insert(format!("locator-{changed_index}"), 2);
-                let WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale) =
-                    reads.compare_decision_read_set(changed).unwrap()
+                let WorthQueryDecisionReadSetFreshnessOutcome::Stale(stale) = reads
+                    .compare_decision_read_set(&phase.borrowed_request_for_test(), changed)
+                    .unwrap()
                 else {
                     panic!("each relevant family must independently stale the receipt");
                 };

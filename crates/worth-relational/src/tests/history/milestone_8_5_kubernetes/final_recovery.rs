@@ -20,6 +20,7 @@ pub(super) struct FinalRecoveryCertificationInput {
 }
 
 pub(super) fn certify_final_recovery(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     input: FinalRecoveryCertificationInput,
 ) -> KubernetesIntentCertificationBundle {
     let FinalRecoveryCertificationInput {
@@ -41,14 +42,16 @@ pub(super) fn certify_final_recovery(
         live_bundle,
     } = input;
 
-    let recovered = recover_stage(&runtime, recovered_root);
+    let recovered = recover_stage(execution, &runtime, recovered_root);
     let recovered_overlap_from_final = recover_stage_from_final_history(
+        execution,
         &recovered,
         unique_test_store_path("worth-relational-m8-5-kubernetes-style-final-overlap"),
         overlap_controller_head,
         overlap_main_head,
     );
     let recovered_overlap_planning = planning_for(
+        execution,
         &recovered_overlap_from_final,
         controller_branch.clone(),
         main_branch.clone(),
@@ -63,12 +66,14 @@ pub(super) fn certify_final_recovery(
         live_bundle.overlap_conflict
     );
     let recovered_narrowed_from_final = recover_stage_from_final_history(
+        execution,
         &recovered,
         unique_test_store_path("worth-relational-m8-5-kubernetes-style-final-narrowed"),
         narrowed_controller_head,
         narrowed_main_head,
     );
     let recovered_narrowed_planning = planning_for(
+        execution,
         &recovered_narrowed_from_final,
         controller_branch.clone(),
         main_branch.clone(),
@@ -83,12 +88,14 @@ pub(super) fn certify_final_recovery(
         live_bundle.narrowed_non_conflict
     );
     let recovered_rebroadened_from_final = recover_stage_from_final_history(
+        execution,
         &recovered,
         unique_test_store_path("worth-relational-m8-5-kubernetes-style-final-rebroadened"),
         rebroadened_controller_head,
         rebroadened_main_head,
     );
     let recovered_rebroadened_planning = planning_for(
+        execution,
         &recovered_rebroadened_from_final,
         controller_branch.clone(),
         main_branch.clone(),
@@ -102,8 +109,12 @@ pub(super) fn certify_final_recovery(
         planning_evidence(&recovered_rebroadened_planning),
         live_bundle.rebroadened_conflict
     );
-    let recovered_revalidated_planning =
-        planning_for(&recovered, controller_branch.clone(), main_branch.clone());
+    let recovered_revalidated_planning = planning_for(
+        execution,
+        &recovered,
+        controller_branch.clone(),
+        main_branch.clone(),
+    );
     assert_converged_strategy_overlap(
         &recovered_revalidated_planning,
         entity,
@@ -111,21 +122,25 @@ pub(super) fn certify_final_recovery(
     );
 
     let recovered_broad_intent_replay = replay_commit(
+        execution,
         &recovered,
         broad_intent_commit.commit.commit_id,
         main_branch.clone(),
     );
     let recovered_first_converge_replay = replay_commit(
+        execution,
         &recovered,
         first_converge_commit.commit.commit_id,
         controller_branch.clone(),
     );
     let recovered_rebroadened_intent_replay = replay_commit(
+        execution,
         &recovered,
         rebroadened_intent_commit.commit.commit_id,
         main_branch.clone(),
     );
     let recovered_revalidation_replay = replay_commit(
+        execution,
         &recovered,
         revalidation_commit.commit.commit_id,
         controller_branch.clone(),
@@ -191,8 +206,8 @@ pub(super) fn certify_final_recovery(
     );
     assert_eq!(
         KubernetesBranchVisibleTruthEvidence {
-            main: visible_truth_for_branch(&recovered, &main_branch, entity),
-            controller: visible_truth_for_branch(&recovered, &controller_branch, entity),
+            main: visible_truth_for_branch(execution, &recovered, &main_branch, entity),
+            controller: visible_truth_for_branch(execution, &recovered, &controller_branch, entity),
         },
         live_bundle.visible_truth
     );

@@ -10,7 +10,9 @@ use runtime_paths::{
 };
 pub(super) use variant_keys::{runtime_error_variant_key, stop_class_variant_key};
 
-pub(super) fn representative_runtime_stop_errors() -> Vec<WorthQueryRuntimeError> {
+pub(super) fn representative_runtime_stop_errors(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Vec<WorthQueryRuntimeError> {
     let binding = existing_binding();
     let status_touch = status_value_touch();
     let assertion_denial = WorthQueryExistingTruthAssertionDenial::new(
@@ -177,13 +179,13 @@ pub(super) fn representative_runtime_stop_errors() -> Vec<WorthQueryRuntimeError
         WorthQueryRuntimeError::ExistingTruthAssertionRequiresAuthorityLane {
             required_lane: WorthQueryAuthorityLane::AuthoritativeTruth,
         },
-        intent_commit_denied_error(),
-        intent_execution_routing_failed_error(),
+        intent_commit_denied_error(request_execution),
+        intent_execution_routing_failed_error(request_execution),
         WorthQueryRuntimeError::EffectPolicyDenied(effect_policy_denial),
-        preview_promotion_stale_basis_error(),
-        preview_promotion_atomic_batch_unsupported_error(),
-        preview_promotion_rebinding_required_error(),
-        preview_promotion_write_failed_error(),
+        preview_promotion_stale_basis_error(request_execution),
+        preview_promotion_atomic_batch_unsupported_error(request_execution),
+        preview_promotion_rebinding_required_error(request_execution),
+        preview_promotion_write_failed_error(request_execution),
         WorthQueryRuntimeError::InvariantRegistration {
             stage: "registration",
             message: "registration failed".to_string(),
@@ -201,14 +203,16 @@ pub(super) fn representative_runtime_stop_errors() -> Vec<WorthQueryRuntimeError
     ]
 }
 
-pub(super) fn representative_runtime_generated_stop_errors() -> Vec<WorthQueryRuntimeError> {
+pub(super) fn representative_runtime_generated_stop_errors(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Vec<WorthQueryRuntimeError> {
     vec![
-        intent_commit_denied_error(),
-        intent_execution_routing_failed_error(),
-        preview_promotion_stale_basis_error(),
-        preview_promotion_atomic_batch_unsupported_error(),
-        preview_promotion_rebinding_required_error(),
-        preview_promotion_write_failed_error(),
+        intent_commit_denied_error(request_execution),
+        intent_execution_routing_failed_error(request_execution),
+        preview_promotion_stale_basis_error(request_execution),
+        preview_promotion_atomic_batch_unsupported_error(request_execution),
+        preview_promotion_rebinding_required_error(request_execution),
+        preview_promotion_write_failed_error(request_execution),
     ]
 }
 

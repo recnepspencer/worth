@@ -18,6 +18,7 @@ pub(super) struct TranscriptWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for TranscriptWriteAuthority {
     fn write(
         &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         _relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,

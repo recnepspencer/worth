@@ -2,6 +2,9 @@ use crate::tests::support::*;
 
 #[test]
 fn expired_candidate_is_typed_deferred_before_reference_movement() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::AiWorkflow)
         .schema_registry(test_schema_registry())
@@ -33,15 +36,14 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
         )
         .unwrap();
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .unwrap();
 
     assert_eq!(runtime.reap_expired_prepared_candidates(), 1);
     assert!(matches!(
-        runtime.publication_port().compare_and_publish(candidate),
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate),
         crate::mvcc::RelationalPublicationOutcome::Deferred(
             crate::mvcc::RelationalPublicationDeferred::CandidateLifetimeExpired {
                 maximum_lifetime_millis: 0,
@@ -62,7 +64,8 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
     assert_eq!(reaped_cost.retention_cost_delta().candidate_acquires, 1);
     assert_eq!(reaped_cost.retention_cost_delta().candidate_releases, 1);
 
-    let replacement = prepared_write(&runtime, &before, "post-reap-replacement").unwrap();
+    let replacement =
+        prepared_write(execution, &runtime, &before, "post-reap-replacement").unwrap();
     runtime.discard_prepared_candidate(replacement).unwrap();
     let terminal_cost = runtime.observe_mvcc_counters(&cost_scope).unwrap();
     assert_eq!(terminal_cost.retention_cost_delta().candidate_acquires, 2);
@@ -71,6 +74,9 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
 
 #[test]
 fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::AiWorkflow)
         .schema_registry(test_schema_registry())
@@ -85,14 +91,20 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
         })
         .build();
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
-    let candidate = prepared_write(&runtime, &basis, "waited-expiry").unwrap();
+    let candidate = prepared_write(execution, &runtime, &basis, "waited-expiry").unwrap();
     let publication_cell = candidate.publication_cell_for_test();
     let coordination = std::sync::Arc::clone(publication_cell.coordination());
     let held_coordination = coordination.enter();
     let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while coordination.wait_count() == 0 && std::time::Instant::now() < wait_deadline {
         std::thread::yield_now();
@@ -119,14 +131,17 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
         runtime.history.pending_canonical_publication_route_count(),
         0
     );
-    let replacement = prepared_write(&runtime, &basis, "post-wait-expiry").unwrap();
+    let replacement = prepared_write(execution, &runtime, &basis, "post-wait-expiry").unwrap();
     runtime.discard_prepared_candidate(replacement).unwrap();
 }
 
 #[test]
 fn foreign_publication_port_denies_before_reference_movement() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = runtime_with_test_schema();
-    create_entity(&source, "foreign-port-anchor");
+    create_entity(execution, &source, "foreign-port-anchor");
     let before = crate::tests::support::test_owner_main_basis(&source).expect("source basis");
     let commit_count_before = source.history().immutable_commit_count();
     let mut transaction = source
@@ -142,14 +157,14 @@ fn foreign_publication_port_denies_before_reference_movement() {
         )
         .unwrap();
     let candidate = source
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("source candidate prepares");
     let foreign = runtime_with_test_schema();
 
-    match foreign.publication_port().compare_and_publish(candidate) {
+    match foreign
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         crate::mvcc::RelationalPublicationOutcome::Denied(
             crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
                 expected_runtime_instance_id,
@@ -175,6 +190,9 @@ fn foreign_publication_port_denies_before_reference_movement() {
 
 #[test]
 fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::AiWorkflow)
         .schema_registry(test_schema_registry())
@@ -189,10 +207,10 @@ fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
         })
         .build();
     let basis = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
-    let first = prepared_write(&runtime, &basis, "candidate-one").unwrap();
+    let first = prepared_write(execution, &runtime, &basis, "candidate-one").unwrap();
 
     assert!(matches!(
-        prepared_write(&runtime, &basis, "candidate-two"),
+        prepared_write(execution, &runtime, &basis, "candidate-two"),
         Err(
             crate::transactions::data::TransactionCommitError::PublicationDeferred {
                 deferred: crate::mvcc::RelationalPublicationDeferred::CandidateCapacityExhausted {
@@ -203,11 +221,12 @@ fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
         )
     ));
     runtime.discard_prepared_candidate(first).unwrap();
-    let replacement = prepared_write(&runtime, &basis, "candidate-replacement").unwrap();
+    let replacement = prepared_write(execution, &runtime, &basis, "candidate-replacement").unwrap();
     runtime.discard_prepared_candidate(replacement).unwrap();
 }
 
 fn prepared_write(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     basis: &crate::branch::AdmittedRelationalBranchBasis,
     key: &str,
@@ -224,8 +243,5 @@ fn prepared_write(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    runtime.prepare_branch_transaction(
-        transaction,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    runtime.prepare_branch_transaction(execution, transaction)
 }

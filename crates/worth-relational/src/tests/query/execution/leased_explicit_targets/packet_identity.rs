@@ -21,6 +21,8 @@ fn packet_keeps_its_identity_at_width_four() {
 }
 
 fn packet_stop(width: usize, stopped_ordinal: usize) {
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&backing);
     const PACKETS: u64 = 9;
     const MEMORY: u64 = 128 << 10;
     // Each packet receives MEMORY / (4 * PACKETS) = 3640 result bytes.
@@ -36,7 +38,7 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
             } else {
                 "a".to_owned()
             };
-            create_entity_in_partition(&runtime, &name, PartitionId(partition))
+            create_entity_in_partition(execution, &runtime, &name, PartitionId(partition))
         })
         .collect();
     let fitting = entities[(stopped_ordinal + 1) % entities.len()];
@@ -46,8 +48,10 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
     let plan = planned_explicit_query(&runtime, &snapshot, "packet-stop-identity", targets);
     let expected = runtime
         .read_truth()
-        .execute_query_plan(plan.clone())
-        .unwrap();
+        .execute_query_plan(plan.clone(), execution)
+        .unwrap()
+        .unwrap()
+        .outcome;
     assert_eq!(expected.complexity.packet_count, PACKETS as usize);
     assert_eq!(expected.result.entities.len(), PACKETS as usize);
     let fitting_record = expected
@@ -78,7 +82,7 @@ fn packet_stop(width: usize, stopped_ordinal: usize) {
     let caller = lease(width, MEMORY, CancellationToken::new());
     let stopped = runtime
         .read_truth()
-        .execute_query_plan_with_lease(plan, &caller);
+        .execute_query_plan(plan, &worth_execution::ExecutionRequest::leased(&caller));
     let Err(QueryReadExecutionStop::PacketStopped {
         boundary: Some(boundary),
         reason:

@@ -218,8 +218,15 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
             // Whatever the last step left marked and unsettled is captured so.
             checkpoint = Some(
                 application
-                    .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-                    .unwrap(),
+                    .with_host_advancement(|host_phase| {
+                        application
+                            .capture_application_checkpoint(
+                                &host_phase,
+                                CapturePolicy::SystemAllocation,
+                            )
+                            .unwrap()
+                    })
+                    .expect("installed host call opens"),
             );
             driven.restores += 1;
         }

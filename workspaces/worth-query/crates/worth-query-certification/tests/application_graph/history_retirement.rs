@@ -88,17 +88,21 @@ fn read_at_commit(
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .at_commit(receipt, WORK)
-        .expect("a held receipt keeps its commit selectable")
-        .query(DocumentRetentionRead {
-            identity: DOCUMENT_IDENTITY.to_owned(),
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .at_commit(&host_phase, receipt, WORK)
+                .expect("a held receipt keeps its commit selectable")
+                .query(DocumentRetentionRead {
+                    identity: DOCUMENT_IDENTITY.to_owned(),
+                })
+                .execute_in_advancement(&host_phase)
+                .expect("a selected commit executes its read")
+                .rows()[0]
+                .retention_days
         })
-        .execute()
-        .expect("a selected commit executes its read")
-        .rows()[0]
-        .retention_days
+        .expect("installed host call opens")
 }
 
 fn selectable(
@@ -109,9 +113,13 @@ fn selectable(
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     match runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .at_commit(receipt, WORK)
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .at_commit(&host_phase, receipt, WORK)
+        })
+        .expect("installed host call opens")
     {
         Ok(_) => true,
         Err(WorthQueryApplicationHistorySelectionDenial::CommitUnavailable) => false,

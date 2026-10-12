@@ -100,6 +100,7 @@ where
 }
 
 pub fn operating_world_family_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<runtime::WorthQueryWorkspace, consumer_kit::WorthQueryTestBackendError> {
     let base = read_vertex_definition(domain::WorthQuerySupportRequirement::Required);
@@ -158,7 +159,7 @@ pub fn operating_world_family_workspace(
             AuxiliaryDomain,
             domain_identity::<AuxiliaryDomain>("auxiliary"),
         ))
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn definition<O, F>(

@@ -11,12 +11,15 @@ use crate::validation::validate_canonical_bundle;
 
 #[test]
 fn compose_read_detail_matches_declarative_request_canonical_query_for_hidden_query_projection() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.declarative-detail")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.local_detail(
                 "user",
                 manager_schema(),
@@ -108,12 +111,15 @@ fn compose_read_detail_matches_declarative_request_canonical_query_for_hidden_qu
 #[test]
 fn compose_read_collection_matches_declarative_request_for_non_equality_predicate_and_descending_ordering(
 ) {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.declarative-collection")
         .expect("read-backed runtime should open a workspace");
 
     let result = workspace
-        .compose_read(|read| {
+        .compose_read(request_execution, |read| {
             read.explicit_broad_search_collection(
                 "user",
                 searchable_manager_schema(),

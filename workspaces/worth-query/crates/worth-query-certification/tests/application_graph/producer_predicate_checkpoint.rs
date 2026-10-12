@@ -63,8 +63,15 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             .unwrap()
             .entity_id();
         let (checkpoint, sections) = runtime
-            .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                runtime
+                    .capture_application_checkpoint_with_sections(
+                        &host_phase,
+                        CapturePolicy::SystemAllocation,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         assert_eq!(
             sections.accepted_output_count(),
             1,
@@ -79,8 +86,15 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             [checkpoint.bytes().len() - sections.accepted_output_bytes()..]
             .to_vec();
         let (repeated, repeated_sections) = runtime
-            .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
-            .unwrap();
+            .with_host_advancement(|host_phase| {
+                runtime
+                    .capture_application_checkpoint_with_sections(
+                        &host_phase,
+                        CapturePolicy::SystemAllocation,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         assert_eq!(repeated_sections.accepted_output_count(), 1);
         assert_eq!(
             &repeated.bytes()[repeated.bytes().len() - repeated_sections.accepted_output_bytes()..],
@@ -97,8 +111,15 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
     .expect("the producer and output are readmitted by their installed owners");
     let runtime = restored.runtime();
     let (recaptured, sections) = runtime
-        .capture_application_checkpoint_with_sections(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            runtime
+                .capture_application_checkpoint_with_sections(
+                    &host_phase,
+                    CapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     assert_eq!(sections.accepted_output_count(), 1);
     assert_captured_document_predicate(
         recaptured.bytes(),
@@ -152,7 +173,9 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
             .entity_id(),
         subject
     );
-    let unchanged = request.retain_read().unwrap();
+    let unchanged = runtime
+        .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
+        .expect("installed host call opens");
     assert!(matches!(request.at(&unchanged)
         .require_current_output_demand(&foreign_settlement, NonZeroUsize::new(4096).unwrap()),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::ForeignSettlement));
@@ -170,7 +193,9 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         settle(set_retention(&restored, restored.current_world(), 6, 871)),
         RetentionVerdict::Performed(6)
     );
-    let current = request.retain_read().unwrap();
+    let current = runtime
+        .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
+        .expect("installed host call opens");
     assert!(matches!(request.at(&current)
         .require_current_output_demand(&settled, NonZeroUsize::new(4096).unwrap()),
         Err(WorthQueryOutputCurrentnessDenial::Output(e)) if e.kind()==WorthQueryOutputDemandDenialKind::Superseded));
@@ -192,7 +217,9 @@ fn captured_producer_predicate_reuses_after_reopen_and_refreshes_after_source_ch
         0
     );
     assert!(refreshed.application_commit_receipt().is_some());
-    let current = request.retain_read().unwrap();
+    let current = runtime
+        .with_host_advancement(|host_phase| request.retain_read(&host_phase).unwrap())
+        .expect("installed host call opens");
     request
         .at(&current)
         .require_current_output_demand(&refreshed, NonZeroUsize::new(4096).unwrap())

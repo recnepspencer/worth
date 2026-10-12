@@ -6,26 +6,43 @@ use crate::domain_computation::primary_graph::output_binding_identity::OutputBin
 fn a_retired_row_absent_in_both_images_does_not_change_the_image() {
     let _oracle =
         crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
-    retirement_image(true);
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    retirement_image(request_execution, true);
 }
 
 #[test]
 fn a_row_disappearing_after_capture_changes_the_image() {
     let _oracle =
         crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
-    retirement_image(false);
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    retirement_image(request_execution, false);
 }
 
-fn retirement_image(retired_before_capture: bool) {
+fn retirement_image(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    retired_before_capture: bool,
+) {
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&phase.test_host_request()))
+        .expect("installed host call opens");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected.resolve_entity(
+                &phase,
+                AccountStatus::reference(),
+                "open".to_owned(),
+                &live_scope(),
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+        })
+        .expect("installed host call opens")
         .unwrap()
         .entity_id();
     let (_, product, _) = selected.into_parts();
@@ -43,7 +60,7 @@ fn retirement_image(retired_before_capture: bool) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let (snapshot, basis) = snapshot(runtime);
         register(
             owner,
@@ -93,6 +110,9 @@ fn retirement_image(retired_before_capture: bool) {
 fn shared_empty_images_still_fence_a_changed_native_position() {
     let _oracle =
         crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_foundational::facade::{AspectValue, InternedString};
     use worth_relational::facade::{
         mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent},
@@ -103,13 +123,19 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
     };
     let world = installed_authorization_world(true);
     let entity = world
-        .selected_product()
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&phase.test_host_request())
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+        })
+        .expect("installed host call opens")
         .unwrap()
         .entity_id();
     let graph = world.application.runtime.primary_graph().unwrap();
@@ -127,8 +153,14 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
             resources.installation().maximum_retained_bytes - resources.retained_capacity_bytes(),
         )
         .unwrap();
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, locator.clone(), "first-discard");
+    handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(
+            request_execution,
+            runtime,
+            entity,
+            locator.clone(),
+            "first-discard",
+        );
         let (snapshot, basis) = snapshot(runtime);
         let first = owner
             .cell_for_read(&basis, &mut owner.edit_admission())
@@ -165,15 +197,14 @@ fn shared_empty_images_still_fence_a_changed_native_position() {
             )
             .unwrap();
         let candidate = runtime
-            .prepare_branch_transaction(
-                transaction,
-                crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(request_execution, transaction)
             .unwrap();
         let captured = owner
             .capture_full_verification(runtime, &snapshot, &basis, &mut owner.edit_admission())
             .unwrap();
-        let outcome = runtime.publication_port().compare_and_publish(candidate);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, candidate);
         let RelationalPublicationOutcome::Performed(performed) = outcome else {
             panic!("the second discard must publish: {outcome:?}");
         };

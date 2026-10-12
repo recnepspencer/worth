@@ -38,6 +38,9 @@ const RETENTION: u64 = SEED_RETENTION + 1;
 
 #[test]
 fn a_key_committed_before_capture_keeps_its_intent_after_restore() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let WorthQueryApplicationMutationOutcome::Committed {
         receipt: original, ..
@@ -55,9 +58,12 @@ fn a_key_committed_before_capture_keeps_its_intent_after_restore() {
     assert!(before.is_same_authoritative_commit(&original));
     let commit = original.committed_changes().commit_reference().commit_id;
     let checkpoint = host
-        .runtime()
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .expect("the host captures");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .expect("the host captures")
+        })
+        .expect("installed host call opens");
     drop(host);
 
     let restored = restore_on_first_program(
@@ -65,12 +71,13 @@ fn a_key_committed_before_capture_keeps_its_intent_after_restore() {
         WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
     )
     .expect("the host restores under the roster it installed");
-    assert_the_key_resolves_by_its_durable_record(&restored, commit);
+    assert_the_key_resolves_by_its_durable_record(request_execution, &restored, commit);
 }
 
 /// The unchanged retry names the key's original commit and commits nothing;
 /// a changed retry under the same key is drift.
 fn assert_the_key_resolves_by_its_durable_record(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &DocumentRetentionRuntime<RetentionProgramP0>,
     commit: CommitId,
 ) {
@@ -79,7 +86,9 @@ fn assert_the_key_resolves_by_its_durable_record(
         restored
             .granular_invalidation_installation()
             .retain_primary_graph_integration_handle()
-            .with_runtime(|runtime| runtime.history().latest_patch_stream_position())
+            .with_runtime(request_execution, |runtime| {
+                runtime.history().latest_patch_stream_position()
+            })
     };
     let restored_head = ledger();
     for _ in 0..3 {

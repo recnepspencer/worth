@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn commit_inspection_is_canonical_and_not_story_shaped() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "commit-inspection");
+    let entity = create_entity(execution, &runtime, "commit-inspection");
     let commit_id = runtime
         .history()
         .latest_commit()
@@ -55,8 +58,11 @@ fn commit_inspection_is_canonical_and_not_story_shaped() {
 
 #[test]
 fn merge_commit_inspection_stays_envelope_projected() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "merge-base");
+    let created = create_entity_outcome(execution, &runtime, "merge-base");
     let entity = changed_entities(&created)[0];
     runtime
         .history_authority()
@@ -86,13 +92,11 @@ fn merge_commit_inspection_stays_envelope_projected() {
         )
         .expect("test staging stays within configured resource budgets");
     feature_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("feature update");
 
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],

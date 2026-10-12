@@ -96,15 +96,19 @@ fn check_live_output(
         .execute()
         .unwrap();
     assert_eq!(
-        application
-            .select_output_producer::<PlanarFinalOutputFamily>(
-                &source.observed_sources()[0],
-                "planar-final",
-                4096,
-            )
-            .unwrap()
-            .applicability()
-            .lifecycle(),
+        crate::checkpoint_recovery::support::host_call(application, |phase| {
+            application
+                .select_output_producer::<PlanarFinalOutputFamily>(
+                    phase,
+                    &source.observed_sources()[0],
+                    "planar-final",
+                    4096,
+                )
+                .map_err(Box::new)
+        })
+        .unwrap()
+        .applicability()
+        .lifecycle(),
         WorthQueryProducerLifecyclePosture::Initial
     );
     drop(source);
@@ -133,13 +137,17 @@ fn check_live_output(
         })
         .execute()
         .unwrap();
-    let selected = application
-        .select_output_producer::<PlanarFinalOutputFamily>(
-            &source.observed_sources()[0],
-            "planar-final",
-            4096,
-        )
-        .unwrap();
+    let selected = crate::checkpoint_recovery::support::host_call(application, |phase| {
+        application
+            .select_output_producer::<PlanarFinalOutputFamily>(
+                phase,
+                &source.observed_sources()[0],
+                "planar-final",
+                4096,
+            )
+            .map_err(Box::new)
+    })
+    .unwrap();
     assert_eq!(
         selected.applicability().lifecycle(),
         WorthQueryProducerLifecyclePosture::Preserve

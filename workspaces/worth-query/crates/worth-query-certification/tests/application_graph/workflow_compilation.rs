@@ -34,19 +34,40 @@ fn native_membership_mutation_is_denied_without_poisoning_warm_compilation() {
     let before = application.runtime().workflow_compilation_reuse_counters();
 
     let mutation = application
-        .runtime()
-        .attempt_workflow_definition_membership_cycle_for_test(definition.definition())
-        .expect_err("published membership must be immutable through the native writer");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .attempt_workflow_definition_membership_cycle_for_test(
+                    &host_phase,
+                    definition.definition(),
+                )
+                .expect("native control enters its admitted phase")
+                .expect_err("published membership must be immutable through the native writer")
+        })
+        .expect("installed host call opens");
     assert_fact_custody_denial(mutation);
     let field_mutation = application
-        .runtime()
-        .attempt_workflow_node_field_update_for_test(definition.definition())
-        .expect_err("published node meaning must be immutable through the native writer");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .attempt_workflow_node_field_update_for_test(&host_phase, definition.definition())
+                .expect("native control enters its admitted phase")
+                .expect_err("published node meaning must be immutable through the native writer")
+        })
+        .expect("installed host call opens");
     assert_fact_custody_denial(field_mutation);
     let attachment = application
-        .runtime()
-        .attempt_workflow_existing_node_attachment_for_test(definition.definition())
-        .expect_err("a new definition must not attach an existing published node");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .attempt_workflow_existing_node_attachment_for_test(
+                    &host_phase,
+                    definition.definition(),
+                )
+                .expect("native control enters its admitted phase")
+                .expect_err("a new definition must not attach an existing published node")
+        })
+        .expect("installed host call opens");
     assert_membership_cardinality_denial(attachment);
 
     assert!(matches!(

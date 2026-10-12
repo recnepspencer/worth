@@ -161,12 +161,15 @@ fn a_forked_branch_inherits_the_law_its_source_was_running() {
     let host = publish_on_first_program();
     let main = host.current_world();
     let fork = host
-        .runtime()
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the Relational fork must publish");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the Relational fork must publish")
+        })
+        .expect("installed host call opens");
 
     assert_eq!(
         settle(set_retention(&host, fork, FORK_RETENTION, 0x9175_0041)),

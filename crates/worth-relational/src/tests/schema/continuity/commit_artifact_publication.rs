@@ -2,9 +2,12 @@ use super::*;
 
 #[test]
 fn successful_commit_surfaces_descriptor_semantics_version_in_result_and_envelope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
 
-    let outcome = create_entity_outcome(&runtime, "a");
+    let outcome = create_entity_outcome(execution, &runtime, "a");
 
     assert_eq!(
         outcome.descriptor_semantics_version(),
@@ -22,8 +25,11 @@ fn successful_commit_surfaces_descriptor_semantics_version_in_result_and_envelop
 
 #[test]
 fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -94,12 +100,7 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     let transition = outcome.schema_transition_summary().unwrap();
     assert_eq!(transition.changed_atom_count, 1);
@@ -186,8 +187,11 @@ fn explicit_schema_transition_is_lowered_into_canonical_commit_artifacts() {
 
 #[test]
 fn schema_certification_transition_is_explained_and_counted() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime = runtime_with_test_schema();
-    let _first = create_entity_outcome(&runtime, "a");
+    let _first = create_entity_outcome(execution, &runtime, "a");
 
     runtime.set_schema_registry_for_test(
         AspectSchemaFixture {
@@ -259,12 +263,7 @@ fn schema_certification_transition_is_explained_and_counted() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
 
     let diagnostics = outcome.diagnostics();
     let detailed_trace = diagnostics

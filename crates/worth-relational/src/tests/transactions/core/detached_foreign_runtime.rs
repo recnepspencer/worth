@@ -5,6 +5,8 @@ use crate::tests::support::*;
 
 #[test]
 fn foreign_runtime_validation_denials_precede_raw_entity_and_relation_effects() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime_a = runtime_with_test_schema();
 
     let mut invariant_transaction = test_owner_begin_transaction_for_main(&runtime_a);
@@ -12,8 +14,15 @@ fn foreign_runtime_validation_denials_precede_raw_entity_and_relation_effects() 
     let invariant_target = require_interned_runtime();
     let invariant_target_before = TargetRuntimeState::capture(&invariant_target);
     let invariant_error = invariant_transaction
-        .commit_boundary_plan(&invariant_target)
+        .commit_boundary_plan(execution, &invariant_target)
         .expect_err("invariant planning cannot cross its runtime boundary");
+    let crate::facade::transactions::TransactionCommitError::Conflict {
+        error: invariant_error,
+        ..
+    } = invariant_error
+    else {
+        panic!("expected conflict")
+    };
     assert!(matches!(
         invariant_error.class,
         crate::facade::transactions::ConflictClass::ForeignRuntime { .. }
@@ -24,10 +33,7 @@ fn foreign_runtime_validation_denials_precede_raw_entity_and_relation_effects() 
     stage_raw_entity_relation_graph(&mut transaction, "validation");
     let validation_target = require_interned_runtime();
     let validation_target_before = TargetRuntimeState::capture(&validation_target);
-    let error = match transaction.validate(
-        &validation_target,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    ) {
+    let error = match transaction.validate(execution, &validation_target) {
         Err(error) => error,
         Ok(_) => panic!("a transaction cannot cross its runtime boundary"),
     };
@@ -44,20 +50,20 @@ fn foreign_runtime_validation_denials_precede_raw_entity_and_relation_effects() 
 
 #[test]
 fn foreign_runtime_validated_proposal_denial_preserves_exact_target_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime_a = runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime_a);
     stage_raw_entity_relation_graph(&mut transaction, "validated");
     let candidate = transaction
-        .validate(
-            &runtime_a,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .validate(execution, &runtime_a)
         .expect("source runtime validates its own transaction");
     let runtime_b = require_interned_runtime();
     let target_before = TargetRuntimeState::capture(&runtime_b);
 
     let error = runtime_b
-        .prepare_validated_proposal(candidate)
+        .prepare_validated_proposal(execution, candidate)
         .expect_err("validated authority cannot cross its runtime boundary");
     assert!(matches!(
         error,
@@ -72,6 +78,9 @@ fn foreign_runtime_validated_proposal_denial_preserves_exact_target_state() {
 
 #[test]
 fn foreign_runtime_discard_denies_without_public_residue_and_disposes_candidate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime_a = runtime_with_test_schema();
     let mut transaction = test_owner_begin_transaction_for_main(&runtime_a);
     transaction
@@ -81,10 +90,7 @@ fn foreign_runtime_discard_denies_without_public_residue_and_disposes_candidate(
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime_a
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("the source owner prepares its own candidate");
     let source_before = TargetRuntimeState::capture(&runtime_a);
 

@@ -20,6 +20,7 @@ pub(crate) fn bind_execution<'runtime>(
     runtime: &'runtime RelationalRuntime,
     request: &'runtime CanonicalStrategyCommitRequest,
     snapshot: &'runtime SnapshotHandle,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BoundStrategyExecution<'runtime>, StrategyExecutionError> {
     let descriptor = runtime
         .commit_strategy_registry()
@@ -39,11 +40,12 @@ pub(crate) fn bind_execution<'runtime>(
     validate_supported_read_contract(request.strategy_id(), descriptor.read_contract())?;
     reject_foreign_runtime_snapshot(runtime, snapshot)?;
 
-    let visibility = runtime.read_truth().project_snapshot(snapshot).ok_or(
-        StrategyExecutionError::UnknownSnapshot {
+    let visibility = runtime
+        .read_truth()
+        .project_snapshot(snapshot, execution)
+        .ok_or(StrategyExecutionError::UnknownSnapshot {
             snapshot_id: snapshot.snapshot_id,
-        },
-    )?;
+        })?;
 
     Ok(BoundStrategyExecution {
         request,

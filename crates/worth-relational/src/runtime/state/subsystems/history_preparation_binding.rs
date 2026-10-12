@@ -209,6 +209,12 @@ impl RelationalPreparationHistory {
         });
     }
 
+    pub(crate) fn record_publication_attempt(&self, branch: &BranchId) {
+        self.record_cost(branch, |costs| {
+            costs.publication_attempts = costs.publication_attempts.saturating_add(1);
+        });
+    }
+
     pub(crate) fn prepare_branch_root_capture<P: crate::storage::overlay::PartitionAccess>(
         &self,
         partitions: &P,

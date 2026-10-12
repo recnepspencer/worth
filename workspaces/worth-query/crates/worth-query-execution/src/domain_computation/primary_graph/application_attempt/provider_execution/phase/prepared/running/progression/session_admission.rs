@@ -148,6 +148,7 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
 
     pub(super) fn progress<Schema, Operation, Input, Scope>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &super::WorthQueryApplicationCommitProgressionAuthority<
             '_,
             '_,
@@ -163,7 +164,9 @@ impl<'run> WorthQueryRegisteredProviderSession<'run> {
         Input: Clone + Send + Sync + 'static,
     {
         super::WorthQueryProviderProgressionCompletion {
-            outcome: self.registered.progress(authority, allocation_policy),
+            outcome: self
+                .registered
+                .progress(execution, authority, allocation_policy),
             cleanup: super::WorthQueryApplicationMutationCleanupOwner::ProviderBound(
                 self.mutation_run,
             ),

@@ -39,10 +39,15 @@ fn foreign_and_retired_tokens_fail_before_query_basis_work() {
     let before_foreign = observer.observe();
     let foreign_denial = world
         .application
-        .on_branch(foreign.application.current_world())
-        .select()
-        .err()
-        .expect("a branch token from another World owner must be refused");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(foreign.application.current_world())
+                .select(&phase)
+                .err()
+                .expect("a branch token from another World owner must be refused")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         foreign_denial,
         WorthQueryProductBranchAdmissionDenial::ForeignOwner
@@ -56,29 +61,44 @@ fn foreign_and_retired_tokens_fail_before_query_basis_work() {
     let source = world.application.current_world();
     let retired = world
         .application
-        .branches()
-        .fork(source)
-        .components(|components| {
-            components
-                .reuse_exact_relational_basis()
-                .reuse_exact_signal_basis()
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(source)
+                .components(|components| {
+                    components
+                        .reuse_exact_relational_basis()
+                        .reuse_exact_signal_basis()
+                })
+                .create(&phase)
+                .expect("the owned reuse branch must publish")
         })
-        .create()
-        .expect("the owned reuse branch must publish");
+        .expect("installed host call opens");
     let close = world
         .application
-        .on_branch(retired)
-        .close()
-        .expect("an unretained public product can close");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(retired)
+                .close(&phase)
+                .expect("an unretained public product can close")
+        })
+        .expect("installed host call opens");
     assert!(close.is_complete());
 
     let before_retired = observer.observe();
     let retired_denial = world
         .application
-        .on_branch(retired)
-        .select()
-        .err()
-        .expect("a retired occurrence token must be refused");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(retired)
+                .select(&phase)
+                .err()
+                .expect("a retired occurrence token must be refused")
+        })
+        .expect("installed host call opens");
     assert_eq!(
         retired_denial,
         WorthQueryProductBranchAdmissionDenial::RetiredBranch
@@ -89,7 +109,14 @@ fn foreign_and_retired_tokens_fail_before_query_basis_work() {
         "retired-token denial must precede Query basis acquisition"
     );
     assert!(matches!(
-        world.application.on_branch(retired).close().unwrap_err(),
+        world
+            .application
+            .with_host_advancement(|phase| world
+                .application
+                .on_branch(retired)
+                .close(&phase)
+                .unwrap_err())
+            .expect("installed host call opens"),
         WorthQueryApplicationProductBranchCloseDenial::Product(
             WorthQueryProductBranchCloseDenial::Selection(
                 WorthQueryProductBranchAdmissionDenial::RetiredBranch
@@ -98,244 +125,54 @@ fn foreign_and_retired_tokens_fail_before_query_basis_work() {
     ));
 }
 
-#[test]
-fn retained_read_defers_component_cleanup_and_preserves_retry_authority() {
-    let world = CourtroomWorld::publish("blocked");
-    let definitions_before = world
-        .application
-        .installed_conditional_definition_count_for_test();
-    let targets_before = world
-        .application
-        .installed_conditional_target_reference_count_for_test();
-    let signal_nodes_before = world.application.owned_signal_active_node_count_for_test();
-    let survivor = world
-        .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the independently selected survivor must publish");
-    let warm = world
-        .application
-        .on_branch(survivor)
-        .select()
-        .expect("the survivor must be selectable before sibling cleanup")
-        .conditional_clock(&world.clock)
-        .expect("the surviving selection must bind its managed clock")
-        .observe();
-    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(warm) = warm else {
-        panic!("the surviving selection must establish its predecessor cursor")
-    };
-    assert_eq!(warm.retained_suppressed_wake_count(), 1);
-    drop(warm);
-    let selected_survivor = world
-        .application
-        .on_branch(survivor)
-        .select()
-        .expect("the survivor must remain explicitly selected through sibling cleanup");
-    let branch = world
-        .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.reuse_exact_relational_basis().fork_signal())
-        .create()
-        .expect("the Signal fork must publish");
-    let retained = world
-        .application
-        .on_branch(branch)
-        .select()
-        .expect("the new product must be selectable");
-    for _generation in 0..2 {
-        let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
-        let selected = world.application.on_branch(branch).select().unwrap();
-        let outcome = selected
-            .publish_conditional_definition(
-                &world.clock,
-                Arc::new(replacement),
-                &runtime::RuntimeWorldCancellationSource::new().token(),
-            )
-            .expect("the retained branch must publish its definition successor");
-        assert!(matches!(
-            outcome,
-            primary_graph::WorthQueryConditionalDefinitionPublicationOutcome::Performed(_)
-        ));
-    }
-    assert_eq!(
-        world
-            .application
-            .installed_conditional_definition_count_for_test(),
-        definitions_before + 2
-    );
-    assert_eq!(
-        world
-            .application
-            .installed_conditional_target_reference_count_for_test(),
-        targets_before + 2
-    );
-    assert_eq!(
-        world.application.owned_signal_active_node_count_for_test(),
-        signal_nodes_before,
-        "definition replacement must preserve the branch-local Signal node population"
-    );
-
-    let WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(failure) = world
-        .application
-        .on_branch(branch)
-        .close()
-        .expect_err("the selected read must retain the branch-private World history")
-    else {
-        panic!("the close must preserve retryable owner cleanup")
-    };
-    assert!(matches!(
-        failure.denial(),
-        WorthQueryApplicationProductBranchCleanupDenial::Product(
-            WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryStillRetained
-        )
-    ));
-    assert_eq!(
-        world
-            .application
-            .installed_conditional_definition_count_for_test(),
-        definitions_before + 2,
-        "history denial must preserve every definition generation for retry"
-    );
-    assert_eq!(
-        world
-            .application
-            .installed_conditional_target_reference_count_for_test(),
-        targets_before + 2,
-        "history denial must preserve every exact Bridge target reference"
-    );
-    assert_eq!(
-        world.application.owned_signal_active_node_count_for_test(),
-        signal_nodes_before,
-        "history denial must leave the live Signal node installed"
-    );
-
-    drop(failure);
-    assert_eq!(world.application.branches().pending_cleanup().len(), 1);
-    drop(retained);
-    let mut pending = world.application.branches().pending_cleanup();
-    assert_eq!(pending.len(), 1);
-    let cleanup = pending.remove(0);
-    let cleanup = cleanup
-        .retry()
-        .expect("cleanup must resume with the original owner authority");
-    assert!(cleanup.is_complete());
-    assert_eq!(cleanup.retired_component_count(), 1);
-    assert_eq!(
-        world
-            .application
-            .installed_conditional_definition_count_for_test(),
-        definitions_before
-    );
-    assert_eq!(
-        world
-            .application
-            .installed_conditional_target_reference_count_for_test(),
-        targets_before
-    );
-    assert_eq!(
-        world.application.owned_signal_active_node_count_for_test(),
-        signal_nodes_before
-    );
-    assert!(world.application.branches().pending_cleanup().is_empty());
-
-    let (replacement, _) = ReplacementPredicate::controlled(world.contacts.clone());
-    let published = selected_survivor
-        .publish_conditional_definition(
-            &world.clock,
-            Arc::new(replacement),
-            &runtime::RuntimeWorldCancellationSource::new().token(),
-        )
-        .expect("the surviving selection must publish after sibling cleanup");
-    let primary_graph::WorthQueryConditionalDefinitionPublicationOutcome::Performed(published) =
-        published
-    else {
-        panic!("the survivor must publish its replacement definition")
-    };
-    assert_eq!(published.product_branch(), survivor);
-    assert_eq!(published.definition_generation(), 2);
-    drop(published);
-
-    let mut publication = world
-        .change_input_on_branch(survivor, "ready")
-        .require_committed()
-        .expect("the surviving branch must publish after sibling cleanup");
-    assert_eq!(publication.product_branch(), survivor);
-    let change = publication
-        .take_performed_relational_product_change()
-        .expect("the survivor publication must carry World's performed patch");
-    let selected_successor = world
-        .application
-        .on_branch(survivor)
-        .select()
-        .expect("the survivor replacement occurrence must remain selectable");
-    let delivery = world
-        .application
-        .with_application_advancement(&world::request_scope(), |phase| {
-            selected_successor.deliver_relational_change_to_conditional(
-                &phase,
-                &world.clock,
-                0,
-                change,
-            )
-        })
-        .expect("the declared host request admits delivery")
-        .expect("the survivor patch must bind to its replacement cursor");
-    let runtime::WorthQueryPerformedRelationalProductChangeDeliveryOutcome::Success(delivery) =
-        delivery
-    else {
-        panic!("the survivor patch must reach conditional execution")
-    };
-    assert_eq!(delivery.source_envelopes_loaded(), 1);
-    assert_eq!(delivery.signal_seeds_emitted(), 1);
-    drop(delivery);
-
-    world.clock_control.push(3, 11);
-    let execution = selected_successor
-        .conditional_clock(&world.clock)
-        .expect("the replacement occurrence must retain its managed clock")
-        .observe();
-    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(execution) =
-        execution
-    else {
-        panic!("the survivor replacement cursor must execute")
-    };
-    assert_eq!(execution.committed_operation_count(), 1);
-    assert_eq!(execution.authoritative_commit_count(), 1);
-}
+#[path = "selected_product_lifecycle/retained_read_defers_component_cleanup_and_preserves_retry_autho.rs"]
+mod retained_read_defers_component_cleanup_and_preserves_retry_autho;
 
 #[test]
 fn reuse_only_descendant_reclaims_its_history_before_parent_component_cleanup() {
     let world = CourtroomWorld::publish("ready");
     let parent = world
         .application
-        .branches()
-        .fork(world.application.current_world())
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the parent Relational fork must publish");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(world.application.current_world())
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&phase)
+                .expect("the parent Relational fork must publish")
+        })
+        .expect("installed host call opens");
     let child = world
         .application
-        .branches()
-        .fork(parent)
-        .components(|components| {
-            components
-                .reuse_exact_relational_basis()
-                .reuse_exact_signal_basis()
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .branches()
+                .fork(parent)
+                .components(|components| {
+                    components
+                        .reuse_exact_relational_basis()
+                        .reuse_exact_signal_basis()
+                })
+                .create(&phase)
+                .expect("the reuse-only child must publish")
         })
-        .create()
-        .expect("the reuse-only child must publish");
+        .expect("installed host call opens");
     let committed = world
         .change_input_on_branch(child, "reuse-descendant-change")
         .require_committed()
         .expect("the child must install a branch-local World descendant");
     let WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(failure) = world
         .application
-        .on_branch(child)
-        .close()
-        .expect_err("the caller-held publication receipt must retain its World history")
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(child)
+                .close(&phase)
+                .expect_err("the caller-held publication receipt must retain its World history")
+        })
+        .expect("installed host call opens")
     else {
         panic!("the close must preserve retryable history cleanup")
     };
@@ -353,9 +190,14 @@ fn reuse_only_descendant_reclaims_its_history_before_parent_component_cleanup() 
     assert_eq!(child_close.retired_component_count(), 0);
     let parent_close = world
         .application
-        .on_branch(parent)
-        .close()
-        .expect("the parent must no longer be retained by the closed child");
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .on_branch(parent)
+                .close(&phase)
+                .expect("the parent must no longer be retained by the closed child")
+        })
+        .expect("installed host call opens");
     assert_eq!(parent_close.retired_component_count(), 1);
     assert!(world.application.branches().pending_cleanup().is_empty());
 }

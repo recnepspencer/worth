@@ -2,9 +2,13 @@ use super::super::support::*;
 
 #[test]
 fn effect_delivery_routes_from_live_trigger_with_expression_metadata() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -26,16 +30,19 @@ fn effect_delivery_routes_from_live_trigger_with_expression_metadata() {
         .expect("effect should declare");
 
     let write = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("Effect task")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("Effect task")),
+                ],
+            ),
+        )
         .expect("write should route effect");
     let evidence = runtime
-        .inspect_effect(&effect)
+        .inspect_effect(request_execution, &effect)
         .expect("effect should inspect before drain");
     let deliveries = runtime
         .drain_effect_deliveries(&effect)
@@ -134,9 +141,13 @@ fn effect_delivery_routes_from_live_trigger_with_expression_metadata() {
 
 #[test]
 fn effect_delivery_routes_from_computed_trigger_after_computed_patch() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -144,6 +155,7 @@ fn effect_delivery_routes_from_computed_trigger_after_computed_patch() {
         .expect("live should declare");
     let titles = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new("computed.titles.effect", test_aspect_touches(["title"]))
                 .depends_on_live(&live)
                 .produces(test_aspect_touches(["title.summary"])),
@@ -159,16 +171,19 @@ fn effect_delivery_routes_from_computed_trigger_after_computed_patch() {
         .expect("computed-triggered effect should declare");
 
     let write = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                (
-                    "title.value",
-                    test_string_aspect_value("Computed effect task"),
-                ),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    (
+                        "title.value",
+                        test_string_aspect_value("Computed effect task"),
+                    ),
+                ],
+            ),
+        )
         .expect("write should route computed effect");
     let deliveries = runtime
         .drain_effect_deliveries(&effect)
@@ -190,7 +205,7 @@ fn effect_delivery_routes_from_computed_trigger_after_computed_patch() {
     let value_path =
         retained_test_field_path("value").expect("test retained value path should parse");
     let materialized = runtime
-        .read_derived_result(&titles)
+        .read_derived_result(request_execution, &titles)
         .expect("computed title materialization should execute");
     let retained_value = materialized.retained_rows()[0]
         .scalar_value_at(&value_path)
@@ -208,9 +223,13 @@ fn effect_delivery_routes_from_computed_trigger_after_computed_patch() {
 
 #[test]
 fn computed_effect_does_not_replay_stale_undrained_computed_patch() {
-    let mut runtime = stateful_bridge_task_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = stateful_bridge_task_runtime(request_execution);
     let live = runtime
         .declare_live_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             "tasks.table",
             task_live_request(),
             task_schema(),
@@ -218,6 +237,7 @@ fn computed_effect_does_not_replay_stale_undrained_computed_patch() {
         .expect("live should declare");
     let titles = runtime
         .declare_maintained_derived_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new(
                 "computed.titles.stale-effect",
                 test_aspect_touches(["title"]),
@@ -236,13 +256,16 @@ fn computed_effect_does_not_replay_stale_undrained_computed_patch() {
         .expect("computed-triggered effect should declare");
 
     let first_write = runtime
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("")),
-                ("title.value", test_string_aspect_value("First effect task")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("")),
+                    ("title.value", test_string_aspect_value("First effect task")),
+                ],
+            ),
+        )
         .expect("first write should route computed effect");
     let first_deliveries = runtime
         .drain_effect_deliveries(&effect)
@@ -250,11 +273,14 @@ fn computed_effect_does_not_replay_stale_undrained_computed_patch() {
     assert_eq!(first_deliveries.len(), 1);
 
     let unrelated = runtime
-        .write(test_update_string_aspect_command(
-            first_write.deltas()[0].entity_identity.clone(),
-            "identity.id",
-            "irrelevant",
-        ))
+        .write(
+            request_execution,
+            test_update_string_aspect_command(
+                first_write.deltas()[0].entity_identity.clone(),
+                "identity.id",
+                "irrelevant",
+            ),
+        )
         .expect("irrelevant write should not replay stale computed patch");
     let stale_deliveries = runtime
         .drain_effect_deliveries(&effect)

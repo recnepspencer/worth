@@ -133,7 +133,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             assert_eq!(reads(), before_mutation);
             bound(None);
             let before_mutation = reads();
-            let Outcome::Performed(performed) = request
+            let observed_outcome = request
                 .mutate(PlanarSourceAdjustment {
                     scope_key: "anchor-a".into(),
                     replacement_y: length(2),
@@ -144,9 +144,12 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                     &application,
                     worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
                 )
-                .unwrap()
-            else {
-                panic!("source must land with discovered custody")
+                .unwrap();
+            let Outcome::Performed(performed) = observed_outcome else {
+                panic!(
+                    "source must land with discovered custody: {}; placement={placement:?}",
+                    outcome_observation::discovered(&observed_outcome)
+                )
             };
             assert!(
                 reads() > before_mutation,
@@ -247,3 +250,5 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
 }
 
 mod recovery_entries;
+
+mod outcome_observation;

@@ -41,6 +41,7 @@ impl ProductObserver {
     }
     pub fn check(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         court: &CompositeSupplyChainCourt,
         model: &ProductModel,
         heads: &BTreeMap<String, ProductBranchObservation>,
@@ -70,15 +71,21 @@ impl ProductObserver {
             self.incarnations
                 .check(expected.incarnation, &fresh.lifecycle_incarnation());
             assert_eq!(fresh.reference_generation().get(), expected.generation);
-            self.check_head(court, model, expected.head, &fresh);
+            self.check_head(request_execution, court, model, expected.head, &fresh);
             drop(fresh);
             self.incarnations
                 .check(expected.incarnation, &head.lifecycle_incarnation());
             assert_eq!(head.reference_generation().get(), expected.generation);
-            self.check_head(court, model, expected.head, head);
+            self.check_head(request_execution, court, model, expected.head, head);
         }
         for (tag, observation) in held {
-            self.check_head(court, model, model.observations[tag], observation);
+            self.check_head(
+                request_execution,
+                court,
+                model,
+                model.observations[tag],
+                observation,
+            );
         }
         // Inspection itself adds no observation or pin. All traversals above
         // have dropped before measuring the persistent semantic dependencies.
@@ -110,6 +117,7 @@ impl ProductObserver {
 
     fn check_head(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         court: &CompositeSupplyChainCourt,
         model: &ProductModel,
         expected: usize,
@@ -118,13 +126,16 @@ impl ProductObserver {
         self.commits.check(expected, head.selected_commit());
         let occurrence = &model.commits[&expected];
         assert_eq!(
-            court.records.read(head.basis().relational_basis()),
+            court
+                .records
+                .read(request_execution, head.basis().relational_basis()),
             occurrence.cargo.records
         );
         self.check_history(court, model, expected, head.selected_commit());
     }
     pub fn check_unpublished(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         court: &CompositeSupplyChainCourt,
         model: &ProductModel,
         expected: usize,
@@ -133,7 +144,9 @@ impl ProductObserver {
         let occurrence = &model.commits[&expected];
         let basis = effects.successor_basis().unwrap();
         assert_eq!(
-            court.records.read(basis.relational_basis()),
+            court
+                .records
+                .read(request_execution, basis.relational_basis()),
             occurrence.cargo.records
         );
         self.relational.check(

@@ -74,14 +74,16 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
             .controls(input_cutoff::controls())
             .start_in_program::<program::ChainProgram, program::ChainRoot>(&application)
             .expect("ordinary fresh admission selects the changed source");
-        let before = request.retain_read().unwrap();
+        let before =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let alias = (0..256)
             .find_map(|_| match refresh.advance(&request).unwrap() {
                 WorthQueryApplicationOutputDemandProgress::Pending => None,
                 WorthQueryApplicationOutputDemandProgress::Settled(settled) => Some(settled),
             })
             .expect("fresh admission publishes the next real Stable alias");
-        let after = request.retain_read().unwrap();
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert_eq!(
             alias.posture(),
             WorthQueryOutputSettlementPosture::StableReused
@@ -103,7 +105,9 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
             WorthQueryOutputSettlementPosture::Performed
         );
         assert_eq!(
-            request.retain_read().unwrap().selected_commit(),
+            crate::checkpoint_recovery::support::retain_read(&application, &request)
+                .unwrap()
+                .selected_commit(),
             after.selected_commit()
         );
         // The planar contract declares one fixed role and one family; the

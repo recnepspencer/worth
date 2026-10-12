@@ -2,6 +2,8 @@ use super::*;
 
 #[test]
 fn successor_observation_capacity_denies_before_effect_but_plain_publication_still_works() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (fixture, owner, expected) = setup();
     let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
     let before = cell.atomic_snapshot();
@@ -13,7 +15,8 @@ fn successor_observation_capacity_denies_before_effect_but_plain_publication_sti
         expected.clone(),
         CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
             .with_prepared_relational_candidate(
-                fixture.prepare_relational_owner_candidate("observation-capacity-denied"),
+                fixture
+                    .prepare_relational_owner_candidate(execution, "observation-capacity-denied"),
             )
             .with_successor_observation(),
         &cancellation.token(),

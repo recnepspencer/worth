@@ -15,11 +15,14 @@ const RECOVERY_CLOSE_TEST_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[test]
 fn updating_recovery_blocks_close_until_cleanup() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let (fixture, owner, expected) = setup();
-    let mut attempt = relational_attempt(&fixture, &owner, expected.clone());
+    let mut attempt = relational_attempt(execution, &fixture, &owner, expected.clone());
     attempt.begin_owner_execution();
 
-    let performed = fixture.perform_relational_owner_change();
+    let performed = fixture.perform_relational_owner_change(execution);
     let successor_basis = successor_basis(&owner, &expected, performed.next_basis().clone(), None);
     let retained = attempt
         .settle(CompositeAttemptProgress::new(

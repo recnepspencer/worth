@@ -7,6 +7,7 @@ use crate::facade::transactions::{
 use super::super::fixture::FintechWorld;
 
 pub(crate) fn correct_trade_with_replacement(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
     trade_id: EntityId,
@@ -54,16 +55,18 @@ pub(crate) fn correct_trade_with_replacement(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    txn.commit(
-        &world.runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
-    .unwrap()
+    txn.commit(execution, &world.runtime).unwrap()
 }
 
 pub(crate) fn correct_seeded_trade_candidate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
     branch_id: BranchId,
 ) -> CommitResult {
-    correct_trade_with_replacement(world, branch_id, world.late_trade_correction_case().trade)
+    correct_trade_with_replacement(
+        execution,
+        world,
+        branch_id,
+        world.late_trade_correction_case().trade,
+    )
 }

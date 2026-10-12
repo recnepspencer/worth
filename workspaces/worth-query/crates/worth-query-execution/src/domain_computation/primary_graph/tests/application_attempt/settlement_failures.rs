@@ -5,20 +5,42 @@ use super::{
 
 #[test]
 fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let commits = || {
         world
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_runtime(request_execution, |runtime| {
+                runtime.history().immutable_commit_count()
+            })
     };
     let baseline = commits();
-    let program = admitted_program(&world, &principal, &account, &request, "recovered");
-    world.application.fail_next_durable_append_for_test();
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(&phase, &world, &principal, &account, &request, "recovered")
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .fail_next_durable_append_for_test(request_execution);
     let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) =
         world.application.compare_and_commit_application(
             program,
@@ -30,7 +52,12 @@ fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor
     };
     let recovery = partial.into_recovery();
     recovery.continue_owner_settlement().unwrap();
-    let fresh = admitted_operation(&world, &principal, &account, &request);
+    let fresh = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_operation(&phase, &world, &principal, &account, &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let outcome = world
         .application
         .recover_admitted_unpublished_application(&recovery, &fresh, idempotency(191, 191))
@@ -68,140 +95,28 @@ use worth_runtime_world::facade::{
     ProductUnpublishedCause, ProductUnpublishedNextAction, RuntimeWorldRecoveryDenial,
 };
 
-#[test]
-fn product_unpublished_settlement_repairs_owner_only_and_cleanup_is_exact() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let selected = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    let commits = || {
-        world
-            .application
-            .primary_provider
-            .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
-    };
-    let baseline = commits();
-    let program = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "performed-before-durable-fault",
-    );
-    world.application.fail_next_durable_append_for_test();
-    let outcome = world.application.compare_and_commit_application(
-        program,
-        idempotency(91, 91),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-    let WorthQueryApplicationCommitOutcome::ProductUnpublished(partial) = outcome else {
-        panic!("owner movement without settled product publication must retain partial custody: {outcome:?}");
-    };
-    assert_eq!(partial.cause(), ProductUnpublishedCause::SettlementPending);
-    assert_eq!(partial.owner_effect_count(), 1);
-    assert!(partial.relational_requires_settlement());
-    assert_eq!(
-        partial.expected_product().selected_commit(),
-        selected.selected_commit()
-    );
-    assert_eq!(commits(), baseline + 1);
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .unpublished_idempotency_count(),
-        1,
-        "the unpublished owner result consumes one bounded tombstone",
-    );
-    let recovery = partial.into_recovery();
-    let foreign = installed_authorization_world(true);
-    assert!(matches!(
-        foreign
-            .application
-            .readmit_product_publication_recovery(recovery.record_handle()),
-        Err(RuntimeWorldRecoveryDenial::ForeignHandle)
-    ));
-    let failure = world
-        .application
-        .release_product_publication_recovery(recovery, 0)
-        .expect_err("unsettled owner effects must remain recoverable");
-    let WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure) = failure else {
-        panic!("unsettled owner effects cannot become cleanup custody")
-    };
-    assert_eq!(
-        failure.denial(),
-        WorthQueryProductUnpublishedRecoveryReleaseDenial::World(
-            RuntimeWorldRecoveryDenial::SettlementRequired
-        )
-    );
-    let recovery = failure.into_recovery();
-    let held_view = recovery.inspect().unwrap();
-    assert!(matches!(
-        recovery.continue_owner_settlement(),
-        Err(RuntimeWorldRecoveryDenial::CallerCapabilityLive)
-    ));
-    drop(held_view);
-    let actions = recovery.continue_owner_settlement().unwrap();
-    assert!(!actions
-        .actions()
-        .contains(&ProductUnpublishedNextAction::SettleOwnerEffects));
-    assert!(actions
-        .actions()
-        .contains(&ProductUnpublishedNextAction::StartFreshCompositePublication));
-    assert_eq!(recovery.continue_owner_settlement().unwrap(), actions);
-    let settled = recovery.inspect().unwrap();
-    assert!(!settled.relational_requires_settlement());
-    assert_eq!(settled.owner_effect_count(), 1);
-    assert!(settled.live_obligation_count() > 0);
-    drop(settled);
-    let current = world
-        .application
-        .product_runtime()
-        .admit_product_branch(world.application.product_runtime().default_branch())
-        .unwrap();
-    assert_eq!(
-        current.selected_commit(),
-        selected.selected_commit(),
-        "settlement cannot publish product truth"
-    );
-    assert_eq!(
-        commits(),
-        baseline + 1,
-        "settlement must not rerun the application"
-    );
-    let receipt = world
-        .application
-        .release_product_publication_recovery(recovery, 0)
-        .unwrap();
-    assert_eq!(receipt.retired_component_count(), 0);
-    assert!(world
-        .application
-        .product_publication_recovery_page(None, NonZeroUsize::new(1).unwrap())
-        .unwrap()
-        .rows()
-        .is_empty());
-    assert_eq!(
-        world
-            .application
-            .primary_provider
-            .unpublished_idempotency_count(),
-        0,
-        "terminal World cleanup releases the exact tombstone capacity",
-    );
-}
+#[path = "settlement_failures/product_unpublished_settlement_repairs_owner_only_and_cleanup_is.rs"]
+mod product_unpublished_settlement_repairs_owner_only_and_cleanup_is;
 
 #[test]
 fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_rows() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let selected = world
         .application
         .product_runtime()
@@ -212,31 +127,53 @@ fn dropped_partial_is_rediscovered_and_idempotent_retry_cannot_promote_owner_row
             .application
             .primary_provider
             .graph
-            .with_runtime(|runtime| runtime.history().immutable_commit_count())
+            .with_runtime(request_execution, |runtime| {
+                runtime.history().immutable_commit_count()
+            })
     };
     let baseline = commits();
-    let program = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "drop-then-idempotent-retry",
-    );
-    let retry_before = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "drop-then-idempotent-retry",
-    );
-    let retry_after = admitted_program(
-        &world,
-        &principal,
-        &account,
-        &request,
-        "drop-then-idempotent-retry",
-    );
-    world.application.fail_next_durable_append_for_test();
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "drop-then-idempotent-retry",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry_before = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "drop-then-idempotent-retry",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retry_after = world
+        .application
+        .with_host_advancement(|phase| {
+            admitted_program(
+                &phase,
+                &world,
+                &principal,
+                &account,
+                &request,
+                "drop-then-idempotent-retry",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .fail_next_durable_append_for_test(request_execution);
     let outcome = world.application.compare_and_commit_application(
         program,
         idempotency(96, 96),

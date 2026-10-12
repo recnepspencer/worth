@@ -103,6 +103,7 @@ impl<'a> WorthQueryAuthorizedCompareContext<'a> {
 }
 
 pub(super) fn finish_authorized_compare(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     compared: WorthQueryProviderCompareAndCommitOutcome,
     context: WorthQueryAuthorizedCompareContext<'_>,
 ) -> WorthQueryProviderProgressionOutcome {
@@ -177,7 +178,7 @@ pub(super) fn finish_authorized_compare(
             )
         }
         WorthQueryProviderCompareAndCommitOutcome::Indeterminate(failure) => {
-            resolve_indeterminate_commit(context, failure)
+            resolve_indeterminate_commit(execution, context, failure)
         }
     }
 }
@@ -187,6 +188,7 @@ pub(super) fn finish_authorized_compare(
 /// The recovery kind is carried, not re-derived: a session that failed on the
 /// commit path demands commit recovery even when the record is now visible.
 fn resolve_indeterminate_commit(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: WorthQueryAuthorizedCompareContext<'_>,
     failure: crate::domain_computation::provider_session::WorthQueryProviderSessionFailure,
 ) -> WorthQueryProviderProgressionOutcome {
@@ -194,10 +196,11 @@ fn resolve_indeterminate_commit(
         WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired,
         &failure,
     );
-    match context
-        .provider
-        .resolve_idempotency_binding_at_product(context.idempotency, &context.product)
-    {
+    match context.provider.resolve_idempotency_binding_at_product(
+        execution,
+        context.idempotency,
+        &context.product,
+    ) {
         Ok(WorthQueryProviderIdempotencyResolution::Equivalent(receipt)) => {
             match resolve_committed_components(&context, receipt) {
                 Ok(resolved) => seal_committed_outcome(context, resolved),

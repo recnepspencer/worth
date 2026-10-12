@@ -3,6 +3,7 @@ use super::*;
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn resolve_condition_replay(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         required: &RequiredWorkflowCondition,
         sources: &crate::domain_computation::primary_graph::WorthQueryWorkflowConditionSources<
@@ -140,7 +141,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 ),
             );
         let [resolution] = runtime
-            .resolve_admitted_application_idempotencies(admission, [binding])?
+            .resolve_admitted_application_idempotencies(execution, admission, [binding])?
             .try_into()
             .expect("one condition replay binding returns one resolution");
         Ok(match resolution.into_resolution() {
@@ -150,22 +151,26 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                     WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
                 )),
             ),
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
-                Some(runtime.primary_provider.graph.with_runtime(|relational| {
-                    super::super::project(
-                        relational,
-                        receipt,
-                        replay.identity.clone(),
-                        locator.clone(),
-                        replay.node_path.clone(),
-                        replay.terminal,
-                        None,
-                        None,
-                        None,
-                        true,
-                    )
-                }))
-            }
+            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
+                runtime
+                    .primary_provider
+                    .graph
+                    .with_runtime(execution, |relational| {
+                        super::super::project(
+                            execution,
+                            relational,
+                            receipt,
+                            replay.identity.clone(),
+                            locator.clone(),
+                            replay.node_path.clone(),
+                            replay.terminal,
+                            None,
+                            None,
+                            None,
+                            true,
+                        )
+                    }),
+            ),
         })
     }
 }

@@ -4,11 +4,14 @@ use crate::transactions::data::ConflictClass;
 
 #[test]
 fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let original_target = create_entity(&runtime, "original-target");
-    let new_target = create_entity(&runtime, "new-target");
-    let relation = create_relation(&runtime, source, original_target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let original_target = create_entity(execution, &runtime, "original-target");
+    let new_target = create_entity(execution, &runtime, "new-target");
+    let relation = create_relation(execution, &runtime, source, original_target, "edge");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -24,14 +27,11 @@ fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints()
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("relation update should commit");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -58,12 +58,15 @@ fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints()
 
 #[test]
 fn relation_endpoint_update_rejects_duplicate_relation_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let left = create_entity(&runtime, "left");
-    let right = create_entity(&runtime, "right");
-    let first = create_relation(&runtime, source, left, "edge-left");
-    let _second = create_relation(&runtime, source, right, "edge-right");
+    let source = create_entity(execution, &runtime, "source");
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    let first = create_relation(execution, &runtime, source, left, "edge-left");
+    let _second = create_relation(execution, &runtime, source, right, "edge-right");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -79,10 +82,7 @@ fn relation_endpoint_update_rejects_duplicate_relation_identity() {
     )
     .expect("test staging stays within configured resource budgets");
     let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect_err("duplicate relation identity should deny");
 
     match error {
@@ -98,10 +98,13 @@ fn relation_endpoint_update_rejects_duplicate_relation_identity() {
 
 #[test]
 fn relation_endpoint_update_accepts_same_batch_created_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let relation = create_relation(&runtime, source, old_target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let old_target = create_entity(execution, &runtime, "old-target");
+    let relation = create_relation(execution, &runtime, source, old_target, "edge");
     let created_target = CreatedEntityRef {
         partition_id: PartitionId(1),
         kind_id: KindId(1),
@@ -129,14 +132,11 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("relation update to same-batch created target should commit");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -156,10 +156,13 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
 
 #[test]
 fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let old_target = create_entity(&runtime, "old-target");
-    let relation = create_relation(&runtime, source, old_target, "edge");
+    let source = create_entity(execution, &runtime, "source");
+    let old_target = create_entity(execution, &runtime, "old-target");
+    let relation = create_relation(execution, &runtime, source, old_target, "edge");
     let created_target = CreatedEntityRef {
         partition_id: PartitionId(1),
         kind_id: KindId(1),
@@ -192,14 +195,11 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("moved relation should survive retirement of its old endpoint");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -230,10 +230,13 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
 
 #[test]
 fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_retirement() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let old_source = create_entity(&runtime, "old-source");
-    let target = create_entity(&runtime, "target");
-    let relation = create_relation(&runtime, old_source, target, "edge");
+    let old_source = create_entity(execution, &runtime, "old-source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation = create_relation(execution, &runtime, old_source, target, "edge");
     let created_source = CreatedEntityRef {
         partition_id: PartitionId(1),
         kind_id: KindId(1),
@@ -266,14 +269,11 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("moved relation should survive retirement of its old source");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -304,10 +304,13 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
 
 #[test]
 fn relation_identity_can_be_replaced_in_one_transaction() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let retired = create_relation(&runtime, source, target, "retired-edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let retired = create_relation(execution, &runtime, source, target, "retired-edge");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -332,14 +335,11 @@ fn relation_identity_can_be_replaced_in_one_transaction() {
     .expect("test staging stays within configured resource budgets");
 
     let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("retiring an identity permits its same-transaction replacement");
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .expect("replacement snapshot should read");
     let replacements = read
         .relations()

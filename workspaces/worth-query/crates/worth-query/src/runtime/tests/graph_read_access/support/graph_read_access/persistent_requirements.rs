@@ -13,10 +13,11 @@ use crate::runtime::tests::graph_read_access::support::graph_index_inventory::ru
 };
 
 pub fn persistent_requirement_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     profile: WorthQueryRuntimeSupportProfile,
 ) -> WorthQueryWorkspace {
-    workspace_with_graph_support(workspace_name, profile)
+    workspace_with_graph_support(request_execution, workspace_name, profile)
 }
 
 pub fn persistent_predicate_family(
@@ -134,10 +135,12 @@ pub fn streaming_frontier_family(
 }
 
 pub fn persistent_requirement_digest_for_named_family(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     family_name: &str,
 ) -> String {
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         workspace_name,
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -148,10 +151,12 @@ pub fn persistent_requirement_digest_for_named_family(
 }
 
 pub fn persistent_requirement_digest_for_reordered_family(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     family_name: &str,
 ) -> String {
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         workspace_name,
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,
@@ -162,10 +167,12 @@ pub fn persistent_requirement_digest_for_reordered_family(
 }
 
 pub fn persistent_requirement_digest_for_equality_family(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace_name: &str,
     family_name: &str,
 ) -> String {
     let mut workspace = persistent_requirement_workspace(
+        request_execution,
         workspace_name,
         profile_requiring_store_backed_graph_index(
             WorthQueryGraphReadAccessRequirementKind::PredicateSupport,

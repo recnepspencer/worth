@@ -16,6 +16,7 @@ pub(super) struct PublishedRestorationSettlement {
 impl PublishedRestorationSettlement {
     pub(super) fn finish<Schema: ApplicationSchema>(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> super::WorthQueryRestoredGeneratedOutput {
         let Self {
@@ -28,6 +29,7 @@ impl PublishedRestorationSettlement {
             .complete(commit)
             .expect("World returns the exact prepared relational restoration result");
         runtime.record_restored_generated_output(
+            execution,
             &observation,
             retry.correspondence,
             retry.producer,
@@ -88,6 +90,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     pub(super) fn finish_restoration_published(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         settlement: PublishedRestorationSettlement,
     ) -> Result<
@@ -95,7 +98,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
         match self.release_product_publication_recovery(recovery, 0) {
-            Ok(_) => Ok(settlement.finish(self)),
+            Ok(_) => Ok(settlement.finish(execution, self)),
             Err(
                 crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(
                     failed,

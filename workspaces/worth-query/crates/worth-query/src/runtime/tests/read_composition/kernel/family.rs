@@ -7,7 +7,10 @@ use crate::runtime::{
 
 #[test]
 fn define_read_family_freezes_reusable_read_graph_artifact() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-define")
         .expect("read-backed runtime should open a workspace");
 
@@ -55,7 +58,10 @@ fn define_read_family_freezes_reusable_read_graph_artifact() {
 
 #[test]
 fn execute_read_family_reuses_same_canonical_read_graph_across_runs() {
-    let mut workspace = read_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = read_runtime(request_execution)
         .workspace("runtime.read-composition.family-execute")
         .expect("read-backed runtime should open a workspace");
 
@@ -99,10 +105,10 @@ fn execute_read_family_reuses_same_canonical_read_graph_across_runs() {
         .expect("read family should define");
 
     let first = workspace
-        .execute_read_family(&family)
+        .execute_read_family(request_execution, &family)
         .expect("first read-family execution should succeed");
     let second = workspace
-        .execute_read_family(&family)
+        .execute_read_family(request_execution, &family)
         .expect("second read-family execution should succeed");
 
     assert_eq!(

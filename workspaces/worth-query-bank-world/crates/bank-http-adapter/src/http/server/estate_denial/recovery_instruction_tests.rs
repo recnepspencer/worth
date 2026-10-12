@@ -122,7 +122,8 @@ const ATTEMPTS: [(Attempt, Denial, Next); 9] = [
 /// table.
 fn every_kind() -> Vec<(Kind, Denial, Next)> {
     let listed = |kind: Kind| match kind {
-        Kind::RecoveryNotAdmitted
+        Kind::CompletionExecutionRequest(_)
+        | Kind::RecoveryNotAdmitted
         | Kind::RecoveryAlreadyMinted
         | Kind::SchemaMismatch
         | Kind::BranchMismatch

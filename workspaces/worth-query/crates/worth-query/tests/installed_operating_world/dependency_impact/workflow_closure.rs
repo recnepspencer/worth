@@ -2,7 +2,11 @@ use super::*;
 
 #[test]
 fn completed_workflow_closure_retains_declared_and_realized_roles_at_exact_d_cost() {
-    let mut workspace = mutation_workflow_workspace("dependency-impact-workflow").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        mutation_workflow_workspace(request_execution, "dependency-impact-workflow").unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let trace = workspace
         .prepare_mutation_operating_world(workspace.current_world())
@@ -100,7 +104,10 @@ fn assert_mutation_dependency_counters(
 
 #[test]
 fn certification_replay_preserves_the_compiled_workflow_closure() {
-    let mut workspace = workflow_workspace("dependency-impact-replay").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "dependency-impact-replay").unwrap();
     let original = bind_workflow(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),

@@ -41,7 +41,16 @@ where
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
     if wave.is_frozen() {
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "advancement phase",
+                )
+            })?;
         return super::frozen_collection::collect(
+            &execution,
             runtime,
             principal,
             request,

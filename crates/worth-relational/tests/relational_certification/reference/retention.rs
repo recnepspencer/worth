@@ -4,7 +4,10 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn supply_chain_fork_acquires_one_target_head_obligation() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let source = BranchId("main".to_owned());
     let target = BranchId("storm".to_owned());
     let (_, basis) = world

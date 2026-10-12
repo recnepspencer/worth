@@ -8,6 +8,7 @@ use worth_relational::facade::{
 use super::{denial, WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact};
 
 pub(super) fn observed_text(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
@@ -15,8 +16,9 @@ pub(super) fn observed_text(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    let value = super::super::observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
+    let value =
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+            .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
     let retained = value.clone();
     let AspectValue::String(value) = &value else {
         return Err(denial(
@@ -41,6 +43,7 @@ pub(super) fn observed_text(
 }
 
 pub(super) fn observed_optional_text(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
@@ -48,7 +51,9 @@ pub(super) fn observed_optional_text(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
-    if super::super::observe_field_value(runtime, snapshot, entity, kind, locator).is_none() {
+    if super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+        .is_none()
+    {
         facts.push(WorthQueryApplicationObservedFact::AbsentField {
             entity_id: entity,
             kind,
@@ -56,10 +61,11 @@ pub(super) fn observed_optional_text(
         });
         return Ok(None);
     }
-    observed_text(runtime, snapshot, entity, kind, locator, facts).map(Some)
+    observed_text(execution, runtime, snapshot, entity, kind, locator, facts).map(Some)
 }
 
 pub(super) fn observed_bool(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
@@ -67,8 +73,9 @@ pub(super) fn observed_bool(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
-    let value = super::super::observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
+    let value =
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+            .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
     let AspectValue::Bool(posture) = value else {
         return Err(denial(
             "workflow assessment evidence field has the wrong type",
@@ -84,6 +91,7 @@ pub(super) fn observed_bool(
 }
 
 pub(super) fn observed_u64(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
@@ -91,8 +99,9 @@ pub(super) fn observed_u64(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = super::super::observe_field_value(runtime, snapshot, entity, kind, locator)
-        .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
+    let value =
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+            .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
     let AspectValue::UInt64(number) = value else {
         return Err(denial(
             "workflow assessment evidence field has the wrong type",
@@ -108,6 +117,7 @@ pub(super) fn observed_u64(
 }
 
 pub(super) fn optional_identity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
@@ -115,7 +125,8 @@ pub(super) fn optional_identity(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<[u8; 32]>, WorthQueryApplicationAttemptDenial> {
-    let Some(value) = super::super::observe_field_value(runtime, snapshot, entity, kind, locator)
+    let Some(value) =
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
     else {
         return Ok(None);
     };

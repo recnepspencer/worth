@@ -12,7 +12,18 @@ fn provider_time_rejects_stale_revoked_classification_then_commits_exact_expired
     world
         .authorization_time
         .script(std::iter::repeat_n(time(100), 16));
-    let program = super::terminal_lifecycle_support::materialize_close(&world, &request, approved);
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::terminal_lifecycle_support::materialize_close(
+                &host_custody,
+                &world,
+                &request,
+                approved,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     world
         .authorization_time
@@ -31,19 +42,50 @@ fn provider_time_rejects_stale_revoked_classification_then_commits_exact_expired
         denial.stage(),
         WorthQueryApplicationCommitDenialStage::DecisionReadSet
     );
-    assert_eq!(
-        super::terminal_state::elevation_status(&world),
-        CapabilityElevationStatus::Approved
-    );
-    assert_eq!(
-        super::terminal_state::review_status(&world),
-        CapabilityReviewStatus::Required
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                super::terminal_state::elevation_status(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &host_custody.borrowed_request_for_test(),
+                    &world
+                ),
+                CapabilityElevationStatus::Approved
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                super::terminal_state::review_status(
+                    &(host_custody).test_host_request(),
+                    &host_custody.borrowed_request_for_test(),
+                    &world
+                ),
+                CapabilityReviewStatus::Required
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     world
         .authorization_time
         .script(std::iter::repeat_n(time(106), 16));
-    let program = super::terminal_lifecycle_support::materialize_close(&world, &request, approved);
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            super::terminal_lifecycle_support::materialize_close(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &request,
+                approved,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let WorthQueryElevationCloseOutcome::Closed(mandatory) = world
         .application
         .compare_and_commit_elevation_close(program, idempotency(178, 178))
@@ -55,10 +97,20 @@ fn provider_time_rejects_stale_revoked_classification_then_commits_exact_expired
         WorthQueryElevationClosureKind::Expired
     );
     assert_eq!(mandatory.closed_at(), &time_value(106));
-    assert_eq!(
-        super::terminal_state::elevation_status(&world),
-        CapabilityElevationStatus::Expired
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            assert_eq!(
+                super::terminal_state::elevation_status(
+                    &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                    &host_custody.borrowed_request_for_test(),
+                    &world
+                ),
+                CapabilityElevationStatus::Expired
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 fn time_value(seconds: u64) -> worth_foundational::facade::AspectValue {

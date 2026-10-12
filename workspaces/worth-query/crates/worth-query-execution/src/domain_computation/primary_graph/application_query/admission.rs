@@ -39,6 +39,7 @@ where
         Scope,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -70,7 +71,9 @@ where
     > {
         let (parameters, controls) =
             self.prepare_application_query_admission(query, access, parameters, controls)?;
-        self.finish_application_query_admission(query, access, parameters, controls, None)
+        self.finish_application_query_admission(
+            execution, query, access, parameters, controls, None,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -87,6 +90,7 @@ where
         Input,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -128,6 +132,13 @@ where
         let pending = prepare_governed_access(self, query, access, capability, &controls)?;
         let (parameters, controls) =
             self.prepare_application_query_admission(query, access, parameters, controls)?;
-        self.finish_application_query_admission(query, access, parameters, controls, Some(pending))
+        self.finish_application_query_admission(
+            execution,
+            query,
+            access,
+            parameters,
+            controls,
+            Some(pending),
+        )
     }
 }

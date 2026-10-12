@@ -6,6 +6,7 @@ impl WorthQueryApplicationObservedFact {
     pub(super) fn comparison(
         &self,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         maximum_work: usize,
     ) -> Result<(bool, usize), WorthQuerySourceCurrentnessFailure> {
@@ -13,14 +14,32 @@ impl WorthQueryApplicationObservedFact {
             return Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded);
         }
         match self {
-            Self::RetiredOutputEntity { .. } => Ok((self.remains_equal_in(runtime, snapshot), 1)),
+            Self::RetiredOutputEntity {
+                entity_id,
+                kind,
+                created_at,
+                deleted_at,
+                ..
+            } => Ok((
+                super::super::retirement_equality::remains_equal(
+                    runtime,
+                    execution,
+                    snapshot,
+                    *entity_id,
+                    *kind,
+                    *created_at,
+                    *deleted_at,
+                ),
+                1,
+            )),
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok((
                     view.entity_record_with_projection_scope(
+                        execution,
                         *entity_id,
                         worth_relational::facade::runtime::ProjectionAspectScope::empty(),
                         |record| {
@@ -61,8 +80,8 @@ impl WorthQueryApplicationObservedFact {
                     native_revision.ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 let Some(current) = runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| view.entity_field_revision(*entity_id, locator))
+                    .project_snapshot(snapshot, execution)
+                    .and_then(|view| view.entity_field_revision(execution, *entity_id, locator))
                 else {
                     return unanswered_probe(runtime, snapshot, *entity_id, 1, maximum_work);
                 };
@@ -77,11 +96,12 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 // The owner-index lookup costs one unit whatever the fact's
                 // recorded limit.
                 match view.bounded_adjacency_structural_revision(
+                    execution,
                     *anchor,
                     *relation_kind,
                     *direction,
@@ -118,6 +138,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let (relations, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *from,
@@ -140,6 +161,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *anchor,
@@ -163,6 +185,7 @@ impl WorthQueryApplicationObservedFact {
                 };
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *lineage,
@@ -186,6 +209,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *lineage,
@@ -210,6 +234,7 @@ impl WorthQueryApplicationObservedFact {
                     .ok_or(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
                 let (current, work) = super::super::adjacency::observe_adjacency_with_work(
                     runtime,
+                    execution,
                     snapshot,
                     *relation_kind,
                     *lineage,
@@ -230,6 +255,7 @@ impl WorthQueryApplicationObservedFact {
             } => Ok((
                 super::super::workflow_history_basis::remains_equal(
                     runtime,
+                    execution,
                     snapshot,
                     observed,
                     *maximum_transitions,
@@ -248,6 +274,7 @@ impl WorthQueryApplicationObservedFact {
 /// longer live at this snapshot: the fact changed. So no fact's answer
 /// depends on the entity fact beside it being read first. Any other silence
 /// is a snapshot that could not be read.
+// Metadata comparison uses one fixed-key native liveness fact, so needs no request.
 fn unanswered_probe(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -272,6 +299,11 @@ fn map_adjacency_denial(
     denial: super::super::AdjacencyObservationDenial,
 ) -> WorthQuerySourceCurrentnessFailure {
     match denial {
+        // The caller observes request interruption again before accepting any
+        // comparison value, and returns its native preflight stop.
+        super::super::AdjacencyObservationDenial::Interrupted(_) => {
+            WorthQuerySourceCurrentnessFailure::Unavailable
+        }
         super::super::AdjacencyObservationDenial::SnapshotUnavailable => {
             WorthQuerySourceCurrentnessFailure::Unavailable
         }

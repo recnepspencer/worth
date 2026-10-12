@@ -153,8 +153,12 @@ pub fn remove_projection_entity(
     entity: worth_query::facade::foundation::WorthQueryEntityIdentity,
 ) {
     workspace
-        .delete(entity)
-        .expect("certification projection entity deletion");
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .delete(execution, entity)
+                .expect("certification projection entity deletion")
+        })
+        .expect("workspace host call opens");
 }
 
 pub fn update_projection_status(
@@ -172,6 +176,7 @@ pub fn update_projection_status_batch(
         String,
     )>,
 ) {
+    workspace.with_execution_request_mut(|request_execution, workspace| {
     let commands = updates
         .into_iter()
         .fold(
@@ -202,8 +207,9 @@ pub fn update_projection_status_batch(
         .expect("QP04 update batch declaration");
     workspace
         .write_batch_intent(commands)
-        .execute()
+        .execute(request_execution)
         .expect("QP04 atomic Query update batch");
+}).expect("certification workspace host call opens")
 }
 
 pub fn update_projection_identity(

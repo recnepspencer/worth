@@ -8,14 +8,17 @@ use crate::runtime::{
 
 #[test]
 fn successful_read_records_each_journey_boundary_once() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read).expect("read declaration should canonicalize");
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-journey-completed")
         .expect("ordinary workspace should open");
 
     let completion = declaration
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect("ordinary read should complete");
     let counters = completion.journey_counters();
@@ -29,6 +32,9 @@ fn successful_read_records_each_journey_boundary_once() {
 
 #[test]
 fn context_denial_records_zero_lower_runtime_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = declare(local_identity_read).expect("read declaration should canonicalize");
     let policy_tenant = admitted_policy_tenant_inputs(1, false);
     let context = current().under_policy_tenant(
@@ -37,13 +43,13 @@ fn context_denial_records_zero_lower_runtime_work() {
         policy_tenant.branch,
         policy_tenant.schema,
     );
-    let mut workspace = read_runtime()
+    let mut workspace = read_runtime(request_execution)
         .workspace("ordinary-read-journey-context-denied")
         .expect("ordinary workspace should open");
 
     let stop = declaration
         .using(context)
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("denied context must stop before runtime execution");
     let counters = stop.journey_counters();
@@ -58,6 +64,9 @@ fn context_denial_records_zero_lower_runtime_work() {
 
 #[test]
 fn runtime_stop_records_attempt_without_completion() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let unsupported_read_profile = WorthQueryRuntimeSupportProfile::bridge_backed(
         "ordinary-read-runtime-stop-subscription",
         "ordinary-read-runtime-stop-preview",
@@ -67,14 +76,14 @@ fn runtime_stop_records_attempt_without_completion() {
         WorthQueryRuntimeFacadeFamily::Read,
         "seeded ordinary read runtime denial",
     ));
-    let mut workspace = bridge_runtime_with_support(unsupported_read_profile)
+    let mut workspace = bridge_runtime_with_support(request_execution, unsupported_read_profile)
         .workspace("ordinary-read-journey-runtime-stopped")
         .expect("ordinary workspace should open");
     let declaration = declare(local_identity_read).expect("read declaration should canonicalize");
 
     let stop = declaration
         .using(current())
-        .run(&mut workspace)
+        .run(request_execution, &mut workspace)
         .into_result()
         .expect_err("unsupported read runtime must stop after context admission");
     let counters = stop.journey_counters();

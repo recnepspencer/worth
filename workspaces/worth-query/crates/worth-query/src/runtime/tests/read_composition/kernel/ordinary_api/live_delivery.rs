@@ -9,6 +9,9 @@ use worth_runtime_bridge::facade::{
 
 #[test]
 fn managed_delivery_keeps_async_and_temporal_cause_families_distinct() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let bridge = test_bridge();
     let async_completion = admitted_async_completion(
         &bridge,
@@ -32,8 +35,12 @@ fn managed_delivery_keeps_async_and_temporal_cause_families_distinct() {
             BridgeSubscriptionDeliveryFamilyKind::AdmittedCoalesced,
         )
         .expect("async delivery window should plan");
-    let mut workspace = task_workspace("managed-live-distinct-delivery-causes");
-    let handle = open_task_resource(&mut workspace, "tasks.distinct-delivery-causes");
+    let mut workspace = task_workspace(request_execution, "managed-live-distinct-delivery-causes");
+    let handle = open_task_resource(
+        request_execution,
+        &mut workspace,
+        "tasks.distinct-delivery-causes",
+    );
 
     workspace
         .runtime

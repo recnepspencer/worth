@@ -7,7 +7,7 @@ fn sole_branch_head_selects_commit_among_equivalent_retained_observations() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
-    let committed = create_entity_outcome(&runtime.lock().unwrap(), "retained-head");
+    let committed = create_entity_outcome(&execution, &runtime.lock().unwrap(), "retained-head");
     let source =
         RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), "model")
             .unwrap();
@@ -36,7 +36,7 @@ fn barrier_ordered_rebind_cannot_be_removed_by_the_old_lease() {
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
 
     let runtime = Arc::new(Mutex::new(runtime_with_test_schema()));
-    create_entity_outcome(&runtime.lock().unwrap(), "race-first-head");
+    create_entity_outcome(&execution, &runtime.lock().unwrap(), "race-first-head");
     let source =
         RuntimeBridgeRelationalSource::for_shared_graph_role(Arc::clone(&runtime), "model")
             .unwrap();
@@ -45,7 +45,7 @@ fn barrier_ordered_rebind_cannot_be_removed_by_the_old_lease() {
     let old_lease = source
         .bind_branch_head_basis_for_bridge(&old_basis)
         .unwrap();
-    create_entity_outcome(&runtime.lock().unwrap(), "race-second-head");
+    create_entity_outcome(&execution, &runtime.lock().unwrap(), "race-second-head");
     let (_, new_basis) = source.observe_branch_basis(&identity).unwrap();
 
     let start = Arc::new(Barrier::new(2));

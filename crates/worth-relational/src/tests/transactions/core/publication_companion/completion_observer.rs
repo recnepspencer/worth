@@ -34,9 +34,12 @@ impl RelationalPublicationCompanion for ObservedCompanion {
 
 #[test]
 fn actual_companion_cutover_resolves_only_its_prepared_observer() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for stop_after_prepare in [true, false] {
         let runtime = runtime_with_test_schema();
-        create_entity(&runtime, "observer-anchor");
+        create_entity(execution, &runtime, "observer-anchor");
         let before = test_owner_main_basis(&runtime).expect("main branch has owner basis");
         let port = runtime.publication_companion_port();
         let pending = port.begin_required_registration().unwrap();
@@ -72,12 +75,11 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
             )
             .unwrap();
         let candidate = runtime
-            .prepare_branch_transaction(
-                transaction,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .prepare_branch_transaction(execution, transaction)
             .unwrap();
-        let outcome = runtime.publication_port().compare_and_publish(candidate);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate);
         let observer = participant.observer.lock().unwrap().take().unwrap();
         if stop_after_prepare {
             assert!(matches!(

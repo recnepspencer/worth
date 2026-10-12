@@ -14,8 +14,12 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
     drop(principal);
     drop(scope);
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
 
     super::super::producer::reset_provider_contacts();

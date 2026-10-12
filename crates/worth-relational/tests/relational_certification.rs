@@ -140,3 +140,6 @@ fn supply_chain_semantic_world_target_is_present() {
     assert_eq!(baseline.scale.name, world::supply_chain::ScaleName::Court);
     assert_eq!(baseline.definition.entities.len(), 244);
 }
+
+#[path = "relational_certification/test_execution_policy.rs"]
+mod test_execution_policy;

@@ -15,6 +15,9 @@ use worth_foundational::facade::{
 
 #[test]
 fn native_entity_patch_supports_optional_whole_clear() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let note = optional_string_contract("note");
     let fixture = AspectSchemaFixture {
         entity_aspects: vec![DeclaredAspectContractBinding {
@@ -26,13 +29,13 @@ fn native_entity_patch_supports_optional_whole_clear() {
         ..AspectSchemaFixture::default()
     };
     let runtime = fixture.build_runtime();
-    let created = commit_entity_create(&runtime, whole_set(&note, text("remember")));
+    let created = commit_entity_create(execution, &runtime, whole_set(&note, text("remember")));
     let entity = changed_entities(&created)[0];
 
-    let cleared = commit_entity_patch(&runtime, entity, whole_clear(&note));
+    let cleared = commit_entity_patch(execution, &runtime, entity, whole_clear(&note));
     let read = runtime
         .read_truth()
-        .read_snapshot(&cleared.snapshot)
+        .read_snapshot(&cleared.snapshot, execution)
         .expect("cleared snapshot");
     let state = read
         .get_entity(entity)
@@ -48,6 +51,9 @@ fn native_entity_patch_supports_optional_whole_clear() {
 
 #[test]
 fn native_struct_field_clear_uses_exact_contract_basis() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
     let contract = binding.contract.clone();
     let fixture = AspectSchemaFixture {
@@ -61,6 +67,7 @@ fn native_struct_field_clear_uses_exact_contract_basis() {
     ])
     .expect("struct value");
     let created = commit_entity_create(
+        execution,
         &runtime,
         PortableRecordAspectPatch::new([PortableAspectPatchOperation::SetWhole {
             basis: PortableAspectContractBasis::from_contract(&contract),
@@ -70,6 +77,7 @@ fn native_struct_field_clear_uses_exact_contract_basis() {
     let entity = changed_entities(&created)[0];
     let status = field_key("status");
     let updated = commit_entity_patch(
+        execution,
         &runtime,
         entity,
         PortableRecordAspectPatch::new([PortableAspectPatchOperation::PatchFields {
@@ -81,7 +89,7 @@ fn native_struct_field_clear_uses_exact_contract_basis() {
     );
     let read = runtime
         .read_truth()
-        .read_snapshot(&updated.snapshot)
+        .read_snapshot(&updated.snapshot, execution)
         .unwrap();
     let value = read
         .get_entity(entity)
@@ -99,15 +107,23 @@ fn native_struct_field_clear_uses_exact_contract_basis() {
 
 #[test]
 fn native_relation_creation_synthesizes_endpoint_aspects_and_publishes_updates() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let fixture = AspectSchemaFixture::with_default_declared_aspects(
         CascadeDeletePolicy::CascadeDeleteRelations,
     );
     let runtime = fixture.build_runtime();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
     let label = contract_for_relation(&runtime, "label");
-    let created =
-        commit_relation_create(&runtime, source, target, whole_set(&label, text("before")));
+    let created = commit_relation_create(
+        execution,
+        &runtime,
+        source,
+        target,
+        whole_set(&label, text("before")),
+    );
     let relation = changed_relations(&created)[0];
     assert_eq!(
         created.patch()[0].authoritative_changed_aspects(),
@@ -120,7 +136,7 @@ fn native_relation_creation_synthesizes_endpoint_aspects_and_publishes_updates()
     );
     let read = runtime
         .read_truth()
-        .read_snapshot(&created.snapshot)
+        .read_snapshot(&created.snapshot, execution)
         .unwrap();
     let state = read
         .get_relation(relation)
@@ -131,103 +147,20 @@ fn native_relation_creation_synthesizes_endpoint_aspects_and_publishes_updates()
     assert!(state.get(&aspect_key("source")).is_some());
     assert!(state.get(&aspect_key("target")).is_some());
 
-    let updated = commit_relation_patch(&runtime, relation, whole_set(&label, text("after")));
+    let updated = commit_relation_patch(
+        execution,
+        &runtime,
+        relation,
+        whole_set(&label, text("after")),
+    );
     assert_eq!(
         updated.patch()[0].authoritative_changed_aspects(),
         vec![aspect_key("label")]
     );
 }
 
-#[test]
-fn stale_native_contract_basis_denies_without_mutating_truth() {
-    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "before");
-    let name = contract_for_entity(&runtime, "name");
-    let stale = PortableRecordAspectPatch::new([PortableAspectPatchOperation::SetWhole {
-        basis: PortableAspectContractBasis::new(
-            name.key().clone(),
-            name.identity(),
-            worth_foundational::facade::AspectContractRevision(name.revision().0 + 1),
-        ),
-        value: ContractValidationInput::Scalar(text("after")),
-    }]);
-    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("stale-native-basis").push(MutationIntent::Entity(
-                EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
-                    entity_id: entity,
-                    aspect_patch: stale,
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-    let error = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect_err("stale basis must deny");
-    assert!(matches!(
-        error,
-        TransactionCommitError::Conflict {
-            error: CommitConflict {
-                class: ConflictClass::RecordAspectPatchDenied { .. },
-                ..
-            },
-            ..
-        }
-    ));
-    let latest = runtime.visibility_authority().snapshot();
-    let read = runtime.read_truth().read_snapshot(&latest).unwrap();
-    let value = read
-        .get_entity(entity)
-        .unwrap()
-        .authoritative_aspect_state
-        .as_ref()
-        .unwrap()
-        .get(name.key())
-        .unwrap();
-    assert!(matches!(
-        value.view(),
-        ContractValidatedAspectValueView::Scalar(AspectValue::String(value))
-            if value == &"before".into()
-    ));
-    drop(read);
-    runtime.snapshots().release_snapshot(&latest).unwrap();
-}
-
-#[test]
-fn native_patch_state_survives_checkpoint_readmission() {
-    let note = optional_string_contract("note");
-    let fixture = AspectSchemaFixture {
-        entity_aspects: vec![DeclaredAspectContractBinding {
-            binding: AspectBinding::EntityField {
-                field: field_key("note"),
-            },
-            contract: note.clone(),
-        }],
-        ..AspectSchemaFixture::default()
-    };
-    let runtime = fixture.build_runtime();
-    let created = commit_entity_create(&runtime, whole_set(&note, text("durable")));
-    let entity = changed_entities(&created)[0];
-    let recovery_fixture = fixture.clone();
-    let (_, recovered) =
-        checkpoint_and_recover_with(&runtime, move || recovery_fixture.build_runtime());
-    let read = recovered.read_truth().read_version(created.version_id);
-    assert!(read
-        .get_entity(entity)
-        .unwrap()
-        .authoritative_aspect_state
-        .as_ref()
-        .unwrap()
-        .get(note.key())
-        .is_some());
-}
-
 fn commit_entity_create(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     aspect_patch: PortableRecordAspectPatch,
 ) -> CommitResult {
@@ -245,15 +178,11 @@ fn commit_entity_create(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn commit_entity_patch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: EntityId,
     aspect_patch: PortableRecordAspectPatch,
@@ -270,15 +199,11 @@ fn commit_entity_patch(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn commit_relation_create(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     source: EntityId,
     target: EntityId,
@@ -300,15 +225,11 @@ fn commit_relation_create(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn commit_relation_patch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     relation_id: RelationId,
     aspect_patch: PortableRecordAspectPatch,
@@ -325,12 +246,7 @@ fn commit_relation_patch(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    transaction
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+    transaction.commit(execution, runtime).unwrap()
 }
 
 fn whole_set(
@@ -390,3 +306,9 @@ fn contract_for_relation(
 fn text(value: &str) -> AspectValue {
     AspectValue::String(value.into())
 }
+
+#[path = "native_aspect_mutations/checkpoint_readmission.rs"]
+mod checkpoint_readmission;
+
+#[path = "native_aspect_mutations/stale_contract.rs"]
+mod stale_contract;

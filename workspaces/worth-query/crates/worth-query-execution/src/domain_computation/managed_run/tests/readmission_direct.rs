@@ -2,7 +2,7 @@ use super::yield_fixture::YieldProvider;
 use super::*;
 
 pub(super) fn yielded_direct(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> (
     crate::domain_computation::WorthQueryYieldedDirectRun,
@@ -13,7 +13,7 @@ pub(super) fn yielded_direct(
 }
 
 pub(super) fn yielded_direct_for_binding(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     binding_identity: &str,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -28,19 +28,27 @@ pub(super) fn yielded_direct_for_binding(
         binding_identity,
         resource_request,
     );
-    let active = running
-        .begin_graph_execution(
-            execution,
+    let active = {
+        let installed_fixture_phase = running.fixture_phase(execution);
+        running.begin_graph_execution(
+            &installed_fixture_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
                 "direct-readmission",
             ),
         )
-        .expect("yield provider should begin");
-    let paused = match active.advance(execution) {
-        WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("yield provider did not pause"),
+    }
+    .expect("yield provider should begin");
+    let paused = {
+        let fixture_phase_result = {
+            let installed_fixture_phase = active.fixture_phase(execution);
+            active.advance(&installed_fixture_phase)
+        };
+        match fixture_phase_result {
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
+            _ => panic!("yield provider did not pause"),
+        }
     };
     let yielded = match paused.yield_run() {
         crate::domain_computation::WorthQueryDirectYieldOutcome::Yielded(yielded) => yielded,
@@ -50,7 +58,7 @@ pub(super) fn yielded_direct_for_binding(
 }
 
 pub(super) fn yielded_direct_with_plan_observation<T>(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     observe_plan: impl FnOnce(
         &worth_query_admission::facade::resource_admission::WorthQueryAdmittedExecutionResourcePlan,
@@ -102,16 +110,18 @@ pub(super) fn yielded_direct_with_plan_observation<T>(
     let attempt = runtime
         .start_direct_resource_attempt(&operation, plan)
         .expect("managed graph operation should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     let running = runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(&operation, attempt, lower.read_request(), resource_request)
         .expect("managed graph run should admit through lower owners")
         .start();
+    let installed_running_phase = execution.phase_for_direct(&running);
+
     let bridge = lower.bridge;
     let active = running
         .begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -119,7 +129,7 @@ pub(super) fn yielded_direct_with_plan_observation<T>(
             ),
         )
         .expect("yield provider should begin");
-    let paused = match active.advance(execution) {
+    let paused = match active.advance(&installed_running_phase) {
         WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("yield provider did not pause"),
     };
@@ -131,7 +141,7 @@ pub(super) fn yielded_direct_with_plan_observation<T>(
 }
 
 pub(in crate::domain_computation::managed_run) fn yielded_direct_with_provider(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -145,9 +155,11 @@ pub(in crate::domain_computation::managed_run) fn yielded_direct_with_provider(
         provider,
         resource_request,
     );
+    let installed_running_phase = execution.phase_for_direct(&running);
+
     let active = running
         .begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -155,7 +167,7 @@ pub(in crate::domain_computation::managed_run) fn yielded_direct_with_provider(
             ),
         )
         .expect("yield provider should begin");
-    let paused = match active.advance(execution) {
+    let paused = match active.advance(&installed_running_phase) {
         WorthQueryDirectGraphStepOutcome::Continue(paused) => paused,
         _ => panic!("yield provider did not pause"),
     };
@@ -182,11 +194,17 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let provider_session = yielded.inspection().provider_session_identity().to_owned();
         let reservation_count = yielded.inspection().retained_capacity_reservation_count();
-        let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted,
-            _ => panic!("same-runtime readmission should succeed"),
+        let readmitted = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted,
+                _ => panic!("same-runtime readmission should succeed"),
+            }
         };
         let active = readmitted.into_active();
         assert_eq!(active.logical_run_identity(), logical);
@@ -201,9 +219,15 @@ fn direct_readmission_mints_fresh_attempts_and_transfers_capacity() {
         assert!(!active.provider_call_identity().is_empty());
         let readmitted_provider_session = active.provider_session_identity().to_owned();
 
-        let completion = match active.advance(execution) {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("restored provider did not complete"),
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored provider did not complete"),
+            }
         };
         let terminal = completion.into_running().completed().unwrap();
         assert_eq!(terminal.logical_run_identity(), logical);
@@ -241,9 +265,17 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let foreign_runtime = query_runtime();
-        let denied = match yielded.readmit_same_runtime(active_request, &foreign_runtime, &bridge) {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => denied,
-            _ => panic!("foreign Query runtime should deny"),
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &foreign_runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("foreign Query runtime should deny"),
+            }
         };
         assert_eq!(
             denied.kind(),
@@ -262,15 +294,27 @@ fn query_preflight_denial_returns_the_exact_yielded_capability_without_fresh_wor
             resource_attempt
         );
 
-        let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted.into_active(),
-            _ => panic!("returned yielded capability should remain readmittable"),
+        let active = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("returned yielded capability should remain readmittable"),
+            }
         };
-        let completion = match active.advance(execution) {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("restored provider did not complete"),
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored provider did not complete"),
+            }
         };
         assert!(completion
             .into_running()
@@ -299,9 +343,17 @@ fn provider_restore_denial_preserves_the_exact_checkpoint_and_capacity_package()
         let checkpoint = yielded.inspection().checkpoint().identity().to_owned();
         let resource_attempt = yielded.inspection().yielded_attempt_identity().to_owned();
         let reservations = yielded.inspection().retained_capacity_reservation_count();
-        let denied = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => denied,
-            _ => panic!("ordinary provider restore failure should deny"),
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("ordinary provider restore failure should deny"),
+            }
         };
         assert_eq!(
             denied.kind(),

@@ -127,7 +127,8 @@ impl<
     >
     WorthQueryApplicationBoundedQueryBatchRequest<'application, 'principal, 'scope, Schema, Intent>
 {
-    pub fn execute(self) -> Result<
+    pub fn execute(
+self, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>) -> Result<
         crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
             <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
             <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
@@ -138,6 +139,6 @@ impl<
         <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
         <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
     {
-        execution::execute(self)
+        execution::execute(phase, self)
     }
 }

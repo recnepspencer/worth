@@ -46,29 +46,46 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     let runtime = application.runtime();
     let scope = request_scope();
     let external = authenticate_operator(runtime.installed_schema(), &scope);
-    let selected = runtime.on_branch(instance.branch()).select().unwrap();
+    let selected = runtime
+        .with_host_advancement(|host_phase| {
+            runtime
+                .on_branch(instance.branch())
+                .select(&host_phase)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let principal_binding = runtime
         .installed_schema()
         .principal_binding(
             super::super::document_retention_model::schema::DocumentPrincipalBinding::reference(),
         )
         .unwrap();
-    let principal = selected
-        .resolve_authenticated_principal(
-            &principal_binding,
-            &external,
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
-    let document = selected
-        .resolve_entity(
-            DocumentIdentityField::reference(),
-            DOCUMENT_IDENTITY.to_owned(),
-            &scope,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+    let principal = runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_authenticated_principal(
+                    &host_phase,
+                    &principal_binding,
+                    &external,
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
+    let document = runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    DocumentIdentityField::reference(),
+                    DOCUMENT_IDENTITY.to_owned(),
+                    &scope,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let operation = runtime
         .installed_schema()
         .installed_operation(SetRetention::reference())
@@ -78,15 +95,20 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         retention_days: 8,
     };
     let candidate = |key: u64| {
-        let admission = selected
-            .authorize_operation(
-                &principal,
-                &document,
-                &operation,
-                Default::default(),
-                &scope,
-            )
-            .unwrap();
+        let admission = runtime
+            .with_host_advancement(|host_phase| {
+                selected
+                    .authorize_operation(
+                        &host_phase,
+                        &principal,
+                        &document,
+                        &operation,
+                        Default::default(),
+                        &scope,
+                    )
+                    .unwrap()
+            })
+            .expect("installed host call opens");
         let HandlerResult::Completed(completed) = runtime
             .with_application_advancement(&scope, |phase| {
                 runtime.execute_mutation_handler::<ReviewedSetRetentionBinding>(
@@ -115,15 +137,20 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         )
     };
     let sibling_key = 974_u64;
-    let sibling_admission = selected
-        .authorize_operation(
-            &principal,
-            &document,
-            &operation,
-            Default::default(),
-            &scope,
-        )
-        .unwrap();
+    let sibling_admission = runtime
+        .with_host_advancement(|host_phase| {
+            selected
+                .authorize_operation(
+                    &host_phase,
+                    &principal,
+                    &document,
+                    &operation,
+                    Default::default(),
+                    &scope,
+                )
+                .unwrap()
+        })
+        .expect("installed host call opens");
     let HandlerResult::Completed(sibling) = runtime
         .with_application_advancement(&scope, |phase| {
             runtime.execute_mutation_handler::<
@@ -144,14 +171,18 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
     else {
         panic!("the ordinary sibling handler must produce a candidate");
     };
-    let sibling_program = sibling
+    let sibling_program = runtime
+        .with_host_advancement(|host_phase| {
+            sibling
         .into_parts()
         .0
         .bind_workflow_operation_authority(
-            &authority,
+            &host_phase, &authority,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap();
+        .unwrap()
+        })
+        .expect("installed host call opens");
     let relabeled = application
         .program_runtime()
         .compare_and_commit_program_action(
@@ -166,18 +197,28 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             if denial.kind() == WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired
     ));
     assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
-    let first_program = candidate(972)
+    let first_candidate = candidate(972);
+    let first_program = runtime
+        .with_host_advancement(|host_phase| {
+            first_candidate
         .bind_workflow_operation_authority(
-            &authority,
+            &host_phase, &authority,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap();
-    let second_program = candidate(973)
+        .unwrap()
+        })
+        .expect("installed host call opens");
+    let second_candidate = candidate(973);
+    let second_program = runtime
+        .with_host_advancement(|host_phase| {
+            second_candidate
         .bind_workflow_operation_authority(
-            &authority,
+            &host_phase, &authority,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .unwrap();
+        .unwrap()
+        })
+        .expect("installed host call opens");
     let first = application
         .program_runtime()
         .compare_and_commit_program_action(
@@ -246,13 +287,17 @@ mod advancement_identity {
         let external = authenticate_operator(runtime.installed_schema(), &scope);
         let prepared = runtime
             .with_application_advancement(&scope, |_phase| {
-                let selected = runtime.on_branch(instance.branch()).select().unwrap();
+                let selected = runtime
+                    .on_branch(instance.branch())
+                    .select(&_phase)
+                    .unwrap();
                 let binding = runtime
                     .installed_schema()
                     .principal_binding(DocumentPrincipalBinding::reference())
                     .unwrap();
                 let principal = selected
                     .resolve_authenticated_principal(
+                        &_phase,
                         &binding,
                         &external,
                         &scope,
@@ -272,6 +317,7 @@ mod advancement_identity {
                     .unwrap();
                 let access = selected
                     .admit_capability_access(
+                        &_phase,
                         &principal,
                         &capability,
                         WorkflowAdvanceInput {
@@ -281,9 +327,10 @@ mod advancement_identity {
                     )
                     .unwrap();
                 let admission = runtime
-                    .authorize_capability_operation(access, &operation, Default::default())
+                    .authorize_capability_operation(&_phase, access, &operation, Default::default())
                     .unwrap();
                 Adapter::prepare::<_, WorkflowAdvanceCapability, _, _, _, _>(
+                    &_phase,
                     &selected,
                     application.vocabulary().workflow_spec_for(&selected),
                     instance,

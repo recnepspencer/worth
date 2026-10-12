@@ -33,9 +33,10 @@ use resolution::{
 impl<'runtime> MergeAccess<'runtime> {
     pub(crate) fn lower_planning_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: NormalizedRelationalMergeRequest,
     ) -> Result<LoweredMergePlan, MergePlanningError> {
-        let policy_plan = self.plan_policy_scope(request)?;
+        let policy_plan = self.plan_policy_scope(execution, request)?;
         self.lower_policy_plan(policy_plan)
     }
 

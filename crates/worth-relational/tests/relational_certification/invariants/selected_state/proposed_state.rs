@@ -53,6 +53,9 @@ impl ProbeEvidence {
 
 #[test]
 fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
@@ -63,11 +66,13 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
         verdict: CustomInvariantVerdict::Pass,
     })
     .expect("proposed-state probe registers");
-    let world = compile_supply_chain_baseline_with_custom_invariant(program, registration)
-        .expect("baseline commits with the inactive proposed-state probe");
+    let world =
+        compile_supply_chain_baseline_with_custom_invariant(execution, program, registration)
+            .expect("baseline commits with the inactive proposed-state probe");
 
     let target = world.handles.aurora_voyage().id;
     assert_snapshot_status(
+        execution,
         &world.runtime,
         &BranchId("main".to_owned()),
         target,
@@ -84,8 +89,13 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
         .expect("the original committed basis is admissible")
         .observation()
         .version_id();
-    let proposal = validate_status_update(&world.runtime, BranchId("main".to_owned()), target)
-        .expect("custom rule sees the proposed and committed status in both phases");
+    let proposal = validate_status_update(
+        execution,
+        &world.runtime,
+        BranchId("main".to_owned()),
+        target,
+    )
+    .expect("custom rule sees the proposed and committed status in both phases");
 
     assert_eq!(evidence.prepared(), 1);
     assert_eq!(evidence.evaluated(), 1);
@@ -125,6 +135,9 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
 
 #[test]
 fn malformed_proposal_denial_preserves_custom_rule_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
         .expect("Court Supply Chain definition is valid");
     let program = CompiledSupplyChainProgram::compile(definition)
@@ -135,13 +148,19 @@ fn malformed_proposal_denial_preserves_custom_rule_identity() {
         verdict: CustomInvariantVerdict::Violation,
     })
     .expect("proposed-state denial rule registers");
-    let world = compile_supply_chain_baseline_with_custom_invariant(program, registration)
-        .expect("baseline commits while the denial rule is inactive");
+    let world =
+        compile_supply_chain_baseline_with_custom_invariant(execution, program, registration)
+            .expect("baseline commits while the denial rule is inactive");
 
     let target = world.handles.aurora_voyage().id;
     evidence.set_target(target);
-    let denial = validate_status_update(&world.runtime, BranchId("main".to_owned()), target)
-        .expect_err("the malformed proposed status must be denied");
+    let denial = validate_status_update(
+        execution,
+        &world.runtime,
+        BranchId("main".to_owned()),
+        target,
+    )
+    .expect_err("the malformed proposed status must be denied");
 
     let TransactionCommitError::Conflict { error, .. } = denial else {
         panic!("custom violation must deny as a typed conflict");
@@ -280,6 +299,7 @@ fn assert_status(
 }
 
 fn assert_snapshot_status(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     branch: &BranchId,
     entity_id: EntityId,
@@ -291,7 +311,7 @@ fn assert_snapshot_status(
     let snapshot = snapshot_for_supply_chain_identity(runtime, &identity);
     let view = runtime
         .read_truth()
-        .read_snapshot(&snapshot)
+        .read_snapshot(&snapshot, execution)
         .expect("branch snapshot is readable");
     let record = view
         .entities()
@@ -308,6 +328,7 @@ fn assert_snapshot_status(
 }
 
 fn validate_status_update(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     branch: BranchId,
     entity_id: EntityId,
@@ -340,8 +361,5 @@ fn validate_status_update(
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    transaction.validate(
-        runtime,
-        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-    )
+    transaction.validate(execution, runtime)
 }

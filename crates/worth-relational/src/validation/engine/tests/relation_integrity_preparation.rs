@@ -33,7 +33,7 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
     }
     // Full candidate retention must still reach the real minimum-cardinality
     // rule, rather than a preparation count refusal or a silently empty scope.
-    let result = InvariantEngine::new(&runtime).execute(request);
+    let result = InvariantEngine::new(&runtime).execute_fixture(request);
     assert!(result.results().iter().any(|result| matches!(
         &result.verdict,
         crate::validation::data::InvariantVerdict::Violation(violation)
@@ -46,6 +46,9 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
 
 #[test]
 fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for interruption in [Interruption::Cancelled, Interruption::TimedOut] {
         let runtime = runtime_with_partition_isolation();
         let identity = runtime.main_branch_identity();
@@ -67,7 +70,7 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
         transaction
             .push_batch(entity_batch(3), Allocation::SystemAllocation)
             .unwrap();
-        let error = match transaction.validate(&runtime, Allocation::SystemAllocation) {
+        let error = match transaction.validate(execution, &runtime) {
             Err(error) => error,
             Ok(_) => panic!("scope scan must observe the requested stop"),
         };
@@ -93,9 +96,7 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
         retry
             .push_batch(entity_batch(3), Allocation::SystemAllocation)
             .unwrap();
-        let outcome = retry
-            .commit(&runtime, Allocation::SystemAllocation)
-            .unwrap();
+        let outcome = retry.commit(execution, &runtime).unwrap();
         for index in 0..3 {
             assert!(outcome
                 .created_entity(&crate::transactions::data::CreatedEntityRef {

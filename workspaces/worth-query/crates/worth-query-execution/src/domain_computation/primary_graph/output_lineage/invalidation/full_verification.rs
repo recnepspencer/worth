@@ -127,6 +127,7 @@ impl SourceInvalidationOwner {
 impl FullVerificationImage<'_> {
     pub(in crate::domain_computation::primary_graph) fn verify_source_view(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: EvidenceView<'_>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
@@ -136,9 +137,10 @@ impl FullVerificationImage<'_> {
             || (!self.state.settlements.contains_key(root.identity())
                 && !self.state.equal_links.contains_key(root.identity()))
         {
-            return self.verify_native_evidence(root, admission);
+            return self.verify_native_evidence(execution, root, admission);
         }
         self.verify_root_evidence(
+            execution,
             root.identity(),
             root.native_output_witness(),
             Some(root),
@@ -149,15 +151,23 @@ impl FullVerificationImage<'_> {
     #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn verify_root(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         fallback_witness: Option<&SealedNativeOutputWitness>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
-        self.verify_root_evidence(identity, fallback_witness, None, admission)
+        self.verify_root_evidence(
+            request_execution,
+            identity,
+            fallback_witness,
+            None,
+            admission,
+        )
     }
 
     fn verify_root_evidence(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         fallback_witness: Option<&SealedNativeOutputWitness>,
         root_source: Option<EvidenceView<'_>>,
@@ -165,6 +175,7 @@ impl FullVerificationImage<'_> {
     ) -> Result<FullVerificationDecision, FullVerificationStop> {
         let mut observed_rows = OrdSet::new();
         let result = self.verify_closure(
+            execution,
             identity,
             fallback_witness,
             root_source,
@@ -177,6 +188,7 @@ impl FullVerificationImage<'_> {
 
     fn verify_closure(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &Arc<RecordedSettlementIdentity>,
         fallback_witness: Option<&SealedNativeOutputWitness>,
         root_source: Option<EvidenceView<'_>>,
@@ -194,7 +206,7 @@ impl FullVerificationImage<'_> {
             image_fence::observe_row(observed_rows, terminal, admission)?;
             let source = root_source.filter(|_| direct && Arc::ptr_eq(&original, terminal));
             if let Some(source) = source {
-                if !self.root_source_is_current(source, admission)? {
+                if !self.root_source_is_current(execution, source, admission)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
                 self.require_complete_root_upstream(source, terminal, admission)?;
@@ -224,7 +236,7 @@ impl FullVerificationImage<'_> {
                 return Ok(FullVerificationDecision::Changed);
             };
             for fact in facts.iter() {
-                if !fact_is_current(fact, self.runtime, self.snapshot, admission)? {
+                if !fact_is_current(execution, fact, self.runtime, self.snapshot, admission)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
             }
@@ -232,12 +244,12 @@ impl FullVerificationImage<'_> {
                 equality::output_projection(&self.state, terminal, observed_rows, admission)?;
             if let Some(projection) = projection {
                 for fact in projection.facts.iter() {
-                    if !fact_is_current(fact, self.runtime, self.snapshot, admission)? {
+                    if !fact_is_current(execution, fact, self.runtime, self.snapshot, admission)? {
                         return Ok(FullVerificationDecision::Changed);
                     }
                 }
             } else if let Some(witness) = fallback_witness.filter(|_| direct) {
-                if !witness.unchanged_in(self.runtime, self.snapshot, admission)? {
+                if !witness.unchanged_in(execution, self.runtime, self.snapshot, admission)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
             } else {
@@ -256,13 +268,14 @@ impl FullVerificationImage<'_> {
 }
 
 fn fact_is_current(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     fact: &WorthQueryApplicationObservedFact,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<bool, FullVerificationStop> {
     let movement = fact
-        .source_currentness_in(runtime, snapshot, admission)?
+        .source_currentness_in(runtime, execution, snapshot, admission)?
         .map_err(FullVerificationStop::SourceRead)?;
     Ok(movement.movement() == Movement::Unmoved)
 }

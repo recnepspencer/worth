@@ -19,33 +19,70 @@ use crate::domain_computation::primary_graph::{
 fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
     let world = installed_delegated_capability_world();
     world.authorization_time.script([time(100), time(102)]);
-    update_grant_field(
-        &world,
-        "capability-parent",
-        field(&world, CapabilityNotAfterField::reference()),
-        worth_foundational::facade::AspectValue::UInt64(101),
-    );
-    update_grant_field(
-        &world,
-        "capability-child",
-        field(&world, CapabilityNotAfterField::reference()),
-        worth_foundational::facade::AspectValue::UInt64(101),
-    );
+    world
+        .application
+        .with_host_advancement(|phase| {
+            update_grant_field(
+                &phase,
+                &world,
+                "capability-parent",
+                field(&world, CapabilityNotAfterField::reference()),
+                worth_foundational::facade::AspectValue::UInt64(101),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            update_grant_field(
+                &phase,
+                &world,
+                "capability-child",
+                field(&world, CapabilityNotAfterField::reference()),
+                worth_foundational::facade::AspectValue::UInt64(101),
+            )
+        })
+        .expect("the fixture read owns its installed host call");
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let capability = admit_touch_account_capability(&world, &principal, &request)
-        .expect("the narrowed chain is current at the first trusted sample");
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let capability = world
+        .application
+        .with_host_advancement(|phase| {
+            admit_touch_account_capability(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+            )
+            .expect("the narrowed chain is current at the first trusted sample")
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = world
         .application
         .installed_schema()
@@ -53,17 +90,26 @@ fn delegated_chain_expiry_between_access_and_governed_query_sessions_denies() {
         .unwrap();
     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &account);
 
-    let Err(denial) = world.selected_product().admit_governed_application_query(
-        &query,
-        &access,
-        capability,
-        ApplicationQueryParameterSet::<GovernedAccountOmissionQuery>::new(),
-        crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
-            NonZeroUsize::new(1).unwrap(),
-            NonZeroUsize::new(256).unwrap(),
-            &request,
-        ),
-    ) else {
+    let Err(denial) = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .admit_governed_application_query(
+                    &phase,
+                    &query,
+                    &access,
+                    capability,
+                    ApplicationQueryParameterSet::<GovernedAccountOmissionQuery>::new(),
+                    crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(
+                        NonZeroUsize::new(1).unwrap(),
+                        NonZeroUsize::new(256).unwrap(),
+                        &request,
+                    ),
+                )
+        })
+        .expect("the fixture read owns its installed host call")
+    else {
         panic!("a fresh session must not reuse the earlier trusted time sample");
     };
     assert_eq!(

@@ -13,115 +13,8 @@ use worth_query_installation::facade::{
     WorthQueryExecutionStrategyContract, WorthQueryExecutionStrategyName,
 };
 
-#[derive(Clone, Copy)]
-struct RepeatedYieldProvider {
-    step_count: u8,
-}
-
-struct RepeatedYieldExecution {
-    next_step: u8,
-    step_count: u8,
-    retained: Option<WorthQueryGraphProviderRetainedMemory>,
-}
-
-struct RepeatedYieldCheckpoint {
-    next_step: u8,
-    step_count: u8,
-    retained: WorthQueryGraphProviderRetainedMemory,
-}
-
-impl WorthQueryGraphParticipationProvider<ManagedGraph> for RepeatedYieldProvider {
-    type Execution = RepeatedYieldExecution;
-
-    fn execution_resource_support(
-        &self,
-    ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupport {
-        crate::domain_computation::provider_session::execution_resource_support_with_yield(
-            "repeated-yield-parity",
-            8,
-        )
-    }
-
-    fn begin(
-        &self,
-        _call: &WorthQueryGraphProviderCall,
-        start: &mut WorthQueryGraphProviderExecutionStart,
-    ) -> Result<
-        WorthQueryCooperativeGraphProviderExecution<Self::Execution>,
-        WorthQueryGraphProviderFailure,
-    > {
-        admit_provider_execution(
-            start,
-            RepeatedYieldExecution {
-                next_step: 0,
-                step_count: self.step_count,
-                retained: None,
-            },
-        )
-    }
-}
-
-impl WorthQueryGraphProviderExecution for RepeatedYieldExecution {
-    fn advance(
-        &mut self,
-        step: &mut WorthQueryGraphProviderStep,
-    ) -> Result<WorthQueryGraphProviderStepDisposition, WorthQueryGraphProviderFailure> {
-        step.perform_work_unit(|| Ok(()))?;
-        self.next_step = self.next_step.saturating_add(1);
-        if self.next_step < self.step_count {
-            if self.retained.is_none() {
-                self.retained = Some(step.retain_bytes(1).map_err(step_failure)?);
-            }
-            step.record_checkpoint_available().map_err(step_failure)?;
-            return Ok(WorthQueryGraphProviderStepDisposition::continue_work());
-        }
-        drop(self.retained.take());
-        WorthQueryGraphProviderStepDisposition::complete("repeated-yield-parity-complete")
-            .map_err(WorthQueryGraphProviderFailure::new)
-    }
-
-    fn suspend(
-        &mut self,
-    ) -> Result<
-        Box<dyn crate::domain_computation::WorthQueryGraphProviderCheckpoint>,
-        WorthQueryGraphProviderFailure,
-    > {
-        Ok(Box::new(RepeatedYieldCheckpoint {
-            next_step: self.next_step,
-            step_count: self.step_count,
-            retained: self
-                .retained
-                .take()
-                .expect("checkpointable execution retains governed memory"),
-        }))
-    }
-
-    fn dispose(&mut self) -> Result<(), WorthQueryGraphProviderFailure> {
-        Ok(())
-    }
-}
-
-impl crate::domain_computation::WorthQueryGraphProviderCheckpoint for RepeatedYieldCheckpoint {
-    fn retained_bytes(&self) -> u64 {
-        u64::try_from(self.retained.len()).unwrap()
-    }
-
-    fn restore(
-        &self,
-        _call: &WorthQueryGraphProviderCall,
-        memory: &mut WorthQueryGraphProviderRestoreMemory,
-    ) -> Result<
-        WorthQueryCooperativeGraphProviderExecution<Box<dyn WorthQueryGraphProviderExecution>>,
-        WorthQueryGraphProviderFailure,
-    > {
-        let execution = Box::new(RepeatedYieldExecution {
-            next_step: self.next_step,
-            step_count: self.step_count,
-            retained: Some(memory.rebind(&self.retained).map_err(step_failure)?),
-        }) as Box<dyn WorthQueryGraphProviderExecution>;
-        admit_restored_provider_execution(memory, execution)
-    }
-}
+mod repeated_yield_provider;
+use repeated_yield_provider::RepeatedYieldProvider;
 
 #[test]
 fn repeated_readmission_matches_uninterrupted_semantics_and_structural_evidence() {
@@ -188,11 +81,17 @@ fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
             reserve_execution_resource_plan(saturation_probe).is_none(),
             "arrival pressure must saturate every capacity pool"
         );
-        let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted.into_active(),
-            _ => panic!("same-runtime readmission must transfer retained capacity"),
+        let active = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted.into_active(),
+                _ => panic!("same-runtime readmission must transfer retained capacity"),
+            }
         };
         assert_eq!(
             active.retained_capacity_reservation_count(),
@@ -203,9 +102,15 @@ fn readmission_transfers_saturated_capacity_without_a_second_reservation() {
             "readmission must not release or duplicate the retained reservation"
         );
 
-        let completion = match active.advance(execution) {
-            WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("restored provider should complete"),
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryDirectGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored provider should complete"),
+            }
         };
         let cleanup = completion
             .into_running()
@@ -278,7 +183,7 @@ struct ProviderWorkEvidence {
 }
 
 fn execute_repeated_yield_world(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     resume_every_safe_point: bool,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
 ) -> ParityEvidence {
@@ -289,9 +194,11 @@ fn execute_repeated_yield_world(
         RepeatedYieldProvider { step_count: 3 },
         resource_request,
     );
+    let installed_running_phase = execution.phase_for_direct(&running);
+
     let active = running
         .begin_graph_execution(
-            execution,
+            &installed_running_phase,
             &graph,
             WorthQueryManagedGraphCallRequest::new(
                 WorthQueryGraphProviderCallKind::Observe,
@@ -304,7 +211,7 @@ fn execute_repeated_yield_world(
     let mut bridge_requests = BTreeSet::from([active.bridge_request_identity().to_owned()]);
     let capacity_reservation_count = active.retained_capacity_reservation_count();
     let mut readmission_count = 0;
-    let mut outcome = active.advance(execution);
+    let mut outcome = active.advance(&installed_running_phase);
 
     loop {
         outcome = match outcome {
@@ -315,11 +222,17 @@ fn execute_repeated_yield_world(
                     }
                     _ => panic!("parity safe point should yield"),
                 };
-                let active = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+                let active = {
+                    let fixture_phase_result = {
+                        let installed_fixture_phase = yielded.fixture_phase(active_request);
+                        yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+                    };
+                    match fixture_phase_result {
                     crate::domain_computation::WorthQueryDirectReadmissionOutcome::Readmitted(
                         readmitted,
                     ) => readmitted.into_active(),
                     _ => panic!("parity yielded run should readmit"),
+                }
                 };
                 readmission_count += 1;
                 managed_attempts.insert(active.run_identity().to_owned());
@@ -329,9 +242,11 @@ fn execute_repeated_yield_world(
                     active.retained_capacity_reservation_count(),
                     capacity_reservation_count
                 );
-                active.advance(execution)
+                active.advance(&installed_running_phase)
             }
-            WorthQueryDirectGraphStepOutcome::Continue(paused) => paused.advance(execution),
+            WorthQueryDirectGraphStepOutcome::Continue(paused) => {
+                paused.advance(&installed_running_phase)
+            }
             WorthQueryDirectGraphStepOutcome::Completed(completion) => {
                 return parity_evidence(
                     completion,
@@ -386,10 +301,4 @@ fn parity_evidence(
     };
     assert!(terminal.cleanup().is_ok());
     evidence
-}
-
-fn step_failure(
-    denial: crate::domain_computation::WorthQueryGraphProviderStepDenial,
-) -> WorthQueryGraphProviderFailure {
-    WorthQueryGraphProviderFailure::new(denial.detail())
 }

@@ -10,22 +10,27 @@ pub(crate) use checked::{
 
 use sha2::{Digest, Sha256};
 
+#[cfg(test)]
+use crate::query::data::{CanonicalQueryResult, IndexParityMode, QueryAccessPath};
 use crate::query::data::{
-    CanonicalQueryResult, DeterministicQueryFragmentKey, DeterministicQueryPlanKey,
-    IndexParityMode, QueryAccessContract, QueryAccessPath, QueryExecutionShape, QueryLocalityClass,
-    QueryOrderingContract, QueryPlanContextId, QueryScope, ReductionDiscipline,
+    DeterministicQueryFragmentKey, DeterministicQueryPlanKey, QueryAccessContract,
+    QueryExecutionShape, QueryLocalityClass, QueryOrderingContract, QueryPlanContextId, QueryScope,
+    ReductionDiscipline,
 };
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 
 use primitive_terms::{encode_string, encode_u128, encode_u64};
+#[cfg(test)]
 use read_record_terms::{
     encode_authoritative_entity_records, encode_authoritative_relation_records,
-    encode_entity_read_record, encode_relation_read_record,
 };
+use read_record_terms::{encode_entity_read_record, encode_relation_read_record};
+#[cfg(test)]
+use scope_terms::{encode_index_parity_mode, encode_query_access_path};
 use scope_terms::{
-    encode_index_parity_mode, encode_query_access_contract, encode_query_access_path,
-    encode_query_execution_shape, encode_query_locality_class, encode_query_ordering_contract,
-    encode_query_plan_context_id, encode_query_scope, encode_reduction_discipline,
+    encode_query_access_contract, encode_query_execution_shape, encode_query_locality_class,
+    encode_query_ordering_contract, encode_query_plan_context_id, encode_query_scope,
+    encode_reduction_discipline,
 };
 
 pub(crate) fn deterministic_query_plan_key_from_canonical_bytes(
@@ -64,6 +69,7 @@ pub(crate) fn deterministic_query_fragment_key_from_canonical_bytes(
     DeterministicQueryFragmentKey(first_u128_digest(&bytes))
 }
 
+#[cfg(test)]
 pub(crate) fn query_result_reduction_digest(
     ordering: QueryOrderingContract,
     entities: &[EntityReadRecord],
@@ -91,6 +97,7 @@ pub(crate) fn query_authoritative_relation_record_digest(record: &RelationReadRe
     sha256_hex(&bytes)
 }
 
+#[cfg(test)]
 pub(crate) fn query_index_parity_basis_digest(
     access_path: &QueryAccessPath,
     parity_mode: IndexParityMode,
@@ -106,6 +113,7 @@ pub(crate) fn query_index_parity_basis_digest(
     sha256_hex(&bytes)
 }
 
+#[cfg(test)]
 fn encode_canonical_query_result(bytes: &mut Vec<u8>, result: &CanonicalQueryResult) {
     encode_query_execution_shape(bytes, result.execution_shape);
     encode_query_ordering_contract(bytes, result.ordering);

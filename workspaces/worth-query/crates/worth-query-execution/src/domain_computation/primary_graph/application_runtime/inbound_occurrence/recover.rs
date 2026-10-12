@@ -68,6 +68,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// installed verifier with the exact signed envelope.
     pub(in crate::domain_computation) fn progress_retained_inbound_occurrence(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
         correlation_token: [u8; 32],
@@ -89,7 +90,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .claim_retryable_publication(&accepted);
         match claim {
             WorthQueryInboundPublicationClaim::Claimed => {
-                self.progress_accepted_inbound_occurrence(phase, accepted, request)
+                self.progress_accepted_inbound_occurrence(execution, phase, accepted, request)
             }
             WorthQueryInboundPublicationClaim::AtCapacity => Err(Denial::CapacityExhausted),
             WorthQueryInboundPublicationClaim::Publishing => Err(Denial::PublicationInProgress),
@@ -215,6 +216,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         recovery: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
         request: &WorthQueryRequestScope,
     ) -> RecoveryStep {
+        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::ExecutionDenied(cause.into())),
+                )
+            }
+        };
         // One load fences new adoption. A concurrent revoke may follow this
         // admission point while this exact World attempt is already in flight.
         if self.inbound_source_posture_for_operation(accepted.operation())
@@ -280,11 +290,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             false,
             false,
         );
-        let outcome = prepared.execute(
-            phase
-                .execution_request_for(&self.product_runtime)
-                .expect("private progression uses its admitted runtime phase"),
-        );
+        let outcome = prepared.execute(publication_execution);
         let world_recovery = binding.recovery();
         drop(lease);
         drop(binding);

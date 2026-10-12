@@ -3,6 +3,9 @@ mod support;
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 
 fn main() {
+    let host_request = support::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .runtime_setup(|runtime| {
             runtime.runtime_name("basic-runtime");
@@ -12,13 +15,14 @@ fn main() {
         })
         .build();
 
-    let (_left_commit, left) = support::create_entity(&runtime, "left");
-    let (_right_commit, right) = support::create_entity(&runtime, "right");
-    let (edge_commit, relation) = support::create_relation(&runtime, left, right, "connects");
+    let (_left_commit, left) = support::create_entity(request_execution, &runtime, "left");
+    let (_right_commit, right) = support::create_entity(request_execution, &runtime, "right");
+    let (edge_commit, relation) =
+        support::create_relation(request_execution, &runtime, left, right, "connects");
 
     let current = runtime
         .read_truth()
-        .read_snapshot(&edge_commit.snapshot)
+        .read_snapshot(&edge_commit.snapshot, request_execution)
         .expect("read final snapshot");
     println!(
         "runtime={} entities={} relations={}",

@@ -5,20 +5,25 @@ use super::{
     title_value_touch, AspectApiFinalizationFailureClass, AspectApiFinalizationRejectionBundle,
 };
 
-pub(super) fn unsupported_intent_rejection() -> AspectApiFinalizationRejectionBundle {
-    let mut workspace = stateful_bridge_task_runtime()
+pub(super) fn unsupported_intent_rejection(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> AspectApiFinalizationRejectionBundle {
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.intent-denial")
         .expect("workspace should open");
     let report = workspace.public_mutation_surface_report();
     let closeout = workspace.public_aspect_api_finalization_closeout();
     let error = workspace
-        .intent(WorthQueryIntentDeclaration::strategy_commit(
-            "unsupported-intent",
-            "strategy.intent.reconcile",
-            "1.0",
-            "intent.reconcile.input.v1",
-            intent_input([("entity", "task-1")]),
-        ))
+        .intent(
+            request_execution,
+            WorthQueryIntentDeclaration::strategy_commit(
+                "unsupported-intent",
+                "strategy.intent.reconcile",
+                "1.0",
+                "intent.reconcile.input.v1",
+                intent_input([("entity", "task-1")]),
+            ),
+        )
         .expect_err("unsupported runtime should deny intent typed and early");
 
     match error {
@@ -43,14 +48,17 @@ pub(super) fn unsupported_intent_rejection() -> AspectApiFinalizationRejectionBu
     }
 }
 
-pub(super) fn duplicate_aspect_authoring_rejection() -> AspectApiFinalizationRejectionBundle {
-    let mut workspace = stateful_bridge_task_runtime()
+pub(super) fn duplicate_aspect_authoring_rejection(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> AspectApiFinalizationRejectionBundle {
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("aspect-api.duplicate-denial")
         .expect("workspace should open");
     let report = workspace.public_mutation_surface_report();
     let closeout = workspace.public_aspect_api_finalization_closeout();
     let error = workspace
         .update(
+            request_execution,
             crate::memory_workspace::admit_authored_entity_label("entity:1:1:1"),
             |task| {
                 task.clear(title_value_touch())

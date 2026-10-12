@@ -99,6 +99,9 @@ fn recovery_denial(kind: BankRecoveryDenialKind) -> BankHttpDenial {
     use BankHttpNextAction as Next;
     use BankRecoveryDenialKind as Kind;
     let (denial, next) = match kind {
+        Kind::CompletionExecutionRequest(cause) => {
+            return super::advancement_denial::advancement(cause)
+        }
         // The installed contract refuses this recovery, or the principal is not
         // the one it belongs to. No retry, refresh, or new credential changes
         // that.
@@ -173,7 +176,8 @@ fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> Ba
         Read::ExactCommitUnavailable | Read::SnapshotIdentityExhausted => {
             (Denial::Unavailable, Next::ContactOperator)
         }
-        Read::ForeignRuntime
+        Read::ForeignPhase
+        | Read::ForeignRuntime
         | Read::Missing
         | Read::AmbiguousCorrelation
         | Read::WrongRecordKind

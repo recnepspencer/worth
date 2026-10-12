@@ -16,6 +16,7 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(super) fn materialize_assessment_requirement(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
@@ -55,6 +56,7 @@ where
         )?;
         let observation_request = self.admission.publication_request();
         let subject = super::assessment_coverage::observe_subject(
+            execution,
             compiled,
             layout,
             progress,
@@ -69,8 +71,9 @@ where
             self.admission.operation(),
         )?;
         let observation_request = self.admission.publication_request();
-        let applicability = self.lease.handle().with_runtime(|runtime| {
+        let applicability = self.lease.handle().with_runtime(execution, |runtime| {
             super::assessment_applicability::observe(
+                execution,
                 node,
                 &self.lease.layout,
                 runtime,
@@ -112,8 +115,9 @@ where
                 self.admission.operation(),
             )?;
             let observation_request = self.admission.publication_request();
-            let (evidence, mut retained_facts) = self.lease.handle().with_runtime(|runtime| {
+            let (evidence, mut retained_facts) = self.lease.handle().with_runtime(execution, |runtime| {
                 super::super::workflow_instance_observation::observe_retained_assessment_evidence(
+                    execution,
                     runtime,
                     self.lease.snapshot(),
                     layout,
@@ -128,6 +132,7 @@ where
             )?;
             let observation_request = self.admission.publication_request();
             let coverage_state = super::assessment_coverage::observe(
+                execution,
                 node,
                 &program_revision,
                 &coverage,
@@ -147,6 +152,7 @@ where
                     ));
                 }
                 return self.materialize_reused_assessment_transition(
+                    execution,
                     layout,
                     program_revision,
                     instance,
@@ -204,6 +210,7 @@ where
     #[allow(clippy::too_many_arguments)]
     fn materialize_reused_assessment_transition(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         program_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         instance: super::super::PublishedWorkflowInstanceRef,
@@ -226,7 +233,12 @@ where
             facts,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )?;
-        assessment::bind_currentness_facts(&mut self, &currentness, selected.node_path())?;
+        assessment::bind_currentness_facts(
+            execution,
+            &mut self,
+            &currentness,
+            selected.node_path(),
+        )?;
         let admitted = admit_workflow_transition(
             self,
             selected,

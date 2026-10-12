@@ -2,16 +2,23 @@ use super::*;
 
 #[test]
 fn replay_contract_success_reproduces_canonical_surfaces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "replayable");
+    let outcome = create_entity_outcome(execution, &runtime, "replayable");
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert_eq!(
@@ -28,25 +35,35 @@ fn replay_contract_success_reproduces_canonical_surfaces() {
 
 #[test]
 fn replay_contract_failure_wrong_branch_is_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "replayable");
+    let outcome = create_entity_outcome(execution, &runtime, "replayable");
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("wrong".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("wrong".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::BranchMismatch));
 }
 
 #[test]
 fn replay_uses_canonical_root_parent_when_catalog_accelerator_is_missing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let parent = create_entity_outcome(&runtime, "parent");
-    let child = create_entity_outcome(&runtime, "child");
+    let parent = create_entity_outcome(execution, &runtime, "parent");
+    let child = create_entity_outcome(execution, &runtime, "child");
 
     assert!(runtime
         .history_authority()
@@ -54,12 +71,16 @@ fn replay_uses_canonical_root_parent_when_catalog_accelerator_is_missing() {
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: child.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: child.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert_eq!(
@@ -70,8 +91,11 @@ fn replay_uses_canonical_root_parent_when_catalog_accelerator_is_missing() {
 
 #[test]
 fn replay_contract_success_preserves_merge_parent_order() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let main = create_entity_outcome(&runtime, "main");
+    let main = create_entity_outcome(execution, &runtime, "main");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -79,21 +103,30 @@ fn replay_contract_success_preserves_merge_parent_order() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature =
-        create_entity_outcome_on_branch(&runtime, "feature", BranchId("feature".to_string()));
+    let feature = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature",
+        BranchId("feature".to_string()),
+    );
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: merge.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: merge.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert!(runtime.replay().compare_outcome(&replay));
     assert_eq!(
@@ -120,8 +153,11 @@ fn replay_contract_success_preserves_merge_parent_order() {
 
 #[test]
 fn replay_contract_reports_structured_patch_drift_when_canonical_envelope_is_tampered() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "replayable");
+    let outcome = create_entity_outcome(execution, &runtime, "replayable");
     assert!(runtime.history_authority().tamper_commit_patch_for_test(
         outcome.commit.commit_id,
         |patch| {
@@ -131,12 +167,16 @@ fn replay_contract_reports_structured_patch_drift_when_canonical_envelope_is_tam
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert_eq!(replay.mismatches.len(), 1);
@@ -152,8 +192,11 @@ fn replay_contract_reports_structured_patch_drift_when_canonical_envelope_is_tam
 
 #[test]
 fn replay_contract_reports_diagnostics_drift_at_digest_layer_when_envelope_is_tampered() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let outcome = create_entity_outcome(&runtime, "replayable");
+    let outcome = create_entity_outcome(execution, &runtime, "replayable");
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         outcome.commit.commit_id,
         |envelope| {
@@ -163,12 +206,16 @@ fn replay_contract_reports_diagnostics_drift_at_digest_layer_when_envelope_is_ta
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(

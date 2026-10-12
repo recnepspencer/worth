@@ -23,12 +23,13 @@ pub(super) type Program =
     WorthQueryApplicationEffectProgram<Schema, TouchAccountOperation, Input, Account>;
 
 pub(in crate::domain_computation::primary_graph) fn admitted_operation(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> WorthQueryAdmittedApplicationOperation<Schema, TouchAccountOperation, Input, Account> {
-    let selected = world.selected_product();
+    let selected = world.selected_product(&(phase_custody).test_host_request());
     let operation = world
         .application
         .installed_schema()
@@ -36,6 +37,7 @@ pub(in crate::domain_computation::primary_graph) fn admitted_operation(
         .unwrap();
     selected
         .authorize_operation(
+            phase_custody,
             principal,
             account,
             &operation,
@@ -60,6 +62,7 @@ pub(super) type ProgramRequiredProgram = WorthQueryApplicationEffectProgram<
 /// An admitted effect program for the one operation the fixture schema marks
 /// program-required, which is the operation the fixture roster acts through.
 pub(super) fn admitted_program_required_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
@@ -72,8 +75,9 @@ pub(super) fn admitted_program_required_program(
         .installed_operation(ProgramRequiredOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            phase_custody,
             principal,
             account,
             &operation,
@@ -84,6 +88,7 @@ pub(super) fn admitted_program_required_program(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, projected| {
                 reader
@@ -97,6 +102,7 @@ pub(super) fn admitted_program_required_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -104,6 +110,7 @@ pub(super) fn admitted_program_required_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -116,6 +123,7 @@ pub(super) fn admitted_program_required_program(
 }
 
 pub(super) fn admitted_mutation_free_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
@@ -132,8 +140,9 @@ pub(super) fn admitted_mutation_free_program(
         .requirements()
         .is_empty());
     let admission = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .authorize_operation(
+            phase_custody,
             principal,
             account,
             &operation,
@@ -144,6 +153,7 @@ pub(super) fn admitted_mutation_free_program(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |_, _| {},
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -153,6 +163,7 @@ pub(super) fn admitted_mutation_free_program(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -160,6 +171,7 @@ pub(super) fn admitted_mutation_free_program(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
@@ -174,16 +186,26 @@ pub(super) fn admitted_mutation_free_program(
 }
 
 pub(super) fn admitted_program(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     replacement: &str,
 ) -> Program {
-    admitted_program_with_emit(world, principal, account, request, replacement, None)
+    admitted_program_with_emit(
+        phase_custody,
+        world,
+        principal,
+        account,
+        request,
+        replacement,
+        None,
+    )
 }
 
 pub(super) fn admitted_program_with_emit(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
@@ -191,10 +213,19 @@ pub(super) fn admitted_program_with_emit(
     replacement: &str,
     emission: Option<&str>,
 ) -> Program {
-    admitted_program_with_emissions(world, principal, account, request, replacement, emission)
+    admitted_program_with_emissions(
+        phase_custody,
+        world,
+        principal,
+        account,
+        request,
+        replacement,
+        emission,
+    )
 }
 
 pub(super) fn admitted_program_with_emissions<'a>(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
@@ -203,6 +234,7 @@ pub(super) fn admitted_program_with_emissions<'a>(
     emissions: impl IntoIterator<Item = &'a str>,
 ) -> Program {
     admitted_program_from_options(
+        phase_custody,
         world,
         principal,
         account,
@@ -216,6 +248,7 @@ pub(super) fn admitted_program_with_emissions<'a>(
 }
 
 pub(super) fn admitted_program_with_expected_status(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
@@ -223,6 +256,7 @@ pub(super) fn admitted_program_with_expected_status(
     status_and_replacement: (&str, &str),
 ) -> Program {
     admitted_program_from_options(
+        phase_custody,
         world,
         principal,
         account,
@@ -242,6 +276,7 @@ pub(super) fn admitted_program_with_expected_status(
 }
 
 pub(super) fn admitted_program_on_selected(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
@@ -250,6 +285,7 @@ pub(super) fn admitted_program_on_selected(
     replacement: &str,
 ) -> Program {
     admitted_program_from_selected(
+        phase_custody,
         world,
         selected,
         principal,
@@ -270,17 +306,27 @@ struct ProgramOptions<'a> {
 }
 
 fn admitted_program_from_options(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
     account: &WorthQueryApplicationEntityIdentity<Schema, Account>,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     options: ProgramOptions<'_>,
 ) -> Program {
-    let selected = world.selected_product();
-    admitted_program_from_selected(world, &selected, principal, account, request, options)
+    let selected = world.selected_product(&(phase_custody).test_host_request());
+    admitted_program_from_selected(
+        phase_custody,
+        world,
+        &selected,
+        principal,
+        account,
+        request,
+        options,
+    )
 }
 
 fn admitted_program_from_selected(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,
@@ -295,6 +341,7 @@ fn admitted_program_from_selected(
         .unwrap();
     let admission = selected
         .authorize_operation(
+            phase_custody,
             principal,
             account,
             &operation,
@@ -305,6 +352,7 @@ fn admitted_program_from_selected(
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            phase_custody,
             &admission,
             |reader, projected| {
                 reader
@@ -318,6 +366,7 @@ fn admitted_program_from_selected(
     let reads = world
         .application
         .begin_projected_application_read_attempt(
+            phase_custody,
             admission,
             projection,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -325,6 +374,7 @@ fn admitted_program_from_selected(
         .unwrap();
     let mut effects = reads
         .complete_projected_dependencies(
+            phase_custody,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()

@@ -145,8 +145,11 @@ mod tests {
 
     #[test]
     fn current_segment_and_checkpoint_readmit_exact_touches_while_legacy_requires_verification() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
         let runtime = persisted_runtime_with_test_schema();
-        let committed = create_entity_outcome(&runtime, "touch-wire");
+        let committed = create_entity_outcome(execution, &runtime, "touch-wire");
         let envelope = runtime
             .replay()
             .canonical_commit_envelope(committed.commit.commit_id)

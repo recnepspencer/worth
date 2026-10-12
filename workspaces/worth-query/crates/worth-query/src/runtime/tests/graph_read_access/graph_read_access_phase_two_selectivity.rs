@@ -17,7 +17,10 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn boolean_selectivity_shape_normalizes_flat_conjunctive_predicates_without_execution() {
-    let shape = selectivity_shape("mixed", |query| {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let shape = selectivity_shape(request_execution, "mixed", |query| {
         query
             .where_equal(equality("status", "value", "active"))
             .where_greater_than(
@@ -78,13 +81,16 @@ fn boolean_selectivity_shape_normalizes_flat_conjunctive_predicates_without_exec
 
 #[test]
 fn boolean_selectivity_shape_canonicalizes_predicate_order_and_membership_values() {
-    let first = selectivity_shape("canonical-a", |query| {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = selectivity_shape(request_execution, "canonical-a", |query| {
         query
             .where_in(membership(["active", "pending"]))
             .where_equal(equality("identity", "id", "user-1"))
             .project(field("identity", "id"))
     });
-    let second = selectivity_shape("canonical-b", |query| {
+    let second = selectivity_shape(request_execution, "canonical-b", |query| {
         query
             .where_equal(equality("identity", "id", "user-1"))
             .where_in(membership(["pending", "active"]))
@@ -105,7 +111,10 @@ fn boolean_selectivity_shape_canonicalizes_predicate_order_and_membership_values
 
 #[test]
 fn boolean_selectivity_shape_preserves_same_field_distinct_range_operand_identity() {
-    let shape = selectivity_shape("distinct-operands", |query| {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let shape = selectivity_shape(request_execution, "distinct-operands", |query| {
         query
             .where_greater_than(
                 NativeComparisonPredicate::greater_than("profile", "age", 18)
@@ -139,7 +148,10 @@ fn boolean_selectivity_shape_preserves_same_field_distinct_range_operand_identit
 
 #[test]
 fn boolean_selectivity_shape_reports_broad_only_presence_as_post_traversal() {
-    let shape = selectivity_shape("presence", |query| {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let shape = selectivity_shape(request_execution, "presence", |query| {
         query
             .where_present(
                 PresencePredicate::is_present("profile", "display_name")
@@ -175,8 +187,11 @@ fn boolean_selectivity_shape_reports_broad_only_presence_as_post_traversal() {
 
 #[test]
 fn boolean_selectivity_shape_rejects_unadmitted_predicate_before_normalization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-two.selectivity.schema-rejection")
         .expect("runtime should open workspace");
@@ -209,11 +224,12 @@ fn boolean_selectivity_shape_rejects_unadmitted_predicate_before_normalization()
 }
 
 fn selectivity_shape(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     label: &str,
     declare_query: impl FnOnce(CollectionQueryBuilder) -> CollectionQueryBuilder,
 ) -> WorthQueryBooleanSelectivityShape {
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace(format!("graph-read-access.phase-two.selectivity.{label}"))
         .expect("runtime should open workspace");

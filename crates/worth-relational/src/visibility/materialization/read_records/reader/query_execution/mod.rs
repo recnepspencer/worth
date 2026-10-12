@@ -1,3 +1,4 @@
+mod denial;
 mod fragment_charge;
 mod fragment_execution;
 mod leased_completion;

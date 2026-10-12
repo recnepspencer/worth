@@ -9,7 +9,11 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn pinned_snapshot_observation_does_not_select_a_later_head() {
-    let world = compile_supply_chain_baseline(court_program()).expect("Court world compiles");
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let world =
+        compile_supply_chain_baseline(execution, court_program()).expect("Court world compiles");
     let port_key = EntityKey::new(EntityKind::Port, 0);
     let port_id = world.handles.entities[&port_key].id;
     let mut fields = std::collections::BTreeMap::new();
@@ -48,13 +52,10 @@ fn pinned_snapshot_observation_does_not_select_a_later_head() {
         )
         .unwrap();
     transaction
-        .commit(
-            &world.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &world.runtime)
         .expect("later head update commits through the public facade");
 
-    let observed = super::world::supply_chain::observe_supply_chain(&world)
+    let observed = super::world::supply_chain::observe_supply_chain(execution, &world)
         .expect("the original pinned snapshot remains readable");
     match observed.entities.get(&port_key) {
         Some(EntityRecord::Port(record)) => assert_eq!(record.name, "Meridian"),

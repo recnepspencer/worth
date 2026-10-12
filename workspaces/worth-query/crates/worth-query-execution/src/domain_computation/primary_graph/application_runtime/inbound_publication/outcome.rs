@@ -74,6 +74,7 @@ impl WorthQueryUnpublishedInboundCompletion {
 
 #[derive(Debug)]
 pub(in crate::domain_computation) enum WorthQueryInboundPublicationDenial {
+    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     ForeignRelationalRuntime,
     ForeignProductWorld,
     OriginalPublicationCommitMismatch,

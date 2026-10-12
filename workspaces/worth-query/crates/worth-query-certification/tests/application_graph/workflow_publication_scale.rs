@@ -97,31 +97,43 @@ fn public_ten_thousand_node_definition_publishes() {
             cancellation.token(),
         );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let cost_scope = runtime
-        .capture_certification_cost_scope(application.current_world())
-        .expect("document branch remains measurable");
+    let cost_scope = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .capture_certification_cost_scope(&host_phase, application.current_world())
+                .expect("document branch remains measurable")
+        })
+        .expect("installed host call opens");
     let started_at = std::time::Instant::now();
     let authored = sparse_definition(NODES);
     let authored_ms = started_at.elapsed().as_millis();
     let draft = runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &application, authored)
+                .expect("the 10k definition validates against installed vocabulary")
         })
-        .workflow(&application, authored)
-        .expect("the 10k definition validates against installed vocabulary");
+        .expect("installed host call opens");
     let validated_ms = started_at.elapsed().as_millis();
     let publication = draft
         .publish(WorkflowDefinitionExpectedPredecessor::Absent)
         .idempotency(&918_400)
         .execute()
         .expect("the 10k definition prepares for publication");
-    let cost = runtime
-        .observe_certification_cost(&cost_scope)
-        .expect("document publication cost remains measurable");
+    let cost = application
+        .with_host_advancement(|host_phase| {
+            runtime
+                .observe_certification_cost(&host_phase, &cost_scope)
+                .expect("document publication cost remains measurable")
+        })
+        .expect("installed host call opens");
     let sharing = cost.relational().sharing_cost_delta();
     assert_eq!(sharing.copied_truth_bytes, 0);
     assert!(sharing.publication_new_authoritative_bytes > 0);
@@ -195,17 +207,21 @@ fn cold_compilation_of_large_definition_uses_bounded_start_facts() {
         );
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let publication = runtime
-        .request(&principal, &scope)
-        .mutate(WorkflowDefinitionAuthoringIntent {
-            input: WorkflowDefinitionAuthoringInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 8,
-            },
+        .with_host_advancement(|host_phase| {
+            runtime
+                .request(&principal, &scope)
+                .mutate(WorkflowDefinitionAuthoringIntent {
+                    input: WorkflowDefinitionAuthoringInput {
+                        identity: DOCUMENT_IDENTITY.to_owned(),
+                        retention_days: 8,
+                    },
+                })
+                .workflow(&host_phase, &application, sparse_definition(NODES))
+                .expect("large definition validates")
+                .publish(WorkflowDefinitionExpectedPredecessor::Absent)
+                .idempotency(&918_401)
         })
-        .workflow(&application, sparse_definition(NODES))
-        .expect("large definition validates")
-        .publish(WorkflowDefinitionExpectedPredecessor::Absent)
-        .idempotency(&918_401)
+        .expect("installed host call opens")
         .execute()
         .expect("large definition publishes");
     let WorkflowDefinitionPublicationOutcome::Published(published) = publication else {

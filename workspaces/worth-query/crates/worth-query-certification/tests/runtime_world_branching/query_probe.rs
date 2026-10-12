@@ -43,33 +43,55 @@ pub(super) fn read_across<Interleaved>(
     let before = observer.observe();
     let selected = world
         .application
-        .on_branch(branch)
-        .select()
-        .expect("the modeled product must remain selectable");
-    let scope = selected
-        .resolve_entity(
-            IntentIdentityField::reference(),
-            "intent-1".to_owned(),
-            &request,
-            primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .expect("the selected product must resolve its intent");
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the modeled product must remain selectable")
+        })
+        .expect("installed host call opens");
+    let scope = world
+        .application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    IntentIdentityField::reference(),
+                    "intent-1".to_owned(),
+                    &request,
+                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .expect("the selected product must resolve its intent")
+        })
+        .expect("installed host call opens");
     let access = primary_graph::WorthQueryApplicationQueryAccessContext::new(&principal, &scope);
-    let plan = selected
-        .admit_application_query(
-            &query,
-            &access,
-            ApplicationQueryParameterSet::new(),
-            controls(&request),
-        )
-        .expect("the ordinary read must be admitted on the selected product");
+    let plan = world
+        .application
+        .with_host_advancement(|host_phase| {
+            selected
+                .admit_application_query(
+                    &host_phase,
+                    &query,
+                    &access,
+                    ApplicationQueryParameterSet::new(),
+                    controls(&request),
+                )
+                .expect("the ordinary read must be admitted on the selected product")
+        })
+        .expect("installed host call opens");
     let after_admission = observer.observe();
     let interleaved = interleave();
     let before_execution = observer.observe();
     let result = world
         .application
-        .execute_application_query_one_shot(plan)
-        .expect("the admitted exact-basis read must execute");
+        .with_host_advancement(|host_phase| {
+            world
+                .application
+                .execute_application_query_one_shot(&host_phase, plan)
+                .expect("the admitted exact-basis read must execute")
+        })
+        .expect("installed host call opens");
     let receipt = result.receipt();
     assert!(receipt.basis_released());
     let authorization = receipt.authorization_work();

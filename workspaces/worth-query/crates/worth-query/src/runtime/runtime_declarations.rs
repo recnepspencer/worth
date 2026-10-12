@@ -11,6 +11,7 @@ use crate::memory_workspace::{
 impl WorthQueryRuntime {
     pub fn declare_live_view<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         request: DeclarativeLiveQueryRequest,
         schema_view: QuerySchemaView,
@@ -20,6 +21,7 @@ impl WorthQueryRuntime {
         let name = name.into();
         admit_live_view_declaration_receipt(&*self.backend, &name, &request, &schema_view)?;
         let activation = self.install_live_subscription_for_request(
+            execution,
             &name,
             &request,
             schema_view.clone(),
@@ -30,6 +32,7 @@ impl WorthQueryRuntime {
 
     pub(crate) fn declare_live_view_from_read_binding<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
         binding: WorthQueryReadExecutionBinding,
     ) -> Result<WorthQueryLiveView<T>, WorthQueryRuntimeError> {
@@ -54,7 +57,8 @@ impl WorthQueryRuntime {
             .clone();
         let schema_view = binding.read_family().read_graph().schema_view().clone();
         admit_live_view_declaration_receipt(&*self.backend, &name, &request, &schema_view)?;
-        let activation = self.install_live_subscription_for_read_binding(&name, binding)?;
+        let activation =
+            self.install_live_subscription_for_read_binding(execution, &name, binding)?;
         self.finish_live_view_declaration(name, request, schema_view, activation, None)
     }
 
@@ -143,6 +147,7 @@ impl WorthQueryRuntime {
 
     pub fn declare_maintained_derived_view<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view: WorthQueryDerivedView,
         maintainer: impl WorthQueryDerivedViewMaintainer + 'static,
     ) -> Result<WorthQueryDerivedViewHandle<T>, WorthQueryRuntimeError> {
@@ -156,7 +161,7 @@ impl WorthQueryRuntime {
             view,
             Some(Box::new(maintainer)),
         );
-        self.initialize_maintained_derived_view_materialization(&name)?;
+        self.initialize_maintained_derived_view_materialization(execution, &name)?;
         Ok(WorthQueryDerivedViewHandle::new(name))
     }
 
@@ -199,6 +204,7 @@ impl WorthQueryRuntime {
 impl WorthQueryRuntime {
     fn initialize_maintained_derived_view_materialization(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         view_name: &str,
     ) -> Result<(), WorthQueryRuntimeError> {
         let target = WorthQueryDerivedMaterializationTarget::new(view_name);
@@ -208,8 +214,8 @@ impl WorthQueryRuntime {
             }
             _ => return Ok(()),
         };
-        let upstreams = retained_upstream_inputs_for_declaration(self, &declaration)?;
-        let snapshot_identity = self.current_snapshot_identity();
+        let upstreams = retained_upstream_inputs_for_declaration(execution, self, &declaration)?;
+        let snapshot_identity = self.current_snapshot_identity_with_request(execution);
         let refresh_identity = WorthQueryCommitIdentity::preview(
             WorthQueryEvidenceIdentity::compose(
                 WorthQueryEvidenceScope::WriteReceiptCommitIdentity,
@@ -317,6 +323,7 @@ fn live_source_declaration_error(
 }
 
 fn retained_upstream_inputs_for_declaration(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut WorthQueryRuntime,
     declaration: &WorthQueryDerivedView,
 ) -> Result<WorthQueryRetainedUpstreamInputs, WorthQueryRuntimeError> {
@@ -330,7 +337,7 @@ fn retained_upstream_inputs_for_declaration(
                 .map(|state| state.installation.clone())
                 .ok_or_else(|| WorthQueryRuntimeError::MissingLiveView(view_name.clone()))?;
             runtime
-                .execute_live_read_for_installation(installation)
+                .execute_live_read_for_installation(execution, installation)
                 .map(|read| {
                     (
                         WorthQueryLiveArtifactTarget::from_view_name(view_name),

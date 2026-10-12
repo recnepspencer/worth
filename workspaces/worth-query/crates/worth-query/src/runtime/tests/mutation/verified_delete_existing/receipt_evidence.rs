@@ -2,30 +2,37 @@ use super::*;
 
 #[test]
 fn delete_existing_verified_preserves_backend_verified_assertion_evidence_on_delete_receipt() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.delete-existing-verified")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.delete-existing-verified-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-delete-existing-verified-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.delete-existing-verified-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-delete-existing-verified-table")
+            },
+        )
         .expect("live view should declare");
 
     let seed = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -54,6 +61,7 @@ fn delete_existing_verified_preserves_backend_verified_assertion_evidence_on_del
 
     let receipt = workspace
         .delete_existing_verified(
+            request_execution,
             binding.clone(),
             |task| {
                 task.set_aspect(
@@ -95,7 +103,10 @@ fn delete_existing_verified_preserves_backend_verified_assertion_evidence_on_del
     );
     assert!(receipt.declared_aspect_value_digest().is_some());
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::WriteReceipt(inspection) => {
             assert_eq!(
                 inspection
@@ -116,7 +127,11 @@ fn delete_existing_verified_preserves_backend_verified_assertion_evidence_on_del
     }
 
     let error = workspace
-        .probe_existing(binding, test_aspect_touches(["status.value"]))
+        .probe_existing(
+            request_execution,
+            binding,
+            test_aspect_touches(["status.value"]),
+        )
         .expect_err("deleted target should no longer probe");
     match error {
         WorthQueryRuntimeError::MutationBindingDenied(denial) => {
@@ -131,30 +146,37 @@ fn delete_existing_verified_preserves_backend_verified_assertion_evidence_on_del
 
 #[test]
 fn batch_delete_existing_verified_preserves_aggregate_assertion_digest() {
-    let mut workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("tasks.batch-delete-existing-verified")
         .expect("task runtime should open a named workspace");
     let _: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.batch-delete-existing-verified-table", |q| {
-            q.from("Task")
-                .select([
-                    crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                    crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
-                        .unwrap(),
-                ])
-                .order_by(
-                    crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
-                        .unwrap(),
-                )
-                .schema_basis("tasks-batch-delete-existing-verified-table")
-        })
+        .live_view(
+            request_execution,
+            "tasks.batch-delete-existing-verified-table",
+            |q| {
+                q.from("Task")
+                    .select([
+                        crate::authoring::AspectFieldKey::from_authoring_parts("identity", "id")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                        crate::authoring::AspectFieldKey::from_authoring_parts("status", "value")
+                            .unwrap(),
+                    ])
+                    .order_by(
+                        crate::authoring::AspectFieldKey::from_authoring_parts("title", "value")
+                            .unwrap(),
+                    )
+                    .schema_basis("tasks-batch-delete-existing-verified-table")
+            },
+        )
         .expect("live view should declare");
 
     let seed_one = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-1"),
@@ -170,7 +192,7 @@ fn batch_delete_existing_verified_preserves_aggregate_assertion_digest() {
         })
         .expect("first seed should execute");
     let seed_two = workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(
                 test_aspect_touch("identity.id"),
                 test_authored_string_aspect_value("task-2"),
@@ -206,7 +228,7 @@ fn batch_delete_existing_verified_preserves_aggregate_assertion_digest() {
         .expect("binding two should build");
 
     let receipt = workspace
-        .batch(|batch| {
+        .batch(request_execution, |batch| {
             batch
                 .delete_existing_verified(
                     binding_one,

@@ -25,9 +25,12 @@ use worth_query_host::facade::{
     },
 };
 
-// Ample for bootstrap admission; the ledger subject does not depend on this absolute size.
-const AUTHORITY_BYTES: usize = 4 * 1024;
+// Headroom for bootstrap and charged native reads; the ledger proof below fills
+// this capacity and does not depend on its absolute size.
+const AUTHORITY_BYTES: usize = 64 * 1024;
 const RETAINED_BYTES: usize = 96;
+// This proof constrains memory; ordinary principal/product reads also need work.
+const ORDINARY_READ_WORK: u64 = 1024;
 
 fn install(
     authority: Arc<ExecutionAuthority>,
@@ -72,7 +75,11 @@ fn request() -> LeaseRequest {
         policy: ExecutionRequestPolicy::new(
             ExecutionPosture::Serial,
             DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), AUTHORITY_BYTES as u64, 1),
+            ExecutionBudget::new(
+                NonZeroUsize::new(1).unwrap(),
+                AUTHORITY_BYTES as u64,
+                ORDINARY_READ_WORK,
+            ),
         ),
         deadline: None,
         cancellation: CancellationToken::new(),
@@ -113,6 +120,28 @@ fn assert_source(app: &ExampleApplication) {
 
 #[test]
 fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_reopen() {
+    // The process-memory ceiling belongs to this proof's composition root.
+    // Other tests in this binary construct the shared placement authority.
+    const CHILD: &str = "WORTH_QUERY_MEMORY_LEDGER_PROOF_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let name = format!(
+            "{}::execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_reopen",
+            module_path!().split_once("::").unwrap().1
+        );
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &name, "--nocapture"])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+        return;
+    }
     let mut omitted = ExampleApplication::publish("blocked");
     assert!(matches!(
         omitted.runtime.runtime().request_execution_lease(request()),
@@ -179,8 +208,13 @@ fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_r
     }
     let checkpoint = first
         .runtime
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            first
+                .runtime
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     first.runtime.close_conditional_runtime().unwrap();
     drop(first);
     second.runtime.close_conditional_runtime().unwrap();

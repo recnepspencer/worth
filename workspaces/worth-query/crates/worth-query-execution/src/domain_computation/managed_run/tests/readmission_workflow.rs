@@ -1,27 +1,16 @@
+mod yielded_run;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use yielded_run::yielded_workflow_fixture;
 
 use super::yield_fixture::YieldProvider;
 use super::*;
 
-pub(super) struct ReadmissionArtifact;
-
-impl WorthQueryArtifactProviderResource for ReadmissionArtifact {
-    const PROVIDER_FAMILY: &'static str = "WORTH.tests.affinity.provider";
-
-    fn canonical_semantic_projection(&self) -> Vec<u8> {
-        b"workflow-readmission-artifact".to_vec()
-    }
-
-    fn retained_bytes(&self) -> usize {
-        9
-    }
-
-    fn dispose(&mut self) {}
-}
+mod readmission_artifact;
+pub(super) use readmission_artifact::ReadmissionArtifact;
 
 pub(in crate::domain_computation::managed_run) fn yielded_workflow(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -35,7 +24,7 @@ pub(in crate::domain_computation::managed_run) fn yielded_workflow(
 }
 
 pub(super) fn yielded_workflow_with_retained_artifact(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
     resource_request: worth_execution::ExecutionRequest<'_, '_>,
@@ -58,7 +47,7 @@ pub(super) fn yielded_workflow_with_retained_artifact(
 }
 
 pub(super) fn yielded_workflow_for_stage(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    execution: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
 
     provider: YieldProvider,
     stage_identity: &str,
@@ -73,112 +62,6 @@ pub(super) fn yielded_workflow_for_stage(
         yielded_workflow_fixture(execution, provider, stage_identity, false, resource_request);
     debug_assert!(artifact.is_none());
     (yielded, bridge, runtime, producer)
-}
-
-fn yielded_workflow_fixture(
-    execution: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-
-    provider: YieldProvider,
-    stage_identity: &str,
-    retain_artifact: bool,
-    resource_request: worth_execution::ExecutionRequest<'_, '_>,
-) -> (
-    crate::domain_computation::WorthQueryYieldedWorkflowRun,
-    RuntimeBridge,
-    WorthQueryExecutionRuntime,
-    Arc<crate::domain_computation::WorthQueryArtifactProductionAuthority>,
-    Option<crate::domain_computation::WorthQueryMoveOnlyArtifactHandle>,
-) {
-    let installer = WorthQueryExecutionRuntimeInstaller::new();
-    let provider_anchor = Arc::new(
-        crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::WorthQueryGraphProviderAnchor::install::<ManagedGraph, _>(
-            provider,
-        ),
-    );
-    let provider_support = provider_anchor.resource_support().clone();
-    let graph = super::workflow_provider_steps::installed_graph(
-        &installer,
-        "workflow-readmission-graph",
-        provider_anchor,
-    );
-    let runtime =
-        super::workflow_provider_steps::installed_runtime(installer, "workflow readmission");
-    let operation_resources =
-        crate::domain_computation::provider_session::admitted_yield_plan("workflow-readmission", 8);
-    let stage_resource_identity = format!("workflow-readmission:{stage_identity}");
-    let stage_resources = admitted_plan_with_graph_support(
-        &stage_resource_identity,
-        8,
-        graph.role(),
-        provider_support,
-    );
-    let resources = WorthQueryAdmittedWorkflowResourcePlan::assemble(
-        operation_resources,
-        BTreeMap::from([(stage_identity.to_owned(), stage_resources)]),
-    );
-    let output =
-        crate::domain_computation::artifact_owner::installed_artifact_contract_for_managed_run();
-    let operation = workflow_authority_with_stage_graph_and_output_artifact(
-        &runtime,
-        &resources,
-        stage_identity,
-        &graph,
-        WorthQueryOperationGraphAccess::Observe,
-        output,
-    );
-    let attempt = runtime
-        .start_workflow_resource_attempt(&operation, resources)
-        .expect("workflow resources should reserve");
-    let lower = causal_fixture::managed_admission_context();
-    let running = runtime
-        .managed_run_admission(&lower.bridge, &lower.relational)
-        .admit_workflow(&operation, attempt, lower.read_request(), resource_request)
-        .expect("workflow should admit")
-        .start()
-        .expect("workflow should start");
-    let old_producer = running
-        .artifacts()
-        .production_authority(stage_identity)
-        .expect("producer stage should validate")
-        .expect("producer stage should own output authority");
-    let retained_artifact = retain_artifact.then(|| {
-        let admission = crate::domain_computation::WorthQueryArtifactProductionAuthority::admit(
-            &old_producer,
-            WorthQueryArtifactProductionEvidence::new("readmission-cleanup", "retained-artifact"),
-        );
-        crate::domain_computation::WorthQueryArtifactProductionAuthority::register_exact(
-            &old_producer,
-            admission,
-            ReadmissionArtifact,
-        )
-        .expect("retained workflow artifact must register before production freezes")
-    });
-    let active = running
-        .begin_stage_graph_execution(
-            execution,
-            stage_identity,
-            &graph,
-            WorthQueryManagedGraphCallRequest::new(
-                WorthQueryGraphProviderCallKind::Observe,
-                "workflow-readmission",
-            ),
-        )
-        .expect("workflow provider should begin");
-    let paused = match active.advance(execution) {
-        WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
-        _ => panic!("workflow provider did not pause"),
-    };
-    let yielded = match paused.yield_run() {
-        crate::domain_computation::WorthQueryWorkflowYieldOutcome::Yielded(yielded) => yielded,
-        _ => panic!("eligible workflow did not yield"),
-    };
-    (
-        yielded,
-        lower.bridge,
-        runtime,
-        old_producer,
-        retained_artifact,
-    )
 }
 
 #[test]
@@ -200,11 +83,17 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
         let old_artifacts = yielded.inspection().artifact_evidence();
         let old_provider_work = yielded.inspection().provider_work().clone();
         let reservations = yielded.inspection().retained_capacity_reservation_count();
-        let readmitted = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(
-                readmitted,
-            ) => readmitted,
-            _ => panic!("same-runtime workflow readmission should succeed"),
+        let readmitted = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Readmitted(
+                    readmitted,
+                ) => readmitted,
+                _ => panic!("same-runtime workflow readmission should succeed"),
+            }
         };
         let active = readmitted.into_active();
         assert_eq!(active.logical_run_identity(), logical);
@@ -267,9 +156,15 @@ fn workflow_readmission_rolls_generation_and_preserves_occurrence_state() {
             .expect("fresh producer should register");
         drop(fresh_handle);
 
-        let completion = match active.advance(execution) {
-            WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
-            _ => panic!("restored workflow provider did not complete"),
+        let completion = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = active.fixture_phase(execution);
+                active.advance(&installed_fixture_phase)
+            };
+            match fixture_phase_result {
+                WorthQueryWorkflowGraphStepOutcome::Completed(completion) => completion,
+                _ => panic!("restored workflow provider did not complete"),
+            }
         };
         let terminal = completion.into_running().completed().unwrap();
         assert_eq!(terminal.logical_run_identity(), logical);
@@ -305,11 +200,17 @@ fn workflow_provider_restore_denial_keeps_frozen_generation_retryable() {
             .inspection()
             .artifact_evidence()
             .production_generation();
-        let denied = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
-            crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
-                denied
+        let denied = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
+                crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::Denied(denied) => {
+                    denied
+                }
+                _ => panic!("ordinary workflow restore failure should deny"),
             }
-            _ => panic!("ordinary workflow restore failure should deny"),
         };
         assert_eq!(
         denied.kind(),
@@ -353,11 +254,17 @@ fn workflow_restore_panic_can_recover_only_through_terminal_cleanup() {
             .inspection()
             .artifact_evidence()
             .production_generation();
-        let recovery = match yielded.readmit_same_runtime(active_request, &runtime, &bridge) {
+        let recovery = {
+            let fixture_phase_result = {
+                let installed_fixture_phase = yielded.fixture_phase(active_request);
+                yielded.readmit_same_runtime(&installed_fixture_phase, &runtime, &bridge)
+            };
+            match fixture_phase_result {
             crate::domain_computation::WorthQueryWorkflowReadmissionOutcome::RecoveryRequired(
                 recovery,
             ) => recovery,
             _ => panic!("workflow provider restore panic should require recovery"),
+        }
         };
         assert_eq!(
         recovery.posture(),

@@ -10,7 +10,10 @@ use super::support::{
 
 #[test]
 fn temporal_current_family_admits_bridge_readiness_once_runtime_temporal_support_closes() {
-    let handle = handle("temporal-current");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "temporal-current");
     let readiness = handle.declaration_entry_readiness::<TemporalInput<TemporalCurrentFamily>>();
     let bridge_row = readiness
         .rows()
@@ -36,7 +39,10 @@ fn temporal_current_family_admits_bridge_readiness_once_runtime_temporal_support
 
 #[test]
 fn temporal_preview_family_keeps_preview_truth_basis_invalid_and_localized() {
-    let handle = handle("temporal-preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "temporal-preview");
     let readiness = handle.declaration_entry_readiness::<TemporalInput<TemporalPreviewFamily>>();
     let bridge_row = readiness
         .rows()
@@ -69,7 +75,10 @@ fn temporal_preview_family_keeps_preview_truth_basis_invalid_and_localized() {
 
 #[test]
 fn temporal_historical_family_keeps_historical_truth_basis_invalid_and_localized() {
-    let handle = handle("temporal-historical");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "temporal-historical");
     let readiness = handle.declaration_entry_readiness::<TemporalInput<TemporalHistoricalFamily>>();
     let bridge_row = readiness
         .rows()
@@ -89,7 +98,10 @@ fn temporal_historical_family_keeps_historical_truth_basis_invalid_and_localized
 
 #[test]
 fn retained_non_temporal_subject_does_not_inherit_family_level_temporal_debt() {
-    let handle = handle("temporal-current");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "temporal-current");
     let envelope = temporal_current_envelope(
         &handle,
         TemporalInput::<TemporalCurrentFamily>::plain("edge:42"),

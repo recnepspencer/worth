@@ -24,12 +24,16 @@ use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 #[test]
 fn republication_cannot_certify_output_computed_before_its_own_write() {
-    suspend_restore_and_read(false);
+    {
+        suspend_restore_and_read(false);
+    }
 }
 
 #[test]
 fn restoration_fallback_cannot_certify_output_computed_before_its_own_write() {
-    suspend_restore_and_read(true);
+    {
+        suspend_restore_and_read(true);
+    }
 }
 
 fn suspend_restore_and_read(exhaust_registration: bool) {
@@ -38,7 +42,14 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         let request = live_scope();
         let graph = application.runtime.primary_graph().unwrap();
         let handle = graph.integration_handle();
-        let selected = world.selected_product();
+        let selected = world
+            .application
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase.test_host_request();
+
+                world.selected_product(phase_custody)
+            })
+            .expect("the fixture read owns its installed host call");
         let (_, product, basis) = selected.into_parts();
         let observation = product.observation();
         let exact = handle.output_lineage.lock().unwrap().qualified_output::<OwnWriteOutputs>(
@@ -72,12 +83,22 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             .collect::<Vec<_>>();
         assert_eq!(generated.len(), 1);
         let generated = generated[0];
-        let kind = handle.with_runtime(|runtime| {
-            runtime
-                .read_truth()
-                .exact_snapshot_live_entity_kind(basis.snapshot_handle(), generated)
-                .unwrap()
-        });
+        let kind = world
+            .application
+            .with_host_advancement(|phase| {
+                let borrowed_execution = phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture borrows its runtime request");
+                let execution = &borrowed_execution;
+
+                handle.with_runtime(execution, |runtime| {
+                    runtime
+                        .read_truth()
+                        .exact_snapshot_live_entity_kind(basis.snapshot_handle(), generated)
+                        .unwrap()
+                })
+            })
+            .expect("the fixture read owns its installed host call");
         let layout = graph.layout();
         let label = AccountLabel::reference();
         let status = AccountStatus::reference();
@@ -121,16 +142,27 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
             )
         })
         .collect::<BTreeMap<_, _>>();
-        let prepared = handle.with_runtime(|runtime| {
-            runtime
-                .owner_component_services()
-                .materialization_port()
-                .prepare_generated_materialization_suspension(
-                    product.relational_basis(),
-                    &[generated],
-                )
-                .unwrap()
-        });
+        let prepared = world
+            .application
+            .with_host_advancement(|phase| {
+                let borrowed_execution = phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture borrows its runtime request");
+                let execution = &borrowed_execution;
+
+                handle.with_runtime(execution, |runtime| {
+                    runtime
+                        .owner_component_services()
+                        .materialization_port()
+                        .prepare_generated_materialization_suspension(
+                            &borrowed_execution,
+                            product.relational_basis(),
+                            &[generated],
+                        )
+                        .unwrap()
+                })
+            })
+            .expect("the fixture read owns its installed host call");
         let (candidate, completion) = prepared.into_parts();
         // This test host's publication call owns its request; retained facts
         // pass between suspension, restoration and the unrelated publication.
@@ -159,23 +191,41 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         let suspended = completion.complete(commit).unwrap();
         drop(basis);
         drop(product);
-        let (_, product, basis) = world.selected_product().into_parts();
-        let prepared = handle.with_runtime(|runtime| {
-            runtime
-                .owner_component_services()
-                .materialization_port()
-                .prepare_generated_rematerialization(
-                    product.relational_basis(),
-                    suspended.custody,
-                    vec![RelationalEntityMaterialization {
-                        entity_id: generated,
-                        kind_id: kind,
-                        fields: AspectFieldPatch::from(fields),
-                    }],
-                    vec![],
-                )
-                .unwrap()
-        });
+        let (_, product, basis) = world
+            .application
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase.test_host_request();
+
+                world.selected_product(phase_custody).into_parts()
+            })
+            .expect("the fixture read owns its installed host call");
+        let prepared = world
+            .application
+            .with_host_advancement(|phase| {
+                let borrowed_execution = phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture borrows its runtime request");
+                let execution = &borrowed_execution;
+
+                handle.with_runtime(execution, |runtime| {
+                    runtime
+                        .owner_component_services()
+                        .materialization_port()
+                        .prepare_generated_rematerialization(
+                            &borrowed_execution,
+                            product.relational_basis(),
+                            suspended.custody,
+                            vec![RelationalEntityMaterialization {
+                                entity_id: generated,
+                                kind_id: kind,
+                                fields: AspectFieldPatch::from(fields),
+                            }],
+                            vec![],
+                        )
+                        .unwrap()
+                })
+            })
+            .expect("the fixture read owns its installed host call");
         let (candidate, completion, _) = prepared.into_parts();
         // This test host's publication call owns its request; retained facts
         // pass between suspension, restoration and the unrelated publication.
@@ -213,7 +263,22 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                 )
                 .unwrap()
         });
-        application.record_restored_generated_output(&observation, exact.correspondence, producer);
+        world
+            .application
+            .with_host_advancement(|phase| {
+                let borrowed_execution = phase
+                    .execution_request_for(&world.application.product_runtime)
+                    .expect("fixture borrows its runtime request");
+                let execution = &borrowed_execution;
+
+                application.record_restored_generated_output(
+                    execution,
+                    &observation,
+                    exact.correspondence,
+                    producer,
+                )
+            })
+            .expect("the fixture read owns its installed host call");
         drop(held);
         drop(basis);
         drop(product);
@@ -228,7 +293,14 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
                     "computed-account".to_owned(),
                 )],
             )]));
-        let (_, restored_product, _) = world.selected_product().into_parts();
+        let (_, restored_product, _) = world
+            .application
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase.test_host_request();
+
+                world.selected_product(phase_custody).into_parts()
+            })
+            .expect("the fixture read owns its installed host call");
         let observation = restored_product.observation();
         let family = handle
             .output_lineage
@@ -249,38 +321,68 @@ fn suspend_restore_and_read(exhaust_registration: bool) {
         assert_eq!(candidate.verification_requirement, exhaust_registration.then_some(FullVerificationReason::CheckpointRestore),
             "the tests must reach the performed republication and its capacity fallback respectively");
         drop(restored_product);
-        let principal = authenticated_principal(world, &request);
-        let account = resolved_account(world, "2", &request);
+        let principal = world
+            .application
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase.test_host_request();
+
+                authenticated_principal(&(phase_custody).test_host_request(), world, &request)
+            })
+            .expect("the fixture read owns its installed host call");
+        let account = world
+            .application
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase.test_host_request();
+
+                resolved_account(&(phase_custody).test_host_request(), world, "2", &request)
+            })
+            .expect("the fixture read owns its installed host call");
         let operation = application
             .installed_schema()
             .installed_operation(ReadRetainedAccount::reference())
             .unwrap();
         let admitted = world
-            .selected_product()
-            .authorize_operation(
-                &principal,
-                &account,
-                &operation,
-                TypedMutationPreconditions::new(),
-                &request,
-            )
-            .unwrap();
-        crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(world, &resources);
+            .application
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase.test_host_request();
+
+                world
+                    .selected_product(phase_custody)
+                    .authorize_operation(
+                        &phase_custody.phase_for_application(&world.application),
+                        &principal,
+                        &account,
+                        &operation,
+                        TypedMutationPreconditions::new(),
+                        &request,
+                    )
+                    .unwrap()
+            })
+            .expect("the fixture read owns its installed host call");
+        world.application.with_host_advancement(|phase| { let phase_custody = &phase.test_host_request();    crate::domain_computation::primary_graph::output_lineage::own_write_fixture::evict_index_with_unrelated_write(&phase_custody.phase_for_application(&world.application), world, &resources) }).expect("the fixture read owns its installed host call");
         let answer = world
-            .invariant
-            .project_admitted_operation(
-                &admitted,
-                |reader, root| {
-                    reader
-                        .current_output::<RetainedFamily, _>(root)
-                        .map(|_| ())
-                        .map_err(|denial| denial.kind())
-                },
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .unwrap()
-            .into_parts()
-            .0;
+            .application
+            .with_host_advancement(|phase| {
+                let phase_custody = &phase.test_host_request();
+
+                world
+                    .invariant
+                    .project_admitted_operation(
+                        &phase_custody.phase_for_application(&world.application),
+                        &admitted,
+                        |reader, root| {
+                            reader
+                                .current_output::<RetainedFamily, _>(root)
+                                .map(|_| ())
+                                .map_err(|denial| denial.kind())
+                        },
+                        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+                    .unwrap()
+                    .into_parts()
+                    .0
+            })
+            .expect("the fixture read owns its installed host call");
         assert_eq!(
             answer,
             Err(WorthQueryCurrentOutputDenialKind::StaleSource),

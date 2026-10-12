@@ -30,15 +30,25 @@ use worth_query_host::facade::{
 
 #[test]
 fn original_row_recovers_unpublished_effects_without_handler_reexecution() {
-    recover_original_source(false, 8);
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover_original_source(request_execution, false, 8);
 }
 
 #[test]
 fn original_result_set_recovers_unpublished_effects_without_becoming_a_row() {
-    recover_original_source(true, 9);
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    recover_original_source(request_execution, true, 9);
 }
 
-fn recover_original_source(result_set: bool, retention: u64) {
+fn recover_original_source(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    result_set: bool,
+    retention: u64,
+) {
     // These two ordinary-assessment input values are reserved for these contact
     // observers; the handler follows exactly the same path for every input.
     reset_ordinary_counts(retention);
@@ -116,7 +126,7 @@ fn recover_original_source(result_set: bool, retention: u64) {
         }};
     }
 
-    runtime.fail_next_durable_append_for_test();
+    runtime.fail_next_durable_append_for_test(request_execution);
     let outcome = request!(&principal, &scope, intent.clone(), &key, result_set)
         .execute_in_program(&host, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();

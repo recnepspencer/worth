@@ -13,7 +13,10 @@ use super::support::{
 
 #[test]
 fn common_lane_routes_bridge_continuation() {
-    let handle = admitted_handle("common");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "common");
 
     let routing = handle
         .declare_review_progress_describe_plan_receipt_envelope_and_route_bridge_continuation(
@@ -37,7 +40,10 @@ fn common_lane_routes_bridge_continuation() {
 
 #[test]
 fn equivalent_retained_truth_yields_identical_bridge_digest() {
-    let handle = admitted_handle("digest");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "digest");
 
     let left = handle
         .route_bridge_continuation_from_progressed(
@@ -59,7 +65,10 @@ fn equivalent_retained_truth_yields_identical_bridge_digest() {
 
 #[test]
 fn mixed_authority_families_keep_common_bridge_lane() {
-    let handle = admitted_handle("mixed");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "mixed");
 
     let routing = handle
         .declare_review_progress_describe_plan_receipt_envelope_and_route_bridge_continuation(
@@ -75,7 +84,10 @@ fn mixed_authority_families_keep_common_bridge_lane() {
 
 #[test]
 fn bridge_bindings_remain_distinct_by_family() {
-    let handle = admitted_handle("binding");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "binding");
 
     let historical = handle
         .declare_review_progress_describe_plan_receipt_envelope_and_route_bridge_continuation(
@@ -104,7 +116,10 @@ fn bridge_bindings_remain_distinct_by_family() {
 
 #[test]
 fn truth_context_sensitive_truth_view_routes_diverge_in_digest() {
-    let handle = admitted_handle("truth-context");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "truth-context");
 
     let current = handle
         .declare_review_progress_describe_plan_receipt_envelope_and_route_bridge_continuation(
@@ -133,7 +148,10 @@ fn truth_context_sensitive_truth_view_routes_diverge_in_digest() {
 
 #[test]
 fn advanced_lane_envelope_checked_input_routes() {
-    let handle = admitted_handle("advanced");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "advanced");
 
     match checked_from_progressed(
         &handle,
@@ -151,7 +169,10 @@ fn advanced_lane_envelope_checked_input_routes() {
 
 #[test]
 fn advanced_lane_envelope_input_routes_without_checked_wrapper_loss() {
-    let handle = admitted_handle("advanced-direct");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "advanced-direct");
 
     let routing = routed_from_progressed(
         &handle,

@@ -80,6 +80,7 @@ pub(super) struct CommittingWriteAuthority;
 impl WorthQueryRuntimeWriteAuthorityAdapter for CommittingWriteAuthority {
     fn write(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         bridge: &RuntimeBridge,
         relational_runtime: Option<&mut RelationalRuntime>,
         mutation: WorthQueryBackendAdmissibleMutation,
@@ -134,22 +135,17 @@ impl WorthQueryRuntimeWriteAuthorityAdapter for CommittingWriteAuthority {
                 worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
             )
             .expect("test staging stays within configured resource budgets");
-        let committed = transaction
-            .commit(
-                runtime,
-                worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(|error| {
-                WorthQueryWorkspaceError::new(format!(
-                    "ordinary Query write could not commit to the shared graph: {error:?}"
-                ))
-            })?;
+        let committed = transaction.commit(execution, runtime).map_err(|error| {
+            WorthQueryWorkspaceError::new(format!(
+                "ordinary Query write could not commit to the shared graph: {error:?}"
+            ))
+        })?;
         runtime
             .snapshots()
             .release_snapshot(&committed.snapshot)
             .expect("ordinary Query write snapshot should close exactly once");
 
         let mut receipt_authority = TestWriteAuthority;
-        receipt_authority.write(bridge, Some(runtime), mutation)
+        receipt_authority.write(execution, bridge, Some(runtime), mutation)
     }
 }

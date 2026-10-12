@@ -1,29 +1,41 @@
 mod admitted_entity_field_lookup;
 mod admitted_generation;
 mod bounded_entity_field_lookup;
+#[cfg(test)]
+mod query_index_parity;
+pub use bounded_entity_field_lookup::BoundedEntityFieldLookupRead;
+mod selected_entity_field_lookup;
+pub use selected_entity_field_lookup::BoundedEntityFieldSelectedLookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
 mod definition_lookup;
 mod entity_field_collection;
+#[cfg(test)]
 mod execution;
 mod generation_selection;
 mod prepared_entity_field_lookup;
 mod prepared_field_certification;
+#[cfg(test)]
 mod routing;
+#[cfg(test)]
 mod scratch;
 
 use crate::history::data::BranchId;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexGeneration, DerivedIndexId};
+#[cfg(test)]
 use crate::query::data::{
     query_index_parity_basis_digest, IndexParityMode, IndexParityVerifiedQueryOutcome,
     QueryAccessContract, QueryAccessPath, SnapshotPinnedQueryPlan,
 };
 use crate::runtime::RelationalRuntime;
 
+#[cfg(test)]
 use self::execution::execute_index_backed_query_from_generation;
+#[cfg(test)]
 use self::routing::{admissible_access_path, should_verify_sampled_parity};
 #[cfg(test)]
 pub(crate) use self::scratch::index_query_scratch_hint_exists;
+#[cfg(test)]
 pub(crate) use self::scratch::purge_index_query_scratch_hints;
 pub use definition_lookup::DerivedIndexDefinitionLookup;
 pub use prepared_entity_field_lookup::PreparedEntityFieldLookup;
@@ -152,94 +164,6 @@ impl<'runtime> IndexAccess<'runtime> {
         generations
     }
 
-    pub fn execute_query_plan_with_index_parity(
-        &self,
-        plan: SnapshotPinnedQueryPlan,
-        parity_mode: IndexParityMode,
-    ) -> Option<IndexParityVerifiedQueryOutcome> {
-        if plan.packet.access_contract == QueryAccessContract::DerivedIndexWithStorageParity {
-            self.runtime
-                .performance_access()
-                .count_query_index_attempt();
-        }
-        let storage_execution = || self.runtime.read_truth().execute_query_plan(plan.clone());
-        let (execution, access_path) = match admissible_access_path(self.runtime, &plan) {
-            QueryAccessPath::DerivedIndexGeneration { generation_id } => {
-                let index_execution =
-                    execute_index_backed_query_from_generation(self.runtime, &plan, generation_id)?;
-                match parity_mode {
-                    IndexParityMode::ProductionAdmissibility => {
-                        self.runtime.performance_access().count_query_index_path();
-                        record_index_execution_counters(self.runtime, &index_execution);
-                        (
-                            index_execution,
-                            QueryAccessPath::DerivedIndexGeneration { generation_id },
-                        )
-                    }
-                    IndexParityMode::SampledParity
-                        if !should_verify_sampled_parity(&plan, generation_id) =>
-                    {
-                        self.runtime.performance_access().count_query_index_path();
-                        record_index_execution_counters(self.runtime, &index_execution);
-                        (
-                            index_execution,
-                            QueryAccessPath::DerivedIndexGeneration { generation_id },
-                        )
-                    }
-                    IndexParityMode::SampledParity | IndexParityMode::CertificationParity => {
-                        self.runtime
-                            .performance_access()
-                            .count_query_index_parity_verification();
-                        let storage_execution = storage_execution()?;
-                        if storage_execution.result == index_execution.result {
-                            self.runtime.performance_access().count_query_index_path();
-                            record_index_execution_counters(self.runtime, &index_execution);
-                            (
-                                index_execution,
-                                QueryAccessPath::DerivedIndexGeneration { generation_id },
-                            )
-                        } else {
-                            self.runtime
-                                .performance_access()
-                                .count_query_index_rejection();
-                            record_index_execution_shape(self.runtime, &index_execution);
-                            (
-                                storage_execution,
-                                QueryAccessPath::DerivedIndexRejectedStorageRead {
-                                    rejection:
-                                        crate::query::data::IndexQueryRejectionClass::CorruptIndexEntries,
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-            access_path => {
-                if matches!(
-                    access_path,
-                    QueryAccessPath::DerivedIndexRejectedStorageRead { .. }
-                ) {
-                    self.runtime
-                        .performance_access()
-                        .count_query_index_rejection();
-                }
-                (storage_execution()?, access_path)
-            }
-        };
-        let parity_basis_digest = query_index_parity_basis_digest(
-            &access_path,
-            parity_mode,
-            &execution.result,
-            execution.plan.packet.plan_key,
-        );
-        Some(IndexParityVerifiedQueryOutcome {
-            execution,
-            access_path,
-            parity_mode,
-            parity_basis_digest,
-        })
-    }
-
     pub(crate) fn definitions_snapshot(&self) -> Vec<DerivedIndexDefinition> {
         self.runtime
             .indexes
@@ -275,6 +199,7 @@ impl<'runtime> IndexAccess<'runtime> {
     }
 }
 
+#[cfg(test)]
 fn record_index_execution_shape(
     runtime: &RelationalRuntime,
     execution: &crate::query::data::QueryExecutionOutcome,
@@ -290,6 +215,7 @@ fn record_index_execution_shape(
     runtime.performance_access().count_query_serial_strategy();
 }
 
+#[cfg(test)]
 fn record_index_execution_counters(
     runtime: &RelationalRuntime,
     execution: &crate::query::data::QueryExecutionOutcome,

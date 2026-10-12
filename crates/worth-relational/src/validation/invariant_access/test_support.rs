@@ -20,20 +20,26 @@ pub(crate) fn evaluate_main_commit_boundary_plan(
     runtime: &RelationalRuntime,
     plan: &MergedCommitPlan,
 ) -> InvariantExecutionResult {
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&backing);
     let selected = selected_main_branch_state(runtime);
     runtime
         .validation()
-        .commit_boundary_for_selected_branch_plan(&selected, plan)
+        .commit_boundary_for_selected_branch_plan(execution, &selected, plan)
+        .expect("plan fixture request")
 }
 
 pub(crate) fn evaluate_main_graph_composition_plan(
     runtime: &RelationalRuntime,
     plan: &MergedCommitPlan,
 ) -> InvariantExecutionResult {
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&backing);
     let selected = selected_main_branch_state(runtime);
     runtime
         .validation()
-        .graph_composition_for_selected_branch_plan(&selected, plan)
+        .graph_composition_for_selected_branch_plan(execution, &selected, plan)
+        .expect("plan fixture request")
 }
 
 fn selected_main_branch_state(
@@ -173,6 +179,7 @@ pub(super) fn relation_cardinality_runtime() -> RelationalRuntime {
 }
 
 pub(super) fn create_entity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     name: &str,
 ) -> crate::identity::data::EntityId {
@@ -198,12 +205,7 @@ pub(super) fn create_entity(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, runtime).unwrap();
     match outcome.changed_records[0] {
         crate::facade::transactions::RecordRef::Entity(entity_id) => entity_id,
         _ => panic!("expected entity"),

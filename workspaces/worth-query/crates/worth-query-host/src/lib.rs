@@ -135,8 +135,9 @@
 //! fn select_issued<Schema: ApplicationSchema>(
 //!     runtime: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 //!     branch: product::WorthQueryProductBranch,
+//!     phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
 //! ) {
-//!     let _ = runtime.on_branch(branch).select();
+//!     let _ = runtime.on_branch(branch).select(phase);
 //! }
 //!
 //! fn release_linear_recovery<Schema: ApplicationSchema>(

@@ -8,8 +8,16 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn workflow_effect_uses_real_mutation_authority_and_retains_its_receipt() {
-    let mut workspace = mutation_workflow_workspace("workflow-mutation").unwrap();
-    let initial_snapshot = workspace.snapshot_identity().clone();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        mutation_workflow_workspace(request_execution, "workflow-mutation").unwrap();
+    let initial_snapshot = workspace
+        .with_advancement(|phase| workspace.snapshot_identity(&phase))
+        .expect("installed host call opens")
+        .expect("phase belongs to workspace")
+        .clone();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let observation_denial = match workspace
         .observe_operating_world(workspace.current_world())
@@ -52,7 +60,13 @@ fn workflow_effect_uses_real_mutation_authority_and_retains_its_receipt() {
         )
         .unwrap();
     let trace = run.complete().unwrap();
-    assert_ne!(workspace.snapshot_identity(), initial_snapshot);
+    assert_ne!(
+        workspace
+            .with_advancement(|phase| workspace.snapshot_identity(&phase))
+            .expect("installed host call opens")
+            .expect("phase belongs to workspace"),
+        initial_snapshot
+    );
     assert_eq!(trace.counters().effect_receipt_checks, 1);
     let receipt = &trace.stage_receipts()[0];
     assert_eq!(receipt.counters().effect_receipt_checks, 1);
@@ -74,8 +88,16 @@ fn workflow_effect_uses_real_mutation_authority_and_retains_its_receipt() {
 
 #[test]
 fn failure_after_effect_retains_the_query_executed_partial_outcome() {
-    let mut workspace = mutation_workflow_workspace("workflow-partial-effect").unwrap();
-    let initial_snapshot = workspace.snapshot_identity().clone();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        mutation_workflow_workspace(request_execution, "workflow-partial-effect").unwrap();
+    let initial_snapshot = workspace
+        .with_advancement(|phase| workspace.snapshot_identity(&phase))
+        .expect("installed host call opens")
+        .expect("phase belongs to workspace")
+        .clone();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .prepare_mutation_operating_world(workspace.current_world())
@@ -98,7 +120,13 @@ fn failure_after_effect_retains_the_query_executed_partial_outcome() {
         TransitionOutcome::Failed(denial) => denial,
         _ => panic!("post-effect executor did not produce an execution failure"),
     };
-    assert_ne!(workspace.snapshot_identity(), initial_snapshot);
+    assert_ne!(
+        workspace
+            .with_advancement(|phase| workspace.snapshot_identity(&phase))
+            .expect("installed host call opens")
+            .expect("phase belongs to workspace"),
+        initial_snapshot
+    );
     assert_eq!(
         denial.kind(),
         &domain::WorthQueryWorkflowAdvanceDenialKind::StageExecutor {
@@ -112,7 +140,14 @@ fn failure_after_effect_retains_the_query_executed_partial_outcome() {
 
 #[test]
 fn workflow_executor_failures_are_typed_and_must_be_declared() {
-    let declared = failing_stage_denial("workflow-declared-failure", "fail-dependency");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let declared = failing_stage_denial(
+        request_execution,
+        "workflow-declared-failure",
+        "fail-dependency",
+    );
     assert_eq!(
         declared.kind(),
         &domain::WorthQueryWorkflowAdvanceDenialKind::StageExecutor {
@@ -120,7 +155,11 @@ fn workflow_executor_failures_are_typed_and_must_be_declared() {
             detail: "declared dependency failure".into(),
         }
     );
-    let undeclared = failing_stage_denial("workflow-undeclared-failure", "fail-unsupported");
+    let undeclared = failing_stage_denial(
+        request_execution,
+        "workflow-undeclared-failure",
+        "fail-unsupported",
+    );
     assert_eq!(
         undeclared.kind(),
         &domain::WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(
@@ -131,7 +170,14 @@ fn workflow_executor_failures_are_typed_and_must_be_declared() {
 
 #[test]
 fn workflow_read_requires_the_exact_stage_local_primary_role() {
-    let denial = failing_stage_denial("workflow-undeclared-read", "read-undeclared");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let denial = failing_stage_denial(
+        request_execution,
+        "workflow-undeclared-read",
+        "read-undeclared",
+    );
     assert_eq!(
         denial.kind(),
         &domain::WorthQueryWorkflowAdvanceDenialKind::UndeclaredFailureClass(
@@ -145,7 +191,10 @@ fn workflow_read_requires_the_exact_stage_local_primary_role() {
 
 #[test]
 fn workflow_stage_cannot_skip_its_declared_primary_read() {
-    let mut workspace = workflow_workspace("workflow-skipped-read").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "workflow-skipped-read").unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -211,8 +260,12 @@ fn workflow_stage_cannot_skip_its_declared_primary_read() {
     assert!(!first.basis_identity().is_empty());
 }
 
-fn failing_stage_denial(name: &str, input: &str) -> domain::WorthQueryWorkflowAdvanceDenial {
-    let mut workspace = workflow_workspace(name).unwrap();
+fn failing_stage_denial(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+    input: &str,
+) -> domain::WorthQueryWorkflowAdvanceDenial {
+    let mut workspace = workflow_workspace(request_execution, name).unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let run = workspace
         .observe_operating_world(workspace.current_world())
@@ -239,6 +292,11 @@ fn failing_stage_denial(name: &str, input: &str) -> domain::WorthQueryWorkflowAd
         &mut workspace,
     ) {
         TransitionOutcome::Failed(denial) => denial,
+        TransitionOutcome::Denied(denial)
+        | TransitionOutcome::Stale(denial)
+        | TransitionOutcome::RebindRequired(denial) => {
+            panic!("failing stage was refused before its expected executor failure: {denial:?}")
+        }
         _ => panic!("failing stage did not produce an execution failure"),
     }
 }

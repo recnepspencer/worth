@@ -6,6 +6,7 @@ use super::{
 };
 
 pub(crate) fn workflow_workspace_with_parallel_provider<P>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     provider: P,
 ) -> Result<
@@ -27,5 +28,5 @@ where
             WorkflowStageExecutor,
         )
         .workflow_parallel_admission_provider(GeometryDomain, WorkflowRead, ReadFamily, provider)
-        .workspace(name)
+        .workspace(request_execution, name)
 }

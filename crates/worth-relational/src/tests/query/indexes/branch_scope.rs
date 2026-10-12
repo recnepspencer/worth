@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let main_outcome = create_entity_outcome(&runtime, "main-a");
+    let main_outcome = create_entity_outcome(execution, &runtime, "main-a");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -11,8 +14,12 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_outcome =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature_outcome = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name".to_string(),
@@ -21,13 +28,14 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
         },
         branch_scoped: true,
     });
-    let feature_build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let feature_build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: feature_outcome.commit.commit_id,
             branch_id: BranchId("feature".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let context = runtime
         .read_truth()
         .query_plan_context(&main_outcome.snapshot)
@@ -44,7 +52,12 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
         .expect("query plan");
     let storage_read = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::ProductionAdmissibility)
+        .execute_query_plan_with_index_parity(
+            plan,
+            IndexParityMode::ProductionAdmissibility,
+            execution,
+        )
+        .expect("request remains live")
         .unwrap();
 
     assert!(feature_build.failed_indexes.is_empty());
@@ -67,8 +80,11 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
 
 #[test]
 fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let main_outcome = create_entity_outcome(&runtime, "main-a");
+    let main_outcome = create_entity_outcome(execution, &runtime, "main-a");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -76,8 +92,12 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_outcome =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature_outcome = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.global".to_string(),
@@ -86,13 +106,14 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
         },
         branch_scoped: false,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: feature_outcome.commit.commit_id,
             branch_id: BranchId("feature".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     let snapshot = runtime.visibility_authority().snapshot();
     let context = runtime
         .read_truth()
@@ -110,7 +131,12 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
         .expect("query plan");
     let storage_read = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::ProductionAdmissibility)
+        .execute_query_plan_with_index_parity(
+            plan,
+            IndexParityMode::ProductionAdmissibility,
+            execution,
+        )
+        .expect("request remains live")
         .unwrap();
 
     assert!(build.failed_indexes.is_empty());
@@ -133,10 +159,14 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
 #[test]
 fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports_unsupported_branch(
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let main_source = create_entity_outcome(&runtime, "main-source");
-    let main_target = create_entity_outcome(&runtime, "main-target");
+    let main_source = create_entity_outcome(execution, &runtime, "main-source");
+    let main_target = create_entity_outcome(execution, &runtime, "main-target");
     let main_relation = create_relation_outcome(
+        execution,
         &runtime,
         changed_entities(&main_source)[0],
         changed_entities(&main_target)[0],
@@ -150,11 +180,13 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
         )
         .unwrap();
     let feature_source = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "feature-source",
         BranchId("feature".to_string()),
     );
     let feature_target = create_entity_outcome_on_branch(
+        execution,
         &runtime,
         "feature-target",
         BranchId("feature".to_string()),
@@ -183,10 +215,7 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
         )
         .expect("test staging stays within configured resource budgets");
     let feature_relation = feature_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("feature relation");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(1),
@@ -196,13 +225,14 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
         },
         branch_scoped: true,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: feature_relation.commit.commit_id,
             branch_id: BranchId("feature".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let context = runtime
@@ -233,7 +263,9 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
                 .plan_query_packet(&main_relation.snapshot, packet)
                 .expect("query plan"),
             IndexParityMode::ProductionAdmissibility,
+            execution,
         )
+        .expect("request remains live")
         .expect("query outcome");
 
     assert_eq!(
@@ -246,8 +278,11 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
 
 #[test]
 fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_index_field_aspects();
-    let main_outcome = create_entity_outcome(&runtime, "main-a");
+    let main_outcome = create_entity_outcome(execution, &runtime, "main-a");
     runtime
         .history_authority()
         .fork_branch_from(
@@ -255,8 +290,12 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
             &BranchId("main".to_string()),
         )
         .unwrap();
-    let feature_outcome =
-        create_entity_outcome_on_branch(&runtime, "feature-a", BranchId("feature".to_string()));
+    let feature_outcome = create_entity_outcome_on_branch(
+        execution,
+        &runtime,
+        "feature-a",
+        BranchId("feature".to_string()),
+    );
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity.name.branch".to_string(),
@@ -265,13 +304,14 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
         },
         branch_scoped: true,
     });
-    let build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    let build = runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: feature_outcome.commit.commit_id,
             branch_id: BranchId("feature".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
     assert!(build.failed_indexes.is_empty());
 
     let context = runtime
@@ -300,7 +340,12 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
         .expect("query plan");
     let outcome = runtime
         .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::ProductionAdmissibility)
+        .execute_query_plan_with_index_parity(
+            plan,
+            IndexParityMode::ProductionAdmissibility,
+            execution,
+        )
+        .expect("request remains live")
         .expect("storage-read outcome");
 
     assert_eq!(
@@ -311,80 +356,5 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
     );
 }
 
-#[test]
-fn derived_index_contract_prefers_older_supported_generation_over_newer_unsupported_one() {
-    let runtime = runtime_with_index_field_aspects();
-    let main_alpha = create_entity_outcome(&runtime, "alpha");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.lookup".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
-    let main_build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
-            source_commit_id: main_alpha.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            index_ids: vec![index.index_id],
-        });
-    assert!(main_build.failed_indexes.is_empty());
-
-    runtime
-        .history_authority()
-        .fork_branch_from(
-            BranchId("feature".to_string()),
-            &BranchId("main".to_string()),
-        )
-        .unwrap();
-    let feature_alpha =
-        create_entity_outcome_on_branch(&runtime, "alpha", BranchId("feature".to_string()));
-    let feature_build = runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
-            source_commit_id: feature_alpha.commit.commit_id,
-            branch_id: BranchId("feature".to_string()),
-            index_ids: vec![index.index_id],
-        });
-    assert!(feature_build.failed_indexes.is_empty());
-    assert!(feature_build.generations[0].generation_id > main_build.generations[0].generation_id);
-
-    let snapshot = main_alpha.snapshot.clone();
-    let context = runtime
-        .read_truth()
-        .query_plan_context(&snapshot)
-        .expect("query plan context");
-    let packet = crate::facade::query::PlannedQueryPacket {
-        label: "entity-name-equals-main".to_string(),
-        context_id: context,
-        scope: crate::facade::query::QueryScope::EntityFieldEquals {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            value: string_aspect_value("alpha"),
-            partition_scope: None,
-        },
-        locality: crate::facade::query::QueryLocalityClass::CrossPartitionTraversal,
-        ordering: crate::facade::query::QueryOrderingContract::CanonicalEntityIdOrder,
-        access_contract: QueryAccessContract::DerivedIndexWithStorageParity,
-        execution_shape: crate::facade::query::QueryExecutionShape::BulkPacketized,
-        reduction: crate::facade::query::ReductionDiscipline::DeterministicMerge,
-        plan_key: crate::facade::query::DeterministicQueryPlanKey(1005),
-        target_count_hint: 0,
-    };
-    let plan = runtime
-        .read_truth()
-        .plan_query_packet(&snapshot, packet)
-        .expect("query plan");
-    let outcome = runtime
-        .index_access()
-        .execute_query_plan_with_index_parity(plan, IndexParityMode::ProductionAdmissibility)
-        .expect("query outcome");
-
-    assert_eq!(
-        outcome.access_path,
-        QueryAccessPath::DerivedIndexGeneration {
-            generation_id: main_build.generations[0].generation_id,
-        }
-    );
-}
+#[path = "branch_scope/generation_preference.rs"]
+mod generation_preference;

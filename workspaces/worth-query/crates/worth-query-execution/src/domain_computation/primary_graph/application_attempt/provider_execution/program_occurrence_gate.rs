@@ -91,20 +91,22 @@ pub(super) fn require_occurrence_acts_through<Operation: 'static>(
 /// under its own named cause: a host that cannot attribute work to admitted
 /// meaning must not perform it.
 pub(super) fn resolve_occurrence_program<'support, Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     support: &'support WorthQueryInstalledProgramSupport<Schema>,
     program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<WorthQueryOccurrenceProgram<'support>, WorthQueryApplicationCommitDenial> {
-    resolve_at_lease(support, &program.read_set.lease)
+    resolve_at_lease(execution, support, &program.read_set.lease)
 }
 
 /// Preserve the program selection already checked at the public commit entry.
 pub(super) fn require_readmitted_program_matches<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     support: &WorthQueryInstalledProgramSupport<Schema>,
     retained: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
     current: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
 ) -> Result<(), WorthQueryApplicationCommitDenial> {
-    let original = resolve_at_lease(support, retained)?;
-    let selected = resolve_at_lease(support, current)?;
+    let original = resolve_at_lease(execution, support, retained)?;
+    let selected = resolve_at_lease(execution, support, current)?;
     if original.rendering() != selected.rendering() {
         return Err(
             WorthQueryApplicationCommitDenial::program_not_active_on_occurrence(
@@ -121,6 +123,7 @@ pub(super) fn require_readmitted_program_matches<Schema>(
 }
 
 fn resolve_at_lease<'support, Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     support: &'support WorthQueryInstalledProgramSupport<Schema>,
     lease: &super::super::snapshot_lease::WorthQueryApplicationSnapshotLease,
 ) -> Result<WorthQueryOccurrenceProgram<'support>, WorthQueryApplicationCommitDenial> {
@@ -131,9 +134,10 @@ fn resolve_at_lease<'support, Schema>(
     let layout = lease.layout.program_activation().clone();
     let rendering = lease
         .handle()
-        .with_runtime(|runtime| {
+        .with_runtime(execution, |runtime| {
             super::super::observe_field_value(
                 runtime,
+                execution,
                 lease.snapshot(),
                 entity_id,
                 layout.entity_kind,

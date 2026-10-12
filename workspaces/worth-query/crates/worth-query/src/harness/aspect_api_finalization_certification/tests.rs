@@ -10,8 +10,13 @@ use crate::harness::certification::{
 
 #[test]
 fn aspect_api_finalization_certification_adapter_emits_named_matrix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let artifact =
-        AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_artifact();
+        AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_artifact(
+            request_execution,
+        );
 
     assert_eq!(artifact.suite_name, "Public Aspect API Finalization Test");
     assert!(!artifact.certification_bundle_digest.is_empty());
@@ -20,7 +25,12 @@ fn aspect_api_finalization_certification_adapter_emits_named_matrix() {
 
 #[test]
 fn aspect_api_finalization_matrix_covers_required_rows() {
-    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test(
+        request_execution,
+    );
 
     for row_name in ASPECT_API_FINALIZATION_REQUIRED_CANONICAL_ROW_NAMES {
         assert!(contains_row(&matrix, row_name), "missing {row_name}");
@@ -32,7 +42,12 @@ fn aspect_api_finalization_matrix_covers_required_rows() {
 
 #[test]
 fn aspect_api_finalization_rows_have_required_outputs() {
-    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test(
+        request_execution,
+    );
 
     for row in &matrix.rows {
         assert!(
@@ -92,7 +107,12 @@ fn aspect_api_finalization_rows_have_required_outputs() {
 
 #[test]
 fn aspect_api_finalization_rows_enforce_required_assertion_classes() {
-    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test(
+        request_execution,
+    );
     let mut covered = Vec::new();
 
     for row in &matrix.rows {
@@ -138,7 +158,12 @@ fn aspect_api_finalization_rows_enforce_required_assertion_classes() {
 
 #[test]
 fn aspect_api_finalization_clear_row_proves_touched_scope_narrowing() {
-    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test(
+        request_execution,
+    );
     let row = matrix
         .rows
         .iter()
@@ -161,7 +186,12 @@ fn aspect_api_finalization_clear_row_proves_touched_scope_narrowing() {
 
 #[test]
 fn aspect_api_finalization_preview_batch_row_proves_lane_isolation() {
-    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let matrix = AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_test(
+        request_execution,
+    );
     let row = matrix
         .rows
         .iter()
@@ -178,8 +208,13 @@ fn aspect_api_finalization_preview_batch_row_proves_lane_isolation() {
 
 #[test]
 fn aspect_api_finalization_preferred_public_story_never_requires_command_surfaces() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let artifact =
-        AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_artifact();
+        AspectApiFinalizationCertificationAdapter::public_aspect_api_finalization_artifact(
+            request_execution,
+        );
 
     for row in &artifact.matrix.rows {
         if row.row_name == "mutation-surface-closeout-contract-sync" {

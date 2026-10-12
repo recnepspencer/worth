@@ -27,26 +27,46 @@ fn current_installed_membership_mints_exact_operation_admission() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
@@ -54,25 +74,37 @@ fn current_installed_membership_mints_exact_operation_admission() {
         .unwrap();
 
     let admitted = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let retried = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &live_scope(),
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &live_scope(),
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     assert_eq!(admitted.operation(), "TouchAccountOperation");
     assert_eq!(admitted.authorization_requirement_count(), 1);
@@ -124,26 +156,46 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
@@ -158,10 +210,22 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
     );
 
     let denial = world
-        .selected_product()
-        .authorize_operation(&principal, &account, &operation, caller_only, &request)
-        .err()
-        .expect("caller marker authority must not widen the installed contract");
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    caller_only,
+                    &request,
+                )
+                .err()
+                .expect("caller marker authority must not widen the installed contract")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
         WorthQueryOperationAuthorizationDenialKind::MutationPreconditionRejected
@@ -175,42 +239,68 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
     let external = denied_world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = denied_world
         .application
-        .select_product_branch(denied_world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_authenticated_principal(
-            &denied_world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            denied_world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    denied_world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_authenticated_principal(
+                    &phase,
+                    &denied_world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = denied_world
         .application
-        .select_product_branch(denied_world.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            denied_world
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    denied_world.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = denied_world
         .application
         .installed_schema()
         .installed_operation(TouchAccountOperation::reference())
         .unwrap();
     let missing_membership = denied_world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .err()
-        .expect("missing relationship must deny");
+        .application
+        .with_host_advancement(|phase| {
+            denied_world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .err()
+                .expect("missing relationship must deny")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         missing_membership.kind(),
         WorthQueryOperationAuthorizationDenialKind::PermissionDenied
@@ -219,26 +309,42 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
     let foreign = installed_authorization_world(true);
     let foreign_account = foreign
         .application
-        .select_product_branch(foreign.application.product_runtime().default_branch())
-        .expect("the selected product branch remains admitted")
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_string(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            foreign
+                .application
+                .select_product_branch(
+                    &host_custody.borrowed_request_for_test(),
+                    foreign.application.product_runtime().default_branch(),
+                )
+                .expect("the selected product branch remains admitted")
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_string(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let crossed_scope = denied_world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &foreign_account,
-            &operation,
-            Default::default(),
-            &request,
-        )
-        .err()
-        .expect("foreign scope must deny");
+        .application
+        .with_host_advancement(|phase| {
+            denied_world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &foreign_account,
+                    &operation,
+                    Default::default(),
+                    &request,
+                )
+                .err()
+                .expect("foreign scope must deny")
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         crossed_scope.kind(),
         WorthQueryOperationAuthorizationDenialKind::ForeignRuntime

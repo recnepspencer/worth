@@ -90,13 +90,16 @@ impl domain::WorthQueryGraphCommitProvider<AtomicCommit> for CountingProvider {
 
 #[test]
 fn adapter_declaration_order_converges_without_provider_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let direct_contacts = Arc::new(AtomicUsize::new(0));
     let direct = configured_runtime()
         .graph_participation(definition::<RemoteGraph>("remote"))
         .graph_participation_provider(RemoteGraph, CountingProvider::new(&direct_contacts))
         .graph_participation(definition::<OtherGraph>("other"))
         .graph_participation_provider(OtherGraph, CountingProvider::new(&direct_contacts))
-        .workspace("graph-order-direct")
+        .workspace(request_execution, "graph-order-direct")
         .unwrap();
     let reversed_contacts = Arc::new(AtomicUsize::new(0));
     let reversed = configured_runtime()
@@ -104,7 +107,7 @@ fn adapter_declaration_order_converges_without_provider_contact() {
         .graph_participation(definition::<OtherGraph>("other"))
         .graph_participation_provider(RemoteGraph, CountingProvider::new(&reversed_contacts))
         .graph_participation(definition::<RemoteGraph>("remote"))
-        .workspace("graph-order-reversed")
+        .workspace(request_execution, "graph-order-reversed")
         .unwrap();
     let direct_adapter = direct.graph_participation(RemoteGraph).unwrap();
     let reversed_adapter = reversed.graph_participation(RemoteGraph).unwrap();
@@ -116,20 +119,26 @@ fn adapter_declaration_order_converges_without_provider_contact() {
 
 #[test]
 fn definition_provider_sets_must_close_exactly() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     assert!(configured_runtime()
         .graph_participation(definition::<RemoteGraph>("remote"))
-        .workspace("graph-missing-provider")
+        .workspace(request_execution, "graph-missing-provider")
         .is_err());
     assert!(configured_runtime()
         .graph_participation_provider(RemoteGraph, CountingProvider::new(&contacts))
-        .workspace("graph-extra-provider")
+        .workspace(request_execution, "graph-extra-provider")
         .is_err());
     assert_eq!(contacts.load(Ordering::Relaxed), 0);
 }
 
 #[test]
 fn atomic_graphs_require_one_exact_referenced_commit_provider() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     assert!(configured_runtime()
         .graph_participation(atomic_definition::<AtomicGraph>("atomic"))
@@ -138,22 +147,25 @@ fn atomic_graphs_require_one_exact_referenced_commit_provider() {
             CountingProvider::new(&contacts),
             AtomicCommit,
         )
-        .workspace("graph-missing-commit-provider")
+        .workspace(request_execution, "graph-missing-commit-provider")
         .is_err());
     assert!(configured_runtime()
         .graph_commit_provider(AtomicCommit, CountingProvider::new(&contacts))
-        .workspace("graph-extra-commit-provider")
+        .workspace(request_execution, "graph-extra-commit-provider")
         .is_err());
     assert_eq!(contacts.load(Ordering::Relaxed), 0);
 }
 
 #[test]
 fn matching_role_on_another_marker_has_no_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let contacts = Arc::new(AtomicUsize::new(0));
     let world = configured_runtime()
         .graph_participation(definition::<RemoteGraph>("remote"))
         .graph_participation_provider(RemoteGraph, CountingProvider::new(&contacts))
-        .workspace("graph-marker-lookalike")
+        .workspace(request_execution, "graph-marker-lookalike")
         .unwrap();
     let denial = match world.graph_participation(RemoteGraphLookalike) {
         Ok(_) => panic!("matching role on a foreign marker must not resolve"),

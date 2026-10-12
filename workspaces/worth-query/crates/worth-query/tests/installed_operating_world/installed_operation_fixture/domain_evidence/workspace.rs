@@ -13,22 +13,30 @@ use super::graph_receipt::{evidence_graph_definition, EvidenceGraph, EvidenceGra
 use super::{EvidenceFamily, EvidenceRead, EvidenceScenario};
 
 pub fn evidence_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     scenario: EvidenceScenario,
     redaction: domain::WorthQueryArtifactRedactionPosture,
 ) -> Result<runtime::WorthQueryWorkspace, WorthQueryTestBackendError> {
-    build_workspace(name, scenario, direct_package(redaction))
+    build_workspace(request_execution, name, scenario, direct_package(redaction))
 }
 
 pub fn evidence_workspace_with_governance(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     scenario: EvidenceScenario,
     governance: EvidenceGovernance,
 ) -> Result<runtime::WorthQueryWorkspace, WorthQueryTestBackendError> {
-    build_workspace(name, scenario, direct_package_with_governance(governance))
+    build_workspace(
+        request_execution,
+        name,
+        scenario,
+        direct_package_with_governance(governance),
+    )
 }
 
 pub fn evidence_graph_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
 ) -> Result<runtime::WorthQueryWorkspace, WorthQueryTestBackendError> {
     in_memory_test_runtime()
@@ -45,10 +53,11 @@ pub fn evidence_graph_workspace(
             EvidenceFamily,
             EvidenceGraphDirectExecutor::honest(),
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn build_workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     name: &str,
     scenario: EvidenceScenario,
     package: domain::WorthQueryDomainPackage<GeometryDomain>,
@@ -63,7 +72,7 @@ fn build_workspace(
             EvidenceFamily,
             EvidenceDirectExecutor::new(scenario),
         )
-        .workspace(name)
+        .workspace(request_execution, name)
 }
 
 fn evidence_schema() -> WorthQueryTestBackendSchema {

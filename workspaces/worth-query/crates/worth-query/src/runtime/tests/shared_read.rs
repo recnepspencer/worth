@@ -11,9 +11,13 @@ use super::support::*;
 
 #[test]
 fn shared_read_context_consumes_published_projection_facts_through_typed_artifact_handles() {
-    let mut workspace = shared_read_workspace("shared-read.current");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = shared_read_workspace(request_execution, "shared-read.current");
     let invocations = Arc::new(AtomicUsize::new(0));
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         "shared-read",
         SharedReadPublishingMaintainer {
@@ -21,10 +25,10 @@ fn shared_read_context_consumes_published_projection_facts_through_typed_artifac
             mode: SharedReadPublicationMode::RefreshTitle("Task One"),
         },
     );
-    insert_task(&mut workspace, "task-1", "Task One");
+    insert_task(request_execution, &mut workspace, "task-1", "Task One");
 
     let artifact = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint")
         .published_derived_artifact(&derived)
         .expect("published artifact handle should mint");
@@ -57,8 +61,12 @@ fn shared_read_context_consumes_published_projection_facts_through_typed_artifac
 
 #[test]
 fn shared_read_unpublished_artifact_fails_closed_with_typed_pending_state() {
-    let mut workspace = shared_read_workspace("shared-read.pending");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = shared_read_workspace(request_execution, "shared-read.pending");
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         "shared-read.pending",
         SharedReadPublishingMaintainer {
@@ -67,7 +75,7 @@ fn shared_read_unpublished_artifact_fails_closed_with_typed_pending_state() {
         },
     );
     let unpublished = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint")
         .published_derived_artifact(&derived)
         .expect("declared unpublished derived view should still mint a typed handle");
@@ -89,12 +97,17 @@ fn shared_read_unpublished_artifact_fails_closed_with_typed_pending_state() {
 
 #[test]
 fn shared_read_foreign_derived_handle_denies_instead_of_masking_as_pending() {
-    let workspace = shared_read_workspace("shared-read.foreign");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = shared_read_workspace(request_execution, "shared-read.foreign");
     let read_ctx = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint");
-    let mut foreign_workspace = shared_read_workspace("shared-read.foreign-source");
+    let mut foreign_workspace =
+        shared_read_workspace(request_execution, "shared-read.foreign-source");
     let foreign = declare_shared_read_derived(
+        request_execution,
         &mut foreign_workspace,
         "shared-read.foreign",
         SharedReadPublishingMaintainer {
@@ -114,8 +127,12 @@ fn shared_read_foreign_derived_handle_denies_instead_of_masking_as_pending() {
 
 #[test]
 fn shared_read_empty_published_artifact_stays_published_instead_of_pending() {
-    let mut workspace = shared_read_workspace("shared-read.empty-published");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = shared_read_workspace(request_execution, "shared-read.empty-published");
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         "shared-read.empty",
         SharedReadPublishingMaintainer {
@@ -123,10 +140,10 @@ fn shared_read_empty_published_artifact_stays_published_instead_of_pending() {
             mode: SharedReadPublicationMode::EmptyRefresh,
         },
     );
-    insert_task(&mut workspace, "task-1", "Task One");
+    insert_task(request_execution, &mut workspace, "task-1", "Task One");
 
     let artifact = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint")
         .published_derived_artifact(&derived)
         .expect("published empty artifact handle should mint");
@@ -145,9 +162,13 @@ fn shared_read_empty_published_artifact_stays_published_instead_of_pending() {
 
 #[test]
 fn shared_read_incremental_republication_preserves_stale_async_posture() {
-    let mut workspace = shared_read_workspace("shared-read.stale");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = shared_read_workspace(request_execution, "shared-read.stale");
     let invocations = Arc::new(AtomicUsize::new(0));
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         "shared-read.stale",
         SharedReadPublishingMaintainer {
@@ -155,10 +176,10 @@ fn shared_read_incremental_republication_preserves_stale_async_posture() {
             mode: SharedReadPublicationMode::IncrementalTitle("Task One"),
         },
     );
-    insert_task(&mut workspace, "task-1", "Task One");
+    insert_task(request_execution, &mut workspace, "task-1", "Task One");
 
     let artifact = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint")
         .published_derived_artifact(&derived)
         .expect("stale artifact handle should mint");
@@ -177,9 +198,13 @@ fn shared_read_incremental_republication_preserves_stale_async_posture() {
 
 #[test]
 fn shared_read_republication_keeps_old_context_on_old_artifact_and_new_context_on_new_artifact() {
-    let mut workspace = shared_read_workspace("shared-read.republication");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = shared_read_workspace(request_execution, "shared-read.republication");
     let invocations = Arc::new(AtomicUsize::new(0));
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         "shared-read.republication",
         SharedReadPublishingMaintainer {
@@ -187,16 +212,16 @@ fn shared_read_republication_keeps_old_context_on_old_artifact_and_new_context_o
             mode: SharedReadPublicationMode::SequencedRefresh(&["Task One", "Task Two"]),
         },
     );
-    insert_task(&mut workspace, "task-1", "Task One");
+    insert_task(request_execution, &mut workspace, "task-1", "Task One");
     let old_artifact = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("old shared read context should mint")
         .published_derived_artifact(&derived)
         .expect("old artifact handle should mint");
 
-    insert_task(&mut workspace, "task-2", "Task Two");
+    insert_task(request_execution, &mut workspace, "task-2", "Task Two");
     let new_artifact = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("new shared read context should mint")
         .published_derived_artifact(&derived)
         .expect("new artifact handle should mint");
@@ -218,8 +243,12 @@ fn shared_read_republication_keeps_old_context_on_old_artifact_and_new_context_o
 
 #[test]
 fn shared_read_context_fails_closed_when_runtime_retires_its_snapshot_generation() {
-    let mut workspace = shared_read_workspace("shared-read.stale-basis");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = shared_read_workspace(request_execution, "shared-read.stale-basis");
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         "shared-read.stale-basis",
         SharedReadPublishingMaintainer {
@@ -227,10 +256,10 @@ fn shared_read_context_fails_closed_when_runtime_retires_its_snapshot_generation
             mode: SharedReadPublicationMode::RefreshTitle("Task One"),
         },
     );
-    insert_task(&mut workspace, "task-1", "Task One");
+    insert_task(request_execution, &mut workspace, "task-1", "Task One");
 
     let read_ctx = workspace
-        .shared_read_context()
+        .shared_read_context(request_execution)
         .expect("shared read context should mint");
     let expected_snapshot_identity = read_ctx.snapshot_identity().clone();
     workspace
@@ -250,8 +279,12 @@ fn shared_read_context_fails_closed_when_runtime_retires_its_snapshot_generation
 
 #[test]
 fn shared_read_pin_counters_return_to_exact_zero_after_context_and_artifact_drop() {
-    let mut workspace = shared_read_workspace("shared-read.pin-counts");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = shared_read_workspace(request_execution, "shared-read.pin-counts");
     let derived = declare_shared_read_derived(
+        request_execution,
         &mut workspace,
         "shared-read.pin-counts",
         SharedReadPublishingMaintainer {
@@ -259,11 +292,11 @@ fn shared_read_pin_counters_return_to_exact_zero_after_context_and_artifact_drop
             mode: SharedReadPublicationMode::RefreshTitle("Task One"),
         },
     );
-    insert_task(&mut workspace, "task-1", "Task One");
+    insert_task(request_execution, &mut workspace, "task-1", "Task One");
 
     {
         let read_ctx = workspace
-            .shared_read_context()
+            .shared_read_context(request_execution)
             .expect("shared read context should mint");
         let artifact = read_ctx
             .published_derived_artifact(&derived)

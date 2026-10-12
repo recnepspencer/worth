@@ -75,25 +75,31 @@ where
     ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
         let owner = workspace.advancement_owner();
         owner
-            .with_advancement(|phase| {
-                let execution = &phase;
-                let prepared =
-                    match WorthQueryPreparedDirectExecution::prepare(execution, self, workspace) {
-                        Ok(prepared) => prepared,
-                        Err(outcome) => return outcome,
-                    };
-                match prepared.invoke_graphs(execution) {
-                    Ok(completed) => completed.invoke_executor(execution, workspace),
-                    Err(outcome) => outcome,
-                }
-            })
+            .with_advancement(|phase| self.execute_in_advancement(&phase, workspace))
             .unwrap_or_else(|cause| {
-                TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::new(
-                    WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause),
-                    "request admission",
-                    Default::default(),
+                TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::from_advancement_denial(
+                    cause,
                 ))
             })
+    }
+
+    /// Executes inside the caller's installed phase, opening no host request.
+    /// The UI live view uses this borrowed entry for its single host call.
+    pub fn execute_in_advancement(
+        self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        workspace: &mut crate::runtime::WorthQueryWorkspace,
+    ) -> super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output> {
+        let prepared = match WorthQueryPreparedDirectExecution::prepare(phase, self, workspace) {
+            Ok(prepared) => prepared,
+            Err(outcome) => return outcome,
+        };
+        match prepared.invoke_graphs(phase) {
+            Ok(completed) => completed.invoke_executor(phase, workspace),
+            Err(outcome) => outcome,
+        }
     }
 }
 
@@ -130,7 +136,13 @@ where
             ));
         }
         let resource_evidence = admitted.resource_attempt.evidence().clone();
-        let execution_snapshot = workspace.snapshot_identity();
+        let execution_snapshot = workspace.snapshot_identity(execution).map_err(|cause| {
+            TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::new(
+                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause.into()),
+                "snapshot phase custody",
+                counters,
+            ))
+        })?;
         let conditional = match admitted.evaluate_conditionals(
             execution,
             workspace,
@@ -305,18 +317,11 @@ fn admit_direct_request<'request>(
     phase: &'request worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     workspace: &crate::runtime::WorthQueryWorkspace,
 ) -> Result<worth_execution::ExecutionRequest<'request, 'request>, WorthQueryBoundExecutionDenial> {
-    use worth_query_execution::facade::application_contribution::{
-        WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
-    };
     phase
         .execution_request_for(&workspace.advancement_owner())
-        .map_err(|_| {
+        .map_err(|cause| {
             WorthQueryBoundExecutionDenial::new(
-                WorthQueryBoundExecutionDenialKind::ExecutionRequest(
-                    WorthQueryAdvancementDenial::Resource(
-                        WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase,
-                    ),
-                ),
+                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause.into()),
                 "direct advancement belongs to another installed runtime",
                 Default::default(),
             )

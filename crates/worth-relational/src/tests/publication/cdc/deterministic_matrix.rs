@@ -3,9 +3,12 @@ use crate::tests::harness::certify::assertions::assert_window_matrix_matches;
 
 #[test]
 fn seeded_cdc_matrix_is_deterministic_and_window_stable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for seed in 0_u64..12 {
-        let left = run_seeded_cdc_scenario(seed, 48);
-        let right = run_seeded_cdc_scenario(seed, 48);
+        let left = run_seeded_cdc_scenario(execution, seed, 48);
+        let right = run_seeded_cdc_scenario(execution, seed, 48);
 
         let full_left =
             collect_subscriber_patches(&left.runtime, left.baseline_checkpoint.clone(), 256);

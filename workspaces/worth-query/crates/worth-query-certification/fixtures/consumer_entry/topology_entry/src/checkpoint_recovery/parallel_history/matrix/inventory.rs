@@ -1,6 +1,6 @@
 //! The product includes unavailable capabilities as named rows, never skips.
 #[test]
-fn matrix_rows_name_the_unplaceable_deadline_and_the_missing_base_slice() {
+fn matrix_rows_name_the_unplaceable_deadline_and_the_separate_placement_proof() {
     let mut rows = Vec::new();
     for family in super::FAMILY_NAMES {
         for workers in [1, 2, 5] {
@@ -9,7 +9,7 @@ fn matrix_rows_name_the_unplaceable_deadline_and_the_missing_base_slice() {
     }
     rows.push((
         "cross-placement incremental prior".to_owned(),
-        "7.6 part two supplies the placement-prior contract; it is not in this base",
+        "7.6 part two owns the cross-placement prior proof; this matrix varies leased widths",
     ));
     assert_eq!(
         rows.len(),

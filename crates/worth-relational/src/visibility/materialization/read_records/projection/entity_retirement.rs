@@ -31,7 +31,11 @@ impl RelationalEntityRetirement {
 impl VisibilityProjectionView<'_> {
     /// One exact identity lookup. Missing, live, reused, wildcard, or historical
     /// identities have no retirement evidence. No aspect state is materialized.
-    pub fn entity_retirement(&self, entity: EntityId) -> Option<RelationalEntityRetirement> {
+    pub fn entity_retirement(
+        &self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+    ) -> Option<RelationalEntityRetirement> {
         if !self.is_exact_basis() || entity.generation.is_zero() {
             return None;
         }

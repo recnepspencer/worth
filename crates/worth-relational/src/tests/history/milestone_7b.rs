@@ -14,12 +14,15 @@ use crate::tests::support::{
 };
 use worth_foundational::facade::AspectKey;
 
-fn inspect_recovered_merge_planning_artifact() -> crate::facade::merge::MergePlanningArtifactCore {
+fn inspect_recovered_merge_planning_artifact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> crate::facade::merge::MergePlanningArtifactCore {
     let runtime = persisted_runtime_with_test_schema();
-    let shared = create_entity(&runtime, "shared");
+    let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
-    update_entity(&runtime, shared, "shared-main");
+    update_entity(execution, &runtime, shared, "shared-main");
     update_entity_on_branch(
+        execution,
         &runtime,
         shared,
         "shared-feature",
@@ -28,22 +31,28 @@ fn inspect_recovered_merge_planning_artifact() -> crate::facade::merge::MergePla
 
     let artifact = runtime
         .merge()
-        .inspect_planning_scope(crate::merge::data::MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            BranchId("feature".to_string()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            crate::merge::data::MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("live merge planning artifact");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(&runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
     let recovered_artifact = recovered
         .merge()
-        .inspect_planning_scope(crate::merge::data::MergePlanningRequest::new(
-            BranchId("main".to_string()),
-            BranchId("feature".to_string()),
-            MergeIntent::ReconcileIntoTarget,
-        ))
+        .inspect_planning_scope(
+            execution,
+            crate::merge::data::MergePlanningRequest::new(
+                BranchId("main".to_string()),
+                BranchId("feature".to_string()),
+                MergeIntent::ReconcileIntoTarget,
+            ),
+        )
         .expect("recovered merge planning artifact");
 
     assert_eq!(recovered_artifact, artifact);
@@ -52,7 +61,10 @@ fn inspect_recovered_merge_planning_artifact() -> crate::facade::merge::MergePla
 
 #[test]
 fn merge_planning_artifact_certification_is_stable_across_recovery() {
-    let artifact = inspect_recovered_merge_planning_artifact();
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let artifact = inspect_recovered_merge_planning_artifact(execution);
 
     assert_eq!(artifact.digest_basis.schema, artifact.schema_snapshot);
     assert_eq!(
@@ -74,6 +86,9 @@ fn merge_planning_artifact_certification_is_stable_across_recovery() {
 
 #[test]
 fn merge_planning_schema_snapshot_changes_when_schema_semantics_change() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn runtime_with_registry(
         merge_policy: AspectMergePolicyKind,
     ) -> crate::facade::runtime::RelationalRuntime {
@@ -116,11 +131,15 @@ fn merge_planning_schema_snapshot_changes_when_schema_semantics_change() {
             .build()
     }
 
-    fn snapshot_digest(runtime: &mut crate::facade::runtime::RelationalRuntime) -> String {
-        let shared = create_entity(runtime, "shared");
+    fn snapshot_digest(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &mut crate::facade::runtime::RelationalRuntime,
+    ) -> String {
+        let shared = create_entity(execution, runtime, "shared");
         create_branch_from_main(runtime, "feature");
-        update_entity(runtime, shared, "shared-main");
+        update_entity(execution, runtime, shared, "shared-main");
         update_entity_on_branch(
+            execution,
             runtime,
             shared,
             "shared-feature",
@@ -128,19 +147,22 @@ fn merge_planning_schema_snapshot_changes_when_schema_semantics_change() {
         );
         let artifact = runtime
             .merge()
-            .inspect_planning_scope(crate::merge::data::MergePlanningRequest::new(
-                BranchId("main".to_string()),
-                BranchId("feature".to_string()),
-                MergeIntent::ReconcileIntoTarget,
-            ))
+            .inspect_planning_scope(
+                execution,
+                crate::merge::data::MergePlanningRequest::new(
+                    BranchId("main".to_string()),
+                    BranchId("feature".to_string()),
+                    MergeIntent::ReconcileIntoTarget,
+                ),
+            )
             .expect("merge planning artifact");
         crate::merge::data::schema_snapshot_digest(&artifact.schema_snapshot)
     }
 
     let mut prefer_richer_runtime = runtime_with_registry(AspectMergePolicyKind::PreferRicher);
     let mut fail_on_conflict_runtime = runtime_with_registry(AspectMergePolicyKind::FailOnConflict);
-    let prefer_richer_digest = snapshot_digest(&mut prefer_richer_runtime);
-    let fail_on_conflict_digest = snapshot_digest(&mut fail_on_conflict_runtime);
+    let prefer_richer_digest = snapshot_digest(execution, &mut prefer_richer_runtime);
+    let fail_on_conflict_digest = snapshot_digest(execution, &mut fail_on_conflict_runtime);
 
     assert_ne!(prefer_richer_digest, fail_on_conflict_digest);
 }

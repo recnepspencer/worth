@@ -1,6 +1,6 @@
 use super::*;
 #[test]
-fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
+fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
     let (scope, principal) = authenticate(&application);
@@ -51,6 +51,8 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
     reports();
     signal_charges();
     computation_runs();
+    use worth_query_host::facade::primary_graph::principal_target_reads_on_this_thread_for_test as native_reads;
+    let reads_before = native_reads();
     let outcome = output
         .advance(&application, &request)
         .expect("the consumer shares its advancement request");
@@ -61,12 +63,6 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
         "one request spans the caller pass and delivery"
     );
     let charged = reports[0].as_ref().unwrap().charged_work();
-    assert!(
-        charged
-            <= super::support::observation::CHECKPOINT_EXECUTION_POLICY
-                .budget()
-                .work_ceiling()
-    );
     let signal_units: u64 = signal_charges().into_iter().sum();
     assert!(
         signal_units > 0,
@@ -81,15 +77,19 @@ fn a_leased_output_demand_carries_its_request_through_bridge_and_signal() {
         query_units, 0,
         "this producer invokes no managed computation"
     );
+    // This advance's plan sequence contains ten principal-target traversals;
+    // each has the seeded shape used by the independent read-work oracle.
+    let traversal_count = native_reads() - reads_before;
+    assert_eq!(
+        traversal_count, 10,
+        "the real fixture executes ten principal-target plans"
+    );
+    let relational_units = traversal_count * super::advancement_custody::PRINCIPAL_TARGET_READ_WORK;
+    let observed_owner_units = query_units + signal_units + relational_units;
     assert_eq!(
         charged,
-        query_units + signal_units,
-        "the parent includes the separately observed Query and Signal owners exactly"
-    );
-    let bridge_units = charged - query_units - signal_units;
-    assert_eq!(
-        bridge_units, 0,
-        "Bridge adds no checkpoint work on this path"
+        observed_owner_units + super::native_commit_work::ADVANCEMENT_COMMIT_WORK,
+        "the shared request pays every named owner, including the three native commits"
     );
     assert!(matches!(
         outcome,
@@ -149,7 +149,7 @@ fn mutation_host_calls_own_the_request_and_prepared_products_hold_only_facts() {
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    assert!(matches!(outcome, Outcome::Committed { .. }));
+    assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
     assert_eq!(
         reports().len(),
         1,

@@ -35,55 +35,34 @@ type Reads = WorthQueryCompleteApplicationReadSet<
     WorthQueryProjectedApplicationMutation,
 >;
 
-#[test]
-fn exact_request_commits_query_derived_state_and_returns_one_requested_receipt() {
-    let world = request_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let program = request_reads(&world, &principal, &request, honest_input())
-        .materialize_elevation_request_program()
-        .unwrap();
-
-    let outcome = world
-        .application
-        .compare_and_commit_elevation_request(program, idempotency(71, 71));
-    let WorthQueryElevationRequestOutcome::Requested(receipt) = outcome else {
-        panic!("the exact request transition must commit: {outcome:?}");
-    };
-
-    assert_eq!(receipt.commit_receipt().changed_record_count(), 8);
-    assert_eq!(receipt.commit_receipt().emitted_effect_count(), 0);
-    assert_eq!(receipt.elevation_key(), "elevation-request-2");
-    assert_eq!(receipt.review_key(), "review-request-2");
-    assert_eq!(receipt.requester(), principal.principal_entity_id());
-    assert_eq!(receipt.elevation_identity(), &string("elevation-2"));
-    assert_eq!(receipt.reason(), &string("protect-customer"));
-    assert_eq!(receipt.requested_status(), &string("requested"));
-    assert_eq!(receipt.issued_at(), &AspectValue::UInt64(100));
-    assert_eq!(receipt.expires_at(), &AspectValue::UInt64(105));
-    assert_eq!(receipt.review_identity(), &string("review-2"));
-    assert_eq!(receipt.review_status(), &string("required"));
-
-    resolve_created_identities(&world, &request);
-    world.authorization_time.script([time(100)]);
-    let denial = super::admit_raw(&world, &principal, &request, Some("elevation-2"))
-        .err()
-        .expect("a requested selector cannot bypass the lifecycle transition");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
-    );
-}
+#[path = "request_transition/exact_request_commits_query_derived_state_and_returns_one_reques.rs"]
+mod exact_request_commits_query_derived_state_and_returns_one_reques;
 
 #[test]
 fn ordinary_compare_and_commit_cannot_publish_a_lifecycle_program() {
     let world = request_world();
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let ordinary = request_reads(&world, &principal, &request, honest_input())
-        .begin_effect_program()
-        .finish()
-        .unwrap();
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let ordinary = world
+        .application
+        .with_host_advancement(|phase| {
+            request_reads(
+                &(phase).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                honest_input(),
+            )
+            .begin_effect_program()
+            .finish()
+            .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryApplicationCommitOutcome::Denied(denial) =
         world.application.compare_and_commit_application(
@@ -100,38 +79,8 @@ fn ordinary_compare_and_commit_cannot_publish_a_lifecycle_program() {
     );
 }
 
-#[test]
-fn equivalent_request_retry_recovers_the_same_authoritative_commit() {
-    let world = request_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let first = request_reads(&world, &principal, &request, honest_input())
-        .materialize_elevation_request_program()
-        .unwrap();
-    let retry = request_reads(&world, &principal, &request, honest_input())
-        .materialize_elevation_request_program()
-        .unwrap();
-
-    let first_outcome = world
-        .application
-        .compare_and_commit_elevation_request(first, idempotency(73, 73));
-    let original = match first_outcome {
-        WorthQueryElevationRequestOutcome::Requested(original) => original,
-        unexpected => panic!("first request must commit: {unexpected:?}"),
-    };
-    let retry_outcome = world
-        .application
-        .compare_and_commit_elevation_request(retry, idempotency(73, 73));
-    let recovered = match retry_outcome {
-        WorthQueryElevationRequestOutcome::AlreadyRequested(recovered) => recovered,
-        unexpected => {
-            panic!("equivalent request retry must recover the original commit: {unexpected:?}")
-        }
-    };
-    assert!(recovered
-        .commit_receipt()
-        .is_same_authoritative_commit(original.commit_receipt()));
-}
+#[path = "request_transition/equivalent_request_retry_recovers_the_same_authoritative_commit.rs"]
+mod equivalent_request_retry_recovers_the_same_authoritative_commit;
 
 #[test]
 fn request_upper_bound_cannot_widen_scope_or_swap_purpose() {
@@ -153,16 +102,29 @@ fn request_upper_bound_cannot_widen_scope_or_swap_purpose() {
     ] {
         let world = request_world();
         let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
-        let access = request_access(&world, &principal, &request, input).unwrap();
-        let operation = request_operation(&world);
-
-        let denial = world
+        world
             .application
-            .authorize_elevation_request(access, &operation, Default::default())
-            .err()
-            .expect("a widened request target must not mint lifecycle authority");
-        assert_eq!(denial.kind(), expected);
+            .with_host_advancement(|phase| {
+                let principal =
+                    authenticated_principal(&(phase).test_host_request(), &world, &request);
+                let access = request_access(
+                    &(phase).test_host_request(),
+                    &world,
+                    &principal,
+                    &request,
+                    input,
+                )
+                .unwrap();
+                let operation = request_operation(&world);
+
+                let denial = world
+                    .application
+                    .authorize_elevation_request(&phase, access, &operation, Default::default())
+                    .err()
+                    .expect("a widened request target must not mint lifecycle authority");
+                assert_eq!(denial.kind(), expected);
+            })
+            .expect("the request fixture owns its installed host call");
     }
 }
 
@@ -171,86 +133,56 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
     let world = installed_elevated_capability_world(CapabilityElevationScenario::WrongGrant);
     world.authorization_time.script([time(100), time(100)]);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = request_access(
-        &world,
-        &principal,
-        &request,
-        RequestElevationInput {
-            grant: "capability-2".to_owned(),
-            ..honest_input()
-        },
-    )
-    .unwrap();
-
-    let denial = world
+    world
         .application
-        .authorize_elevation_request(access, &request_operation(&world), Default::default())
-        .err()
-        .expect("a different grant cannot become the elevation upper bound");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
-    );
-    assert!(denial.identity().is_some());
-    assert_eq!(
-        denial.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing]
-    );
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+
+            let principal = authenticated_principal(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &request,
+            );
+            let access = request_access(
+                &(host_custody.phase_for_application(&world.application)).test_host_request(),
+                &world,
+                &principal,
+                &request,
+                RequestElevationInput {
+                    grant: "capability-2".to_owned(),
+                    ..honest_input()
+                },
+            )
+            .unwrap();
+
+            let denial = world
+                .application
+                .authorize_elevation_request(
+                    &host_custody.phase_for_application(&world.application),
+                    access,
+                    &request_operation(&world),
+                    Default::default(),
+                )
+                .err()
+                .expect("a different grant cannot become the elevation upper bound");
+            assert_eq!(
+                denial.kind(),
+                WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+            );
+            assert!(denial.identity().is_some());
+            assert_eq!(
+                denial.causes(),
+                [WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing]
+            );
+        })
+        .expect("the fixture block owns its installed host call")
 }
 
-#[test]
-fn zero_or_overlong_duration_and_invalid_storage_key_fail_before_commit() {
-    for duration in [Duration::ZERO, Duration::from_secs(1_201)] {
-        let world = request_world();
-        let request = live_scope();
-        let principal = authenticated_principal(&world, &request);
-        let access = request_access(
-            &world,
-            &principal,
-            &request,
-            RequestElevationInput {
-                duration,
-                ..honest_input()
-            },
-        )
-        .unwrap();
-        let denial = world
-            .application
-            .authorize_elevation_request(access, &request_operation(&world), Default::default())
-            .err()
-            .expect("invalid duration must not mint request authority");
-        assert_eq!(
-            denial.kind(),
-            WorthQueryOperationAuthorizationDenialKind::ElevationDurationExceeded
-        );
-    }
-
-    let world = request_world();
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let access = request_access(
-        &world,
-        &principal,
-        &request,
-        RequestElevationInput {
-            elevation_key: " bad-key".to_owned(),
-            ..honest_input()
-        },
-    )
-    .unwrap();
-    let denial = world
-        .application
-        .authorize_elevation_request(access, &request_operation(&world), Default::default())
-        .err()
-        .expect("invalid provider key must fail before lifecycle graph progression");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected
-    );
-}
+#[path = "request_transition/zero_or_overlong_duration_and_invalid_storage_key_fail_before_co.rs"]
+mod zero_or_overlong_duration_and_invalid_storage_key_fail_before_co;
 
 pub(super) fn request_reads(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         IdentityExecutionSchema,
@@ -261,14 +193,20 @@ pub(super) fn request_reads(
     input: RequestElevationInput,
 ) -> Reads {
     let operation = request_operation(world);
-    let access = request_access(world, principal, request, input).unwrap();
+    let access = request_access(phase_custody, world, principal, request, input).unwrap();
     let admission = world
         .application
-        .authorize_elevation_request(access, &operation, Default::default())
+        .authorize_elevation_request(
+            &phase_custody.phase_for_application(&world.application),
+            access,
+            &operation,
+            Default::default(),
+        )
         .unwrap();
     let (_, projection, _) = world
         .invariant
         .project_admitted_operation(
+            &phase_custody.phase_for_application(&world.application),
             &admission,
             |reader, account| {
                 reader
@@ -282,18 +220,21 @@ pub(super) fn request_reads(
     world
         .application
         .begin_projected_application_read_attempt(
+            &phase_custody.phase_for_application(&world.application),
             admission,
             projection,
             AllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .complete_projected_dependencies(
+            &phase_custody.phase_for_application(&world.application),
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
 }
 
 fn request_access(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
     world: &World,
     principal: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal<
         IdentityExecutionSchema,
@@ -312,8 +253,14 @@ fn request_access(
         )
         .unwrap();
     world
-        .selected_product()
-        .admit_capability_access(principal, &capability, input, request)
+        .selected_product(&(phase_custody).test_host_request())
+        .admit_capability_access(
+            &phase_custody.phase_for_application(&world.application),
+            principal,
+            &capability,
+            input,
+            request,
+        )
 }
 
 fn request_operation(
@@ -355,14 +302,20 @@ pub(super) fn honest_input() -> RequestElevationInput {
 }
 
 pub(super) fn resolve_created_identities(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &World,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) {
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityElevationIdentity::reference(),
             "elevation-2".to_owned(),
             request,
@@ -371,9 +324,13 @@ pub(super) fn resolve_created_identities(
         .expect("committed request must create the exact elevation identity");
     world
         .application
-        .select_product_branch(world.application.product_runtime().default_branch())
+        .select_product_branch(
+            execution,
+            world.application.product_runtime().default_branch(),
+        )
         .expect("the selected product branch remains admitted")
         .resolve_entity(
+            &phase_custody.phase_for_application(&world.application),
             CapabilityReviewIdentity::reference(),
             "review-2".to_owned(),
             request,

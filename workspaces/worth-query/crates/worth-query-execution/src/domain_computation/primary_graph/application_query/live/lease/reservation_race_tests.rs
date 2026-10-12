@@ -21,28 +21,40 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
-        .selected_product()
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let query = world
         .application
         .installed_schema()
         .certification_query(LiveAccountActivityQuery::reference())
         .unwrap();
     let account = world
-        .selected_product()
-        .resolve_entity(
-            AccountIdentity::reference(),
-            "account-1".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_entity(
+                    &phase,
+                    AccountIdentity::reference(),
+                    "account-1".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let (parked_tx, parked_rx) = mpsc::sync_channel(0);
     let (release_tx, release_rx) = mpsc::sync_channel(0);
     let release_rx = Arc::new(Mutex::new(release_rx));
@@ -54,14 +66,14 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
             release_rx.lock().unwrap().recv().unwrap();
         })));
 
-    std::thread::scope(|scope| {
-        let committed = scope.spawn(|| commit_live_activity(&world, &principal, &request));
-        parked_rx.recv().unwrap();
-        let mut lease = world
-            .application
-            .with_application_advancement(&request, |phase| {
-                world
-            .selected_product()
+    world
+        .application
+        .with_host_advancement(|phase| {
+            std::thread::scope(|scope| {
+                let committed = scope.spawn(|| commit_live_activity(&world, &principal, &request));
+                parked_rx.recv().unwrap();
+                let mut lease = world
+            .selected_product(&(phase).test_host_request(), )
             .open_application_query_live::<
                 LiveAccountActivityQuery,
                 AccountSummaryParameters,
@@ -71,8 +83,7 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 Account,
                 Activity,
                 LiveAccountActivityCause,
-            >(
- &phase,
+            >(&phase,
                 query,
                 &principal,
                 account,
@@ -80,34 +91,35 @@ fn lease_opened_after_reservation_receives_the_exact_committed_successor() {
                 WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048)
                     .unwrap(),
             )
-            .unwrap()
-            })
             .unwrap();
-        release_tx.send(()).unwrap();
-        let committed = committed.join().unwrap();
-        world
-            .application
-            .primary_provider
-            .set_application_commit_causality_reservation_hook(None);
+                release_tx.send(()).unwrap();
+                let committed = committed.join().unwrap();
+                world
+                    .application
+                    .primary_provider
+                    .set_application_commit_causality_reservation_hook(None);
 
-        let WorthQueryApplicationLiveOutcome::Delivered(update) = lease.next(&principal, &request)
-        else {
-            panic!("the lease linearized before World movement must receive its successor");
-        };
-        assert_eq!(
-            update.product_publication(),
-            committed.committed_product_publication()
-        );
-        let WorthQueryApplicationBasisSelectionIdentity::Product(product) =
-            update.receipt().basis_identity().selection()
-        else {
-            panic!("live delivery must project the carried product occurrence");
-        };
-        assert_eq!(
-            product.selected_commit(),
-            committed.committed_product_publication().composite_commit()
-        );
-    });
+                let WorthQueryApplicationLiveOutcome::Delivered(update) =
+                    lease.next(&phase, &principal, &request)
+                else {
+                    panic!("the lease linearized before World movement must receive its successor");
+                };
+                assert_eq!(
+                    update.product_publication(),
+                    committed.committed_product_publication()
+                );
+                let WorthQueryApplicationBasisSelectionIdentity::Product(product) =
+                    update.receipt().basis_identity().selection()
+                else {
+                    panic!("live delivery must project the carried product occurrence");
+                };
+                assert_eq!(
+                    product.selected_commit(),
+                    committed.committed_product_publication().composite_commit()
+                );
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 #[test]
@@ -116,23 +128,35 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
     let request = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     let principal = world
-        .selected_product()
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_authenticated_principal(
+                    &phase,
+                    &world.binding,
+                    &external,
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = world
-        .selected_product()
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &request,
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let retention_before = world
         .application
         .product_runtime()
@@ -140,14 +164,22 @@ fn publication_without_a_joining_subscriber_releases_marker_and_observation() {
         .inspection_port()
         .retention_snapshot()
         .unwrap();
-    let program = live_activity_program(
-        &world,
-        world.application.product_runtime().default_branch(),
-        &principal,
-        &account,
-        &request,
-        "no-join",
-    );
+    let program = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            live_activity_program(
+                &(phase).test_host_request(),
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                world.application.product_runtime().default_branch(),
+                &principal,
+                &account,
+                &request,
+                "no-join",
+            )
+        })
+        .expect("the fixture read owns its installed host call");
 
     let WorthQueryApplicationCommitOutcome::Committed(committed) =
         world.application.compare_and_commit_application(

@@ -2,18 +2,24 @@ use worth_query::facade::{domain, installed};
 
 use super::{conditional_node_contract, installed_operation_fixture::conditional_workspace};
 
-fn workspace(identity: &str) -> worth_query::facade::runtime::WorthQueryWorkspace {
+fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    identity: &str,
+) -> worth_query::facade::runtime::WorthQueryWorkspace {
     let node = conditional_node_contract::node(
         "geometry",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    conditional_workspace(identity, node).unwrap()
+    conditional_workspace(request_execution, identity, node).unwrap()
 }
 
 #[test]
 fn installed_product_entry_requires_typed_selection_and_retains_its_observation() {
-    let workspace = workspace("typed-product-entry");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = workspace(request_execution, "typed-product-entry");
     let branch = workspace.current_world();
     let default = workspace.observe_operating_world(branch).unwrap();
     let held = default.product_branch();
@@ -25,8 +31,11 @@ fn installed_product_entry_requires_typed_selection_and_retains_its_observation(
 
 #[test]
 fn product_selection_from_another_runtime_fails_before_binding() {
-    let first = workspace("first-product-entry");
-    let second = workspace("second-product-entry");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let first = workspace(request_execution, "first-product-entry");
+    let second = workspace(request_execution, "second-product-entry");
     let branch = first.current_world();
     let denied = second
         .observe_operating_world(branch)

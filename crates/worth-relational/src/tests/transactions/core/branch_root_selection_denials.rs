@@ -4,8 +4,11 @@ use crate::branch::{
 use crate::facade::history::BranchId;
 use crate::tests::support::{create_entity, install_empty_test_branch, runtime_with_test_schema};
 
-fn committed_child(runtime: &crate::runtime::RelationalRuntime) -> BranchId {
-    create_entity(runtime, "root-selection-source");
+fn committed_child(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalRuntime,
+) -> BranchId {
+    create_entity(execution, runtime, "root-selection-source");
     let source = BranchId("main".to_owned());
     let (_, basis) = runtime
         .observe_fork_source(&source)
@@ -19,8 +22,11 @@ fn committed_child(runtime: &crate::runtime::RelationalRuntime) -> BranchId {
 
 #[test]
 fn unavailable_committed_root_denies_before_transaction_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let child = committed_child(&runtime);
+    let child = committed_child(execution, &runtime);
     runtime
         .history
         .branch_cell_mut(&child)
@@ -47,8 +53,11 @@ fn unavailable_committed_root_denies_before_transaction_admission() {
 
 #[test]
 fn committed_root_reference_mismatch_denies_before_transaction_admission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let child = committed_child(&runtime);
+    let child = committed_child(execution, &runtime);
     runtime
         .history
         .branch_cell_mut(&child)

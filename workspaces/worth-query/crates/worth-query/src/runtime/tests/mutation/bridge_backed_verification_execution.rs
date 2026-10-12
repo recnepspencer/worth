@@ -51,6 +51,9 @@ fn admitted_primary_profile(target_binding_family: &str) -> WorthQueryRuntimeSup
 
 #[test]
 fn primary_bridge_backed_entity_verification_family_executes_when_profile_and_adapter_admit_it() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = WorthQueryExistingEntityTarget::new(
         crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
             crate::runtime::WorthQueryExistingTruthBindingAuthorityLabel::new("authority:task-1")
@@ -65,6 +68,7 @@ fn primary_bridge_backed_entity_verification_family_executes_when_profile_and_ad
     let binding = WorthQueryExistingTruthTargetBinding::from_entity_target(binding)
         .expect("entity binding should build");
     let runtime = bridge_runtime_with_support_and_existing_truth_verification(
+        request_execution,
         admitted_primary_profile("direct_entity_identity"),
         TestExistingTruthVerificationAdapter::default()
             .with_value(&binding, "status.value", test_string_aspect_value("open"))
@@ -95,7 +99,7 @@ fn primary_bridge_backed_entity_verification_family_executes_when_profile_and_ad
     }
 
     let verify_receipt = workspace
-        .verify_existing(binding.clone(), |task| {
+        .verify_existing(request_execution, binding.clone(), |task| {
             task.set_aspect(
                 test_aspect_touch("status.value"),
                 test_authored_string_aspect_value("open"),
@@ -149,6 +153,7 @@ fn primary_bridge_backed_entity_verification_family_executes_when_profile_and_ad
 
     let probe = workspace
         .probe_existing(
+            request_execution,
             binding.clone(),
             test_aspect_touches(["status.value", "title.value"]),
         )
@@ -163,6 +168,7 @@ fn primary_bridge_backed_entity_verification_family_executes_when_profile_and_ad
 
     let update_receipt = workspace
         .update_existing_verified(
+            request_execution,
             binding.clone(),
             |task| {
                 task.set_aspect(
@@ -199,6 +205,7 @@ fn primary_bridge_backed_entity_verification_family_executes_when_profile_and_ad
 
     let delete_receipt = workspace
         .delete_existing_verified(
+            request_execution,
             binding,
             |task| {
                 task.set_aspect(
@@ -233,6 +240,9 @@ fn primary_bridge_backed_entity_verification_family_executes_when_profile_and_ad
 
 #[test]
 fn primary_bridge_backed_relation_verification_family_executes_when_profile_and_adapter_admit_it() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = WorthQueryExistingRelationTarget::new(
         crate::runtime::WorthQueryMutationAuthorityIdentity::existing_truth_binding_authority(
             crate::runtime::WorthQueryExistingTruthBindingAuthorityLabel::new("authority:rel-1")
@@ -247,6 +257,7 @@ fn primary_bridge_backed_relation_verification_family_executes_when_profile_and_
     let binding = WorthQueryExistingTruthTargetBinding::from_relation_target(binding)
         .expect("relation binding should build");
     let runtime = bridge_runtime_with_support_and_existing_truth_verification(
+        request_execution,
         admitted_primary_profile("direct_relation_identity"),
         TestExistingTruthVerificationAdapter::default()
             .with_value(
@@ -269,6 +280,7 @@ fn primary_bridge_backed_relation_verification_family_executes_when_profile_and_
 
     let probe = workspace
         .probe_existing(
+            request_execution,
             binding.clone(),
             test_aspect_touches(["kind.value", "status.value"]),
         )
@@ -283,6 +295,7 @@ fn primary_bridge_backed_relation_verification_family_executes_when_profile_and_
 
     let update_receipt = workspace
         .update_existing_verified(
+            request_execution,
             binding.clone(),
             |relation| {
                 relation.set_aspect(
@@ -325,7 +338,7 @@ fn primary_bridge_backed_relation_verification_family_executes_when_profile_and_
             .as_str()
     );
     match workspace
-        .inspect(&update_receipt)
+        .inspect(request_execution, &update_receipt)
         .expect("relation update should inspect")
     {
         WorthQueryInspection::WriteReceipt(inspection) => {
@@ -351,6 +364,7 @@ fn primary_bridge_backed_relation_verification_family_executes_when_profile_and_
 
     let delete_receipt = workspace
         .delete_existing_verified(
+            request_execution,
             binding,
             |relation| {
                 relation.set_aspect(

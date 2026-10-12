@@ -19,6 +19,7 @@ where
     #[allow(clippy::too_many_arguments)]
     pub(super) fn materialize_evidence_join(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         compiled: crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
         instance: super::super::PublishedWorkflowInstanceRef,
@@ -59,6 +60,7 @@ where
             )?;
             let observation_request = self.admission.publication_request();
             let subject = super::assessment_coverage::observe_subject_cached(
+                execution,
                 &compiled,
                 layout,
                 progress,
@@ -74,8 +76,9 @@ where
                 self.admission.operation(),
             )?;
             let observation_request = self.admission.publication_request();
-            let observed = self.lease.handle().with_runtime(|runtime| {
+            let observed = self.lease.handle().with_runtime(execution, |runtime| {
                 super::assessment_applicability::observe(
+                    execution,
                     node,
                     &self.lease.layout,
                     runtime,
@@ -113,8 +116,9 @@ where
                 self.admission.operation(),
             )?;
             let observation_request = self.admission.publication_request();
-            let (evidence, mut retained_facts) = self.lease.handle().with_runtime(|runtime| {
+            let (evidence, mut retained_facts) = self.lease.handle().with_runtime(execution, |runtime| {
                 super::super::workflow_instance_observation::observe_retained_assessment_evidence(
+                    execution,
                     runtime,
                     self.lease.snapshot(),
                     layout,
@@ -129,6 +133,7 @@ where
             )?;
             let observation_request = self.admission.publication_request();
             let observed = super::assessment_coverage::observe(
+                execution,
                 node,
                 compiled.program_revision(),
                 coverage,
@@ -177,6 +182,7 @@ where
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )?;
         super::assessment::bind_currentness_facts(
+            execution,
             &mut self,
             &evidence_currentness,
             selected.node_path(),

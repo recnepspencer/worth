@@ -21,6 +21,7 @@ impl WorthQueryPrimaryGraphProvider {
     /// canonical row; no verifier claim or signed message is fabricated.
     pub(in crate::domain_computation::primary_graph) fn prepare_installed_transport_completion_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
         dispatch: &WorthQueryExternalEffectDispatch,
@@ -111,6 +112,6 @@ impl WorthQueryPrimaryGraphProvider {
                 string(hex(observation.identity().bytes())),
             ),
         ]);
-        self.prepare_completion_fields(basis, *original_entity, &correlation, fields)
+        self.prepare_completion_fields(execution, basis, *original_entity, &correlation, fields)
     }
 }

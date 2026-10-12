@@ -6,6 +6,7 @@ use crate::world::supply_chain::{
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 pub(super) fn observe_snapshot_against_oracle(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &ProductionSeededSupplyChainWorld,
     trace: &ProductionModelTrace,
     scenario_index: usize,
@@ -14,6 +15,7 @@ pub(super) fn observe_snapshot_against_oracle(
     operation: &'static str,
 ) {
     let observed = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(snapshot.clone()),
         &world.runtime,

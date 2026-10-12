@@ -56,42 +56,49 @@ fn existing_task_binding(
 
 #[test]
 fn public_bridge_runtime_common_bootstrap_lane_builds_runtime_backed_live_reads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("public.bridge-runtime-bootstrap.common-lane")
         .expect("runtime should open a named workspace");
     let tasks: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("public.bridge-runtime-bootstrap.common-lane.tasks", |q| {
-            q.from("Task")
-                .select([
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "identity", "id",
+        .live_view(
+            request_execution,
+            "public.bridge-runtime-bootstrap.common-lane.tasks",
+            |q| {
+                q.from("Task")
+                    .select([
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "identity", "id",
+                        )
+                        .unwrap(),
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "title", "value",
+                        )
+                        .unwrap(),
+                    ])
+                    .order_by(
+                        worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
+                            "title", "value",
+                        )
+                        .unwrap(),
                     )
-                    .unwrap(),
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "title", "value",
-                    )
-                    .unwrap(),
-                ])
-                .order_by(
-                    worth_query::facade::foundation::AspectFieldKey::from_authoring_parts(
-                        "title", "value",
-                    )
-                    .unwrap(),
-                )
-                .schema_basis("public-bridge-runtime-bootstrap-common-lane-tasks")
-        })
+                    .schema_basis("public-bridge-runtime-bootstrap-common-lane-tasks")
+            },
+        )
         .expect("task live view should declare");
 
     workspace
-        .insert("Task", |task| {
+        .insert(request_execution, "Task", |task| {
             task.set_aspect(touch("identity.id"), authored_text("task-bootstrap"))
                 .set_aspect(touch("title.value"), authored_text("Bootstrap task"))
         })
         .expect("insert should execute through the public bridge-backed bootstrap lane");
 
-    let rows = workspace.read(&tasks);
+    let rows = workspace.read(request_execution, &tasks);
 
     assert_eq!(rows.len(), 1);
     assert_eq!(
@@ -106,11 +113,14 @@ fn public_bridge_runtime_common_bootstrap_lane_builds_runtime_backed_live_reads(
 
 #[test]
 fn public_bridge_runtime_builder_lane_supports_seeded_existing_truth_probe() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
     let runtime = harness
         .bridge_backed_runtime_builder()
         .support_profile(public_entity_verified_profile())
-        .build();
+        .build(request_execution);
     let workspace = runtime
         .workspace("public.bridge-runtime-bootstrap.builder-lane")
         .expect("runtime should open a named workspace");
@@ -132,7 +142,7 @@ fn public_bridge_runtime_builder_lane_supports_seeded_existing_truth_probe() {
             WorthQueryExistingTruthProbeRequest::new(binding, [touch("title.value")])
                 .expect("probe request should build"),
         )
-        .execute()
+        .execute(request_execution)
         .expect("probe should execute through the public builder bootstrap lane")
         .probe()
         .clone();
@@ -152,11 +162,14 @@ fn public_bridge_runtime_builder_lane_supports_seeded_existing_truth_probe() {
 
 #[test]
 fn public_bridge_runtime_builder_lane_missing_existing_truth_probe_fails_closed() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
     let runtime = harness
         .bridge_backed_runtime_builder()
         .support_profile(public_entity_verified_profile())
-        .build();
+        .build(request_execution);
     let workspace = runtime
         .workspace("public.bridge-runtime-bootstrap.builder-lane-missing-probe")
         .expect("runtime should open a named workspace");
@@ -168,7 +181,7 @@ fn public_bridge_runtime_builder_lane_missing_existing_truth_probe_fails_closed(
             WorthQueryExistingTruthProbeRequest::new(binding, [touch("title.value")])
                 .expect("probe request should build"),
         )
-        .execute()
+        .execute(request_execution)
         .expect_err("backend-verified probe must deny missing authoritative truth");
 
     match error {
@@ -185,8 +198,11 @@ fn public_bridge_runtime_builder_lane_missing_existing_truth_probe_fails_closed(
 #[test]
 fn public_bridge_runtime_common_lane_fail_closes_existing_truth_probe_without_verification_support()
 {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let workspace = runtime
         .workspace("public.bridge-runtime-bootstrap.common-lane-unsupported-probe")
         .expect("runtime should open a named workspace");
@@ -197,7 +213,7 @@ fn public_bridge_runtime_common_lane_fail_closes_existing_truth_probe_without_ve
             WorthQueryExistingTruthProbeRequest::new(binding, [touch("title.value")])
                 .expect("probe request should build"),
         )
-        .execute()
+        .execute(request_execution)
         .expect_err("common bootstrap lane should deny undeclared verification support");
 
     match error {
@@ -213,13 +229,16 @@ fn public_bridge_runtime_common_lane_fail_closes_existing_truth_probe_without_ve
 
 #[test]
 fn public_bridge_runtime_builder_lane_usage_stays_explicit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     reset_public_bridge_runtime_bootstrap_invocations();
 
     let harness = PublicBridgeRuntimeHarness::new();
     let _runtime = harness
         .bridge_backed_runtime_builder()
         .support_profile(public_graph_support_profile())
-        .build();
+        .build(request_execution);
 
     assert_eq!(
         public_bridge_runtime_bootstrap_invocation_count(PublicBridgeRuntimeBootstrapPath::Common),
@@ -252,15 +271,18 @@ fn field_path(path: &str) -> CanonicalFieldPath {
 
 #[test]
 fn public_bridge_runtime_common_and_builder_bootstrap_counts_stay_lane_local() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     reset_public_bridge_runtime_bootstrap_invocations();
 
     let harness = PublicBridgeRuntimeHarness::new();
-    let _common_runtime = harness.bridge_backed_runtime();
+    let _common_runtime = harness.bridge_backed_runtime(request_execution);
     let _builder_runtime = harness
         .bridge_backed_runtime_builder()
         .support_profile(public_entity_verified_profile())
-        .build();
-    let _second_common_runtime = harness.bridge_backed_runtime();
+        .build(request_execution);
+    let _second_common_runtime = harness.bridge_backed_runtime(request_execution);
 
     assert_eq!(
         public_bridge_runtime_bootstrap_invocation_count(PublicBridgeRuntimeBootstrapPath::Common),

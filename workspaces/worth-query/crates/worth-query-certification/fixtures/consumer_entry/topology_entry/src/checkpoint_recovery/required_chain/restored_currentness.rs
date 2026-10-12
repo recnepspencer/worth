@@ -92,8 +92,12 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         scope,
     ));
     let checkpoint = application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|host_phase| {
+            application
+                .capture_application_checkpoint(&host_phase, CapturePolicy::SystemAllocation)
+                .unwrap()
+        })
+        .expect("installed host call opens");
     drop(application);
 
     super::super::producer::reset_provider_contacts();
@@ -101,7 +105,7 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         support::install_program::<program::ChainProgram>(Some(checkpoint), Default::default());
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&restored, &request).unwrap();
     let mut demand = request
         .demand(PlanarOutputDemand::new("anchor-a"))
         .controls(input_cutoff::controls())
@@ -120,7 +124,7 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
     );
     assert!(super::super::producer::provider_contacts() > 0);
     assert!(settlement.application_commit_receipt().is_some());
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&restored, &request).unwrap();
     assert_ne!(before.selected_commit(), after.selected_commit());
     let output = request
         .query(PlanarOutputRead {

@@ -32,7 +32,13 @@ fn field_key(value: &str) -> FieldKey {
 
 #[test]
 fn checked_requirement_derivation_rejects_mismatched_proof_artifacts() {
-    let mut workspace = workspace("graph-read-access.phase-four.checked-derivation");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-four.checked-derivation",
+    );
     let manager = traversal_family(&mut workspace, "phase-four-manager-proof", "manager");
     let mentor = traversal_family(&mut workspace, "phase-four-mentor-proof", "mentor");
 
@@ -55,7 +61,13 @@ fn checked_requirement_derivation_rejects_mismatched_proof_artifacts() {
 
 #[test]
 fn trusted_requirement_derivation_preserves_canonical_parts_and_digest() {
-    let mut workspace = workspace("graph-read-access.phase-four.canonical-parts");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-four.canonical-parts",
+    );
     let family = traversal_family(&mut workspace, "phase-four-canonical-parts", "manager");
 
     let access =
@@ -78,7 +90,13 @@ fn trusted_requirement_derivation_preserves_canonical_parts_and_digest() {
 
 #[test]
 fn predicate_and_ordering_authorities_name_exact_schema_fields() {
-    let mut workspace = workspace("graph-read-access.phase-four.authorities");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-four.authorities",
+    );
     let family = workspace
         .define_read_family("phase-four-authorities", |read| {
             read.explicit_broad_search_collection(
@@ -129,7 +147,13 @@ fn predicate_and_ordering_authorities_name_exact_schema_fields() {
 
 #[test]
 fn registry_requirement_outcome_exposes_registered_required_and_denied_paths() {
-    let mut workspace = workspace("graph-read-access.phase-four.registry-outcomes");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-four.registry-outcomes",
+    );
     let operation = visible_face_neighborhood_operation();
     let family = domain_operation_family(&mut workspace, operation.clone());
     let registered = WorthQueryGraphReadOperationRegistry::admit([
@@ -179,7 +203,13 @@ fn registry_requirement_outcome_exposes_registered_required_and_denied_paths() {
 
 #[test]
 fn successor_walk_counters_are_exact_not_elapsed_time_proxies() {
-    let mut workspace = workspace("graph-read-access.phase-four.exact-counters");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workspace(
+        request_execution,
+        "graph-read-access.phase-four.exact-counters",
+    );
     let family = workspace
         .define_read_family("phase-four-successor-walk-counters", |read| {
             read.local_successor_walk_collection(
@@ -208,9 +238,12 @@ fn successor_walk_counters_are_exact_not_elapsed_time_proxies() {
     assert_eq!(counters.materialization_lifecycle_count(), 1);
 }
 
-fn workspace(name: &str) -> crate::runtime::WorthQueryWorkspace {
+fn workspace(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    name: &str,
+) -> crate::runtime::WorthQueryWorkspace {
     PublicBridgeRuntimeHarness::new()
-        .bridge_backed_runtime()
+        .bridge_backed_runtime(request_execution)
         .workspace(name)
         .expect("runtime should open workspace")
 }

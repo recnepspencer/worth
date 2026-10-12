@@ -25,24 +25,31 @@ fn ui_and_direct_consumers_converge_on_query_results_authority_and_counters() {
 }
 
 fn convergence_workspace() -> runtime::WorthQueryWorkspace {
-    let mut workspace = installed_builder()
-        .workspace("worth-ui-reference-convergence")
-        .expect("canonical Query world installs");
+    let mut workspace =
+        crate::certification::request_custody::with_bootstrap_request(|execution| {
+            installed_builder()
+                .workspace(execution, "worth-ui-reference-convergence")
+                .expect("canonical Query world installs")
+        });
     workspace
-        .insert("WorthUiMeasurement", |measurement| {
-            measurement
-                .set_aspect(
-                    aspect_touch("identity.id"),
-                    runtime::WorthQueryAuthoredAspectValue::string("measurement"),
-                )
-                .set_aspect(
-                    aspect_touch("measurement.value"),
-                    runtime::WorthQueryAuthoredAspectValue::native(AspectValue::Float32(
-                        CanonicalF32::from_f32(240.0),
-                    )),
-                )
+        .with_execution_request_mut(|execution, workspace| {
+            workspace
+                .insert(execution, "WorthUiMeasurement", |measurement| {
+                    measurement
+                        .set_aspect(
+                            aspect_touch("identity.id"),
+                            runtime::WorthQueryAuthoredAspectValue::string("measurement"),
+                        )
+                        .set_aspect(
+                            aspect_touch("measurement.value"),
+                            runtime::WorthQueryAuthoredAspectValue::native(AspectValue::Float32(
+                                CanonicalF32::from_f32(240.0),
+                            )),
+                        )
+                })
+                .expect("canonical measurement delta applies")
         })
-        .expect("canonical measurement delta applies");
+        .expect("workspace host call opens");
     workspace
 }
 
@@ -130,13 +137,15 @@ fn assert_exact_convergence(ui: &WorthUiSettledSnapshotProjection, direct: &Quer
 
 #[test]
 fn ui_and_direct_consumers_preserve_the_same_query_denial_and_cost() {
-    let workspace = installed_builder()
-        .consumer_support_posture(
-            installed::support::WorthQueryConsumerSupportDimension::ProjectionConsumption,
-            installed::support::WorthQueryConsumerSupportPosture::Unsupported,
-        )
-        .workspace("worth-ui-reference-denial-convergence")
-        .expect("unsupported canonical Query world installs");
+    let workspace = crate::certification::request_custody::with_bootstrap_request(|execution| {
+        installed_builder()
+            .consumer_support_posture(
+                installed::support::WorthQueryConsumerSupportDimension::ProjectionConsumption,
+                installed::support::WorthQueryConsumerSupportPosture::Unsupported,
+            )
+            .workspace(execution, "worth-ui-reference-denial-convergence")
+            .expect("unsupported canonical Query world installs")
+    });
     let reference = installed_reference(&workspace, "reference.denial.convergence");
 
     let direct_denial = match bound_snapshot(&workspace).consumer_projection_contract() {

@@ -11,7 +11,10 @@ use super::support::{
 
 #[test]
 fn ordinary_temporal_and_async_bridge_routes_share_one_checked_routing_lane() {
-    let handle = admitted_handle("future-bridge");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "future-bridge");
 
     let ordinary = super::support::proof::routed_from_progressed(
         &handle,
@@ -41,7 +44,10 @@ fn ordinary_temporal_and_async_bridge_routes_share_one_checked_routing_lane() {
 
 #[test]
 fn future_projection_and_basis_support_participate_in_bridge_routing_identity() {
-    let handle = admitted_handle("future-bridge-digest");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "future-bridge-digest");
 
     let temporal = routed_from_future_supported_runtime_test_posture(
         &handle,
@@ -68,7 +74,10 @@ fn future_projection_and_basis_support_participate_in_bridge_routing_identity() 
 
 #[test]
 fn future_projection_survives_route_plan_to_bridge_routing_without_drift() {
-    let handle = admitted_handle("future-bridge-stitch");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "future-bridge-stitch");
 
     let temporal = routed_from_future_supported_runtime_test_posture(
         &handle,
@@ -94,7 +103,10 @@ fn future_projection_survives_route_plan_to_bridge_routing_without_drift() {
 
 #[test]
 fn temporal_and_async_signal_only_declarations_deny_before_continuation_preparation() {
-    let handle = admitted_handle("future-signal-only");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "future-signal-only");
 
     match checked_from_future_supported_runtime_test_posture(
         &handle,

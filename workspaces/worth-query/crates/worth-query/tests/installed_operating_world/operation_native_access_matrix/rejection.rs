@@ -19,7 +19,15 @@ macro_rules! request_and_key {
 
 #[test]
 fn one_bound_capability_cannot_mint_a_distinct_second_request() {
-    let workspace = matrix_workspace("installed-native-one-shot-request", 1, false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = matrix_workspace(
+        request_execution,
+        "installed-native-one-shot-request",
+        1,
+        false,
+    );
     let bound = bind(&workspace);
     let mut builder = bound
         .consumer_projection_contract()
@@ -38,7 +46,15 @@ fn one_bound_capability_cannot_mint_a_distinct_second_request() {
 
 #[test]
 fn selector_from_another_declaration_denies_before_any_key_lookup() {
-    let workspace = matrix_workspace("installed-native-foreign-selector", 1, false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = matrix_workspace(
+        request_execution,
+        "installed-native-foreign-selector",
+        1,
+        false,
+    );
     let owner = bind(&workspace);
     let foreign = bind(&workspace);
     let mut owner_builder = owner
@@ -72,7 +88,11 @@ fn selector_from_another_declaration_denies_before_any_key_lookup() {
 
 #[test]
 fn same_path_capability_domain_revision_family_and_runtime_drift_deny_before_access() {
-    let mut owner_workspace = matrix_workspace("installed-native-owner", 1, true);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut owner_workspace =
+        matrix_workspace(request_execution, "installed-native-owner", 1, true);
     let owner = bind(&owner_workspace);
     let foreign_capability = bind(&owner_workspace);
     let (_foreign_request, foreign_capability_key) =
@@ -97,7 +117,12 @@ fn same_path_capability_domain_revision_family_and_runtime_drift_deny_before_acc
         foundation::AspectValuePosture::Scalar(read::ScalarAspectType::String)
     );
 
-    let foreign_runtime_workspace = matrix_workspace("installed-native-foreign-runtime", 1, false);
+    let foreign_runtime_workspace = matrix_workspace(
+        request_execution,
+        "installed-native-foreign-runtime",
+        1,
+        false,
+    );
     let foreign_runtime = bind(&foreign_runtime_workspace);
     let (_foreign_runtime_request, foreign_runtime_key) =
         request_and_key!(&foreign_runtime, sample_field(2));
@@ -164,7 +189,15 @@ fn same_path_capability_domain_revision_family_and_runtime_drift_deny_before_acc
 
 #[test]
 fn undeclared_field_is_rejected_before_a_native_key_exists() {
-    let workspace = matrix_workspace("installed-native-unknown-field", 1, false);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = matrix_workspace(
+        request_execution,
+        "installed-native-unknown-field",
+        1,
+        false,
+    );
     let mut builder = bind(&workspace)
         .consumer_projection_contract()
         .unwrap()

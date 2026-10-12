@@ -44,11 +44,13 @@ pub(super) struct MixedEffectAxes {
     pub(super) second_created_reference: EntityReference,
 }
 
-pub(super) fn mixed_effect_world() -> MixedEffectWorld {
+pub(super) fn mixed_effect_world(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> MixedEffectWorld {
     let created_field = field_locator("State", "Created");
     let alpha_field = field_locator("AlphaState", "Alpha");
     let beta_field = field_locator("BetaState", "Beta");
-    let observed = compile_committed_observations(&alpha_field, &beta_field);
+    let observed = compile_committed_observations(execution, &alpha_field, &beta_field);
     let axes = MixedEffectAxes {
         update_entity: observed.update_entity,
         deleted_entity: observed.deleted_entity,

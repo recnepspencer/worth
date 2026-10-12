@@ -12,15 +12,24 @@ use super::support::{
 
 #[test]
 fn inventory_digest_changes_when_admitted_world_changes() {
-    let left = handle("alpha").declaration_entry_crossing_inventory::<Input<RelationalFamily>>();
-    let right = handle("beta").declaration_entry_crossing_inventory::<Input<RelationalFamily>>();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let left = handle(request_execution, "alpha")
+        .declaration_entry_crossing_inventory::<Input<RelationalFamily>>();
+    let right = handle(request_execution, "beta")
+        .declaration_entry_crossing_inventory::<Input<RelationalFamily>>();
 
     assert_ne!(left.inventory_digest(), right.inventory_digest());
 }
 
 #[test]
 fn mixed_family_inventory_keeps_relational_and_bridge_rows_distinct() {
-    let inventory = handle("mixed").declaration_entry_crossing_inventory::<Input<MixedFamily>>();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let inventory = handle(request_execution, "mixed")
+        .declaration_entry_crossing_inventory::<Input<MixedFamily>>();
     assert!(inventory
         .rows()
         .iter()
@@ -41,8 +50,11 @@ fn mixed_family_inventory_keeps_relational_and_bridge_rows_distinct() {
 
 #[test]
 fn deferred_signal_family_uses_deferred_neighbor_classification() {
-    let inventory =
-        handle("deferred").declaration_entry_crossing_inventory::<Input<DeferredSignalFamily>>();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let inventory = handle(request_execution, "deferred")
+        .declaration_entry_crossing_inventory::<Input<DeferredSignalFamily>>();
     let signal_row = inventory
         .rows()
         .iter()
@@ -61,7 +73,10 @@ fn deferred_signal_family_uses_deferred_neighbor_classification() {
 
 #[test]
 fn readiness_projection_matches_signal_support_status() {
-    let handle = handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "preview");
     let readiness = handle.declaration_entry_readiness::<Input<BridgeSignalFamily>>();
     let signal_row = readiness
         .rows()
@@ -84,7 +99,10 @@ fn readiness_projection_matches_signal_support_status() {
 
 #[test]
 fn mixed_family_readiness_matches_relational_and_bridge_support_rows() {
-    let handle = handle("mixed");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "mixed");
     let readiness = handle.declaration_entry_readiness::<Input<MixedFamily>>();
     let relational_row = readiness
         .rows()
@@ -127,7 +145,10 @@ fn mixed_family_readiness_matches_relational_and_bridge_support_rows() {
 
 #[test]
 fn signalless_world_keeps_invalid_basis_distinct() {
-    let handle = signal_disabled_handle("preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = signal_disabled_handle(request_execution, "preview");
     let readiness = handle.declaration_entry_readiness::<Input<BridgeSignalFamily>>();
     let signal_row = readiness
         .rows()

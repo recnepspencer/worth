@@ -19,12 +19,13 @@ impl BankCommitRecoveryEvidence {
 
     pub(crate) fn observe_dispatch_outbox(
         &self,
+        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
     ) -> Result<
         Option<WorthQueryCommittedDispatchOutboxObservation>,
         WorthQueryCommittedDispatchOutboxReadDenial,
     > {
-        runtime.observe_committed_dispatch_outbox(&self.execution)
+        runtime.observe_committed_dispatch_outbox(phase, &self.execution)
     }
 
     pub(crate) fn mint_recovery_handle(

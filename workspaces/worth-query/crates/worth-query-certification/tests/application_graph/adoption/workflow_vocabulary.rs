@@ -34,15 +34,25 @@ fn an_adopted_branch_runs_workflows_through_its_new_program_vocabulary() {
     let initial = application.workflow_spec().program_revision();
     assert_eq!(
         application
-            .vocabulary()
-            .workflow_spec_on(main)
-            .program_revision(),
+            .with_host_advancement(|host_phase| application
+                .vocabulary()
+                .workflow_spec_on(&host_phase, main)
+                .expect("workflow branch remains admitted")
+                .program_revision())
+            .expect("installed host call opens"),
         initial,
         "a supported vocabulary serves no branch until the branch adopts its program",
     );
     adopt_second_program(&application, main);
 
-    let second = application.vocabulary().workflow_spec_on(main);
+    let second = application
+        .with_host_advancement(|host_phase| {
+            application
+                .vocabulary()
+                .workflow_spec_on(&host_phase, main)
+                .expect("workflow branch remains admitted")
+        })
+        .expect("installed host call opens");
     assert_eq!(second.program_revision(), second_revision(&application));
     assert_ne!(second.program_revision(), initial);
 
@@ -81,11 +91,22 @@ fn a_sibling_keeps_its_program_vocabulary_after_its_parent_adopts() {
 
     let vocabulary = application.vocabulary();
     assert_eq!(
-        vocabulary.workflow_spec_on(sibling).program_revision(),
+        application
+            .with_host_advancement(|host_phase| vocabulary
+                .workflow_spec_on(&host_phase, sibling)
+                .expect("workflow branch remains admitted")
+                .program_revision())
+            .expect("installed host call opens"),
         application.workflow_spec().program_revision(),
     );
     let absent = WorkflowDefinitionExpectedPredecessor::Absent;
-    let parent_spec = vocabulary.workflow_spec_on(main);
+    let parent_spec = application
+        .with_host_advancement(|host_phase| {
+            vocabulary
+                .workflow_spec_on(&host_phase, main)
+                .expect("workflow branch remains admitted")
+        })
+        .expect("installed host call opens");
     let early = publish_bound(&application, parent_spec, sibling, "early", 84_100, absent);
     expect_stale_definition_vocabulary(early);
     expect_published(publish(&application, sibling, "unchanged", 84_101));
@@ -98,9 +119,12 @@ fn an_adopted_branch_without_its_program_vocabulary_refuses_workflow_work() {
     adopt_second_program(&application, main);
     assert_eq!(
         application
-            .vocabulary()
-            .workflow_spec_on(main)
-            .program_revision(),
+            .with_host_advancement(|host_phase| application
+                .vocabulary()
+                .workflow_spec_on(&host_phase, main)
+                .expect("workflow branch remains admitted")
+                .program_revision())
+            .expect("installed host call opens"),
         application.workflow_spec().program_revision(),
         "a branch whose program has no installed vocabulary falls back to the initial one",
     );
@@ -123,7 +147,14 @@ fn sibling_workflow_lineages_stay_on_their_own_branch() {
     // Each branch's current definition is its own publication.
     let replace = |branch, terminal, idempotency, own| {
         let predecessor = WorkflowDefinitionExpectedPredecessor::Published(own);
-        let spec = application.vocabulary().workflow_spec_on(branch);
+        let spec = application
+            .with_host_advancement(|host_phase| {
+                application
+                    .vocabulary()
+                    .workflow_spec_on(&host_phase, branch)
+                    .expect("workflow branch remains admitted")
+            })
+            .expect("installed host call opens");
         publish_bound(
             &application,
             spec,
@@ -181,6 +212,9 @@ fn a_supported_vocabulary_names_one_rostered_program_once() {
 
 #[test]
 fn a_retired_program_accepts_no_workflow_vocabulary() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut application = publish_workflow_on_first_program();
     let late = install_workflow_spec(
         application.installed_schema(),
@@ -190,7 +224,7 @@ fn a_retired_program_accepts_no_workflow_vocabulary() {
             .installed_program(),
         application.workflow_spec().resources(),
     );
-    retire_second_program(&application);
+    retire_second_program(request_execution, &application);
     assert_eq!(
         application.workflow_mut().support_workflow_spec(late),
         Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram),
@@ -207,14 +241,17 @@ fn second_revision(
         .revision()
 }
 
-fn retire_second_program(application: &DocumentWorkflowRuntime) {
+fn retire_second_program(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &DocumentWorkflowRuntime,
+) {
     let revision = *application
         .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
         .installed_program()
         .revision();
     application
-        .retire_program_support(&revision)
+        .retire_program_support(request_execution, &revision)
         .expect("an idle rostered program retires");
 }
 
@@ -223,12 +260,16 @@ fn fork_sibling(
     parent: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     application
-        .runtime()
-        .branches()
-        .fork(parent)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the sibling branch publishes")
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(parent)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the sibling branch publishes")
+        })
+        .expect("installed host call opens")
 }
 
 fn adopt_second_program(application: &DocumentWorkflowRuntime, branch: WorthQueryProductBranch) {
@@ -265,7 +306,14 @@ fn publish(
     WorkflowDefinitionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
 > {
-    let spec = application.vocabulary().workflow_spec_on(branch);
+    let spec = application
+        .with_host_advancement(|host_phase| {
+            application
+                .vocabulary()
+                .workflow_spec_on(&host_phase, branch)
+                .expect("workflow branch remains admitted")
+        })
+        .expect("installed host call opens");
     let absent = WorkflowDefinitionExpectedPredecessor::Absent;
     publish_bound(application, spec, branch, terminal, idempotency, absent)
 }

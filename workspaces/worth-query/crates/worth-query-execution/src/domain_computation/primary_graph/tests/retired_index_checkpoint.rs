@@ -36,24 +36,69 @@ const RETIRED_CORRELATION_INDEX: &str = "worth-query-provider.inbound-completion
 
 #[test]
 fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_world(&[("alice", WorthQueryPrincipalMappingStatus::Enabled)]);
-    let principal = resolve_alice(&world, 1);
-    set_principal_identity(&world, principal, 2);
-    let retired = persist_as_the_retired_code_did(&world);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| resolve_alice(&(phase).test_host_request(), &world, 1))
+        .expect("the fixture read owns its installed host call");
+    world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_principal_identity(
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                principal,
+                2,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let retired = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            persist_as_the_retired_code_did(&host_custody.borrowed_request_for_test(), &world)
+        })
+        .expect("the fixture read owns its installed host call");
     let checkpoint = world
         .application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
+        })
+        .expect("installed host call opens")
         .expect("the store with the retired index captures");
     drop(world);
 
     let restored = restored_world(checkpoint)
         .expect("a store holding the retired index opens under the current code");
-    assert_retired_index_is_inert(&restored, retired);
-    let principal = resolve_alice(&restored, 2);
+    assert_retired_index_is_inert(request_execution, &restored, retired);
+    let principal = restored
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolve_alice(&host_custody, &restored, 2)
+        })
+        .expect("the fixture read owns its installed host call");
     // The fixture publication asserts every installed index refreshes.
-    set_principal_identity(&restored, principal, 3);
-    let head = with_runtime(&restored, main_head);
-    with_runtime(&restored, |runtime| {
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            set_principal_identity(
+                &host_custody.borrowed_request_for_test(),
+                &restored,
+                principal,
+                3,
+            )
+        })
+        .expect("the fixture read owns its installed host call");
+    let head = with_runtime(request_execution, &restored, main_head);
+    with_runtime(request_execution, &restored, |runtime| {
         assert!(
             runtime
                 .index_access()
@@ -62,55 +107,82 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
             "nothing maintains the retired index"
         );
     });
-    resolve_alice(&restored, 3);
+    restored
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolve_alice(&host_custody, &restored, 3)
+        })
+        .expect("the fixture read owns its installed host call");
 
     // The retired index now lags head; capture and readmission still hold.
     let checkpoint = restored
         .application
-        .capture_application_checkpoint(CapturePolicy::SystemAllocation)
+        .with_host_advancement(|phase| {
+            restored
+                .application
+                .capture_application_checkpoint(&phase, CapturePolicy::SystemAllocation)
+        })
+        .expect("installed host call opens")
         .expect("a store with a lagging retired index captures");
     drop(restored);
     let reopened = restored_world(checkpoint).expect("the lagging retired index still reopens");
-    assert_retired_index_is_inert(&reopened, retired);
-    resolve_alice(&reopened, 3);
+    assert_retired_index_is_inert(request_execution, &reopened, retired);
+    reopened
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            resolve_alice(&host_custody, &reopened, 3)
+        })
+        .expect("the fixture read owns its installed host call");
 }
 
 /// Registers the retired definition and builds its generation at the
 /// committed head, the state every store written by the retired code holds.
-pub(super) fn persist_as_the_retired_code_did(world: &IdentityWorld) -> DerivedIndexId {
+pub(super) fn persist_as_the_retired_code_did(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &IdentityWorld,
+) -> DerivedIndexId {
     let graph = world.application.runtime.primary_graph().unwrap();
     let correlation = graph
         .layout
         .provider_inbound_completion()
         .correlation
         .clone();
-    graph.integration_handle().with_runtime_mut(|runtime| {
-        let head = main_head(runtime);
-        let retired = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: RETIRED_CORRELATION_INDEX.to_owned(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: correlation,
-            },
-            branch_scoped: false,
-        });
-        let built = runtime
-            .index_authority()
-            .build_for_commit(DerivedIndexBuildRequest {
-                source_commit_id: head.commit_id,
-                branch_id: head.branch_id.clone(),
-                index_ids: vec![retired.index_id],
+    graph
+        .integration_handle()
+        .with_runtime_mut(execution, |runtime| {
+            let head = main_head(runtime);
+            let retired = runtime.index_authority().register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: RETIRED_CORRELATION_INDEX.to_owned(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: correlation,
+                },
+                branch_scoped: false,
             });
-        assert_eq!(built.generations.len(), 1, "{built:?}");
-        retired.index_id
-    })
+            let built = runtime.index_authority().build_for_commit(
+                execution,
+                DerivedIndexBuildRequest {
+                    source_commit_id: head.commit_id,
+                    branch_id: head.branch_id.clone(),
+                    index_ids: vec![retired.index_id],
+                },
+            );
+            assert_eq!(built.generations.len(), 1, "{built:?}");
+            retired.index_id
+        })
 }
 
-pub(super) fn assert_retired_index_is_inert(world: &IdentityWorld, retired: DerivedIndexId) {
+pub(super) fn assert_retired_index_is_inert(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &IdentityWorld,
+    retired: DerivedIndexId,
+) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     assert!(!handle.primary_index_ids.contains(&retired));
-    handle.with_runtime(|runtime| {
+    handle.with_runtime(request_execution, |runtime| {
         let lookup = runtime.index_access().definition_lookup_snapshot();
         assert_eq!(
             lookup.candidate_count_for_name(RETIRED_CORRELATION_INDEX),
@@ -120,12 +192,17 @@ pub(super) fn assert_retired_index_is_inert(world: &IdentityWorld, retired: Deri
     });
 }
 
-pub(super) fn resolve_alice(world: &IdentityWorld, identity: u64) -> EntityId {
+pub(super) fn resolve_alice(
+    phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    world: &IdentityWorld,
+    identity: u64,
+) -> EntityId {
     let scope = live_scope();
     let external = world.authenticate("alice", Duration::from_secs(60), &scope);
     let principal = world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .resolve_authenticated_principal(
+            &phase_custody.phase_for_application(&world.application),
             &world.binding,
             &external,
             &scope,
@@ -136,7 +213,12 @@ pub(super) fn resolve_alice(world: &IdentityWorld, identity: u64) -> EntityId {
     principal.principal_entity_id()
 }
 
-pub(super) fn set_principal_identity(world: &IdentityWorld, principal: EntityId, identity: u64) {
+pub(super) fn set_principal_identity(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &IdentityWorld,
+    principal: EntityId,
+    identity: u64,
+) {
     let graph = world.application.runtime.primary_graph().unwrap();
     let locator = graph
         .layout
@@ -145,6 +227,7 @@ pub(super) fn set_principal_identity(world: &IdentityWorld, principal: EntityId,
         .principal_identity_locator
         .clone();
     publish_relational_mutation_on_application(
+        execution,
         &world.application,
         WorkerIntentBatch::new("set-principal-identity").push(MutationIntent::Entity(
             EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -159,11 +242,14 @@ pub(super) fn set_principal_identity(world: &IdentityWorld, principal: EntityId,
 }
 
 pub(super) fn with_runtime<T>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &IdentityWorld,
     read: impl FnOnce(&RelationalRuntime) -> T,
 ) -> T {
     let graph = world.application.runtime.primary_graph().unwrap();
-    graph.integration_handle().with_runtime(read)
+    graph
+        .integration_handle()
+        .with_runtime(request_execution, read)
 }
 
 pub(super) fn main_head(runtime: &RelationalRuntime) -> RelationalCommitReceipt {

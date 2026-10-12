@@ -245,12 +245,19 @@ impl WorkflowOperationAuthority {
     #[doc(hidden)]
     pub fn validate_before_handler<Schema>(
         &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
+        let phase_request = match phase.execution_request_for(&runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase, "application-read-phase")),
+        };
+        let execution = &phase_request;
+
         use crate::domain_computation::primary_graph::{
             WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
         };
@@ -266,7 +273,7 @@ impl WorkflowOperationAuthority {
         check_request_live(request, "workflow operation authority")?;
         let selected = runtime
             .on_branch(self.observation.product_branch())
-            .select()
+            .select_with_request(execution)
             .map_err(|_| mismatch())?;
         let current =
             WorthQueryProductBranchReadIdentity::from_observation(selected.product().observation());
@@ -274,13 +281,21 @@ impl WorkflowOperationAuthority {
             return Err(mismatch());
         }
         let lease = WorthQueryApplicationSnapshotLease::acquire(
+            &phase
+                .execution_request_for(&runtime.product_runtime)
+                .map_err(|_| {
+                    WorthQueryApplicationAttemptDenial::new(
+                        WorthQueryApplicationAttemptDenialKind::ForeignPhase,
+                        "handler-phase",
+                    )
+                })?,
             self.handle.clone(),
             Arc::clone(&self.layout),
             selected.product().retained_clone(),
         )
         .map_err(|_| mismatch())?;
         runtime
-            .readmit_workflow_approval_authority_on_product(
+            .readmit_workflow_approval_authority_on_product(execution,
                 &self.approval_authority,
                 lease.product(),
                 self.session_identity,
@@ -308,11 +323,11 @@ impl WorkflowOperationAuthority {
                 };
                 WorthQueryApplicationAttemptDenial::new(kind, denial.to_string())
             })?;
-        lease.handle().with_runtime(|runtime| {
+        lease.handle().with_runtime(execution, |runtime| {
             let mut current = true;
             for fact in self.facts.iter() {
                 check_request_live(request, "workflow operation authority")?;
-                if !fact.remains_equal_in(runtime, lease.snapshot()) {
+                if !fact.remains_equal_in(runtime,execution,  lease.snapshot())? {
                     current = false;
                     break;
                 }
@@ -322,7 +337,7 @@ impl WorkflowOperationAuthority {
             }
             // An instance that ended since is named before any fact it left
             // behind can mismatch.
-            crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::instance_binding::deny_ended(
+            crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::instance_binding::deny_ended(execution,
                 runtime,
                 lease.snapshot(),
                 &self.workflow_layout,

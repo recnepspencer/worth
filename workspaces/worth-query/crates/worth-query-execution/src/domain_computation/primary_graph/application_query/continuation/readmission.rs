@@ -34,6 +34,7 @@ where
         Scope,
     >(
         &'a self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -70,6 +71,12 @@ where
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
+        let request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let affinity =
             validate_continuation_affinity(self, query, access.scope().entity_id(), continuation)?;
         let query_controls = WorthQueryApplicationQueryControls::continuation_resume(
@@ -77,6 +84,7 @@ where
             controls,
         );
         self.finish_continuation_readmission(
+            execution,
             query,
             access,
             parameters,
@@ -100,6 +108,7 @@ where
         Input,
     >(
         &'a self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -145,6 +154,12 @@ where
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
+        let request = match phase.execution_request_for(&self.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase), query.name())),
+        };
+        let execution = &request;
+
         let affinity =
             validate_continuation_affinity(self, query, access.scope().entity_id(), continuation)?;
         let query_controls = WorthQueryApplicationQueryControls::continuation_resume(
@@ -153,6 +168,7 @@ where
         );
         let pending = prepare_governed_access(self, query, access, capability, &query_controls)?;
         self.finish_continuation_readmission(
+            execution,
             query,
             access,
             parameters,
@@ -173,6 +189,7 @@ where
         Scope,
     >(
         &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<
             Schema,
             Query,
@@ -216,6 +233,7 @@ where
             ));
         }
         let mut plan = self.finish_application_query_admission(
+            execution,
             query,
             access,
             parameters,

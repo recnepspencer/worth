@@ -25,8 +25,10 @@ use super::{
     WorthQueryLowerRuntimeRepresentativeEvidenceSource,
 };
 
-pub(crate) fn representative_projection_query_receipts_row() -> RepresentativeArtifacts {
-    let receipt = certification_query_write_receipt();
+pub(crate) fn representative_projection_query_receipts_row(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> RepresentativeArtifacts {
+    let receipt = certification_query_write_receipt(execution);
     let source = ProjectionConsumptionSource::from_write_receipt(&receipt);
 
     readmission_projection_row(

@@ -30,7 +30,10 @@ fn runtime_state_snapshot_is_digest_bound_to_basis_shape_lane_and_state() {
 
 #[test]
 fn runtime_workspace_states_basis_lifecycle_surfaces() {
-    let workspace = stateful_bridge_task_runtime()
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let workspace = stateful_bridge_task_runtime(request_execution)
         .workspace("task.basis-state-workspace")
         .expect("task runtime should open a named workspace");
     let current = crate::basis_lifecycle::basis_lifecycle()
@@ -43,10 +46,10 @@ fn runtime_workspace_states_basis_lifecycle_surfaces() {
         .expect("branch-head observation should admit");
 
     let current_state = workspace
-        .state(&current)
+        .state(request_execution, &current)
         .expect("basis capability should snapshot");
     let branch_state = workspace
-        .state(&branch)
+        .state(request_execution, &branch)
         .expect("branch basis capability should snapshot");
 
     assert_eq!(current_state.kind(), WorthQueryRuntimeStateKind::Ready);
@@ -59,7 +62,11 @@ fn runtime_workspace_states_basis_lifecycle_surfaces() {
 
 #[test]
 fn runtime_workspace_inspection_surfaces_basis_lifecycle_artifacts() {
-    let runtime = stateful_bridge_task_runtime_with_domain(test_runtime_basis_package());
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime =
+        stateful_bridge_task_runtime_with_domain(request_execution, test_runtime_basis_package());
     let installed = runtime
         .domain(TestRuntimeBasisDomain)
         .expect("test basis domain should be installed");
@@ -75,10 +82,10 @@ fn runtime_workspace_inspection_surfaces_basis_lifecycle_artifacts() {
         .observe()
         .expect("current-head observation should admit");
     let capability_inspection = workspace
-        .inspect(&current)
+        .inspect(request_execution, &current)
         .expect("basis capability should inspect");
     let world_inspection = workspace
-        .inspect(&world_basis)
+        .inspect(request_execution, &world_basis)
         .expect("retained world basis should inspect");
 
     match capability_inspection {

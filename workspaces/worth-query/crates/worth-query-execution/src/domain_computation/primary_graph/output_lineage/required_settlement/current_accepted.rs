@@ -131,6 +131,7 @@ impl AcceptedCurrentCandidate {
     /// that execution reads every consumed output current.
     pub(in crate::domain_computation::primary_graph) fn pending_consumed_output<'selected>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
@@ -141,10 +142,11 @@ impl AcceptedCurrentCandidate {
         if self.selected.recorded().consumed_outputs.is_empty() {
             return Ok(None);
         }
-        if !self.own_evidence_is_current(runtime, snapshot, admission)? {
+        if !self.own_evidence_is_current(execution, runtime, snapshot, admission)? {
             return Ok(None);
         }
         ConsumedOutputEvidence::select_exact_pending_dependency(
+            execution,
             &self.selected.recorded().consumed_outputs,
             owner,
             runtime,
@@ -156,6 +158,7 @@ impl AcceptedCurrentCandidate {
 
     fn own_evidence_is_current(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
         admission: &mut InvalidationEditAdmission,
@@ -184,6 +187,7 @@ impl AcceptedCurrentCandidate {
         // Handler evidence decides whether the old edges still apply. Source
         // query stamps are a suffix whose meaning is checked by input equality.
         match ConsumedOutputEvidence::own_evidence_is_current(
+            request_execution,
             handler_facts,
             &self.selected.recorded().consumed_outputs,
             witness,
@@ -201,6 +205,7 @@ impl AcceptedCurrentCandidate {
     /// recorded row and exact accepted cell remain pinned throughout the edit.
     pub(in crate::domain_computation::primary_graph) fn certify_current<'basis>(
         &'basis self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
         product: &'basis WorthQueryProductObservationLease,
@@ -261,6 +266,7 @@ impl AcceptedCurrentCandidate {
             (requirement, facts.as_ref())
         {
             return self.recover_registration(
+                execution,
                 computation,
                 owner,
                 runtime,
@@ -276,7 +282,8 @@ impl AcceptedCurrentCandidate {
             return Ok(CurrentAcceptedResult::NeedsDisclosure);
         }
         let (None, Some(facts)) = (requirement.filter(|_| !restored), facts) else {
-            return match self.pending_consumed_output(owner, runtime, snapshot, selected, admission)
+            return match self
+                .pending_consumed_output(execution, owner, runtime, snapshot, selected, admission)
             {
                 Ok(Some(pending)) => Ok(CurrentAcceptedResult::PendingExact(pending)),
                 Ok(None) | Err(ConsumedOutputVerificationStop::Unavailable) => {
@@ -286,6 +293,7 @@ impl AcceptedCurrentCandidate {
             };
         };
         match ConsumedOutputEvidence::verify_many_with_admission(
+            execution,
             &recorded.consumed_outputs,
             owner,
             runtime,
@@ -296,12 +304,13 @@ impl AcceptedCurrentCandidate {
             Ok(ConsumedOutputVerification::Current) => {}
             Ok(_) => {
                 if !self
-                    .own_evidence_is_current(runtime, snapshot, admission)
+                    .own_evidence_is_current(execution, runtime, snapshot, admission)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
                 }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
+                    execution,
                     &recorded.consumed_outputs,
                     owner,
                     runtime,
@@ -317,12 +326,13 @@ impl AcceptedCurrentCandidate {
             }
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
                 if !self
-                    .own_evidence_is_current(runtime, snapshot, admission)
+                    .own_evidence_is_current(execution, runtime, snapshot, admission)
                     .map_err(CurrentAcceptedStop::Closure)?
                 {
                     return Ok(CurrentAcceptedResult::NeedsDisclosure);
                 }
                 return ConsumedOutputEvidence::select_exact_pending_dependency(
+                    execution,
                     &recorded.consumed_outputs,
                     owner,
                     runtime,

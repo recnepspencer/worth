@@ -4,11 +4,15 @@ use super::*;
 
 #[test]
 fn workflow_reexecution_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "workflow reexecute",
         || {
-            let workspace = workflow_workspace("workflow-reexecute-custody").unwrap();
+            let workspace =
+                workflow_workspace(request_execution, "workflow-reexecute-custody").unwrap();
             let operation = bind(&workspace)
                 .admit_workflow_resources(execution_resource_request(), &workspace)
                 .unwrap();
@@ -31,11 +35,14 @@ fn workflow_reexecution_opens_before_its_reader() {
 
 #[test]
 fn workflow_stage_attempt_opens_before_its_reader() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "workflow stage attempt execute",
         || {
-            let (mut workspace, run) = super::workflow_roots::run_setup();
+            let (mut workspace, run) = super::workflow_roots::run_setup(request_execution);
             let run = run
                 .advance(
                     "start",

@@ -17,12 +17,17 @@ use crate::relational_source::snapshot_reading::RuntimePublicationSnapshotReader
 
 #[test]
 fn snapshot_reader_reads_published_entity_values_without_projection_surface() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let host_request = crate::snapshot::test_serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "visible");
+    let created = create_entity_outcome(execution, &runtime, "visible");
     let published_snapshot = created.snapshot.clone();
     let published_entity = runtime
         .read_truth()
-        .read_snapshot(&published_snapshot)
+        .read_snapshot(&published_snapshot, request_execution)
         .expect("published snapshot read")
         .entities()
         .first()
@@ -61,10 +66,13 @@ fn snapshot_reader_reads_published_entity_values_without_projection_surface() {
 
 #[test]
 fn snapshot_reader_reads_published_relation_field_aspects_from_authoritative_state() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let created_relation = create_relation_outcome(&runtime, source, target, "visible-edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let created_relation =
+        create_relation_outcome(execution, &runtime, source, target, "visible-edge");
     let relation = changed_relations(&created_relation)[0];
     let published_snapshot = created_relation.snapshot.clone();
 
@@ -100,8 +108,11 @@ fn snapshot_reader_reads_published_relation_field_aspects_from_authoritative_sta
 
 #[test]
 fn snapshot_reader_rejects_undeclared_dotted_document_paths() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let created = create_entity_outcome(&runtime, "visible");
+    let created = create_entity_outcome(execution, &runtime, "visible");
     let published_snapshot = created.snapshot.clone();
     let published_entity =
         crate::relational_source::relational_test_support::changed_entities(&created)[0];
@@ -138,8 +149,11 @@ fn snapshot_reader_rejects_undeclared_dotted_document_paths() {
 
 #[test]
 fn snapshot_reader_rejects_untyped_bridge_record_identity() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "visible");
+    let created = create_entity_outcome(execution, &runtime, "visible");
     let published_snapshot = created.snapshot.clone();
 
     let snapshot_identity = bridge_snapshot_identity_for_handle(&published_snapshot);
@@ -167,8 +181,11 @@ fn snapshot_reader_rejects_untyped_bridge_record_identity() {
 
 #[test]
 fn snapshot_reader_reports_missing_record_as_authoritative_absence() {
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let created = create_entity_outcome(&runtime, "visible");
+    let created = create_entity_outcome(execution, &runtime, "visible");
     let published_snapshot = created.snapshot.clone();
     let snapshot_identity = bridge_snapshot_identity_for_handle(&published_snapshot);
     let reader = reader_for_current(runtime, snapshot_identity, published_snapshot.version_id());
@@ -226,3 +243,6 @@ fn scalar_string_contract(aspect: &str) -> SnapshotReadContract {
 
 #[path = "snapshot_serial_memory_tests.rs"]
 mod serial_memory;
+
+#[path = "snapshot_request_work_tests.rs"]
+mod request_work;

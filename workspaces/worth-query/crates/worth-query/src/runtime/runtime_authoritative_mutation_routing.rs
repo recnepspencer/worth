@@ -136,6 +136,7 @@ impl WorthQueryAuthoritativeMutationRoutingInput {
 impl WorthQueryRuntime {
     pub(super) fn route_authoritative_mutation_receipt(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: WorthQueryAuthoritativeMutationRoutingInput,
     ) -> Result<WorthQueryWriteReceipt, WorthQueryRuntimeError> {
         let WorthQueryAuthoritativeMutationRoutingInput {
@@ -171,7 +172,8 @@ impl WorthQueryRuntime {
             target_collection_identity = binding.target_collection_identity().cloned();
             target_entity_identity = Some(binding.resolved_entity_artifact_identity());
         }
-        let summary = self.route_authoritative_mutation_summary(&receipt, &mutation_metadata)?;
+        let summary =
+            self.route_authoritative_mutation_summary(execution, &receipt, &mutation_metadata)?;
         self.capture_shared_read_generation(receipt.snapshot_identity.clone());
         Ok(WorthQueryWriteReceipt::from_mutation_receipt(
             receipt,
@@ -206,6 +208,7 @@ impl WorthQueryRuntime {
 
     pub(super) fn route_authoritative_mutation_summary(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         receipt: &WorthQueryMutationReceipt,
         mutation_metadata: &WorthQueryMutationMetadata,
     ) -> Result<WorthQueryRoutedMutationSummary, WorthQueryRuntimeError> {
@@ -225,7 +228,7 @@ impl WorthQueryRuntime {
         let retained_live_rows = retained_live_view_targets
             .into_iter()
             .map(|target| {
-                let rows = self.backend.live_entities_for_target(&target);
+                let rows = self.backend.live_entities_for_target(execution, &target);
                 (target, rows)
             })
             .collect::<BTreeMap<_, _>>();

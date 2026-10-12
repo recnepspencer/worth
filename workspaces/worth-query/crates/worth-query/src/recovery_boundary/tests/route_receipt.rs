@@ -10,7 +10,10 @@ use super::support::{
 
 #[test]
 fn route_plan_recovery_preserves_typed_route_denial_cause() {
-    let handle = recovery_admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = recovery_admitted_handle(request_execution, "primary");
     let progression = recovery_progressed(
         &handle,
         RecoveryInput::<RequiredIntentRouteFamily>::new("edge-a"),
@@ -48,7 +51,10 @@ fn route_plan_recovery_preserves_typed_route_denial_cause() {
 
 #[test]
 fn receipt_recovery_preserves_typed_receipt_denial_cause() {
-    let handle = recovery_admitted_handle("primary");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = recovery_admitted_handle(request_execution, "primary");
     let progression =
         recovery_progressed(&handle, RecoveryInput::<SignalReceiptFamily>::new("edge-a"));
     let evidence = recovery_foundational(&handle, progression.clone());

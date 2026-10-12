@@ -5,6 +5,7 @@ use crate::merge::data::{
 use super::super::planning_artifact::merge_schema_snapshot_for_execution_ready;
 
 pub(super) fn verify_prepared_merge_execution(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     prepared: &PreparedMergeExecution,
 ) -> Result<(), MergeExecutionError> {
@@ -17,7 +18,7 @@ pub(super) fn verify_prepared_merge_execution(
     verify_branch_heads(runtime, binding)?;
     verify_merge_base(runtime, binding)?;
     verify_execution_ready_proof(binding, prepared)?;
-    verify_schema_snapshot(runtime, binding, prepared)?;
+    verify_schema_snapshot(execution, runtime, binding, prepared)?;
     verify_compiled_plan_digest(runtime, binding, prepared)?;
     Ok(())
 }
@@ -203,12 +204,14 @@ fn verify_execution_ready_proof(
 }
 
 fn verify_schema_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     binding: &crate::merge::data::MergeExecutionAuthorityBinding,
     prepared: &PreparedMergeExecution,
 ) -> Result<(), MergeExecutionError> {
     let execution_ready = prepared.execution_ready_plan();
     let current_schema_snapshot = merge_schema_snapshot_for_execution_ready(
+        execution,
         runtime,
         execution_ready.basis.target_head.version_id,
         execution_ready.source_records.as_ref(),

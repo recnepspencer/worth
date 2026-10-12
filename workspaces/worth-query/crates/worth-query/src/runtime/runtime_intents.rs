@@ -30,15 +30,17 @@ impl WorthQueryRuntime {
 
     pub fn execute_intent(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         declaration: WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentReceipt, WorthQueryRuntimeError> {
         let handoff = self.admit_authoritative_intent_for_execution(declaration)?;
         let binding = self.prepare_authoritative_intent_execution_binding(handoff);
-        self.execute_authoritative_intent_execution_binding(binding)
+        self.execute_authoritative_intent_execution_binding(execution, binding)
     }
 
     pub fn execute_next_effect_write_intent<T>(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         effect: &WorthQueryEffectHandle<T>,
         strategy_version: impl Into<String>,
         input_contract: impl Into<String>,
@@ -49,7 +51,7 @@ impl WorthQueryRuntime {
             input_contract.into(),
         )?;
         let binding = self.prepare_effect_intent_execution_binding(handoff, &pending_delivery);
-        self.execute_effect_intent_execution_binding(binding)
+        self.execute_effect_intent_execution_binding(execution, binding)
     }
 
     pub fn admit_authoritative_intent_for_execution(

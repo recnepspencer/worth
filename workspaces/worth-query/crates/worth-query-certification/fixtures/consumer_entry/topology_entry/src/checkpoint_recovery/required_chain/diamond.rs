@@ -191,7 +191,7 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
         [[6, 55]],
         "the shared dependent decided once, reading both new root outputs"
     );
-    let basis = request.retain_read().unwrap();
+    let basis = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     for (name, root) in [("left", &mut left), ("right", &mut right)] {
         let settled = settled_in_one_advance!(root, request, "a refreshed root");
         assert_eq!(
@@ -201,7 +201,9 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
         );
     }
     assert_eq!(
-        request.retain_read().unwrap().selected_commit(),
+        crate::checkpoint_recovery::support::retain_read(&application, &request)
+            .unwrap()
+            .selected_commit(),
         basis.selected_commit(),
         "the refreshed roots were already current"
     );

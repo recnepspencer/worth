@@ -11,6 +11,9 @@ use worth_proof::TransitionOutcome;
 
 #[test]
 fn update_entity_fields_applies_struct_contract_field_patch() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(
@@ -25,8 +28,15 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
         ..AspectSchemaFixture::default()
     }
     .build_runtime();
-    let entity =
-        create_entity_with_summary_fields(&runtime, "struct-patch", "before", "open", true, false);
+    let entity = create_entity_with_summary_fields(
+        execution,
+        &runtime,
+        "struct-patch",
+        "before",
+        "open",
+        true,
+        false,
+    );
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -45,16 +55,11 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
     let patch_record = &outcome.patch()[0];
     let current_read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let record = current_read.get_entity(entity).unwrap();
 
@@ -138,6 +143,7 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
 }
 
 pub(super) fn create_entity_with_summary_fields(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     client_key: &str,
     summary_title: &str,
@@ -192,11 +198,5 @@ pub(super) fn create_entity_with_summary_fields(
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    changed_entities(
-        &txn.commit(
-            runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap(),
-    )[0]
+    changed_entities(&txn.commit(execution, runtime).unwrap())[0]
 }

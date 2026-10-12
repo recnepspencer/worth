@@ -20,6 +20,7 @@ use crate::domain_computation::primary_graph::application_query::{
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn attach_ordered_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView<'_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
@@ -60,12 +61,17 @@ pub(super) fn attach_ordered_relation(
     work.checkpoint(relation.result_path())?;
     let page = runtime
         .index_access()
-        .execute_bounded_related_entity_ordered_lookup(lookup, BoundedIndexParityMode::Production)
+        .execute_bounded_related_entity_ordered_lookup(
+            lookup,
+            BoundedIndexParityMode::Production,
+            execution,
+        )
         .map_err(|denial| ordered_lookup_denial(denial.kind(), relation.result_path()))?;
     work.charge_ordered_index_entries(page.examined_entry_count(), relation.result_path())?;
     let child_ids = page.child_entity_ids().to_vec();
     let mut nested_selection = ActiveResultTreeCollectionSelection::Complete;
     let children = project_nodes(
+        execution,
         runtime,
         projection,
         graph,

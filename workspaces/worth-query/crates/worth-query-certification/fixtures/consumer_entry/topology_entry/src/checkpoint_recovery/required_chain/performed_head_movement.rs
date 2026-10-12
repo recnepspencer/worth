@@ -105,7 +105,7 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
     let contacts_before =
         roots.map(|root| application.producer_contacts_at_root_on_this_thread_for_test(root));
     let reads_before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let settled = match c
         .advance(&request)
         .expect("the caller advances the real required chain after an input change")
@@ -122,7 +122,7 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         1,
         "C rebuilds its input once"
     );
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     assert_ne!(before.selected_commit(), after.selected_commit());
     assert_eq!(
         settled.observation().selected_commit(),

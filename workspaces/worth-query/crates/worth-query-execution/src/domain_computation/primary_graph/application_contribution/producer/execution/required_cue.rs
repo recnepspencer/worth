@@ -66,6 +66,7 @@ impl<'basis> From<ReadyInspection<'basis>> for FrozenCurrentInspection<'basis> {
 
 /// Inputs borrowed for native currentness inspection, without a preparation phase.
 pub(in crate::domain_computation::primary_graph::application_contribution::producer) struct FrozenInspection<'basis, 'call, Schema: ApplicationSchema> {
+    pub execution: &'call worth_execution::ExecutionRequest<'call, 'call>,
     pub runtime: &'call crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub principal: &'call worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
     pub request: &'call worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

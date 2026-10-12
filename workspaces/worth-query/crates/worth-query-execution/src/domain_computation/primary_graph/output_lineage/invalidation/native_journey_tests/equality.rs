@@ -21,17 +21,29 @@ mod pending_resolution;
 
 #[test]
 fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request()))
+        .expect("installed host call opens");
+    let entity = world
+        .application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("installed host call opens");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -80,17 +92,17 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         0,
     );
 
-    handle.with_runtime_mut(|runtime| {
-        write_field(runtime, entity, label.clone(), "prime");
+    handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(request_execution, runtime, entity, label.clone(), "prime");
         let (before_handle, before) = snapshot(runtime);
-        let old_a_fact = field_fact(runtime, &before_handle, entity, status.clone());
+        let old_a_fact = field_fact(request_execution, runtime, &before_handle, entity, status.clone());
         register(owner, Arc::clone(&a0), Arc::from([old_a_fact.clone()]), &before, OrdSet::new());
-        register(owner, Arc::clone(&other), Arc::from([field_fact(runtime, &before_handle, entity, label.clone())]), &before, OrdSet::new());
+        register(owner, Arc::clone(&other), Arc::from([field_fact(request_execution, runtime, &before_handle, entity, label.clone())]), &before, OrdSet::new());
         register(owner, Arc::clone(&b), Arc::from([]), &before, OrdSet::unit(Arc::clone(&a0)));
         register(owner, Arc::clone(&c), Arc::from([]), &before, [Arc::clone(&b), Arc::clone(&other)].into_iter().collect());
 
-        write_field(runtime, entity, status.clone(), "closed");
-        write_field(runtime, entity, label, "changed");
+        write_field(request_execution, runtime, entity, status.clone(), "closed");
+        write_field(request_execution, runtime, entity, label, "changed");
         let (changed_handle, changed) = snapshot(runtime);
         assert_pending(owner, &changed, &b, &a0);
         assert_pending(owner, &changed, &c, &b);
@@ -101,26 +113,26 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
             .unwrap()
             .read_image();
 
-        register_alias(owner, runtime, &changed_handle, &changed, entity, status.clone(), &a0, &a1);
+        register_alias(request_execution, owner, runtime, &changed_handle, &changed, entity, status.clone(), &a0, &a1);
         assert!(matches!(currentness(owner, &changed, &b), SourceSettlementCurrentness::Clean));
         assert_pending(owner, &changed, &c, &b);
         assert_pending(owner, &changed, &c, &other);
         let prior = SnapshotAlignedMarkState::observe_image(&historical_image, &changed).unwrap();
         assert!(matches!(prior.currentness(&b), SettlementCurrentness::PendingUpstream(edges) if edges.contains(&a0)));
-        assert_source_only_alias_verification(owner, runtime, &changed_handle, &changed, &before, &a0, &old_a_fact);
+        assert_source_only_alias_verification(request_execution, owner, runtime, &changed_handle, &changed, &before, &a0, &old_a_fact);
         // Late registration consumes the already-certified clean successor,
         // rather than recreating a pending edge from the dirty predecessor.
         register(owner, Arc::clone(&b), Arc::from([]), &changed, OrdSet::unit(Arc::clone(&a0)));
         assert!(matches!(currentness(owner, &changed, &b), SourceSettlementCurrentness::Clean));
 
-        write_field(runtime, entity, status.clone(), "again");
+        write_field(request_execution, runtime, entity, status.clone(), "again");
         let (next_handle, next) = snapshot(runtime);
         assert_pending(owner, &next, &b, &a0);
-        register_alias(owner, runtime, &next_handle, &next, entity, status.clone(), &a1, &a2);
+        register_alias(request_execution, owner, runtime, &next_handle, &next, entity, status.clone(), &a1, &a2);
         assert!(matches!(currentness(owner, &next, &b), SourceSettlementCurrentness::Clean));
-        assert_source_only_alias_verification(owner, runtime, &next_handle, &next, &before, &a0, &old_a_fact);
+        assert_source_only_alias_verification(request_execution, owner, runtime, &next_handle, &next, &before, &a0, &old_a_fact);
 
-        write_field(runtime, entity, status.clone(), "changed-output");
+        write_field(request_execution, runtime, entity, status.clone(), "changed-output");
         let (later_handle, later) = snapshot(runtime);
         assert_pending(owner, &later, &b, &a0);
         assert!(matches!(
@@ -129,7 +141,7 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
         ));
         assert_eq!(
             ConsumedOutputEvidence::verify_candidate_with_admission(
-                &a0,
+request_execution,                &a0,
                 &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, Arc::from([old_a_fact.clone()])).for_comparison().unwrap(),
                 &[],
                 None,
@@ -150,17 +162,29 @@ fn certified_alias_chain_discharge_is_exact_and_later_native_change_repends() {
 
 #[test]
 fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|host_phase| world.selected_product(&host_phase.test_host_request()))
+        .expect("installed host call opens");
+    let entity = world
+        .application
+        .with_host_advancement(|host_phase| {
+            selected
+                .resolve_entity(
+                    &host_phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("installed host call opens");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -192,20 +216,20 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
     let a_source = source(OutputBindingIdentity::declared("StatusOutput"));
     let a0 = RecordedSettlementIdentity::retain(&a_source, coordinate, 0);
     let a1 = RecordedSettlementIdentity::retain(&a_source, coordinate, 1);
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let (before_handle, before) = snapshot(runtime);
-        let unchanged_fact = field_fact(runtime, &before_handle, entity, label);
+        let unchanged_fact = field_fact(request_execution, runtime, &before_handle, entity, label);
         register(owner, Arc::clone(&a0), Arc::from([unchanged_fact.clone()]), &before, OrdSet::new());
-        write_field(runtime, entity, status.clone(), "closed");
+        write_field(request_execution, runtime, entity, status.clone(), "closed");
         let (alias_handle, alias) = snapshot(runtime);
-        register_alias(owner, runtime, &alias_handle, &alias, entity, status.clone(), &a0, &a1);
+        register_alias(request_execution, owner, runtime, &alias_handle, &alias, entity, status.clone(), &a0, &a1);
         // The successor's status changes; the predecessor's label never changes.
-        write_field(runtime, entity, status, "changed-output");
+        write_field(request_execution, runtime, entity, status, "changed-output");
         let (later_handle, later) = snapshot(runtime);
         assert!(matches!(owner.consumed_output_currentness(&later, &a0, &mut owner.edit_admission()).unwrap(),
             crate::domain_computation::primary_graph::output_lineage::invalidation::ConsumedOutputCurrentness::PendingEqualSuccessor));
         assert_eq!(ConsumedOutputEvidence::verify_candidate_with_admission(
-            &a0,
+request_execution,            &a0,
             &RetainedSourceFacts::for_test(false, Arc::from([unchanged_fact])).for_comparison().unwrap(),
             &[], None, &before, owner, runtime, &later_handle, &later,
             &mut owner.edit_admission(),
@@ -217,6 +241,7 @@ fn unchanged_own_evidence_waits_for_a_pending_equal_successor() {
 }
 
 fn register_alias(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     owner: &SourceInvalidationOwner,
     runtime: &RelationalRuntime,
     handle: &SnapshotHandle,
@@ -238,7 +263,7 @@ fn register_alias(
                 identity: Arc::clone(successor),
                 facts: RetainedSourceFacts::for_test(
                     false,
-                    Arc::from([field_fact(runtime, handle, entity, locator)]),
+                    Arc::from([field_fact(execution, runtime, handle, entity, locator)]),
                 ),
                 output_facts: None,
                 read_basis: selected.clone(),
@@ -271,6 +296,7 @@ fn assert_pending(
 }
 
 fn assert_source_only_alias_verification(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     owner: &SourceInvalidationOwner,
     runtime: &RelationalRuntime,
     handle: &SnapshotHandle,
@@ -281,6 +307,7 @@ fn assert_source_only_alias_verification(
 ) {
     let verify = || {
         ConsumedOutputEvidence::verify_candidate_with_admission(
+        execution,
         old_identity,
         &crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(
             false,

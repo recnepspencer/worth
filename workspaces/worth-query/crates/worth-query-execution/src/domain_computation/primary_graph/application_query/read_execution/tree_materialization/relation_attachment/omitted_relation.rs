@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 };
 
 pub(in crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization) fn advance_omitted_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     relation: &WorthQueryInstalledGraphRelation,
@@ -52,7 +53,11 @@ pub(in crate::domain_computation::primary_graph::application_query::read_executi
     work.checkpoint(relation.result_path())?;
     let page = runtime
         .index_access()
-        .execute_bounded_related_entity_ordered_lookup(lookup, BoundedIndexParityMode::Production)
+        .execute_bounded_related_entity_ordered_lookup(
+            lookup,
+            BoundedIndexParityMode::Production,
+            execution,
+        )
         .map_err(|denial| ordered_lookup_denial(denial.kind(), relation.result_path()))?;
     work.charge_ordered_index_entries(page.examined_entry_count(), relation.result_path())?;
     let generation_id = page.generation_id();

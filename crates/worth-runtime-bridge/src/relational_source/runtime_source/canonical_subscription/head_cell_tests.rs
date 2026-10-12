@@ -25,11 +25,11 @@ impl RelationalPublicationCompanion for Consumer {
         Ok(effect)
     }
 }
-fn runtime() -> Arc<RelationalRuntime> {
+fn runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Arc<RelationalRuntime> {
     let runtime = Arc::new(runtime_with_declared_aspect_schema(
         CascadeDeletePolicy::CascadeDeleteRelations,
     ));
-    let baseline = create_entity_outcome(&runtime, "canonical-head-baseline");
+    let baseline = create_entity_outcome(execution, &runtime, "canonical-head-baseline");
     release_test_commit_snapshot(&runtime, &baseline);
     runtime
 }
@@ -53,7 +53,10 @@ fn subscribe(
 
 #[test]
 fn canonical_subscription_head_cell_selects_the_current_native_head() {
-    let runtime = runtime();
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = runtime(execution);
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -66,7 +69,7 @@ fn canonical_subscription_head_cell_selects_the_current_native_head() {
         .positioned_snapshot(&old_handle)
         .unwrap();
     let subscription = subscribe(&runtime, Consumer { gate: None });
-    let written = create_entity_outcome(&runtime, "canonical-new-head");
+    let written = create_entity_outcome(execution, &runtime, "canonical-new-head");
     let head = runtime
         .read_truth()
         .positioned_snapshot(&written.snapshot)
@@ -88,7 +91,10 @@ fn canonical_subscription_head_cell_selects_the_current_native_head() {
 
 #[test]
 fn canonical_subscription_head_cell_forwards_contention_without_install_or_custody() {
-    let runtime = runtime();
+    let host_request = crate::snapshot::test_serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = runtime(execution);
     let basis = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
@@ -108,7 +114,8 @@ fn canonical_subscription_head_cell_forwards_contention_without_install_or_custo
     let weak = Arc::downgrade(&initial);
     let mut installed = false;
     std::thread::scope(|threads| {
-        let publisher = threads.spawn(|| create_entity_outcome(&runtime, "canonical-held-head"));
+        let publisher =
+            threads.spawn(|| create_entity_outcome(execution, &runtime, "canonical-held-head"));
         observe_prepared.recv().unwrap();
         let result = subscription.with_branch_cell_at_head(
             &runtime,

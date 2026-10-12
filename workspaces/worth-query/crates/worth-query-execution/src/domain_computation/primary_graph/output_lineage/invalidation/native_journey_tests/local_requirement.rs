@@ -13,17 +13,29 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn local_full_verification_requirement_overrides_a_clean_actor_row() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = installed_authorization_world(true);
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".to_owned(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".to_owned(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let observation = product.observation();
     let graph = world.application.runtime.primary_graph().unwrap();
@@ -35,12 +47,24 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
-    let (before_handle, before, retained_fact) = handle.with_runtime(|runtime| {
-        let (snapshot, basis) = snapshot(runtime);
-        let fact = field_fact(runtime, &snapshot, entity, status.clone());
-        let facts: Arc<[_]> = Arc::from([fact]);
-        (snapshot, basis, facts)
-    });
+    let (before_handle, before, retained_fact) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime(request_execution, |runtime| {
+                let (snapshot, basis) = snapshot(runtime);
+                let fact = field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &snapshot,
+                    entity,
+                    status.clone(),
+                );
+                let facts: Arc<[_]> = Arc::from([fact]);
+                (snapshot, basis, facts)
+            })
+        })
+        .expect("the fixture read owns its installed host call");
 
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(TypeId::of::<StatusOutput>(), "StatusOutput");
@@ -98,8 +122,10 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         &identity,
         FullVerificationReason::NativeRevisionUnavailable,
     );
-    handle.with_runtime_mut(|runtime| write_field(runtime, entity, status, "closed"));
-    let (after_handle, after) = handle.with_runtime(snapshot);
+    handle.with_runtime_mut(request_execution, |runtime| {
+        write_field(request_execution, runtime, entity, status, "closed")
+    });
+    let (after_handle, after) = handle.with_runtime(request_execution, snapshot);
     assert!(matches!(
         owner.currentness(&after, &identity, &mut owner.edit_admission()),
         Ok(SourceSettlementCurrentness::Clean)
@@ -124,22 +150,29 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         Some(FullVerificationReason::NativeRevisionUnavailable)
     );
     let mut admission = owner.edit_admission();
-    let result = handle.with_runtime(|runtime| {
-        ConsumedOutputEvidence::verify_candidate_with_admission(
-            &candidate.settlement_identity,
-            &candidate.observed_source_facts.for_comparison().unwrap(),
-            &candidate.consumed_outputs,
-            candidate.verification_requirement,
-            &before,
-            owner,
-            runtime,
-            &after_handle,
-            &after,
-            &mut admission,
-        )
-    });
+    let result = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime(request_execution, |runtime| {
+                ConsumedOutputEvidence::verify_candidate_with_admission(
+                    &host_custody.borrowed_request_for_test(),
+                    &candidate.settlement_identity,
+                    &candidate.observed_source_facts.for_comparison().unwrap(),
+                    &candidate.consumed_outputs,
+                    candidate.verification_requirement,
+                    &before,
+                    owner,
+                    runtime,
+                    &after_handle,
+                    &after,
+                    &mut admission,
+                )
+            })
+        })
+        .expect("the fixture read owns its installed host call");
     assert_eq!(result, Ok(ConsumedOutputVerification::ChangedDirectFact(0)));
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&before_handle)

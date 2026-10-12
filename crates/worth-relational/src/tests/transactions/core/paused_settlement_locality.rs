@@ -64,8 +64,11 @@ impl Drop for SettlementParkRelease {
 /// running the full convenience commit path.
 #[test]
 fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    create_entity(&runtime, "phase3-settlement-independence-anchor");
+    create_entity(execution, &runtime, "phase3-settlement-independence-anchor");
     fork_from_main(&runtime, "paused-settlement");
     fork_from_main(&runtime, "progressing-settlement");
 
@@ -78,8 +81,13 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
             Arc::clone(&reached),
             Arc::clone(&release),
         );
-    let performed =
-        perform_write_with_control(&runtime, "paused-settlement", "paused-write", control);
+    let performed = perform_write_with_control(
+        execution,
+        &runtime,
+        "paused-settlement",
+        "paused-write",
+        control,
+    );
     let paused_commit_id = performed.canonical_commit().commit.commit_id;
     let paused_cell = runtime
         .history
@@ -134,10 +142,7 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
     let progressing_result = std::thread::scope(|scope| {
         let committer = scope.spawn(move || {
             let committed = committing
-                .commit_branch_transaction(
-                    progressing,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .commit_branch_transaction(execution, progressing)
                 .expect("branch B commits end to end while branch A settlement is paused");
             finished
                 .send(())

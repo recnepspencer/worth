@@ -46,11 +46,14 @@ fn store_backed_replay_gap_request(
 
 #[test]
 fn public_common_and_checked_lanes_converge_for_named_categories() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = intent_declaration();
     let admitted_plan = admitted_basis_observation_plan();
     let projection_plan = admitted_projection_consumption_plan();
     let lower_runtime = lower_runtime_envelope("domain-capability-public-lane");
-    let installation = install_domain_capability_certification();
+    let installation = install_domain_capability_certification(request_execution);
     let domain = installation.contributions();
 
     let support_common = domain

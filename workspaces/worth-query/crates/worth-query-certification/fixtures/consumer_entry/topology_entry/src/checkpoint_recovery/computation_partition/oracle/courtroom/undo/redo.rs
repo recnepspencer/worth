@@ -80,15 +80,18 @@ fn applied<const REUSE: bool, const MODE: u8>(redo: bool) -> OracleRun {
             &redo_identities,
             Some(recovery.handle()),
         );
-        let selected = application
-            .runtime()
-            .on_branch(application.current_world())
-            .select()
-            .unwrap();
+        let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+            application
+                .runtime()
+                .on_branch(application.current_world())
+                .select(phase)
+        })
+        .unwrap();
         let intent = selected.derive_redo_intent(recovery.proved()).unwrap();
-        let admitted = selected
-            .admit_redo(recovery, &authority.unwrap(), &intent)
-            .unwrap();
+        let admitted = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+            selected.admit_redo(phase, recovery, &authority.unwrap(), &intent)
+        })
+        .unwrap();
         drop(selected);
         let handoff = aftermath::progress_admitted_redo(admitted).unwrap();
         let redo_receipt = preparation::committed(application.compare_and_commit_program_redo(

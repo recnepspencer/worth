@@ -153,24 +153,27 @@ impl RuntimeApiStabilizationCertificationMatrix {
 pub struct RuntimeApiStabilizationAdapter;
 
 impl RuntimeApiStabilizationAdapter {
-    pub fn runtime_api_golden_dx_and_async_safe_facade_artifact() -> RuntimeApiStabilizationArtifact
-    {
-        Self::runtime_api_golden_dx_and_async_safe_facade_test()
+    pub fn runtime_api_golden_dx_and_async_safe_facade_artifact(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> RuntimeApiStabilizationArtifact {
+        Self::runtime_api_golden_dx_and_async_safe_facade_test(request_execution)
             .into_runtime_api_stabilization_artifact()
     }
 
     pub fn runtime_api_golden_dx_and_async_safe_facade_test(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> RuntimeApiStabilizationCertificationMatrix {
         RuntimeApiStabilizationCertificationMatrix {
             suite_name: "Runtime API Golden DX And Async-Safe Facade Test",
-            rows: builders::canonical_rows(),
-            rejection_rows: builders::rejection_rows(),
+            rows: builders::canonical_rows(request_execution),
+            rejection_rows: builders::rejection_rows(request_execution),
         }
     }
 
     pub(crate) fn composed_runtime_hostile_transcript_evidence(
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> crate::runtime::WorthQueryRuntimePublicApiTranscriptEvidence {
-        transcripts::composed_runtime_hostile_transcript()
+        transcripts::composed_runtime_hostile_transcript(request_execution)
     }
 }
 

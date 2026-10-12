@@ -208,6 +208,7 @@ where
             }
             application
                 .validate_discovered_program_source::<Root>(
+                    phase,
                     &worth_query_execution::publication_boundary::program_publication_access(),
                     prepared,
                     receipt,
@@ -227,6 +228,7 @@ where
             let admitted = match self.kind {
                 DiscoveredRootStartKind::Performed => application
                     .admit_performed_discovered_program_root_output::<Root>(
+                        phase,
                         &worth_query_execution::publication_boundary::program_publication_access(),
                         source,
                         limits,
@@ -243,7 +245,7 @@ where
                     };
                     application.validate_recovered_discovered_program_root_currentness::<Root>(
                         &worth_query_execution::publication_boundary::program_publication_access(), prepared, &source, &current)
-                        .and_then(|()| application.recover_discovered_program_root_output::<Root>(
+                        .and_then(|()| application.recover_discovered_program_root_output::<Root>(phase,
                             &worth_query_execution::publication_boundary::program_publication_access(), source, current, limits, receipt))
                 }
             };

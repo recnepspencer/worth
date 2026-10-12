@@ -34,14 +34,18 @@ impl super::RelationalBranchRoot {
 
 #[test]
 fn incremental_content_matches_cold_rebuild_after_each_real_graph_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
+    let source = create_entity(execution, &runtime, "source");
     assert_complete(&runtime, "first entity");
-    let target = create_entity(&runtime, "target");
+    let target = create_entity(execution, &runtime, "target");
     assert_complete(&runtime, "second entity and empty adjacency");
-    let relation = create_relation_outcome(&runtime, source, target, "edge");
+    let relation = create_relation_outcome(execution, &runtime, source, target, "edge");
     assert_complete(&runtime, "relation creation");
     delete_relation_on_branch(
+        execution,
         &runtime,
         changed_relations(&relation)[0],
         BranchId("main".to_owned()),

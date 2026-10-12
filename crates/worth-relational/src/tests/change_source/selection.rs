@@ -10,9 +10,16 @@ use super::{linear_ancestry_work, observe};
 
 #[test]
 fn reachable_selection_reports_exactly_the_ancestry_work_it_did() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let ancestor = create_entity_outcome(&runtime, "ancestor").commit.commit_id;
-    let head = create_entity_outcome(&runtime, "head").commit.commit_id;
+    let ancestor = create_entity_outcome(execution, &runtime, "ancestor")
+        .commit
+        .commit_id;
+    let head = create_entity_outcome(execution, &runtime, "head")
+        .commit
+        .commit_id;
     let observation = observe(&runtime, "main").observation();
     let expected_visits = linear_ancestry_work(&runtime, head);
 
@@ -35,9 +42,16 @@ fn reachable_selection_reports_exactly_the_ancestry_work_it_did() {
 
 #[test]
 fn exact_selection_costs_one_selection_and_no_ancestry() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let ancestor = create_entity_outcome(&runtime, "ancestor").commit.commit_id;
-    let head = create_entity_outcome(&runtime, "head").commit.commit_id;
+    let ancestor = create_entity_outcome(execution, &runtime, "ancestor")
+        .commit
+        .commit_id;
+    let head = create_entity_outcome(execution, &runtime, "head")
+        .commit
+        .commit_id;
     let observation = observe(&runtime, "main").observation();
 
     let exact = runtime.select_exact_commit(&observation, head);
@@ -58,8 +72,11 @@ fn exact_selection_costs_one_selection_and_no_ancestry() {
 
 #[test]
 fn fork_sees_inherited_ancestor_but_not_post_fork_sibling_at_equal_cost_class() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let inherited = create_entity_outcome(&runtime, "inherited")
+    let inherited = create_entity_outcome(execution, &runtime, "inherited")
         .commit
         .commit_id;
     let feature = BranchId("feature".to_owned());
@@ -67,10 +84,13 @@ fn fork_sees_inherited_ancestor_but_not_post_fork_sibling_at_equal_cost_class() 
         .history_authority()
         .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
         .unwrap();
-    let sibling = create_entity_outcome(&runtime, "sibling").commit.commit_id;
-    let feature_head = create_entity_outcome_on_branch(&runtime, "feature-head", feature)
+    let sibling = create_entity_outcome(execution, &runtime, "sibling")
         .commit
         .commit_id;
+    let feature_head =
+        create_entity_outcome_on_branch(execution, &runtime, "feature-head", feature)
+            .commit
+            .commit_id;
     let observation = observe(&runtime, "feature").observation();
 
     let reachable = runtime.select_reachable_commit(&observation, inherited);
@@ -92,9 +112,14 @@ fn fork_sees_inherited_ancestor_but_not_post_fork_sibling_at_equal_cost_class() 
 
 #[test]
 fn a_runtime_refuses_an_observation_another_runtime_issued() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let owner = runtime_with_test_schema();
     let other = runtime_with_test_schema();
-    let commit_id = create_entity_outcome(&owner, "owned").commit.commit_id;
+    let commit_id = create_entity_outcome(execution, &owner, "owned")
+        .commit
+        .commit_id;
     let observation = observe(&owner, "main").observation();
 
     let selection = other.select_exact_commit(&observation, commit_id);

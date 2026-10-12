@@ -12,8 +12,14 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn installation_sameness_does_not_claim_basis_compatibility() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let workspace = no_primary_read_runtime()
-        .workspace("compatibility-distinct-relationship-laws")
+        .workspace(
+            request_execution,
+            "compatibility-distinct-relationship-laws",
+        )
         .unwrap();
     let installed = workspace.domain(GeometryDomain).unwrap();
     let current = bind_current(&workspace, &installed);
@@ -28,13 +34,17 @@ fn installation_sameness_does_not_claim_basis_compatibility() {
 
 #[test]
 fn every_relationship_preserves_query_bound_conditional_drift() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let declaration = node(
         "compatibility-node",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
-    let (mut owner, donor) =
-        conditional_controlled_workspace_with_donor(ConditionalDonorWorkspaceScenario {
+    let (mut owner, donor) = conditional_controlled_workspace_with_donor(
+        request_execution,
+        ConditionalDonorWorkspaceScenario {
             owner: ConditionalWorkspacePlacement {
                 name: "compatibility-relationship-drift-owner",
                 partition: "geometry-signal",
@@ -45,8 +55,9 @@ fn every_relationship_preserves_query_bound_conditional_drift() {
             },
             node: declaration.clone(),
             donor_compute: DirectConditionalCompute,
-        })
-        .unwrap();
+        },
+    )
+    .unwrap();
     let prior_domain = owner.domain(GeometryDomain).unwrap();
     let subject = bind(&owner, &prior_domain);
 
@@ -59,8 +70,9 @@ fn every_relationship_preserves_query_bound_conditional_drift() {
     assert_continuity_drift(subject.compatible_basis_with(&candidate).unwrap_err());
     assert_affinity_drift(subject.execution_sharing_with(&candidate).unwrap_err());
 
-    let (mut rebound_owner, rebound_donor) =
-        conditional_controlled_workspace_with_donor(ConditionalDonorWorkspaceScenario {
+    let (mut rebound_owner, rebound_donor) = conditional_controlled_workspace_with_donor(
+        request_execution,
+        ConditionalDonorWorkspaceScenario {
             owner: ConditionalWorkspacePlacement {
                 name: "compatibility-rebind-drift-owner",
                 partition: "geometry-signal",
@@ -71,8 +83,9 @@ fn every_relationship_preserves_query_bound_conditional_drift() {
             },
             node: declaration,
             donor_compute: DirectConditionalCompute,
-        })
-        .unwrap();
+        },
+    )
+    .unwrap();
     let rebound_prior_domain = rebound_owner.domain(GeometryDomain).unwrap();
     let rebound_subject = bind(&rebound_owner, &rebound_prior_domain);
     rebound_owner
@@ -96,8 +109,11 @@ fn every_relationship_preserves_query_bound_conditional_drift() {
 
 #[test]
 fn changed_required_domain_authority_requires_its_owner_rebind_receipt() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut controlled = required_domain_runtime(true)
-        .controlled_workspace("compatibility-required-domain-rebind")
+        .controlled_workspace(request_execution, "compatibility-required-domain-rebind")
         .unwrap();
     let prior_geometry = controlled.domain(GeometryDomain).unwrap();
     let prior_auxiliary = controlled.domain(AuxiliaryDomain).unwrap();

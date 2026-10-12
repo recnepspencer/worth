@@ -10,8 +10,13 @@ use crate::runtime::tests::graph_read_access::support::graph_read_access::async_
 
 #[test]
 fn materialization_checkpoint_intervals_emit_exact_sequences() {
-    let mut workspace =
-        async_materialization_workspace("graph-read-access.async-materialization.checkpoints");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = async_materialization_workspace(
+        request_execution,
+        "graph-read-access.async-materialization.checkpoints",
+    );
     let family = async_required_graph_read_family(&mut workspace, "async-checkpoints");
     let admission = workspace
         .read_family_intent(&family)
@@ -21,12 +26,13 @@ fn materialization_checkpoint_intervals_emit_exact_sequences() {
         .expect("graph read admission should exist")
         .clone();
 
-    assert_checkpoint_interval_sequence(&mut workspace, &admission, 1);
-    assert_checkpoint_interval_sequence(&mut workspace, &admission, 2);
-    assert_checkpoint_interval_sequence(&mut workspace, &admission, 256);
+    assert_checkpoint_interval_sequence(request_execution, &mut workspace, &admission, 1);
+    assert_checkpoint_interval_sequence(request_execution, &mut workspace, &admission, 2);
+    assert_checkpoint_interval_sequence(request_execution, &mut workspace, &admission, 256);
 }
 
 fn assert_checkpoint_interval_sequence(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     admission: &WorthQueryGraphReadAccessAdmission,
     checkpoint_interval: usize,
@@ -41,7 +47,7 @@ fn assert_checkpoint_interval_sequence(
         expected_checkpoint_count_for_request(&request, checkpoint_interval.max(1));
     let mut job = workspace
         .graph_read_materializations()
-        .admit(request)
+        .admit(request_execution, request)
         .expect("request should admit")
         .start()
         .expect("job should start");

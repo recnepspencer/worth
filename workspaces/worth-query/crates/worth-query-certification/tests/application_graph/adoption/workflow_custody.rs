@@ -32,12 +32,16 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
     let application = publish_workflow_on_first_program();
     let main = application.current_world();
     let sibling = application
-        .runtime()
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("P0 sibling publishes before the instance starts");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("P0 sibling publishes before the instance starts")
+        })
+        .expect("installed host call opens");
     let definition = match publish_definition(
         &application,
         reviewed_document_definition("completed"),
@@ -62,12 +66,16 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         Ok(WorkflowProgressOutcome::AwaitingAssessment(_)),
     ));
     let historical_fork = application
-        .runtime()
-        .branches()
-        .fork(main)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("fork retains instance history without executable custody");
+        .with_host_advancement(|host_phase| {
+            application
+                .runtime()
+                .branches()
+                .fork(main)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("fork retains instance history without executable custody")
+        })
+        .expect("installed host call opens");
 
     let target = *application
         .program_runtime()

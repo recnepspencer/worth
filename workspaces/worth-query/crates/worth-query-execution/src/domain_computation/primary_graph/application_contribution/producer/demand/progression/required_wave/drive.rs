@@ -22,6 +22,7 @@ mod wave_execution;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn drive_required_wave<'runtime, Schema, Family>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
@@ -70,7 +71,7 @@ where
             admission,
         )?;
         if let Some(delivery) = result.delivery {
-            wave = wave.after_awaited_delivery(runtime, delivery, admission)?;
+            wave = wave.after_awaited_delivery(execution, runtime, delivery, admission)?;
             frontier.members[0].state = MemberState::Inspect;
             if !wave.is_frozen() {
                 continue;
@@ -106,7 +107,7 @@ where
         }
         if result.moved {
             queue.wave_moved();
-            wave = wave.reselect(runtime, admission)?;
+            wave = wave.reselect(execution, runtime, admission)?;
             resolved.clear();
             for member in &mut frontier.members {
                 member.dependency_schedule = DependencySchedule::OwnSelection;
@@ -245,7 +246,7 @@ where
                 Ok(HeldUpstream::Ready(ready)) => {
                     runtime.output_demands.clear_required_stop(&head);
                     if super::selection::committed_ready(&ready, admission)? {
-                        wave = wave.reselect(runtime, admission)?;
+                        wave = wave.reselect(execution, runtime, admission)?;
                         resolved.clear();
                         queue.wave_moved();
                     }

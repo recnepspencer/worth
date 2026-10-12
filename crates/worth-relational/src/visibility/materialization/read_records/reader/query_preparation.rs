@@ -43,8 +43,30 @@ impl QueryPreparationBudget<'_, '_, '_> {
     }
 }
 
+/// Interruption before preparation starts retains its canonical boundary and
+/// reports no executed work, active workers or allocated packet memory.
+pub(super) fn check_query_preparation_request(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<(), QueryReadExecutionStop> {
+    execution
+        .check_live()
+        .map_err(|stop| QueryReadExecutionStop::PreparationStopped {
+            reason: worth_execution::MapStop::Failure {
+                identity: PartitionIdentity::new(1),
+                cause: MapKernelFailure::Stop(stop),
+            },
+            report: ExecutionReport::new(
+                execution.resolved_posture(),
+                0,
+                0,
+                ExecutionPhysicalReport::new(0, 0, None, 0, 0),
+            ),
+        })
+}
+
 pub(super) fn prepare_query_packets(
-    lease: &ExecutionResourceLease<'_>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    lease: Option<&ExecutionResourceLease<'_>>,
     build: impl FnOnce(
         &mut QueryPreparationBudget<'_, '_, '_>,
     ) -> Result<Vec<PacketizedQueryWork>, MapKernelFailure<()>>,
@@ -52,9 +74,9 @@ pub(super) fn prepare_query_packets(
     let identity = PartitionIdentity::new(1);
     let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())])
         .map_err(QueryReadExecutionStop::PreparationAdmission)?;
-    let ceiling = lease.policy().budget().charged_memory_bytes() / PREPARATION_MEMORY_DIVISOR;
+    let ceiling = execution.memory_limit() / PREPARATION_MEMORY_DIVISOR;
     let mut build = Some(build);
-    match scan.run(Some(lease), (), 0, ceiling, 0, ceiling, |_, _, context| {
+    match scan.run(lease, (), 0, ceiling, 0, ceiling, |_, _, context| {
         let mut budget = QueryPreparationBudget {
             context,
             ceiling,

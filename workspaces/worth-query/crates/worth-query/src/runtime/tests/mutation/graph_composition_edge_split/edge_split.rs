@@ -2,19 +2,22 @@ use super::*;
 
 #[test]
 fn compose_graph_supports_verified_edge_split_with_lineage_summary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let binding = geometry_relation_binding("authority:edge-main", "Edge:1", "Edge");
     let expected_basis_binding_digest = WorthQueryMutationEvidenceDigest::source_identity(
         "continuity-basis-binding",
         binding.binding_evidence_identity(),
     );
     let expected_edge_identity = binding.resolved_relation_identity().clone();
-    let runtime = edge_split_runtime(&binding);
+    let runtime = edge_split_runtime(request_execution, &binding);
     let mut workspace = runtime
         .workspace("topology.graph-composition-edge-split")
         .expect("workspace should open");
-    declare_edge_split_live_views(&mut workspace);
+    declare_edge_split_live_views(request_execution, &mut workspace);
 
-    let receipt = compose_verified_edge_split(&mut workspace, binding);
+    let receipt = compose_verified_edge_split(request_execution, &mut workspace, binding);
 
     let split_vertex_identity = receipt.write_receipts()[0].deltas()[0]
         .entity_identity
@@ -206,7 +209,10 @@ fn compose_graph_supports_verified_edge_split_with_lineage_summary() {
         ],
     );
 
-    match workspace.inspect(&receipt).expect("receipt should inspect") {
+    match workspace
+        .inspect(request_execution, &receipt)
+        .expect("receipt should inspect")
+    {
         WorthQueryInspection::BatchWriteReceipt(inspection) => {
             let inspection_lineage = inspection
                 .graph_composition_lineage_summary()

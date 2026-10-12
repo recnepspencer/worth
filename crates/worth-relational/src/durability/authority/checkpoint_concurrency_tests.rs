@@ -6,8 +6,11 @@ use crate::tests::support::*;
 
 #[test]
 fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let baseline = create_entity_outcome(&runtime, "checkpoint-concurrency-anchor");
+    let baseline = create_entity_outcome(execution, &runtime, "checkpoint-concurrency-anchor");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
@@ -16,10 +19,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
         )
         .expect("test staging stays within configured resource budgets");
     let candidate = runtime
-        .prepare_branch_transaction(
-            transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(execution, transaction)
         .expect("publication candidate prepares");
     let port = runtime.publication_port();
     let (captured_tx, captured_rx) = sync_channel(0);
@@ -46,9 +46,11 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
         .recv_timeout(Duration::from_secs(2))
         .expect("checkpoint reaches post-capture reconstruction boundary");
     let (publication_tx, publication_rx) = sync_channel(1);
+    let publication_request = std::sync::Arc::clone(&host_request);
     let publication_thread = std::thread::spawn(move || {
+        let execution = worth_execution::ExecutionRequest::serial(&publication_request);
         publication_tx
-            .send(port.compare_and_publish(candidate))
+            .send(port.compare_and_publish(&execution, candidate))
             .expect("publication outcome receiver remains live");
     });
     let outcome = match publication_rx.recv_timeout(Duration::from_secs(1)) {
@@ -97,7 +99,7 @@ fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     let mut recovered = runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
-        .recover(plan)
+        .recover(execution, plan)
         .expect("fresh recovery replays the concurrent publication as checkpoint tail");
     assert_eq!(outcome.coverage.replayed_tail_commits, 1);
     assert_eq!(

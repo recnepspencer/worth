@@ -10,9 +10,12 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 };
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 
-fn relational_head(world: &AuthorizationWorld) -> RelationalCommitReceipt {
+fn relational_head(
+    phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    world: &AuthorizationWorld,
+) -> RelationalCommitReceipt {
     world
-        .selected_product()
+        .selected_product(&(phase_custody).test_host_request())
         .product()
         .relational_basis()
         .observation()
@@ -32,54 +35,91 @@ fn assert_retention_denied(outcome: &WorthQueryApplicationCommitOutcome) {
 fn right_record_wrong_field_retention_denial_commits_nothing() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let before = relational_head(&world);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let before = world
+        .application
+        .with_host_advancement(|phase| relational_head(&phase, &world))
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(WrongFieldRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, projected| {
-                reader
-                    .require_decision_field(projected, AccountStatus::reference())
-                    .unwrap();
-                reader
-                    .require_decision_field(projected, AccountLabel::reference())
-                    .unwrap();
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, projected| {
+                        reader
+                            .require_decision_field(projected, AccountStatus::reference())
+                            .unwrap();
+                        reader
+                            .require_decision_field(projected, AccountLabel::reference())
+                            .unwrap();
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
     let reads = world
         .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .begin_effect_program();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut effects = world
+        .application
+        .with_host_advancement(|phase| {
+            reads
+                .complete_projected_dependencies(
+                    &phase,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .begin_effect_program()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = effects.existing_entity(&account).unwrap();
     effects
         .write_field(
@@ -95,145 +135,104 @@ fn right_record_wrong_field_retention_denial_commits_nothing() {
     );
 
     assert_retention_denied(&outcome);
-    let after = relational_head(&world);
+    let after = world
+        .application
+        .with_host_advancement(|phase| relational_head(&phase, &world))
+        .expect("the fixture read owns its installed host call");
     assert_eq!(
         after, before,
         "retention denial must precede Relational commit"
     );
 }
 
-#[test]
-fn two_field_cross_record_retention_denial_commits_nothing() {
-    let world = installed_authorization_world(true);
-    let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
-    let unrelated = resolved_account(&world, "unrelated", &request);
-    let before = relational_head(&world);
-    let operation = world
-        .application
-        .installed_schema()
-        .installed_operation(MultiFieldRetentionOperation::reference())
-        .unwrap();
-    let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
-    let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, _| {
-                let open = reader
-                    .resolve_entity(AccountStatus::reference(), "open".to_owned())
-                    .unwrap();
-                let unrelated = reader
-                    .resolve_entity(AccountStatus::reference(), "unrelated".to_owned())
-                    .unwrap();
-                reader
-                    .require_decision_field(&open, AccountStatus::reference())
-                    .unwrap();
-                reader
-                    .require_decision_field(&unrelated, AccountLabel::reference())
-                    .unwrap();
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
-    let reads = world
-        .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .begin_effect_program();
-    let open = effects.existing_entity(&account).unwrap();
-    let unrelated = effects.existing_entity(&unrelated).unwrap();
-    effects
-        .write_field(&open, AccountStatus::reference(), "frozen".to_owned())
-        .unwrap();
-    effects
-        .write_field(
-            &unrelated,
-            AccountLabel::reference(),
-            "must-not-land".to_owned(),
-        )
-        .unwrap();
-    let outcome = world.application.compare_and_commit_application(
-        effects.finish().unwrap(),
-        idempotency(73, 74),
-        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    );
-
-    assert_retention_denied(&outcome);
-    assert_eq!(relational_head(&world), before);
-}
+#[path = "preimage_retention/two_field_cross_record_retention_denial_commits_nothing.rs"]
+mod two_field_cross_record_retention_denial_commits_nothing;
 
 #[test]
 fn two_field_same_record_retains_one_exact_prior_truth() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let principal = authenticated_principal(&world, &request);
-    let account = resolved_account(&world, "open", &request);
+    let principal = world
+        .application
+        .with_host_advancement(|phase| {
+            authenticated_principal(&(phase).test_host_request(), &world, &request)
+        })
+        .expect("the fixture read owns its installed host call");
+    let account = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &request)
+        })
+        .expect("the fixture read owns its installed host call");
     let operation = world
         .application
         .installed_schema()
         .installed_operation(MultiFieldRetentionOperation::reference())
         .unwrap();
     let admission = world
-        .selected_product()
-        .authorize_operation(
-            &principal,
-            &account,
-            &operation,
-            TypedMutationPreconditions::new(),
-            &request,
-        )
-        .unwrap();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .selected_product(&(phase).test_host_request())
+                .authorize_operation(
+                    &phase,
+                    &principal,
+                    &account,
+                    &operation,
+                    TypedMutationPreconditions::new(),
+                    &request,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, projection, _) = world
-        .invariant
-        .project_admitted_operation(
-            &admission,
-            |reader, projected| {
-                reader
-                    .require_decision_field(projected, AccountStatus::reference())
-                    .unwrap();
-                reader
-                    .require_decision_field(projected, AccountLabel::reference())
-                    .unwrap();
-            },
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .into_parts();
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .invariant
+                .project_admitted_operation(
+                    &phase,
+                    &admission,
+                    |reader, projected| {
+                        reader
+                            .require_decision_field(projected, AccountStatus::reference())
+                            .unwrap();
+                        reader
+                            .require_decision_field(projected, AccountLabel::reference())
+                            .unwrap();
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+        })
+        .expect("the fixture read owns its installed host call");
     let reads = world
         .application
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let mut effects = reads
-        .complete_projected_dependencies(
-            crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .begin_effect_program();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .begin_projected_application_read_attempt(
+                    &phase,
+                    admission,
+                    projection,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
+    let mut effects = world
+        .application
+        .with_host_advancement(|phase| {
+            reads
+                .complete_projected_dependencies(
+                    &phase,
+                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .begin_effect_program()
+        })
+        .expect("the fixture read owns its installed host call");
     let account = effects.existing_entity(&account).unwrap();
     effects
         .write_field(&account, AccountStatus::reference(), "frozen".to_owned())

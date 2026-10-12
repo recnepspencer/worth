@@ -19,7 +19,10 @@ use super::domain::{
 
 #[test]
 fn progression_non_success_posture_stays_typed() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     assert!(matches!(
         handle.orchestrate_declaration_entry_checked(Input::<DeferredFamily>::new("edge:42")),
@@ -37,8 +40,11 @@ fn progression_non_success_posture_stays_typed() {
 
 #[test]
 fn stale_and_rebind_required_remain_distinct() {
-    let collaborative = admitted_handle("collaborative");
-    let restricted = admitted_handle("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_handle(request_execution, "collaborative");
+    let restricted = admitted_handle(request_execution, "restricted");
 
     assert!(matches!(
         collaborative.orchestrate_declaration_entry_checked(Input::<StaleFamily>::new("edge:42")),
@@ -53,7 +59,10 @@ fn stale_and_rebind_required_remain_distinct() {
 
 #[test]
 fn intent_required_route_is_refused_without_hidden_route_lowering() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let checked =
         handle.orchestrate_declaration_entry_checked(Input::<ExplicitIntentFamily>::new("edge:42"));
     let proof =
@@ -90,7 +99,10 @@ fn intent_required_route_is_refused_without_hidden_route_lowering() {
 
 #[test]
 fn unsupported_receipt_kind_is_refused_without_hidden_continuation() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let checked = handle
         .orchestrate_declaration_entry_checked(Input::<UnsupportedReceiptFamily>::new("edge:42"));
     match checked {
@@ -114,7 +126,10 @@ fn unsupported_receipt_kind_is_refused_without_hidden_continuation() {
 
 #[test]
 fn expensive_but_legal_declaration_refuses_automation_at_route() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let checked = handle
         .orchestrate_declaration_entry_checked(Input::<ExpensiveAutomationFamily>::new("edge:42"));
     let proof = handle
@@ -154,7 +169,10 @@ fn expensive_but_legal_declaration_refuses_automation_at_route() {
 
 #[test]
 fn expensive_route_can_still_continue_on_the_explicit_path() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
 
     let envelope = handle
         .declare_review_progress_describe_plan_receipt_and_envelope(Input::<
@@ -170,7 +188,10 @@ fn expensive_route_can_still_continue_on_the_explicit_path() {
 
 #[test]
 fn deferred_route_lowering_records_receipt_stop_honestly() {
-    let handle = admitted_handle("collaborative");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "collaborative");
     let checked =
         handle.orchestrate_declaration_entry_checked(Input::<DeferredRouteFamily>::new("edge:42"));
     let proof =
@@ -206,7 +227,10 @@ fn deferred_route_lowering_records_receipt_stop_honestly() {
 
 #[test]
 fn ordinary_surface_preserves_terminal_error_classes() {
-    let handle = admitted_handle("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = admitted_handle(request_execution, "restricted");
 
     assert!(matches!(
         handle.orchestrate_declaration_entry(Input::<RebindRequiredFamily>::new("edge:42")),
@@ -306,8 +330,11 @@ fn materialization_taxonomies_remain_publicly_nameable_even_before_all_gates_are
 
 #[test]
 fn product_orchestration_denies_wrong_world_progressed_artifacts_without_panicking() {
-    let collaborative = admitted_handle("collaborative");
-    let restricted = admitted_handle("restricted");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let collaborative = admitted_handle(request_execution, "collaborative");
+    let restricted = admitted_handle(request_execution, "restricted");
     let progressed = collaborative
         .declare_review_and_progress(Input::<AdmittedFamily>::new("edge:42"))
         .unwrap_or_else(|_| panic!("progression should admit"));

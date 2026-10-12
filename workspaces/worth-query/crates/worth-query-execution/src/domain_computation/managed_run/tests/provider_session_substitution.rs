@@ -136,11 +136,14 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
             resource_request,
         );
         let first_identity = first.identity().to_owned();
-        let first_failure = first
-            .admit_provider_execution_plan(&world.graph)
-            .expect("first plan should admit")
-            .readmit(execution)
-            .expect_err("provider intentionally retains the first token");
+        let first_failure = {
+            let installed_fixture_phase = first.fixture_phase(execution);
+            first
+                .admit_provider_execution_plan(&world.graph)
+                .expect("first plan should admit")
+                .readmit(&installed_fixture_phase)
+        }
+        .expect_err("provider intentionally retains the first token");
         assert_eq!(
             first_failure.kind(),
             WorthQueryProviderSessionDenialKind::ProviderRejected
@@ -161,11 +164,14 @@ fn token_minted_for_an_earlier_plan_cannot_open_a_later_plan() {
             resource_request,
         );
         assert_ne!(second.identity(), first_identity);
-        let substitution = second
-            .admit_provider_execution_plan(&world.graph)
-            .expect("second plan should admit")
-            .readmit(execution)
-            .expect_err("token minted for the first plan must not substitute");
+        let substitution = {
+            let installed_fixture_phase = second.fixture_phase(execution);
+            second
+                .admit_provider_execution_plan(&world.graph)
+                .expect("second plan should admit")
+                .readmit(&installed_fixture_phase)
+        }
+        .expect_err("token minted for the first plan must not substitute");
         assert_eq!(
             substitution.kind(),
             WorthQueryProviderSessionDenialKind::TokenNotMintedForPlan
@@ -236,7 +242,7 @@ fn start_run(
     let attempt = runtime
         .start_direct_resource_attempt(operation, plan)
         .expect("substitution attempt should start");
-    let lower = causal_fixture::managed_admission_context();
+    let lower = causal_fixture::managed_admission_context(&resource_request);
     runtime
         .managed_run_admission(&lower.bridge, &lower.relational)
         .admit_direct(operation, attempt, lower.read_request(), resource_request)

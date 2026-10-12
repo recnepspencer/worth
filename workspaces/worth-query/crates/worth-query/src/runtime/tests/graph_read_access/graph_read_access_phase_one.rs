@@ -16,8 +16,11 @@ use support::public_bridge_runtime::PublicBridgeRuntimeHarness;
 
 #[test]
 fn graph_read_access_shape_explains_anchored_frontier_without_executing() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-one.frontier")
         .expect("runtime should open workspace");
@@ -107,8 +110,11 @@ fn graph_read_access_shape_explains_anchored_frontier_without_executing() {
 
 #[test]
 fn graph_read_access_shape_resolves_declared_traversal_before_shape_derivation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-one.declared-traversal")
         .expect("runtime should open workspace");
@@ -154,8 +160,11 @@ fn graph_read_access_shape_resolves_declared_traversal_before_shape_derivation()
 
 #[test]
 fn graph_read_access_shape_keeps_direct_edge_distinct_from_successor_walk() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-one.locality")
         .expect("runtime should open workspace");
@@ -207,8 +216,11 @@ fn graph_read_access_shape_keeps_direct_edge_distinct_from_successor_walk() {
 
 #[test]
 fn graph_read_access_shape_digest_is_stable_across_frontier_relation_ordering() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-one.equivalence")
         .expect("runtime should open workspace");
@@ -272,8 +284,11 @@ fn graph_read_access_shape_digest_is_stable_across_frontier_relation_ordering() 
 
 #[test]
 fn graph_read_access_shape_digest_changes_with_result_shape_breadth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let harness = PublicBridgeRuntimeHarness::new();
-    let runtime = harness.bridge_backed_runtime();
+    let runtime = harness.bridge_backed_runtime(request_execution);
     let mut workspace = runtime
         .workspace("graph-read-access.phase-one.result-pressure")
         .expect("runtime should open workspace");

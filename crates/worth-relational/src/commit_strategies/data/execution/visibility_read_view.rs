@@ -36,10 +36,13 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
         self.projection.version_id()
     }
 
-    pub fn entities<T: EntityRecordProjection>(&self) -> Result<Vec<T>, StrategyExecutorFailure> {
+    pub fn entities<T: EntityRecordProjection>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<T>, StrategyExecutorFailure> {
         self.admit_kind_scan(None, "cross-partition entity kind scan")?;
         let values = self.safe_projection("cross-partition entity kind scan", || {
-            self.projection.entities::<T>()
+            self.projection.entities::<T>(execution)
         })?;
         self.record_entity_reads(None, values.len());
         Ok(values)
@@ -47,11 +50,12 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
 
     pub fn entities_in<T: EntityRecordProjection>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
     ) -> Result<Vec<T>, StrategyExecutorFailure> {
         self.admit_kind_scan(Some(partition_id), "partition-scoped entity kind scan")?;
         let values = self.safe_projection("partition-scoped entity kind scan", || {
-            self.projection.entities_in::<T>(partition_id)
+            self.projection.entities_in::<T>(execution, partition_id)
         })?;
         self.record_entity_reads(Some(partition_id), values.len());
         Ok(values)
@@ -59,21 +63,24 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
 
     pub fn entity<T: EntityRecordProjection>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
     ) -> Result<Option<T>, StrategyExecutorFailure> {
         self.admit_target_lookup(entity_id.partition_id, "entity lookup")?;
-        let value =
-            self.safe_projection("entity lookup", || self.projection.entity::<T>(entity_id))?;
+        let value = self.safe_projection("entity lookup", || {
+            self.projection.entity::<T>(execution, entity_id)
+        })?;
         self.record_entity_reads(Some(entity_id.partition_id), usize::from(value.is_some()));
         Ok(value)
     }
 
     pub fn relations<T: RelationRecordProjection>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Vec<T>, StrategyExecutorFailure> {
         self.admit_kind_scan(None, "cross-partition relation kind scan")?;
         let values = self.safe_projection("cross-partition relation kind scan", || {
-            self.projection.relations::<T>()
+            self.projection.relations::<T>(execution)
         })?;
         self.record_relation_reads(None, values.len());
         Ok(values)
@@ -81,11 +88,12 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
 
     pub fn relations_in<T: RelationRecordProjection>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         partition_id: PartitionId,
     ) -> Result<Vec<T>, StrategyExecutorFailure> {
         self.admit_kind_scan(Some(partition_id), "partition-scoped relation kind scan")?;
         let values = self.safe_projection("partition-scoped relation kind scan", || {
-            self.projection.relations_in::<T>(partition_id)
+            self.projection.relations_in::<T>(execution, partition_id)
         })?;
         self.record_relation_reads(Some(partition_id), values.len());
         Ok(values)
@@ -93,11 +101,12 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
 
     pub fn relation<T: RelationRecordProjection>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
     ) -> Result<Option<T>, StrategyExecutorFailure> {
         self.admit_target_lookup(relation_id.partition_id, "relation lookup")?;
         let value = self.safe_projection("relation lookup", || {
-            self.projection.relation::<T>(relation_id)
+            self.projection.relation::<T>(execution, relation_id)
         })?;
         self.record_relation_reads(Some(relation_id.partition_id), usize::from(value.is_some()));
         Ok(value)
@@ -105,6 +114,7 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
 
     pub fn entity_whole_aspects(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         aspect_keys: impl IntoIterator<Item = worth_foundational::facade::AspectKey>,
     ) -> Result<Option<StrategyEntityAspectReadRecord>, StrategyExecutorFailure> {
@@ -113,6 +123,7 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
         let projection_scope = ProjectionAspectScope::whole_aspects(aspect_keys.clone());
         let value = self.safe_projection("entity whole-aspect lookup", || {
             self.projection.entity_record_with_projection_scope(
+                execution,
                 entity_id,
                 projection_scope,
                 |record| {

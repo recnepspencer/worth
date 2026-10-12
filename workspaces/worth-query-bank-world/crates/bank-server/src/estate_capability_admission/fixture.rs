@@ -331,3 +331,7 @@ fn capability_fixture(installed: world::InstalledFixtureWorld) -> CapabilityFixt
         reviewer_identity: installed.identities[4].clone(),
     }
 }
+
+pub(crate) fn live_read_world(scenario: &str) -> CapabilityFixture {
+    capability_fixture(world::install_live_read_world(scenario))
+}

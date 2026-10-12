@@ -8,7 +8,11 @@ fn message_probe_matches_previous_support_wording(error: &WorthQueryRuntimeError
 
 #[test]
 fn public_api_family_admission_denial_surfaces_typed_family_status_posture_and_reason() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let error = temporal_public_family_admission_error(
+        request_execution,
         "stop-class-consumer-public-admission",
         "support-gated temporal family stays closed",
     );
@@ -34,7 +38,11 @@ fn public_api_family_admission_denial_surfaces_typed_family_status_posture_and_r
 
 #[test]
 fn consumer_router_handles_public_family_admission_without_string_matching() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let family_error = temporal_public_family_admission_error(
+        request_execution,
         "stop-class-consumer-family-route",
         "support-gated temporal family stays closed",
     );
@@ -51,11 +59,16 @@ fn consumer_router_handles_public_family_admission_without_string_matching() {
 
 #[test]
 fn typed_family_admission_matching_survives_message_rewording_while_string_probe_drifts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let first_error = temporal_public_family_admission_error(
+        request_execution,
         "stop-class-consumer-reword-first",
         "first temporal wording",
     );
     let second_error = temporal_public_family_admission_error(
+        request_execution,
         "stop-class-consumer-reword-second",
         "second temporal wording",
     );

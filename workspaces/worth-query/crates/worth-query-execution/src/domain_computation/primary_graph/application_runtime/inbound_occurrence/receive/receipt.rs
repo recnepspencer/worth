@@ -18,6 +18,7 @@ pub enum WorthQueryInboundReceiptPosture {
 /// Retained work preventing an accepted occurrence from finishing now.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundPendingReason {
+    ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     PublicationAtCapacity,
     PublicationInProgress,
     RetainedUnpublished,

@@ -31,17 +31,14 @@ where
             }
             crate::publication::RelationalComponentPlanPosture::PublishPrepared => {
                 // The candidate already owns its publication reservation. The
-                // caller's request still admits this owner contact; no new
+                // port consults the caller's request at publication; no new
                 // backing, speculative work reserve or post-effect refusal is
                 // introduced around the prepared publication.
                 let candidate = attempt
                     .take_relational_candidate()
                     .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
-                execution.consult().map_err(|denial| {
-                    pre_effect_failure(NoEffectCause::ExecutionRequest(denial))
-                })?;
                 attempt.counters_mut().record_relational_owner_contact();
-                self.publish_relational_candidate(attempt, candidate)
+                self.publish_relational_candidate(&execution, attempt, candidate)
             }
             crate::publication::RelationalComponentPlanPosture::AdoptSettled => attempt
                 .take_settled_relational_adoption()
@@ -52,6 +49,7 @@ where
 
     fn publish_relational_candidate(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
@@ -59,8 +57,11 @@ where
             .state
             .relational
             .publication_port()
-            .compare_and_publish(candidate)
+            .compare_and_publish(execution, candidate)
         {
+            RelationalPublicationOutcome::RequestStopped(stop) => {
+                Err(pre_effect_failure(NoEffectCause::ExecutionRequest(stop)))
+            }
             RelationalPublicationOutcome::Performed(performed) => {
                 let commit_identity = performed.commit_identity();
                 let successor_basis = performed.next_basis().clone();

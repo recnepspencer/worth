@@ -38,17 +38,22 @@ pub(super) fn require_stale_source_denial(
     branch: worth_query_host::facade::product::WorthQueryProductBranch,
     source: WorthQueryObservedSource<PlanarQuery>,
 ) {
-    match application
-        .on_branch(branch)
-        .select()
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            scope, source,
-        ) {
+    let selected = application
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the Query-issued output occurrence remains selectable")
+        })
+        .expect("installed host call opens");
+    match selected.suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
+        scope, source,
+    ) {
         Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
         )) => {}
-        _ => panic!("a predecessor source proof must not suspend current output"),
+        Err(failure) => panic!("the predecessor source refusal had the wrong cause: {failure:?}"),
+        Ok(_) => panic!("a predecessor source proof must not suspend current output"),
     }
 }
 

@@ -47,16 +47,26 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
         authentication::authenticate_external(world.runtime.installed_schema(), &request);
     let selected = world
         .runtime
-        .on_branch(world.runtime.current_world())
-        .select()
+        .with_application_advancement(&request, |phase| {
+            world
+                .runtime
+                .on_branch(world.runtime.current_world())
+                .select(&phase)
+        })
+        .expect("installed host call opens")
         .expect("the published product branch must remain admitted");
-    let principal = selected
-        .resolve_authenticated_principal(
-            &world.binding,
-            &external,
-            &request,
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
+    let principal = world
+        .runtime
+        .with_application_advancement(&request, |phase| {
+            selected.resolve_authenticated_principal(
+                &phase,
+                &world.binding,
+                &external,
+                &request,
+                WorthQueryPrincipalResolutionMode::Ordinary,
+            )
+        })
+        .expect("installed host call opens")
         .unwrap();
     let capability = world
         .runtime
@@ -67,8 +77,18 @@ pub(crate) fn real_denial(scenario: CompositionScenario) -> WorthQueryOperationA
         )
         .unwrap();
 
-    selected
-        .admit_capability_access(&principal, &capability, PublicationInput, &request)
+    world
+        .runtime
+        .with_application_advancement(&request, |phase| {
+            selected.admit_capability_access(
+                &phase,
+                &principal,
+                &capability,
+                PublicationInput,
+                &request,
+            )
+        })
+        .expect("installed host call opens")
         .err()
         .unwrap_or_else(|| panic!("{scenario:?} must deny at real capability admission"))
 }

@@ -55,11 +55,13 @@ fn workflow_yield_retains_operation_and_stage_capacity_until_cleanup() {
             resources,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let logical_run_identity = running.logical_run_identity().to_owned();
         let attempt_identity = running.identity().to_owned();
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "stage",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -68,7 +70,7 @@ fn workflow_yield_retains_operation_and_stage_capacity_until_cleanup() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow provider did not pause"),
         };
@@ -178,9 +180,11 @@ fn workflow_suspension_failure_returns_terminalized_release_authority() {
             resources,
             resource_request,
         );
+        let installed_running_phase = execution.phase_for_workflow(&running);
+
         let active = running
             .begin_stage_graph_execution(
-                execution,
+                &installed_running_phase,
                 "stage",
                 &graph,
                 WorthQueryManagedGraphCallRequest::new(
@@ -189,7 +193,7 @@ fn workflow_suspension_failure_returns_terminalized_release_authority() {
                 ),
             )
             .unwrap();
-        let paused = match active.advance(execution) {
+        let paused = match active.advance(&installed_running_phase) {
             WorthQueryWorkflowGraphStepOutcome::Continue(paused) => paused,
             _ => panic!("workflow provider did not pause"),
         };

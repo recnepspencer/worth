@@ -1,5 +1,7 @@
 #[path = "support/product_operation_phase_thirteen/fixture.rs"]
 mod fixture;
+#[path = "support/test_execution_policy.rs"]
+mod test_execution_policy;
 
 use fixture::{
     actions_payload, build_server, build_server_with_execution_authority, direct_read,

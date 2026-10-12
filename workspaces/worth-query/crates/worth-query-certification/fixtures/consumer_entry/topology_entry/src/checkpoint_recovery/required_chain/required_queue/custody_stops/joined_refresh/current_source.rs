@@ -70,7 +70,10 @@ fn a_dependent_reads_a_held_stable_join_at_the_current_head_once() {
     );
     application.retained_source_selections_for_test();
     let before = primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test();
-    let head = request.retain_read().unwrap().selected_commit().clone();
+    let head = crate::checkpoint_recovery::support::retain_read(&application, &request)
+        .unwrap()
+        .selected_commit()
+        .clone();
     let advanced = c.advance(&request);
     let reads = application.retained_source_selections_for_test();
     let selected = reads

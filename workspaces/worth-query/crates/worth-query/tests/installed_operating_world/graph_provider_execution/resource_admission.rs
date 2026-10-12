@@ -12,6 +12,9 @@ use crate::suite::installed_operation_fixture::{
 
 #[test]
 fn commit_provider_mismatch_denies_before_any_graph_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let log = Arc::new(Mutex::new(Vec::new()));
     let workspace = configured_runtime_for_partial_effect_package(federated_touch_package::<
         RemoteA,
@@ -37,7 +40,7 @@ fn commit_provider_mismatch_denies_before_any_graph_contact() {
             mismatched_partial_effect_provider_resource_support(),
         ),
     )
-    .workspace("graph-commit-resource-mismatch")
+    .workspace(request_execution, "graph-commit-resource-mismatch")
     .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace
@@ -61,6 +64,9 @@ fn commit_provider_mismatch_denies_before_any_graph_contact() {
 
 #[test]
 fn graph_provider_mismatch_denies_before_any_graph_contact() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let log = Arc::new(Mutex::new(Vec::new()));
     let workspace = configured_runtime_for_package(federated_package::<RemoteA, RemoteB>())
         .graph_participation(read_definition::<RemoteA>(
@@ -76,7 +82,7 @@ fn graph_provider_mismatch_denies_before_any_graph_contact() {
             domain::WorthQueryGraphProjectionPosture::NativeProjection,
         ))
         .graph_participation_provider(RemoteB, SelectiveProvider::new(&log, None))
-        .workspace("graph-provider-resource-mismatch")
+        .workspace(request_execution, "graph-provider-resource-mismatch")
         .unwrap();
     let installed_domain = workspace.domain(GeometryDomain).unwrap();
     let bound = workspace

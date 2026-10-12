@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_are_tampered() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let commit = create_entity_outcome(&runtime, "indexed");
+    let commit = create_entity_outcome(execution, &runtime, "indexed");
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "entity-name".to_string(),
@@ -12,13 +15,14 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
         },
         branch_scoped: false,
     });
-    runtime
-        .index_authority()
-        .build_for_commit(DerivedIndexBuildRequest {
+    runtime.index_authority().build_for_commit(
+        execution,
+        DerivedIndexBuildRequest {
             source_commit_id: commit.commit.commit_id,
             branch_id: BranchId("main".to_string()),
             index_ids: vec![index.index_id],
-        });
+        },
+    );
 
     assert!(runtime.history_authority().tamper_commit_envelope_for_test(
         commit.commit.commit_id,
@@ -36,12 +40,16 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: commit.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: commit.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_eq!(replay.failure, Some(ReplayFailureClass::ObservableMismatch));
     assert!(
@@ -58,16 +66,19 @@ fn replay_contract_reports_derived_index_drift_at_digest_layer_when_artifacts_ar
 
 #[test]
 fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_workload() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let created = create_entity_outcome(&runtime, "anchor");
+    let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
-    let _updated = update_entity(&runtime, anchor, "anchor-updated");
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "net-edge");
+    let _updated = update_entity(execution, &runtime, anchor, "anchor-updated");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "net-edge");
     let relation = changed_relations(&relation_outcome)[0];
-    let _retained = delete_entity(&runtime, source);
+    let _retained = delete_entity(execution, &runtime, source);
     let replace_outcome = {
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
         txn.push_batch(
@@ -89,11 +100,7 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-        txn.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
+        txn.commit(execution, &runtime).unwrap()
     };
     runtime.durability_authority().checkpoint().unwrap();
 
@@ -105,12 +112,16 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
 
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: replace_outcome.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: replace_outcome.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         runtime.replay().compare_outcome(&replay),
         "hostile replay mismatch: {replay:#?}"
@@ -137,19 +148,23 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
     recovered
         .durability_recovery()
-        .recover(recovery_plan)
+        .recover(execution, recovery_plan)
         .unwrap();
-    let recovered_replay_check =
-        recovered
-            .replay_authority()
-            .replay_commit(RelationalReplayRequest {
+    let recovered_replay_check = recovered
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
                 commit_id: replace_outcome.commit.commit_id,
                 branch_id: BranchId("main".to_string()),
                 execution_mode: ReplayExecutionMode::SerialDeterministic,
                 verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-            });
+            },
+            execution,
+        )
+        .unwrap();
 
     assert_recovered_commit_truth_matches(
+        execution,
         &runtime,
         &recovered,
         replace_outcome.commit.commit_id,
@@ -158,8 +173,13 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
         &[start_lineage],
     );
     assert!(recovered.replay().compare_outcome(&recovered_replay_check));
-    let recovered_bundle =
-        capture_aspect_truth_bundle(&recovered, &[anchor], &[relation], &[start_lineage]);
+    let recovered_bundle = capture_aspect_truth_bundle(
+        execution,
+        &recovered,
+        &[anchor],
+        &[relation],
+        &[start_lineage],
+    );
     assert_eq!(
         recovered_replay_check.requested.commit_id,
         replace_outcome.commit.commit_id
@@ -170,16 +190,20 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
 
 #[test]
 fn hostile_commit_replay_equivalence_test() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut runtime =
         persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit);
-    let created = create_entity_outcome(&runtime, "anchor");
+    let created = create_entity_outcome(execution, &runtime, "anchor");
     let anchor = changed_entities(&created)[0];
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "net-edge");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "net-edge");
     let relation = changed_relations(&relation_outcome)[0];
     create_branch_from_main(&runtime, "feature");
     let _feature_update = update_entity_on_branch(
+        execution,
         &runtime,
         anchor,
         "feature-anchor",
@@ -216,14 +240,10 @@ fn hostile_commit_replay_equivalence_test() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let _transition_outcome = transition_txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _transition_outcome = transition_txn.commit(execution, &runtime).unwrap();
 
     let merge = merge_commit_from_branches(
+        execution,
         &runtime,
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
@@ -235,9 +255,15 @@ fn hostile_commit_replay_equivalence_test() {
         .for_record(anchor)
         .unwrap()
         .lineage_id;
-    let original_bundle =
-        capture_aspect_truth_bundle(&runtime, &[anchor], &[relation], &[anchor_lineage]);
+    let original_bundle = capture_aspect_truth_bundle(
+        execution,
+        &runtime,
+        &[anchor],
+        &[relation],
+        &[anchor_lineage],
+    );
     let original_inspection = capture_inspection_truth_bundle(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         anchor,
@@ -249,12 +275,16 @@ fn hostile_commit_replay_equivalence_test() {
         .unwrap();
     let replay = runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: merge.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: merge.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert!(
         runtime.replay().compare_outcome(&replay),
         "hostile replay mismatch: {replay:#?}"
@@ -285,11 +315,17 @@ fn hostile_commit_replay_equivalence_test() {
         .build();
     recovered
         .durability_recovery()
-        .recover(recovery_plan)
+        .recover(execution, recovery_plan)
         .unwrap();
-    let recovered_bundle =
-        capture_aspect_truth_bundle(&recovered, &[anchor], &[relation], &[anchor_lineage]);
+    let recovered_bundle = capture_aspect_truth_bundle(
+        execution,
+        &recovered,
+        &[anchor],
+        &[relation],
+        &[anchor_lineage],
+    );
     let recovered_inspection = capture_inspection_truth_bundle(
+        execution,
         &recovered,
         &BranchId("main".to_string()),
         anchor,
@@ -301,12 +337,16 @@ fn hostile_commit_replay_equivalence_test() {
         .unwrap();
     let recovered_replay = recovered
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: merge.commit.commit_id,
-            branch_id: BranchId("main".to_string()),
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: merge.commit.commit_id,
+                branch_id: BranchId("main".to_string()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     let recovered_replay_diagnostics = recovered.publication().diagnostics();
     assert!(recovered_replay_diagnostics
         .by_scope(DiagnosticsScope::Replay)

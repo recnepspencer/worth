@@ -36,26 +36,38 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
             cancellation.token(),
         );
         let external = receiver.authenticate("alice", Duration::from_secs(60), &request);
-        let principal = receiver
-            .selected_product()
-            .resolve_authenticated_principal(
-                &receiver.binding,
-                &external,
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
+        let (principal, account, capability, selected) = receiver
+            .application
+            .with_application_advancement(&request, |receiver_phase| {
+                let custody = receiver_phase.test_host_request();
+                let principal = receiver
+                    .selected_product(&custody)
+                    .resolve_authenticated_principal(
+                        &receiver_phase,
+                        &receiver.binding,
+                        &external,
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let account = receiver
+                    .selected_product(&custody)
+                    .resolve_entity(
+                        &receiver_phase,
+                        AccountIdentity::reference(),
+                        "account-1".to_owned(),
+                        &request,
+                        WorthQueryPrincipalResolutionMode::Ordinary,
+                    )
+                    .unwrap();
+                let capability = governed.then(|| {
+                    admit_touch_account_capability(&custody, &receiver, &principal, &request)
+                        .unwrap()
+                });
+                let selected = receiver.selected_product(&custody);
+                (principal, account, capability, selected)
+            })
             .unwrap();
-        let account = receiver
-            .selected_product()
-            .resolve_entity(
-                AccountIdentity::reference(),
-                "account-1".to_owned(),
-                &request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-            )
-            .unwrap();
-        let capability = governed
-            .then(|| admit_touch_account_capability(&receiver, &principal, &request).unwrap());
         let before = receiver
             .application
             .provider_session_resource_count_for_test();
@@ -64,14 +76,14 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
             let controls = WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap();
             let denial = if governed {
                 let query = receiver.application.installed_schema().certification_query(GovernedLiveAccountActivityQuery::reference()).unwrap();
-                receiver.selected_product().open_governed_application_query_live::<
+                selected.open_governed_application_query_live::<
                     GovernedLiveAccountActivityQuery, AccountSummaryParameters, GovernedLiveAccountActivityResult,
                     _, _, Account, Activity, GovernedLiveAccountActivityCause, _, _, _,
                 >(&phase, query, &principal, account, capability.unwrap(), governed_live_account_parameters("account-1"), controls)
                 .err().expect("a foreign phase cannot open a governed live lease")
             } else {
                 let query = receiver.application.installed_schema().certification_query(LiveAccountActivityQuery::reference()).unwrap();
-                receiver.selected_product().open_application_query_live::<
+                selected.open_application_query_live::<
                     LiveAccountActivityQuery, AccountSummaryParameters, LiveAccountActivityResult,
                     _, _, Account, Activity, LiveAccountActivityCause,
                 >(&phase, query, &principal, account, live_account_parameters("account-1"), controls)

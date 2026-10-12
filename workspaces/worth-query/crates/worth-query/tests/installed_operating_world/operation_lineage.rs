@@ -12,6 +12,9 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn installed_lineage_is_executed_by_the_existing_identity_evolution_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let cases = [
         (
             "preserved-lineage",
@@ -79,7 +82,8 @@ fn installed_lineage_is_executed_by_the_existing_identity_evolution_authority() 
     ];
     for (name, scenario, contract, expected_kind, expected_width) in cases {
         let mut workspace =
-            lineage_workflow_workspace(name, contract, false, vec![scenario]).unwrap();
+            lineage_workflow_workspace(request_execution, name, contract, false, vec![scenario])
+                .unwrap();
         let trace = execute(&mut workspace);
         let report = trace.lineage_report().unwrap();
         let evidence = &report.evidence()[0];
@@ -178,7 +182,11 @@ fn installed_lineage_is_executed_by_the_existing_identity_evolution_authority() 
 
 #[test]
 fn generated_identity_naming_requires_the_exact_generated_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = lineage_workflow_workspace(
+        request_execution,
         "generated-lineage-persistent-name",
         domain::WorthQueryOperationLineageContract::Evolve,
         false,
@@ -218,7 +226,11 @@ fn generated_identity_naming_requires_the_exact_generated_target() {
 
 #[test]
 fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut missing = lineage_workflow_workspace(
+        request_execution,
         "lineage-missing-evidence",
         domain::WorthQueryOperationLineageContract::Evolve,
         false,
@@ -233,6 +245,7 @@ fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
     ));
 
     let mut preserve = lineage_workflow_workspace(
+        request_execution,
         "lineage-preserve-needs-owner-evidence",
         domain::WorthQueryOperationLineageContract::Preserve,
         false,
@@ -246,6 +259,7 @@ fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
     ));
 
     let mut preserved = lineage_workflow_workspace(
+        request_execution,
         "lineage-preserve-exact-owner-evidence",
         domain::WorthQueryOperationLineageContract::Preserve,
         false,
@@ -260,7 +274,8 @@ fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
         domain::InstalledIdentityEvolutionKind::PreservedIdentity
     );
 
-    let mut detached_workspace = workflow_workspace("lineage-detached-trace").unwrap();
+    let mut detached_workspace =
+        workflow_workspace(request_execution, "lineage-detached-trace").unwrap();
     let detached = execute(&mut detached_workspace);
     assert!(matches!(
         detached.admit_persistent_name(
@@ -276,7 +291,11 @@ fn executor_lineage_must_exist_and_match_an_executable_installed_contract() {
 
 #[test]
 fn persistent_naming_rejects_a_wrong_attachment_or_lineage_target() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let mut workspace = lineage_workflow_workspace(
+        request_execution,
         "lineage-hostile-persistent-name",
         domain::WorthQueryOperationLineageContract::Evolve,
         false,

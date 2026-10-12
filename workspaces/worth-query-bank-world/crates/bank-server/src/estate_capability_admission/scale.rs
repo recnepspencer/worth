@@ -39,23 +39,37 @@ fn unrelated_grant_population_does_not_enter_warm_capability_work() {
             ViewRestrictedEstateOperation::reference(),
         )
         .unwrap();
-    let baseline_selected = baseline.runtime.select_current_product().unwrap();
-    let expanded_selected = expanded.runtime.select_current_product().unwrap();
-    let baseline_access = baseline_selected
-        .admit_capability_access(
-            baseline_principal.query(),
-            &baseline_capability,
-            view_action(),
-            &request_scope(),
-        )
+    let baseline_selected =
+        crate::test_host_policy::with_phase(baseline.runtime.application_runtime(), |phase| {
+            baseline.runtime.select_current_product(phase)
+        })
         .unwrap();
-    let expanded_access = expanded_selected
-        .admit_capability_access(
-            expanded_principal.query(),
-            &expanded_capability,
-            view_action(),
-            &request_scope(),
-        )
+    let expanded_selected =
+        crate::test_host_policy::with_phase(expanded.runtime.application_runtime(), |phase| {
+            expanded.runtime.select_current_product(phase)
+        })
+        .unwrap();
+    let baseline_access =
+        crate::test_host_policy::with_phase(baseline.runtime.application_runtime(), |phase| {
+            baseline_selected.admit_capability_access(
+                phase,
+                baseline_principal.query(),
+                &baseline_capability,
+                view_action(),
+                &request_scope(),
+            )
+        })
+        .unwrap();
+    let expanded_access =
+        crate::test_host_policy::with_phase(expanded.runtime.application_runtime(), |phase| {
+            expanded_selected.admit_capability_access(
+                phase,
+                expanded_principal.query(),
+                &expanded_capability,
+                view_action(),
+                &request_scope(),
+            )
+        })
         .unwrap();
 
     assert_eq!(

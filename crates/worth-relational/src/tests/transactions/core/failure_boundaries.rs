@@ -8,9 +8,12 @@ use crate::tests::support::*;
 
 #[test]
 fn failed_commit_carries_attempt_log() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "first");
-    delete_entity(&runtime, entity);
+    let entity = create_entity(execution, &runtime, "first");
+    delete_entity(execution, &runtime, entity);
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -27,12 +30,7 @@ fn failed_commit_carries_attempt_log() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     assert!(!error.commit_log().events().is_empty());
     assert!(error
@@ -49,6 +47,9 @@ fn failed_commit_carries_attempt_log() {
 
 #[test]
 fn patch_budget_failure_carries_artifact_phase_decision_trace() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -67,12 +68,7 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     assert!(matches!(
         error,
@@ -95,9 +91,12 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
 
 #[test]
 fn stale_entity_ids_are_rejected() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity = create_entity(&runtime, "first");
-    delete_entity(&runtime, entity);
+    let entity = create_entity(execution, &runtime, "first");
+    delete_entity(execution, &runtime, entity);
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         WorkerIntentBatch::new("update").push(MutationIntent::Entity(
@@ -113,12 +112,7 @@ fn stale_entity_ids_are_rejected() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     assert!(matches!(
         error,
@@ -128,6 +122,9 @@ fn stale_entity_ids_are_rejected() {
 
 #[test]
 fn unknown_entity_kind_fails_explicitly() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -146,12 +143,7 @@ fn unknown_entity_kind_fails_explicitly() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     assert!(matches!(
         error,
@@ -161,12 +153,15 @@ fn unknown_entity_kind_fails_explicitly() {
 
 #[test]
 fn duplicate_relation_identity_is_rejected() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source_outcome = create_entity_outcome(&runtime, "source");
-    let target_outcome = create_entity_outcome(&runtime, "target");
+    let source_outcome = create_entity_outcome(execution, &runtime, "source");
+    let target_outcome = create_entity_outcome(execution, &runtime, "target");
     let source = changed_entities(&source_outcome)[0];
     let target = changed_entities(&target_outcome)[0];
-    create_relation(&runtime, source, target, "r1");
+    create_relation(execution, &runtime, source, target, "r1");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -183,12 +178,7 @@ fn duplicate_relation_identity_is_rejected() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
 
     assert!(matches!(
         error,
@@ -199,6 +189,9 @@ fn duplicate_relation_identity_is_rejected() {
 
 #[test]
 fn savepoint_rollback_discards_inner_work_only() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -213,15 +206,10 @@ fn savepoint_rollback_discards_inner_work_only() {
     )
     .expect("test staging stays within configured resource budgets");
     let rollback = txn.rollback_to_savepoint(savepoint).unwrap();
-    let outcome = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let outcome = txn.commit(execution, &runtime).unwrap();
     let read = runtime
         .read_truth()
-        .read_snapshot(&outcome.snapshot)
+        .read_snapshot(&outcome.snapshot, execution)
         .unwrap();
     let rollback_summary = rollback.summary();
 
@@ -234,12 +222,15 @@ fn savepoint_rollback_discards_inner_work_only() {
 
 #[test]
 fn snapshot_audit_failure_discards_only_touched_overlay() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema_and_invariants(InvariantCatalog {
         registrations: vec![InvariantRegistration::snapshot_publication_blocking(
             InvariantRule::MaxSnapshotEntities(1),
         )],
     });
-    let baseline = create_entity_outcome(&runtime, "baseline");
+    let baseline = create_entity_outcome(execution, &runtime, "baseline");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -247,15 +238,10 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let error = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap_err();
+    let error = txn.commit(execution, &runtime).unwrap_err();
     let committed_read = runtime
         .read_truth()
-        .read_snapshot(&baseline.snapshot)
+        .read_snapshot(&baseline.snapshot, execution)
         .unwrap();
 
     assert!(matches!(
@@ -276,6 +262,9 @@ fn snapshot_audit_failure_discards_only_touched_overlay() {
 
 #[test]
 fn audit_retained_relations_remain_visible_after_endpoint_delete() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let schema = RelationalSchemaRegistry::new()
         .register_entity_kind(EntityKindRegistration {
             kind_id: KindId(1),
@@ -301,14 +290,14 @@ fn audit_retained_relations_remain_visible_after_endpoint_delete() {
         .schema_registry(schema)
         .cascade_delete_policy(CascadeDeletePolicy::RetainDanglingForAudit)
         .build();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation_outcome = create_relation_outcome(&runtime, source, target, "r1");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r1");
     let relation = changed_relations(&relation_outcome)[0];
-    let deleted = delete_entity(&runtime, source);
+    let deleted = delete_entity(execution, &runtime, source);
     let read = runtime
         .read_truth()
-        .read_snapshot(&deleted.snapshot)
+        .read_snapshot(&deleted.snapshot, execution)
         .unwrap();
     let relation = read.get_relation(relation).unwrap();
 
@@ -320,69 +309,5 @@ fn audit_retained_relations_remain_visible_after_endpoint_delete() {
     assert_eq!(relation.target, target);
 }
 
-#[test]
-fn merged_plan_is_stable_across_batch_order() {
-    let runtime_a = runtime_with_test_schema();
-    let mut txn_a = {
-        let transaction_validation_input =
-            crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime_a);
-        runtime_a
-            .begin_branch_transaction(
-                transaction_validation_input.basis(),
-                transaction_validation_input.intent().clone(),
-            )
-            .expect("owner-admitted transaction context")
-    };
-    txn_a
-        .push_batch(
-            batch_create("b"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-    txn_a
-        .push_batch(
-            batch_create("a"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-    let plan_a = txn_a
-        .merged_plan(
-            &runtime_a,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .clone();
-
-    let runtime_b = runtime_with_test_schema();
-    let mut txn_b = {
-        let transaction_validation_input =
-            crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime_b);
-        runtime_b
-            .begin_branch_transaction(
-                transaction_validation_input.basis(),
-                transaction_validation_input.intent().clone(),
-            )
-            .expect("owner-admitted transaction context")
-    };
-    txn_b
-        .push_batch(
-            batch_create("a"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-    txn_b
-        .push_batch(
-            batch_create("b"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-    let plan_b = txn_b
-        .merged_plan(
-            &runtime_b,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap()
-        .clone();
-
-    assert_eq!(plan_a, plan_b);
-}
+#[path = "failure_boundaries/batch_order.rs"]
+mod batch_order;

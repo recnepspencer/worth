@@ -1,11 +1,12 @@
 use super::*;
 
 fn derived_summary_view(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     workspace: &mut WorthQueryWorkspace,
     view_name: &str,
 ) -> WorthQueryDerivedViewHandle<WorthQueryUnrefinedLiveShape> {
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([identity_id_field_key(), title_value_field_key()])
                 .order_by(title_value_field_key())
@@ -14,6 +15,7 @@ fn derived_summary_view(
         .expect("live view should declare");
     workspace
         .computed_view::<WorthQueryUnrefinedLiveShape>(
+            request_execution,
             WorthQueryDerivedView::new(view_name, test_aspect_touches(["title"]))
                 .depends_on_live(&live)
                 .produces(test_aspect_touches(["title.summary"])),
@@ -24,23 +26,33 @@ fn derived_summary_view(
 
 #[test]
 fn materialize_intent_common_path_helper_executes_through_canonical_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("derived-materialize-common", runtime)
         .expect("workspace should build");
-    let derived = derived_summary_view(&mut workspace, "computed.materialize.common");
+    let derived = derived_summary_view(
+        request_execution,
+        &mut workspace,
+        "computed.materialize.common",
+    );
     workspace
-        .write(insert_command(
-            "Task",
-            [
-                ("identity.id", test_string_aspect_value("derived-common-1")),
-                ("title.value", test_string_aspect_value("Derived common")),
-            ],
-        ))
+        .write(
+            request_execution,
+            insert_command(
+                "Task",
+                [
+                    ("identity.id", test_string_aspect_value("derived-common-1")),
+                    ("title.value", test_string_aspect_value("Derived common")),
+                ],
+            ),
+        )
         .expect("write should materialize derived output");
 
     let result = workspace
         .materialize_intent(&derived)
-        .execute()
+        .execute(request_execution)
         .expect("materialize common path should execute");
 
     assert_eq!(result.row_count(), 1);
@@ -66,10 +78,17 @@ fn materialize_intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn inspect_derived_intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("derived-inspect-advanced", runtime)
         .expect("workspace should build");
-    let derived = derived_summary_view(&mut workspace, "computed.inspect.advanced");
+    let derived = derived_summary_view(
+        request_execution,
+        &mut workspace,
+        "computed.inspect.advanced",
+    );
 
     let review = workspace
         .inspect_derived_intent(&derived)
@@ -99,11 +118,14 @@ fn inspect_derived_intent_advanced_path_helper_exposes_request_eligibility_decis
 
 #[test]
 fn inspect_intent_common_path_helper_executes_through_canonical_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("generic-inspect-common", runtime)
         .expect("workspace should build");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([identity_id_field_key(), title_value_field_key()])
                 .order_by(title_value_field_key())
@@ -115,7 +137,7 @@ fn inspect_intent_common_path_helper_executes_through_canonical_handoff() {
         .inspections()
         .expect("inspection lane should be admitted")
         .inspect_intent(&live)
-        .execute()
+        .execute(request_execution)
         .expect("generic inspection common path should execute");
 
     assert!(matches!(
@@ -134,11 +156,14 @@ fn inspect_intent_common_path_helper_executes_through_canonical_handoff() {
 
 #[test]
 fn inspect_intent_advanced_path_helper_exposes_request_eligibility_decision_and_handoff() {
-    let runtime = read_runtime();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = read_runtime(request_execution);
     let mut workspace = WorthQueryWorkspace::new("generic-inspect-advanced", runtime)
         .expect("workspace should build");
     let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
-        .live_view("tasks.table", |q| {
+        .live_view(request_execution, "tasks.table", |q| {
             q.from("Task")
                 .select([identity_id_field_key(), title_value_field_key()])
                 .order_by(title_value_field_key())

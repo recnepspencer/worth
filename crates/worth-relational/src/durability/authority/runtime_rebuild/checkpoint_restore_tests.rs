@@ -9,8 +9,11 @@ use crate::tests::support::*;
 
 #[test]
 fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
-    let committed = create_entity_outcome(&source, "reuse-root-mirror");
+    let committed = create_entity_outcome(execution, &source, "reuse-root-mirror");
     release_test_commit_snapshot(&source, &committed);
     let checkpoint = source.durability_authority().checkpoint().unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 1);
@@ -29,13 +32,16 @@ fn equal_exact_root_reuses_the_readmitted_partition_substrate() {
 
 #[test]
 fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
-    let entity = create_entity(&source, "work-seed");
+    let entity = create_entity(execution, &source, "work-seed");
     let small = source
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    create_entity_in_partition(&source, "work-secondary", PartitionId(41));
+    create_entity_in_partition(execution, &source, "work-secondary", PartitionId(41));
     let grown = source
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -46,9 +52,9 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     );
 
     let pinned = snapshot_for_owner_branch(&source, &BranchId("main".into()));
-    update_entity_and_release_snapshot(&source, entity, "work-revised");
+    update_entity_and_release_snapshot(execution, &source, entity, "work-revised");
     let sibling = create_branch_from_main(&source, "work-sibling");
-    let sibling_commit = create_entity_outcome_on_branch(&source, "work-fork", sibling);
+    let sibling_commit = create_entity_outcome_on_branch(execution, &source, "work-fork", sibling);
     release_test_commit_snapshot(&source, &sibling_commit);
     let native = source
         .durability_authority()
@@ -64,7 +70,7 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let mut recovered = persisted_runtime_with_test_schema();
     let outcome = recovered
         .durability_recovery()
-        .restore_native_checkpoint(&native)
+        .restore_native_checkpoint(execution, &native)
         .unwrap();
     let work = outcome.checkpoint_restore_work.unwrap();
     assert_eq!(work.native_bytes_read, Some(native.bytes().len()));
@@ -99,7 +105,7 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     assert_eq!(
         source
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),
@@ -109,22 +115,28 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
 
 #[test]
 fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
-    create_entity(&source, "reuse-reader-seed");
+    create_entity(execution, &source, "reuse-reader-seed");
     source.durability_authority().checkpoint().unwrap();
     let plan = source.durability().recovery_plan(
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
 
     let main = BranchId("main".into());
     let pinned = snapshot_for_owner_branch(&recovered, &main);
-    create_entity(&recovered, "reuse-reader-next");
+    create_entity(execution, &recovered, "reuse-reader-next");
     assert_eq!(
         recovered
             .read_truth()
-            .read_snapshot(&pinned)
+            .read_snapshot(&pinned, execution)
             .unwrap()
             .entities()
             .len(),
@@ -134,7 +146,7 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
     assert_eq!(
         recovered
             .read_truth()
-            .read_snapshot(&latest)
+            .read_snapshot(&latest, execution)
             .unwrap()
             .entities()
             .len(),
@@ -144,13 +156,16 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
 
 #[test]
 fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
-    create_entity(&source, "reuse-sibling-seed");
+    create_entity(execution, &source, "reuse-sibling-seed");
     let sibling = create_branch_from_main(&source, "reuse-sibling");
     let sibling_commit =
-        create_entity_outcome_on_branch(&source, "reuse-sibling-only", sibling.clone());
+        create_entity_outcome_on_branch(execution, &source, "reuse-sibling-only", sibling.clone());
     release_test_commit_snapshot(&source, &sibling_commit);
-    let main_commit = create_entity_outcome(&source, "reuse-main-only");
+    let main_commit = create_entity_outcome(execution, &source, "reuse-main-only");
     release_test_commit_snapshot(&source, &main_commit);
     let checkpoint = source.durability_authority().checkpoint().unwrap();
     assert_eq!(checkpoint.branch_roots.len(), 2);
@@ -172,13 +187,16 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     );
     plan.checkpoint = Some(checkpoint);
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     for (branch, expected) in [(BranchId("main".into()), 2), (sibling, 2)] {
         let snapshot = snapshot_for_owner_branch(&recovered, &branch);
         assert_eq!(
             recovered
                 .read_truth()
-                .read_snapshot(&snapshot)
+                .read_snapshot(&snapshot, execution)
                 .unwrap()
                 .entities()
                 .len(),
@@ -189,8 +207,11 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
 
 #[test]
 fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
-    let main_entity = create_entity(&source, "partial-mirror-main");
+    let main_entity = create_entity(execution, &source, "partial-mirror-main");
     let mut transaction = test_owner_begin_transaction_for_main(&source);
     transaction
         .push_batch(
@@ -209,15 +230,11 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    let committed = transaction
-        .commit(
-            &source,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(execution, &source).unwrap();
     let secondary = changed_entities(&committed)[0];
     release_test_commit_snapshot(&source, &committed);
     create_relation_in_partition(
+        execution,
         &source,
         main_entity,
         secondary,
@@ -254,14 +271,17 @@ fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
 
 #[test]
 fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
-    let seed = create_entity_outcome(&source, "catalog-relink-seed");
+    let seed = create_entity_outcome(execution, &source, "catalog-relink-seed");
     release_test_commit_snapshot(&source, &seed);
     let sibling = create_branch_from_main(&source, "catalog-relink-sibling");
     let sibling_commit =
-        create_entity_outcome_on_branch(&source, "catalog-relink-fork", sibling.clone());
+        create_entity_outcome_on_branch(execution, &source, "catalog-relink-fork", sibling.clone());
     release_test_commit_snapshot(&source, &sibling_commit);
-    let main_commit = create_entity_outcome(&source, "catalog-relink-main");
+    let main_commit = create_entity_outcome(execution, &source, "catalog-relink-main");
     release_test_commit_snapshot(&source, &main_commit);
     source.durability_authority().checkpoint().unwrap();
 
@@ -269,7 +289,10 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
         crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
     );
     let mut recovered = persisted_runtime_with_test_schema();
-    recovered.durability_recovery().recover(plan).unwrap();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
     for commit_id in [
         seed.commit.commit_id,
         sibling_commit.commit.commit_id,
@@ -289,8 +312,11 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
 
 #[test]
 fn equal_image_cannot_bypass_global_contract_readmission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let source = persisted_runtime_with_test_schema();
-    create_entity(&source, "reuse-contract-corruption");
+    create_entity(execution, &source, "reuse-contract-corruption");
     let mut checkpoint = source.durability_authority().checkpoint().unwrap();
     assert_eq!(
         checkpoint.branch_roots[0].partition_images,

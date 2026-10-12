@@ -152,6 +152,22 @@ pub(super) struct BoundedAggregateObservation {
 }
 
 impl AggregateWorld {
+    pub(super) fn with_host_advancement<R>(
+        &self,
+        body: impl for<'scope> FnOnce(
+            crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+        ) -> R,
+    ) -> Result<R, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
+        self._runtime.with_host_advancement(body)
+    }
+
+    pub(super) fn fixture_phase<'scope>(
+        &self,
+        host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
+    ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
+        host.phase_for_application(&self._runtime)
+    }
+
     pub(super) fn values(values: impl IntoIterator<Item = i64>) -> Self {
         Self::install(values.into_iter().map(Some).collect(), false)
     }
@@ -164,10 +180,14 @@ impl AggregateWorld {
         Self::install(vec![Some(value)], true)
     }
 
-    pub(super) fn observe(&self) -> AggregateObservation {
+    pub(super) fn observe(
+        &self,
+        phase_custody: &crate::domain_computation::primary_graph::TestHostRequest<'_>,
+    ) -> AggregateObservation {
         let completed = self
             .authority
             .project(
+                &self.fixture_phase(phase_custody),
                 |reader| {
                     reader.summarize_exclusive_incoming(
                         AggregateContribution::reference(),
@@ -186,15 +206,20 @@ impl AggregateWorld {
         AggregateObservation { result, work }
     }
 
-    pub(super) fn observe_bounded(&self, maximum_work: usize) -> BoundedAggregateObservation {
+    pub(super) fn observe_bounded(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        maximum_work: usize,
+    ) -> BoundedAggregateObservation {
         let denial = Cell::new(None);
         let work = Cell::new(WorthQueryInvariantProjectionWork::default());
         let selected = self
             ._runtime
-            .select_product_branch(self._runtime.product_runtime().default_branch())
+            .select_product_branch(execution, self._runtime.product_runtime().default_branch())
             .expect("aggregate product basis");
         let product = selected.product().publication_binding();
         let completed = self.authority.project_bounded(
+            execution,
             maximum_work,
             product.observation().basis().relational_basis().clone(),
             |reader| {
@@ -217,14 +242,28 @@ impl AggregateWorld {
         }
     }
 
-    pub(super) fn replace_amount(&self, source: &str, amount: i64) {
-        self.replace_amount_on(self.main_branch(), self.source(source), amount);
+    pub(super) fn replace_amount(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        source: &str,
+        amount: i64,
+    ) {
+        self.replace_amount_on(
+            execution,
+            phase_custody,
+            self.main_branch(),
+            self.source(phase_custody, source),
+            amount,
+        );
     }
 
     /// Commits a new amount for one source already resolved, since a raw
     /// commit leaves the identity index behind the branch it moved.
     pub(super) fn replace_amount_on(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         branch: crate::basis::WorthQueryProductBranch,
         source: worth_relational::facade::identity::EntityId,
         amount: i64,
@@ -243,7 +282,13 @@ impl AggregateWorld {
                 fields,
             },
         ));
-        self.commit_on(branch, "aggregate-stale-generation", intent);
+        self.commit_on(
+            execution,
+            phase_custody,
+            branch,
+            "aggregate-stale-generation",
+            intent,
+        );
     }
 
     fn install(values: Vec<Option<i64>>, ambiguous: bool) -> Self {
@@ -316,6 +361,7 @@ impl AggregateWorld {
                 .expect("primary graph publishes");
             let target = projection
                 .project(
+                    &active_phase.phase_for_application(&runtime),
                     |reader| {
                         reader.resolve_entity(TargetIdentity::reference(), "target".to_owned())
                     },

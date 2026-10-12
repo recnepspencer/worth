@@ -1,0 +1,283 @@
+use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
+
+use super::*;
+use crate::facade::identity::{KindId, PartitionId};
+use crate::facade::mvcc::WorkerIntentBatch;
+use crate::facade::transactions::{
+    ApplyEntityAspectPatchIntent, CreateIntent, EntityMutationIntent, MutationIntent,
+    UpdateEntityFieldsIntent,
+};
+use crate::tests::support::*;
+use worth_foundational::facade::{
+    PortableAspectContractBasis, PortableAspectPatchOperation, PortableRecordAspectPatch,
+};
+
+fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
+    AspectFieldLocator::new(
+        LocatorAuthority::Authoritative,
+        aspect_key(aspect),
+        CanonicalFieldPath::single(field_key(field)),
+    )
+}
+
+#[test]
+fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = AspectSchemaFixture {
+        entity_aspects: vec![entity_summary_struct_aspect(
+            aspect_key("summary"),
+            field_key("summary"),
+        )],
+        ..AspectSchemaFixture::default()
+    }
+    .build_runtime();
+    let mut create = test_owner_begin_transaction_for_main(&runtime);
+    create
+        .push_batch(
+            WorkerIntentBatch::new("field-revision-create").push(MutationIntent::Create(
+                CreateIntent::Entity(crate::transactions::data::EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: crate::symbols::data::ClientKey::raw("field-revision"),
+                    fields: string_aspect_field_patch([(
+                        aspect_key("summary"),
+                        field_key("title"),
+                        "same",
+                    )]),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
+    let entity = changed_entities(&created)[0];
+    let title = locator("summary", "title");
+    let status = locator("summary", "status");
+    let read = |snapshot| {
+        let view = runtime
+            .read_truth()
+            .project_snapshot(snapshot, execution)
+            .unwrap();
+        (
+            view.entity_field_revision(execution, entity, &title),
+            view.entity_field_revision(execution, entity, &status),
+        )
+    };
+    let before = read(&created.snapshot);
+    assert_eq!(
+        before.0.unwrap().presence(),
+        RelationalFieldPresence::Present
+    );
+    assert_eq!(
+        before.1.unwrap().presence(),
+        RelationalFieldPresence::Absent
+    );
+
+    let mut update = test_owner_begin_transaction_for_main(&runtime);
+    update
+        .push_batch(
+            WorkerIntentBatch::new("field-revision-update").push(MutationIntent::Entity(
+                EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                    entity_id: entity,
+                    fields: string_aspect_field_patch([(
+                        aspect_key("summary"),
+                        field_key("status"),
+                        "ready",
+                    )]),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let updated = update.commit(execution, &runtime).unwrap();
+    let after = read(&updated.snapshot);
+    assert_eq!(before.0, after.0);
+    assert_ne!(before.1, after.1);
+    assert_eq!(
+        after.1.unwrap().presence(),
+        RelationalFieldPresence::Present
+    );
+    assert_eq!(read(&created.snapshot), before);
+    release_test_commit_snapshot(&runtime, &created);
+    release_test_commit_snapshot(&runtime, &updated);
+}
+
+#[test]
+fn absent_present_absent_aba_has_distinct_native_revision() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
+    let contract = binding.contract.clone();
+    let runtime = AspectSchemaFixture {
+        entity_aspects: vec![binding],
+        ..AspectSchemaFixture::default()
+    }
+    .build_runtime();
+    let mut create = test_owner_begin_transaction_for_main(&runtime);
+    create
+        .push_batch(
+            WorkerIntentBatch::new("aba-create").push(MutationIntent::Create(
+                CreateIntent::Entity(crate::transactions::data::EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: crate::symbols::data::ClientKey::raw("aba"),
+                    fields: string_aspect_field_patch([(
+                        aspect_key("summary"),
+                        field_key("title"),
+                        "fixed",
+                    )]),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let created = create.commit(execution, &runtime).unwrap();
+    let entity = changed_entities(&created)[0];
+    let status = locator("summary", "status");
+    let title = locator("summary", "title");
+    let revision = |snapshot| {
+        runtime
+            .read_truth()
+            .project_snapshot(snapshot, execution)
+            .unwrap()
+            .entity_field_revision(execution, entity, &status)
+            .unwrap()
+    };
+    let initial = revision(&created.snapshot);
+    assert_eq!(initial.presence(), RelationalFieldPresence::Absent);
+    let title_initial = runtime
+        .read_truth()
+        .project_snapshot(&created.snapshot, execution)
+        .unwrap()
+        .entity_field_revision(execution, entity, &title);
+
+    let mut set = test_owner_begin_transaction_for_main(&runtime);
+    set.push_batch(
+        WorkerIntentBatch::new("aba-set").push(MutationIntent::Entity(
+            EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
+                entity_id: entity,
+                fields: string_aspect_field_patch([(
+                    aspect_key("summary"),
+                    field_key("status"),
+                    "intermediate",
+                )]),
+            }),
+        )),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
+    let present = set.commit(execution, &runtime).unwrap();
+    assert_eq!(
+        revision(&present.snapshot).presence(),
+        RelationalFieldPresence::Present
+    );
+
+    let mut clear = test_owner_begin_transaction_for_main(&runtime);
+    clear
+        .push_batch(
+            WorkerIntentBatch::new("aba-clear").push(MutationIntent::Entity(
+                EntityMutationIntent::ApplyAspectPatch(ApplyEntityAspectPatchIntent {
+                    entity_id: entity,
+                    aspect_patch: PortableRecordAspectPatch::new([
+                        PortableAspectPatchOperation::PatchFields {
+                            basis: PortableAspectContractBasis::from_contract(&contract),
+                            selected_fields: vec![field_key("status")],
+                            field_sets: Vec::new(),
+                            field_clears: vec![field_key("status")],
+                        },
+                    ]),
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let absent_again = clear.commit(execution, &runtime).unwrap();
+    let final_revision = revision(&absent_again.snapshot);
+    assert_eq!(final_revision.presence(), RelationalFieldPresence::Absent);
+    assert_ne!(initial, final_revision);
+    assert_eq!(
+        title_initial,
+        runtime
+            .read_truth()
+            .project_snapshot(&absent_again.snapshot, execution)
+            .unwrap()
+            .entity_field_revision(execution, entity, &title)
+    );
+    for outcome in [&created, &present, &absent_again] {
+        release_test_commit_snapshot(&runtime, outcome);
+    }
+}
+
+#[test]
+fn forked_updates_preserve_the_original_field_revision_and_recreation_changes_identity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = runtime_with_test_schema();
+    let created = create_entity_outcome(execution, &runtime, "first");
+    let entity = changed_entities(&created)[0];
+    let name = locator("name", "name");
+    let original = runtime
+        .read_truth()
+        .project_snapshot(&created.snapshot, execution)
+        .unwrap()
+        .entity_field_revision(execution, entity, &name)
+        .unwrap();
+    let fork = create_branch_from_main(&runtime, "field-revision-fork");
+    let changed = update_entity_on_branch(execution, &runtime, entity, "second", fork.clone());
+    let on_fork = runtime
+        .read_truth()
+        .project_snapshot(&changed.snapshot, execution)
+        .unwrap()
+        .entity_field_revision(execution, entity, &name)
+        .unwrap();
+    assert_ne!(on_fork, original);
+    assert_eq!(
+        runtime
+            .read_truth()
+            .project_snapshot(&created.snapshot, execution)
+            .unwrap()
+            .entity_field_revision(execution, entity, &name),
+        Some(original)
+    );
+    let main = snapshot_for_owner_branch(
+        &runtime,
+        &crate::facade::history::BranchId("main".to_owned()),
+    );
+    assert_eq!(
+        runtime
+            .read_truth()
+            .project_snapshot(&main, execution)
+            .unwrap()
+            .entity_field_revision(execution, entity, &name),
+        Some(original)
+    );
+    runtime.snapshots().release_snapshot(&main).unwrap();
+
+    let deleted = delete_entity(execution, &runtime, entity);
+    assert_eq!(
+        runtime
+            .read_truth()
+            .project_snapshot(&deleted.snapshot, execution)
+            .unwrap()
+            .entity_field_revision(execution, entity, &name),
+        None
+    );
+    let recreated = create_entity_outcome(execution, &runtime, "first");
+    let new_entity = changed_entities(&recreated)[0];
+    assert_ne!(new_entity, entity);
+    assert_ne!(
+        runtime
+            .read_truth()
+            .project_snapshot(&recreated.snapshot, execution)
+            .unwrap()
+            .entity_field_revision(execution, new_entity, &name),
+        Some(original)
+    );
+    for outcome in [&created, &changed, &deleted, &recreated] {
+        release_test_commit_snapshot(&runtime, outcome);
+    }
+}

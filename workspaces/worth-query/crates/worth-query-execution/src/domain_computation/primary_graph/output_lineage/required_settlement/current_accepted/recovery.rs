@@ -5,6 +5,7 @@ use super::*;
 impl AcceptedCurrentCandidate {
     pub(super) fn recover_registration<'basis>(
         &'basis self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         computation: super::super::super::CurrentComputation,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -20,6 +21,7 @@ impl AcceptedCurrentCandidate {
         };
         let requirement = Some(FullVerificationReason::RegistrationIncomplete);
         let verified = match ConsumedOutputEvidence::verify_at_observation(
+            execution,
             &recorded.settlement_identity,
             &facts,
             &recorded.consumed_outputs,
@@ -34,7 +36,9 @@ impl AcceptedCurrentCandidate {
             Ok(answer) => answer,
             Err(ConsumedOutputVerificationStop::PendingUpstream) => {
                 return self
-                    .pending_consumed_output(owner, runtime, snapshot, selected, admission)
+                    .pending_consumed_output(
+                        execution, owner, runtime, snapshot, selected, admission,
+                    )
                     .map(|pending| match pending {
                         Some(pending) => CurrentAcceptedResult::PendingExact(pending),
                         None => CurrentAcceptedResult::PendingUnresolved,
@@ -64,6 +68,7 @@ impl AcceptedCurrentCandidate {
         } else {
             use crate::domain_computation::primary_graph::invariant_projection::PublicationRecoveryStop;
             match ConsumedOutputEvidence::recover_missing(
+                execution,
                 owner,
                 &recorded.consumed_outputs,
                 runtime,

@@ -23,6 +23,9 @@ const P1_VALUE: u64 = 15;
 
 #[test]
 fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
@@ -42,7 +45,8 @@ fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work(
         .prepare(64)
         .expect("adoption prepares");
 
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let unpublished = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
@@ -97,15 +101,21 @@ fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work(
 
 #[test]
 fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let sibling = host
-        .runtime()
-        .branches()
-        .fork(branch)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("sibling branch publishes");
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(branch)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("sibling branch publishes")
+        })
+        .expect("installed host call opens");
     let target = *host
         .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")
@@ -122,7 +132,8 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
         .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let recovery = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
@@ -175,6 +186,9 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
 
 #[test]
 fn performed_recovery_retains_cleanup_failure_after_the_effect() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host
@@ -193,7 +207,8 @@ fn performed_recovery_retains_cleanup_failure_after_the_effect() {
         .adopt(&requirements)
         .prepare(64)
         .expect("adoption prepares");
-    host.runtime().fail_next_durable_append_for_test();
+    host.runtime()
+        .fail_next_durable_append_for_test(request_execution);
     let recovery = match prepared.publish() {
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")

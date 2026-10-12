@@ -174,6 +174,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     #[doc(hidden)]
     pub fn integration_recover_branch_adoption(
         &self,
+
         branch: crate::basis::WorthQueryProductBranch,
         recovery: WorthQueryBranchAdoptionRecovery,
         request: &WorthQueryRequestScope,
@@ -186,6 +187,16 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let mut retained = Some(recovery);
         self.with_application_advancement(request, |phase| {
+            let phase_request = match phase.execution_request_for(&self.product_runtime) {
+                Ok(request) => request,
+                Err(_) => {
+                    return Err((
+                        crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignPhase,
+                        retained.take().expect("one retained recovery"),
+                    ))
+                }
+            };
+            let execution = &phase_request;
             let recovery = retained.take().expect("one admitted recovery");
 
             let product = match self
@@ -195,7 +206,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(product) => product,
                 Err(denial) => return Err((denial, recovery)),
             };
-            let selected = match self.on_product_for_adoption_recovery(product) {
+            let selected = match self.on_product_for_adoption_recovery(execution, product) {
                 Ok(selected) => selected,
                 Err(denial) => return Err((denial, recovery)),
             };

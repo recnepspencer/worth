@@ -112,7 +112,7 @@ fn restrictive_host_denies_estimate_before_operation_or_publication() {
     let application = support::install_with_demand_profile(None, profile);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let before = request.retain_read().unwrap();
+    let before = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     super::super::producer::reset_provider_contacts();
     let denied = match request.demand(PlanarOutputDemand::new("anchor-a")).start() {
         Ok(_) => panic!("the producer estimate exceeds host work capacity"),
@@ -125,7 +125,7 @@ fn restrictive_host_denies_estimate_before_operation_or_publication() {
     // A fresh estimate is one provider callback; operation_input/idempotency
     // are not contacted and no mutation is published.
     assert_eq!(super::super::producer::provider_contacts(), 1);
-    let after = request.retain_read().unwrap();
+    let after = crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     assert_eq!(before.selected_commit(), after.selected_commit());
 }
 
@@ -226,7 +226,8 @@ fn installed_child_excess_is_denied_without_publishing_the_child() {
     // The call that settles the parent starts the child and is refused. The
     // refusal is kept: the next call starts the child again, is refused
     // again and publishes nothing.
-    let mut before = request.retain_read().unwrap();
+    let mut before =
+        crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     for call in ["the call that settles the parent", "the next call"] {
         match output.advance(&application, &request) {
             Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
@@ -240,7 +241,8 @@ fn installed_child_excess_is_denied_without_publishing_the_child() {
                 ))
             ),
         }
-        let after = request.retain_read().unwrap();
+        let after =
+            crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         let (before_commit, after_commit) = (before.selected_commit(), after.selected_commit());
         if call == "the next call" {
             assert_eq!(

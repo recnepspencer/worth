@@ -59,8 +59,15 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
     assert_eq!(published.rows().len(), 1);
     let last_published_truth = published.rows()[0].value;
     let checkpoint = application
-        .capture_application_checkpoint(WorthQueryCheckpointCapturePolicy::SystemAllocation)
-        .unwrap();
+        .with_host_advancement(|phase| {
+            application
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .expect("checkpoint capture owns its host request");
     assert_eq!(
         application.undelivered_publication_counts_for_test(),
         (1, 1),

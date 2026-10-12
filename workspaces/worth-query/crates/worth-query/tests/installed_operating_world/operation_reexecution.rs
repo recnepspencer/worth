@@ -9,10 +9,14 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn replay_comparator_must_be_installed_before_any_replay_can_execute() {
-    let denial = match missing_replay_comparator_workspace("missing-replay-comparator") {
-        Ok(_) => panic!("replay contract without a comparator object must not install"),
-        Err(denial) => denial,
-    };
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let denial =
+        match missing_replay_comparator_workspace(request_execution, "missing-replay-comparator") {
+            Ok(_) => panic!("replay contract without a comparator object must not install"),
+            Err(denial) => denial,
+        };
     assert!(denial
         .message()
         .contains("workflow replay comparator disagrees with installed semantics"));
@@ -20,7 +24,10 @@ fn replay_comparator_must_be_installed_before_any_replay_can_execute() {
 
 #[test]
 fn ordinary_reexecution_uses_installed_intent_and_mints_a_distinct_run() {
-    let mut workspace = workflow_workspace("ordinary-reexecution").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "ordinary-reexecution").unwrap();
     let original_bound = bind(&workspace);
     let original = original_bound
         .admit_workflow_resources(
@@ -59,7 +66,10 @@ fn ordinary_reexecution_uses_installed_intent_and_mints_a_distinct_run() {
 
 #[test]
 fn certification_replay_is_trace_bound_and_denies_foreign_basis_before_execution() {
-    let mut workspace = workflow_workspace("certification-replay").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "certification-replay").unwrap();
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -106,7 +116,8 @@ fn certification_replay_is_trace_bound_and_denies_foreign_basis_before_execution
         foundational.materialized().target()
     );
 
-    let foreign_workspace = workflow_workspace("foreign-certification-replay").unwrap();
+    let foreign_workspace =
+        workflow_workspace(request_execution, "foreign-certification-replay").unwrap();
     let foreign_bound = bind(&foreign_workspace);
     let denial = certification::replay_installed_workflow(
         certification::issue_query_certification_replay_capability(),
@@ -126,6 +137,9 @@ fn certification_replay_is_trace_bound_and_denies_foreign_basis_before_execution
 
 #[test]
 fn certification_replay_localizes_realized_conditional_path_drift() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let dependency = super::conditional_node_contract::dependency(
         domain::WorthQuerySemanticLocality::SourceRecord,
     );
@@ -156,7 +170,8 @@ fn certification_replay_localizes_realized_conditional_path_drift() {
     .output_relationship(domain::WorthQueryOutputRelationship::IsWorkflowStageOutput)
     .finish()
     .unwrap();
-    let mut workspace = conditional_workflow_workspace("conditional-replay", node).unwrap();
+    let mut workspace =
+        conditional_workflow_workspace(request_execution, "conditional-replay", node).unwrap();
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -185,8 +200,12 @@ fn certification_replay_localizes_realized_conditional_path_drift() {
 
 #[test]
 fn historical_replay_resolves_owner_evidence_for_the_exact_basis_pair() {
-    let mut workspace = workflow_workspace("historical-certification-replay").unwrap();
-    let historical_context = worth_query::facade::history::at(&workspace);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_workspace(request_execution, "historical-certification-replay").unwrap();
+    let historical_context = worth_query::facade::history::at(request_execution, &workspace);
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -212,6 +231,7 @@ fn historical_replay_resolves_owner_evidence_for_the_exact_basis_pair() {
 
     let admission_correspondence = admission.correspondence();
     let replay = certification::replay_installed_workflow_historical(
+        request_execution,
         admission,
         &original,
         historical_bound,
@@ -234,8 +254,12 @@ fn historical_replay_resolves_owner_evidence_for_the_exact_basis_pair() {
 
 #[test]
 fn historical_replay_refuses_to_simulate_an_unowned_reconstruction_path() {
-    let mut workspace = workflow_workspace("historical-reconstruction-denial").unwrap();
-    let historical_context = worth_query::facade::history::at(&workspace);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace =
+        workflow_workspace(request_execution, "historical-reconstruction-denial").unwrap();
+    let historical_context = worth_query::facade::history::at(request_execution, &workspace);
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -266,8 +290,11 @@ fn historical_replay_refuses_to_simulate_an_unowned_reconstruction_path() {
 
 #[test]
 fn historical_replay_denies_when_the_retained_execution_substrate_has_drifted() {
-    let mut workspace = workflow_workspace("historical-replay-drift").unwrap();
-    let historical_context = worth_query::facade::history::at(&workspace);
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "historical-replay-drift").unwrap();
+    let historical_context = worth_query::facade::history::at(request_execution, &workspace);
     let original = bind(&workspace)
         .admit_workflow_resources(
             crate::suite::installed_operation_fixture::execution_resource_request(),
@@ -286,12 +313,13 @@ fn historical_replay_denies_when_the_retained_execution_substrate_has_drifted() 
     )
     .unwrap();
     workspace
-        .insert("Vertex", |builder| {
+        .insert(request_execution, "Vertex", |builder| {
             builder.aspect("identity.id", "historical-replay-drift")
         })
         .unwrap();
 
     let denied = certification::replay_installed_workflow_historical(
+        request_execution,
         admission,
         &original,
         replay_bound,

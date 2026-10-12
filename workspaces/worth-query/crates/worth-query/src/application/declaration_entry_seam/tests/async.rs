@@ -11,7 +11,10 @@ use super::support::{
 
 #[test]
 fn async_current_family_admits_bridge_readiness_once_runtime_async_support_closes() {
-    let handle = handle("async-current");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "async-current");
     let readiness = handle.declaration_entry_readiness::<AsyncInput<AsyncCurrentFamily>>();
     let bridge_row = readiness
         .rows()
@@ -37,7 +40,10 @@ fn async_current_family_admits_bridge_readiness_once_runtime_async_support_close
 
 #[test]
 fn deferred_async_family_projects_family_level_async_debt_before_runtime_row_meaning() {
-    let handle = handle("async-deferred-family");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "async-deferred-family");
     let readiness = handle.declaration_entry_readiness::<AsyncInput<DeferredAsyncFamily>>();
     let bridge_row = readiness
         .rows()
@@ -57,7 +63,10 @@ fn deferred_async_family_projects_family_level_async_debt_before_runtime_row_mea
 
 #[test]
 fn async_preview_family_keeps_preview_basis_invalid_and_localized() {
-    let handle = handle("async-preview");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "async-preview");
     let readiness = handle.declaration_entry_readiness::<AsyncInput<AsyncPreviewFamily>>();
     let bridge_row = readiness
         .rows()
@@ -90,7 +99,10 @@ fn async_preview_family_keeps_preview_basis_invalid_and_localized() {
 
 #[test]
 fn retained_non_async_subject_does_not_inherit_family_level_async_debt() {
-    let handle = handle("async-current");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "async-current");
     let envelope =
         async_current_envelope(&handle, AsyncInput::<AsyncCurrentFamily>::plain("edge:42"));
 
@@ -136,7 +148,10 @@ fn retained_non_async_subject_does_not_inherit_family_level_async_debt() {
 
 #[test]
 fn unsupported_async_source_is_rejected_before_route_planning() {
-    let handle = handle("async-current");
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let handle = handle(request_execution, "async-current");
 
     assert!(matches!(
         handle.declare_review_and_progress(AsyncInput::<AsyncCurrentFamily>::external_refresh("edge:99")),

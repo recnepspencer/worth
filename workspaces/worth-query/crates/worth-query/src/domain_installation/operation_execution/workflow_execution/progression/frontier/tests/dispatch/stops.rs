@@ -9,17 +9,20 @@ fn denial(record: &Record) -> &Denial {
 }
 #[test]
 fn zero_memory_public_frontier_refuses_without_retaining_start_receipts() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_query_execution::facade::application_contribution::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
     };
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
-    let mut prepared = Policy::width(0).workspace(&probe);
+    let mut prepared = Policy::width(0).workspace(request_execution, &probe);
     let held = start(&mut prepared);
     let mut workspace = Policy {
         memory: 0,
         ..Policy::width(0)
     }
-    .workspace(&probe);
+    .workspace(request_execution, &probe);
     probe.take_computes();
     // Admission precedes any inspection of the held run or the frontier. The
     // refused call must retain none of that input's earlier start evidence.
@@ -41,16 +44,19 @@ fn zero_memory_public_frontier_refuses_without_retaining_start_receipts() {
 
 #[test]
 fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     // The fixture's start stage has an empty payload. Its exact map reservation
     // is derived below; the frontier owns a larger Words payload, independently
     // of its zero-work declaration. No measured or fitted budget is used.
-    let bytes = super::reservation::start_reservation(&probe);
+    let bytes = super::reservation::start_reservation(request_execution, &probe);
     let mut workspace = Policy {
         memory: bytes,
         ..Policy::width(0)
     }
-    .workspace(&probe);
+    .workspace(request_execution, &probe);
     let run = start(&mut workspace);
     probe.take_computes();
     let mut input = members(1, None);
@@ -68,7 +74,7 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
         })
         .unwrap();
     let root = super::reservation::framework(&lease, 1);
-    let mut sample = Policy::width(0).workspace(&probe);
+    let mut sample = Policy::width(0).workspace(request_execution, &probe);
     let sample_run = start(&mut sample);
     let (requested, admitted) = sample
         .advancement_owner()
@@ -105,6 +111,9 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
 }
 #[test]
 fn large_task_refusal_stays_typed_at_every_width() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     // Preserve the incoming positive-memory width oracle independently of the
     // new declaration-derived minimum-budget case above.
@@ -113,7 +122,7 @@ fn large_task_refusal_stays_typed_at_every_width() {
             memory: 64 * 1024,
             ..Policy::width(workers)
         }
-        .workspace(&probe);
+        .workspace(request_execution, &probe);
         let run = start(&mut workspace);
         probe.take_computes();
         let mut input = members(1, None);
@@ -138,9 +147,18 @@ fn large_task_refusal_stays_typed_at_every_width() {
 
 #[test]
 fn panic_and_result_capacity_fail_after_canonical_prefix() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for mode in [6, 7, 11] {
-        let (record, work, failed) = observe(7, Some((1, mode)), Policy::width(0), &probe);
+        let (record, work, failed) = observe(
+            request_execution,
+            7,
+            Some((1, mode)),
+            Policy::width(0),
+            &probe,
+        );
         assert!(failed);
         assert_eq!(work, COSTS[0] + COSTS[1]);
         assert_eq!(record.receipts.len(), 2);
@@ -164,14 +182,27 @@ fn panic_and_result_capacity_fail_after_canonical_prefix() {
 }
 #[test]
 fn work_ceiling_settles_the_same_boundary_at_all_widths() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for workers in [1, 2, 4] {
-        let policy = Policy {
-            work: COSTS[0],
-            ..Policy::width(workers)
-        };
-        let (record, work, failed) = observe(7, None, policy, &probe);
-        assert!(!failed);
+        // The caller funds the real first-stage effect as well as computation.
+        // Only the map declaration is short: later tasks still attempt their
+        // original work, so the second task meets the exact computation ceiling.
+        let mut workspace = Policy::width(workers).workspace(request_execution, &probe);
+        let mut input = members(7, None);
+        for (rank, (_, value)) in input.iter_mut().enumerate() {
+            let declared_work = if rank == 0 { COSTS[rank] } else { 0 };
+            *value = domain::WorthQueryWorkflowValue::Text(format!(
+                "{}:0:{}:{declared_work}",
+                7 + rank as u64,
+                COSTS[rank],
+            ));
+        }
+        let (record, work, failed) =
+            observe_members(start(&mut workspace), input, &mut workspace, None);
+        assert!(!failed, "width {workers}: {record:?}");
         assert_eq!(work, COSTS[0]);
         assert_eq!(
             denial(&record),
@@ -186,9 +217,18 @@ fn work_ceiling_settles_the_same_boundary_at_all_widths() {
 }
 #[test]
 fn nested_stop_is_a_stage_bound_contract_failure_at_every_posture() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for workers in [0, 1, 2, 4] {
-        let (record, work, failed) = observe(7, Some((1, 10)), Policy::width(workers), &probe);
+        let (record, work, failed) = observe(
+            request_execution,
+            7,
+            Some((1, 10)),
+            Policy::width(workers),
+            &probe,
+        );
         assert!(failed);
         assert_eq!(work, COSTS[0] + COSTS[1]);
         assert_eq!(
@@ -250,6 +290,9 @@ fn every_scope_stop_keeps_its_specific_typed_cause() {
 
 #[test]
 fn already_elapsed_deadline_and_cancelled_entry_do_not_compute() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for cancelled in [false, true] {
         probe.take_computes();
@@ -267,7 +310,7 @@ fn already_elapsed_deadline_and_cancelled_entry_do_not_compute() {
                 })),
                 source.token(),
             );
-        let mut workspace = Policy::width(0).workspace(&probe);
+        let mut workspace = Policy::width(0).workspace(request_execution, &probe);
         let run = start(&mut workspace);
         let (record, work, failed) =
             observe_members(run, members(7, None), &mut workspace, Some(&scope));
@@ -290,3 +333,6 @@ fn already_elapsed_deadline_and_cancelled_entry_do_not_compute() {
         assert_eq!(record.receipts.len(), 0);
     }
 }
+
+#[path = "stops/caller_budget.rs"]
+mod caller_budget;

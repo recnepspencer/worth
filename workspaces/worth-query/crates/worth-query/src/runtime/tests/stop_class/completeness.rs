@@ -9,7 +9,10 @@ const STOP_CLASS_VARIANT_COUNT: usize = 27;
 
 #[test]
 fn runtime_stop_class_classifier_is_complete_for_covered_runtime_error_variants() {
-    let representative_errors = representative_runtime_stop_errors();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let representative_errors = representative_runtime_stop_errors(request_execution);
     assert_eq!(
         representative_errors.len(),
         COVERED_RUNTIME_ERROR_VARIANT_COUNT

@@ -8,7 +8,10 @@ use super::operation_reexecution::intent;
 
 #[test]
 fn ordinary_publication_consumption_converges_without_receiving_replay_authority() {
-    let mut workspace = workflow_workspace("replay-publication-parity").unwrap();
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut workspace = workflow_workspace(request_execution, "replay-publication-parity").unwrap();
     let original_bound = bind(&workspace);
     let (original_request, original_keys) =
         native_replay_request(original_bound.consumer_projection_contract().unwrap());

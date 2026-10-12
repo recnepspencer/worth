@@ -36,7 +36,7 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
         .application
         .install_external_effect_transport(transport.clone())
         .unwrap();
-    let receipt = world.commit_dispatch(91, "synchronous-rail-completed");
+    let receipt = { world.commit_dispatch(91, "synchronous-rail-completed") };
     assert_eq!(transport.0.load(Ordering::Acquire), 1);
     let record = receipt.dispatch_outbox().expect("co-committed dispatch");
     let terminal = world
@@ -66,11 +66,13 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
         callback.posture(),
         WorthQueryInboundReceiptPosture::AlreadyCompleted
     );
-    let retry = world.attempt_dispatch_on(
-        world.application.current_world(),
-        91,
-        "synchronous-rail-completed",
-    );
+    let retry = {
+        world.attempt_dispatch_on(
+            world.application.current_world(),
+            91,
+            "synchronous-rail-completed",
+        )
+    };
     assert!(matches!(
         retry,
         WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
@@ -91,12 +93,17 @@ fn synchronous_completed_and_later_signed_callback_share_one_world_terminal() {
 #[test]
 fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt() {
     let world = installed_world();
-    let first_receipt = world.commit_dispatch(92, "first-transport-owner");
+    let first_receipt = { world.commit_dispatch(92, "first-transport-owner") };
     let first_owner = world
         .application
-        .observe_committed_dispatch_outbox(&first_receipt)
-        .unwrap()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &first_receipt)
+                .unwrap()
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let binding = world
         .application
         .resolve_installed_transport_completion_binding(&first_owner)
@@ -118,12 +125,17 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
         later.causal_ladder().attempt().identity()
     );
 
-    let other_receipt = world.commit_dispatch(93, "other-transport-owner");
+    let other_receipt = { world.commit_dispatch(93, "other-transport-owner") };
     let other_owner = world
         .application
-        .observe_committed_dispatch_outbox(&other_receipt)
-        .unwrap()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &other_receipt)
+                .unwrap()
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let other_binding = world
         .application
         .resolve_installed_transport_completion_binding(&other_owner)
@@ -138,12 +150,12 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
                 .product_incarnation(),
         )
         .unwrap();
-    assert!(matches!(
-        world.application.primary_provider.prepare_installed_transport_completion_candidate(
+    world.application.with_host_advancement(|phase| { let host_custody = phase.test_host_request(); assert!(matches!(
+        world.application.primary_provider.prepare_installed_transport_completion_candidate(&host_custody.borrowed_request_for_test(),
             lease.relational_basis(), &other_owner, &completed, &other_binding,
         ),
         Err(crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial::DispatchOwnerMismatch)
-    ));
+    )) }).expect("the fixture read owns its installed host call");
 
     let evidence =
         InstalledTransportCompletion::from_observed_dispatch(first_owner.clone(), &completed)
@@ -165,6 +177,7 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
             let phase = &active_phase;
             assert!(matches!(
                 world.application.resume_installed_transport_completion(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     first_owner.record().correlation(),
                     &request
@@ -188,12 +201,17 @@ fn transport_candidate_rejects_another_owner_and_terminal_matches_later_attempt(
 #[test]
 fn two_real_completed_attempts_share_the_first_world_terminal() {
     let world = installed_world();
-    let receipt = world.commit_dispatch(94, "two-physical-completions");
+    let receipt = { world.commit_dispatch(94, "two-physical-completions") };
     let owner = world
         .application
-        .observe_committed_dispatch_outbox(&receipt)
-        .unwrap()
-        .unwrap();
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_committed_dispatch_outbox(&phase, &receipt)
+                .unwrap()
+                .unwrap()
+        })
+        .expect("the fixture read owns its installed host call");
     let first_attempt = world
         .application
         .admit_external_dispatch_attempt(owner.clone())
@@ -240,6 +258,7 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
             let phase = &active_phase;
             assert!(matches!(
                 world.application.resume_installed_transport_completion(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     owner.record().correlation(),
                     &request
@@ -277,6 +296,7 @@ fn two_real_completed_attempts_share_the_first_world_terminal() {
             let phase = &active_phase;
             assert!(matches!(
                 world.application.resume_installed_transport_completion(
+                    &phase.borrowed_request_for_test(),
                     phase,
                     owner.record().correlation(),
                     &request

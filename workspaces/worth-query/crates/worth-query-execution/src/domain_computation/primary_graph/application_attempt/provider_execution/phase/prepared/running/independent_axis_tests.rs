@@ -263,9 +263,10 @@ fn start(
     Account,
 > {
     let request = live_scope();
-    let principal = authenticated_principal(world, &request);
-    let account = resolved_account(world, "open", &request);
+    let principal = authenticated_principal(&(phase).test_host_request(), world, &request);
+    let account = resolved_account(&(phase).test_host_request(), world, "open", &request);
     let program: RetainedProgram = retained_status_program(
+        &(phase).test_host_request(),
         world,
         &principal,
         &account,
@@ -274,6 +275,7 @@ fn start(
         RetentionMutationBreadth::Narrow,
     );
     let WorthQueryApplicationCommitPreparation::Ready(prepared) = prepare_application_commit(
+        &phase.borrowed_request_for_test(),
         phase,
         &world.application,
         WorthQueryApplicationCommitPreparationRequest::new(program, idempotency, None, None),

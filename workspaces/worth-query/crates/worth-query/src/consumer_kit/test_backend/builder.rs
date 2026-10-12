@@ -61,9 +61,10 @@ impl WorthQueryInMemoryTestRuntimeBuilder {
 
     pub fn controlled_workspace(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         name: impl Into<String>,
     ) -> Result<super::WorthQueryControlledTestWorkspace, WorthQueryTestBackendError> {
-        self.workspace(name)
+        self.workspace(execution, name)
             .map(super::WorthQueryControlledTestWorkspace::new)
     }
 

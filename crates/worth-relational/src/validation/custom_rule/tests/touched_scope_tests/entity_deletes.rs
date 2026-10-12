@@ -2,8 +2,11 @@ use super::*;
 
 #[test]
 fn touched_scope_tracks_planned_entity_deletes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let entity_id = create_entity(&runtime, "entity");
+    let entity_id = create_entity(execution, &runtime, "entity");
     let intent = MutationIntent::Entity(crate::facade::transactions::EntityMutationIntent::Delete(
         DeleteEntityIntent { entity_id },
     ));

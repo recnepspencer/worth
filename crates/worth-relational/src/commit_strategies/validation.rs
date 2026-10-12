@@ -7,9 +7,14 @@ use crate::transactions::data::TransactionCommitError;
 use crate::transactions::data::{CommitConflict, ConflictClass};
 
 pub(crate) fn validate_lowered_plan(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     lowered: LoweredStrategyCommitPlan,
 ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+    crate::authority::commit::pipeline::consult_stage(
+        execution,
+        crate::authority::commit::pipeline::CommitStage::Validation,
+    )?;
     lowered
         .transaction()
         .ensure_current_basis_for_runtime(runtime)
@@ -31,7 +36,8 @@ pub(crate) fn validate_lowered_plan(
     let (transaction, bulk_mutation_batch, selected_branch_state, merged_plan) =
         lowered.into_validation_parts();
 
-    runtime.validate_lowered_strategy_proposal(
+    runtime.validate_consulted_lowered_strategy_proposal(
+        execution,
         transaction,
         selected_branch_state,
         merged_plan,

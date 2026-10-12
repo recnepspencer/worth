@@ -13,6 +13,7 @@ use super::RelationalEffectExecutionFailure;
 
 pub(super) fn execute_lowered_mutation(
     runtime: &mut RelationalRuntime,
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     declaration: &LoweredMutationIntentDeclaration,
 ) -> Result<CommitResult, RelationalEffectExecutionFailure> {
     let target_branch = mutation_target_branch(declaration)?;
@@ -31,7 +32,7 @@ pub(super) fn execute_lowered_mutation(
         open_exact_basis_snapshot(runtime, &target_branch, &transaction_validation_input)?;
     let execution = runtime
         .commit_strategies()
-        .execute(&canonical, &snapshot)
+        .execute(&canonical, &snapshot, request_execution)
         .map_err(|error| {
             lower_runtime_error(
                 error,
@@ -56,12 +57,20 @@ pub(super) fn execute_lowered_mutation(
             )
         })?;
     let validated = commit_authority
-        .validate_lowered_plan(runtime, lowered)
+        .validate_lowered_plan(request_execution, runtime, lowered)
         .map_err(super::relational_execution_deferred::transaction_commit)?;
     let candidate = commit_authority
-        .prepare_validated_commit(runtime, validated)
+        .prepare_validated_commit(request_execution, runtime, validated)
         .map_err(super::relational_execution_deferred::transaction_commit)?;
-    let performed = match runtime.publication_port().compare_and_publish(candidate) {
+    let performed = match runtime
+        .publication_port()
+        .compare_and_publish(request_execution, candidate)
+    {
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::RequestStopped(stop) => {
+            return Err(super::relational_execution_deferred::execution_denial(
+                stop.into(),
+            ));
+        }
         worth_relational::facade::mvcc::RelationalPublicationOutcome::Performed(performed) => {
             performed
         }

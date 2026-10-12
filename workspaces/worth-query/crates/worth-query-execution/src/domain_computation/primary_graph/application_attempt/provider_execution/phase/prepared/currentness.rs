@@ -25,6 +25,7 @@ pub(super) fn select_current_product<Schema: ApplicationSchema>(
 /// exact snapshot; Relational admission and World's publication CAS still reject
 /// any further head movement. Exact-parent candidates retain their old basis.
 pub(super) fn readmit_current_basis<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     retained: WorthQueryApplicationSnapshotLease,
@@ -44,9 +45,10 @@ pub(super) fn readmit_current_basis<Schema, Operation, Input, Scope>(
     {
         return Ok(retained);
     }
-    let current_admission = acquire_current_lease(&retained, current.retained_clone())?;
+    let current_admission = acquire_current_lease(execution, &retained, current.retained_clone())?;
     if let Some(support) = application.program_support.as_ref() {
         super::super::super::program_occurrence_gate::require_readmitted_program_matches(
+            execution,
             support,
             &retained,
             &current_admission,
@@ -57,17 +59,19 @@ pub(super) fn readmit_current_basis<Schema, Operation, Input, Scope>(
         .graph_work_mut()
         .readmit_mutation_lease(retained.product(), current_admission)
         .map_err(|_| denied(DenialStage::DecisionReadSet))?;
-    let current_decision = acquire_current_lease(&retained, current)?;
+    let current_decision = acquire_current_lease(execution, &retained, current)?;
     // No handler rerun or fact replacement: comparison uses the sealed values.
     Ok(current_decision)
 }
 
 fn acquire_current_lease(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     retained: &WorthQueryApplicationSnapshotLease,
     product: crate::basis::WorthQueryProductBranchLease,
 ) -> Result<WorthQueryApplicationSnapshotLease, WorthQueryApplicationCommitOutcome> {
     use crate::domain_computation::primary_graph::application_attempt::snapshot_lease::WorthQueryApplicationSnapshotLeaseDenial as Denial;
     WorthQueryApplicationSnapshotLease::acquire(
+        execution,
         retained.handle().clone(),
         std::sync::Arc::clone(&retained.layout),
         product,

@@ -10,6 +10,8 @@ pub struct WorthQueryWorkflowStageWorkspace<'a> {
         Option<std::sync::Arc<crate::domain_installation::WorthQueryArtifactProductionAuthority>>,
     pub(super) artifact_access_authority:
         Option<std::sync::Arc<crate::domain_installation::WorthQueryArtifactAccessAuthority>>,
+    // The owner retains request refusal even if authored apply renders it as text.
+    pub(super) request_denial: Option<Box<super::WorthQueryWorkflowAdvanceDenialKind>>,
     pub(super) installed_read_executions: usize,
     pub(super) executed_effects: Vec<WorthQueryWorkflowEffectEvidence>,
 }
@@ -28,6 +30,7 @@ impl<'a> WorthQueryWorkflowStageWorkspace<'a> {
             workspace,
             artifact_production_authority,
             artifact_access_authority,
+            request_denial: None,
             installed_read_executions: 0,
             executed_effects: Vec::new(),
         }

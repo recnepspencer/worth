@@ -338,6 +338,7 @@ pub(crate) fn map_recovery_denial(
         | K::CompatibilityGenerationMismatch
         | K::ForeignBranchEqualOrdinal
         | K::AlreadyCompleted
+        | K::CompletionExecutionRequest(_)
         | K::CompletionPublicationPending
         | K::CompletionExecutionDenied { .. }
         | K::CompletionExecutionControlStopped { .. }

@@ -42,6 +42,12 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<PhaseDomain, PhaseOperation, 
             .split(':')
             .nth(2)
             .map_or(17, |count| count.parse::<u64>().unwrap());
+        // Adversarial probes can cap the computation's declaration separately
+        // from the caller budget that also pays for applying native effects.
+        let declared_work = input
+            .split(':')
+            .nth(3)
+            .map_or(count, |work| work.parse::<u64>().unwrap());
         if mode == 1 {
             return Err(computation_failure("prepare failure"));
         }
@@ -51,7 +57,7 @@ impl domain::WorthQueryDomainWorkflowStageExecutor<PhaseDomain, PhaseOperation, 
         Ok(view
             .task(domain::WorthQueryWorkflowStageComputePayload::Words(words))
             .with_computation_limits(
-                if mode == 9 { 0 } else { count },
+                if mode == 9 { 0 } else { declared_work },
                 0,
                 if mode == 11 {
                     128

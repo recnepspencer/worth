@@ -111,6 +111,7 @@ impl WorthQueryPreparedBranchSetAdoption {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn resume_branch_set_adoption(
         &self,
+
         adoption: WorthQueryStoppedBranchSetAdoption,
         coverage: WorthQueryOrderedProgramAdoptionCoverage,
         maximum_selection_work_per_branch: usize,
@@ -119,6 +120,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut retained = Some(adoption);
         let result = self.with_application_advancement(request, |phase| {
         let phase = &phase;
+            let phase_request = match phase.execution_request_for(&self.product_runtime) {
+                Ok(request) => request,
+                Err(cause) => return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::Preparation(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())), retained.take().expect("one admitted resume"))),
+            };
+            let execution = &phase_request;
             let mut adoption = retained.take().expect("one admitted resume");
 
         if coverage.branches() != adoption.remaining.as_ref() {
@@ -127,7 +133,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 adoption,
             ));
         }
-        let (pending, resumed_work) = match self.prepare_branch_set_targets(
+        let (pending, resumed_work) = match self.prepare_branch_set_targets(execution,
             phase,
             coverage.branches(),
             &adoption.target,

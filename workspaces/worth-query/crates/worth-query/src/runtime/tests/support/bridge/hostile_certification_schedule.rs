@@ -63,35 +63,39 @@ struct HostileExecutionState {
 }
 
 pub(in crate::runtime::tests) fn execute_runtime_hostile_schedule(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RuntimeHostileCertificationArtifact {
     let schedule = hostile_schedule();
-    run_hostile_schedule_steps(schedule.steps.iter().copied())
+    run_hostile_schedule_steps(request_execution, schedule.steps.iter().copied())
 }
 
 pub(in crate::runtime::tests) fn replay_runtime_hostile_schedule(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> RuntimeHostileCertificationArtifact {
     let schedule = hostile_schedule();
     let recorded_steps = schedule.steps.to_vec();
-    run_hostile_schedule_steps(recorded_steps)
+    run_hostile_schedule_steps(request_execution, recorded_steps)
 }
 
 fn run_hostile_schedule_steps(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     steps: impl IntoIterator<Item = HostileScheduleStep>,
 ) -> RuntimeHostileCertificationArtifact {
-    let mut state = HostileExecutionState::new();
+    let mut state = HostileExecutionState::new(request_execution);
     for step in steps {
-        state.apply(step);
+        state.apply(request_execution, step);
     }
     state.finish()
 }
 
 impl HostileExecutionState {
-    fn new() -> Self {
-        let mut workspace = stateful_bridge_task_runtime()
+    fn new(request_execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
+        let mut workspace = stateful_bridge_task_runtime(request_execution)
             .workspace("runtime.tests.hostile-certification")
             .expect("workspace should build");
         let live: WorthQueryLiveView<WorthQueryUnrefinedLiveShape> = workspace
             .live_view_request(
+                request_execution,
                 "tasks.hostile-certification",
                 task_live_request(),
                 task_schema(),
@@ -100,6 +104,7 @@ impl HostileExecutionState {
         let invocations = Arc::new(AtomicUsize::new(0));
         let derived = workspace
             .computed_view(
+                request_execution,
                 crate::program::WorthQueryDerivedView::new(
                     "derived.hostile-certification",
                     [test_aspect_touch("title.value")],
@@ -129,20 +134,28 @@ impl HostileExecutionState {
         }
     }
 
-    fn apply(&mut self, step: HostileScheduleStep) {
+    fn apply(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        step: HostileScheduleStep,
+    ) {
         match step {
-            HostileScheduleStep::ConsumeUnpublishedDerived => self.capture_unpublished_posture(),
-            HostileScheduleStep::OpenBranch(label) => self.record_branch_basis(label),
+            HostileScheduleStep::ConsumeUnpublishedDerived => {
+                self.capture_unpublished_posture(request_execution)
+            }
+            HostileScheduleStep::OpenBranch(label) => {
+                self.record_branch_basis(request_execution, label)
+            }
             HostileScheduleStep::DiscardPreview {
                 label,
                 identity,
                 title,
-            } => self.record_preview_discard(label, identity, title),
+            } => self.record_preview_discard(request_execution, label, identity, title),
             HostileScheduleStep::SubmitTask {
                 identity,
                 title,
                 slot,
-            } => self.record_submission_publication(identity, title, slot),
+            } => self.record_submission_publication(request_execution, identity, title, slot),
             HostileScheduleStep::ReconsumePublishedArtifacts {
                 current_slot,
                 stable_slot,
@@ -151,7 +164,7 @@ impl HostileExecutionState {
                 label,
                 identity,
                 title,
-            } => self.record_preview_promotion(label, identity, title),
+            } => self.record_preview_promotion(request_execution, label, identity, title),
         }
     }
 
@@ -175,10 +188,13 @@ impl HostileExecutionState {
         )
     }
 
-    fn capture_unpublished_posture(&mut self) {
+    fn capture_unpublished_posture(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) {
         let unpublished = self
             .workspace
-            .shared_read_context()
+            .shared_read_context(request_execution)
             .expect("shared read context should mint")
             .published_derived_artifact(&self.derived)
             .expect("declared derived handle should mint");
@@ -192,16 +208,21 @@ impl HostileExecutionState {
             .push(hostile_published_artifact_digest(&unpublished, None));
     }
 
-    fn record_branch_basis(&mut self, label: &'static str) {
+    fn record_branch_basis(
+        &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        label: &'static str,
+    ) {
         let branch = self
             .workspace
-            .branch(test_session_label(label))
+            .branch(request_execution, test_session_label(label))
             .expect("branch churn should admit");
         self.branch_bases.push(hostile_branch_basis_digest(&branch));
     }
 
     fn record_preview_discard(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         label: &'static str,
         identity: &'static str,
         title: &'static str,
@@ -209,10 +230,10 @@ impl HostileExecutionState {
         let discarded = {
             let mut preview = self
                 .workspace
-                .preview(test_session_label(label))
+                .preview(request_execution, test_session_label(label))
                 .expect("preview churn should admit");
             preview
-                .insert("Task", |task| {
+                .insert(request_execution, "Task", |task| {
                     task.set_aspect(
                         test_aspect_touch("identity.id"),
                         test_authored_string_aspect_value(identity),
@@ -232,6 +253,7 @@ impl HostileExecutionState {
 
     fn record_submission_publication(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &'static str,
         title: &'static str,
         slot: PublishedArtifactSlot,
@@ -240,7 +262,10 @@ impl HostileExecutionState {
             .workspace
             .submissions()
             .expect("submission lane should mint")
-            .submit(hostile_insert_task_command(identity, title))
+            .submit(
+                request_execution,
+                hostile_insert_task_command(identity, title),
+            )
             .expect("submission should succeed");
         self.receipt_summaries
             .push(hostile_write_receipt_digest(&receipt));
@@ -248,7 +273,7 @@ impl HostileExecutionState {
 
         let artifact = self
             .workspace
-            .shared_read_context()
+            .shared_read_context(request_execution)
             .expect("shared read context should mint")
             .published_derived_artifact(&self.derived)
             .expect("published artifact should mint");
@@ -284,6 +309,7 @@ impl HostileExecutionState {
 
     fn record_preview_promotion(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         label: &'static str,
         identity: &'static str,
         title: &'static str,
@@ -291,10 +317,10 @@ impl HostileExecutionState {
         let promoted = {
             let mut preview = self
                 .workspace
-                .preview(test_session_label(label))
+                .preview(request_execution, test_session_label(label))
                 .expect("preview churn should admit");
             preview
-                .insert("Task", |task| {
+                .insert(request_execution, "Task", |task| {
                     task.set_aspect(
                         test_aspect_touch("identity.id"),
                         test_authored_string_aspect_value(identity),
@@ -305,14 +331,16 @@ impl HostileExecutionState {
                     )
                 })
                 .expect("preview promotion staging should succeed");
-            preview.promote().expect("preview promotion should succeed")
+            preview
+                .promote(request_execution)
+                .expect("preview promotion should succeed")
         };
         self.delivery_residue_count += hostile_preview_delivery_residue_count(&promoted);
         self.preview_closeouts
             .push(hostile_preview_closeout_digest(&promoted));
         let promoted_artifact = self
             .workspace
-            .shared_read_context()
+            .shared_read_context(request_execution)
             .expect("shared read context should mint")
             .published_derived_artifact(&self.derived)
             .expect("third published artifact should mint");

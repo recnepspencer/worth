@@ -2,18 +2,22 @@ use super::*;
 
 #[test]
 fn complexity_budget_partition_local_commit_reports_touched_partitions() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
+    let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
 
     runtime.performance_access().reset_counters();
-    let _ = update_entity(&runtime, left, "left-updated");
+    let _ = update_entity(execution, &runtime, left, "left-updated");
     let single_partition = runtime.performance_access().counters();
     assert_eq!(single_partition.partitions_touched_by_commit, 1);
     assert_eq!(single_partition.full_state_clones, 0);
 
     runtime.performance_access().reset_counters();
-    let _ = create_relation_in_partition(&runtime, left, right, "cross", PartitionId(13));
+    let _ =
+        create_relation_in_partition(execution, &runtime, left, right, "cross", PartitionId(13));
     let cross_partition = runtime.performance_access().counters();
     assert_eq!(cross_partition.partitions_touched_by_commit, 3);
     assert_eq!(cross_partition.full_state_clones, 0);
@@ -21,12 +25,15 @@ fn complexity_budget_partition_local_commit_reports_touched_partitions() {
 
 #[test]
 fn complexity_budget_commit_topology_inference_distinguishes_flat_and_graph_mutations() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let left = create_entity_in_partition(&runtime, "left", PartitionId(7));
-    let right = create_entity_in_partition(&runtime, "right", PartitionId(11));
+    let left = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
 
     runtime.performance_access().reset_counters();
-    let _ = update_entity(&runtime, left, "left-updated");
+    let _ = update_entity(execution, &runtime, left, "left-updated");
     let flat = runtime.performance_access().counters();
     assert_eq!(
         flat.commit_topology_flags,
@@ -34,7 +41,8 @@ fn complexity_budget_commit_topology_inference_distinguishes_flat_and_graph_muta
     );
 
     runtime.performance_access().reset_counters();
-    let _ = create_relation_in_partition(&runtime, left, right, "cross", PartitionId(13));
+    let _ =
+        create_relation_in_partition(execution, &runtime, left, right, "cross", PartitionId(13));
     let graph = runtime.performance_access().counters();
     assert_eq!(
         graph.commit_topology_flags,
@@ -44,6 +52,9 @@ fn complexity_budget_commit_topology_inference_distinguishes_flat_and_graph_muta
 
 #[test]
 fn complexity_budget_bulk_create_reserves_exact_logical_slots() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     runtime.performance_access().reset_counters();
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
@@ -79,12 +90,7 @@ fn complexity_budget_bulk_create_reserves_exact_logical_slots() {
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
-    let _ = txn
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let _ = txn.commit(execution, &runtime).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.bulk_entity_slots_reserved, 3);
@@ -93,14 +99,17 @@ fn complexity_budget_bulk_create_reserves_exact_logical_slots() {
 
 #[test]
 fn complexity_budget_mutation_structural_invariants_are_touched_slot_bounded() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let target = create_entity(&runtime, "target");
+    let target = create_entity(execution, &runtime, "target");
     for index in 0..8 {
-        let _ = create_entity(&runtime, &format!("e{index}"));
+        let _ = create_entity(execution, &runtime, &format!("e{index}"));
     }
 
     runtime.performance_access().reset_counters();
-    let _ = update_entity(&runtime, target, "target-updated");
+    let _ = update_entity(execution, &runtime, target, "target-updated");
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.entity_slots_touched_by_commit, 1);
@@ -110,12 +119,15 @@ fn complexity_budget_mutation_structural_invariants_are_touched_slot_bounded() {
 
 #[test]
 fn complexity_budget_relation_structural_invariants_are_touched_slot_bounded() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
 
     runtime.performance_access().reset_counters();
-    let _ = create_relation(&runtime, source, target, "r0");
+    let _ = create_relation(execution, &runtime, source, target, "r0");
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.entity_slots_touched_by_commit, 0);
@@ -125,15 +137,18 @@ fn complexity_budget_relation_structural_invariants_are_touched_slot_bounded() {
 
 #[test]
 fn complexity_contract_partition_edition_acquisition_is_declared_and_measured() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_test_schema();
     for index in 0..8 {
-        let _ = create_entity(&runtime, &format!("e{index}"));
+        let _ = create_entity(execution, &runtime, &format!("e{index}"));
     }
 
     runtime.performance_access().reset_counters();
-    let entity = create_entity(&runtime, "target");
+    let entity = create_entity(execution, &runtime, "target");
     runtime.performance_access().reset_counters();
-    let _ = update_entity(&runtime, entity, "target-updated");
+    let _ = update_entity(execution, &runtime, entity, "target-updated");
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.full_state_clones, 0);

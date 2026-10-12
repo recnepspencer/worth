@@ -151,6 +151,7 @@ where
                     return Err(WorthQueryWorkflowAssessmentAcceptanceDenial::RequirementMismatch);
                 }
                 if let Some(replayed) = WorthQueryWorkflowAdvanceAdapter::resolve_assessment_replay(
+                    &phase,
                     self.application,
                     &self.prepared,
                     settlement.required(),

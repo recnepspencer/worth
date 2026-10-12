@@ -17,10 +17,14 @@ use worth_relational::facade::transactions::{RecordRef, WorkerIntentBatch};
 
 #[test]
 fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let branch = BranchId("main".to_owned());
     let batch = lower_hazard_v2_batch(&world.handles).unwrap();
     let committed = commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         branch.clone(),
@@ -39,12 +43,16 @@ fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
     let replay = world
         .runtime
         .replay_authority()
-        .replay_commit(RelationalReplayRequest {
-            commit_id: committed.commit.commit_id,
-            branch_id: branch,
-            execution_mode: ReplayExecutionMode::SerialDeterministic,
-            verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
-        });
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: committed.commit.commit_id,
+                branch_id: branch,
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::NormalRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
     assert_eq!(
         replay.failure, None,
         "V2 replay must reconstruct through envelope authority: {replay:?}"
@@ -59,9 +67,13 @@ fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
 
 #[test]
 fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let branch = BranchId("main".to_owned());
     let transitioned = commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         branch.clone(),
@@ -69,6 +81,7 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
         lower_hazard_v2_batch(&world.handles).unwrap(),
     );
     let successor = commit_branch_batch_with_result(
+        execution,
         &world.runtime,
         branch,
         WorkerIntentBatch::new("supply-chain-v2-successor"),
@@ -77,7 +90,7 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
     let read = world
         .runtime
         .read_truth()
-        .read_snapshot(&transitioned.snapshot)
+        .read_snapshot(&transitioned.snapshot, execution)
         .expect("the retained V2 snapshot remains readable after its branch advances");
     assert!(!read.entities().is_empty());
     assert!(!read.relations().is_empty());
@@ -111,10 +124,14 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
 
 #[test]
 fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
-    let (world, _) = certified_supply_chain_world(SupplyChainScale::court());
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let branch = BranchId("hazard-v2".to_owned());
     fork_supply_chain_branch_from_main(&world.runtime, branch.clone());
     let transitioned = commit_supply_chain_delta(
+        execution,
         &world.runtime,
         &world.program,
         branch.clone(),
@@ -122,6 +139,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
         lower_hazard_v2_batch(&world.handles).unwrap(),
     );
     let retained_observed = observe_supply_chain_snapshot(
+        execution,
         &world.program,
         &world.handles.for_snapshot(transitioned.snapshot.clone()),
         &world.runtime,
@@ -140,7 +158,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
     let retained_view = world
         .runtime
         .read_truth()
-        .read_snapshot(&transitioned.snapshot)
+        .read_snapshot(&transitioned.snapshot, execution)
         .expect("the retained V2 snapshot supplies exact query targets");
     let cargo_id = world.handles.medical_cargo().id;
     let entity = retained_view
@@ -178,6 +196,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
         .collect::<std::collections::BTreeMap<_, _>>();
     drop(retained_view);
     let successor = commit_branch_batch_with_result(
+        execution,
         &world.runtime,
         branch,
         lower_cargo_footprint_batch(&world.handles, SupplyChainScale::court(), 1),
@@ -185,7 +204,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
     let successor_view = world
         .runtime
         .read_truth()
-        .read_snapshot(&successor.snapshot)
+        .read_snapshot(&successor.snapshot, execution)
         .expect("the changed V2 successor is readable");
     let successor_cargo = successor_view
         .entities()
@@ -243,18 +262,19 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
         target_count_hint: 1,
     };
 
-    let explicit_outcome = execute_exact_query(&world, &transitioned.snapshot, explicit);
+    let explicit_outcome = execute_exact_query(execution, &world, &transitioned.snapshot, explicit);
     assert_eq!(explicit_outcome.result.entities, vec![entity.clone()]);
     assert_eq!(explicit_outcome.result.relations, vec![relation.clone()]);
     assert_matches_retained_root(&explicit_outcome, &retained_entities, &retained_relations);
     assert_schema_v2(&explicit_outcome);
 
-    let kind_outcome = execute_exact_query(&world, &transitioned.snapshot, kind_scan);
+    let kind_outcome = execute_exact_query(execution, &world, &transitioned.snapshot, kind_scan);
     assert_eq!(kind_outcome.result.entities, expected_kind_entities);
     assert_matches_retained_root(&kind_outcome, &retained_entities, &retained_relations);
     assert_schema_v2(&kind_outcome);
 
-    let traversal_outcome = execute_exact_query(&world, &transitioned.snapshot, traversal);
+    let traversal_outcome =
+        execute_exact_query(execution, &world, &transitioned.snapshot, traversal);
     let traversed_relation = traversal_outcome
         .result
         .relations
@@ -279,6 +299,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
 }
 
 fn execute_exact_query(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::world::supply_chain::ProductionSeededSupplyChainWorld,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     packet: PlannedQueryPacket,
@@ -291,7 +312,9 @@ fn execute_exact_query(
     world
         .runtime
         .read_truth()
-        .execute_query_plan(plan)
+        .execute_query_plan(plan, execution)
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("the exact V2 query plan executes")
 }
 

@@ -46,6 +46,8 @@ pub(crate) struct RelationalPreparationRuntime {
 
 impl RelationalPreparationOwnerBinding {
     pub(crate) fn from_runtime(runtime: &super::RelationalRuntime) -> Self {
+        #[cfg(test)]
+        crate::mvcc::split_contacts::binding_capture();
         Self {
             configuration: runtime.configuration_binding(),
             history: runtime.history.preparation_binding(),
@@ -92,10 +94,13 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
-    pub(crate) fn with_commit_work_budget(&self) -> Self {
+    pub(crate) fn with_commit_work_budget(
+        &self,
+        prior: Option<crate::execution::RequestWorkBudget>,
+    ) -> Self {
         let mut runtime = self.clone();
         if runtime.commit_work_budget.is_none() {
-            runtime.commit_work_budget = Some(crate::execution::RequestWorkBudget::new());
+            runtime.commit_work_budget = Some(prior.unwrap_or_default());
         }
         runtime
     }
@@ -103,6 +108,8 @@ impl RelationalPreparationRuntime {
     pub(crate) fn admit_operation(
         &self,
     ) -> Option<super::owner_lifecycle::AdmittedRelationalRuntimeOperation> {
+        #[cfg(test)]
+        crate::mvcc::split_contacts::admission();
         self.lifecycle.admit()
     }
 

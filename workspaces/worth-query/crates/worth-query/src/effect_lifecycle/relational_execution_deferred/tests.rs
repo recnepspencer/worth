@@ -2,6 +2,25 @@ use super::*;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 
 #[test]
+fn publication_request_stops_keep_the_existing_control_mapping() {
+    for (stop, expected) in [
+        (
+            worth_execution::MapKernelStop::Cancelled,
+            crate::effect_lifecycle::EffectExecutionControlStopKind::Cancelled,
+        ),
+        (
+            worth_execution::MapKernelStop::DeadlineElapsed,
+            crate::effect_lifecycle::EffectExecutionControlStopKind::TimedOut,
+        ),
+    ] {
+        let failure = execution_denial(worth_execution::WorkCeilingDenial::Stopped(stop).into());
+        assert!(
+            matches!(failure, RelationalEffectExecutionFailure::ControlStopped { kind, .. } if kind == expected)
+        );
+    }
+}
+
+#[test]
 fn resource_pressure_remains_typed_across_the_effect_boundary() {
     let owner = crate::test_execution_authority::authority();
     let lease = owner
@@ -96,8 +115,13 @@ fn materialization_staging_denials_preserve_authority_meaning() {
 
 #[test]
 fn leased_execution_is_typed_at_the_effect_boundary() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
-    let observed = transaction_commit(crate::relational_execution_refusal::work_exhausted());
+    let observed = transaction_commit(crate::relational_execution_refusal::work_exhausted(
+        execution,
+    ));
     assert!(matches!(
         observed,
         RelationalEffectExecutionFailure::Denied {

@@ -10,12 +10,15 @@ use worth_foundational::facade::{
 
 #[test]
 fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     for (clear_second, reverse_order) in
         [(false, false), (false, true), (true, false), (true, true)]
     {
         let runtime =
             runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-        let entity = create_entity(&runtime, "before");
+        let entity = create_entity(execution, &runtime, "before");
         let contract = entity_name_contract(&runtime);
         let before_snapshot = runtime.visibility_authority().snapshot();
         let before_patch = runtime.publication().latest_bundle().unwrap().patch.clone();
@@ -44,10 +47,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
         }
 
         let error = transaction
-            .commit(
-                &runtime,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .commit(execution, &runtime)
             .expect_err("same-record updates must conflict");
         assert!(matches!(
             error,
@@ -66,7 +66,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
 
         let read = runtime
             .read_truth()
-            .read_snapshot(&after_snapshot)
+            .read_snapshot(&after_snapshot, execution)
             .expect("unchanged snapshot");
         let value = read
             .get_entity(entity)
@@ -175,14 +175,22 @@ fn native_create_merge_is_stable_across_batch_permutations() {
 
 #[test]
 fn compatibility_and_native_scalar_authoring_publish_identical_patch_meaning() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let compatibility_runtime =
         runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let compatibility_entity = create_entity(&compatibility_runtime, "before");
-    let compatibility = update_entity(&compatibility_runtime, compatibility_entity, "after");
+    let compatibility_entity = create_entity(execution, &compatibility_runtime, "before");
+    let compatibility = update_entity(
+        execution,
+        &compatibility_runtime,
+        compatibility_entity,
+        "after",
+    );
 
     let native_runtime =
         runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let native_entity = create_entity(&native_runtime, "before");
+    let native_entity = create_entity(execution, &native_runtime, "before");
     let contract = entity_name_contract(&native_runtime);
     let mut transaction =
         crate::tests::support::test_owner_begin_transaction_for_main(&native_runtime);
@@ -195,12 +203,7 @@ fn compatibility_and_native_scalar_authoring_publish_identical_patch_meaning() {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("test staging stays within configured resource budgets");
-    let native = transaction
-        .commit(
-            &native_runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let native = transaction.commit(execution, &native_runtime).unwrap();
 
     assert_eq!(
         compatibility.patch()[0].authoritative_patch,
@@ -214,8 +217,11 @@ fn compatibility_and_native_scalar_authoring_publish_identical_patch_meaning() {
 
 #[test]
 fn compatibility_and_native_updates_on_one_target_have_one_conflict_law() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let entity = create_entity(&runtime, "before");
+    let entity = create_entity(execution, &runtime, "before");
     let contract = entity_name_contract(&runtime);
     let before_snapshot = runtime
         .publication()
@@ -245,10 +251,7 @@ fn compatibility_and_native_updates_on_one_target_have_one_conflict_law() {
         .expect("test staging stays within configured resource budgets");
 
     assert!(matches!(
-        transaction.commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        ),
+        transaction.commit(execution, &runtime),
         Err(TransactionCommitError::Conflict {
             error: CommitConflict {
                 class: ConflictClass::ConflictingIntent { .. },
@@ -265,10 +268,13 @@ fn compatibility_and_native_updates_on_one_target_have_one_conflict_law() {
 
 #[test]
 fn mixed_native_entity_and_relation_updates_share_one_atomic_commit() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-    let source = create_entity(&runtime, "source");
-    let target = create_entity(&runtime, "target");
-    let relation = create_relation(&runtime, source, target, "before");
+    let source = create_entity(execution, &runtime, "source");
+    let target = create_entity(execution, &runtime, "target");
+    let relation = create_relation(execution, &runtime, source, target, "before");
     let entity_contract = entity_name_contract(&runtime);
     let relation_contract = runtime
         .relation_aspect_plan(KindId(2))
@@ -297,12 +303,7 @@ fn mixed_native_entity_and_relation_updates_share_one_atomic_commit() {
         )
         .expect("test staging stays within configured resource budgets");
 
-    let committed = transaction
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+    let committed = transaction.commit(execution, &runtime).unwrap();
     assert_eq!(committed.patch().len(), 2);
     assert!(committed.patch().iter().any(
         |record: &crate::publication::patch::data::PublishedAuthoritativeRecordPatch| {

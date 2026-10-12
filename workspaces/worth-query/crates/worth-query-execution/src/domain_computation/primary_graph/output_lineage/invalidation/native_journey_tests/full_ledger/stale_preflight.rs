@@ -5,11 +5,20 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = world_installing(|defaults| WorthQueryInvalidationResourceInstallation {
         maximum_retained_bytes: MAXIMUM_RETAINED_BYTES,
         ..defaults
     });
-    let entity = resolved_account(&world, "open", &live_scope()).entity_id();
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            resolved_account(&(phase).test_host_request(), &world, "open", &live_scope())
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
     let owner = &handle.source_owner.invalidation_owner;
@@ -26,7 +35,7 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
             MAXIMUM_RETAINED_BYTES - owner.resources.retained_capacity_bytes(),
         )
         .unwrap();
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         let (_, source) = runtime
             .observe_fork_source(runtime.main_branch_identity().branch_id())
             .unwrap();
@@ -52,29 +61,31 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
             )
             .unwrap();
             runtime
-                .prepare_branch_transaction(
-                    tx,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
+                .prepare_branch_transaction(request_execution, tx)
                 .unwrap()
         };
         let w1 = prepare(runtime, "winner");
         let w2 = prepare(runtime, "stale-loser");
-        let RelationalPublicationOutcome::Performed(performed) =
-            runtime.publication_port().compare_and_publish(w1)
+        let RelationalPublicationOutcome::Performed(performed) = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, w1)
         else {
             panic!("the full ledger cannot refuse W1");
         };
         let committed = runtime.settle_performed_publication(performed).unwrap();
         release_test_commit_snapshot(runtime, &committed);
         drop(held);
-        let stale = runtime.publication_port().compare_and_publish(w2);
+        let stale = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, w2);
         assert!(
             matches!(stale, RelationalPublicationOutcome::Stale(_)),
             "W2 must be stale: {stale:?}"
         );
         let later = prepare(runtime, "later-writer");
-        let outcome = runtime.publication_port().compare_and_publish(later);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, later);
         let RelationalPublicationOutcome::Performed(performed) = outcome else {
             panic!(
                 "a stale candidate cannot poison the lookup or defer a later writer: {outcome:?}"

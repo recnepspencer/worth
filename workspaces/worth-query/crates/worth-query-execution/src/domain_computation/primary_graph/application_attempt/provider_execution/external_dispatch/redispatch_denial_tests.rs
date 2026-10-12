@@ -69,7 +69,8 @@ fn every_refusal() -> Vec<Redispatch> {
         | Redispatch::CompletionInputDirectoryAllocationDenied { .. }
         | Redispatch::TerminalIndexUnavailable
         | Redispatch::CanonicalDerivationDenied
-        | Redispatch::TimeObservationDenied => denial,
+        | Redispatch::TimeObservationDenied
+        | Redispatch::CompletionExecutionRequest(_) => denial,
     };
     [
         Redispatch::AdmissionCancelled,

@@ -6,6 +6,9 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[test]
 fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_before_install() {
+    let host_request = crate::test_request_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let world = super::marking_ceiling::world_installing(|defaults| {
         crate::domain_computation::execution_runtime::WorthQueryInvalidationResourceInstallation {
             maximum_preparation_bytes: 256 * 1024 * 1024,
@@ -14,16 +17,25 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
             ..defaults
         }
     });
-    let selected = world.selected_product();
-    let entity = selected
-        .resolve_entity(
-            AccountStatus::reference(),
-            "open".into(),
-            &live_scope(),
-            WorthQueryPrincipalResolutionMode::Ordinary,
-        )
-        .unwrap()
-        .entity_id();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let entity = world
+        .application
+        .with_host_advancement(|phase| {
+            selected
+                .resolve_entity(
+                    &phase,
+                    AccountStatus::reference(),
+                    "open".into(),
+                    &live_scope(),
+                    WorthQueryPrincipalResolutionMode::Ordinary,
+                )
+                .unwrap()
+                .entity_id()
+        })
+        .expect("the fixture read owns its installed host call");
     let (_, product, _) = selected.into_parts();
     let coordinate = ProductCoordinate {
         occurrence: product.observation().lifecycle_incarnation(),
@@ -44,11 +56,23 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
         .field_locator(status_ref.entity(), status_ref.aspect(), status_ref.field())
         .unwrap()
         .clone();
-    let (snapshot_handle, basis, fact) = handle.with_runtime(|runtime| {
-        let (snapshot_handle, basis) = snapshot(runtime);
-        let fact = field_fact(runtime, &snapshot_handle, entity, status);
-        (snapshot_handle, basis, fact)
-    });
+    let (snapshot_handle, basis, fact) = world
+        .application
+        .with_host_advancement(|phase| {
+            let host_custody = phase.test_host_request();
+            handle.with_runtime(request_execution, |runtime| {
+                let (snapshot_handle, basis) = snapshot(runtime);
+                let fact = field_fact(
+                    &host_custody.borrowed_request_for_test(),
+                    runtime,
+                    &snapshot_handle,
+                    entity,
+                    status,
+                );
+                (snapshot_handle, basis, fact)
+            })
+        })
+        .expect("the fixture read owns its installed host call");
     let first = RecordedSettlementIdentity::retain(&source, coordinate, 0);
     let second = RecordedSettlementIdentity::retain(&source, coordinate, 1);
     let registration = |identity, count| SettlementRegistration {
@@ -146,7 +170,7 @@ fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_be
         .postings
         .values()
         .all(|postings| postings.len() == 1));
-    handle.with_runtime_mut(|runtime| {
+    handle.with_runtime_mut(request_execution, |runtime| {
         runtime
             .snapshots()
             .release_snapshot(&snapshot_handle)

@@ -233,11 +233,14 @@ impl WorthQueryApplicationBasisLease {
         &self.core().graph
     }
 
-    pub fn is_live(&self) -> bool {
+    pub fn is_live(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
         self.core().basis.is_some()
             && self.core().snapshot.as_ref().is_some_and(|snapshot| {
-                self.core().graph.with_runtime(|runtime| {
-                    runtime.read_truth().project_snapshot(snapshot).is_some()
+                self.core().graph.with_runtime(execution, |runtime| {
+                    runtime
+                        .read_truth()
+                        .project_snapshot(snapshot, execution)
+                        .is_some()
                 })
             })
     }
@@ -284,7 +287,7 @@ impl BasisLeaseCore {
             .expect("active Query basis owns Native retention");
         let receipt = self
             .graph
-            .with_runtime(|runtime| runtime.release_component_basis(retention))
+            .release_component_basis(retention)
             .unwrap_or_else(|denial| {
                 panic!(
                     "Query retained a lease its Native owner rejected: {:?}",

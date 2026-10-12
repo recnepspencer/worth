@@ -11,6 +11,9 @@ use crate::symbols::data::ClientKey;
 
 #[test]
 fn stale_strategy_basis_denies_before_raw_key_normalization() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = crate::runtime::builder::RelationalRuntimeBuilder::new()
         .schema_registry(crate::tests::support::test_schema_registry())
         .client_key_symbol_policy(crate::symbols::data::ClientKeySymbolPolicy::RequireInterned)
@@ -20,7 +23,7 @@ fn stale_strategy_basis_denies_before_raw_key_normalization() {
     let transaction = runtime
         .begin_branch_transaction_with_owner_inputs(validation_input)
         .expect("owner context opens a branch-bound transaction");
-    crate::tests::support::create_entity_outcome(&runtime, "strategy-basis-advance");
+    crate::tests::support::create_entity_outcome(execution, &runtime, "strategy-basis-advance");
     let symbols_before = runtime.services.symbols.clone();
     let configured_symbols_before = runtime.config().identity.symbol_table.clone();
     let branch_cells_before = runtime.history().branch_cells_snapshot();
@@ -113,8 +116,11 @@ fn foreign_strategy_basis_preserves_taxonomy_and_exact_target_state() {
 
 #[test]
 fn sibling_strategy_target_denies_before_normalization_with_zero_residue() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let runtime = require_interned_runtime();
-    crate::tests::support::create_entity_outcome(&runtime, "shared-strategy-root");
+    crate::tests::support::create_entity_outcome(execution, &runtime, "shared-strategy-root");
     fork_from_main(&runtime, "strategy-storm");
     fork_from_main(&runtime, "strategy-maintenance");
     let mut storm = begin_on(&runtime, "strategy-storm");
@@ -125,10 +131,7 @@ fn sibling_strategy_target_denies_before_normalization_with_zero_residue() {
         )
         .expect("test staging stays within configured resource budgets");
     let storm_outcome = storm
-        .commit(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .commit(execution, &runtime)
         .expect("storm create commits");
     let storm_only = storm_outcome
         .changed_records

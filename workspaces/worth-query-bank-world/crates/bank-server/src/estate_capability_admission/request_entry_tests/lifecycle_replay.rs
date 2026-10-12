@@ -73,10 +73,13 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     else {
         panic!("first approval must commit");
     };
-    let first_commit = fixture
-        .runtime
-        .request(&approver, &scope)
-        .retain_read()
+    let first_commit =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&approver, &scope)
+                .retain_read(phase)
+        })
         .unwrap()
         .selected_commit()
         .clone();
@@ -108,12 +111,14 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     };
     assert_eq!(replayed.query().approver(), first.query().approver());
     assert_eq!(
-        fixture
-            .runtime
-            .request(&approver, &scope)
-            .retain_read()
-            .unwrap()
-            .selected_commit(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&approver, &scope)
+                .retain_read(phase)
+        })
+        .unwrap()
+        .selected_commit(),
         &first_commit,
     );
 
@@ -137,10 +142,13 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         );
     };
     let first_closed_at = mandatory.closed_at().clone();
-    let closed_commit = fixture
-        .runtime
-        .request(&approver, &scope)
-        .retain_read()
+    let closed_commit =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&approver, &scope)
+                .retain_read(phase)
+        })
         .unwrap()
         .selected_commit()
         .clone();
@@ -161,12 +169,14 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     assert_eq!(replayed_mandatory.closure_kind(), mandatory.closure_kind());
     assert_eq!(replayed_mandatory.closed_at(), mandatory.closed_at());
     assert_eq!(
-        fixture
-            .runtime
-            .request(&approver, &scope)
-            .retain_read()
-            .unwrap()
-            .selected_commit(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&approver, &scope)
+                .retain_read(phase)
+        })
+        .unwrap()
+        .selected_commit(),
         &closed_commit,
     );
 
@@ -190,10 +200,13 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     else {
         panic!("first mandatory review must commit");
     };
-    let reviewed_commit = fixture
-        .runtime
-        .request(&reviewer, &scope)
-        .retain_read()
+    let reviewed_commit =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&reviewer, &scope)
+                .retain_read(phase)
+        })
         .unwrap()
         .selected_commit()
         .clone();
@@ -214,12 +227,14 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     assert_eq!(replayed_review.closure_kind(), reviewed.closure_kind());
     assert_eq!(replayed_review.reviewed_at(), reviewed.reviewed_at());
     assert_eq!(
-        fixture
-            .runtime
-            .request(&reviewer, &scope)
-            .retain_read()
-            .unwrap()
-            .selected_commit(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&reviewer, &scope)
+                .retain_read(phase)
+        })
+        .unwrap()
+        .selected_commit(),
         &reviewed_commit,
     );
     for offset in 0..65_u64 {
@@ -262,10 +277,13 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
     else {
         panic!("an unapproved request must commit before the time cutover");
     };
-    let after_eviction = fixture
-        .runtime
-        .request(&reviewer, &scope)
-        .retain_read()
+    let after_eviction =
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&reviewer, &scope)
+                .retain_read(phase)
+        })
         .unwrap()
         .selected_commit()
         .clone();
@@ -327,12 +345,14 @@ fn lifecycle_replays_through_query_after_each_prior_transition() {
         "exact approval replay must survive later close and review: {later_approval:?}"
     );
     assert_eq!(
-        fixture
-            .runtime
-            .request(&reviewer, &scope)
-            .retain_read()
-            .unwrap()
-            .selected_commit(),
+        crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
+            fixture
+                .runtime
+                .request(&reviewer, &scope)
+                .retain_read(phase)
+        })
+        .unwrap()
+        .selected_commit(),
         &after_eviction,
     );
 }

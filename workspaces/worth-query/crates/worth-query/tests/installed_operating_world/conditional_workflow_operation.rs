@@ -13,6 +13,9 @@ use super::installed_operation_fixture::{
 
 #[test]
 fn eligible_operation_condition_enters_the_run_before_any_stage_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = node(
         "workflow-operation-eligible",
         domain::WorthQueryComparatorRequirement::ExactCanonicalValue,
@@ -21,6 +24,7 @@ fn eligible_operation_condition_enters_the_run_before_any_stage_work() {
     let installation = conditional_installation(&node);
     let captured = Arc::new(Mutex::new(None));
     let mut workspace = operation_conditional_workflow_workspace_with(
+        request_execution,
         "workflow-operation-eligible",
         node,
         installation,
@@ -65,6 +69,9 @@ fn eligible_operation_condition_enters_the_run_before_any_stage_work() {
 
 #[test]
 fn deferred_operation_condition_returns_fresh_retry_authority_and_zero_stage_work() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = domain_condition_node("workflow-operation-deferred");
     let mut installation = conditional_installation(&node);
     installation.providers = worth_runtime_bridge::facade::BridgeConditionalProviderSet::new()
@@ -73,6 +80,7 @@ fn deferred_operation_condition_returns_fresh_retry_authority_and_zero_stage_wor
         ));
     let compute_contacts = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let mut workspace = operation_conditional_workflow_workspace_with(
+        request_execution,
         "workflow-operation-deferred",
         node,
         installation,
@@ -119,6 +127,9 @@ fn deferred_operation_condition_returns_fresh_retry_authority_and_zero_stage_wor
 
 #[test]
 fn ineligible_operation_condition_cannot_create_a_workflow_run() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let node = domain_condition_node("workflow-operation-suppressed");
     let mut installation = conditional_installation(&node);
     installation.providers = worth_runtime_bridge::facade::BridgeConditionalProviderSet::new()
@@ -127,6 +138,7 @@ fn ineligible_operation_condition_cannot_create_a_workflow_run() {
         ));
     let compute_contacts = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let mut workspace = operation_conditional_workflow_workspace_with(
+        request_execution,
         "workflow-operation-suppressed",
         node,
         installation,

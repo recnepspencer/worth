@@ -5,12 +5,16 @@ use super::{
 
 #[test]
 fn full_receipt_evidence_matches_reference_on_success_and_failure() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     let _probe = phased_workflow::fold_executor::ComputeProbe::new();
     for mode in 0..=5 {
         for position in 0..3 {
             let mut reference_workspace =
-                phased_workflow::reference_workspace("phase-full-evidence");
-            let mut phased_workspace = phased_workflow::phased_workspace("phase-full-evidence");
+                phased_workflow::reference_workspace(request_execution, "phase-full-evidence");
+            let mut phased_workspace =
+                phased_workflow::phased_workspace(request_execution, "phase-full-evidence");
             let members = || {
                 let mut members = inputs();
                 members[position].1 =

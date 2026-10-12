@@ -44,6 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
     QueryResult,
     Scope,
 >(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     basis: &AdmittedRelationalBranchBasis,
@@ -81,8 +82,8 @@ pub(in crate::domain_computation::primary_graph::application_query) fn ensure_se
         .map_err(|_| work_denial(query.name()))?;
     let retained_basis = basis.clone();
     graph
-        .with_runtime(|runtime| {
-            ensure_selected_field_indexes_admitted(runtime, basis, [root, target], admission)
+        .with_runtime(execution, |runtime| {
+            ensure_selected_field_indexes_admitted(execution, runtime, basis, [root, target], admission)
         })
         .map_err(|stop| match stop {
             SelectedFieldIndexAdmissionStop::Admission(

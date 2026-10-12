@@ -19,11 +19,15 @@ fn fork(
     source: WorthQueryProductBranch,
 ) -> WorthQueryProductBranch {
     host.runtime()
-        .branches()
-        .fork(source)
-        .components(|components| components.fork_relational().reuse_exact_signal_basis())
-        .create()
-        .expect("the covered branch must publish")
+        .with_host_advancement(|host_phase| {
+            host.runtime()
+                .branches()
+                .fork(source)
+                .components(|components| components.fork_relational().reuse_exact_signal_basis())
+                .create(&host_phase)
+                .expect("the covered branch must publish")
+        })
+        .expect("installed host call opens")
 }
 
 fn target_revision(

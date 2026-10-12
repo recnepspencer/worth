@@ -32,12 +32,25 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) =
+        certified_supply_chain_world(request_execution, SupplyChainScale::court());
+    assert_oracle_matches(request_execution, &world, &expected);
     let court = OwnerPhaseCourtBranches::fork(&world);
-    let storm_batch = lower_court_delta(&world, &court.storm, DeltaId::StormRerouteAurora);
-    let maintenance_batch =
-        lower_court_delta(&world, &court.maintenance, DeltaId::MaintainAtlasBerth);
+    let storm_batch = lower_court_delta(
+        request_execution,
+        &world,
+        &court.storm,
+        DeltaId::StormRerouteAurora,
+    );
+    let maintenance_batch = lower_court_delta(
+        request_execution,
+        &world,
+        &court.maintenance,
+        DeltaId::MaintainAtlasBerth,
+    );
 
     let pause = OwnerPhasePause::new();
     let storm_transaction = begin_court_transaction(
@@ -48,15 +61,15 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
     );
     let preparation = world.runtime.preparation_port();
     let storm_worker = std::thread::spawn(move || {
-        preparation.prepare_branch_transaction(
-            storm_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+        let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+        preparation.prepare_branch_transaction(request_execution, storm_transaction)
     });
     pause.await_arrival("candidate preparation");
 
     let before = court.capture(&world.runtime);
     let committed = commit_unrelated_branch_while_paused(
+        request_execution,
         &world,
         &court,
         &before,
@@ -77,22 +90,36 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
         .discard_prepared_candidate(storm_candidate)
         .expect("the released storm candidate discards through its own owner port");
     assert_court_commit_matches_oracle(
+        request_execution,
         &world,
         &committed,
         BranchLabel::Maintenance,
         DeltaId::MaintainAtlasBerth,
     );
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(request_execution, &world, &expected);
 }
 
 #[test]
 fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) =
+        certified_supply_chain_world(request_execution, SupplyChainScale::court());
+    assert_oracle_matches(request_execution, &world, &expected);
     let court = OwnerPhaseCourtBranches::fork(&world);
-    let storm_batch = lower_court_delta(&world, &court.storm, DeltaId::StormRerouteAurora);
-    let maintenance_batch =
-        lower_court_delta(&world, &court.maintenance, DeltaId::MaintainAtlasBerth);
+    let storm_batch = lower_court_delta(
+        request_execution,
+        &world,
+        &court.storm,
+        DeltaId::StormRerouteAurora,
+    );
+    let maintenance_batch = lower_court_delta(
+        request_execution,
+        &world,
+        &court.maintenance,
+        DeltaId::MaintainAtlasBerth,
+    );
 
     let pause = OwnerPhasePause::new();
     let storm_transaction = begin_court_transaction(
@@ -104,17 +131,22 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
     let storm_candidate = world
         .runtime
         .preparation_port()
-        .prepare_branch_transaction(
-            storm_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(request_execution, storm_transaction)
         .expect("the storm candidate prepares before the publication court opens");
     let publication = world.runtime.publication_port();
-    let storm_worker = std::thread::spawn(move || publication.compare_and_publish(storm_candidate));
+    let storm_worker = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let request_execution =
+                &worth_execution::ExecutionRequest::serial(&publication_request);
+            publication.compare_and_publish(request_execution, storm_candidate)
+        }
+    });
     pause.await_arrival("publication critical-section entry");
 
     let before = court.capture(&world.runtime);
     let committed = commit_unrelated_branch_while_paused(
+        request_execution,
         &world,
         &court,
         &before,
@@ -156,22 +188,36 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
         "storm's own publication charges exactly one uncontended storm contact, so the zero-delta claim measures a live counter"
     );
     assert_court_commit_matches_oracle(
+        request_execution,
         &world,
         &committed,
         BranchLabel::Maintenance,
         DeltaId::MaintainAtlasBerth,
     );
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(request_execution, &world, &expected);
 }
 
 #[test]
 fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() {
-    let (world, expected) = certified_supply_chain_world(SupplyChainScale::court());
-    assert_oracle_matches(&world, &expected);
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
+    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let (world, expected) =
+        certified_supply_chain_world(request_execution, SupplyChainScale::court());
+    assert_oracle_matches(request_execution, &world, &expected);
     let court = OwnerPhaseCourtBranches::fork(&world);
-    let storm_batch = lower_court_delta(&world, &court.storm, DeltaId::StormRerouteAurora);
-    let maintenance_batch =
-        lower_court_delta(&world, &court.maintenance, DeltaId::MaintainAtlasBerth);
+    let storm_batch = lower_court_delta(
+        request_execution,
+        &world,
+        &court.storm,
+        DeltaId::StormRerouteAurora,
+    );
+    let maintenance_batch = lower_court_delta(
+        request_execution,
+        &world,
+        &court.maintenance,
+        DeltaId::MaintainAtlasBerth,
+    );
 
     let pause = OwnerPhasePause::new();
     let storm_transaction = begin_court_transaction(
@@ -184,15 +230,12 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
     let storm_candidate = world
         .runtime
         .preparation_port()
-        .prepare_branch_transaction(
-            storm_transaction,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .prepare_branch_transaction(request_execution, storm_transaction)
         .expect("the storm candidate prepares before the settlement court opens");
     let performed = match world
         .runtime
         .publication_port()
-        .compare_and_publish(storm_candidate)
+        .compare_and_publish(request_execution, storm_candidate)
     {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("the uncontended storm candidate must perform: {outcome:?}"),
@@ -221,6 +264,7 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
     let before = court.capture(&world.runtime);
     let maintenance_before = coordination_counters(&world.runtime, &court.maintenance);
     let committed = commit_unrelated_branch_while_paused(
+        request_execution,
         &world,
         &court,
         &before,
@@ -254,6 +298,7 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
         "the unrelated branch reserved, used, and released its own pending record while storm held its own"
     );
     assert_court_commit_matches_oracle(
+        request_execution,
         &world,
         &committed,
         BranchLabel::Maintenance,
@@ -276,10 +321,11 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
         "finished settlement leaves no pending record behind"
     );
     assert_court_commit_matches_oracle(
+        request_execution,
         &world,
         &storm_committed,
         BranchLabel::Storm,
         DeltaId::StormRerouteAurora,
     );
-    assert_oracle_matches(&world, &expected);
+    assert_oracle_matches(request_execution, &world, &expected);
 }

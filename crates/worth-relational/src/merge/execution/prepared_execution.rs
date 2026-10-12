@@ -10,6 +10,7 @@ use crate::transactions::data::{
 };
 
 pub(in crate::merge) fn execute_prepared_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     prepared: PreparedMergeExecution,
 ) -> Result<MergeExecutionOutcome, MergeExecutionError> {
@@ -17,7 +18,7 @@ pub(in crate::merge) fn execute_prepared_merge(
     runtime.performance_access().count_merge_execution_attempt();
     runtime
         .merge()
-        .verify_prepared_merge_execution(&prepared)
+        .verify_prepared_merge_execution(execution, &prepared)
         .map_err(|error| emit_failure(runtime, &prepared, error))?;
     let transaction_id = runtime.services.next_transaction_id();
     let mutation_plan = prepared.mutation_plan().bind_transaction(transaction_id);
@@ -82,7 +83,7 @@ pub(in crate::merge) fn execute_prepared_merge(
     )
     .map_err(MergeExecutionError::from)
     .map_err(|error| emit_failure(runtime, &prepared, error))?;
-    let commit = execute_authoritative_commit(runtime, context)
+    let commit = execute_authoritative_commit(execution, runtime, context)
         .map_err(MergeExecutionError::from)
         .map_err(|error| emit_failure(runtime, &prepared, error))?;
     Ok(MergeExecutionOutcome {

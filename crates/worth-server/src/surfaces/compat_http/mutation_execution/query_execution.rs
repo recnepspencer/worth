@@ -147,9 +147,25 @@ pub(crate) fn execute_compatibility_mutation_request(
             ));
         }
     };
-    let observed_basis_digest = bound_workspace
-        .snapshot_identity()
-        .terminal_projection_for_reporting();
+    let snapshot =
+        match bound_workspace.with_advancement(|phase| bound_workspace.snapshot_identity(&phase)) {
+            Ok(Ok(snapshot)) => snapshot,
+            Ok(Err(denial)) => {
+                return TransitionOutcome::Denied(WorthServerQueryHandoffDenial::new(
+                    WorthServerQueryHandoffDenialCode::WorkspaceBindingFailed,
+                    diagnostics_profile,
+                    format!("snapshot binding was refused: {denial:?}"),
+                ))
+            }
+            Err(denial) => {
+                return TransitionOutcome::Denied(WorthServerQueryHandoffDenial::new(
+                    WorthServerQueryHandoffDenialCode::WorkspaceBindingFailed,
+                    diagnostics_profile,
+                    format!("snapshot binding was refused: {denial:?}"),
+                ))
+            }
+        };
+    let observed_basis_digest = snapshot.terminal_projection_for_reporting();
     let readiness = WorthServerOperationReadinessFacade::with_operation_registry(
         facade.operation_registry.clone(),
     );

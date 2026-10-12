@@ -154,12 +154,13 @@ fn materialize_unread(
     action: EstateAction,
 ) -> DelegationProgram {
     let child = delegation_command(action).unwrap().child;
-    let admission = runtime
-        .admit_delegation(principal, action, child, &request_scope())
-        .expect("the delegation admits");
-    let projected = runtime
-        .invariant_projection()
-        .project_admitted_operation(
+    let admission = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime.admit_delegation(phase, principal, action, child, &request_scope())
+    })
+    .expect("the delegation admits");
+    let projected = crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime.invariant_projection().project_admitted_operation(
+            phase,
             &admission,
             |reader, estate| {
                 let branch =
@@ -178,23 +179,29 @@ fn materialize_unread(
             },
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
-        .expect("the scope projects");
+    })
+    .expect("the scope projects");
     let (result, projection, _) = projected.into_parts();
     result.expect("the scope's relations hold");
-    runtime
-        .application_runtime()
-        .begin_projected_application_read_attempt(
-            admission,
-            projection,
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the read attempt begins")
-        .complete_projected_dependencies(
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("the dependencies complete")
-        .materialize_capability_delegation_program(
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("Query materializes the activation with its child id's absence")
+    crate::test_host_policy::with_phase(runtime.application_runtime(), |phase| {
+        runtime
+            .application_runtime()
+            .begin_projected_application_read_attempt(
+                phase,
+                admission,
+                projection,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("the read attempt begins")
+            .complete_projected_dependencies(
+                phase,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("the dependencies complete")
+            .materialize_capability_delegation_program(
+                phase,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+    })
+    .expect("Query materializes the activation with its child id's absence")
 }

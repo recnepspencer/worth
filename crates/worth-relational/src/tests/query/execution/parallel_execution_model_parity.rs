@@ -2,6 +2,9 @@ use super::*;
 
 #[test]
 fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
@@ -11,23 +14,27 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
             .build()
     }
 
-    fn build_fixture(runtime: &RelationalRuntime) -> (SnapshotHandle, PlannedQueryPacket) {
+    fn build_fixture(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+    ) -> (SnapshotHandle, PlannedQueryPacket) {
         let seeds = vec![
-            create_entity_in_partition(runtime, "s0", PartitionId(7)),
-            create_entity_in_partition(runtime, "s1", PartitionId(11)),
-            create_entity_in_partition(runtime, "s2", PartitionId(13)),
-            create_entity_in_partition(runtime, "s3", PartitionId(17)),
-            create_entity_in_partition(runtime, "s4", PartitionId(19)),
+            create_entity_in_partition(execution, runtime, "s0", PartitionId(7)),
+            create_entity_in_partition(execution, runtime, "s1", PartitionId(11)),
+            create_entity_in_partition(execution, runtime, "s2", PartitionId(13)),
+            create_entity_in_partition(execution, runtime, "s3", PartitionId(17)),
+            create_entity_in_partition(execution, runtime, "s4", PartitionId(19)),
         ];
         let neighbors = [
-            create_entity_in_partition(runtime, "n0", PartitionId(23)),
-            create_entity_in_partition(runtime, "n1", PartitionId(29)),
-            create_entity_in_partition(runtime, "n2", PartitionId(31)),
-            create_entity_in_partition(runtime, "n3", PartitionId(37)),
-            create_entity_in_partition(runtime, "n4", PartitionId(41)),
+            create_entity_in_partition(execution, runtime, "n0", PartitionId(23)),
+            create_entity_in_partition(execution, runtime, "n1", PartitionId(29)),
+            create_entity_in_partition(execution, runtime, "n2", PartitionId(31)),
+            create_entity_in_partition(execution, runtime, "n3", PartitionId(37)),
+            create_entity_in_partition(execution, runtime, "n4", PartitionId(41)),
         ];
         for (index, (seed, neighbor)) in seeds.iter().zip(neighbors.iter()).enumerate() {
             create_relation_in_partition(
+                execution,
                 runtime,
                 *seed,
                 *neighbor,
@@ -59,7 +66,7 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
     }
 
     let serial_runtime = build_runtime();
-    let (serial_snapshot, serial_packet) = build_fixture(&serial_runtime);
+    let (serial_snapshot, serial_packet) = build_fixture(execution, &serial_runtime);
     let serial = serial_runtime
         .read_truth()
         .execute_query_plan(
@@ -67,20 +74,24 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
                 .read_truth()
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial query plan"),
+            execution,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("serial execution");
 
     let staged_runtime = build_runtime();
-    let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
+    let (staged_snapshot, staged_packet) = build_fixture(execution, &staged_runtime);
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
-            &test_execution_lease(),
+            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
         .expect("staged execution");
 
@@ -107,6 +118,9 @@ fn planned_query_execution_parallelized_traversal_matches_serial_reference() {
 
 #[test]
 fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_with_a_lease() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
@@ -116,21 +130,25 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
             .build()
     }
 
-    fn build_fixture(runtime: &RelationalRuntime) -> (SnapshotHandle, PlannedQueryPacket) {
+    fn build_fixture(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+    ) -> (SnapshotHandle, PlannedQueryPacket) {
         let seeds = vec![
-            create_entity_in_partition(runtime, "s0", PartitionId(7)),
-            create_entity_in_partition(runtime, "s1", PartitionId(11)),
-            create_entity_in_partition(runtime, "s2", PartitionId(13)),
-            create_entity_in_partition(runtime, "s3", PartitionId(17)),
+            create_entity_in_partition(execution, runtime, "s0", PartitionId(7)),
+            create_entity_in_partition(execution, runtime, "s1", PartitionId(11)),
+            create_entity_in_partition(execution, runtime, "s2", PartitionId(13)),
+            create_entity_in_partition(execution, runtime, "s3", PartitionId(17)),
         ];
         let neighbors = [
-            create_entity_in_partition(runtime, "n0", PartitionId(19)),
-            create_entity_in_partition(runtime, "n1", PartitionId(23)),
-            create_entity_in_partition(runtime, "n2", PartitionId(29)),
-            create_entity_in_partition(runtime, "n3", PartitionId(31)),
+            create_entity_in_partition(execution, runtime, "n0", PartitionId(19)),
+            create_entity_in_partition(execution, runtime, "n1", PartitionId(23)),
+            create_entity_in_partition(execution, runtime, "n2", PartitionId(29)),
+            create_entity_in_partition(execution, runtime, "n3", PartitionId(31)),
         ];
         for (index, (seed, neighbor)) in seeds.iter().zip(neighbors.iter()).enumerate() {
             create_relation_in_partition(
+                execution,
                 runtime,
                 *seed,
                 *neighbor,
@@ -164,7 +182,7 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
     }
 
     let serial_runtime = build_runtime();
-    let (serial_snapshot, serial_packet) = build_fixture(&serial_runtime);
+    let (serial_snapshot, serial_packet) = build_fixture(execution, &serial_runtime);
     serial_runtime.performance_access().reset_counters();
     let serial = serial_runtime
         .read_truth()
@@ -173,22 +191,26 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
                 .read_truth()
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial query plan"),
+            execution,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("serial execution");
     let serial_counters = serial_runtime.performance_access().counters();
 
     let staged_runtime = build_runtime();
-    let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
+    let (staged_snapshot, staged_packet) = build_fixture(execution, &staged_runtime);
     staged_runtime.performance_access().reset_counters();
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged query plan"),
-            &test_execution_lease(),
+            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
         .expect("staged execution");
     let staged_counters = staged_runtime.performance_access().counters();
@@ -202,6 +224,9 @@ fn planned_query_execution_reports_workload_derived_scratch_reuse_consistently_w
 
 #[test]
 fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_matches_serial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
     fn build_runtime() -> RelationalRuntime {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
@@ -211,14 +236,38 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
             .build()
     }
 
-    fn build_fixture(runtime: &RelationalRuntime) -> (SnapshotHandle, PlannedQueryPacket) {
-        let seed_a = create_entity_in_partition(runtime, "seed-a", PartitionId(7));
-        let seed_b = create_entity_in_partition(runtime, "seed-b", PartitionId(11));
-        let shared = create_entity_in_partition(runtime, "shared", PartitionId(13));
-        let tail = create_entity_in_partition(runtime, "tail", PartitionId(17));
-        create_relation_in_partition(runtime, seed_a, shared, "a-shared", PartitionId(23));
-        create_relation_in_partition(runtime, seed_b, shared, "b-shared", PartitionId(29));
-        create_relation_in_partition(runtime, shared, tail, "shared-tail", PartitionId(31));
+    fn build_fixture(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+    ) -> (SnapshotHandle, PlannedQueryPacket) {
+        let seed_a = create_entity_in_partition(execution, runtime, "seed-a", PartitionId(7));
+        let seed_b = create_entity_in_partition(execution, runtime, "seed-b", PartitionId(11));
+        let shared = create_entity_in_partition(execution, runtime, "shared", PartitionId(13));
+        let tail = create_entity_in_partition(execution, runtime, "tail", PartitionId(17));
+        create_relation_in_partition(
+            execution,
+            runtime,
+            seed_a,
+            shared,
+            "a-shared",
+            PartitionId(23),
+        );
+        create_relation_in_partition(
+            execution,
+            runtime,
+            seed_b,
+            shared,
+            "b-shared",
+            PartitionId(29),
+        );
+        create_relation_in_partition(
+            execution,
+            runtime,
+            shared,
+            tail,
+            "shared-tail",
+            PartitionId(31),
+        );
         let snapshot = runtime.visibility_authority().snapshot();
         let context = runtime
             .read_truth()
@@ -246,7 +295,7 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
     }
 
     let serial_runtime = build_runtime();
-    let (serial_snapshot, serial_packet) = build_fixture(&serial_runtime);
+    let (serial_snapshot, serial_packet) = build_fixture(execution, &serial_runtime);
     let serial = serial_runtime
         .read_truth()
         .execute_query_plan(
@@ -254,20 +303,24 @@ fn planned_query_execution_parallelized_overlapping_seed_traversal_dedupes_and_m
                 .read_truth()
                 .plan_query_packet(&serial_snapshot, serial_packet)
                 .expect("serial plan"),
+            execution,
         )
+        .expect("request remains live")
+        .map(|read| read.outcome)
         .expect("serial outcome");
 
     let staged_runtime = build_runtime();
-    let (staged_snapshot, staged_packet) = build_fixture(&staged_runtime);
+    let (staged_snapshot, staged_packet) = build_fixture(execution, &staged_runtime);
     let staged = staged_runtime
         .read_truth()
-        .execute_query_plan_with_lease(
+        .execute_query_plan(
             staged_runtime
                 .read_truth()
                 .plan_query_packet(&staged_snapshot, staged_packet)
                 .expect("staged plan"),
-            &test_execution_lease(),
+            &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
         )
+        .map(|read| read.map(|read| read.outcome))
         .expect("leased execution")
         .expect("staged outcome");
 
