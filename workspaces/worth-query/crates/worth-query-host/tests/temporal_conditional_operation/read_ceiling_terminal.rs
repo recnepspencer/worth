@@ -62,13 +62,16 @@ fn conditional_read_ceiling_answers_the_computation_terminal_by_value() {
     assert_eq!(
         cause,
         Some(
-            graph::WorthQueryConditionalExecutionCause::ApplicationCommitDenied(
-                graph::WorthQueryApplicationCommitDenialKind::ExecutionResource {
-                    denial: Resource::WorkExhausted,
-                    partition_identity: None,
-                    policy_ancestor: None
-                }
-            )
+            graph::WorthQueryConditionalExecutionCause::ApplicationExecutionDenied {
+                stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+                cause: Ok(
+                    graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                        denial: Resource::WorkExhausted,
+                        partition_identity: None,
+                        policy_ancestor: None,
+                    }
+                ),
+            }
         )
     );
 }
