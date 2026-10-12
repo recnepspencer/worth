@@ -28,6 +28,7 @@ impl<Reduced: ChargedBytes> ChargedBytes for SettledPartition<Reduced> {
 pub(super) struct SettledPartitions<Reduced> {
     pub values: BTreeMap<PartitionIdentity, Reduced>,
     pub work: u64,
+    pub span: u64,
 }
 
 pub(super) fn run<Key, Item, Gathered, Reduced, Stopped>(
@@ -126,5 +127,6 @@ where
             })
             .collect(),
         work: outcome.1.charged_work(),
+        span: outcome.1.charged_span(),
     })
 }

@@ -160,10 +160,16 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
             .unwrap();
             assert!(
                 matches!(
-                    map.run(None, |units, context| {
-                        context.checkpoint(*units)?;
-                        Ok::<_, worth_execution::MapKernelFailure<()>>(*units)
-                    }),
+                    map.run(
+                        Some(
+                            checkpoint.native_lease_for_test()
+                                .expect("the kernel lends its actual leased backing")
+                        ),
+                        |units, context| {
+                            context.checkpoint(*units)?;
+                            Ok::<_, worth_execution::MapKernelFailure<()>>(*units)
+                        }
+                    ),
                     worth_execution::MapOutcome::Complete { .. }
                 ),
                 "the nested public map computes inside its parent's meter"

@@ -1,6 +1,7 @@
 //! The compute and complete phases of a prepared partitioned computation.
 
 mod decision_plan;
+pub(super) mod kernel_observation;
 mod transport;
 
 use worth_execution::{ExecutionMap, MapKernelContext};
@@ -61,6 +62,8 @@ where
     pub(super) run: PreparedRun<Schema, Feature, Computation, Owner>,
     /// Where the completed run is left for seal, when a producer runs it.
     pub(super) deposit: ComputationDeposit,
+    pub(super) kernel_observation_for_test:
+        Option<kernel_observation::KernelCostObservationForTest>,
 }
 
 /// Every partition gathered, or only the marked ones.
@@ -108,6 +111,18 @@ where
             }
             PreparedRun::Incremental(prepared) => prepared.restrict_compute_ceiling(ceiling),
         }
+        self
+    }
+
+    /// Observe this receiver's full-equivalent map bill without a thread recorder.
+    #[doc(hidden)]
+    pub fn observe_kernel_cost_for_test(
+        mut self,
+        report: impl Fn(u64, u64) + Send + Sync + 'static,
+    ) -> Self {
+        self.kernel_observation_for_test = Some(
+            kernel_observation::KernelCostObservationForTest::new(report),
+        );
         self
     }
 
@@ -159,35 +174,44 @@ where
         };
         let recording_steps =
             super::incremental::KernelRecording::new(execution.request, retain, declared_bytes);
-        let compute_kernel =
-            |partition: &Gathered<Schema, Feature, Computation, Owner>,
-             context: &mut MapKernelContext<'_, '_>,
-             steps: &mut Option<super::incremental::KernelSteps>| {
-                let (computed, refused) = {
-                    let mut charge = |work| {
-                        context.checkpoint(work)?;
-                        recording_steps.accepted(steps, work);
-                        Ok(())
-                    };
-                    let mut checkpoint = WorthQueryManagedComputationCheckpoint::for_partition(
-                        &mut charge,
-                        execution,
-                    );
-                    let computed = owner.compute_partition(
-                        WorthQueryComputationPartitionView::new(partition),
-                        &mut checkpoint,
-                    );
-                    (computed, checkpoint.refused())
+        let compute_kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
+                              context: &mut MapKernelContext<'_, '_>,
+                              steps: &mut Option<super::incremental::KernelSteps>,
+                              #[cfg(test)] native: Option<
+            &worth_execution::ExecutionResourceLease<'_>,
+        >| {
+            let (computed, refused) = {
+                let mut charge = |work| {
+                    context.checkpoint(work)?;
+                    recording_steps.accepted(steps, work);
+                    Ok(())
                 };
-                match refused {
-                    Some(refused) => Err(kernel_failure(refused.into())),
-                    None => computed.map_err(kernel_failure),
-                }
+                let checkpoint =
+                    WorthQueryManagedComputationCheckpoint::for_partition(&mut charge, execution);
+                #[cfg(test)]
+                let checkpoint = checkpoint.with_native_lease_for_test(native);
+                let mut checkpoint = checkpoint;
+                let computed = owner.compute_partition(
+                    WorthQueryComputationPartitionView::new(partition),
+                    &mut checkpoint,
+                );
+                (computed, checkpoint.refused())
             };
+            match refused {
+                Some(refused) => Err(kernel_failure(refused.into())),
+                None => computed.map_err(kernel_failure),
+            }
+        };
         let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                       context: &mut MapKernelContext<'_, '_>| {
             let mut steps = recording_steps.start();
-            let result = compute_kernel(partition, context, &mut steps);
+            let result = compute_kernel(
+                partition,
+                context,
+                &mut steps,
+                #[cfg(test)]
+                None,
+            );
             recording_steps.finish(partition.identity, steps, context.charged_cost());
             result
         };
@@ -196,7 +220,13 @@ where
         let diagnostic_kernel =
             |partition: &Gathered<Schema, Feature, Computation, Owner>,
              context: &mut MapKernelContext<'_, '_>| {
-                compute_kernel(partition, context, &mut None)
+                compute_kernel(
+                    partition,
+                    context,
+                    &mut None,
+                    #[cfg(test)]
+                    None,
+                )
             };
         let exhausted = || {
             WorthQueryPartitionedComputationDenial::Resource(
@@ -215,13 +245,26 @@ where
                     .request
                     .dispatch()
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
+                #[cfg(test)]
+                let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
+                              context: &mut MapKernelContext<'_, '_>| {
+                    let mut steps = recording_steps.start();
+                    let result = compute_kernel(
+                        partition,
+                        context,
+                        &mut steps,
+                        Some(dispatch.native_lease_for_test()),
+                    );
+                    recording_steps.finish(partition.identity, steps, context.charged_cost());
+                    result
+                };
                 // The map's admission takes over the gathered partitions' hold,
                 // and the tree is handed to `tree_memory` as the run ends.
                 let mut tree_memory = execution
                     .request
                     .reserve(0)
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-                let (tree, report, _) = transport.call(|| {
+                let (tree, report, metrics) = transport.call(|| {
                     let reduced = dispatch
                         .reduce(
                             remaining_work,
@@ -244,6 +287,18 @@ where
                         })?;
                     reduced.map_err(WorthQueryPartitionedComputationDenial::from_reduce)
                 })?;
+                if let Some(observer) = &self.kernel_observation_for_test {
+                    observer.record(
+                        report
+                            .charged_work()
+                            .checked_sub(metrics.charged_work)
+                            .expect("tree work is included"),
+                        report
+                            .charged_span()
+                            .checked_sub(metrics.charged_span)
+                            .expect("tree span is included"),
+                    );
+                }
                 let reduced = tree.result().clone();
                 let completed = match recording {
                     Ok(recording) => {
@@ -265,6 +320,7 @@ where
                     execution.request,
                     kernel,
                     &recording_steps,
+                    self.kernel_observation_for_test.as_ref(),
                     &reducer,
                     transport,
                 )?;

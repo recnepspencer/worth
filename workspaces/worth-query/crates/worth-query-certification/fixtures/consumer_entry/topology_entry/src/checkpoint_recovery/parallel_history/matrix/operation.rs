@@ -206,6 +206,19 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                     .prepare_without_reuse_for_test(reader, &facts)
             };
             let node = input.key;
+            let prepared = prepared.map(|prepared| {
+                if !self.control.nested {
+                    return prepared;
+                }
+                let control = self.control.clone();
+                prepared.observe_kernel_cost_for_test(move |work, span| {
+                    if !control.fails(node, super::control::Phase::Compute)
+                        && control.state.lock().unwrap().armed
+                    {
+                        control.nested_meter(node, Some((u128::from(work), u128::from(span))));
+                    }
+                })
+            });
             let next = match prepared {
                 Ok(prepared) => prepared.into_decision_plan(move |computed| {
                     match computed.and_then(|value| value.complete()) {
@@ -233,31 +246,9 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                 let after = self.control.clone();
                 next.observe_computes_for_test(
                     move || {
-                        partitioned_computation_runs_on_this_thread_for_test();
-                        partitioned_computation_tree_work_on_this_thread_for_test();
                         before.dispatched(node);
                     },
                     move || {
-                        let runs = partitioned_computation_runs_on_this_thread_for_test();
-                        let trees = partitioned_computation_tree_work_on_this_thread_for_test();
-                        if after.nested
-                            && !after.fails(node, super::control::Phase::Compute)
-                            && after.state.lock().unwrap().armed
-                        {
-                            let cost = match (runs.as_slice(), trees.as_slice()) {
-                                ([(_, Some(report))], [tree]) => {
-                                    let tree = tree.metrics_for_test();
-                                    u128::from(report.charged_work())
-                                        .checked_sub(tree.charged_work)
-                                        .zip(
-                                            u128::from(report.charged_span())
-                                                .checked_sub(tree.charged_span),
-                                        )
-                                }
-                                _ => None,
-                            };
-                            after.nested_meter(node, cost);
-                        }
                         after.exit_member();
                     },
                     |_| {},

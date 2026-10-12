@@ -49,9 +49,26 @@ pub(super) enum CheckpointWork<'request> {
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
     pub(super) work: CheckpointWork<'request>,
     pub(super) execution: &'request WorthQueryManagedComputationExecution<'request>,
+    #[cfg(test)]
+    pub(super) native: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
 }
 
 impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
+    #[cfg(test)]
+    pub(in super::super) fn with_native_lease_for_test(
+        mut self,
+        lease: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
+    ) -> Self {
+        self.native = lease;
+        self
+    }
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn native_lease_for_test(
+        &self,
+    ) -> Option<&'request worth_execution::ExecutionResourceLease<'request>> {
+        crate::domain_computation::execution_observation::owned_control_scope::current_id();
+        self.native
+    }
     pub(in super::super) fn for_partition(
         charge: &'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         execution: &'request WorthQueryManagedComputationExecution<'request>,
@@ -62,6 +79,8 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
                 refused: None,
             },
             execution,
+            #[cfg(test)]
+            native: None,
         }
     }
 

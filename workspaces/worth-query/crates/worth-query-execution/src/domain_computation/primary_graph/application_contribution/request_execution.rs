@@ -232,6 +232,11 @@ pub(super) type Reduced<R, Combine, E> =
     Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>;
 
 impl QueryDispatch<'_> {
+    #[cfg(test)]
+    pub(in super::super) fn native_lease_for_test(&self) -> &ExecutionResourceLease<'_> {
+        let DispatchForm::Leased(lease) = &self.form;
+        lease
+    }
     /// Maps every partition of `map` inside `ceiling`. The map's admission
     /// takes over `inputs`, the request memory held for its partitions, in
     /// one ledger step: no byte of them is unreserved between the two holds.

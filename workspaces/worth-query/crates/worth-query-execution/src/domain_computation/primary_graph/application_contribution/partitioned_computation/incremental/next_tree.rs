@@ -119,6 +119,7 @@ where
         execution: &QueryRequestExecution<'_>,
         kernel: Kernel,
         recording: &super::KernelRecording,
+        observer: Option<&super::super::compute::kernel_observation::KernelCostObservationForTest>,
         reducer: &WorthQueryDeterministicReducer<Reduced>,
         transport: &mut NestedFailureTransport<'_>,
     ) -> Result<
@@ -191,6 +192,9 @@ where
             &kernel,
             transport,
         )?;
+        if let Some(observer) = observer {
+            observer.record(settled_wave.work, settled_wave.span);
+        }
         remaining.spend(Some(settled_wave.work)).map_err(|_| {
             WorthQueryPartitionedComputationDenial::Resource(
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
