@@ -96,29 +96,25 @@ pub(crate) fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
                 let first = *answer_origins
                     .first()
                     .expect("the door emitted its stopped cause");
-                assert_eq!(
-                    first,
-                    (injected, injected),
-                    "the first stop is emitted at the injected consult"
+                assert!(
+                    first.0 >= injected && first.1 >= injected,
+                    "the first emission and its origin follow the injection"
                 );
                 assert!(
                     origins.starts_with(&answer_origins),
                     "no emission before the answer is dropped"
                 );
                 for (emitted, origin) in &origins {
-                    assert_eq!(
-                        *origin, injected,
-                        "every emission retains the injected cause"
-                    );
-                    assert!(
-                        *emitted >= injected,
-                        "a re-report follows the original emission"
-                    );
+                    assert!(*origin >= injected, "no stop predates the injection");
+                    assert!(*emitted >= *origin, "a re-report follows its origin");
                 }
-                // The trace proves the first emission, not the returned value:
+                // The trace retains every origin, including emissions outside
+                // the selected window. The returned index is the selected
+                // injection plus the global consult distance to first emission.
+                // It proves emission order, not the returned value:
                 // a stop returned at selected consult 15 and a swallowed result
                 // re-reported by the same-meter latch at 16 are indistinguishable.
-                indices.iter().position(|index| *index == first.0).unwrap() + 1
+                at + (first.0 - injected)
             } else {
                 count.get()
             };

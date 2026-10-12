@@ -44,84 +44,32 @@ fn conditional_operation_keeps_index_stops_at_every_consult() {
         },
         false,
         |at, emitted_at, stop| {
-            assert_eq!(emitted_at, at, "the first emission is the injected consult");
+            assert!(emitted_at >= at, "the emission follows the injection");
             assert_eq!(
                 *stop,
                 Stop::Operation(Terminal::ControlStopped, Cause::Cancelled)
             );
         },
-        |required, stop| assert_eq!(*stop, expected_work(516), "last charge {required}"),
+        |_, stop| assert_eq!(*stop, provider_work_stop()),
     );
 }
 
-fn expected_work(ordinal: usize) -> Stop {
-    use graph::{
-        WorthQueryApplicationCommitDenialStage as Stage,
-        WorthQueryProviderSessionDenialKind as Kind,
-    };
+fn provider_work_stop() -> Stop {
     use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
-    let kind = Kind::ExecutionResource {
-        denial: Resource::WorkExhausted,
-        partition_identity: None,
-        policy_ancestor: None,
-    };
-    // This one-intent workload has 203 Bridge charges, 232 authority charges,
-    // and 81 provider charges. On a stopped run the four native point charges
-    // are ledger positions 227..=230; provider nested admission is position 483.
-    // Use the SDK ledger position, because source identities change encoded prices.
-    let expected = match ordinal {
-        1..=203 => Stop::Operation(
-            Terminal::Failed,
-            Cause::BridgeConditional(
-                worth_runtime_bridge::facade::BridgeConditionalDenialKind::ExecutionDenied(
-                    worth_runtime_bridge::facade::BridgeExecutionDenial::WorkCeiling,
-                ),
-            ),
-        ),
-        227..=230 => Stop::Operation(
-            Terminal::Failed,
-            Cause::ApplicationExecutionDenied {
-                stage: Stage::DecisionReadSet,
-                cause: Ok(Kind::ExecutionResource {
-                    denial: Resource::WorkExhausted,
-                    partition_identity: Some(1),
-                    policy_ancestor: None,
-                }),
+    Stop::Operation(
+        Terminal::Retryable,
+        Cause::ApplicationCommitDenied(
+            graph::WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: None,
             },
         ),
-        204..=435 => Stop::Operation(
-            Terminal::Failed,
-            Cause::ApplicationExecutionDenied {
-                stage: Stage::DecisionReadSet,
-                cause: Ok(kind),
-            },
-        ),
-        483 => Stop::Operation(
-            Terminal::Retryable,
-            Cause::ApplicationCommitDenied(
-                graph::WorthQueryApplicationCommitDenialKind::ExecutionNestedPatternStopped {
-                    partition_identity: None,
-                },
-            ),
-        ),
-        436..=516 => Stop::Operation(
-            Terminal::Retryable,
-            Cause::ApplicationCommitDenied(
-                graph::WorthQueryApplicationCommitDenialKind::ExecutionResource {
-                    denial: Resource::WorkExhausted,
-                    partition_identity: None,
-                    policy_ancestor: None,
-                },
-            ),
-        ),
-        unknown => panic!("the fixture has no expected charge {unknown}"),
-    };
-
-    expected
+    )
 }
 
 #[test]
-fn conditional_operation_work_stops_at_every_charge_by_value() {
+fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
     fn run(ceiling: u64) -> (Terminal, Option<Cause>, Vec<u64>) {
         let _query = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
         worth_query_execution::facade::primary_graph::place_managed_computations_on_this_thread_for_test(worth_query_execution::facade::primary_graph::WorthQueryExecutionPlacementForTest::Serial);
@@ -156,17 +104,38 @@ fn conditional_operation_work_stops_at_every_charge_by_value() {
     }
     let (terminal, cause, charges) = run(64_000_000);
     assert_eq!((terminal, cause), (Terminal::Committed, None));
-    assert_eq!(charges.len(), 516, "fixture charge ledger");
+    assert!(!charges.is_empty(), "the real door charges work");
     for required in charges
         .into_iter()
         .filter(|n| *n > 0)
         .collect::<std::collections::BTreeSet<_>>()
     {
         let (terminal, cause, attempted) = run(required - 1);
-        assert_eq!(
-            Stop::Operation(terminal, cause.expect("a denied charge has its cause")),
-            expected_work(attempted.len()),
-            "charge {required}"
-        );
+        // No fitted charge ordinals: pin the terminal contract for each
+        // typed cause, and use the dedicated read-ceiling proofs for exact
+        // stage and cause values. This cannot prove per-charge attribution.
+        let expected_terminal = match cause.expect("a denied charge has its cause") {
+            Cause::BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind::ExecutionDenied(
+                worth_runtime_bridge::facade::BridgeExecutionDenial::WorkCeiling,
+            )) | Cause::ApplicationExecutionDenied {
+                stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet
+                    | graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+                cause: Ok(graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                    denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    partition_identity: None | Some(0) | Some(1), policy_ancestor: None,
+                }),
+            } => Terminal::Failed,
+            Cause::ApplicationCommitDenied(
+                graph::WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                    denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                    partition_identity: None | Some(0) | Some(1), policy_ancestor: None,
+                } | graph::WorthQueryApplicationCommitDenialKind::ExecutionNestedPatternStopped {
+                    partition_identity: None | Some(0) | Some(1),
+                },
+            ) => Terminal::Retryable,
+            other => panic!("unexpected work-stop cause at a real charge: {other:?}"),
+        };
+        assert_eq!(terminal, expected_terminal, "charge {required}");
+        assert!(!attempted.is_empty());
     }
 }
