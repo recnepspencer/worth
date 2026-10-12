@@ -5,12 +5,17 @@ fn charges(actual: (u64, u64), declared: &World) {
         .members
         .iter()
         .flat_map(|m| &m.partitions)
-        .map(|p| p.work)
+        .map(|p| p.work + model::SINGLETON_TREE_WORK)
         .sum::<u64>();
     let span = declared
         .members
         .iter()
-        .map(|m| m.partitions.iter().map(|p| p.work).sum::<u64>())
+        .map(|m| {
+            m.partitions
+                .iter()
+                .map(|p| p.work + model::SINGLETON_TREE_WORK)
+                .sum::<u64>()
+        })
         .max()
         .unwrap();
     assert_eq!(
@@ -35,7 +40,7 @@ fn a_prefix_only_model_and_a_summed_span_are_convicted() {
     let prefix = world.members[..1]
         .iter()
         .flat_map(|m| &m.partitions)
-        .map(|p| p.work)
+        .map(|p| p.work + model::SINGLETON_TREE_WORK)
         .sum::<u64>();
     assert!(
         std::panic::catch_unwind(|| charges((prefix, actual.span), &world)).is_err(),

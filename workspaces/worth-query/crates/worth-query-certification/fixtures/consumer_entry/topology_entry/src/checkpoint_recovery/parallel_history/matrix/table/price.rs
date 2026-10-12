@@ -84,12 +84,12 @@ fn absolute_anchor(row: Cell, observed: &PricedObservation) -> Result<(), String
     // independently of the differential (zero bills cannot certify themselves).
     let expected = [
         (0, 0),                 // Already-current empty caller dispatches and charges nothing.
-        (557_789, 557_774),     // owner 557787/557772 + one checkpoint 2/2.
-        (1_410_281, 1_410_221), // owner 1410273/1410213 + four serial stages 8/8.
-        (1_410_281, 1_410_212), // owner 1410273/1410206 + diamond sum/max 8/6.
-        (1_410_311, 1_410_209), // owner 1410303/1410207 + four independent 8/2.
-        (1_410_349, 1_410_229), // same owner + declared [1,8,15,22] => 46/22.
-        (1_410_419, 1_410_236), // owner 1410387/1410228 + four zipped members 32/8.
+        (557_789, 557_774),     // owner 557780/557765 + one scalar frame (2+7)/(2+7).
+        (1_410_281, 1_410_221), // owner 1410245/1410185 + four serial scalar stages 36/36.
+        (1_410_281, 1_410_212), // owner 1410245/1410185 + three scalar waves 36/27.
+        (1_410_311, 1_410_209), // owner 1410275/1410200 + independent scalar frames 36/9.
+        (1_410_349, 1_410_229), // same owner + [1,8,15,22], each followed by seven units => 74/29.
+        (1_410_419, 1_410_236), // owner 1410275/1410200 + four zipped scalar members 144/36.
         (1_410_435, 1_410_230), // owner 1410403/1410228 + four nested maps 32/2.
     ][row.family];
     if (observed.work, observed.span) != expected {

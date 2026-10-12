@@ -1,6 +1,9 @@
 //! Pure readiness, value and checkpoint expressions; no execution calls.
 use super::World;
 use std::collections::{BTreeMap, BTreeSet};
+// One leaf placement + one stack visit + one split-plan visit + two
+// evaluation visits + two combines. This is a hand count, not a price reader.
+pub(super) const SINGLETON_TREE_WORK: u64 = 1 + 1 + 1 + 2 + 2;
 pub fn waves(world: &World, ranks: &BTreeMap<u64, usize>) -> Vec<Vec<usize>> {
     let mut done = BTreeSet::new();
     let mut waves = Vec::new();
@@ -78,7 +81,19 @@ pub fn advancement(
                         failure == Some((member.key, Phase::Compute)),
                     )
                 } else {
-                    let work = member.partitions.iter().map(|p| p.work).sum();
+                    let work = member
+                        .partitions
+                        .iter()
+                        .map(|p| {
+                            let tree =
+                                if p.key == 0 && failure == Some((member.key, Phase::Compute)) {
+                                    0
+                                } else {
+                                    SINGLETON_TREE_WORK
+                                };
+                            p.work + tree
+                        })
+                        .sum();
                     (work, work)
                 }
             })
