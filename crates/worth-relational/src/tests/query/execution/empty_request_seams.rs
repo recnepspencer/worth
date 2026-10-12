@@ -51,6 +51,7 @@ fn empty_read_request_refuses_before_rows() {
             .execute_query_plan(plan.clone(), &ExecutionRequest::leased(&lease))
             .unwrap_err();
         let CommitExecutionDenialKind::Cause(cause) = stopped.execution_denial().unwrap().kind;
+        // First leased query-map admission quote for this one-entity packet.
         assert_empty_cause(memory, 344, cause);
         assert_eq!(rows.rows(), 0);
     }
@@ -95,6 +96,7 @@ fn empty_index_request_refuses_before_rows() {
             &lease,
         );
         let DerivedIndexExecutionDenialKind::Cause(cause) = result.execution_denial.unwrap().kind;
+        // First ordered index-planning scan admission quote for one definition.
         assert_empty_cause(memory, 409, cause);
         assert_eq!(rows.rows(), 0);
     }
@@ -135,6 +137,7 @@ fn empty_commit_request_refuses_before_publication() {
             panic!("native execution cause required: {stopped:?}");
         };
         let CommitExecutionDenialKind::Cause(cause) = denial.kind;
+        // First commit-preparation admission quote for the single create batch.
         assert_empty_cause(memory, 3328, cause);
         let after = runtime.history().latest_commit().unwrap().commit_id;
         assert_eq!(after.0 - before.0, 0, "a refused commit publishes no head");

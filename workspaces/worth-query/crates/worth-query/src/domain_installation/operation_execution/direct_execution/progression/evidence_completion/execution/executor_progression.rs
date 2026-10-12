@@ -31,7 +31,7 @@ where
             mut counters,
         } = prepared;
         let running = running.expect("completed graph execution owns its managed run");
-        let request = match admit_direct_request(execution, workspace) {
+        let request = match admit_direct_request(execution, workspace, counters) {
             Ok(request) => request,
             Err(mut denial) => {
                 denial = denial

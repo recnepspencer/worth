@@ -305,6 +305,7 @@ where
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
         let owner = workspace.advancement_owner();
+        let counters = self.counters;
         owner
             .with_advancement(|phase| {
                 let execution = phase.checked_execution_request_for(&owner)?;
@@ -317,7 +318,7 @@ where
             .unwrap_or_else(|cause| {
                 TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
                     WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
-                    Default::default(),
+                    counters,
                 ))
             })
     }

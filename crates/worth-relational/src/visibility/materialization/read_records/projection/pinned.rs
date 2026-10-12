@@ -4,7 +4,7 @@ use crate::runtime::RelationalPinnedRead;
 impl VisibilityProjectionView {
     pub(crate) fn from_pinned<Snapshot>(read: &RelationalPinnedRead<Snapshot>) -> Self {
         Self {
-            runtime_identity: read.query_context().runtime_instance_id,
+            runtime_identity: read.runtime_instance_id(),
             current_version: read.pinned_current_version(),
             instrumentation: read.pinned_instrumentation().clone(),
             symbols: read.symbols().clone(),

@@ -159,7 +159,7 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
             .expect("admitted advancement")
     }
     /// Borrows execution only after the receiving installed runtime accepts custody.
-    pub fn execution_request_for(
+    pub(crate) fn execution_request_for(
         &self,
         runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {

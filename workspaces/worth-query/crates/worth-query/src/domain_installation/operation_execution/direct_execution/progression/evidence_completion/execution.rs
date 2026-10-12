@@ -116,8 +116,8 @@ where
         admitted: WorthQueryAdmittedDirectOperation<D, O, F, L>,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> Result<Self, super::super::WorthQueryBoundExecutionOutcome<D, O, F, L, O::Output>> {
-        let resource_request =
-            admit_direct_request(execution, workspace).map_err(TransitionOutcome::Denied)?;
+        let resource_request = admit_direct_request(execution, workspace, Default::default())
+            .map_err(TransitionOutcome::Denied)?;
         let mut counters = WorthQueryOperationExecutionCounters {
             runtime_authority_checks: 1,
             ..Default::default()
@@ -138,7 +138,7 @@ where
         let resource_evidence = admitted.resource_attempt.evidence().clone();
         let execution_snapshot = workspace.snapshot_identity(execution).map_err(|cause| {
             TransitionOutcome::Denied(WorthQueryBoundExecutionDenial::new(
-                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause.into()),
+                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause),
                 "snapshot phase custody",
                 counters,
             ))
@@ -314,6 +314,7 @@ mod executor_progression;
 fn admit_direct_request<'request>(
     phase: &'request worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     workspace: &crate::runtime::WorthQueryWorkspace,
+    counters: crate::domain_installation::WorthQueryOperationExecutionCounters,
 ) -> Result<worth_execution::ExecutionRequest<'request, 'request>, WorthQueryBoundExecutionDenial> {
     phase
         .checked_execution_request_for(&workspace.advancement_owner())
@@ -321,7 +322,7 @@ fn admit_direct_request<'request>(
             WorthQueryBoundExecutionDenial::new(
                 WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause),
                 "direct advancement belongs to another installed runtime",
-                Default::default(),
+                counters,
             )
         })
 }

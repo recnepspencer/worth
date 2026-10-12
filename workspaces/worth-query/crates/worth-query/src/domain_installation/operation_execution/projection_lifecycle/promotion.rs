@@ -63,13 +63,13 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         >,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
-        let execution = match phase.execution_request_for(&workspace.advancement_owner()) {
+        let execution = match phase.checked_execution_request_for(&workspace.advancement_owner()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return WorthQueryProjectionPromotionOutcome::Denied(
                     WorthQueryProjectionPromotionStop::new(
                         self,
-                        WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause.into()),
+                        WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause),
                         "projection advancement belongs to another installed runtime",
                         Default::default(),
                     ),

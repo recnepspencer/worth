@@ -57,7 +57,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         .with_host_advancement(|phase| {
             world.application.fail_next_durable_append_for_test(
                 &phase
-                    .execution_request_for(world.application.product_runtime())
+                    .checked_execution_request_for(world.application.product_runtime())
                     .expect("matching installed phase"),
             )
         })

@@ -113,7 +113,7 @@ fn cycle_chain_at_small_retention(
                 .with_host_advancement(|phase| {
                     application.history_retained_for_test(
                         &phase
-                            .execution_request_for(application.product_runtime())
+                            .checked_execution_request_for(application.product_runtime())
                             .expect("matching installed phase"),
                     )
                 })

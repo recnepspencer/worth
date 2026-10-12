@@ -38,6 +38,11 @@ mod tests;
 ///     let _ = runtime.read_truth().pin_read_capability(snapshot, &[], request);
 /// }
 /// ```
+/// Observation-backed pins have no snapshot query context.
+/// ```compile_fail,E0599
+/// use worth_relational::facade::runtime::RelationalPinnedRead;
+/// fn context(read: &RelationalPinnedRead<()>) { read.query_context(); }
+/// ```
 /// No runtime borrow can be extracted from a pinned read.
 /// ```compile_fail,E0599
 /// use worth_relational::facade::runtime::{RelationalPinnedRead, RelationalRuntime};
@@ -73,6 +78,11 @@ pub enum RelationalPinnedReadAdmissionDenial {
 }
 
 impl RelationalPinnedRead {
+    /// Schema and canonical source revisions captured at pin time.
+    pub fn query_context(&self) -> &QueryPlanContextId {
+        &self.context
+    }
+
     /// Metadata of the exact owner-issued snapshot, including its source identity.
     pub fn snapshot(&self) -> &SnapshotHandle {
         &self.snapshot
@@ -80,10 +90,6 @@ impl RelationalPinnedRead {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
-    /// Schema and canonical source revisions captured at pin time.
-    pub fn query_context(&self) -> &QueryPlanContextId {
-        &self.context
-    }
     /// Immutable schema carried by the selected root, never current configuration.
     pub fn schema(&self) -> &RelationalSchemaRegistry {
         self.basis.root().schema_authority().registry()
@@ -109,6 +115,9 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
+    pub(crate) fn runtime_instance_id(&self) -> u64 {
+        self.context.runtime_instance_id
+    }
     pub(crate) fn pinned_basis(&self) -> &VisibilitySnapshotBasis {
         &self.basis
     }
