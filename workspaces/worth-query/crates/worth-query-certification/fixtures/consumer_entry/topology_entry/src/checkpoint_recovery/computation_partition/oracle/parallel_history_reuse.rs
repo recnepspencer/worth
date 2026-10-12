@@ -130,7 +130,8 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         Some(before_work),
         "declared full compute and tree work"
     );
-    let pair = ceiling_family.then(|| ceiling_pair::branches(&application));
+    let pair = (ceiling_family || matches!(change, Change::Gather))
+        .then(|| ceiling_pair::branches(&application));
     let code_branch =
         matches!(change, Change::CodeIdentity).then(|| ceiling_pair::branches(&application)[0]);
     let request = match pair {
@@ -214,13 +215,17 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         });
         assert_eq!(
             retained_total, full_total,
-            "a ceiling inside carried work has the reuse-off advancement's exact work and span"
+            "the same edited request has identical advancement work and span with reuse on or off"
         );
-        ceiling_pair::assert_stop(&retained, &reference, &model, reuse);
-        println!(
-            "REUSE_TOTAL:retained={retained_total:?}:fresh={full_total:?}:declared={declared_work}"
+        assert_eq!(
+            retained.outcome, reference.outcome,
+            "reuse preserves the same request's result or typed stop"
         );
-        return;
+        println!("SAME_REQUEST_BILL:reuse={reuse}:edited_retained_work={}:edited_retained_span={}:edited_reuse_off_work={}:edited_reuse_off_span={}", retained_total.0, retained_total.1, full_total.0, full_total.1);
+        if ceiling_family {
+            ceiling_pair::assert_stop(&retained, &reference, &model, reuse);
+            return;
+        }
     }
     let (reference, fresh_work) = fresh(&model);
     let fresh_total = observations().iter().fold((0, 0), |sum, r| {
@@ -229,8 +234,13 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
             sum.1 + r.report.charged_span(),
         )
     });
+    // A freshly seeded world has no prior edit/publication history. Its whole
+    // advancement bill is a different input; only its declared computation
+    // charge is compared below. Gather's same-history counterpart above pins
+    // the reuse law for the entire advancement, including native owner reads.
     println!(
-        "REUSE_TOTAL:retained={retained_total:?}:fresh={fresh_total:?}:declared={declared_work}"
+        "HISTORY_BILLS:edited_work={}:edited_span={}:new_installation_work={}:new_installation_span={}:declared={declared_work}",
+        retained_total.0, retained_total.1, fresh_total.0, fresh_total.1
     );
     for (label, run, charge) in [
         ("retained", &retained, retained_work),

@@ -58,6 +58,9 @@ pub use readiness::InitialPlanarReadiness;
 pub use source_adjustment::*;
 
 pub trait TopologySchemaBinding: ApplicationSchema {
+    fn planar_invariant_work() -> u64 {
+        planar_topology::PLANAR_CHECKED_WORK
+    }
     const ROOT_INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> =
         Some(WorthQueryProducerInputReuseContract::canonical_bitwise(
             WorthQueryDecisionContextDependencies::NONE,

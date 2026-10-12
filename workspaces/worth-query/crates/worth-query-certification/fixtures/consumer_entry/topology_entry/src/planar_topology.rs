@@ -119,7 +119,7 @@ const PLANAR_SCOPE_RINGS: u64 = 8;
 const PLANAR_SCOPE_BODIES: u64 = PLANAR_SCOPE_RINGS * 3;
 const PLANAR_SCOPE_SUCCESSORS: u64 = PLANAR_SCOPE_BODIES;
 const PLANAR_CHECKED_HEADROOM: u64 = 4;
-const PLANAR_CHECKED_WORK: u64 = PLANAR_CHECKED_HEADROOM
+pub(crate) const PLANAR_CHECKED_WORK: u64 = PLANAR_CHECKED_HEADROOM
     * (PLANAR_SCOPE_BODIES * 3 * PLANAR_SCOPE_BODIES
         + PLANAR_SCOPE_BODIES * 6 * (18 + 18)
         + PLANAR_SCOPE_SUCCESSORS * 8)
@@ -133,7 +133,7 @@ where
         PositivePlanarTurn::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
         RelationalInvariantWorkBudget::new(
-            NonZeroU64::new(PLANAR_CHECKED_WORK).expect("nonzero declared scope budget"),
+            NonZeroU64::new(Schema::planar_invariant_work()).expect("nonzero fixture budget"),
         ),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
