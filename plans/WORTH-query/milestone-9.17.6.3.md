@@ -2791,6 +2791,11 @@ The next phase may trust that partition-granular reuse is exact.
     judges every history against them. *Completed.*
   - The same harness then varies the worker count and wave order over the
     full matrix and compares span with work.
+    Certified placement uses one fixed seed beside a plain leased slice.
+    Seed variation belongs to `certified_placement_perturbs_the_actual_owned_wave`;
+    `certification_never_changes_the_advancements_work_or_span` pins its bill.
+    Both tests live beside Query's wave dispatch; the matrix drops only seed
+    variation, never the Certified placement.
 
 The next phase may trust that advancement exploits every declared independence.
 

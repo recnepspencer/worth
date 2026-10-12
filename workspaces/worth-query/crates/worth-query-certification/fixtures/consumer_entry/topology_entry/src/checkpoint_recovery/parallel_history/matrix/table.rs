@@ -80,13 +80,13 @@ fn required_wave_full_declared_matrix() {
     let rows = cases::table();
     assert_eq!(
         rows.len(),
-        984,
-        "plain leased placement has no unobserved seed axis"
+        1032,
+        "fixed Certified product plus shipped slice and deadlines"
     );
     for family in 0..super::FAMILIES.len() {
         assert_eq!(
             rows.iter().filter(|row| row.family == family).count(),
-            123,
+            129,
             "declared product per family"
         );
     }
@@ -218,4 +218,43 @@ fn required_actual_worker_witnesses() {
             })
             .collect(),
     );
+}
+
+#[test]
+fn required_certified_product_is_present() {
+    let rows = cases::table();
+    // Eight shapes * three widths * two declarations * ten faults * two reuse.
+    assert_eq!(
+        rows.iter().filter(|r| r.dispatch == 0).count(),
+        960,
+        "every shape keeps the fixed-seed Certified placement"
+    );
+    // Eight shapes * three widths * (success and rank-middle failure).
+    assert_eq!(
+        rows.iter()
+            .filter(|r| r.dispatch == cases::UNSEEDED && r.fault != 10)
+            .count(),
+        48,
+        "the shipped unseeded slice remains beside certification"
+    );
+}
+
+#[test]
+fn required_certified_paths_match_plain_success_and_singleton_stop() {
+    let mut rows = Vec::new();
+    for dispatch in [0, cases::UNSEEDED] {
+        for workers in [1, 2, 5] {
+            for (family, fault) in [(7, 0), (1, 2)] {
+                rows.push(Cell {
+                    family,
+                    workers,
+                    declaration: 0,
+                    dispatch,
+                    fault,
+                    reuse: false,
+                });
+            }
+        }
+    }
+    matrix(rows);
 }
