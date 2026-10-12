@@ -164,7 +164,7 @@ fn run(placement: Placement, failure: Option<(usize, Failure)>) -> Observed {
     );
     assert!(
         state.runs.iter().all(|&runs| runs <= 1),
-        "an admitted root is computed at most once: {:?}",
+        "each declared schedule root computes at most once; unrelated kernels return zero outside this schedule: {:?}",
         state.runs
     );
     if overlap {

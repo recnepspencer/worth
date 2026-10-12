@@ -111,6 +111,11 @@ fn case(transitive: bool, changed_own_source: bool) {
         application.producer_contacts_at_root_on_this_thread_for_test(roots[1]),
         own_contacts
     );
+    assert_eq!(
+        application.undelivered_publication_counts_for_test(),
+        (1, 1),
+        "a foreign advance leaves the frozen publication unchanged"
+    );
     if changed_own_source {
         let issued = application.queued_required_rows_for_root_for_test(roots[1]);
         assert!(

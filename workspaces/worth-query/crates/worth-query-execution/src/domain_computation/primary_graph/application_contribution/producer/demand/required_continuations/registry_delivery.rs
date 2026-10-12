@@ -63,7 +63,7 @@ impl<Schema: ApplicationSchema + 'static> RegistryDelivery<Schema> {
         match held::resume_registry_successor(
             phase, runtime, principal, request, branch, custody, self.held, admission, performed,
         )? {
-            HeldUpstream::Ready(_) => Ok(Some(awaited_delivery::delivered_registry())),
+            HeldUpstream::Ready(ready) => Ok(Some(DeliveredAwaited::from_delivery(ready))),
             HeldUpstream::Unfinished | HeldUpstream::GaveBack => Ok(None),
         }
     }

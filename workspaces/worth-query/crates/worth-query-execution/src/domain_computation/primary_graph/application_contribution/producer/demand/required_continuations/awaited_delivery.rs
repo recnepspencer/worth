@@ -9,9 +9,13 @@ pub(in super::super) struct AwaitedDelivery<'a, Schema: ApplicationSchema> {
     entries: &'a mut [RequiredFreshProgress<Schema>],
 }
 /// Delivery, unlike compute, can thaw a frozen head. No other step mints this.
-pub(in super::super) struct DeliveredAwaited(());
-pub(super) fn delivered_registry() -> DeliveredAwaited {
-    DeliveredAwaited(())
+pub(in super::super) struct DeliveredAwaited {
+    _ready: SelectedReadyReadmission,
+}
+impl DeliveredAwaited {
+    pub(super) fn from_delivery(ready: SelectedReadyReadmission) -> Self {
+        Self { _ready: ready }
+    }
 }
 impl<Schema: ApplicationSchema + 'static> RequiredContinuations<Schema> {
     pub(super) fn awaited_delivery(
@@ -66,10 +70,10 @@ impl<Schema: ApplicationSchema + 'static> AwaitedDelivery<'_, Schema> {
                 .map_err(|_| work_denial())?;
         }
         match result {
-            Ok(Some(_)) => {
+            Ok(Some(ready)) => {
                 runtime.output_demands.clear_required_stop(self.key());
                 self.entries.rotate_left(1);
-                Ok(Some(DeliveredAwaited(())))
+                Ok(Some(DeliveredAwaited::from_delivery(ready)))
             }
             Ok(None) => Ok(None),
             Err(stop) => Err(stop),

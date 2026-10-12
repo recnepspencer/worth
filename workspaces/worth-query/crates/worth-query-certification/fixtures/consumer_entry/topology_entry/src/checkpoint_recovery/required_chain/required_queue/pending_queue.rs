@@ -7,7 +7,7 @@ fn a_pending_caller_whose_head_moved_holds_the_independent_queue_root() {
     let application = chain_application();
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let (mut a, mut b, c, d) = chain_with_unrelated!(application, request);
+    let (mut a, mut b, c, mut d) = chain_with_unrelated!(application, request);
     change_root_input!(request, application, 2, 0x9176_4401_u64);
     writes_y!(request, application, "anchor-source-b", 2, 0x9176_4402_u64);
     application.delay_next_output_readiness_delivery_for_test();
@@ -47,5 +47,6 @@ fn a_pending_caller_whose_head_moved_holds_the_independent_queue_root() {
         1,
         "a later advance selects and drives the held independent root"
     );
+    settled_in_one_advance!(d, request, "the independent root settles after the thaw");
     drop((a, b, c, d));
 }

@@ -122,7 +122,8 @@ impl WorthQueryManagedComputationOwner<CheckpointSchema, PlanarOutputFeature, Co
     type Output = CostValue;
     type Stopped = ();
     fn prepare(&self, input: &String) -> Result<Prepared, ()> {
-        // A schedule witnesses only its declared roots, never an unrelated member.
+        // Counts witness only declared roots; an unrelated kernel returns zero
+        // without joining this schedule or contributing to its run counts.
         let schedule = ARMED
             .lock()
             .unwrap()
