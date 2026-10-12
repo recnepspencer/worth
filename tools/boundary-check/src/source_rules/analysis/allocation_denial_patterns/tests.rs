@@ -321,3 +321,24 @@ fn an_unclosed_comparison_cannot_hide_a_generic_alias_read() {
         assert_raw_kind_diagnostics(source, 1);
     }
 }
+
+#[test]
+fn closed_angles_in_a_macro_cannot_hide_a_generic_alias_read() {
+    for source in [
+        "type Id<T> = T; fn f() { tokens!(a < b, Id::<ExecutionAllocationDenialKind>::Cancelled > c => value); }",
+        "type Id<T> = T; fn f() { tokens!(a < b, c > Id::<ExecutionAllocationDenialKind>::Cancelled => value); }",
+        "type Id<T> = T; fn f() { tokens!(Vec<u8> Id::<ExecutionAllocationDenialKind>::Cancelled => value); }",
+    ] {
+        assert_raw_kind_diagnostics(source, 1);
+    }
+}
+
+#[test]
+fn qualified_self_trait_projection_in_a_macro_is_refused() {
+    // A literal raw ident followed by closing angles and :: cannot see this
+    // projection: the trait name occurs between the raw ident and the member.
+    assert_raw_kind_diagnostics(
+        "fn f() { tokens!(<ExecutionAllocationDenialKind as Id>::Out => value); }",
+        1,
+    );
+}

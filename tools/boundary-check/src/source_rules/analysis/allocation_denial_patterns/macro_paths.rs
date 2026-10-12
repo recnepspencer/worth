@@ -92,7 +92,7 @@ fn finish(
         let tokens = std::mem::take(candidate);
         match syn::parse2::<syn::TypePath>(tokens.iter().cloned().collect()) {
             Ok(candidate) => path(Fragment::Path(candidate)),
-            Err(_) if first_pass => recover_unclosed_angles(&tokens, path, operations),
+            Err(_) if first_pass => recover_failed_path(&tokens, path, operations),
             Err(_) => {}
         }
     } else {
@@ -100,34 +100,50 @@ fn finish(
     }
 }
 
-// An unmatched comparison angle cannot own the following DSL entries. Split
-// only at unmatched opens: each recovered piece is balanced and scanned once.
-fn recover_unclosed_angles(
+// Failed paths may contain comparisons or adjacent generic types. Decide every
+// angle boundary in one stack walk, then scan disjoint pieces once. A closing
+// angle followed by :: stays with its path; other matched pairs split at both
+// ends. Unmatched opens split too, so no comparison owns a following DSL entry.
+fn recover_failed_path(
     tokens: &[TokenTree],
     path: &mut impl FnMut(Fragment),
     operations: &mut usize,
 ) {
     let mut unmatched = Vec::new();
+    let mut boundaries = vec![false; tokens.len()];
     for (index, token) in tokens.iter().enumerate() {
         *operations += 1;
         match token {
             TokenTree::Punct(p) if p.as_char() == '<' => unmatched.push(index),
             TokenTree::Punct(p) if p.as_char() == '>' => {
-                unmatched.pop();
+                if let Some(open) = unmatched.pop() {
+                    *operations += 2;
+                    if !(tokens.get(index + 1).is_some_and(colon)
+                        && tokens.get(index + 2).is_some_and(colon))
+                    {
+                        boundaries[open] = true;
+                        boundaries[index] = true;
+                    }
+                }
             }
             _ => {}
         }
     }
-    if unmatched.is_empty() {
-        return;
+    for open in unmatched {
+        *operations += 1;
+        boundaries[open] = true;
     }
     let mut start = 0;
-    for end in unmatched.into_iter().chain(std::iter::once(tokens.len())) {
-        // Reuse the same callback type and leave descendant groups and raw
-        // members with their first pass. Balanced pieces need no recovery.
-        *operations += scan_fragments(&tokens[start..end], path, false);
-        start = end + 1;
+    for (end, split) in boundaries.into_iter().enumerate() {
+        *operations += 1;
+        if split {
+            // Reuse the callback type; groups and raw members belong to the
+            // first pass. The recovered pieces never invoke recovery again.
+            *operations += scan_fragments(&tokens[start..end], path, false);
+            start = end + 1;
+        }
     }
+    *operations += scan_fragments(&tokens[start..], path, false);
 }
 
 fn colon(token: &TokenTree) -> bool {
@@ -153,6 +169,12 @@ mod tests {
             "Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
             "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
             "a < b < c, Family::<ExecutionAllocationDenialKind>::Cancelled: value;",
+            "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled > c => value;",
+            "a < b, c > Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            "Vec<u8> Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            // No semicolon bounds these candidates: the recovery work itself
+            // must scale linearly when the entire macro body doubles.
+            "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled,",
         ] {
             let count = |n| {
                 let tokens = fragment
