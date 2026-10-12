@@ -34,13 +34,10 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
                 output.published_commit = Some(commit.clone());
                 // Delivery can outlive an interrupted advancement. Semantic
                 // joining must not hide the selected-publication fallback.
-                output.advancement = super::super::WorthQueryOutputAdvancement::Stopped {
-                    denial: WorthQueryOutputDemandDenial::new(
-                        WorthQueryOutputDemandDenialKind::Superseded,
-                        "",
-                    ),
-                    interrupted_claim: None,
-                };
+                output.finish_stopped(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    "",
+                ));
                 let mut row = record(occurrence(), DemandState::Output(output), 1);
                 row.source_scope = Some(scope);
                 state.records.insert(binding.clone(), row);
