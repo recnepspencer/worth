@@ -41,11 +41,12 @@ struct Case {
     work: Vec<u64>,
 }
 fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(Placement::Serial), bound(None));
     let application = install_status_application().unwrap();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
+        Some(Instant::now() + Duration::from_secs(120)),
         cancellation.token(),
     );
     let principal = authenticate(application.installed_schema(), &scope).unwrap();

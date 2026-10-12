@@ -41,11 +41,14 @@ struct Case {
     work: Option<u64>,
 }
 fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(Placement::Serial), bound(None));
     let world = world::install();
     let source = WorthQueryCancellationSource::new();
-    let scope =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(120), source.token());
+    let scope = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(120)),
+        source.token(),
+    );
     let program = program::prepare(&world, &scope);
     reports();
     place(if leased {
