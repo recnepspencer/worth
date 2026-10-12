@@ -310,6 +310,7 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
             Ok(())
         })();
         if let Err(stop) = result {
+            meter.checkpoint_stop.get_or_insert(stop);
             if stop == KernelStop::WorkCounterOverflow
                 || meter.limits.ceiling_owner == NestedStopOwner::Request
             {

@@ -166,14 +166,16 @@ where
                 max_value_bytes,
                 |charge| match charge {
                     FrontierCharge::Node => context.checkpoint_frontier(1),
-                    FrontierCharge::TaskUnit => {
-                        // These units were completed by the checked task. This
+                    FrontierCharge::CompletedNode | FrontierCharge::TaskUnit => {
+                        // These units belong to the completed canonical prefix. This
                         // transfers its settled prefix; it authorizes no new work
                         // and preserves the request's interruption latch.
                         context.account_completed_work(1)?;
-                        accepted_task_work = accepted_task_work
-                            .checked_add(1)
-                            .ok_or_else(KernelStop::work_counter_overflow)?;
+                        if matches!(charge, FrontierCharge::TaskUnit) {
+                            accepted_task_work = accepted_task_work
+                                .checked_add(1)
+                                .ok_or_else(KernelStop::work_counter_overflow)?;
+                        }
                         Ok(())
                     }
                 },

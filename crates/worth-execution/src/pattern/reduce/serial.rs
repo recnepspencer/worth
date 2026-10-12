@@ -18,7 +18,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         Kernel: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
         Combine: Fn(&R, &R) -> R,
     {
-        let tree_bytes = ReductionTree::<R, Combine>::checked_build_memory_bound(
+        let tree_bytes = ReductionTree::<R, Combine>::checked_serial_build_memory_bound(
             self.partition_count(),
             max_value_bytes,
         )

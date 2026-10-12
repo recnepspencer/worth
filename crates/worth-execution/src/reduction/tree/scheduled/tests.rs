@@ -130,3 +130,186 @@ fn a_cancelled_subtree_keeps_its_completed_combines_and_charge() {
         ));
     }
 }
+
+#[test]
+fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
+    let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
+    let mut oracle = None;
+    // Canonical task order constructs the interruption; frontier widths still
+    // select different Node/Task event streams. Scheduling is not the oracle.
+    for backing in [0, 1, 2, 3] {
+        let cancellation = crate::CancellationSource::new();
+        let mut policy = request(if backing == 3 { 2 } else { 1 }, 2_000, 100);
+        policy.cancellation = cancellation.token();
+        let lease = match backing {
+            0 => None,
+            1 => Some(crate::ExecutionResourceLease::serial(policy).unwrap()),
+            2 | 3 => Some(authority().request_lease(policy).unwrap()),
+            _ => unreachable!(),
+        };
+        let mut measured = None;
+        let outcome = run_scope(lease.as_ref(), 0, 0, |context| {
+            let plan = ReductionPlan::try_from_sorted_unique(
+                [1, 3, 4].map(PartitionIdentity::new).to_vec(),
+            )
+            .unwrap();
+            let combine = |left: &u64, right: &u64| {
+                cancellation.cancel();
+                left + right
+            };
+            let result = if let Some(lease) = &lease {
+                ReductionTree::build_scheduled_checked(
+                    lease,
+                    BackendKind::Serial,
+                    plan,
+                    vec![1_u64, 3, 4],
+                    0,
+                    combine,
+                    8,
+                    context,
+                )
+                .map_err(|error| match error {
+                    ScheduledReductionError::Reduction(failure) => failure,
+                    ScheduledReductionError::Admission(denial) => panic!("admission: {denial:?}"),
+                })
+            } else {
+                ReductionTree::from_plan_checked(plan, vec![1_u64, 3, 4], 0, combine, 8, || {
+                    if cancellation.token().is_cancelled() {
+                        Err(KernelStop::Cancelled)
+                    } else {
+                        context.checkpoint(1)
+                    }
+                })
+            };
+            let failure = result
+                .err()
+                .expect("the second combine observes cancellation");
+            assert_eq!(failure.metrics.combine_calls, 1);
+            assert!(matches!(
+                failure.reason,
+                ReductionRunStop::Hook(KernelStop::Cancelled)
+            ));
+            measured = Some(failure.metrics);
+            Err::<(), _>(KernelFailure::<()>::Stop(KernelStop::Cancelled))
+        });
+        let metrics = measured.unwrap();
+        assert_eq!(outcome.report.charged_work(), metrics.charged_work);
+        assert_eq!(outcome.report.charged_span(), metrics.charged_span);
+        let observed = (
+            metrics,
+            outcome.report.charged_work(),
+            outcome.report.charged_span(),
+            matches!(
+                outcome.result,
+                Err(ScopeStop::Failure(KernelFailure::Stop(
+                    KernelStop::Cancelled
+                )))
+            ),
+        );
+        if let Some(expected) = &oracle {
+            assert_eq!(&observed, expected, "backing {backing}");
+        } else {
+            oracle = Some(observed);
+        }
+    }
+}
+
+#[test]
+fn a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width() {
+    let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
+    let mut oracle = None;
+    // Canonical task order constructs the interruption; frontier widths still
+    // select different Node/Task event streams. Scheduling is not the oracle.
+    for backing in [0, 1, 2, 3] {
+        let cancellation = crate::CancellationSource::new();
+        let mut policy = request(if backing == 3 { 2 } else { 1 }, 2_000, 100);
+        policy.cancellation = cancellation.token();
+        let lease = match backing {
+            0 => None,
+            1 => Some(crate::ExecutionResourceLease::serial(policy).unwrap()),
+            2 | 3 => Some(authority().request_lease(policy).unwrap()),
+            _ => unreachable!(),
+        };
+        let mut measured = None;
+        let outcome = run_scope(lease.as_ref(), 0, 0, |context| {
+            let plan = ReductionPlan::try_from_sorted_unique(
+                [1, 3, 4].map(PartitionIdentity::new).to_vec(),
+            )
+            .unwrap();
+            let combine = |left: &u64, right: &u64| {
+                if *left == 4 && *right == 4 {
+                    cancellation.cancel();
+                }
+                left + right
+            };
+            let before = context.cost();
+            let result = if let Some(lease) = &lease {
+                ReductionTree::build_scheduled_checked(
+                    lease,
+                    BackendKind::Serial,
+                    plan,
+                    vec![1_u64, 3, 4],
+                    0,
+                    combine,
+                    8,
+                    context,
+                )
+                .map_err(|error| match error {
+                    ScheduledReductionError::Reduction(failure) => failure,
+                    ScheduledReductionError::Admission(denial) => panic!("admission: {denial:?}"),
+                })
+            } else {
+                ReductionTree::from_plan_checked(plan, vec![1_u64, 3, 4], 0, combine, 8, || {
+                    if cancellation.token().is_cancelled() {
+                        Err(KernelStop::Cancelled)
+                    } else {
+                        context.checkpoint(1)
+                    }
+                })
+            };
+            let metrics = match result {
+                Ok((_, metrics)) => {
+                    if lease.is_none() {
+                        context
+                            .apply_structural_span(
+                                before,
+                                metrics.charged_work,
+                                metrics.charged_span,
+                            )
+                            .unwrap();
+                    }
+                    metrics
+                }
+                Err(failure) => {
+                    assert!(matches!(
+                        failure.reason,
+                        ReductionRunStop::Hook(KernelStop::Cancelled)
+                    ));
+                    failure.metrics
+                }
+            };
+            assert_eq!(metrics.combine_calls, 2 * 3);
+            assert_eq!(metrics.recombined_nodes, 3);
+            measured = Some(metrics);
+            Ok::<(), KernelFailure<()>>(())
+        });
+        let metrics = measured.unwrap();
+        assert_eq!(outcome.report.charged_work(), metrics.charged_work);
+        assert_eq!(outcome.report.charged_span(), metrics.charged_span);
+        let observed = (
+            metrics,
+            outcome.report.charged_work(),
+            outcome.report.charged_span(),
+            matches!(outcome.result, Ok(())),
+        );
+        assert!(
+            observed.3,
+            "no checkpoint follows the final canonical combine"
+        );
+        if let Some(expected) = &oracle {
+            assert_eq!(&observed, expected, "backing {backing}");
+        } else {
+            oracle = Some(observed);
+        }
+    }
+}

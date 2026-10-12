@@ -12,6 +12,7 @@ use super::{
 
 pub(crate) enum FrontierCharge {
     Node,
+    CompletedNode,
     TaskUnit,
 }
 
@@ -80,12 +81,28 @@ impl<T: Clone + ChargedBytes + CanonicalBits, F: Fn(&T, &T) -> T> ReductionTree<
         for (spec, child) in frontier.tasks.iter().copied().zip(children) {
             built.insert(spec.index(), child);
         }
+        // A started canonical task implies its preceding DFS entries were
+        // reached. These visits belong to the already-performed prefix, not
+        // to new owner-side joins after the tasks.
+        let first = frontier.tasks.first();
+        let entered_prefix = first.is_some_and(|spec| {
+            built
+                .get(&spec.index())
+                .is_some_and(|child| child.metrics.charged_work != 0)
+                || failed
+                    .as_ref()
+                    .is_some_and(|(id, _, work)| *id == spec.identity && *work != 0)
+        });
         let mut metrics = shape_metrics;
         for event in frontier.events {
             match event {
                 FrontierEvent::Enter(_spec) => {
                     let mut engine = Engine::new(&identity, &combine, max_value_bytes, || {
-                        charge(FrontierCharge::Node)
+                        charge(if entered_prefix {
+                            FrontierCharge::CompletedNode
+                        } else {
+                            FrontierCharge::Node
+                        })
                     });
                     engine
                         .visit()
