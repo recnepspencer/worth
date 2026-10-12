@@ -32,6 +32,7 @@ mod consumer_custody;
 mod custody_drain;
 mod custody_note;
 mod custody_reader;
+mod delivery_binding;
 mod demand_key;
 mod discarded_successor;
 mod drained_cleanup;
