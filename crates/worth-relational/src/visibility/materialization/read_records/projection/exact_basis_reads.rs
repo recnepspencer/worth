@@ -11,14 +11,14 @@ use super::read_record_identity_ordering::{
 };
 use super::VisibilityProjectionView;
 
-pub(super) struct ExactProjectionReader<'view, 'runtime> {
-    view: &'view VisibilityProjectionView<'runtime>,
+pub(super) struct ExactProjectionReader<'view> {
+    view: &'view VisibilityProjectionView,
     root: &'view Arc<RelationalBranchRoot>,
 }
 
-impl<'view, 'runtime> ExactProjectionReader<'view, 'runtime> {
+impl<'view> ExactProjectionReader<'view> {
     pub(super) const fn new(
-        view: &'view VisibilityProjectionView<'runtime>,
+        view: &'view VisibilityProjectionView,
         root: &'view Arc<RelationalBranchRoot>,
     ) -> Self {
         Self { view, root }

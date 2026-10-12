@@ -8,6 +8,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
+        let execution = match recovery_execution(phase, &self.application().product_runtime) {
+            Ok(execution) => execution,
+            Err(denial) => return Err(failure(denial, recovery)),
+        };
         let inspected = match recovery.product.inspect() {
             Ok(inspected) => inspected,
             Err(denial) => {
@@ -68,11 +72,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             product,
             support_custody,
         } = recovery;
-        match prepared.execute(
-            phase
-                .execution_request_for(&self.application().product_runtime)
-                .expect("private recovery uses its admitted runtime phase"),
-        ) {
+        match prepared.execute(execution) {
             worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
                 let adoption = WorthQueryPerformedBranchAdoption::new(
                     performed.consume(),
@@ -130,5 +130,35 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 )
             }
         }
+    }
+}
+
+fn recovery_execution<'scope>(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+    runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryBranchAdoptionRecoveryDenial>
+{
+    phase
+        .checked_execution_request_for(runtime)
+        .map_err(WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied)
+}
+
+#[cfg(test)]
+#[path = "foreign_phase_tests.rs"]
+mod foreign_phase_tests;
+
+impl crate::domain_computation::execution_observation::WorthQueryExecutionObservation {
+    /// Drives the private continuation with an already selected product and
+    /// real retained recovery custody; the listener owns this test door.
+    #[doc(hidden)]
+    pub fn recover_branch_adoption_in_advancement_for_test<Schema: ApplicationSchema>(
+        &self,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        recovery: WorthQueryBranchAdoptionRecovery,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
+    {
+        selected.recover_branch_adoption_in_advancement(phase, recovery, request)
     }
 }

@@ -4,7 +4,7 @@ mod direct_attempt;
 mod execution_attempt_identity;
 mod graph_obligation;
 pub(in crate::domain_computation) use graph_obligation::{
-    WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
+    WorthQueryManagedGraphReadDenial, WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion,
     WorthQueryPreparedSessionRead,
 };
 pub(crate) mod graph_provider;
@@ -62,3 +62,9 @@ pub(crate) use tests::{
 pub(in crate::domain_computation) use provisional_attempt::check_invariant_request_live;
 /// Borrowed request view supplied by Query to an admitted provider invocation.
 pub use worth_execution::ExecutionRequest;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use graph_obligation::pin_panic;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use graph_obligation::pin_control;

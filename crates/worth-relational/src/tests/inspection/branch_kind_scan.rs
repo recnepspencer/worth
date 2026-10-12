@@ -133,11 +133,11 @@ fn historical_entities(
     )
 }
 
-fn branch_view<'runtime>(
+fn branch_view(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &'runtime crate::runtime::RelationalRuntime,
+    runtime: &crate::runtime::RelationalRuntime,
     branch: &BranchId,
-) -> crate::facade::runtime::VisibilityProjectionView<'runtime> {
+) -> crate::facade::runtime::VisibilityProjectionView {
     let head = runtime
         .history()
         .branch_head(branch)

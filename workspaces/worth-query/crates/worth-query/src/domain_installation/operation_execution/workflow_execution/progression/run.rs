@@ -102,12 +102,11 @@ where
         let owner = workspace.advancement_owner();
         owner
             .with_advancement(|phase| {
-                let execution = phase
-                    .execution_request_for(&owner)
-                    .expect("the opener lent this owner its phase");
+                let execution = phase.checked_execution_request_for(&owner)?;
 
-                self.start_workflow_attempt(execution, workspace, 1)
+                Ok(self.start_workflow_attempt(execution, workspace, 1))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|cause| {
                 TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
                     WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
@@ -306,19 +305,20 @@ where
         workspace: &mut crate::runtime::WorthQueryWorkspace,
     ) -> WorthQueryWorkflowStartOutcome<D, O, F, L> {
         let owner = workspace.advancement_owner();
+        let counters = self.counters;
         owner
             .with_advancement(|phase| {
-                let execution = phase
-                    .execution_request_for(&owner)
-                    .expect("the opener lent this owner its phase");
+                let execution = phase.checked_execution_request_for(&owner)?;
 
-                self.admitted
-                    .start_workflow_attempt(execution, workspace, self.attempt + 1)
+                Ok(self
+                    .admitted
+                    .start_workflow_attempt(execution, workspace, self.attempt + 1))
             })
+            .and_then(std::convert::identity)
             .unwrap_or_else(|cause| {
                 TransitionOutcome::Denied(WorthQueryWorkflowStartDenial::new(
                     WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
-                    Default::default(),
+                    counters,
                 ))
             })
     }

@@ -70,12 +70,12 @@ mod current_output_source;
 #[path = "fixture/filtered_activity_query.rs"]
 mod filtered_activity_query;
 pub(super) use application_queries::{
-    cross_root_definition, AccountSummaryQuery, CrossRootQuery, GovernedAccountSummaryQuery,
+    cross_root_definition, AccountSummaryQuery, GovernedAccountSummaryQuery,
     OrderedAccountSummaryQuery, PublicAccountMembershipQuery, PublicAccountMembershipResult,
     ScopedAccountSummaryQuery,
 };
 pub(in crate::domain_computation::primary_graph) use application_queries::{
-    status_parameter, AccountSummaryParameters, AccountSummaryResult,
+    status_parameter, AccountSummaryParameters, AccountSummaryResult, CrossRootQuery,
     PublicScopedAccountSummaryQuery,
 };
 pub(in crate::domain_computation::primary_graph) use current_output_source::TestAccountSourceBinding;

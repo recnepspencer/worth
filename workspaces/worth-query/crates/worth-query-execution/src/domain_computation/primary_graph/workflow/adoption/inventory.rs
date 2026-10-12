@@ -43,7 +43,7 @@ struct ReadDefinition {
 
 pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    branch: VisibilityProjectionView<'_>,
+    branch: VisibilityProjectionView,
     request: &WorkflowAdoptionInventoryRequest<'_>,
 ) -> Result<WorthQueryWorkflowAdoptionInventory, WorkflowAdoptionReadDenial> {
     let layout = request.layout;
@@ -105,7 +105,7 @@ pub(in crate::domain_computation::primary_graph) fn inventory_workflows(
 
 fn read_definition<'read>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    truth: &mut WorkflowAdoptionTruth<'_>,
+    truth: &mut WorkflowAdoptionTruth,
     read: &'read mut BTreeMap<EntityId, ReadDefinition>,
     request: &WorkflowAdoptionInventoryRequest<'_>,
     lineage: EntityId,

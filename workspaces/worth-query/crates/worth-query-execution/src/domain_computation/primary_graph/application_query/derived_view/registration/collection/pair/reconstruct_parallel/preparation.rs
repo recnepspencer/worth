@@ -104,10 +104,21 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         }
     }
 
+    #[cfg(test)]
     pub(super) fn worker(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         root: EntityId,
+    ) -> Result<PreparedPair<'_>, Denial> {
+        self.worker_with_pins(execution, application, root, &mut Default::default())
+    }
+    pub(super) fn worker_with_pins(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        root: EntityId,
+        pins: &mut crate::domain_computation::primary_graph::application_query::one_shot::pair_plans::WorthQueryPairReadPins,
     ) -> Result<PreparedPair<'_>, Denial> {
         let first_batch = self.first_batch.take();
         let second_batch = self.second_batch.take();
@@ -134,27 +145,57 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         let second_buffer =
             reserve_one_shot_result_buffer_in_batch(application, &self.second, self.batch.as_ref())
                 .map_err(|denial| Denial::ReadDenied { root, denial })?;
+        let first = match pins.first.as_ref() {
+            Some(pin) => self.first.graph_work.prepare_query_read_from_pin(
+                self.first.basis.identity(),
+                execution,
+                self.first.basis.snapshot_handle(),
+                pin,
+                |graph| ReadPlan::public_worker(&self.first).selected_indexes(graph),
+            ),
+            None => self.first.graph_work.prepare_query_read(
+                self.first.basis.identity(),
+                execution,
+                self.first.basis.snapshot_handle(),
+                |graph| ReadPlan::public_worker(&self.first).selected_indexes(graph),
+            ),
+        }
+        .map_err(|cause| {
+            super::denial::session(cause, root, &ReadPlan::public_worker(&self.first))
+        })?;
+        let second = match pins.second.as_ref() {
+            Some(pin) => self.second.graph_work.prepare_query_read_from_pin(
+                self.second.basis.identity(),
+                execution,
+                self.second.basis.snapshot_handle(),
+                pin,
+                |graph| ReadPlan::public_worker(&self.second).selected_indexes(graph),
+            ),
+            None => self.second.graph_work.prepare_query_read(
+                self.second.basis.identity(),
+                execution,
+                self.second.basis.snapshot_handle(),
+                |graph| ReadPlan::public_worker(&self.second).selected_indexes(graph),
+            ),
+        }
+        .map_err(|cause| {
+            super::denial::session(cause, root, &ReadPlan::public_worker(&self.second))
+        })?;
+        pins.first = Some(first.retained_pin());
+        pins.second = Some(second.retained_pin());
         Ok(PreparedPair {
             root,
             #[cfg(test)]
             witness: DispatchWitness::carried(),
             first: PreparedRead {
                 plan: ReadPlan::public_worker(&self.first),
-                session: self
-                    .first
-                    .graph_work
-                    .prepare_query_read(self.first.basis.identity())
-                    .map_err(super::denial::session)?,
+                session: first,
                 buffer: first_buffer,
                 batch: first_batch,
             },
             second: PreparedRead {
                 plan: ReadPlan::public_worker(&self.second),
-                session: self
-                    .second
-                    .graph_work
-                    .prepare_query_read(self.second.basis.identity())
-                    .map_err(super::denial::session)?,
+                session: second,
                 buffer: second_buffer,
                 batch: second_batch,
             },

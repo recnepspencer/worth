@@ -26,7 +26,7 @@ impl RelationIndexFieldProjectionScope {
 }
 
 pub(super) fn entity_index_projection_scopes(
-    source: &super::IndexProjectionSource<'_, '_>,
+    source: &super::IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
 ) -> Vec<EntityIndexFieldProjectionScope> {
     source
@@ -38,7 +38,7 @@ pub(super) fn entity_index_projection_scopes(
 }
 
 pub(super) fn source_entity_index_projection_scope_for_kind(
-    source: &super::IndexProjectionSource<'_, '_>,
+    source: &super::IndexProjectionSource<'_>,
     kind_id: KindId,
     field_locator: &AspectFieldLocator,
 ) -> Option<EntityIndexFieldProjectionScope> {
@@ -47,7 +47,7 @@ pub(super) fn source_entity_index_projection_scope_for_kind(
 }
 
 pub(super) fn relation_index_projection_scopes(
-    source: &super::IndexProjectionSource<'_, '_>,
+    source: &super::IndexProjectionSource<'_>,
     field_locator: &AspectFieldLocator,
 ) -> Vec<RelationIndexFieldProjectionScope> {
     source

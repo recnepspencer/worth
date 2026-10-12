@@ -10,9 +10,10 @@ impl WorthQueryWorkspace {
         >,
     ) -> Result<
         WorthQuerySnapshotIdentity,
-        worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     > {
-        let execution = phase.execution_request_for(&self.runtime.installed_product.world)?;
+        let execution =
+            phase.checked_execution_request_for(&self.runtime.installed_product.world)?;
         Ok(self.snapshot_identity_with_request(&execution))
     }
 

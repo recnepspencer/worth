@@ -5,8 +5,8 @@ impl IndexAuthority<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &DerivedIndexBuildRequest,
-        before: Option<&VisibilityProjectionView<'_>>,
-        after: &VisibilityProjectionView<'_>,
+        before: Option<&VisibilityProjectionView>,
+        after: &VisibilityProjectionView,
         work: &mut MaintenanceWork,
     ) -> Result<PreparedRefresh, DerivedIndexMaintenanceDenialKind> {
         let root = after.selected_root().expect("validated exact root");

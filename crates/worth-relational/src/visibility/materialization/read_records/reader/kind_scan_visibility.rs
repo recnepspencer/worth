@@ -17,7 +17,13 @@ impl KindScanVisibility {
         runtime: &crate::runtime::RelationalRuntime,
         version_id: crate::identity::data::VersionId,
     ) -> Self {
-        if version_id == VersionSource::current_version_id(runtime) {
+        Self::for_selected_version(VersionSource::current_version_id(runtime), version_id)
+    }
+    pub(crate) fn for_selected_version(
+        current: crate::identity::data::VersionId,
+        version_id: crate::identity::data::VersionId,
+    ) -> Self {
+        if version_id == current {
             Self::Live
         } else {
             Self::AtVersion(version_id)

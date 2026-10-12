@@ -290,3 +290,6 @@ fn retry_saw_moved_head(denial: &WorthQueryApplicationProgramAdoptionPreparation
 
 #[path = "branch_adoption_recovery/two_same_head_adoptions_report_one_performed_world_transition.rs"]
 mod two_same_head_adoptions_report_one_performed_world_transition;
+
+#[path = "branch_adoption_recovery/foreign_phase.rs"]
+mod foreign_phase;

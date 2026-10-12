@@ -8,7 +8,7 @@ use std::collections::BTreeSet;
 
 pub(super) fn apply<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: &Context<'_, '_, '_>,
+    context: &Context<'_, '_>,
     path: &RelationalAuthorizationPathPlan,
     ordinal: usize,
     frontier: &mut BTreeSet<Witness>,

@@ -108,3 +108,6 @@ fn authorization_denial(
         subject,
     )
 }
+
+#[cfg(test)]
+pub(in crate::domain_computation) use capability_observation::CancelGrantSelectionGuardForTest;

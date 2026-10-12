@@ -218,11 +218,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         let step = prepared
             .compute(
                 execution
-                    .execution_request_for(&workspace.advancement_owner())
+                    .checked_execution_request_for(&workspace.advancement_owner())
                     .map_err(|cause| {
-                        self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(
-                            cause.into(),
-                        ))
+                        self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause))
                     })?,
             )
             .apply(execution, self, workspace, None)?;

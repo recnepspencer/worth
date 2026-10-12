@@ -130,11 +130,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         prepared
             .compute(
                 execution
-                    .execution_request_for(&workspace.advancement_owner())
+                    .checked_execution_request_for(&workspace.advancement_owner())
                     .map_err(|cause| {
-                        self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(
-                            cause.into(),
-                        ))
+                        self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause))
                     })?,
             )
             .apply(execution, self, workspace, Some(admitted))
@@ -162,7 +160,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
         let semantic_input = slot.input().semantic_value();
         let graph_snapshot = workspace.snapshot_identity(execution).map_err(|cause| {
             WorthQueryWorkflowAdvanceDenial::new(
-                WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause.into()),
+                WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
                 self.counters,
             )
         })?;
@@ -210,7 +208,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
                 conditional,
                 execution_snapshot: workspace.snapshot_identity(execution).map_err(|cause| {
                     WorthQueryWorkflowAdvanceDenial::new(
-                        WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause.into()),
+                        WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
                         self.counters,
                     )
                 })?,
@@ -234,11 +232,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
     ) -> Result<WorthQueryStageConditionAdmission, WorthQueryWorkflowAdvanceDenial> {
         match super::workflow_conditional_stage_evaluation::evaluate(
             execution
-                .execution_request_for(&workspace.advancement_owner())
+                .checked_execution_request_for(&workspace.advancement_owner())
                 .map_err(|cause| {
-                    self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(
-                        cause.into(),
-                    ))
+                    self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause))
                 })?,
             &self.bound,
             workspace,
@@ -281,18 +277,16 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             stage,
             workspace.snapshot_identity(execution).map_err(|cause| {
                 WorthQueryWorkflowAdvanceDenial::new(
-                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause.into()),
+                    WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause),
                     self.counters,
                 )
             })?,
         );
         let context = self.stage_execution_context(
             execution
-                .execution_request_for(&workspace.advancement_owner())
+                .checked_execution_request_for(&workspace.advancement_owner())
                 .map_err(|cause| {
-                    self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(
-                        cause.into(),
-                    ))
+                    self.denial(WorthQueryWorkflowAdvanceDenialKind::ExecutionRequest(cause))
                 })?,
             stage,
             &predecessor_receipts,

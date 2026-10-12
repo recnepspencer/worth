@@ -1,8 +1,8 @@
+use crate::performance::PerformanceAccess;
 use crate::query::data::{
     CanonicalQueryResult, QueryComplexitySummary, QueryExecutionOutcome, QueryWorkerFragment,
     SnapshotPinnedQueryPlan,
 };
-use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::ExecutionReport;
 
@@ -11,7 +11,7 @@ use super::leased_completion::complete_leased_query;
 use super::QueryReadExecutionStop;
 
 pub(in crate::visibility::materialization::read_records::reader) fn query_execution_outcome_maybe_leased(
-    runtime: &RelationalRuntime,
+    performance: &PerformanceAccess<'_>,
     plan: SnapshotPinnedQueryPlan,
     packet_count: usize,
     touched_partitions: usize,
@@ -50,7 +50,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn query_execut
         other => other,
     })?;
     let outcome = assemble_outcome(
-        runtime,
+        performance,
         plan,
         packet_count,
         touched_partitions,
@@ -63,7 +63,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn query_execut
 }
 
 fn assemble_outcome(
-    runtime: &RelationalRuntime,
+    performance: &PerformanceAccess<'_>,
     plan: SnapshotPinnedQueryPlan,
     packet_count: usize,
     touched_partitions: usize,
@@ -80,9 +80,7 @@ fn assemble_outcome(
         authoritative_entity_records_emitted,
         authoritative_relation_records_emitted,
     };
-    runtime
-        .performance_access()
-        .count_query_emissions(result.entities.len(), result.relations.len());
+    performance.count_query_emissions(result.entities.len(), result.relations.len());
 
     QueryExecutionOutcome {
         plan,

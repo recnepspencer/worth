@@ -1,7 +1,7 @@
 use super::super::reader::VisibilityReadContext;
 use super::VisibilityProjectionView;
 
-impl VisibilityProjectionView<'_> {
+impl VisibilityProjectionView {
     pub(crate) fn retain_exact_basis(
         &self,
     ) -> Option<crate::visibility::snapshot_states::VisibilitySnapshotBasis> {
@@ -21,8 +21,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &crate::mvcc::RelationalBranchObservation,
-    ) -> Result<VisibilityProjectionView<'runtime>, crate::branch::RelationalBranchBasisDenial>
-    {
+    ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
         if observation.identity().runtime_instance_id() != self.runtime().runtime_instance_id() {
             return Err(crate::branch::RelationalBranchBasisDenial::ForeignRuntime {
                 expected_runtime_instance_id: self.runtime().runtime_instance_id(),

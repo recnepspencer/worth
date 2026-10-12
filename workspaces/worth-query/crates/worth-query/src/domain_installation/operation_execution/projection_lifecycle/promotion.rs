@@ -28,18 +28,16 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
     ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
         let owner = workspace.advancement_owner();
         let mut retained = Some(self);
-        match owner.with_advancement(|phase| {
-            let current = retained
-                .take()
-                .expect("host call retains its projection before admission");
-            current.promote_with_request(
-                request_execution,
-                phase
-                    .execution_request_for(&owner)
-                    .expect("the opener lent this owner its phase"),
-                workspace,
-            )
-        }) {
+        match owner
+            .with_advancement(|phase| {
+                let execution = phase.checked_execution_request_for(&owner)?;
+                let current = retained
+                    .take()
+                    .expect("host call retains its projection before admission");
+                Ok(current.promote_with_request(request_execution, execution, workspace))
+            })
+            .and_then(std::convert::identity)
+        {
             Ok(outcome) => outcome,
             Err(denial) => {
                 let current = retained
@@ -65,13 +63,13 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane>
         >,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryProjectionPromotionOutcome<D, O, F, L> {
-        let execution = match phase.execution_request_for(&workspace.advancement_owner()) {
+        let execution = match phase.checked_execution_request_for(&workspace.advancement_owner()) {
             Ok(execution) => execution,
             Err(cause) => {
                 return WorthQueryProjectionPromotionOutcome::Denied(
                     WorthQueryProjectionPromotionStop::new(
                         self,
-                        WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause.into()),
+                        WorthQueryProjectionPromotionDenialKind::ExecutionRequest(cause),
                         "projection advancement belongs to another installed runtime",
                         Default::default(),
                     ),

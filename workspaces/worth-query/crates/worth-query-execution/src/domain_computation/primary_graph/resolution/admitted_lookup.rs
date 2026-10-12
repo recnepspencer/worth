@@ -22,17 +22,15 @@ pub(super) enum AdmittedPrincipalLookupStop {
 /// The sole indexed candidate is already compared to this expected identity
 /// on this issued view. Its private fields keep that association together for
 /// the immediately following mapping observation.
-pub(super) struct CheckedMappingCandidate<'view, 'basis, 'resolution, 'identity> {
-    view: &'view VisibilityProjectionView<'basis>,
+pub(super) struct CheckedMappingCandidate<'view, 'resolution, 'identity> {
+    view: &'view VisibilityProjectionView,
     resolution: &'resolution WorthQueryPrincipalSnapshotResolution<'identity>,
     mapping: EntityId,
     examined_count: usize,
 }
 
-impl<'view, 'basis, 'resolution, 'identity>
-    CheckedMappingCandidate<'view, 'basis, 'resolution, 'identity>
-{
-    pub(super) fn view(&self) -> &'view VisibilityProjectionView<'basis> {
+impl<'view, 'resolution, 'identity> CheckedMappingCandidate<'view, 'resolution, 'identity> {
+    pub(super) fn view(&self) -> &'view VisibilityProjectionView {
         self.view
     }
 
@@ -54,16 +52,13 @@ impl<'view, 'basis, 'resolution, 'identity>
 /// Native selection, candidate verification and Certification parity share
 /// this same admission. The issued selected view avoids copying a snapshot or
 /// rebuilding a second principal/index authority.
-pub(super) fn resolve_unique_mapping_candidate<'view, 'basis, 'resolution, 'identity>(
+pub(super) fn resolve_unique_mapping_candidate<'view, 'resolution, 'identity>(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &'view VisibilityProjectionView<'basis>,
+    view: &'view VisibilityProjectionView,
     resolution: &'resolution WorthQueryPrincipalSnapshotResolution<'identity>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<
-    CheckedMappingCandidate<'view, 'basis, 'resolution, 'identity>,
-    AdmittedPrincipalLookupStop,
-> {
+) -> Result<CheckedMappingCandidate<'view, 'resolution, 'identity>, AdmittedPrincipalLookupStop> {
     use AdmittedPrincipalLookupStop as Stop;
     let parity = match resolution.mode {
         WorthQueryPrincipalResolutionMode::Ordinary => BoundedIndexParityMode::Production,
@@ -106,7 +101,7 @@ pub(super) fn resolve_unique_mapping_candidate<'view, 'basis, 'resolution, 'iden
         .ok_or(Stop::Semantic(
             WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal,
         ))?;
-    let carrier = u64::try_from(std::mem::size_of::<CheckedMappingCandidate<'_, '_, '_, '_>>())
+    let carrier = u64::try_from(std::mem::size_of::<CheckedMappingCandidate<'_, '_, '_>>())
         .map_err(|_| Stop::Admission(CompanionPreflightStop::WorkCounterOverflow))?;
     admission
         .charge_external_work(carrier)

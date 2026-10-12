@@ -31,3 +31,11 @@ mod map_ceiling;
 mod query_ceiling;
 
 mod parallel_ceiling;
+
+mod native_concurrency;
+
+mod pinning_reasons;
+
+mod reconstruction_parity;
+
+mod pin_custody_tests;

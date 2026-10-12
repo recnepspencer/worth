@@ -19,7 +19,7 @@ fn failure_retains_only_the_canonical_prefix() {
     let frontier = run.prepare_parallel_frontier(&stages).unwrap();
     run.admit_parallel_frontier(frontier).unwrap();
     let computed = run.prepare_frontier_computation(stages).compute(
-        phase.execution_request_for(&owner).unwrap(),
+        phase.checked_execution_request_for(&owner).unwrap(),
     );
     assert_eq!(
         _probe.take_computes(),
@@ -89,7 +89,7 @@ fn missing_predecessor_authority_remains_a_typed_denial() {
         let denial = owner
             .with_advancement(|phase| {
                 run.prepare_frontier_computation(inputs())
-                    .compute(phase.execution_request_for(&owner).unwrap())
+                    .compute(phase.checked_execution_request_for(&owner).unwrap())
                     .apply(&phase, &mut run, &mut workspace, None)
                     .err()
                     .unwrap()

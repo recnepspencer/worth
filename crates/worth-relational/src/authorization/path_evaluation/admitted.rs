@@ -20,7 +20,7 @@ use state::{Context, State, Witness};
 pub(in crate::authorization) fn evaluate_path<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
-    view: &VisibilityProjectionView<'_>,
+    view: &VisibilityProjectionView,
     plan: &RelationalAuthorizationObservationPlan,
     path: &RelationalAuthorizationPathPlan,
     counters: &mut RelationalAuthorizationObservationCounters,
@@ -83,7 +83,7 @@ pub(in crate::authorization) fn evaluate_path<A: RelationalAuthorizationObservat
 
 fn traverse<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    context: &Context<'_, '_, '_>,
+    context: &Context<'_, '_>,
     traversal: &RelationalAuthorizationTraversal,
     anchor: Option<EntityId>,
     frontier: &BTreeSet<Witness>,
