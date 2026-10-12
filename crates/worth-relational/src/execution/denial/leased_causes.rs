@@ -129,7 +129,7 @@ fn actual_work_counter_overflow_survives_both_domain_doors() {
                     kernel_scratch_bytes: 0,
                     max_result_bytes: 0,
                 }],
-                Some(&lease),
+                &lease,
                 |_, context| {
                     context.checkpoint(1)?;
                     context.account_completed_work(u64::MAX)?;
@@ -157,7 +157,7 @@ fn actual_unrelated_nested_lease_and_parent_stop_survive_both_domain_doors() {
                     kernel_scratch_bytes: 0,
                     max_result_bytes: 0,
                 }],
-                Some(&lease),
+                &lease,
                 |_, _| {
                     assert_both(|| scan_stop(None, 0, 0), Cause::UnrelatedNestedLease, None);
                     Ok::<_, MapKernelFailure<PacketBudgetDenial>>(())
@@ -188,7 +188,7 @@ fn actual_packet_scratch_and_result_refusals_survive_both_domain_doors() {
                         kernel_scratch_bytes: 0,
                         max_result_bytes: 0,
                     }],
-                    Some(&lease),
+                    &lease,
                     |_, context| {
                         if scratch {
                             context.claim_scratch(1)?;
@@ -220,7 +220,7 @@ fn actual_packet_panic_survives_both_domain_doors() {
                     kernel_scratch_bytes: 0,
                     max_result_bytes: 0,
                 }],
-                Some(&lease),
+                &lease,
                 |_, _| -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
                     panic!("packet panic is contained by the execution authority")
                 },

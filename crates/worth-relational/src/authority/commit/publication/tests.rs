@@ -35,19 +35,27 @@ fn direct_serial_patch_preparation_matches_packet_merge_order() {
         });
     }
 
+    let lease = publication_lease(10_000);
     let inputs = packets
         .into_iter()
         .enumerate()
         .map(|(ordinal, packet)| crate::execution::ReadOnlyPacket {
             identity: worth_foundational::PartitionIdentity::new(ordinal as u64),
-            input_bytes: 0,
+            input_bytes: (packet.authoritative_record_patches.capacity()
+                * std::mem::size_of::<PublishedAuthoritativeRecordPatch>())
+                as u64
+                + packet
+                    .authoritative_record_patches
+                    .iter()
+                    .map(|record| record.owned_allocation_capacity_bytes())
+                    .sum::<u64>(),
             kernel_scratch_bytes: 0,
-            max_result_bytes: 0,
+            max_result_bytes: 8 * 1024,
             value: packet,
         })
         .collect();
     let streams =
-        crate::execution::execute_read_only_packets(inputs, None, diff_packet_stream, |_| 0)
+        crate::execution::execute_read_only_packets(inputs, &lease, diff_packet_stream, |_| 0)
             .expect("serial packet preparation must complete");
     let merged = canonical_merge_streams(streams)
         .into_iter()

@@ -29,13 +29,16 @@ fn noncanonical_identities_remain_typed_with_and_without_a_lease() {
     for lease in [None, Some(&lease)] {
         assert_both(
             || {
-                execute_read_only_packets(
-                    vec![packet(2, 0, 0), packet(1, 0, 0)],
-                    lease,
-                    |_, _| Ok(()),
-                    |_| 0,
-                )
-                .expect_err("identity ordering is admitted before the kernel")
+                let packets = vec![packet(2, 0, 0), packet(1, 0, 0)];
+                if let Some(lease) = lease {
+                    execute_read_only_packets(packets, lease, |_, _| Ok(()), |_| 0)
+                        .expect_err("identity ordering is admitted before the kernel")
+                } else {
+                    PacketExecutionStop::Admission(
+                        crate::execution::admit_read_only_packet_order(&packets)
+                            .expect_err("identity ordering is admitted before the unleased kernel"),
+                    )
+                }
             },
             Cause::ExpectedIdentitiesNotCanonical,
             None,
@@ -61,7 +64,7 @@ fn declared_map_bytes_overflow_before_execution_admission() {
         || {
             execute_read_only_packets(
                 vec![packet(1, u64::MAX, 0), packet(2, 1, 0)],
-                Some(&lease),
+                &lease,
                 |_, _| Ok(()),
                 |_| 0,
             )

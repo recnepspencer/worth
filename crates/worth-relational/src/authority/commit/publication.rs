@@ -131,7 +131,7 @@ fn prepare_patch_fragments(
     }
     let streams = crate::execution::execute_read_only_packets_with_budget(
         inputs,
-        Some(lease),
+        lease,
         runtime.commit_work_budget.as_ref(),
         |(floor, records), context| {
             checked_fragments::diff_fragment_slice_stream(*floor, records, context)

@@ -101,31 +101,31 @@ pub(super) fn execute_index_inputs(
     lease: Option<&ExecutionResourceLease<'_>>,
     work_budget: Option<&RequestWorkBudget>,
 ) -> Result<Vec<(IndexReductionKey, IndexPreparationResult)>, DerivedIndexExecutionDenial> {
-    let streams = execute_read_only_packets_with_budget(
-        inputs,
-        lease,
-        work_budget,
-        |packet, context| {
-            if lease.is_some() {
-                index_packet_result_checked(execution, projection, packet, context)
-            } else {
-                index_packet_result(execution, projection, packet).map_err(|cause| {
-                    worth_execution::MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(
-                        cause,
-                    ))
+    crate::execution::admit_read_only_packet_order(&inputs)
+        .map_err(PacketExecutionStop::Admission)
+        .map_err(index_execution_denial)?;
+    let streams = if let Some(lease) = lease {
+        execute_read_only_packets_with_budget(
+            inputs,
+            lease,
+            work_budget,
+            |packet, context| index_packet_result_checked(execution, projection, packet, context),
+            |stream: &IndexResultStream| {
+                stream.owned_allocation_capacity_bytes(|_, result| {
+                    result
+                        .entries
+                        .as_ref()
+                        .map_or(0, DerivedIndexEntries::owned_allocation_capacity_bytes)
                 })
-            }
-        },
-        |stream: &IndexResultStream| {
-            stream.owned_allocation_capacity_bytes(|_, result| {
-                result
-                    .entries
-                    .as_ref()
-                    .map_or(0, DerivedIndexEntries::owned_allocation_capacity_bytes)
-            })
-        },
-    )
-    .map_err(index_execution_denial)?;
+            },
+        )
+        .map_err(index_execution_denial)?
+    } else {
+        crate::execution::execute_unleased_read_only_packets(&inputs, |packet| {
+            index_packet_result(execution, projection, packet)
+        })
+        .map_err(|stop| index_execution_denial(stop.into()))?
+    };
     let merged = if let Some(lease) = lease {
         canonical_merge_streams_checked(
             streams,

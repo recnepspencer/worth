@@ -18,3 +18,7 @@ pub(crate) use read_only_packets::{
     execute_read_only_packets, execute_read_only_packets_with_budget, PacketBudgetDenial,
     PacketExecutionStop, PacketKernelContext, ReadOnlyPacket,
 };
+
+mod unleased_read_only_packets;
+pub(crate) use read_only_packets::admit_read_only_packet_order;
+pub(crate) use unleased_read_only_packets::execute_unleased_read_only_packets;

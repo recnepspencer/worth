@@ -98,8 +98,8 @@ impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
         let context = self.context.borrow();
         CustomPreparationBudget::new(
             self.status.clone(),
-            context.remaining_work(),
-            context.remaining_scratch(),
+            Some(context.remaining_work()),
+            Some(context.remaining_scratch()),
         )
     }
 

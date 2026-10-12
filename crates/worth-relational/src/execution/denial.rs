@@ -130,6 +130,7 @@ fn packet_admission(denial: PacketAdmissionDenial) -> Cause {
 fn packet_denial(stop: PacketExecutionStop) -> (Cause, Option<u64>) {
     match stop {
         PacketExecutionStop::Admission(denial) => (packet_admission(denial), None),
+        PacketExecutionStop::ReadRequest(stop) => (stop.cause, Some(stop.identity.value())),
         PacketExecutionStop::Execution { boundary, reason } => {
             let cause = map_stop(&reason, std::convert::identity, packet_budget_denial);
             (cause, boundary.map(PartitionIdentity::value))

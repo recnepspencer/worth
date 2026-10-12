@@ -123,24 +123,22 @@ impl<'runtime> InvariantEngine<'runtime> {
             }).collect();
             (proof_boundary, packets)
         };
-        let envelopes = crate::execution::execute_read_only_packets_with_budget(
-            packets,
-            lease,
-            runtime.commit_work_budget.as_ref(),
-            |packet, context| {
-                if let Some(lease) = lease {
-                    crate::validation::execution::evaluate_invariant_packet_checked(
-                        &runtime,
-                        packet,
-                        context,
-                        lease.status(),
-                    )
-                } else {
-                    Ok(evaluate_invariant_packet(&runtime, packet))
-                }
-            },
-            crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes,
-        )?;
+        crate::execution::admit_read_only_packet_order(&packets)
+            .map_err(crate::execution::PacketExecutionStop::Admission)?;
+        let envelopes = if let Some(lease) = lease {
+            crate::execution::execute_read_only_packets_with_budget(
+                packets,lease,runtime.commit_work_budget.as_ref(),
+                |packet,context|crate::validation::execution::evaluate_invariant_packet_checked(
+                    &runtime,packet,context,lease.status(),
+                ),
+                crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes,
+            )?
+        } else {
+            crate::execution::execute_unleased_read_only_packets(&packets, |packet| {
+                Ok(evaluate_invariant_packet(&runtime, packet))
+            })
+            .map_err(crate::execution::PacketExecutionStop::from)?
+        };
         let (result, _, reducer_conflicts) = if let Some(lease) = lease {
             reduce_invariant_execution_checked(
                 &request,

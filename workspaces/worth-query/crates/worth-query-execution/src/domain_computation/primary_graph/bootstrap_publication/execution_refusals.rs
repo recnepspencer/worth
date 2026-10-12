@@ -78,77 +78,7 @@ fn refused_index_build(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     request: LeaseRequest,
 ) -> DerivedIndexBuildOutcome {
-    let key = AspectKey::new("name").unwrap();
-    let field = FieldKey::new("name").unwrap();
-    let locator = AspectFieldLocator::new(
-        LocatorAuthority::Planned,
-        key.clone(),
-        CanonicalFieldPath::single(field.clone()),
-    );
-    let schema = RelationalSchemaRegistry::new()
-        .register_entity_kind(EntityKindRegistration {
-            kind_id: KindId(1),
-            kind_name: "result.entity".to_owned(),
-            schema_id: SchemaId("result-probe".to_owned()),
-            schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: KindAspectContractDeclarations::new(vec![
-                DeclaredAspectContractBinding {
-                    binding: AspectBinding::EntityField { field },
-                    contract: aspects()
-                        .contract()
-                        .for_key(key)
-                        .identified_by(AspectIdentity(1))
-                        .at_revision(aspects().vocabulary().revision(1))
-                        .scalar(ScalarAspectType::String),
-                },
-            ]),
-        })
-        .unwrap();
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema)
-        .build();
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let mut transaction = runtime
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .unwrap();
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("index-source").push(MutationIntent::Create(
-                CreateIntent::BulkEntities(BulkEntityCreateIntent {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_keys: (0..128)
-                        .map(|i| ClientKey::raw(format!("index-heavy-{i}")))
-                        .collect(),
-                    field_patches: (0..128)
-                        .map(|i| {
-                            AspectFieldPatch::from_locator(
-                                locator.clone(),
-                                AspectValue::String(format!("index-heavy-{i}").into()),
-                            )
-                        })
-                        .collect(),
-                }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
-    let committed = transaction.commit(execution, &runtime).unwrap();
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "large.index.name".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator,
-        },
-        branch_scoped: true,
-    });
-    let build_request = DerivedIndexBuildRequest {
-        source_commit_id: committed.commit.commit_id,
-        branch_id: BranchId("main".to_owned()),
-        index_ids: vec![index.index_id],
-    };
+    let (runtime, build_request) = index_fixture(execution);
     let baseline = runtime
         .index_authority()
         .build_for_commit(execution, build_request.clone());
@@ -228,4 +158,52 @@ fn cancellation_and_deadline_are_control_stops() {
             }
         },
     );
+}
+
+mod unleased_fixture;
+use unleased_fixture::index_fixture;
+#[test]
+fn unleased_bootstrap_index_stop_keeps_execution_denial() {
+    use worth_execution::{SerialMemoryBudget, SerialRequest};
+    let setup_host = crate::test_request_policy::serial_request();
+    let setup = worth_execution::ExecutionRequest::serial(&setup_host);
+    let (runtime, request) = index_fixture(&setup);
+    for expired in [false, true] {
+        let source = CancellationSource::new();
+        if !expired {
+            source.cancel();
+        }
+        let host = SerialRequest::from_memory(
+            SerialMemoryBudget::new(64 * 1024 * 1024),
+            source.token(),
+            expired.then(Instant::now),
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let build = runtime
+            .index_authority()
+            .build_for_commit(&execution, request.clone());
+        assert_eq!(
+            build.execution_denial,
+            Some(
+                worth_relational::facade::indexes::DerivedIndexExecutionDenial {
+                    kind: DerivedIndexExecutionDenialKind::Cause(if expired {
+                        Cause::DeadlineElapsed
+                    } else {
+                        Cause::Cancelled
+                    }),
+                    partition_identity: Some(0),
+                }
+            )
+        );
+        assert_eq!(
+            identity_indexes_built(build, 1).unwrap_err().kind(),
+            WorthQueryPrimaryGraphInstallationDenialKind::ExecutionControlStopped {
+                kind: if expired {
+                    Control::TimedOut
+                } else {
+                    Control::Cancelled
+                },
+            }
+        );
+    }
 }

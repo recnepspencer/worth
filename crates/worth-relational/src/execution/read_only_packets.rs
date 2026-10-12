@@ -10,6 +10,7 @@ use worth_foundational::PartitionIdentity;
 /// publish its result only after the whole canonical batch settles.
 #[derive(Debug)]
 pub(crate) enum PacketExecutionStop {
+    ReadRequest(super::unleased_read_only_packets::UnleasedReadStop),
     Admission(PacketAdmissionDenial),
     Execution {
         boundary: Option<PartitionIdentity>,
@@ -38,40 +39,35 @@ impl ChargedBytes for PacketBudgetDenial {
 }
 
 pub(crate) struct PacketKernelContext<'a, 'b, 'c> {
-    meter: Option<&'a mut MapKernelContext<'b, 'c>>,
-    scratch_limit: Option<u64>,
-    result_limit: Option<u64>,
+    meter: &'a mut MapKernelContext<'b, 'c>,
+    scratch_limit: u64,
+    result_limit: u64,
     scratch_bytes: u64,
     result_bytes: u64,
 }
 
 impl PacketKernelContext<'_, '_, '_> {
-    pub(crate) fn remaining_work(&self) -> Option<u64> {
-        self.meter.as_ref().map(|meter| meter.remaining_work())
+    pub(crate) fn remaining_work(&self) -> u64 {
+        self.meter.remaining_work()
     }
 
-    pub(crate) fn remaining_scratch(&self) -> Option<u64> {
-        self.scratch_limit
-            .map(|limit| limit.saturating_sub(self.scratch_bytes))
+    pub(crate) fn remaining_scratch(&self) -> u64 {
+        self.scratch_limit.saturating_sub(self.scratch_bytes)
     }
 
     pub(crate) fn account_completed_work(
         &mut self,
         units: u64,
     ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        self.meter.as_mut().map_or(Ok(()), |meter| {
-            meter
-                .account_completed_work(units)
-                .map_err(MapKernelFailure::Stop)
-        })
+        self.meter
+            .account_completed_work(units)
+            .map_err(MapKernelFailure::Stop)
     }
     pub(crate) fn checkpoint(
         &mut self,
         units: u64,
     ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
-        self.meter.as_mut().map_or(Ok(()), |meter| {
-            meter.checkpoint(units).map_err(MapKernelFailure::Stop)
-        })
+        self.meter.checkpoint(units).map_err(MapKernelFailure::Stop)
     }
 
     pub(crate) fn claim_scratch(
@@ -84,10 +80,7 @@ impl PacketKernelContext<'_, '_, '_> {
                 .ok_or(MapKernelFailure::Domain(
                     PacketBudgetDenial::ScratchCapacityExceeded,
                 ))?;
-        if self
-            .scratch_limit
-            .is_some_and(|limit| self.scratch_bytes > limit)
-        {
+        if self.scratch_bytes > self.scratch_limit {
             return Err(MapKernelFailure::Domain(
                 PacketBudgetDenial::ScratchCapacityExceeded,
             ));
@@ -105,7 +98,7 @@ impl PacketKernelContext<'_, '_, '_> {
             .ok_or(MapKernelFailure::Domain(
                 PacketBudgetDenial::ScratchCapacityExceeded,
             ))?;
-        if self.scratch_limit.is_some_and(|limit| peak > limit) {
+        if peak > self.scratch_limit {
             return Err(MapKernelFailure::Domain(
                 PacketBudgetDenial::ScratchCapacityExceeded,
             ));
@@ -121,10 +114,7 @@ impl PacketKernelContext<'_, '_, '_> {
             .result_bytes
             .checked_add(bytes)
             .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        if self
-            .result_limit
-            .is_some_and(|limit| self.result_bytes > limit)
-        {
+        if self.result_bytes > self.result_limit {
             return Err(MapKernelFailure::ResultCapacityExceeded);
         }
         Ok(())
@@ -138,7 +128,7 @@ impl PacketKernelContext<'_, '_, '_> {
             .result_bytes
             .checked_add(bytes)
             .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        if self.result_limit.is_some_and(|limit| peak > limit) {
+        if peak > self.result_limit {
             return Err(MapKernelFailure::ResultCapacityExceeded);
         }
         Ok(())
@@ -197,7 +187,7 @@ impl<T> ChargedBytes for ChargedPacketResult<T> {
 /// stable packet before dispatch. Shared immutable authority is only borrowed.
 pub(crate) fn execute_read_only_packets<P, T, F, C>(
     packets: Vec<ReadOnlyPacket<P>>,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: &ExecutionResourceLease<'_>,
     kernel: F,
     charged_bytes: C,
 ) -> Result<Vec<T>, PacketExecutionStop>
@@ -216,7 +206,7 @@ where
 
 pub(crate) fn execute_read_only_packets_with_budget<P, T, F, C>(
     packets: Vec<ReadOnlyPacket<P>>,
-    lease: Option<&ExecutionResourceLease<'_>>,
+    lease: &ExecutionResourceLease<'_>,
     budget: Option<&super::RequestWorkBudget>,
     kernel: F,
     charged_bytes: C,
@@ -231,37 +221,7 @@ where
         + Sync,
     C: Fn(&T) -> u64 + Sync,
 {
-    if packets
-        .windows(2)
-        .any(|pair| pair[0].identity >= pair[1].identity)
-    {
-        return Err(PacketExecutionStop::Admission(
-            PacketAdmissionDenial::ExpectedIdentitiesNotCanonical,
-        ));
-    }
-    if lease.is_none() {
-        return packets
-            .iter()
-            .map(|packet| {
-                let mut context = PacketKernelContext {
-                    meter: None,
-                    scratch_limit: None,
-                    result_limit: None,
-                    scratch_bytes: 0,
-                    result_bytes: 0,
-                };
-                kernel(&packet.value, &mut context).map_err(|cause| {
-                    PacketExecutionStop::Execution {
-                        boundary: Some(packet.identity),
-                        reason: MapStop::Failure {
-                            identity: packet.identity,
-                            cause,
-                        },
-                    }
-                })
-            })
-            .collect();
-    }
+    admit_read_only_packet_order(&packets).map_err(PacketExecutionStop::Admission)?;
     let partitions: BTreeMap<_, _> = packets
         .into_iter()
         .map(|packet| {
@@ -286,15 +246,15 @@ where
         },
     )?;
     let outcome = super::run_with_remaining_request_work(
-        lease.expect("checked above"),
+        lease,
         budget,
         |lease| {
             batch.run(Some(lease), |packet, context| {
                 context.checkpoint(1)?;
                 let mut packet_context = PacketKernelContext {
-                    meter: Some(context),
-                    scratch_limit: Some(packet.scratch_limit),
-                    result_limit: Some(packet.result_limit),
+                    meter: context,
+                    scratch_limit: packet.scratch_limit,
+                    result_limit: packet.result_limit,
                     scratch_bytes: 0,
                     result_bytes: 0,
                 };
@@ -321,3 +281,21 @@ where
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) fn admit_read_only_packet_order<P>(
+    packets: &[ReadOnlyPacket<P>],
+) -> Result<(), PacketAdmissionDenial> {
+    if packets
+        .windows(2)
+        .any(|pair| pair[0].identity >= pair[1].identity)
+    {
+        Err(PacketAdmissionDenial::ExpectedIdentitiesNotCanonical)
+    } else {
+        Ok(())
+    }
+}
+impl From<super::unleased_read_only_packets::UnleasedReadStop> for PacketExecutionStop {
+    fn from(stop: super::unleased_read_only_packets::UnleasedReadStop) -> Self {
+        Self::ReadRequest(stop)
+    }
+}

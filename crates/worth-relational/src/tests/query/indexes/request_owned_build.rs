@@ -84,3 +84,69 @@ fn index_builds_use_the_memory_ceiling_of_their_request() {
     }
     release_test_commit_snapshot(&runtime, &created);
 }
+
+#[test]
+fn unleased_builds_keep_cancellation_and_deadline_without_publishing() {
+    use crate::execution::RelationalExecutionDenialCause as Cause;
+    use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
+    let host = crate::test_execution_policy::serial_request();
+    let setup = ExecutionRequest::serial(&host);
+    let runtime = runtime_with_index_field_aspects();
+    let created = create_entity_outcome(&setup, &runtime, "unleased-stops");
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let index = runtime.index_authority().register(DerivedIndexDefinition {
+        index_id: DerivedIndexId(0),
+        name: "unleased-stops".into(),
+        kind: DerivedIndexKind::EntityField {
+            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+        },
+        branch_scoped: true,
+    });
+    let request = DerivedIndexBuildRequest {
+        source_commit_id: created.commit.commit_id,
+        branch_id: BranchId("main".into()),
+        index_ids: vec![index.index_id],
+    };
+    let generations = runtime.index_access().generations_snapshot();
+    let version = runtime.current_version_id();
+    for exact in [false, true] {
+        for expired in [false, true] {
+            let source = CancellationSource::new();
+            if !expired {
+                source.cancel();
+            }
+            let host = SerialRequest::from_memory(
+                SerialMemoryBudget::new(64 * 1024 * 1024),
+                source.token(),
+                expired.then(std::time::Instant::now),
+            );
+            let execution = ExecutionRequest::serial(&host);
+            let outcome = if exact {
+                runtime
+                    .index_authority()
+                    .build_for_basis(&execution, request.clone(), &basis)
+            } else {
+                runtime
+                    .index_authority()
+                    .build_for_commit(&execution, request.clone())
+            };
+            assert_eq!(
+                outcome.execution_denial,
+                Some(DerivedIndexExecutionDenial {
+                    kind: DerivedIndexExecutionDenialKind::Cause(if expired {
+                        Cause::DeadlineElapsed
+                    } else {
+                        Cause::Cancelled
+                    }),
+                    partition_identity: Some(0),
+                })
+            );
+            assert!(outcome.generations.is_empty());
+            assert_eq!(runtime.index_access().generations_snapshot(), generations);
+            assert_eq!(runtime.current_version_id(), version);
+        }
+    }
+    release_test_commit_snapshot(&runtime, &created);
+}
