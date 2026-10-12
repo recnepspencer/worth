@@ -67,3 +67,66 @@ fn a_frontier_suffix_request_dominates_the_first_panic() {
         )))
     ));
 }
+
+#[test]
+fn a_cancelled_subtree_keeps_its_completed_combines_and_charge() {
+    use std::sync::atomic::AtomicUsize;
+    let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
+    for serial in [false, true] {
+        let cancellation = crate::CancellationSource::new();
+        let mut policy = request(1, 2_000, 100);
+        policy.cancellation = cancellation.token();
+        let lease = if serial {
+            crate::ExecutionResourceLease::serial(policy).unwrap()
+        } else {
+            authority().request_lease(policy).unwrap()
+        };
+        let calls = AtomicUsize::new(0);
+        let mut observed = None;
+        let outcome = run_scope(Some(&lease), 0, 0, |context| {
+            let plan =
+                ReductionPlan::try_from_sorted_unique(vec![PartitionIdentity::new(1)]).unwrap();
+            let stopped = ReductionTree::build_scheduled_checked(
+                &lease,
+                BackendKind::Native,
+                plan,
+                vec![7_u64],
+                0,
+                |left: &u64, right: &u64| {
+                    calls.fetch_add(1, Ordering::SeqCst);
+                    cancellation.cancel();
+                    left + right
+                },
+                8,
+                context,
+            );
+            let Err(ScheduledReductionError::Reduction(failure)) = stopped else {
+                panic!("the next checked operation must observe cancellation");
+            };
+            assert!(matches!(
+                failure.reason,
+                ReductionRunStop::Hook(KernelStop::Cancelled)
+            ));
+            observed = Some(failure.metrics);
+            Err::<(), _>(KernelFailure::<()>::Stop(KernelStop::Cancelled))
+        });
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        let metrics = observed.unwrap();
+        assert_eq!(metrics.combine_calls, 1);
+        // A singleton enters shape construction three times, evaluation twice,
+        // and its first combine once; cancellation refuses the second combine.
+        let work = 3 + 2 + 1;
+        assert_eq!(metrics.structural_visits, 3 + 2);
+        assert_eq!(metrics.recombined_nodes, 0);
+        assert_eq!(metrics.charged_work, work);
+        assert_eq!(metrics.charged_span, work);
+        assert_eq!(outcome.report.charged_work(), work);
+        assert_eq!(outcome.report.charged_span(), work);
+        assert!(matches!(
+            outcome.result,
+            Err(ScopeStop::Failure(KernelFailure::Stop(
+                KernelStop::Cancelled
+            )))
+        ));
+    }
+}

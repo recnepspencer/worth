@@ -1,4 +1,7 @@
-use std::{mem::size_of, sync::Arc};
+use std::{
+    mem::size_of,
+    sync::{Arc, OnceLock},
+};
 
 use worth_foundational::PartitionIdentity;
 
@@ -7,7 +10,7 @@ use crate::report::ChargedBytes;
 use super::{
     construction::{Built, FrontierEvent, ShapeNode, SubtreeSpec},
     edit::{deletion_depth, search_depth},
-    Link, Node, ReductionTree,
+    Link, Node, ReductionMetrics, ReductionTree,
 };
 
 /// Why an existing partition's edit memory bound cannot be computed.
@@ -86,6 +89,12 @@ impl<T, F> ReductionTree<T, F> {
                     .checked_mul(2)?,
             )?;
         let split_flags = count;
+        // During batch admission the entry Vec and admitted input Vec coexist.
+        // Both contain an inline cell preserving the task's checked metrics.
+        let task_metrics = u64::try_from(size_of::<OnceLock<ReductionMetrics>>())
+            .ok()?
+            .checked_mul(count)?
+            .checked_mul(2)?;
         // A BTreeMap node stores keys, child pointers, and allocator metadata.
         // This conservative per-entry ceiling covers its live join results.
         let join_map = 256_u64.checked_mul(count)?;
@@ -99,6 +108,7 @@ impl<T, F> ReductionTree<T, F> {
             .checked_add(traversal)?
             .checked_add(frontier)?
             .checked_add(split_flags)?
+            .checked_add(task_metrics)?
             .checked_add(join_map)?
             .checked_add(u64::try_from(size_of::<Arc<Node<T>>>() * 4).ok()?)?
             .checked_add(max_value_bytes.checked_mul(6)?)
