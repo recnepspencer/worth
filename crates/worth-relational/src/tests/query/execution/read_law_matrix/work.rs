@@ -44,3 +44,23 @@ impl Quote {
             + self.records * DIGEST_BLOCK
     }
 }
+
+// Separate pre-refactor serial-backing literals, in the same named-unit scale.
+// These move when serial backing enters with its serial-backed lease.
+pub(super) fn serial_literal(name: &str) -> u64 {
+    match name {
+        "explicit-mixed" => 21,
+        "entity-kind" | "entity-aspect" => 13,
+        "entity-kind-unscoped" => 14,
+        "relation-kind" | "relation-aspect" => 10,
+        "entity-equals-failing-rows" => 9,
+        "entity-equals-empty" => 7,
+        "entity-any-of" => 19,
+        "relation-equals-failing-row" => 8,
+        "relation-any-of" => 18,
+        "outgoing" | "incoming" => 25,
+        "connectivity" => 38,
+        "depth-zero-cut" => 12,
+        other => panic!("missing independent serial quote: {other}"),
+    }
+}

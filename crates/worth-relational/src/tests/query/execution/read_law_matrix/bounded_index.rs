@@ -60,26 +60,31 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
             ("absent", 2, 0, false),
         ] {
             for (posture, width) in [
-                (ExecutionPosture::Serial, 1),
-                (ExecutionPosture::Automatic, 1),
-                (ExecutionPosture::Automatic, 4),
+                (None, 1),
+                (Some(ExecutionPosture::Serial), 1),
+                (Some(ExecutionPosture::Automatic), 1),
+                (Some(ExecutionPosture::Automatic), 4),
             ] {
-                let lease = test_execution_authority()
-                    .request_lease(LeaseRequest {
-                        policy: ExecutionRequestPolicy::new(
-                            posture,
-                            DeterminismContract::CanonicalBitwise,
-                            ExecutionBudget::new(
-                                std::num::NonZeroUsize::new(width).unwrap(),
-                                MEMORY,
-                                100_000,
+                let lease = posture.map(|posture| {
+                    test_execution_authority()
+                        .request_lease(LeaseRequest {
+                            policy: ExecutionRequestPolicy::new(
+                                posture,
+                                DeterminismContract::CanonicalBitwise,
+                                ExecutionBudget::new(
+                                    std::num::NonZeroUsize::new(width).unwrap(),
+                                    MEMORY,
+                                    100_000,
+                                ),
                             ),
-                        ),
-                        deadline: None,
-                        cancellation: CancellationToken::new(),
-                    })
-                    .unwrap();
-                let request = ExecutionRequest::leased(&lease);
+                            deadline: None,
+                            cancellation: CancellationToken::new(),
+                        })
+                        .unwrap()
+                });
+                let request = lease
+                    .as_ref()
+                    .map_or(ExecutionRequest::serial(&host), ExecutionRequest::leased);
                 let input = BoundedEntityFieldLookupRequest::new(
                     snapshot.clone(),
                     definition.index_id,
@@ -98,6 +103,7 @@ fn runtime_bounded_index_law_keeps_cold_stop_limit_and_generation() {
                         )
                     })
                     .unwrap();
+                // Serial backing stays at literal zero here until the serial-lease line lands.
                 // This snapshot-input lane checks liveness but prices no positive
                 // unit today; the admitted selected-view lane has its own quote.
                 assert_eq!(report.charged_work(), 0);

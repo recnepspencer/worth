@@ -44,6 +44,18 @@ pub(super) fn table(world: &fixture::World) -> Vec<Case> {
             work: ordinary(1, 3, 3, 1),
         },
         Case {
+            name: "entity-kind-unscoped",
+            scope: QueryScope::EntityKindScan {
+                kind_id: KindId(1),
+                partition_scope: None,
+            },
+            ordering: entity_order,
+            entities: &[0, 1, 2],
+            relations: &[],
+            // One published partition discovery and one scan packet copy.
+            work: ordinary(2, 3, 3, 1),
+        },
+        Case {
             name: "relation-kind",
             scope: QueryScope::RelationKindScan {
                 kind_id: KindId(2),

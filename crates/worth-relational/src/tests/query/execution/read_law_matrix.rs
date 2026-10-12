@@ -13,6 +13,7 @@ use worth_foundational::{
 mod bounded_index;
 mod cases;
 mod fixture;
+mod refusals;
 mod work;
 
 const MEMORY: u64 = 64 * 1024 * 1024;
@@ -25,26 +26,31 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
         let world = fixture::World::new(&setup, indexed);
         for case in cases::table(&world) {
             for (posture, width) in [
-                (ExecutionPosture::Serial, 1),
-                (ExecutionPosture::Automatic, 1),
-                (ExecutionPosture::Automatic, 4),
+                (None, 1),
+                (Some(ExecutionPosture::Serial), 1),
+                (Some(ExecutionPosture::Automatic), 1),
+                (Some(ExecutionPosture::Automatic), 4),
             ] {
-                let lease = test_execution_authority()
-                    .request_lease(LeaseRequest {
-                        policy: ExecutionRequestPolicy::new(
-                            posture,
-                            DeterminismContract::CanonicalBitwise,
-                            ExecutionBudget::new(
-                                std::num::NonZeroUsize::new(width).unwrap(),
-                                MEMORY,
-                                100_000,
+                let lease = posture.map(|posture| {
+                    test_execution_authority()
+                        .request_lease(LeaseRequest {
+                            policy: ExecutionRequestPolicy::new(
+                                posture,
+                                DeterminismContract::CanonicalBitwise,
+                                ExecutionBudget::new(
+                                    std::num::NonZeroUsize::new(width).unwrap(),
+                                    MEMORY,
+                                    100_000,
+                                ),
                             ),
-                        ),
-                        deadline: None,
-                        cancellation: CancellationToken::new(),
-                    })
-                    .unwrap();
-                let request = ExecutionRequest::leased(&lease);
+                            deadline: None,
+                            cancellation: CancellationToken::new(),
+                        })
+                        .unwrap()
+                });
+                let request = lease
+                    .as_ref()
+                    .map_or(ExecutionRequest::serial(&host), ExecutionRequest::leased);
                 let read = world
                     .runtime
                     .read_truth()
@@ -124,10 +130,14 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                     assert_eq!(revision.version(), VersionId((i + 4) as u64));
                     assert_eq!(revision.presence(), RelationalFieldPresence::Present);
                 }
-                // Serial-posture accounting is recorded here; it moves when the serial-backed lease fix lands.
+                // The serial-backed literal moves when the serial-lease line is merged.
                 assert_eq!(
                     read.report.unwrap().charged_work(),
-                    case.work.total(),
+                    if lease.is_none() {
+                        work::serial_literal(case.name)
+                    } else {
+                        case.work.total()
+                    },
                     "{} {posture:?}/{width}, indexed={indexed}",
                     case.name
                 );
