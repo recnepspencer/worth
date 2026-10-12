@@ -100,6 +100,10 @@ impl DemandRegistryState {
         if record.framework_required_count != 0
             || record.prepared_prerequisite_claims != 0
             || record.pending_cleanup_queued
+            // A closed-row note already owns this member's retirement. Keep
+            // that occurrence debt with its paid cascade, rather than making
+            // an own cascade wait on a second terminal-cleanup owner.
+            || (matches!(target, CleanupTarget::ReleasedMember) && record.closed_cleanup.queued())
             || (matches!(target, CleanupTarget::Allocations)
                 && record.prerequisites.capacity() == 0
                 && record.checkpoint_prerequisites.is_none()
