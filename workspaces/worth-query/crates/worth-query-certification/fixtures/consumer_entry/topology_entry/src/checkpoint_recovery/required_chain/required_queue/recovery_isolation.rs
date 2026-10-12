@@ -129,7 +129,7 @@ fn scenario(direct: bool) {
     assert!(
         matches!(&stop, WorthQueryRequiredOutputPreparationDenial::Demand(
         WorthQueryApplicationOutputDemandDenial::Demand(cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::ProductSelection(
-            primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted))),
+            AdmissionRefusal::ObservationCapacityExhausted)),
         "{stop:?}"
     );
     drop(output);
