@@ -41,7 +41,8 @@ fn admitted_observation_reads_do_not_move_branch_cells() {
     assert!(world
         .runtime
         .history_authority()
-        .retain_version_for_replay(replay_version));
+        .retain_version_for_replay(execution, replay_version)
+        .unwrap());
 
     let after = capture_reference_evidence(
         &world.runtime,
