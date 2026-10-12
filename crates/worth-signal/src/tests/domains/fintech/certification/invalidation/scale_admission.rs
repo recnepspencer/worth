@@ -11,8 +11,10 @@ pub(super) fn scheduled_request() -> FinancialLocalityResourceRequest {
     let outputs = 100_000_usize;
     // A finite ceiling of sixteen waiter visits per ordered output pair is
     // 100,000 * 100,000 * 16 = 160,000,000,000; work admits that same ceiling.
+    // The visit count saturates at the machine word on 32-bit targets;
+    // the separate u64 work amount retains its full ceiling.
     let mut policy = SignalRuntimePolicy::operational()
-        .with_maximum_waiter_resolution_visits(outputs * outputs * 16);
+        .with_maximum_waiter_resolution_visits(outputs.saturating_mul(outputs).saturating_mul(16));
     policy.serial_memory_bytes = 512 * 1024 * 1024;
     FinancialLocalityResourceRequest {
         policy,
