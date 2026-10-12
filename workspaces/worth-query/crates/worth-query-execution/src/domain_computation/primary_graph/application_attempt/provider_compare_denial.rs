@@ -43,6 +43,10 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
     failure: crate::domain_computation::WorthQueryProviderSessionFailure,
 ) -> Denial {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
+    if let Some(stop) = failure.checked_read_stop() {
+        return Denial::provider_execution_denied(Stage::ProviderCommit, stop, failure.detail())
+            .with_provider_session_failure(failure);
+    }
     let kind = match super::super::provider::relational_execution_denial::native_preparation_kind(
         &failure,
     ) {

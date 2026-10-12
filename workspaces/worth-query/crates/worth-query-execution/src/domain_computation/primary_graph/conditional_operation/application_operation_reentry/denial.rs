@@ -44,6 +44,8 @@ impl WorthQueryTemporalReentryDenial {
             super::super::super::WorthQueryEntityResolutionDenialKind::RetentionCapacityExhausted => {
                 Self::RetentionCapacityExhausted
             }
+            super::super::super::WorthQueryEntityResolutionDenialKind::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled) => Self::ControlStopped(super::WorthQueryTemporalControlStop::Cancelled),
+            super::super::super::WorthQueryEntityResolutionDenialKind::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed) => Self::ControlStopped(super::WorthQueryTemporalControlStop::TimedOut),
             super::super::super::WorthQueryEntityResolutionDenialKind::Cancelled => {
                 Self::ControlStopped(super::WorthQueryTemporalControlStop::Cancelled)
             }
@@ -116,6 +118,8 @@ impl WorthQueryTemporalReentryDenial {
             };
         }
         match kind {
+            WorthQueryOperationProjectionDenialKind::InvariantAdmission(WorthQueryInvariantProjectionDenialKind::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)) => Self::ControlStopped(super::WorthQueryTemporalControlStop::Cancelled),
+            WorthQueryOperationProjectionDenialKind::InvariantAdmission(WorthQueryInvariantProjectionDenialKind::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed)) => Self::ControlStopped(super::WorthQueryTemporalControlStop::TimedOut),
             WorthQueryOperationProjectionDenialKind::Authorization(
                 WorthQueryOperationAuthorizationDenialKind::Cancelled,
             ) => Self::ControlStopped(super::WorthQueryTemporalControlStop::Cancelled),
@@ -132,6 +136,8 @@ impl WorthQueryTemporalReentryDenial {
         denial: super::super::super::WorthQueryInvariantProjectionDenial,
     ) -> Self {
         match denial.kind() {
+            super::super::super::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled) => Self::ControlStopped(super::WorthQueryTemporalControlStop::Cancelled),
+            super::super::super::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed) => Self::ControlStopped(super::WorthQueryTemporalControlStop::TimedOut),
             super::super::super::WorthQueryInvariantProjectionDenialKind::ActiveSnapshotCapacityExhausted {
                 maximum_active_snapshots,
             } => Self::ActiveSnapshotCapacityExhausted {

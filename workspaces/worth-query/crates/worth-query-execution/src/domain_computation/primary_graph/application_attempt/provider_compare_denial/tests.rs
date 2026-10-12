@@ -343,3 +343,19 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
     assert_eq!(denial.detail(), Some(error.detail().as_str()));
     assert_eq!(denial.native_preparation_error(), Some(&error));
 }
+
+#[test]
+fn read_fold_checked_session_read_stop_is_the_commit_denial_cause() {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionControlStopKind as Control,
+        WorthQueryProviderSessionFailure as Failure,
+        WorthQueryProviderSessionProtocolStage as Protocol,
+    };
+    for stop in [Control::Cancelled, Control::TimedOut] {
+        let failure =
+            Failure::checked_read_stopped(Err(stop), Protocol::Commit, "native read stopped");
+        let denial = super::provider_session_denied(failure);
+        assert_eq!(denial.execution_denial_cause(), Some(Err(stop)));
+        assert_eq!(denial.stage(), super::Stage::ProviderCommit);
+    }
+}

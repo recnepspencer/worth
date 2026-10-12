@@ -123,9 +123,13 @@ where
     let running = run_admission
         .admit_direct(&operation, attempt, read_request, execution)
         .map_err(|failure| {
-            let detail = format!("{:?}: {}", failure.kind(), failure.detail());
+            let kind = failure.kind();
+            let detail = format!("{:?}: {}", kind, failure.detail());
             failure.release();
-            denied_with_detail(DenialStage::ManagedRunAdmission, detail)
+            match kind {
+                crate::domain_computation::WorthQueryManagedDirectRunAdmissionFailureKind::ReadExecution(cause) => WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied(cause, DenialStage::ManagedRunAdmission, detail)),
+                _ => denied_with_detail(DenialStage::ManagedRunAdmission, detail),
+            }
         })?
         .start();
     let Some(mutation_run) = admission.graph_work().bind_mutation_run(&running) else {

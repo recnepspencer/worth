@@ -149,9 +149,5 @@ fn admission_denial(
 }
 
 fn native_denial_kind(kind: BoundedEntityFieldLookupDenialKind) -> Kind {
-    match kind {
-        BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
-        | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => Kind::CorruptIdentityIndex,
-        _ => Kind::EqualityIndexUnavailable,
-    }
+    super::map_index_denial(kind, "selected entity lookup").kind()
 }

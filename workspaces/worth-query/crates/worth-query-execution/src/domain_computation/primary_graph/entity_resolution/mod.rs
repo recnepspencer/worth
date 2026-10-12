@@ -206,7 +206,16 @@ fn map_index_denial(
         | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
             WorthQueryEntityResolutionDenialKind::CorruptIdentityIndex
         }
-        _ => WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+        BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+            WorthQueryEntityResolutionDenialKind::ExecutionRequest(cause)
+        }
+        BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+        | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+        | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+        | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+        | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => {
+            WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable
+        }
     };
     entity_denial(kind, subject)
 }

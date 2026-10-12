@@ -93,6 +93,7 @@ fn principal_posture(kind: PrincipalKind) -> WorthQueryRequiredOutputRecoveryPos
 fn scope_posture(kind: ScopeKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
+        ScopeKind::ExecutionRequest(_) => Retryable,
         ScopeKind::Cancelled
         | ScopeKind::DeadlineExceeded
         | ScopeKind::EqualityIndexUnavailable

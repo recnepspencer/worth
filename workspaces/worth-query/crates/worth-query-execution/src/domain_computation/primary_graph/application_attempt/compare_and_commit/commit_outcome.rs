@@ -259,6 +259,17 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
         }
     }
 
+    pub(in crate::domain_computation::primary_graph) fn with_read_stop(
+        mut self,
+        cause: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ) -> Self {
+        self.denial_kind = cause;
+        self
+    }
+
     pub const fn recovery(&self) -> WorthQueryApplicationCommitRecoveryKind {
         self.recovery
     }

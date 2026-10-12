@@ -323,6 +323,7 @@ fn require_current_facts(
         Err(RetainedFactStop::Interrupted(event)) => {
             Err(super::super::output_reuse::interruption_denial(event))
         }
+        Err(RetainedFactStop::Memory) => Err(super::super::output_reuse::memory_denial()),
         Err(RetainedFactStop::Work) => {
             Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
         }

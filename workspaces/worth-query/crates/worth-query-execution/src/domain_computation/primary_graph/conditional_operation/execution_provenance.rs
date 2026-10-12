@@ -162,6 +162,20 @@ fn cause(
         Decision::OperationTerminalFailure(
             _,
             Terminal::Admission(
+                Admission::Entity(graph::WorthQueryEntityResolutionDenialKind::ExecutionRequest(
+                    cause,
+                ))
+                | Admission::Invariant(InvariantKind::ExecutionRequest(cause))
+                | Admission::Projection(
+                    graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
+                        InvariantKind::ExecutionRequest(cause),
+                    ),
+                ),
+            ),
+        ) => Some(Cause::ReadExecution(*cause)),
+        Decision::OperationTerminalFailure(
+            _,
+            Terminal::Admission(
                 Admission::Principal(_)
                 | Admission::Entity(_)
                 | Admission::Authorization(_)

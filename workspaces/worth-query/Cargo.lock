@@ -768,6 +768,7 @@ dependencies = [
  "worth-query-installation",
  "worth-query-publication",
  "worth-relational",
+ "worth-runtime-bridge",
 ]
 
 [[package]]

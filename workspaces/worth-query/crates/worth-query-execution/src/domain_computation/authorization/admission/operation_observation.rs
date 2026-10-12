@@ -99,11 +99,8 @@ where
                 &principal_layout,
                 &expected_external_identity,
             )
-            .map_err(|_| {
-                denial(
-                    WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
-                    principal.binding(),
-                )
+            .map_err(|cause| {
+                denial(super::super::denial::principal_currentness(cause), principal.binding())
             })?;
             entity_resolution
                 .at_snapshot(
@@ -113,11 +110,11 @@ where
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .and_then(|truth| truth.validate_entity_freshness(execution, scope_identity))
-                .map_err(|_| {
-                    denial(
-                        WorthQueryOperationAuthorizationDenialKind::StaleScope,
-                        scope_identity.entity_name(),
-                    )
+                .map_err(|cause| {
+                    match cause.kind() {
+                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ExecutionRequest(cause) => super::super::denial::relational_read_denial(cause, scope_identity.entity_name()),
+                        _ => denial(WorthQueryOperationAuthorizationDenialKind::StaleScope, scope_identity.entity_name()),
+                    }
                 })?;
             self.observe_authorization_requirements(
                 execution,

@@ -27,6 +27,7 @@ mod bootstrap;
 mod bootstrap_publication;
 mod conditional_operation;
 pub(crate) use conditional_operation::classify_bridge_signal;
+pub use conditional_operation::conditional_intent_read_is_active_for_test;
 mod denial;
 mod entity_key;
 mod entity_resolution;

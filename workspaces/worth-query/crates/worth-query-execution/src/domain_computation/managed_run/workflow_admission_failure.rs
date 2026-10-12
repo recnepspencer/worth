@@ -12,6 +12,12 @@ pub enum WorthQueryManagedWorkflowRunAdmissionFailureKind {
     SnapshotIdentityExhausted,
     BridgePlanning,
     InstalledStepContract,
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     BridgeExecutionBasis,
     ManagedAuthorityJoin,
 }

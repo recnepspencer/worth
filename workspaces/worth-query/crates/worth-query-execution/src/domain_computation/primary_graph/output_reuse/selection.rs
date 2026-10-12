@@ -35,6 +35,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
         Err(RetainedFactStop::Work) => Err(work_denial()),
+        Err(RetainedFactStop::Memory) => Err(memory_denial()),
         Err(RetainedFactStop::Execution(cause)) => Err(read_denial(cause)),
         Err(RetainedFactStop::Interrupted(event)) => Err(interruption_denial(event)),
         Err(RetainedFactStop::Unavailable(fact)) => Err(WorthQueryOutputDemandDenial::new(
@@ -48,6 +49,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
+    Memory,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
     /// The snapshot cannot answer this fact.
@@ -76,12 +78,32 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
             Err(CompanionPreflightStop::Interrupted(event)) => {
                 return Err(RetainedFactStop::Interrupted(event))
             }
-            Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) | Err(_) => {
-                return Err(RetainedFactStop::Work);
+            Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) => {
+                return Err(RetainedFactStop::Work)
             }
+            Err(stop) => return Err(preflight_stop(stop)),
         }
     }
     Ok(None)
+}
+
+fn preflight_stop(stop: CompanionPreflightStop) -> RetainedFactStop<'static> {
+    match stop {
+        CompanionPreflightStop::PreparationMemoryExhausted { .. }
+        | CompanionPreflightStop::PreparationMemoryCounterOverflow
+        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
+            RetainedFactStop::Memory
+        }
+        _ => RetainedFactStop::Work,
+    }
+}
+
+pub(in crate::domain_computation::primary_graph) fn memory_denial() -> WorthQueryOutputDemandDenial
+{
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+        "retained output comparison exceeded preparation memory",
+    )
 }
 
 /// The other half of a retained output's canonical fact set: the performed
@@ -223,5 +245,29 @@ mod tests {
             reusable_facts(false, None),
             Err(OutputDependencySelection::FreshRequired)
         ));
+    }
+}
+
+#[cfg(test)]
+mod read_fold_tests {
+    use super::*;
+    #[test]
+    fn read_fold_output_memory_stop_keeps_memory() {
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: 10,
+                maximum_preparation_bytes: 0,
+            },
+        );
+        let stop = admission.admit_read_scratch(1).unwrap_err();
+        let denial = match preflight_stop(stop) {
+            RetainedFactStop::Memory => memory_denial(),
+            RetainedFactStop::Work => work_denial(),
+            _ => panic!("the preparation meter yields its resource stop"),
+        };
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+        );
     }
 }

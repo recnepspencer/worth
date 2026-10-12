@@ -95,12 +95,39 @@ impl PreparedSelections {
             Ok(current) => Ok(!current.overflowed()
                 && current.retain_definition().as_ref() == definition.as_ref()
                 && current.candidate_entity_ids() == candidates),
-            Err(BoundedEntityFieldLookupAdmissionStop::Admission(denial)) => Err(denial),
-            Err(BoundedEntityFieldLookupAdmissionStop::Lookup(denial)) => match denial.kind() {
-                worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed comparison"))),
-                _ => Ok(false),
-            },
-            Err(_) => Ok(false),
+            Err(stop) => comparison_stop(stop),
         }
+    }
+}
+
+fn comparison_stop(
+    stop: BoundedEntityFieldLookupAdmissionStop<WorthQueryDecisionReadSetFailure>,
+) -> Result<bool, WorthQueryDecisionReadSetFailure> {
+    match stop {
+        BoundedEntityFieldLookupAdmissionStop::Admission(denial) => Err(denial),
+        BoundedEntityFieldLookupAdmissionStop::Lookup(denial) => match denial.kind() {
+            worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause) => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "prepared indexed comparison"))),
+            _ => Ok(false),
+        },
+        BoundedEntityFieldLookupAdmissionStop::AccountingOverflow => Err(super::super::fact_read_set_failure(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None }), "prepared indexed comparison accounting"))),
+        BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired => Ok(false),
+    }
+}
+
+#[cfg(test)]
+mod read_fold_tests {
+    use super::*;
+    #[test]
+    fn read_fold_index_accounting_overflow_is_a_request_stop() {
+        let denied = comparison_stop(BoundedEntityFieldLookupAdmissionStop::AccountingOverflow)
+            .expect_err("accounting overflow cannot answer not equal");
+        assert_eq!(denied.kind(), crate::domain_computation::WorthQueryDecisionReadSetDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+            denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow,
+            partition_identity: None, policy_ancestor: None,
+        }));
+        assert!(
+            !comparison_stop(BoundedEntityFieldLookupAdmissionStop::ExactBasisRequired).unwrap()
+        );
     }
 }

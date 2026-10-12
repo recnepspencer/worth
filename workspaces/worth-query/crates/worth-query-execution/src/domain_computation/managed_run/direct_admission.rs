@@ -100,6 +100,9 @@ impl WorthQueryManagedRunAdmission<'_> {
                     WorthQueryManagedLowerAdmissionFailureKind::InstalledStepContract => {
                         WorthQueryManagedDirectRunAdmissionFailureKind::InstalledStepContract
                     }
+                    WorthQueryManagedLowerAdmissionFailureKind::ReadExecution(cause) => {
+                        WorthQueryManagedDirectRunAdmissionFailureKind::ReadExecution(cause)
+                    }
                     WorthQueryManagedLowerAdmissionFailureKind::BridgeExecutionBasis => {
                         WorthQueryManagedDirectRunAdmissionFailureKind::BridgeExecutionBasis
                     }

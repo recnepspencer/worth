@@ -47,6 +47,12 @@ pub(in crate::domain_computation) enum WorthQueryManagedLowerAdmissionFailureKin
     SnapshotIdentityExhausted,
     BridgePlanning,
     InstalledStepContract,
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     BridgeExecutionBasis,
 }
 
@@ -168,7 +174,14 @@ fn admit_lower_execution_basis(
         }
     }
     .map_err(|denial| WorthQueryManagedLowerAdmissionFailure {
-        kind: WorthQueryManagedLowerAdmissionFailureKind::BridgeExecutionBasis,
+        kind: match denial.kind() {
+            worth_runtime_bridge::facade::BridgeExecutionBasisDenialKind::ExecutionDenied(
+                cause,
+            ) => WorthQueryManagedLowerAdmissionFailureKind::ReadExecution(
+                super::bridge_read_stop::stopped(cause),
+            ),
+            _ => WorthQueryManagedLowerAdmissionFailureKind::BridgeExecutionBasis,
+        },
         detail: Arc::from(denial.detail()),
     })?;
     Ok(WorthQueryManagedLowerExecutionBasis {

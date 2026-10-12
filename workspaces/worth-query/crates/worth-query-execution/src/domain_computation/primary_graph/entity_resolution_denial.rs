@@ -3,6 +3,8 @@
 pub enum WorthQueryEntityResolutionDenialKind {
     /// The supplied phase belongs to another installed runtime.
     ForeignPhase,
+    /// The request stopped while reading the equality index.
+    ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// Resolution was cancelled.
     Cancelled,
     /// Resolution reached its deadline.

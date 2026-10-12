@@ -1,6 +1,4 @@
-use worth_relational::facade::indexes::{
-    BoundedEntityFieldLookupDenialKind, BoundedEntityFieldLookupRequest, BoundedIndexParityMode,
-};
+use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
 
 use super::super::{
     WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionDenial,
@@ -29,12 +27,12 @@ pub(super) fn validate<Schema, Entity>(
         identity.identity_value().clone(),
         2,
     )
-    .map_err(|rejected| map_index_denial(rejected.kind(), identity.entity_name()))?;
+    .map_err(|rejected| super::map_index_denial(rejected.kind(), identity.entity_name()))?;
     let lookup = truth
         .relational
         .index_access()
         .execute_bounded_entity_field_lookup(request, parity(identity.resolution_mode()), execution)
-        .map_err(|rejected| map_index_denial(rejected.kind(), identity.entity_name()))?;
+        .map_err(|rejected| super::map_index_denial(rejected.kind(), identity.entity_name()))?;
     if lookup.overflowed()
         || lookup.candidate_entity_ids().len() != 1
         || lookup.candidate_entity_ids()[0] != identity.entity_id()
@@ -52,20 +50,6 @@ fn parity(mode: WorthQueryPrincipalResolutionMode) -> BoundedIndexParityMode {
         WorthQueryPrincipalResolutionMode::Ordinary => BoundedIndexParityMode::Production,
         WorthQueryPrincipalResolutionMode::Certification => BoundedIndexParityMode::Certification,
     }
-}
-
-fn map_index_denial(
-    kind: BoundedEntityFieldLookupDenialKind,
-    subject: &str,
-) -> WorthQueryEntityResolutionDenial {
-    let kind = match kind {
-        BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
-        | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
-            WorthQueryEntityResolutionDenialKind::CorruptIdentityIndex
-        }
-        _ => WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
-    };
-    denial(kind, subject)
 }
 
 fn denial(
