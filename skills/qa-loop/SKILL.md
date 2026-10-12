@@ -1,81 +1,22 @@
 ---
 name: qa-loop
-description: Review and correct a completed WORTH implementation slice against its specification, relevant engineering laws, tests, and code-review risks. Use after coherent implementation work when Codex should find material defects, fix root causes, and verify the final change without creating a progressive proof ledger.
+description: Review and correct a WORTH implementation against its intent, specification, engineering laws, and credible evidence.
 ---
 
 # QA Loop
 
-Review the implementation, not a certification system around it. Requirements
-come from the governing specification, public contracts, repository laws, and
-the behavior the change necessarily promises. Tests are evidence for those
-requirements; code review decides whether that evidence is adequate.
+Read the repository instructions, governing specification, and `docs/coding-guidelines/arch_laws.md`, `docs/coding-guidelines/perf_laws.md`, and `docs/coding-guidelines/MENTALITY.md` before reviewing. Inspect the implementation, affected owners, consumers, and tests. Scope follows causal necessity: include boundaries and prerequisites needed to make the requested behavior correct, preserve unrelated work, and report unrelated debt separately.
 
-Read the repository instructions, governing specification, relevant engineering
-laws, and `docs/coding-guidelines/qa_review_guide.md`. Inspect the task's diff,
-the affected production paths, adjacent owners and consumers, and the tests that
-claim to protect the change.
+Check consequential implementation claims using plausible inputs, boundary conditions, and execution sequences. Build a compact risk matrix connecting claims and invariants to failure cases and distinguishing evidence. Prioritize authority, correctness, recovery, and performance risks, including interactions between them. Reuse adequate evidence and investigate concrete uncertainty; avoid exhaustive combinations, speculative concerns, and repeated review without new evidence.
 
-## Establish scope
+## Budget review priority
 
-State the implementation slice and the material requirements under review in
-plain language. Select only the QA categories that are causally relevant. Do not
-manufacture concerns to fill every category or create requirement identifiers,
-status rows, predecessor portfolios, or phase-reopening records.
+Budget scrutiny must remain a small minority of ordinary QA and repair time. Make it a focus only when diagnosing a demonstrated performance/resource issue or investigating a concrete concerning resource risk, such as runaway work, excessive allocation, or an ineffective limit. Otherwise, budget findings should be rare, including advisories. Do not raise findings merely because accounting could be finer, counters could be richer, or an exhaustion matrix could be broader; do not pursue speculative budget refinements or repeatedly reopen adequately bounded paths.
 
-Include adjacent authority, lifecycle, persistence, integration, or facade
-boundaries when they can invalidate the change. Preserve unrelated user work and
-report unrelated repository debt as a caveat rather than expanding the task.
+Preserve existing safeguards and run explicitly required checks without turning them into a separate budget-hardening project. When a concerning defect warrants work, state its concrete consequence, fix the responsible boundary, and use focused evidence sufficient to close it. Reuse that evidence and return to the requested product behavior; budget accounting and instrumentation must not displace functional correctness, integration, or user-experience progress.
 
-## Independent review
+## Findings and closure
 
-Use the reviewer arrangement selected by the user or repository. Do not replace
-it with a hard-coded model or create new reviewer instances merely because a
-small correction occurred. Persistent reviewers may follow the correction cycle
-as long as they inspect the final diff and current test results before clearing
-the work.
+Each finding must state the defect and consequence, concrete evidence, root cause, proposed correction, and required verification. Pin it to an exact law or numbered principle in `arch_laws.md`, `perf_laws.md`, or `MENTALITY.md`, explaining the violation. Use **N/A** when none applies and name the violated specification, contract, or expected behavior; these findings carry equal weight. Close findings by restoring the underlying invariant at its owning boundary. Use typed progression, carried authority, or required infrastructure when the governing laws call for them. A guard, special case, or green reproducer does not close a surviving root cause. Complete causally necessary foundations; difficulty or a larger diff alone does not justify deferral.
 
-Give reviewers the specification, relevant laws, current diff, affected source
-and tests, and test results. Ask for material correctness, authority, security,
-lifecycle, recovery, performance, integration, DX, test, and structural defects
-that are relevant to the change. Reviewers provide independent judgment; the
-primary agent verifies findings against the repository and owns corrections.
-
-If outside review is required but unavailable, report that limitation. Do not
-relabel the primary pass as independent review.
-
-## Review and correct
-
-Trace real success, denial, failure, cancellation, partial-effect, recovery, and
-teardown paths where they matter. Look for wording-compliant implementations
-that defeat the specification's intent, competing authority paths, stale state,
-dishonest fallbacks, resource escape, and tests that can pass for the wrong
-reason.
-
-For each supported finding, state:
-
-1. the affected requirement
-2. the concrete defect and evidence
-3. the required root-cause correction
-4. the test or review evidence needed after correction
-
-Fix root causes rather than padding tests. Search the affected semantic family
-for the same defect, then rerun only the causally affected tests and repository
-gates. Use focused checks during correction, ordinary CI checks for the final
-change, and scheduled expensive suites only when they are relevant or explicitly
-required.
-
-## Completion
-
-QA is complete when:
-
-- the affected requirements are implemented on the final source
-- appropriate focused and required repository checks pass
-- code review finds the tests adequate for the risk
-- required independent reviewers have inspected the final diff
-- no known in-scope material defect remains
-
-Report the requirements reviewed, material findings and corrections, tests and
-repository gates run, reviewer conclusions, unrun environment-dependent checks,
-and any scoped caveats. Do not create evidence to certify the evidence, reopen
-historical phases, or continue adding proof after review finds the residual risk
-acceptable.
+Use the reviewer arrangement selected by the user or repository. Run focused verification during correction and required gates before completion. Reviewers must inspect corrections and affected evidence before clearance. Escalate genuine specification contradictions, undiscoverable product choices, and actions beyond granted authority with evidence and options; resolve discoverable uncertainty through investigation. Broaden review only when new evidence or a correction invalidates an earlier conclusion. Stop when required verification and review are complete and no supported, material in-scope finding remains. Report findings, corrections, evidence, and limitations; do not add rounds merely to discover more issues.

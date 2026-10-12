@@ -33,8 +33,9 @@ As you plan:
 - Make implicit requirements, authority boundaries, failure behavior,
   lifecycle obligations, and performance expectations explicit.
 - Identify existing paths that must be cut over, removed, or made insufficient.
-- Include the phase-relevant tests, structural counters, compiler boundaries,
-  and verification needed to prove the result.
+- Include the phase-relevant tests, compiler boundaries, and verification
+  needed to prove the result. Plan a counter or budget only when it is proven
+  necessary, and plan the removal of any that has become a tax.
 - Build the complete plan inline in the chat. Do not create a separate plan
   file unless the user asks for one.
 

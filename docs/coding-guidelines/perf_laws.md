@@ -24,7 +24,7 @@ Breadth, richness, coordination, and quality may degrade only by explicit policy
 
 Structural waste dominates constant waste. Remove scope leakage, amplification, repeated maintenance, path conflation, projection inflation, repeated rediscovery, and avoidable coordination before tuning capacities, layouts, or instruction-level constants.
 
-A performance claim is valid only at its named boundary and must carry counters explaining the work performed. End-to-end claims require end-to-end measurement; slope claims require scale-sensitive evidence across every independent input axis.
+A performance claim is valid only at its named boundary and must explain the work performed. A counter is added only when it is proven necessary to diagnose or hold a real cost, is asserted as a growth class or an equality and never as an exact count, and is removed when it costs more than it catches. End-to-end claims require end-to-end measurement; slope claims require scale-sensitive evidence across every independent input axis.
 
 A performance claim must name its workload distribution, scale axes, environment, hardware and runtime configuration, cold or warm posture, repetitions, variance, structural counters, and reported percentiles. Evidence may not transfer across an unmeasured workload, scale regime, execution lane, or environment.
 
