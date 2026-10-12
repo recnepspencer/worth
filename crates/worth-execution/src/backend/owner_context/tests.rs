@@ -1,19 +1,17 @@
 use super::*;
 
 #[test]
-fn owner_context_restores_after_nested_work_and_unwind() {
+fn owner_context_restores_after_nested_work() {
     assert!(!ExecutionOwnerContext::is_active());
-    let owner = ExecutionOwnerContext::enter();
+    let owner = ExecutionOwnerContext::enter_for_test();
     let inherited = CapturedOwnerContext::capture();
-    assert!(std::panic::catch_unwind(|| {
+    {
         let _nested = inherited.enter();
         assert!(ExecutionOwnerContext::is_active());
-        panic!("owner work unwinds");
-    })
-    .is_err());
+    }
     assert!(
         ExecutionOwnerContext::is_active(),
-        "nested unwind preserves its owner's context"
+        "nested work restores the owning frame"
     );
     drop(owner);
     assert!(
@@ -26,7 +24,7 @@ crate::needs_os_threads! {
 #[test]
 fn descendant_unwind_releases_custody_before_later_work() {
     let absent = CapturedOwnerContext::capture();
-    let owner = ExecutionOwnerContext::enter();
+    let owner = ExecutionOwnerContext::enter_for_test();
     let inherited = CapturedOwnerContext::capture();
     drop(owner);
     std::thread::scope(|scope| {

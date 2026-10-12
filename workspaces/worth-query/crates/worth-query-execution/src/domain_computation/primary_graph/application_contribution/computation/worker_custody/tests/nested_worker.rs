@@ -1,6 +1,7 @@
 //! An author-held host handle must receive the same refusal inside partition work.
 worth_execution::needs_os_threads! {
 use super::*;
+const HANG_GUARD:Duration=Duration::from_secs(60);
 #[derive(Debug)]
 struct Probe {
     marked: bool,
@@ -18,7 +19,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let application = Arc::new(fixture::installed_authorization_world(false).application);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
+        None,
         cancellation.token(),
     );
     let root = QueryRequestExecution::open(
@@ -70,7 +71,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
                             *entered += 1;
                             ready.notify_all();
                             let (entered, timed) = ready
-                                .wait_timeout_while(entered, Duration::from_secs(60), |entered| {
+                                .wait_timeout_while(entered, HANG_GUARD, |entered| {
                                     *entered < 2
                                 })
                                 .unwrap();
@@ -110,7 +111,7 @@ fn nested_partition_workers_keep_the_member_reentry_refusal() {
     let probes = witnessed.lock().unwrap();
     assert!(
         probes.iter().any(|probe| probe.thread != probes[0].thread),
-        "the witness runs on distinct descendant threads: {probes:?}"
+        "the witness runs on distinct computing threads: {probes:?}"
     );
     assert!(!probes.is_empty(), "the nested witness entered its kernel");
     assert!(

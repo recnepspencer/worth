@@ -11,7 +11,8 @@ pub struct ExecutionOwnerContext {
     _thread: PhantomData<Rc<()>>,
 }
 impl ExecutionOwnerContext {
-    pub fn enter() -> Self {
+    /// Sealed owner arming door; the guard owns and restores its refusal marker.
+    pub fn enter_for_test() -> Self {
         CapturedOwnerContext(true).enter()
     }
     pub fn is_active() -> bool {

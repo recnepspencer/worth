@@ -6,7 +6,7 @@ pub(in crate::domain_computation::primary_graph) struct MemberComputeCustody {
 impl MemberComputeCustody {
     pub(super) fn enter() -> Self {
         Self {
-            _context: worth_execution::ExecutionOwnerContext::enter(),
+            _context: worth_execution::ExecutionOwnerContext::enter_for_test(),
         }
     }
 }
