@@ -27,7 +27,7 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
 
     let (reached, release) = (Arc::new(Barrier::new(2)), Arc::new(Barrier::new(2)));
     let control = RelationalOperationControl::uninterrupted()
-        .with_critical_section_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_critical_section_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let basis = services
         .basis_port()
         .admit_branch_basis(&runtime.main_branch_identity())

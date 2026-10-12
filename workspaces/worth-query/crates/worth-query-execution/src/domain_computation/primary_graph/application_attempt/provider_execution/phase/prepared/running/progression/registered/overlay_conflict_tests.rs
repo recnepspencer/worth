@@ -77,5 +77,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
         .discard_provisional_overlay(staged.execution_request(), first.view())
         .expect("the first exact overlay must remain independently discardable");
     let _ = staged.abort();
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }

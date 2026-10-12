@@ -5,7 +5,8 @@ use super::differential::{
 };
 use super::*;
 use worth_query_host::facade::application_contribution::{
-    WorthQueryPartitionedComputationFullCause as Cause, WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationFullCause as Cause,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 use worth_query_host::facade::product::WorthQueryProductBranch;
 

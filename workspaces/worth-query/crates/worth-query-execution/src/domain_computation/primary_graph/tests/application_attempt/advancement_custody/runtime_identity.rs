@@ -6,6 +6,8 @@ mod native_commit_work;
 
 #[test]
 fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let a = installed_authorization_world(true);
@@ -123,6 +125,8 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
 
 #[test]
 fn mutable_principal_reader_moves_the_installed_source_counter() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let request = live_scope();
     let external = world.authenticate("alice", std::time::Duration::from_secs(60), &request);

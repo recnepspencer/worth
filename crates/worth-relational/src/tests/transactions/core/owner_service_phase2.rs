@@ -40,11 +40,12 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
 
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
-    let control = crate::mvcc::RelationalOperationControl::uninterrupted().with_boundary_pause(
-        crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation,
-        Arc::clone(&reached),
-        Arc::clone(&release),
-    );
+    let control = crate::mvcc::RelationalOperationControl::uninterrupted()
+        .with_boundary_pause_for_test(
+            crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation,
+            Arc::clone(&reached),
+            Arc::clone(&release),
+        );
     let mut paused_transaction =
         begin_transaction_with_control(&runtime, "paused-preparation", control);
     paused_transaction

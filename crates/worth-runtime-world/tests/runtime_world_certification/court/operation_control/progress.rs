@@ -45,7 +45,7 @@ fn unrelated_signal_branch_progresses_at_each_owner_park() {
         let second = signal_prepared(&court, &other, &token);
         let mut first_context = court.context(request_execution, &root);
         let mut second_context = court.context(request_execution, &other);
-        let control = court.signal.owner_operation_control().unwrap();
+        let control = court.signal.owner_operation_control_for_test().unwrap();
         let port = court.world.publication_port();
         let second_port = port.clone();
         let first_token = token.clone();
@@ -53,7 +53,7 @@ fn unrelated_signal_branch_progresses_at_each_owner_park() {
         std::thread::scope(|scope| {
             // This guard is inside the scope so assertion unwinding releases
             // the parked owner before scope's implicit worker joins.
-            let pause = control.arm_pause_once(boundary);
+            let pause = control.arm_pause_once_for_test(boundary);
             let first_worker = scope.spawn(move || {
                 port.execute_with_signal(
                     worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),

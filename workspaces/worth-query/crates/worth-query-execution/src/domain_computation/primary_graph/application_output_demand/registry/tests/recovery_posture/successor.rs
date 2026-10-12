@@ -49,7 +49,8 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
             Some(OutputRefreshPredecessor::Committed(&receipt)),
             &mut record_admission(),
         )
-        .expect("the exact stale ready receipt admits its forced successor");
+        .expect("the exact stale ready receipt admits its forced successor")
+        .0;
     assert_eq!(replacement.key, demand_key);
     let state = registry.state.lock().unwrap();
     let record = &state.records[&demand_key];

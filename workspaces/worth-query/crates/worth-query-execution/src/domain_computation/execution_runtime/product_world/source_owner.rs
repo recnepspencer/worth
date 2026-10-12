@@ -137,8 +137,7 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
-        #[cfg(feature = "test-query-execution-observer")]
-        super::read_observation::record_read();
+        super::read_observation::record_read_for_test();
         read(&runtime)
     }
 
@@ -152,8 +151,7 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
-        #[cfg(feature = "test-query-execution-observer")]
-        super::read_observation::record_read();
+        super::read_observation::record_read_for_test();
         mutate(&mut runtime)
     }
 
@@ -178,8 +176,7 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
-        #[cfg(feature = "test-query-execution-observer")]
-        super::read_observation::record_read();
+        super::read_observation::record_read_for_test();
         let outcome =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(&mut runtime)));
         drop(runtime);

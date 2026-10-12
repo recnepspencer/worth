@@ -1,7 +1,6 @@
 mod advancement;
 use std::collections::BTreeSet;
 
-#[cfg(feature = "test-controls")]
 #[path = "identity_runtime/certification_controls.rs"]
 mod certification_controls;
 #[path = "identity_runtime/installation.rs"]

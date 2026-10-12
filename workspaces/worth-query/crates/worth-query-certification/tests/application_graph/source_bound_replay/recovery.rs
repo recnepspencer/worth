@@ -143,7 +143,7 @@ fn recover_original_source(
 
     let cancellation = WorthQueryCancellationSource::new();
     let stopped = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
+        Some(Instant::now() + Duration::from_secs(30)),
         cancellation.token(),
     );
     cancellation.cancel();

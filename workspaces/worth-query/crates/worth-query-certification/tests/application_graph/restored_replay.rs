@@ -112,7 +112,7 @@ fn assert_the_key_resolves_by_its_durable_record(
     }
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        std::time::Instant::now() + std::time::Duration::from_secs(30),
+        Some(std::time::Instant::now() + std::time::Duration::from_secs(30)),
         cancellation.token(),
     );
     let principal = authenticate_operator(restored.installed_schema(), &scope);

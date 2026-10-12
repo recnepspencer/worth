@@ -108,23 +108,21 @@ impl RealReferenceFixture {
             .expect("real Signal owner performs the empty bounded transaction")
     }
 
-    #[cfg(feature = "test-operation-control")]
     pub(crate) fn signal_operation_control(
         &self,
-    ) -> worth_signal::facade::branch::SignalOwnerOperationControl {
+    ) -> worth_signal::facade::branch::SignalOwnerOperationControlForTest {
         self._signal_runtime
-            .owner_operation_control()
+            .owner_operation_control_for_test()
             .expect("real Signal owner exposes operation control")
     }
 
-    #[cfg(feature = "test-operation-control")]
     pub(crate) fn inject_signal_retention_panic(&self) {
-        use worth_signal::facade::branch::SignalOwnerOperationBoundary;
+        use worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest;
 
         self._signal_runtime
-            .owner_operation_control()
+            .owner_operation_control_for_test()
             .expect("real Signal owner exposes operation control")
-            .inject_panic_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+            .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     }
 
     pub(crate) fn owner_inputs(

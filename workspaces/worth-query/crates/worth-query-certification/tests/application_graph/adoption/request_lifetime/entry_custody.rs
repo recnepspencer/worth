@@ -12,6 +12,7 @@ use worth_query_host::facade::{
 
 #[test]
 fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let host = publish_on_first_program();
     let branch = host.current_world();
     let target = *host

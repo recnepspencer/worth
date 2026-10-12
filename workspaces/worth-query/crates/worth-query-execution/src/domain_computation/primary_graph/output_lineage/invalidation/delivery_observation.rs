@@ -9,8 +9,14 @@ thread_local! {
 }
 
 pub(super) fn record_delivery(report: &NativeMarkingReport) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
     if matches!(report.precision, NativeMarkingPrecision::Exact(_)) {
         return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
     }
     INEXACT_DELIVERIES.with(|deliveries| {
         deliveries.set(
@@ -30,23 +36,18 @@ pub fn inexact_native_deliveries_on_this_thread_for_test() -> u64 {
     INEXACT_DELIVERIES.with(Cell::get)
 }
 
-thread_local! {
-    static EXHAUST_RETAINED_DELIVERY: Cell<bool> = const { Cell::new(false) };
-}
 pub(super) fn exhaust_delivery_capacity(
     resources: &crate::domain_computation::execution_runtime::WorthQueryInvalidationResources,
 ) -> Option<
     crate::domain_computation::execution_runtime::source_invalidation::RetainedInvalidationCapacity,
 > {
-    EXHAUST_RETAINED_DELIVERY
-        .with(|armed| armed.replace(false))
-        .then(|| {
-            let remaining = resources.installation().maximum_retained_bytes
-                - resources.retained_capacity_bytes();
-            resources
-                .reserve_retained_capacity(remaining)
-                .expect("exact remaining ledger capacity")
-        })
+    resources.take_delivery_exhaustion().then(|| {
+        let remaining =
+            resources.installation().maximum_retained_bytes - resources.retained_capacity_bytes();
+        resources
+            .reserve_retained_capacity(remaining)
+            .expect("exact remaining ledger capacity")
+    })
 }
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -54,6 +55,18 @@ impl<Schema>
     /// Hold the ledger's remaining real capacity during one source delivery.
     #[doc(hidden)]
     pub fn exhaust_next_source_delivery_capacity_for_test(&self) {
-        EXHAUST_RETAINED_DELIVERY.with(|armed| armed.set(true));
+        self.primary_provider
+            .graph
+            .source_owner
+            .invalidation_owner
+            .resources
+            .arm_delivery_exhaustion();
     }
+}
+
+// Law 2, scope: passive counts end with their owned observation guard.
+thread_local! { static CLEANUP_REGISTERED: Cell<bool> = const { Cell::new(false) }; }
+fn clear_observations() {
+    CLEANUP_REGISTERED.set(false);
+    INEXACT_DELIVERIES.set(0);
 }

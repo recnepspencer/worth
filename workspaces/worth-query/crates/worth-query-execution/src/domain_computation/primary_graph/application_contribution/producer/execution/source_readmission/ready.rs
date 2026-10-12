@@ -15,9 +15,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
     WorthQueryOutputDemandDenial::new(
         match stop {
-            Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-            }
+            Stop::WorkExhausted { .. }
+            | Stop::WorkExhaustedWithoutRequirement { .. }
+            | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
             Stop::Interrupted(event) => {
                 WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }
@@ -45,7 +45,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     let kind = match stop {
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::WorkExhausted)
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow,
         )) => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Interrupted(event))

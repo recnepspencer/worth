@@ -20,6 +20,8 @@ impl Drop for Restore {
 
 #[test]
 fn product_transaction_refuses_zero_budgets_before_revalidation() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
         let control = installed_authorization_world(true);

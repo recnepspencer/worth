@@ -68,8 +68,8 @@ fn world_unwind_retains_and_releases_the_exact_query_idempotency_slot() {
     world
         .application
         .product_runtime()
-        .operation_control()
-        .panic_before_product_compare_once();
+        .operation_control_for_test()
+        .panic_before_product_compare_once_for_test();
 
     let unwind = catch_unwind(AssertUnwindSafe(|| {
         world.application.compare_and_commit_application(

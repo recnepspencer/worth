@@ -59,7 +59,6 @@ impl Drop for SettlementIndex {
 }
 
 impl SettlementIndex {
-    #[cfg(feature = "test-query-execution-observer")]
     pub(super) fn custody_for_test(&self) -> (usize, usize) {
         (
             self.sources.values().map(BTreeMap::len).sum(),
@@ -251,7 +250,6 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn custody_layout() -> (usize, usize, usize) {
     (
         node_bytes::<SemanticSource, SourcePostings>().unwrap(),

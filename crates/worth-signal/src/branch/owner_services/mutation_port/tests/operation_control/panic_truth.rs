@@ -1,6 +1,6 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::validate_signal_branch_name;
 
 use super::super::super::super::SignalOwnerCancellationSource;
@@ -60,8 +60,8 @@ fn panic_after_performed_fork() {
     );
     world
         .owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.port.fork_exact(
             validate_signal_branch_name("outcome-panic-fork").expect("name validates"),
@@ -117,8 +117,8 @@ fn panic_after_performed_advance() {
     let before = world.owner.cost_snapshot();
     world
         .owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.port.advance_exact(
             request_execution,
@@ -146,8 +146,8 @@ fn panic_after_performed_capture() {
     let before = world.owner.cost_snapshot();
     world
         .owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.port.capture_exact(
             &world.source_basis,
@@ -202,8 +202,8 @@ fn panic_after_performed_restore() {
     let before = world.owner.cost_snapshot();
     world
         .owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.port.restore_exact(
             current.advanced_basis(),
@@ -270,8 +270,10 @@ fn fork_installation_panic_preserves_performed_destination_and_releases_source_c
     );
     world
         .owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::ForkDestinationInstallation);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(
+            SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
+        );
     let panic = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.port.fork_exact(
             validate_signal_branch_name("installation-panic-fork").expect("name validates"),

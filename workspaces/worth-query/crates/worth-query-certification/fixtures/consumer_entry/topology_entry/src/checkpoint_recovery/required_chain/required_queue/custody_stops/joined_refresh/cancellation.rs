@@ -31,14 +31,14 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
         let ready = application.stable_ready_sources_for_test();
         let claims = application.registry_successor_claims_for_test();
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let cancelled_scope = authentication::WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(120),
-            cancellation.token(),
-        );
+        let cancelled_scope =
+            authentication::WorthQueryRequestScope::new(None, cancellation.token());
         let cancelled = application.request(&principal, &cancelled_scope);
         let pause = application.pause_stable_join_for_test(root);
         std::thread::scope(|threads| {
             let worker = threads.spawn(|| {
+                let _observation =
+                    primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
                 application.joined_stable_roots_for_test();
                 application.required_refresh_stops_for_test();
                 let stopped = d.advance(&cancelled);
@@ -49,13 +49,14 @@ fn cancellation_of_a_joined_stable_refresh_restores_its_ready_and_all_custody() 
                     application.required_refresh_stops_for_test(),
                 )
             });
+            // Hang guard for the held-Ready join; elapsed time is not the fact under test.
             let reached = pause.wait_until_joined(Duration::from_secs(5));
             cancellation.cancel();
             pause.release();
             let (stopped, joined, stops) = worker.join().unwrap();
             assert!(
                 reached,
-                "the interrupted refresh really joined C's held Stable Ready"
+                "held Stable Ready join rendezvous did not occur before cancellation"
             );
             assert_eq!(
                 joined

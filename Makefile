@@ -83,7 +83,7 @@ query-fast: query-test
 
 .PHONY: query-cold-certification
 query-cold-certification:
-	cargo test --manifest-path $(QUERY_MANIFEST) -p worth-query-execution --features allocation-probes --lib $(ARGS) -- --test-threads=4
+	cargo test --manifest-path $(QUERY_MANIFEST) -p worth-query-execution --lib $(ARGS) -- --test-threads=4
 	cargo test --manifest-path $(QUERY_MANIFEST) -p worth-query-certification -p worth-query-replay $(ARGS)
 
 .PHONY: relational-allocation-probes

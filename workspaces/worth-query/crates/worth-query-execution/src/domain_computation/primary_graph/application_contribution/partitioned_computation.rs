@@ -19,7 +19,6 @@
 
 mod compute;
 pub(super) use incremental::{observe_full_tree, FullTreeMapWork};
-#[cfg(feature = "test-query-execution-observer")]
 mod certification_reuse;
 mod denial;
 mod gather_memory;
@@ -39,14 +38,13 @@ pub use denial::{
     WorthQueryReductionInputDenial,
 };
 pub use incremental::WorthQueryPartitionedComputationFullCause;
-#[cfg(feature = "test-query-execution-observer")]
 pub use incremental::{
     discarded_computation_retention_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeMetrics,
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest,
 };
@@ -196,7 +194,5 @@ mod tests;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use incremental::sealed_run_for_lineage_test;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation) use incremental::observe_discarded;
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use incremental::observe_published;

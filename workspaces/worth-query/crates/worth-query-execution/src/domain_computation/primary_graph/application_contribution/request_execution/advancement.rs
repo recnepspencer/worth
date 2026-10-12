@@ -97,7 +97,6 @@ impl QueryRequestExecution<'_> {
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         let result = self.run_admitted_advancement(owner, source_instance, body);
-        #[cfg(any(test, feature = "test-query-execution-observer"))]
         observation::record_result(&result);
         result
     }
@@ -150,10 +149,7 @@ impl QueryRequestExecution<'_> {
         }
         outcome
             .map(|(result, report)| {
-                #[cfg(any(test, feature = "test-query-execution-observer"))]
                 observation::record_report(report);
-                #[cfg(not(any(test, feature = "test-query-execution-observer")))]
-                let _ = report;
                 result.expect("a completed advancement has its body result")
             })
             .map_err(advancement_denial)
@@ -222,7 +218,7 @@ pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement
 ) -> Result<R, WorthQueryAdvancementDenial> {
     let _custody = OpeningCustody::enter()?;
     let cancellation = request.cancellation().execution_token();
-    let deadline = Some(request.deadline());
+    let deadline = request.deadline();
     let execution = QueryRequestExecution {
         cancellation: cancellation.clone(),
         deadline,
@@ -288,9 +284,7 @@ impl WorthQueryAdvancementDenial {
     }
 }
 
-#[cfg(any(test, feature = "test-query-execution-observer"))]
 mod observation;
-#[cfg(feature = "test-query-execution-observer")]
 pub use observation::{
     advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
 };
@@ -308,7 +302,7 @@ pub(crate) fn with_test_advancement<R>(
     .expect("the declared fixture policy admits its host call")
 }
 
-#[cfg(all(test, feature = "test-query-execution-observer"))]
+#[cfg(test)]
 mod standalone_test_custody;
 
 #[cfg(test)]

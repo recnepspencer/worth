@@ -135,7 +135,7 @@ async fn prove_cancellation_denial(
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let error = identity

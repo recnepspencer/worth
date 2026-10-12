@@ -6,7 +6,7 @@ use worth_signal::facade::branch::{
     AdmittedSignalBranchBasis, AdmittedSignalBranchSnapshot, SignalBranchAdvanceDenial,
     SignalBranchBasisPort, SignalBranchLifecyclePort, SignalBranchMutationPort,
     SignalBranchRetirementReason, SignalOwnerCancellationSource, SignalOwnerLifecycleObservation,
-    SignalOwnerOperationBoundary,
+    SignalOwnerOperationBoundaryForTest,
 };
 
 use super::super::world::{AdversarialWorld, PROGRESS_BOUND};
@@ -48,9 +48,10 @@ fn close_drains_an_admitted_fork_while_fencing_late_work() {
         .runtime
         .as_ref()
         .expect("the root remains live until close is requested")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("control is issued after sealing");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let mutation = world.mutation.clone();
     let basis = world.root_basis.clone();
     let (tx, rx) = mpsc::sync_channel(1);
@@ -87,9 +88,10 @@ fn close_drains_an_admitted_snapshot_capture_while_fencing_late_work() {
         .runtime
         .as_ref()
         .expect("the root remains live until close is requested")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("control is issued after sealing");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
     let (tx, rx) = mpsc::sync_channel(1);
@@ -129,9 +131,10 @@ fn close_drains_an_admitted_restore_while_fencing_late_work() {
         .runtime
         .as_ref()
         .expect("the root remains live until close is requested")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("control is issued after sealing");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let mutation = world.mutation.clone();
     let basis = captured_basis.clone();
     let worker_snapshot = snapshot.clone();
@@ -191,9 +194,10 @@ fn close_drains_an_admitted_retirement_while_fencing_late_work() {
     let control = runtime
         .as_ref()
         .expect("the root remains live until close is requested")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("control is issued after sealing");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let worker_lifecycle = lifecycle.clone();
     let (tx, rx) = mpsc::sync_channel(1);
     thread::scope(|scope| {

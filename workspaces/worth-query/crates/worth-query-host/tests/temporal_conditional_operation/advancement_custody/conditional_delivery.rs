@@ -2,6 +2,7 @@
 use super::*;
 #[test]
 fn conditional_delivery_refuses_before_its_retained_truth_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let world = CourtroomWorld::publish("blocked");
@@ -84,6 +85,7 @@ fn conditional_delivery_refuses_before_its_retained_truth_reader() {
 
 #[test]
 fn foreign_phase_cannot_deliver_on_another_installed_world() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     use worth_query_host::facade::runtime::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind;
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));

@@ -243,7 +243,10 @@ fn finish_peer(
             .active_snapshot_count(&phase.borrowed_request_for_test()),
         baseline
     );
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }
 
 #[derive(Clone, Copy, Debug)]

@@ -20,7 +20,6 @@ where
         expected: &'selected ProductBranchObservation,
         prepare: &mut dyn FnMut(u64) -> bool,
     ) -> Result<crate::branch::ProductBranchCurrentnessScope<'selected>, Stop> {
-        #[cfg(feature = "test-execution-observer")]
         crate::lifecycle::read_observation::record_read();
         if expected.owner_identity() != self.owner_identity() {
             return Err(Stop::Native(
@@ -54,10 +53,9 @@ where
             cell,
             expected,
             operation,
-            #[cfg(feature = "test-operation-control")]
             self.state
                 .operation_control
-                .currentness_latch(expected.lifecycle_incarnation()),
+                .currentness_latch_for_test(expected.lifecycle_incarnation()),
         ))
     }
 
@@ -65,7 +63,6 @@ where
         &self,
         branch: &ProductBranchIdentity,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
-        #[cfg(feature = "test-execution-observer")]
         crate::lifecycle::read_observation::record_read();
         if branch.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
@@ -89,7 +86,6 @@ where
         &self,
         occurrence: ProductBranchIncarnation,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
-        #[cfg(feature = "test-execution-observer")]
         crate::lifecycle::read_observation::record_read();
         if occurrence.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldBranchAdmissionDenial::ForeignOwner);
@@ -130,7 +126,6 @@ where
         history: &ProductBranchHistoryTraversal,
         index: usize,
     ) -> Result<ProductBranchObservation, RuntimeWorldBranchAdmissionDenial> {
-        #[cfg(feature = "test-execution-observer")]
         crate::lifecycle::read_observation::record_read();
         super::history::observe_entry(self, history, index)
     }

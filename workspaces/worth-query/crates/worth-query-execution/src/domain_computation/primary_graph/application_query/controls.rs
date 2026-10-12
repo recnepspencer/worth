@@ -253,7 +253,7 @@ impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
         crate::basis::WorthQueryProductObservationLease,
         WorthQueryAdmittedApplicationQueryControls<'a>,
     ) {
-        let basis_deadline = Some(self.request_scope.deadline());
+        let basis_deadline = self.request_scope.deadline();
         let admitted = WorthQueryAdmittedApplicationQueryControls {
             basis: self.basis_posture(),
             consistency: self.consistency(),

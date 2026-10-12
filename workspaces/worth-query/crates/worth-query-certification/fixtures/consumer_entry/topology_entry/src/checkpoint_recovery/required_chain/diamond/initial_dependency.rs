@@ -22,7 +22,6 @@ fn an_initial_consumer_readmits_the_cached_dependency_it_actually_reads() {
 }
 
 #[test]
-#[cfg(feature = "test-output-delivery-faults")]
 fn a_cached_read_keeps_custody_while_another_demand_delivers_its_pending_child() {
     journey(false, true, true);
 }
@@ -62,7 +61,6 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
     if close_dependencies {
         drop((left, right));
     }
-    #[cfg(feature = "test-output-delivery-faults")]
     if delay_child {
         application.delay_next_output_readiness_delivery_for_test();
         assert!(matches!(
@@ -84,10 +82,8 @@ fn journey(cancel_decision: bool, close_dependencies: bool, delay_child: bool) {
     }
     if cancel_decision {
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let cancelled_scope = authentication::WorthQueryRequestScope::new(
-            std::time::Instant::now() + std::time::Duration::from_secs(120),
-            cancellation.token(),
-        );
+        let cancelled_scope =
+            authentication::WorthQueryRequestScope::new(None, cancellation.token());
         super::super::binding::cancel_during_next_decision("diamond-join", cancellation);
         let cancelled = application.request(&principal, &cancelled_scope);
         let stopped = join.advance(&cancelled);

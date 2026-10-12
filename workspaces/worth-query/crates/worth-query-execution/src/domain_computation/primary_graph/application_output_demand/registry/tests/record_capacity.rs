@@ -47,7 +47,8 @@ fn notification_keeps_wake_capacity_after_record_removal() {
             None,
             &mut record_admission(),
         )
-        .expect("the actual registry admits the demand");
+        .expect("the actual registry admits the demand")
+        .0;
     let retained = Arc::clone(&registry.state.lock().unwrap().record_retained_bytes);
     let notification = interest.notifications.clone();
     drop(interest);
@@ -68,4 +69,16 @@ fn notification_keeps_wake_capacity_after_record_removal() {
     );
     drop(registry);
     assert_eq!(retained.load(Ordering::Acquire), 0);
+}
+
+#[cfg(target_pointer_width = "64")]
+#[test]
+fn an_interest_keeps_the_shipped_per_record_charge() {
+    // Law 3: a control changes no charge. This is a cost consumers pay per
+    // record and changes only on purpose. It changed once on purpose: the
+    // canonical order replaced the key's TypeId (16) with the family's
+    // canonical name (Cow 24), so 200 became 208. The 64-bit layout is:
+    // key 184 (family name 24, source epoch 112, applicability 24, String 24),
+    // required-output bit 1, notification Arc 8, registry Arc 8, padding 7.
+    assert_eq!(std::mem::size_of::<WorthQueryOutputDemandInterest>(), 208);
 }

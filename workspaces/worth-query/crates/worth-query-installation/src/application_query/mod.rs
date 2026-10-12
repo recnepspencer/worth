@@ -13,7 +13,6 @@ mod output_dependency_contract;
 mod planning_contract;
 mod read_family_binding;
 mod root_selection;
-#[cfg(any(test, feature = "certification-query-lookup"))]
 mod schema_resolution;
 
 #[cfg(test)]

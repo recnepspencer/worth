@@ -31,6 +31,27 @@ parallel authority lane.
 
 ## Hard Invariants
 
+Every workspace and package root has one build except the named other-team
+roots `workspaces/worth-store`, `workspaces/worth-ui`, and `crates/worth-proof`.
+No Cargo features are declared beyond Signal's retained product profiles/default
+(including WASM forwarding) and Signal-only `test-peak-allocation`. Empty feature
+tables and feature arrays on governed dependencies are refused. Unit-test-only
+hooks use `cfg(test)`; other controls and observers compile and use owned handles.
+The rule is enforced by `tools/boundary-check/src/one_build.rs`.
+
+Law 1, reach: exported and crate-visible test doors are discovered throughout
+their owners by the `*_for_test` and `*ForTest` conventions and sealed to their
+owner and closed test/certification callers in `control-callers.txt`. Law 2, scope: a
+control's arm lives on its receiver. Pre-runtime placement and read-only
+recorders may use thread-local guards that clear their state during unwinding.
+
+The four Bridge source factories and Installation's `certification_query` are
+compiled public doors with a named source boundary. Only the owners and the
+closed caller list in
+`tools/boundary-check/config/certification-construction-callers.txt` may reference
+them. Consumer-facing declaration and host production facades do not re-export
+them. A new caller requires an explicit boundary ruling.
+
 - Pure meaning stays Query-agnostic: `worth-schema-*` crates must never import
   `worth-query`. Query is consumed only through audience facades
   (`worth-query-decl`, `worth-query-host`) from `entry`-band crates, and

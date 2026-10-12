@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use crate::durability::data::{DurableCheckpoint, DurableStore};
@@ -14,6 +15,7 @@ use state::DurabilityState;
 #[derive(Debug, Default)]
 pub(crate) struct DurabilitySubsystem {
     state: RuntimeOwnedState<DurabilityState>,
+    fail_next_append: AtomicBool,
 }
 
 impl DurabilitySubsystem {
@@ -82,14 +84,13 @@ impl DurabilitySubsystem {
         self.state.write().store = store.map(Arc::new);
     }
 
-    #[cfg(any(test, feature = "test-durability-faults"))]
-    pub(crate) fn arm_append_failure(&self) {
-        self.state.write().fail_next_append = true;
+    pub(crate) fn arm_append_failure_for_test(&self) {
+        self.fail_next_append.store(true, Ordering::Release);
     }
 
-    #[cfg(any(test, feature = "test-durability-faults"))]
-    pub(crate) fn take_armed_append_failure(&self) -> bool {
-        std::mem::take(&mut self.state.write().fail_next_append)
+    pub(crate) fn take_armed_append_failure_for_test(&self) -> bool {
+        self.fail_next_append.load(Ordering::Acquire)
+            && self.fail_next_append.swap(false, Ordering::AcqRel)
     }
 }
 
@@ -99,12 +100,14 @@ impl RuntimeSubsystem for DurabilitySubsystem {
     fn new(config: &Self::Config) -> Self {
         Self {
             state: RuntimeOwnedState::new(DurabilityState::build_from_config(config)),
+            fail_next_append: AtomicBool::new(false),
         }
     }
 
     fn fork(&self) -> Self {
         Self {
             state: self.state.detached(),
+            fail_next_append: AtomicBool::new(self.fail_next_append.load(Ordering::Acquire)),
         }
     }
 }

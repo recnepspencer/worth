@@ -3,10 +3,8 @@
 
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-#[cfg(feature = "test-query-execution-observer")]
 use worth_foundational::facade::ExecutionReport;
-#[cfg(feature = "test-query-execution-observer")]
-use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRun;
+use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRunForTest;
 use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
@@ -14,10 +12,8 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
-#[cfg(feature = "test-query-execution-observer")]
 use worth_query_host::facade::primary_graph::partitioned_computation_runs_on_this_thread_for_test as runs_on_this_thread;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) mod calls;
 
 use super::demand::{RegionTotalsDemand, RegionTotalsHandler, TotalRegions};
@@ -51,7 +47,6 @@ where
         reader: &mut Reader<'_, '_, '_>,
         set: &Set,
     ) -> Result<WorthQueryComputationPartitionPlan<Entry>, InputDenial> {
-        #[cfg(feature = "test-query-execution-observer")]
         calls::record(0);
         Ok(facts::entries(reader, set)?)
     }
@@ -62,7 +57,6 @@ where
         _: &Set,
         entry: &Entry,
     ) -> Result<RegionKey, InputDenial> {
-        #[cfg(feature = "test-query-execution-observer")]
         calls::record(1);
         Ok(RegionKey(facts::region(reader, entry)?))
     }
@@ -73,7 +67,6 @@ where
         _: &Set,
         partition: WorthQueryComputationPartitionMembers<'_, RegionKey, Entry>,
     ) -> Result<Vec<EntryData>, InputDenial> {
-        #[cfg(feature = "test-query-execution-observer")]
         calls::record(2);
         Ok(facts::gathered(reader, partition.items())?)
     }
@@ -83,7 +76,6 @@ where
         partition: WorthQueryComputationPartitionView<'_, RegionKey, Vec<EntryData>>,
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
-        #[cfg(feature = "test-query-execution-observer")]
         calls::record(3);
         total_region(partition.key().0, partition.gathered(), checkpoint)
     }
@@ -104,7 +96,6 @@ pub(super) fn total_region(
     entries: &[EntryData],
     checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
 ) -> Result<f64, WorthQueryManagedComputationDenial<u32>> {
-    #[cfg(feature = "test-query-execution-observer")]
     super::worker_axis::enter_overlapped();
     let mut total = -0.0;
     for entry in entries {
@@ -153,7 +144,6 @@ pub(super) type Installed = Result<
 pub(super) struct RegionTotal {
     pub(super) bits: u64,
     pub(super) charged_work: u64,
-    #[cfg(feature = "test-query-execution-observer")]
     pub(super) report: ExecutionReport,
 }
 
@@ -177,7 +167,6 @@ fn room() -> MutexGuard<'static, RegionRoom> {
     ROOM.lock().unwrap_or_else(PoisonError::into_inner)
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn take_outcomes() -> Vec<RegionOutcome> {
     std::mem::take(&mut room().outcomes)
 }
@@ -219,12 +208,10 @@ where
                 .prepare(reader, set)?
                 .compute(reader.managed_computation_execution())?;
             let charged_work = computed.charged_work();
-            #[cfg(feature = "test-query-execution-observer")]
             let report = observed_report();
             Ok(RegionTotal {
                 bits: computed.complete()?.to_bits(),
                 charged_work,
-                #[cfg(feature = "test-query-execution-observer")]
                 report,
             })
         })();
@@ -234,11 +221,10 @@ where
 
 /// Execution's report of the decision's one run, which ran in full. How a
 /// run ran is the observer's, never the handler's value.
-#[cfg(feature = "test-query-execution-observer")]
 fn observed_report() -> ExecutionReport {
     let runs = runs_on_this_thread();
     assert_eq!(runs.len(), 1, "one run per decision");
-    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRun::Full(
+    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRunForTest::Full(
         worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause::Unretained));
     runs[0]
         .1

@@ -80,7 +80,7 @@ where
         input: &PlanarMutation,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<(), PlanarMutationDenial> {
-        #[cfg(feature = "test-query-execution-observer")]
+        #[cfg(test)]
         HANDLER_CONTACTS.with(|contacts| contacts.set(contacts.get() + 1));
         #[cfg(test)]
         DECISION_ENTRIES.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
@@ -379,9 +379,9 @@ where
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
+#[cfg(test)]
 thread_local! { static HANDLER_CONTACTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
-#[cfg(all(test, feature = "test-query-execution-observer"))]
+#[cfg(test)]
 pub(crate) fn handler_contacts() -> usize {
     HANDLER_CONTACTS.with(std::cell::Cell::get)
 }

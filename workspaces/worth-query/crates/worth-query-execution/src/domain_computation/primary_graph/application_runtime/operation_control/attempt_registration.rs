@@ -1,14 +1,27 @@
-//! Feature-only scheduling at real application-attempt boundaries.
+//! Handle-armed scheduling at real application-attempt boundaries.
 
 use std::num::NonZeroUsize;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Condvar, Mutex,
+};
 use std::time::Duration;
+
+mod caller_pass;
 
 #[derive(Clone, Default)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptOperationControl
 {
-    pending_registration: Arc<Mutex<Option<Arc<ExactAttemptPause>>>>,
-    pending_candidate: Arc<Mutex<Option<Arc<ExactAttemptPause>>>>,
+    pub(in crate::domain_computation::primary_graph) caller_pass:
+        Arc<caller_pass::CallerPassControl>,
+    pending_registration: Arc<PendingAttemptPause>,
+    pending_candidate: Arc<PendingAttemptPause>,
+}
+
+#[derive(Default)]
+struct PendingAttemptPause {
+    armed: AtomicBool,
+    pending: Mutex<Option<Arc<ExactAttemptPause>>>,
 }
 
 struct ExactAttemptPause {
@@ -17,12 +30,12 @@ struct ExactAttemptPause {
     changed: Condvar,
 }
 
-pub struct WorthQueryApplicationAttemptRegistrationPause {
+pub struct WorthQueryApplicationAttemptRegistrationPauseForTest {
     control: WorthQueryApplicationAttemptOperationControl,
     latch: Arc<ExactAttemptPause>,
 }
 
-pub struct WorthQueryApplicationCandidatePreparationPause {
+pub struct WorthQueryApplicationCandidatePreparationPauseForTest {
     control: WorthQueryApplicationAttemptOperationControl,
     latch: Arc<ExactAttemptPause>,
 }
@@ -31,9 +44,9 @@ impl WorthQueryApplicationAttemptOperationControl {
     pub(super) fn pause_after_registration(
         &self,
         attempts: NonZeroUsize,
-    ) -> WorthQueryApplicationAttemptRegistrationPause {
+    ) -> WorthQueryApplicationAttemptRegistrationPauseForTest {
         let latch = arm(&self.pending_registration, attempts);
-        WorthQueryApplicationAttemptRegistrationPause {
+        WorthQueryApplicationAttemptRegistrationPauseForTest {
             control: self.clone(),
             latch,
         }
@@ -46,9 +59,9 @@ impl WorthQueryApplicationAttemptOperationControl {
     pub(super) fn pause_after_candidate_preparation(
         &self,
         attempts: NonZeroUsize,
-    ) -> WorthQueryApplicationCandidatePreparationPause {
+    ) -> WorthQueryApplicationCandidatePreparationPauseForTest {
         let latch = arm(&self.pending_candidate, attempts);
-        WorthQueryApplicationCandidatePreparationPause {
+        WorthQueryApplicationCandidatePreparationPauseForTest {
             control: self.clone(),
             latch,
         }
@@ -67,26 +80,27 @@ impl WorthQueryApplicationAttemptOperationControl {
     }
 }
 
-fn arm(
-    pending: &Mutex<Option<Arc<ExactAttemptPause>>>,
-    attempts: NonZeroUsize,
-) -> Arc<ExactAttemptPause> {
+fn arm(slot: &PendingAttemptPause, attempts: NonZeroUsize) -> Arc<ExactAttemptPause> {
     let latch = Arc::new(ExactAttemptPause {
         target: attempts.get(),
         state: Mutex::new((0, false)),
         changed: Condvar::new(),
     });
-    let mut pending = pending.lock().unwrap_or_else(|e| e.into_inner());
+    let mut pending = slot.pending.lock().unwrap_or_else(|e| e.into_inner());
     assert!(
         pending.is_none(),
         "one attempt pause may be armed per boundary"
     );
     *pending = Some(Arc::clone(&latch));
+    slot.armed.store(true, Ordering::Release);
     latch
 }
 
-fn reach(pending: &Mutex<Option<Arc<ExactAttemptPause>>>) {
-    let mut pending = pending.lock().unwrap_or_else(|e| e.into_inner());
+fn reach(slot: &PendingAttemptPause) {
+    if !slot.armed.load(Ordering::Acquire) {
+        return;
+    }
+    let mut pending = slot.pending.lock().unwrap_or_else(|e| e.into_inner());
     let Some(latch) = pending.as_ref().map(Arc::clone) else {
         return;
     };
@@ -94,6 +108,7 @@ fn reach(pending: &Mutex<Option<Arc<ExactAttemptPause>>>) {
     state.0 += 1;
     if state.0 == latch.target {
         pending.take();
+        slot.armed.store(false, Ordering::Release);
     }
     drop(pending);
     latch.changed.notify_all();
@@ -104,17 +119,18 @@ fn reach(pending: &Mutex<Option<Arc<ExactAttemptPause>>>) {
     assert!(state.1, "application attempt pause exceeded release budget");
 }
 
-fn clear(pending: &Mutex<Option<Arc<ExactAttemptPause>>>, latch: &Arc<ExactAttemptPause>) {
-    let mut pending = pending.lock().unwrap_or_else(|e| e.into_inner());
+fn clear(slot: &PendingAttemptPause, latch: &Arc<ExactAttemptPause>) {
+    let mut pending = slot.pending.lock().unwrap_or_else(|e| e.into_inner());
     if pending
         .as_ref()
         .is_some_and(|armed| Arc::ptr_eq(armed, latch))
     {
         pending.take();
+        slot.armed.store(false, Ordering::Release);
     }
 }
 
-impl WorthQueryApplicationAttemptRegistrationPause {
+impl WorthQueryApplicationAttemptRegistrationPauseForTest {
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -133,13 +149,13 @@ impl WorthQueryApplicationAttemptRegistrationPause {
     }
 }
 
-impl Drop for WorthQueryApplicationAttemptRegistrationPause {
+impl Drop for WorthQueryApplicationAttemptRegistrationPauseForTest {
     fn drop(&mut self) {
         self.release();
     }
 }
 
-impl WorthQueryApplicationCandidatePreparationPause {
+impl WorthQueryApplicationCandidatePreparationPauseForTest {
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -158,7 +174,7 @@ impl WorthQueryApplicationCandidatePreparationPause {
     }
 }
 
-impl Drop for WorthQueryApplicationCandidatePreparationPause {
+impl Drop for WorthQueryApplicationCandidatePreparationPauseForTest {
     fn drop(&mut self) {
         self.release();
     }

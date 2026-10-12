@@ -181,7 +181,12 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let mut exhausted = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 2).unwrap());
         assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             std::slice::from_ref(&indexed), &mut exhausted),
-            Err(CompanionPreflightStop::WorkExhausted { .. })));
+            Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
+                if maximum == u64::try_from(witness_work + 2).unwrap()));
+        // One visit cannot fund the index lookup and a candidate visit.
+        // The refused probe refunds that reservation without reading a row.
+        assert_eq!(exhausted.remaining_work(), 1);
+        assert_eq!(exhausted.charged_work(), u64::try_from(witness_work + 1).unwrap());
         // Producer selection reads both halves of the retained fact set.
         let mut selection_work =
             owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());

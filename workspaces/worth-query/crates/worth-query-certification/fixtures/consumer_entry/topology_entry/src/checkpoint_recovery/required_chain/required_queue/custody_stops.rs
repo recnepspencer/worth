@@ -1,7 +1,7 @@
 //! A caller refused required custody stops for itself, never for its rows.
 
 use super::*;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use support::capacity_region::Attempt;
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial;
 
@@ -176,10 +176,7 @@ fn a_refresh_cancelled_under_tight_custody_settles_on_the_next_advance() {
     // The middle consumer's caller refreshes the root, then its request is
     // cancelled inside the middle row's refresh.
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let cancelled_scope = authentication::WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
-        cancellation.token(),
-    );
+    let cancelled_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
     let cancelled = application.request(&principal, &cancelled_scope);
     take_decisions("anchor-b");
     super::super::binding::cancel_during_next_decision("anchor-b", cancellation);

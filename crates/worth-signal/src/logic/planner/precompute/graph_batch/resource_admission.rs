@@ -66,7 +66,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             .execution
             .bounded_inputs
             .as_ref()
-            .ok_or_else(|| SignalError::invalid_input("missing bounded inputs"))?;
+            .ok_or(SignalError::MissingBoundedInputsAtEpochAdmission { node: task.node })?;
         let declared_result_minimum = self.declared_result_minimum.max(
             contract
                 .execution

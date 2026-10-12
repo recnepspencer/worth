@@ -9,14 +9,15 @@ impl AuthoritySealingTestRepository {
     pub fn run_boundary_check(&self) -> (bool, String) {
         let displaced_sources = self.displace_hostile_sources_for_snapshot_seed();
         let prior_exemptions = self.install_snapshot_seed_exemptions();
-        let seed = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-            .arg("--root")
-            .arg(&self.root)
-            .arg("--config")
-            .arg("tools/boundary-check/config/road1.toml")
-            .arg("--update-snapshots")
-            .output()
-            .expect("seed Phase 6 snapshots");
+        let seed = worth_harness::tooling::process_deadline::output(
+            Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+                .arg("--root")
+                .arg(&self.root)
+                .arg("--config")
+                .arg("tools/boundary-check/config/road1.toml")
+                .arg("--update-snapshots"),
+        )
+        .expect("seed Phase 6 snapshots");
         self.restore_snapshot_seed_exemptions(prior_exemptions);
         self.restore_displaced_sources(displaced_sources);
         if !seed.status.success() {
@@ -29,13 +30,14 @@ impl AuthoritySealingTestRepository {
                 ),
             );
         }
-        let output = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-            .arg("--root")
-            .arg(&self.root)
-            .arg("--config")
-            .arg("tools/boundary-check/config/road1.toml")
-            .output()
-            .expect("run boundary-check");
+        let output = worth_harness::tooling::process_deadline::output(
+            Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+                .arg("--root")
+                .arg(&self.root)
+                .arg("--config")
+                .arg("tools/boundary-check/config/road1.toml"),
+        )
+        .expect("run boundary-check");
         let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
         (output.status.success(), format!("{stdout}{stderr}"))

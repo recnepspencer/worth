@@ -1,7 +1,7 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use crate::branch::admit_runtime_signal_branch_observation;
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::owner_services::SignalOwnerCancellationSource;
 use crate::data::aspect::Aspect;
 use crate::data::dependency::DependencyEdge;
@@ -43,8 +43,8 @@ fn advance_outcome_construction_fault_preserves_performed_truth_and_releases_out
     let ledger_before = owner.retention_ledger_observation();
     let cell_before = cell.cost_snapshot();
     owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
 
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let ready = owner

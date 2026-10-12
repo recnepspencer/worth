@@ -41,7 +41,9 @@ where
             use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
             WorthQueryOutputDemandDenial::new(
                 match stop {
-                    Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
+                    Stop::WorkExhausted { .. }
+                    | Stop::WorkExhaustedWithoutRequirement { .. }
+                    | Stop::WorkCounterOverflow => {
                         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
                     }
                     _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,

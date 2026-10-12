@@ -1,5 +1,4 @@
 use std::sync::Arc;
-#[cfg(feature = "test-world-operation-control")]
 use std::time::{Duration, Instant};
 
 use super::fixture::installed_world;
@@ -7,7 +6,6 @@ use super::schema::WideNotifyOperation;
 use super::verifier::{signed_envelope, TestVerifier};
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 use crate::domain_computation::primary_graph::WorthQueryInboundReceiptPosture;
-#[cfg(feature = "test-world-operation-control")]
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -31,7 +29,6 @@ fn empty_operation_program_denial_has_no_inbound_reservation_or_lookup_work() {
     assert_eq!(after, before);
 }
 
-#[cfg(feature = "test-world-operation-control")]
 #[test]
 fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
     let host_request = crate::test_request_policy::serial_request();
@@ -40,7 +37,7 @@ fn post_preparation_cancellation_releases_inbound_dispatch_reservation() {
     let world = installed_world();
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let pause = world

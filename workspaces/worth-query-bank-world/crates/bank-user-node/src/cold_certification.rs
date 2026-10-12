@@ -6,7 +6,7 @@
 
 use std::time::Instant;
 
-use bank_http_adapter::cold_certification;
+use bank_http_adapter::cold_certification_for_test;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
@@ -15,7 +15,7 @@ use crate::{
     BankUserNode, BankUserNodeBinding, BankUserNodeConfiguration, BankUserNodeInstallError,
 };
 
-pub async fn install(
+pub async fn install_for_test(
     binding: BankUserNodeBinding,
     configuration: BankUserNodeConfiguration,
     external_redirect_url: String,
@@ -25,10 +25,10 @@ pub async fn install(
         .map_err(BankUserNodeInstallError::OidcConfiguration)?;
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + configuration.maximum_deadline,
+        Some(Instant::now() + configuration.maximum_deadline),
         cancellation.token(),
     );
-    let oidc = cold_certification::discover_adapter(oidc_configuration, &scope)
+    let oidc = cold_certification_for_test::discover_adapter_for_test(oidc_configuration, &scope)
         .await
         .map_err(BankUserNodeInstallError::OidcDiscovery)?;
     binding.install_with_adapter(configuration, oidc)

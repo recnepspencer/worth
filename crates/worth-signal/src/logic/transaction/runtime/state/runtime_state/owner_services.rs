@@ -42,17 +42,6 @@ where
         )
     }
 
-    /// Issue deterministic control over the real owner progression in test builds.
-    #[cfg(feature = "test-operation-control")]
-    pub fn owner_operation_control(
-        &self,
-    ) -> Result<
-        crate::branch::owner_services::SignalOwnerOperationControl,
-        crate::branch::owner_services::SignalOwnerUnavailable,
-    > {
-        self.owner_services.operation_control()
-    }
-
     #[cfg(test)]
     pub(crate) fn inject_merge_participation_unwind_for_owner_contract(
         &mut self,

@@ -5,6 +5,8 @@ fn managed_recovery_refuses_before_revalidation_at_both_placements() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let world = installed_authorization_world(true);

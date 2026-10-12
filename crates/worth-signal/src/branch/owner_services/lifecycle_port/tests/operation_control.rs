@@ -4,7 +4,7 @@ use worth_proof::TransitionOutcome;
 
 use crate::branch::SignalBranchRetirementReason;
 
-use super::super::super::operation_control::SignalOwnerOperationBoundary;
+use super::super::super::operation_control::SignalOwnerOperationBoundaryForTest;
 use super::super::super::tests::runtime_root::runtime_with_two_branches;
 use super::super::super::SignalOwnerCancellationSource;
 
@@ -24,8 +24,8 @@ fn lifecycle_planning_reaches_admission_and_exact_basis_boundaries() {
     drop(setup);
     let admission_before = admission_cell.cost_snapshot();
     admission_owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ = admission_port
             .plan_retirement_exact(admission_basis, SignalBranchRetirementReason::Rejected);
@@ -48,8 +48,8 @@ fn lifecycle_planning_reaches_admission_and_exact_basis_boundaries() {
     drop(setup);
     let preflight_before = preflight_cell.cost_snapshot();
     preflight_owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::ExactBasisPreflight);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ = preflight_port
             .plan_retirement_exact(preflight_basis, SignalBranchRetirementReason::Rejected);
@@ -64,8 +64,8 @@ fn lifecycle_planning_reaches_admission_and_exact_basis_boundaries() {
 #[test]
 fn lifecycle_planning_reaches_registry_and_target_cell_boundaries() {
     for (boundary, expected_registry_lookups) in [
-        (SignalOwnerOperationBoundary::BranchRegistryLookup, 0),
-        (SignalOwnerOperationBoundary::TargetCellAdmission, 1),
+        (SignalOwnerOperationBoundaryForTest::BranchRegistryLookup, 0),
+        (SignalOwnerOperationBoundaryForTest::TargetCellAdmission, 1),
     ] {
         let (mut runtime, _, target, basis) = runtime_with_two_branches();
         let (_, _, port) = runtime.owner_port_slots().expect("the fixture seals");
@@ -77,7 +77,9 @@ fn lifecycle_planning_reaches_registry_and_target_cell_boundaries() {
         drop(setup);
         let owner_before = owner.cost_snapshot();
         let cell_before = cell.cost_snapshot();
-        owner.operation_control().inject_panic_once(boundary);
+        owner
+            .operation_control_for_test()
+            .inject_panic_once_for_test(boundary);
         assert!(catch_unwind(AssertUnwindSafe(|| {
             let _ = port.plan_retirement_exact(basis, SignalBranchRetirementReason::Rejected);
         }))
@@ -116,8 +118,8 @@ fn lifecycle_retirement_reaches_both_sides_of_canonical_movement() {
     drop(setup);
     let cost_before = before_cell.cost_snapshot();
     before_owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ =
             before_port.retire_exact(before_plan, &SignalOwnerCancellationSource::new().token());
@@ -153,8 +155,8 @@ fn lifecycle_retirement_reaches_both_sides_of_canonical_movement() {
     drop(setup);
     let cost_before = after_cell.cost_snapshot();
     after_owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::AfterCanonicalMovement);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ = after_port.retire_exact(after_plan, &SignalOwnerCancellationSource::new().token());
     }))

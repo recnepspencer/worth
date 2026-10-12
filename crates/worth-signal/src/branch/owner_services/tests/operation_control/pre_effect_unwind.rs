@@ -1,7 +1,7 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use crate::branch::owner_services::lifecycle_state::MAXIMUM_IN_FLIGHT_SIGNAL_OWNER_OPERATIONS;
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::owner_services::{SignalOwnerAdmissionDenial, SignalOwnerCancellationSource};
 use crate::branch::{validate_signal_branch_name, SignalBranchBasisObservationDenial};
 
@@ -19,8 +19,8 @@ fn exercise_lifecycle_admission_fault() {
     let (port, _, _) = runtime.owner_port_slots().expect("admission owner seals");
     let owner = port.upgrade_owner().expect("admission owner remains live");
     owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission);
     assert!(catch_unwind(AssertUnwindSafe(|| owner.admit())).is_err());
 
     let admissions = (0..MAXIMUM_IN_FLIGHT_SIGNAL_OWNER_OPERATIONS)
@@ -43,8 +43,8 @@ fn exercise_registry_lookup_fault() {
     let admission = owner.admit().expect("lookup fault admits");
     let before = owner.cost_snapshot();
     owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ = owner.lookup_cell(&admission, branch.id);
     }))
@@ -76,8 +76,8 @@ fn exercise_registry_reservation_fault() {
         .expect("source lineage is observable");
     let before = owner.cost_snapshot();
     owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::BranchRegistryReservation);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryReservation);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ = owner.reserve_fork_destination(
             &admission,
@@ -116,15 +116,15 @@ fn exercise_registry_reservation_fault() {
 #[test]
 fn target_and_basis_preflight_faults_preserve_exact_no_movement_truth() {
     for boundary in [
-        SignalOwnerOperationBoundary::TargetCellAdmission,
-        SignalOwnerOperationBoundary::ExactBasisPreflight,
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::TargetCellAdmission,
+        SignalOwnerOperationBoundaryForTest::ExactBasisPreflight,
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
     ] {
         exercise_advance_pre_effect_fault(boundary);
     }
 }
 
-fn exercise_advance_pre_effect_fault(boundary: SignalOwnerOperationBoundary) {
+fn exercise_advance_pre_effect_fault(boundary: SignalOwnerOperationBoundaryForTest) {
     // This standalone caller declares the operational serial memory policy.
     let serial_request = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(
@@ -149,7 +149,9 @@ fn exercise_advance_pre_effect_fault(boundary: SignalOwnerOperationBoundary) {
         .expect("unrelated sibling is live");
     let ledger_before = owner.retention_ledger_observation();
     let cell_before = cell.cost_snapshot();
-    owner.operation_control().inject_panic_once(boundary);
+    owner
+        .operation_control_for_test()
+        .inject_panic_once_for_test(boundary);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let reservation = owner
             .reserve_advance_output(&admission, &cell)
@@ -170,7 +172,7 @@ fn exercise_advance_pre_effect_fault(boundary: SignalOwnerOperationBoundary) {
     assert_eq!(owner.retention_ledger_observation(), released);
     assert_eq!(cell.cost_snapshot().movements(), cell_before.movements());
 
-    if boundary == SignalOwnerOperationBoundary::TargetCellAdmission {
+    if boundary == SignalOwnerOperationBoundaryForTest::TargetCellAdmission {
         assert_eq!(cell.cost_snapshot(), cell_before);
         assert_eq!(cell.poison_recovery(), None);
         assert!(cell.observe_exact(&admission).is_ok());

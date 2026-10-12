@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::output_binding_identity::OutputBin
 
 #[test]
 fn a_retired_row_absent_in_both_images_does_not_change_the_image() {
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -12,6 +14,8 @@ fn a_retired_row_absent_in_both_images_does_not_change_the_image() {
 
 #[test]
 fn a_row_disappearing_after_capture_changes_the_image() {
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -104,6 +108,8 @@ fn retirement_image(
 
 #[test]
 fn shared_empty_images_still_fence_a_changed_native_position() {
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

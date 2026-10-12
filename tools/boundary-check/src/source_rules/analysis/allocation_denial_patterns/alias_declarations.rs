@@ -20,6 +20,7 @@ pub(super) struct Declarations {
     sources: BTreeMap<String, Name>,
     modules: BTreeSet<Name>,
     imports: BTreeMap<Name, (Name, Name)>,
+    nominal_types: BTreeSet<Name>,
 }
 
 impl Declarations {
@@ -89,6 +90,9 @@ impl Declarations {
             }
             for length in 1..=rest.len() {
                 let binding: Name = prefix.iter().chain(&rest[..length]).cloned().collect();
+                if self.nominal_types.contains(&binding) {
+                    return None;
+                }
                 if let Some((namespace, target)) = self.imports.get(&binding) {
                     if seen.insert(binding) {
                         let target: Name = target.iter().chain(&rest[length..]).cloned().collect();
@@ -160,6 +164,18 @@ impl Collector<'_> {
 
 impl<'ast> Visit<'ast> for Collector<'_> {
     fn visit_item(&mut self, item: &'ast syn::Item) {
+        let ident = match item {
+            syn::Item::Struct(item) => Some(&item.ident),
+            syn::Item::Enum(item) => Some(&item.ident),
+            syn::Item::Union(item) => Some(&item.ident),
+            syn::Item::Trait(item) => Some(&item.ident),
+            _ => None,
+        };
+        if let Some(ident) = ident {
+            let mut name = self.scope.clone();
+            name.push(ident.to_string());
+            self.declarations.nominal_types.insert(name);
+        }
         visit_item_in_scope(self, item);
     }
     fn visit_item_mod(&mut self, item: &'ast syn::ItemMod) {

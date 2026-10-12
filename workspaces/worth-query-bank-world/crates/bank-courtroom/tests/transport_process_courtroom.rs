@@ -37,6 +37,7 @@ use effect_observation::{activity_entries, current_balance};
 use world::TransportProcessWorld;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-courtroom --test transport_process_courtroom -- --ignored"]
 async fn independently_authenticated_nodes_cross_real_process_and_tcp_boundaries() {
     let mut world = TransportProcessWorld::start().await;
     world.authenticate_participants().await;

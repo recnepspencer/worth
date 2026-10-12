@@ -52,7 +52,7 @@ fn a_child_edit_shares_every_tree_node_outside_its_edit_path() {
     );
     let parent_state = parent_run.published.last().unwrap();
     let child_state = child_run.published.last().unwrap();
-    let shared = parent_state.tree_node_sharing_with::<RegionKey, Entry, f64>(child_state);
+    let shared = parent_state.tree_node_sharing_with_for_test::<RegionKey, Entry, f64>(child_state);
     assert_eq!(shared.len(), SIZE);
     assert!(
         shared.iter().any(|(_, shared)| *shared),

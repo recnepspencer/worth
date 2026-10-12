@@ -88,7 +88,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
 
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
+        Some(Instant::now() + Duration::from_secs(120)),
         cancellation.token(),
     );
     let adapter = authentication::admit(world.application.installed_schema());

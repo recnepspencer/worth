@@ -26,8 +26,8 @@ fn signed_zero_requires_one_kernel_and_one_tree_recombination() {
     assert_eq!(runs[0].calls, model.expected_calls(Some(&before)));
     assert_eq!(runs[0].outcome.as_ref().unwrap().0, 0.0_f64.to_bits());
     assert_eq!(
-        runs[0].tree_runs[0].metrics().recombined_nodes,
+        runs[0].tree_runs[0].metrics_for_test().recombined_nodes,
         tree::expected_nodes(&model, Some(&before))
     );
-    assert_eq!(runs[0].tree_runs[0].metrics().recombined_nodes, 1);
+    assert_eq!(runs[0].tree_runs[0].metrics_for_test().recombined_nodes, 1);
 }

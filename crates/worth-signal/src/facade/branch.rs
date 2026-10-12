@@ -59,7 +59,7 @@ pub use crate::branch::{
     SIGNAL_BRANCH_BASIS_DESCRIPTOR_SCHEMA_VERSION,
 };
 
-#[cfg(feature = "test-operation-control")]
 pub use crate::branch::{
-    SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+    SignalOwnerOperationPauseForTest,
 };

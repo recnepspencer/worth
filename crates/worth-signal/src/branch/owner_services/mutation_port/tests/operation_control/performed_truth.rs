@@ -1,4 +1,4 @@
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::validate_signal_branch_name;
 
 use super::super::super::super::SignalOwnerCancellationSource;
@@ -21,8 +21,8 @@ fn cancel_after_performed_fork() {
     let port = world.port.clone();
     let basis = world.source_basis.clone();
     let performed = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
         move || {
             port.fork_exact(
                 validate_signal_branch_name("post-cutoff-fork").expect("name validates"),
@@ -70,8 +70,8 @@ fn cancel_after_performed_advance() {
     let derived = world.derived;
     let input_b = world.input_b;
     let generation = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
         move || {
             let serial_request = worth_execution::SerialRequest::from_memory(
                 worth_execution::SerialMemoryBudget::new(
@@ -117,8 +117,8 @@ fn cancel_after_performed_capture() {
     let port = world.port.clone();
     let basis = world.source_basis.clone();
     let generation = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
         move || {
             port.capture_exact(&basis, &worker_cancellation.token())
                 .map(|outcome| outcome.captured_basis().observation().generation().get())
@@ -173,8 +173,8 @@ fn cancel_after_performed_restore() {
     let basis = current.advanced_basis().clone();
     let snapshot = captured.admitted_snapshot().clone();
     let generation = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
         move || {
             port.restore_exact(&basis, &snapshot, &worker_cancellation.token())
                 .map(|basis| basis.observation().generation().get())

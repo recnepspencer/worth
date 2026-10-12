@@ -1153,7 +1153,8 @@ separate from admission's `ExecutionRequest(Interrupted(..))` refusals.
 Zero memory reports `PolicyMemoryLimit` at serial placement and a policy
 `MemoryLimit { requested, admitted: 0, level }` at leased placement.
 
-A **request scope** carries only a deadline and a cancellation token. It is
+A **request scope** carries an optional deadline and a cancellation token. With no deadline,
+the request is unbounded but remains cancellable. It is
 not an entity and grants nothing:
 
 ```rust
@@ -1163,7 +1164,7 @@ use worth_query_host::facade::admission::authenticated_principal::{
 };
 
 let cancellation = WorthQueryCancellationSource::new();
-let scope = WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), cancellation.token());
+let scope = WorthQueryRequestScope::new(Some(Instant::now() + Duration::from_secs(60)), cancellation.token());
 ```
 
 The entity an operation acts on is a different thing: the intent's *scope

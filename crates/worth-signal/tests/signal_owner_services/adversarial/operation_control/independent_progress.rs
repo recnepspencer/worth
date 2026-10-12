@@ -3,7 +3,7 @@ use std::thread;
 
 use worth_signal::facade::branch::{
     validate_signal_branch_name, SignalBranchRetirementReason, SignalOwnerCancellationSource,
-    SignalOwnerOperationBoundary,
+    SignalOwnerOperationBoundaryForTest,
 };
 
 use super::super::world::{AdversarialWorld, PROGRESS_BOUND};
@@ -11,12 +11,14 @@ use super::super::world::{AdversarialWorld, PROGRESS_BOUND};
 #[path = "independent_progress/retirement_planning.rs"]
 mod retirement_planning;
 
-fn control(world: &AdversarialWorld) -> worth_signal::facade::branch::SignalOwnerOperationControl {
+fn control(
+    world: &AdversarialWorld,
+) -> worth_signal::facade::branch::SignalOwnerOperationControlForTest {
     world
         .runtime
         .as_ref()
         .expect("the owner root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control")
 }
 
@@ -51,10 +53,10 @@ fn assert_advanced(
     );
 }
 
-fn exercise_advance_boundary(boundary: SignalOwnerOperationBoundary) {
+fn exercise_advance_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
     let world = AdversarialWorld::new();
     let control = control(&world);
-    let pause = control.arm_pause_once(boundary);
+    let pause = control.arm_pause_once_for_test(boundary);
     let (a_tx, a_rx) = mpsc::sync_channel(1);
     let (b_tx, b_rx) = mpsc::sync_channel(1);
     let mutation_a = world.mutation.clone();
@@ -86,8 +88,8 @@ fn exercise_advance_boundary(boundary: SignalOwnerOperationBoundary) {
 #[test]
 fn unrelated_branch_advances_while_fork_registry_and_source_capture_are_parked() {
     for boundary in [
-        SignalOwnerOperationBoundary::BranchRegistryReservation,
-        SignalOwnerOperationBoundary::ForkSourceCapture,
+        SignalOwnerOperationBoundaryForTest::BranchRegistryReservation,
+        SignalOwnerOperationBoundaryForTest::ForkSourceCapture,
     ] {
         exercise_fork_boundary(boundary);
     }
@@ -96,12 +98,12 @@ fn unrelated_branch_advances_while_fork_registry_and_source_capture_are_parked()
 #[test]
 fn every_reachable_advance_boundary_preserves_unrelated_progress() {
     for boundary in [
-        SignalOwnerOperationBoundary::OwnerLifecycleAdmission,
-        SignalOwnerOperationBoundary::BranchRegistryLookup,
-        SignalOwnerOperationBoundary::ExactBasisPreflight,
-        SignalOwnerOperationBoundary::TargetCellAdmission,
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission,
+        SignalOwnerOperationBoundaryForTest::BranchRegistryLookup,
+        SignalOwnerOperationBoundaryForTest::ExactBasisPreflight,
+        SignalOwnerOperationBoundaryForTest::TargetCellAdmission,
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
     ] {
         exercise_advance_boundary(boundary);
     }
@@ -111,7 +113,8 @@ fn every_reachable_advance_boundary_preserves_unrelated_progress() {
 fn unrelated_branch_advances_before_a_parked_branch_is_released() {
     let world = AdversarialWorld::new();
     let control = control(&world);
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let before = world
         .basis
         .owner_service_cost_snapshot()
@@ -181,10 +184,10 @@ fn unrelated_branch_advances_before_a_parked_branch_is_released() {
     );
 }
 
-fn exercise_fork_boundary(boundary: SignalOwnerOperationBoundary) {
+fn exercise_fork_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
     let world = AdversarialWorld::new();
     let control = control(&world);
-    let pause = control.arm_pause_once(boundary);
+    let pause = control.arm_pause_once_for_test(boundary);
     let (fork_tx, fork_rx) = mpsc::sync_channel(1);
     let (advance_tx, advance_rx) = mpsc::sync_channel(1);
     let fork_mutation = world.mutation.clone();
@@ -224,10 +227,10 @@ fn exercise_fork_boundary(boundary: SignalOwnerOperationBoundary) {
     });
 }
 
-fn exercise_fork_post_capture_boundary(boundary: SignalOwnerOperationBoundary) {
+fn exercise_fork_post_capture_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
     let world = AdversarialWorld::new();
     let control = control(&world);
-    let pause = control.arm_pause_once(boundary);
+    let pause = control.arm_pause_once_for_test(boundary);
     let before = world
         .basis
         .owner_service_cost_snapshot()
@@ -292,8 +295,8 @@ fn exercise_fork_post_capture_boundary(boundary: SignalOwnerOperationBoundary) {
 #[test]
 fn source_advances_while_post_capture_fork_work_is_parked() {
     for boundary in [
-        SignalOwnerOperationBoundary::ForkDestinationInstallation,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
     ] {
         exercise_fork_post_capture_boundary(boundary);
     }
@@ -301,21 +304,21 @@ fn source_advances_while_post_capture_fork_work_is_parked() {
 
 #[test]
 fn outcome_construction_pause_holds_only_the_completed_branch() {
-    exercise_advance_boundary(SignalOwnerOperationBoundary::OutcomeConstruction);
+    exercise_advance_boundary(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
 }
 
 #[test]
 fn unrelated_branch_advances_while_retirement_cell_work_is_parked() {
     for boundary in [
-        SignalOwnerOperationBoundary::ExactBasisPreflight,
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::ExactBasisPreflight,
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
     ] {
         exercise_retirement_boundary(boundary);
     }
 }
 
-fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundary) {
+fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
     let world = AdversarialWorld::new();
     let reference = world
         .basis
@@ -334,7 +337,7 @@ fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundary) {
         ..
     } = world;
     drop(child_basis);
-    if boundary == SignalOwnerOperationBoundary::ExactBasisPreflight {
+    if boundary == SignalOwnerOperationBoundaryForTest::ExactBasisPreflight {
         return retirement_planning::exercise(
             runtime,
             lifecycle,
@@ -352,9 +355,9 @@ fn exercise_retirement_boundary(boundary: SignalOwnerOperationBoundary) {
     let control = runtime
         .as_ref()
         .expect("the strong root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    let pause = control.arm_pause_once(boundary);
+    let pause = control.arm_pause_once_for_test(boundary);
     let (retire_tx, retire_rx) = mpsc::sync_channel(1);
     let (advance_tx, advance_rx) = mpsc::sync_channel(1);
     let worker_lifecycle = lifecycle.clone();

@@ -16,7 +16,7 @@ worth-query-installation = { path = "../worth-query-installation" }
 
 [dev-dependencies]
 serde_json = "1"
-worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }
+worth-query-installation = { path = "../worth-query-installation" }
 
 [lints]
 workspace = true

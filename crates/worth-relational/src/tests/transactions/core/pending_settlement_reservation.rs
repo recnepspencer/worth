@@ -85,11 +85,12 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
         create_entity(execution, &runtime, "interrupted-reservation-anchor");
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
-        let control = RelationalOperationControl::uninterrupted().with_injected_interruption(
-            RelationalInterruptionBoundary::BeforeCriticalSection,
-            interruption,
-            1,
-        );
+        let control = RelationalOperationControl::uninterrupted()
+            .with_injected_interruption_for_test(
+                RelationalInterruptionBoundary::BeforeCriticalSection,
+                interruption,
+                1,
+            );
         let mut transaction = runtime
             .begin_branch_transaction_with_control(
                 &basis,
@@ -220,7 +221,7 @@ fn the_pending_settlement_record_exists_before_the_moved_head_is_observable() {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
     let control = RelationalOperationControl::uninterrupted()
-        .with_post_linearization_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_post_linearization_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let mut transaction = runtime
         .begin_branch_transaction_with_control(
             &basis,

@@ -132,7 +132,7 @@ fn revoked_advance_grant_yields_a_redacted_actor_wait() {
 
     let cancellation = WorthQueryCancellationSource::new();
     let cancelled_scope = WorthQueryRequestScope::new(
-        std::time::Instant::now() + std::time::Duration::from_secs(60),
+        Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
         cancellation.token(),
     );
     let cancelled_principal = authenticate_operator(runtime.installed_schema(), &cancelled_scope);

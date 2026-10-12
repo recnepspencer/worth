@@ -1,5 +1,4 @@
 mod execution_policy;
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) use execution_policy::CHECKPOINT_EXECUTION_POLICY;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
@@ -362,7 +361,7 @@ pub(super) fn limits_with_history_and_policy(
     )
 }
 
-mod authentication_fixture;
+pub(super) mod authentication_fixture;
 pub(super) use authentication_fixture::authenticate;
 pub(super) use authentication_fixture::external_identity;
 

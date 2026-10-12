@@ -100,14 +100,13 @@ cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-publ
 cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-host
 ```
 
-Allocation and reconstruction certification are cold and must be selected only
-when their boundary changes or at closeout. Allocation probes install a
-process-wide measuring allocator, so they are deliberately absent from the
-ordinary execution test binary. The unbounded legacy compiler matrices were
+Allocation probes always compile in the execution unit-test binary, which
+owns its measuring allocator. Select allocation and reconstruction certification
+when their boundary changes or at closeout. The unbounded legacy compiler matrices were
 removed rather than retained as an unsupported archive:
 
 ```text
-cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --features allocation-probes --lib -- --test-threads=4
+cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-execution --lib -- --test-threads=4
 cargo test --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certification -p worth-query-replay
 ```
 

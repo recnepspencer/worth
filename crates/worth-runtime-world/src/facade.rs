@@ -114,11 +114,11 @@ pub use crate::retention::{
 
 pub use worth_relational::facade::transactions::CommitResult;
 
-#[cfg(feature = "test-operation-control")]
 pub use crate::lifecycle::{
-    RuntimeWorldOperationControl, RuntimeWorldProductComparePause,
-    RuntimeWorldProductCurrentnessPause,
+    RuntimeWorldOperationControlForTest, RuntimeWorldProductComparePauseForTest,
+    RuntimeWorldProductCurrentnessPauseForTest,
 };
 
-#[cfg(feature = "test-execution-observer")]
-pub use crate::lifecycle::world_branch_reads_on_this_thread_for_test;
+pub use crate::lifecycle::{
+    world_branch_reads_on_this_thread_for_test, RuntimeWorldReadObservation,
+};

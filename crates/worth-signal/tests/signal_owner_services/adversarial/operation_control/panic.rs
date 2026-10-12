@@ -1,7 +1,8 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use worth_signal::facade::branch::{
-    SignalBranchBasisObservationDenial, SignalOwnerCancellationSource, SignalOwnerOperationBoundary,
+    SignalBranchBasisObservationDenial, SignalOwnerCancellationSource,
+    SignalOwnerOperationBoundaryForTest,
 };
 
 use super::super::world::AdversarialWorld;
@@ -13,9 +14,10 @@ fn pre_effect_advance_panic_unwinds_without_poisoning_the_owner() {
         .runtime
         .as_ref()
         .expect("the strong root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control.inject_panic_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    control
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let mutation = world.mutation.clone();
     let basis = world.root_basis.clone();
     let fault = catch_unwind(AssertUnwindSafe(|| {
@@ -62,9 +64,9 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
         .runtime
         .as_ref()
         .expect("the strong root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control.inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
@@ -106,8 +108,8 @@ fn post_effect_advance_panic_preserves_performed_truth_and_sibling_progress() {
 #[test]
 fn fork_post_capture_fault_preserves_performed_child_and_source_health() {
     for boundary in [
-        SignalOwnerOperationBoundary::ForkDestinationInstallation,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
     ] {
         let world = AdversarialWorld::new();
         let runtime = world
@@ -115,10 +117,10 @@ fn fork_post_capture_fault_preserves_performed_child_and_source_health() {
             .as_ref()
             .expect("the strong root remains live");
         let control = runtime
-            .owner_operation_control()
+            .owner_operation_control_for_test()
             .expect("the control handle comes from the sealed owner");
         let name = "performed-fork";
-        control.inject_panic_once(boundary);
+        control.inject_panic_once_for_test(boundary);
         let fault = catch_unwind(AssertUnwindSafe(|| {
             let _ = world.mutation.fork_exact(
                 worth_signal::facade::branch::validate_signal_branch_name(name)
@@ -168,9 +170,9 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination() 
         .runtime
         .as_ref()
         .expect("the strong root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    control.inject_panic_once(SignalOwnerOperationBoundary::ForkSourceCapture);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::ForkSourceCapture);
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = world.mutation.fork_exact(
             worth_signal::facade::branch::validate_signal_branch_name("faulted-source")
@@ -227,9 +229,9 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
         .runtime
         .as_ref()
         .expect("the strong root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control.inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
     let snapshot_fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = snapshot_world.mutation.capture_exact(
             &snapshot_world.child_basis,
@@ -266,9 +268,9 @@ fn snapshot_and_restore_faults_do_not_poison_an_unrelated_branch() {
         .runtime
         .as_ref()
         .expect("the strong root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the control handle comes from the sealed owner");
-    control.inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
     let restore_fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = restore_world.mutation.restore_exact(
             &current,

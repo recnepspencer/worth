@@ -14,8 +14,6 @@ default = ["profile-extended"]
 profile-compact = []
 profile-standard = []
 profile-extended = []
-test-operation-control = []
-test-execution-observer = []
 test-peak-allocation = []
 
 [dependencies]

@@ -205,16 +205,14 @@ pub mod integration {
         )
     }
     #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
     pub fn product_world_resources_for_test(
         retained_composite_commits: u64,
     ) -> WorthQueryProductWorldResources {
-        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_history_limit(
+        crate::domain_computation::execution_runtime::product_world::test_product_world_resources_with_history_limit_for_test(
             retained_composite_commits,
         )
     }
     #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
     pub fn prepare_primary_graph_with_active_snapshot_limit_for_test<Schema>(
         phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
         authority: &WorthQueryExecutionInstallationAuthority,

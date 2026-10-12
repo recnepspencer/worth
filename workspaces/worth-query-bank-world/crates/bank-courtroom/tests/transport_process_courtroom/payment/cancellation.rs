@@ -20,6 +20,7 @@ use super::setup::PaymentCourt;
 use super::{correlation_token, support, TIMEOUT};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-courtroom --test transport_process_courtroom -- --ignored"]
 async fn callback_settled_cancellation_survives_late_exact_duplicate() {
     let mut court = PaymentCourt::start("payment-callback-cancellation").await;
     let scope = support::request_scope();
@@ -192,7 +193,6 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
         1
     );
     tokio::task::block_in_place(|| assert_eq!(court.transport.admission_count(), 1));
-    drop(workflow);
     court.proxy.shutdown().await;
     court.bank.shutdown().await.expect("callback host stops");
     tokio::task::block_in_place(|| {

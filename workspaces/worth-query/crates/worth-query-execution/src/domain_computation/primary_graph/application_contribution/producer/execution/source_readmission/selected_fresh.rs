@@ -72,7 +72,6 @@ where
                 query_execution_denied(Binding::IDENTITY, stop)
             }
         })?;
-    #[cfg(feature="test-query-execution-observer")]
     crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
         retained.source_root(),retained.selected_product_commit().expect("retained Product source").clone(),
         shared.selected().product().observation().selected_commit().clone());

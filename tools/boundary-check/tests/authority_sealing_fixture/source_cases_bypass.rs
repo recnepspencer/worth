@@ -174,7 +174,7 @@ pub struct Carrier;
 /// Legal: cfg_attr carrying only known-safe nested attributes.
 pub fn legal_cfg_attr_safe_nested() -> &'static str {
     r#"
-#[cfg_attr(feature = "hot", inline)]
+#[cfg_attr(target_os = "windows", inline)]
 #[cfg_attr(debug_assertions, allow(dead_code))]
 pub fn admit() {}
 "#

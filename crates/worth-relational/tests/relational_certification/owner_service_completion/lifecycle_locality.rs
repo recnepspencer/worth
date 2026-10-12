@@ -23,7 +23,7 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
     let control = RelationalOperationControl::uninterrupted()
-        .with_critical_section_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_critical_section_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let mut transaction = runtime
         .begin_branch_transaction_with_control(
             &parked_basis,

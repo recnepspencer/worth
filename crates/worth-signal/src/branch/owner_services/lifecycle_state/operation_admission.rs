@@ -8,7 +8,7 @@ use super::{
     SignalOwnerAdmissionMismatch, SignalOwnerCloseCoordinator, SignalOwnerLifecycleIdentity,
     SignalOwnerLifecycleState,
 };
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 
 pub(crate) struct SignalOwnerOperationAdmission<'owner> {
     lifecycle: Arc<SignalOwnerLifecycleState>,
@@ -61,7 +61,7 @@ impl<'owner> SignalOwnerOperationAdmission<'owner> {
     pub(in crate::branch::owner_services) fn hold_branch_cell(
         &self,
     ) -> Result<SignalOwnerBranchCellHold<'_>, SignalOwnerBranchCellHoldDenial> {
-        self.reach_operation_boundary(SignalOwnerOperationBoundary::TargetCellAdmission);
+        self.reach_operation_boundary(SignalOwnerOperationBoundaryForTest::TargetCellAdmission);
         let (hold, scanned) = self.published.hold_cell().map_err(|(denial, scanned)| {
             self.lifecycle
                 .counters
@@ -83,7 +83,7 @@ impl<'owner> SignalOwnerOperationAdmission<'owner> {
 
     pub(in crate::branch::owner_services) fn reach_operation_boundary(
         &self,
-        boundary: SignalOwnerOperationBoundary,
+        boundary: SignalOwnerOperationBoundaryForTest,
     ) {
         self.lifecycle.reach_operation_boundary(boundary);
     }

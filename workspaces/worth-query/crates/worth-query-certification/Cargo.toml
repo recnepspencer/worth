@@ -7,9 +7,6 @@ license.workspace = true
 description = "Bounded hostile and replay certification for WORTH Query."
 publish = false
 
-[features]
-request-lifetime-probes = ["worth-query-host/test-query-execution-observer"]
-
 [dependencies]
 worth-query-host.workspace = true
 worth-query-replay.workspace = true
@@ -21,9 +18,9 @@ worth-foundational.workspace = true
 worth-query.workspace = true
 worth-query-decl.workspace = true
 worth-query-admission = { path = "../worth-query-admission" }
-worth-query-execution = { path = "../worth-query-execution", features = ["test-durability-faults", "test-primary-graph-faults", "test-world-operation-control"] }
-worth-query-host = { workspace = true, features = ["test-query-execution-observer"] }
-worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }
+worth-query-execution = { path = "../worth-query-execution" }
+worth-query-host = { workspace = true }
+worth-query-installation = { path = "../worth-query-installation" }
 worth-query-package-archive.workspace = true
 worth-proof.workspace = true
 worth-relational.workspace = true

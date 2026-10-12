@@ -8,6 +8,8 @@ use crate::domain_computation::primary_graph::application_contribution::sealed_r
 
 #[test]
 fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (mut lineage, prior_identity) = recorded_settlement();
     let source = prior_identity.source().clone();
     let (occurrence, generation, old_slot) = prior_identity.address();

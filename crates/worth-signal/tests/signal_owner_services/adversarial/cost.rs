@@ -366,6 +366,5 @@ fn target_work_cost_is_independent_of_unrelated_live_branch_count() {
     drop(unrelated);
 }
 
-#[cfg(feature = "test-operation-control")]
 #[path = "cost/unarmed_operation_control_is_cost_neutral.rs"]
 mod unarmed_operation_control_is_cost_neutral;

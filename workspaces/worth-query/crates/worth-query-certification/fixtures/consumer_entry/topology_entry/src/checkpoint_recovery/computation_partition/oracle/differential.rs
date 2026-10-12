@@ -7,7 +7,7 @@
 use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionStop as Stop, WorthQueryManagedComputationResourceDenial,
     WorthQueryPartitionedComputationFullCause as FullCause,
-    WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 
 use super::super::region_output::{arm_own_write, OwnWrite};

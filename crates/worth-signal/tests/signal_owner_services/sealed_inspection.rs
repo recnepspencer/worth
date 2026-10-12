@@ -1,19 +1,15 @@
-#[cfg(feature = "test-operation-control")]
 use std::panic::{catch_unwind, AssertUnwindSafe};
-#[cfg(feature = "test-operation-control")]
 use std::sync::mpsc;
-#[cfg(feature = "test-operation-control")]
 use std::thread;
-#[cfg(feature = "test-operation-control")]
 use std::time::Duration;
 
 use worth_signal::facade::branch::SignalOwnerCancellationSource;
-#[cfg(feature = "test-operation-control")]
-use worth_signal::facade::branch::{SignalBranchRetirementReason, SignalOwnerOperationBoundary};
+use worth_signal::facade::branch::{
+    SignalBranchRetirementReason, SignalOwnerOperationBoundaryForTest,
+};
 
 use super::runtime;
 
-#[cfg(feature = "test-operation-control")]
 const PROGRESS_BOUND: Duration = Duration::from_secs(3);
 
 #[test]
@@ -79,7 +75,6 @@ fn selected_branch_resolves_live_head_after_post_seal_capture_and_restore() {
 }
 
 #[test]
-#[cfg(feature = "test-operation-control")]
 fn catalog_omits_retiring_cell_and_preserves_healthy_siblings() {
     let mut runtime = runtime();
     let root = runtime.current_branch();
@@ -106,9 +101,10 @@ fn catalog_omits_retiring_cell_and_preserves_healthy_siblings() {
         .into_result()
         .expect("the nonselected branch has an exact retirement plan");
     let control = runtime
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("test operation control is issued by the sealed owner");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let (done_tx, done_rx) = mpsc::sync_channel(1);
     let lifecycle = services.lifecycle_port();
     thread::scope(|scope| {
@@ -157,7 +153,6 @@ fn catalog_omits_retiring_cell_and_preserves_healthy_siblings() {
 }
 
 #[test]
-#[cfg(feature = "test-operation-control")]
 fn catalog_filters_quarantined_sibling_and_ancestry_keeps_observable_suffix() {
     let mut runtime = runtime();
     let root = runtime.current_branch();
@@ -184,9 +179,10 @@ fn catalog_filters_quarantined_sibling_and_ancestry_keeps_observable_suffix() {
         .owner_component_services()
         .expect("the owner seals with the complete lineage");
     let control = runtime
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("test operation control is issued by the sealed owner");
-    control.inject_panic_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    control
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let mutation = services.mutation_port();
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let _ = mutation.advance_exact(

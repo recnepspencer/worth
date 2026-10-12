@@ -56,7 +56,7 @@ pub(in crate::http::server) fn start_maintenance(
                 let route = Arc::clone(&route);
                 let batch = tokio::task::spawn_blocking(move || {
                     let cancellation = WorthQueryCancellationSource::new();
-                    let request = WorthQueryRequestScope::new(deadline, cancellation.token());
+                    let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token());
                     route.maintain_custody(&request)
                 })
                 .await

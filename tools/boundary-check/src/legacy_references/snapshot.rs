@@ -1,13 +1,12 @@
 //! Committed legacy-reference snapshot: parse, schema, and structural checks.
 //!
 //! Truth source for the *candidate* snapshot file only. Returns validated
-//! candidate rows or typed structural issues — never final diagnostics.
+//! candidate rows or typed structural issues - never final diagnostics.
 
 use crate::cargo_graph::normalize_str;
 use crate::legacy_references::occurrence::LegacyReferenceOccurrence;
 use serde::Deserialize;
 use std::collections::{BTreeSet, HashSet};
-use std::fs;
 use std::path::Path;
 
 const SNAPSHOT_SCHEMA_VERSION: u32 = 1;
@@ -65,7 +64,7 @@ pub(super) fn load_and_validate_candidate(
 }
 
 fn load_snapshot_file(path: &Path) -> Result<LegacyReferenceSnapshotFile, String> {
-    let text = fs::read_to_string(path)
+    let text = crate::source_documents::read_to_string(path)
         .map_err(|error| format!("read legacy-reference snapshot {}: {error}", path.display()))?;
     toml::from_str(&text).map_err(|error| {
         format!(

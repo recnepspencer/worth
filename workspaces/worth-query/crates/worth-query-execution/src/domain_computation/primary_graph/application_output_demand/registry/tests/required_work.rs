@@ -65,7 +65,8 @@ impl super::WorthQueryOutputDemandRegistry {
                 None,
                 &mut super::record_admission(),
             )
-            .expect("real required-interest admission creates its work token");
+            .expect("real required-interest admission creates its work token")
+            .0;
         let member = self.state.lock().unwrap().records[&output]
             .work_membership
             .as_ref()

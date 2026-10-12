@@ -206,7 +206,7 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
 
     let (mut runtime, authority) = recovered_world(execution);
     let prepared = candidate(execution, &runtime, "deferred-transition");
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
         .commit_checkpoint_transition(execution, authority, prepared)
@@ -281,7 +281,7 @@ fn repair_carries_performed_successor_even_after_owner_repair_and_later_movement
 
     let (mut runtime, authority) = recovered_world(execution);
     let prepared = candidate(execution, &runtime, "captured-successor");
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
         .commit_checkpoint_transition(execution, authority, prepared)

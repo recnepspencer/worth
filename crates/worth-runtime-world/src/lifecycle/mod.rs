@@ -36,18 +36,17 @@ pub use ports::RuntimeWorldBranchCreationOutcome;
 mod service_denial;
 pub use service_denial::RuntimeWorldServiceDenial;
 
-#[cfg(feature = "test-operation-control")]
-pub(crate) mod operation_control;
-#[cfg(feature = "test-operation-control")]
-pub use operation_control::{
-    RuntimeWorldOperationControl, RuntimeWorldProductComparePause,
-    RuntimeWorldProductCurrentnessPause,
+#[path = "operation_control.rs"]
+pub(crate) mod operation_control_for_test;
+pub use operation_control_for_test::{
+    RuntimeWorldOperationControlForTest, RuntimeWorldProductComparePauseForTest,
+    RuntimeWorldProductCurrentnessPauseForTest,
 };
 
 #[cfg(test)]
 pub(crate) use ports::RuntimeWorldProductPublicationService;
 
-#[cfg(feature = "test-execution-observer")]
 mod read_observation;
-#[cfg(feature = "test-execution-observer")]
-pub use read_observation::world_branch_reads_on_this_thread_for_test;
+pub use read_observation::{
+    world_branch_reads_on_this_thread_for_test, RuntimeWorldReadObservation,
+};

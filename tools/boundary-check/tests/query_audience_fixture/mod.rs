@@ -171,27 +171,29 @@ pub fn run_boundary_check(root: &Path) -> (bool, String) {
             return (false, error);
         }
     }
-    let output = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-        .arg("--root")
-        .arg(root)
-        .arg("--config")
-        .arg("tools/boundary-check/config/road1.toml")
-        .output()
-        .expect("run boundary-check");
+    let output = worth_harness::tooling::process_deadline::output(
+        Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+            .arg("--root")
+            .arg(root)
+            .arg("--config")
+            .arg("tools/boundary-check/config/road1.toml"),
+    )
+    .expect("run boundary-check");
     let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
     let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
     (output.status.success(), format!("{stdout}{stderr}"))
 }
 
 pub fn seed_snapshots(root: &Path) -> Result<(), String> {
-    let seed = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-        .arg("--root")
-        .arg(root)
-        .arg("--config")
-        .arg("tools/boundary-check/config/road1.toml")
-        .arg("--update-snapshots")
-        .output()
-        .expect("seed Phase 6 snapshots");
+    let seed = worth_harness::tooling::process_deadline::output(
+        Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+            .arg("--root")
+            .arg(root)
+            .arg("--config")
+            .arg("tools/boundary-check/config/road1.toml")
+            .arg("--update-snapshots"),
+    )
+    .expect("seed Phase 6 snapshots");
     if seed.status.success() {
         Ok(())
     } else {

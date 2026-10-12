@@ -89,7 +89,7 @@ fn commit_response_lost(
         })
         .expect("the fixture read owns its installed host call");
     world.faults.lose_next_commit_response();
-    let before_commit = world.application.application_attempt_work();
+    let before_commit = world.application.application_attempt_work_for_test();
     let WorthQueryApplicationCommitOutcome::Committed(original) =
         world.application.compare_and_commit_application(
             original,
@@ -101,7 +101,7 @@ fn commit_response_lost(
     };
     let committed_work = world
         .application
-        .application_attempt_work()
+        .application_attempt_work_for_test()
         .since(before_commit);
     assert!(original.dispatch_outbox().is_some());
     assert_eq!(committed_work.external_dispatch_admissions, 1);
@@ -159,7 +159,7 @@ fn retry_without_managed_work(
         .expect("the fixture read owns its installed host call");
     world.faults.reject_next_session_prepare();
     world.faults.skip_next_invariant_owner_execution();
-    let before_retry = world.application.application_attempt_work();
+    let before_retry = world.application.application_attempt_work_for_test();
     let WorthQueryApplicationCommitOutcome::AlreadyCommitted(recovered) =
         world.application.compare_and_commit_application(
             retry,
@@ -171,7 +171,7 @@ fn retry_without_managed_work(
     };
     let retry_work = world
         .application
-        .application_attempt_work()
+        .application_attempt_work_for_test()
         .since(before_retry);
     assert_eq!(retry_work.retained_resolutions, 1);
     assert_no_managed_attempt_work(retry_work);
@@ -179,7 +179,10 @@ fn retry_without_managed_work(
     assert!(recovered.is_same_authoritative_commit(original));
     assert_eq!(recovered.dispatch_outbox(), original.dispatch_outbox());
     assert_eq!(recovered.terminal().attempt_resources_released(), None);
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }
 
 fn consume_armed_session_and_invariant_sentinels(world: &AuthorizationWorld) {
@@ -323,7 +326,7 @@ fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let before_control = world.application.application_attempt_work();
+    let before_control = world.application.application_attempt_work_for_test();
     assert!(matches!(
         world.application.compare_and_commit_application(
             positive_control,
@@ -334,7 +337,7 @@ fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
     ));
     let control = world
         .application
-        .application_attempt_work()
+        .application_attempt_work_for_test()
         .since(before_control);
     assert_eq!(
         control.retained_resolutions, 3,
@@ -352,7 +355,10 @@ fn assert_unseen_commit_uses_the_managed_path(world: &AuthorizationWorld) {
     assert_eq!(control.attempt_aborts, 0);
     assert_eq!(control.managed_cleanups, 1);
     assert_eq!(control.external_dispatch_admissions, 0);
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }
 
 fn assert_no_managed_attempt_work(

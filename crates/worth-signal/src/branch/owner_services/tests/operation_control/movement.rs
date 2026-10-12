@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 use std::thread;
 
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 
 use super::super::progress_bound::PROGRESS_BOUND;
 use super::super::runtime_root::runtime_with_two_branches;
@@ -10,17 +10,23 @@ use crate::branch::owner_services::SignalOwnerCancellationSource;
 #[test]
 fn operation_control_reaches_cell_basis_movement_and_outcome_boundaries() {
     for (boundary, expected_movements) in [
-        (SignalOwnerOperationBoundary::TargetCellAdmission, 0),
-        (SignalOwnerOperationBoundary::ExactBasisPreflight, 0),
-        (SignalOwnerOperationBoundary::BeforeCanonicalMovement, 0),
-        (SignalOwnerOperationBoundary::AfterCanonicalMovement, 1),
-        (SignalOwnerOperationBoundary::OutcomeConstruction, 1),
+        (SignalOwnerOperationBoundaryForTest::TargetCellAdmission, 0),
+        (SignalOwnerOperationBoundaryForTest::ExactBasisPreflight, 0),
+        (
+            SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+            0,
+        ),
+        (
+            SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+            1,
+        ),
+        (SignalOwnerOperationBoundaryForTest::OutcomeConstruction, 1),
     ] {
         exercise_advance_pause(boundary, expected_movements);
     }
 }
 
-fn exercise_advance_pause(boundary: SignalOwnerOperationBoundary, expected_movements: u64) {
+fn exercise_advance_pause(boundary: SignalOwnerOperationBoundaryForTest, expected_movements: u64) {
     let (mut runtime, _, branch, basis) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("movement owner seals");
     let owner = mutation
@@ -31,7 +37,9 @@ fn exercise_advance_pause(boundary: SignalOwnerOperationBoundary, expected_movem
         .lookup_cell(&setup, branch.id)
         .expect("movement target is live");
     drop(setup);
-    let pause = owner.operation_control().arm_pause_once(boundary);
+    let pause = owner
+        .operation_control_for_test()
+        .arm_pause_once_for_test(boundary);
     let (done_tx, done_rx) = mpsc::sync_channel(1);
     let worker_owner = owner.clone();
     let worker_cell = cell.clone();

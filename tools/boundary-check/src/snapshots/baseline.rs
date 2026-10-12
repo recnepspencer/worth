@@ -1,6 +1,5 @@
 use super::document::{validate_rows, CrateDagDocument, FacadeDocument};
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
-use std::fs;
 use std::path::{Path, PathBuf};
 
 pub(super) fn dag_path(root: &Path) -> PathBuf {
@@ -75,7 +74,8 @@ fn load_dag(path: &Path) -> Result<CrateDagDocument, String> {
 }
 
 fn parse<T: serde::de::DeserializeOwned>(path: &Path) -> Result<T, String> {
-    let text = fs::read_to_string(path).map_err(|e| format!("read {}: {e}", path.display()))?;
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
     toml::from_str(&text).map_err(|e| format!("parse {}: {e}", path.display()))
 }
 

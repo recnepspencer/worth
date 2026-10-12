@@ -315,7 +315,7 @@ fn injected_control(
     interruption: RelationalOperationInterruption,
     trigger_on_visit: usize,
 ) -> RelationalOperationControl {
-    RelationalOperationControl::uninterrupted().with_injected_interruption(
+    RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         boundary,
         interruption,
         trigger_on_visit,

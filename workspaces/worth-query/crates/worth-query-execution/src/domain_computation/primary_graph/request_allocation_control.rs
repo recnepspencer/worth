@@ -34,8 +34,8 @@ impl<'authority> RequestAllocationControl<'authority> {
             },
             ExecutionAllocationPolicy::Execution(parent) => {
                 let registration = CancellationRegistration::new(request);
-                let lease = parent
-                    .controlled_child(registration.cancellation.token(), Some(request.deadline()));
+                let lease =
+                    parent.controlled_child(registration.cancellation.token(), request.deadline());
                 Self {
                     storage: ControlStorage::Execution {
                         lease,

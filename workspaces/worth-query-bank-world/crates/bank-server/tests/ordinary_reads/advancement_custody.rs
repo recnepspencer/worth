@@ -31,6 +31,7 @@ impl Drop for Restore {
 
 #[test]
 fn page_resume_and_live_entries_refuse_before_their_own_reader() {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let fixture = ordinary_read_world("advancement-public-query-doors", 0);
     let owner = fixture.authenticate(OWNER);
     let activity = || {

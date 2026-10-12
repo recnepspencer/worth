@@ -102,7 +102,6 @@ fn workflow_run_uses_the_same_managed_safe_point_authority() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn repeated_safe_point_observation_has_no_heap_allocation() {
     let output = crate::process_deadline::output(
         std::process::Command::new(std::env::current_exe().unwrap())
@@ -119,7 +118,6 @@ fn repeated_safe_point_observation_has_no_heap_allocation() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn isolated_managed_safe_point_allocation_probe() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

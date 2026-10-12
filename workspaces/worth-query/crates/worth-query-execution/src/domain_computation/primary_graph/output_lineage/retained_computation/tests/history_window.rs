@@ -18,6 +18,8 @@ use worth_runtime_world::facade::{
 
 #[test]
 fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let product = world
         .application

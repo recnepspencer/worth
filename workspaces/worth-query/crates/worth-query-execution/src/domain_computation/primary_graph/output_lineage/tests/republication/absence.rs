@@ -46,6 +46,8 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
 
 #[test]
 fn restoring_existing_unverified_facts_drops_state_as_restored() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 

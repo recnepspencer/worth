@@ -32,7 +32,6 @@ static DECISIONS: std::sync::Mutex<Vec<(String, Vec<u64>)>> = std::sync::Mutex::
 
 /// The upstream Lengths each decision for `scope_key` read since the last
 /// take, in order. Other scopes' decisions are discarded.
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn take_decisions(scope_key: &str) -> Vec<Vec<u64>> {
     take_all_decisions()
         .into_iter()
@@ -41,7 +40,6 @@ pub(super) fn take_decisions(scope_key: &str) -> Vec<Vec<u64>> {
 }
 
 /// Observe the existing decision ledger without consuming another oracle's evidence.
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn decisions_snapshot() -> Vec<(String, Vec<u64>)> {
     DECISIONS
         .lock()
@@ -51,7 +49,6 @@ pub(super) fn decisions_snapshot() -> Vec<(String, Vec<u64>)> {
 
 /// Every decision since the last take, in order: its scope and the upstream
 /// Lengths it read.
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn take_all_decisions() -> Vec<(String, Vec<u64>)> {
     std::mem::take(
         &mut *DECISIONS
@@ -67,7 +64,6 @@ static CANCEL_DURING_DECISION: std::sync::Mutex<
 > = std::sync::Mutex::new(None);
 
 /// Cancels `cancellation` while `scope_key`'s next decision runs.
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn cancel_during_next_decision(
     scope_key: &str,
     cancellation: authentication::WorthQueryCancellationSource,

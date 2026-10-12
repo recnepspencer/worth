@@ -179,7 +179,7 @@ fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
 
     let performed = perform_write(execution, &runtime, "main", "phase3-route-repair-write");
     let route_commit_id = performed.canonical_commit().commit.commit_id;
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let deferred_error = settlement
         .settle_performed_publication(performed)
         .expect_err("the injected append fault defers settlement after performance");

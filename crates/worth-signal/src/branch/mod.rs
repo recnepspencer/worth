@@ -79,9 +79,9 @@ pub use owner_services::{
     SignalOwnerServiceIssuanceDenial, SignalOwnerServicePorts, SignalOwnerUnavailable,
     SignalPreparedConditionalInstallationExtension,
 };
-#[cfg(feature = "test-operation-control")]
 pub use owner_services::{
-    SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+    SignalOwnerOperationPauseForTest,
 };
 pub use readmission::{
     SignalBranchBasisCompatibilityDenial, SignalBranchBasisObservationDenial,

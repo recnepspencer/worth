@@ -130,7 +130,7 @@ fn cancelled_terminal() {
     let baseline = baselines(request_execution, &world);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let principal = world
@@ -323,7 +323,7 @@ fn baselines(
 ) -> (usize, usize) {
     (
         world.invariant.active_snapshot_count(request_execution),
-        world.application.provider_session_resource_count(),
+        world.application.provider_session_resource_count_for_test(),
     )
 }
 
@@ -337,7 +337,7 @@ fn assert_baselines(
         expected.0
     );
     assert_eq!(
-        world.application.provider_session_resource_count(),
+        world.application.provider_session_resource_count_for_test(),
         expected.1
     );
 }

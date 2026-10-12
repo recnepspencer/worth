@@ -218,7 +218,7 @@ fn installed_schema(
 
 fn scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         WorthQueryCancellationSource::new().token(),
     )
 }

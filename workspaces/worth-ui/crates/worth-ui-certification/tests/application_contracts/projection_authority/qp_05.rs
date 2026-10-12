@@ -217,7 +217,7 @@ fn assert_basis_drift() {
         Some(current),
     );
     let (revalidating, _) = revalidating.into_fact_and_predecessor();
-    let late = worth_runtime_bridge::certification::observe_late_async_completion(
+    let late = worth_runtime_bridge::certification_for_test::observe_late_async_completion_for_test(
         &world.bridge,
         &world.request,
     );

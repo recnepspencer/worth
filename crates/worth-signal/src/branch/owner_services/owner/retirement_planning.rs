@@ -9,7 +9,7 @@ use crate::branch::{
 use crate::logic::transaction::canonical_digest;
 use crate::state::{SignalBranchHandle, SignalBranchId};
 
-use super::super::operation_control::SignalOwnerOperationBoundary;
+use super::super::operation_control::SignalOwnerOperationBoundaryForTest;
 use super::super::SignalOwnerOperationAdmission;
 use super::retirement_reservation::map_retirement_registry_denial;
 use super::SignalOwner;
@@ -87,7 +87,8 @@ where
             Ok(cell) => cell,
             Err(denial) => return TransitionOutcome::denied(denial),
         };
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::ExactBasisPreflight);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
         self.finish_retirement_plan(
             expected,
             reason,
@@ -138,7 +139,8 @@ where
             Err(denial) => return TransitionOutcome::denied(denial),
         };
         let retention = self.retirement_retention_counts(branch_id);
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::ExactBasisPreflight);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
         self.finish_retirement_plan(
             expected,
             reason,

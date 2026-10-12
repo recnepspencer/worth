@@ -17,55 +17,57 @@ use crate::{
 /// This does not skip discovery, issuer, audience, signature, nonce, token
 /// activity, or principal checks. It changes only the TLS root posture and is
 /// unavailable unless the explicit certification feature is selected.
-pub async fn discover_adapter(
+pub async fn discover_adapter_for_test(
     configuration: AuthentikOidcConfiguration,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikOidcAdapter, AuthentikOidcAdapterBuildError> {
-    AuthentikOidcAdapter::discover_for_cold_certification(configuration, scope).await
+    AuthentikOidcAdapter::discover_for_cold_certification_for_test(configuration, scope).await
 }
 
-pub async fn install_identity(
+pub async fn install_identity_for_test(
     configuration: AuthentikOidcConfiguration,
     seeds: impl IntoIterator<Item = bank_server::BankPrincipalSeed>,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikBankIdentity, AuthentikBankIdentityBuildError> {
-    AuthentikBankIdentity::install_for_cold_certification(configuration, seeds, scope).await
+    AuthentikBankIdentity::install_for_cold_certification_for_test(configuration, seeds, scope)
+        .await
 }
 
-pub async fn install_world(
+pub async fn install_world_for_test(
     configuration: AuthentikOidcConfiguration,
     seed: bank_server::BankWorldSeed,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikBankIdentity, AuthentikBankIdentityBuildError> {
-    AuthentikBankIdentity::install_world_for_cold_certification(configuration, seed, scope).await
+    AuthentikBankIdentity::install_world_for_cold_certification_for_test(configuration, seed, scope)
+        .await
 }
 
-pub fn corrupt_signature(
+pub fn corrupt_signature_for_test(
     mut credential: AuthentikOidcCredential,
-) -> Result<AuthentikOidcCredential, HostileCredentialError> {
+) -> Result<AuthentikOidcCredential, HostileCredentialErrorForTest> {
     let serialized = credential.id_token.to_string();
     let (signing_input, signature) = serialized
         .rsplit_once('.')
-        .ok_or(HostileCredentialError::MalformedIdToken)?;
+        .ok_or(HostileCredentialErrorForTest::MalformedIdToken)?;
     let first = signature
         .chars()
         .next()
-        .ok_or(HostileCredentialError::MalformedIdToken)?;
+        .ok_or(HostileCredentialErrorForTest::MalformedIdToken)?;
     let replacement = if first == 'A' { 'B' } else { 'A' };
     let mut corrupted_signature = signature.to_string();
     corrupted_signature.replace_range(0..first.len_utf8(), &replacement.to_string());
     credential.id_token = format!("{signing_input}.{corrupted_signature}")
         .parse()
-        .map_err(|_| HostileCredentialError::MalformedIdToken)?;
+        .map_err(|_| HostileCredentialErrorForTest::MalformedIdToken)?;
     Ok(credential)
 }
 
-pub fn mismatch_nonce(mut credential: AuthentikOidcCredential) -> AuthentikOidcCredential {
+pub fn mismatch_nonce_for_test(mut credential: AuthentikOidcCredential) -> AuthentikOidcCredential {
     credential.nonce = Nonce::new("cold-certification-mismatched-nonce".to_string());
     credential
 }
 
-pub fn substitute_access_token(
+pub fn substitute_access_token_for_test(
     mut identity_credential: AuthentikOidcCredential,
     access_token_source: &AuthentikOidcCredential,
 ) -> AuthentikOidcCredential {
@@ -73,24 +75,24 @@ pub fn substitute_access_token(
     identity_credential
 }
 
-pub fn replace_with_malformed_id_token(
+pub fn replace_with_malformed_id_token_for_test(
     mut credential: AuthentikOidcCredential,
-) -> Result<AuthentikOidcCredential, HostileCredentialError> {
+) -> Result<AuthentikOidcCredential, HostileCredentialErrorForTest> {
     credential.id_token = "not.a.valid-json-web-token"
         .parse()
-        .map_err(|_| HostileCredentialError::MalformedIdToken)?;
+        .map_err(|_| HostileCredentialErrorForTest::MalformedIdToken)?;
     Ok(credential)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum HostileCredentialError {
+pub enum HostileCredentialErrorForTest {
     MalformedIdToken,
 }
 
-impl std::fmt::Display for HostileCredentialError {
+impl std::fmt::Display for HostileCredentialErrorForTest {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter.write_str("hostile credential is not a structurally valid ID token")
     }
 }
 
-impl std::error::Error for HostileCredentialError {}
+impl std::error::Error for HostileCredentialErrorForTest {}

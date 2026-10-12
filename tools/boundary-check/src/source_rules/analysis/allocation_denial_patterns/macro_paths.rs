@@ -1,0 +1,177 @@
+//! Recognize paths in macro DSL fragments, with disjoint token ownership.
+use proc_macro2::{Spacing, TokenTree};
+
+use super::raw_kind_types::RAW;
+
+pub(super) enum Fragment {
+    Path(syn::TypePath),
+    Group(proc_macro2::TokenStream),
+    RawMember(proc_macro2::Span),
+}
+
+pub(super) fn scan(tokens: &[TokenTree], mut path: impl FnMut(Fragment)) -> usize {
+    scan_fragments(tokens, &mut path, true)
+}
+
+fn scan_fragments(
+    tokens: &[TokenTree],
+    path: &mut impl FnMut(Fragment),
+    first_pass: bool,
+) -> usize {
+    let mut operations = 0;
+    let mut candidate = Vec::new();
+    let mut angles = 0usize;
+    for (index, token) in tokens.iter().enumerate() {
+        operations += 1;
+        if first_pass {
+            if let TokenTree::Ident(name) = token {
+                if name == RAW {
+                    operations += 2;
+                    if tokens.get(index + 1).is_some_and(colon)
+                        && tokens.get(index + 2).is_some_and(colon)
+                    {
+                        path(Fragment::RawMember(name.span()));
+                    }
+                }
+            }
+            if let TokenTree::Group(group) = token {
+                path(Fragment::Group(group.stream()));
+            }
+        }
+        let continues = match token {
+            TokenTree::Group(_) if angles > 0 => true,
+            TokenTree::Ident(_) => {
+                if angles == 0 && matches!(candidate.last(), Some(TokenTree::Ident(_))) {
+                    finish(&mut candidate, path, &mut operations, first_pass);
+                }
+                true
+            }
+            TokenTree::Punct(p) if p.as_char() == '<' => {
+                angles += 1;
+                true
+            }
+            TokenTree::Punct(p) if p.as_char() == '>' && angles > 0 => {
+                angles -= 1;
+                true
+            }
+            // Neither delimiter belongs to a type argument. In particular, an
+            // unclosed comparison angle must not absorb the next DSL entry.
+            TokenTree::Punct(p) if p.as_char() == ';' => false,
+            TokenTree::Punct(p)
+                if p.as_char() == '='
+                    && tokens.get(index + 1).is_some_and(
+                        |next| matches!(next, TokenTree::Punct(p) if p.as_char() == '>'),
+                    ) =>
+            {
+                false
+            }
+            TokenTree::Punct(_) if angles > 0 => true,
+            TokenTree::Punct(_) if colon(token) => path_colon(tokens, index),
+            _ => false,
+        };
+        if continues {
+            candidate.push(token.clone());
+        } else {
+            finish(&mut candidate, path, &mut operations, first_pass);
+            angles = 0;
+        }
+    }
+    finish(&mut candidate, path, &mut operations, first_pass);
+    operations
+}
+
+fn finish(
+    candidate: &mut Vec<TokenTree>,
+    path: &mut impl FnMut(Fragment),
+    operations: &mut usize,
+    first_pass: bool,
+) {
+    // Each candidate is disjoint, so parsing cannot repeatedly reread prefixes.
+    if candidate.iter().any(colon) {
+        *operations += candidate.len();
+        let tokens = std::mem::take(candidate);
+        match syn::parse2::<syn::TypePath>(tokens.iter().cloned().collect()) {
+            Ok(candidate) => path(Fragment::Path(candidate)),
+            Err(_) if first_pass => recover_unclosed_angles(&tokens, path, operations),
+            Err(_) => {}
+        }
+    } else {
+        candidate.clear();
+    }
+}
+
+// An unmatched comparison angle cannot own the following DSL entries. Split
+// only at unmatched opens: each recovered piece is balanced and scanned once.
+fn recover_unclosed_angles(
+    tokens: &[TokenTree],
+    path: &mut impl FnMut(Fragment),
+    operations: &mut usize,
+) {
+    let mut unmatched = Vec::new();
+    for (index, token) in tokens.iter().enumerate() {
+        *operations += 1;
+        match token {
+            TokenTree::Punct(p) if p.as_char() == '<' => unmatched.push(index),
+            TokenTree::Punct(p) if p.as_char() == '>' => {
+                unmatched.pop();
+            }
+            _ => {}
+        }
+    }
+    if unmatched.is_empty() {
+        return;
+    }
+    let mut start = 0;
+    for end in unmatched.into_iter().chain(std::iter::once(tokens.len())) {
+        // Reuse the same callback type and leave descendant groups and raw
+        // members with their first pass. Balanced pieces need no recovery.
+        *operations += scan_fragments(&tokens[start..end], path, false);
+        start = end + 1;
+    }
+}
+
+fn colon(token: &TokenTree) -> bool {
+    matches!(token, TokenTree::Punct(p) if p.as_char() == ':')
+}
+
+fn path_colon(tokens: &[TokenTree], index: usize) -> bool {
+    matches!(&tokens[index], TokenTree::Punct(p) if p.spacing() == Spacing::Joint)
+        && tokens.get(index + 1).is_some_and(colon)
+        || index.checked_sub(1).is_some_and(|previous| {
+            matches!(&tokens[previous], TokenTree::Punct(p)
+                if p.as_char() == ':' && p.spacing() == Spacing::Joint)
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scan;
+
+    #[test]
+    fn doubling_a_macro_body_doubles_token_work() {
+        for fragment in [
+            "Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            "a < b, Family::<ExecutionAllocationDenialKind>::Cancelled => value;",
+            "a < b < c, Family::<ExecutionAllocationDenialKind>::Cancelled: value;",
+        ] {
+            let count = |n| {
+                let tokens = fragment
+                    .repeat(n)
+                    .parse::<proc_macro2::TokenStream>()
+                    .unwrap();
+                let tokens: Vec<_> = tokens.into_iter().collect();
+                let mut reads = 0;
+                let work = scan(&tokens, |fragment| {
+                    if matches!(fragment, super::Fragment::Path(_)) {
+                        reads += 1;
+                    }
+                });
+                (work, reads)
+            };
+            let small = count(16);
+            let large = count(32);
+            assert_eq!(large.0, 2 * small.0);
+            assert_eq!((small.1, large.1), (16, 32));
+        }
+    }
+}

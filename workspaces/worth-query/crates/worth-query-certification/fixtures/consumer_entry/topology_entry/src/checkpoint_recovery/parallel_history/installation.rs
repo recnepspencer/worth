@@ -1,12 +1,6 @@
 //! Fresh authentic application worlds and credentials, separate from the reference.
 use super::{application::*, expected_history::World};
 use crate::principal::*;
-use std::{
-    future::Future,
-    pin::pin,
-    task::{Context, Poll, Waker},
-    time::{Duration, Instant, SystemTime},
-};
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
@@ -60,46 +54,9 @@ pub(super) fn install(world: &World) -> Application {
     )
     .unwrap()
 }
-// The existing support adapter is fixed to CheckpointSchema and its
-// installed principal binding. This independent Node schema needs its own
-// admitted adapter; changing the existing test owner would exceed mount scope.
-struct LocalIdentityAdapter;
-struct LocalCredential;
-
-impl authentication::WorthQueryAuthenticationAdapter for LocalIdentityAdapter {
-    type Credential = LocalCredential;
-
-    fn configuration_identity(&self) -> &str {
-        "worth.query.certification.neutral-history-authentication.v1"
-    }
-
-    fn validate<'a>(
-        &'a self,
-        _: Self::Credential,
-        _: &'a authentication::WorthQueryRequestScope,
-    ) -> authentication::WorthQueryAuthenticationFuture<'a> {
-        Box::pin(async move {
-            let now = SystemTime::now();
-            authentication::WorthQueryValidatedExternalPrincipal::new(
-                external_identity(),
-                authentication::WorthQueryAuthenticationAudience::new("neutral-history").unwrap(),
-                authentication::WorthQueryAuthenticationMethod::new("local").unwrap(),
-                now,
-                now + Duration::from_secs(600),
-                Vec::new(),
-            )
-            .map_err(|_| {
-                authentication::WorthQueryAuthenticationAdapterFailure::new(
-                    authentication::WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation,
-                )
-            })
-        })
-    }
-}
-
 fn external_identity() -> WorthQueryExternalPrincipalIdentity {
-    WorthQueryExternalPrincipalIdentity::new("https://neutral-history.invalid/local", "model-owner")
-        .unwrap()
+    super::super::support::authentication_fixture::FixtureAuthenticationRealm::NeutralHistory
+        .external_identity()
 }
 
 pub(super) fn authenticate<Program>(
@@ -111,29 +68,8 @@ pub(super) fn authenticate<Program>(
 where
     Program: ApplicationProgramDefinition<Schema>,
 {
-    let cancellation = authentication::WorthQueryCancellationSource::new();
-    let scope = authentication::WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
-        cancellation.token(),
-    );
-    let adapter = authentication::admit_authentication_adapter(
-        application.installed_schema(),
-        authentication::WorthQueryAuthenticationAdapterAdmission::new(
-            authentication::WorthQueryAuthenticationAudience::new("neutral-history").unwrap(),
-            authentication::WorthQueryAuthenticationMethod::new("local").unwrap(),
-        ),
-        LocalIdentityAdapter,
-    )
-    .unwrap();
-    let principal = block_on(adapter.authenticate(LocalCredential, &scope)).unwrap();
-    (scope, principal)
-}
-
-fn block_on<Output>(future: impl Future<Output = Output>) -> Output {
-    let mut future = pin!(future);
-    let mut context = Context::from_waker(Waker::noop());
-    match future.as_mut().poll(&mut context) {
-        Poll::Ready(output) => output,
-        Poll::Pending => panic!("the local authentication completes synchronously"),
-    }
+    use super::super::support::authentication_fixture::{
+        authenticate_in_realm, FixtureAuthenticationRealm,
+    };
+    authenticate_in_realm(application, FixtureAuthenticationRealm::NeutralHistory)
 }

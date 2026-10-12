@@ -90,7 +90,7 @@ fn cancellation_inside_publication_critical_section_defers_until_performed() {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
     let control = RelationalOperationControl::from(source.token())
-        .with_critical_section_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_critical_section_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let mut transaction = runtime
         .begin_branch_transaction_with_control(
             &basis,

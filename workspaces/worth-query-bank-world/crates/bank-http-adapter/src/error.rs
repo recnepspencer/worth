@@ -10,6 +10,7 @@ use crate::configuration::AuthentikOidcConfigurationError;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AuthentikOidcAdapterBuildError {
     HttpClient,
+    MissingColdCertificationTrustedRoot,
     DiscoveryUnavailable,
     DiscoveryInterrupted(WorthQueryRequestInterruption),
     MissingTokenEndpoint,

@@ -73,7 +73,6 @@ pub(super) fn carry_row(
 }
 
 /// One carried row owns its new basis, marks, and copied index path.
-#[cfg(feature = "test-query-execution-observer")]
 pub fn carried_read_basis_custody_for_test(branch_bytes: usize, rows: usize) -> u64 {
     index_capacity::arc_bytes::<PositionedRelationalSnapshot>()
         .and_then(|bytes| bytes.checked_add(branch_bytes as u64))

@@ -38,6 +38,7 @@ mod governed_crates;
 mod library_target;
 mod module_source;
 mod opaque_attributes;
+mod packet_identity;
 mod path_dependencies;
 mod production_cfg;
 mod production_crate_roots;
@@ -77,6 +78,7 @@ pub(super) fn validate(
 ) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = canonical_order::validate(root)?;
     diagnostics.extend(allocation_denial_patterns::validate(root)?);
+    diagnostics.extend(packet_identity::validate(root)?);
     diagnostics.extend(commit_consults::validate(root));
     diagnostics.extend(truth_types::check_hash_walk_configuration(root)?);
     let query_vocabulary = query_fence::QueryVocabulary::load(query_audience, facade_exports);

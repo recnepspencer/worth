@@ -65,7 +65,7 @@ fn compare_publications(
             kept_states
                 .last()
                 .unwrap()
-                .same_fields::<RegionKey, Entry, f64>(
+                .same_fields_for_test::<RegionKey, Entry, f64>(
                     fresh_states.last().unwrap(),
                     |a, b| a.0 == b.0,
                     Entry::same_binding_as,

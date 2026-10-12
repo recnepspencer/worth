@@ -48,8 +48,7 @@ pub use relational_publication::{
 pub(crate) use request_control::WorthQueryPreparedProductPublication;
 #[cfg(test)]
 pub(in crate::domain_computation) use resources::test_product_world_resources;
-#[cfg(feature = "test-primary-graph-faults")]
-pub(crate) use resources::test_product_world_resources_with_history_limit;
+pub(crate) use resources::test_product_world_resources_with_history_limit_for_test;
 pub use resources::WorthQueryProductWorldResources;
 pub use runtime::WorthQueryProductRuntime;
 #[doc(hidden)]
@@ -59,10 +58,7 @@ pub use source_owner::{
     WorthQueryRelationalSourceInstallationDenial, WorthQueryRelationalSourceOwner,
 };
 
-#[cfg(feature = "test-query-execution-observer")]
 mod read_observation;
-#[cfg(feature = "test-query-execution-observer")]
 pub use read_observation::installed_source_reads_on_this_thread_for_test;
 
-#[cfg(feature = "test-query-execution-observer")]
-pub(crate) use read_observation::record_read as record_installed_source_read_for_test;
+pub(crate) use read_observation::record_read_for_test as record_installed_source_read_for_test;

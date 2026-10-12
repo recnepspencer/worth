@@ -234,7 +234,6 @@ pub(super) struct Entry {
 impl Entry {
     /// Independent installations bind these same Native entities under
     /// different projection authorities; compare the carried entity and kind.
-    #[cfg(feature = "test-query-execution-observer")]
     pub(super) fn same_binding_as(&self, other: &Self) -> bool {
         self.number == other.number
             && self.entity.entity_id() == other.entity.entity_id()
@@ -287,7 +286,6 @@ where
 }
 
 /// The float the set lends some of its regions.
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn weight<Operation>(reader: &mut Reader<'_, '_, '_, Operation>, set: &Set) -> Read<f64>
 where
     EntrySetWeight: OperationReads<Operation>,
@@ -356,7 +354,6 @@ where
 }
 
 /// The entry's complete incoming membership, used by the wide-key oracle.
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn membership_count<Operation>(
     reader: &mut Reader<'_, '_, '_, Operation>,
     entry: &Entry,

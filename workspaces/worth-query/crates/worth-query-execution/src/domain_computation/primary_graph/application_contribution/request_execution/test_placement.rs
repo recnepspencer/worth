@@ -8,9 +8,8 @@
 //! the machine has. Each policy carries its own budget, far under the
 //! authority's, so tests running at once never meet on its memory.
 
-use super::test_authority::test_execution_authority;
-#[cfg(feature = "test-query-execution-observer")]
-pub use super::test_authority::test_execution_workers;
+use super::test_authority::query_test_execution_authority_for_test;
+pub use super::test_authority::test_execution_workers_for_test;
 use std::cell::Cell;
 use std::num::NonZeroUsize;
 
@@ -37,7 +36,11 @@ pub enum WorthQueryExecutionPlacementForTest {
     Certified { workers: NonZeroUsize, seed: u64 },
 }
 
+use crate::domain_computation::execution_observation::owned_control_scope;
+
 thread_local! {
+    static PLACEMENT_OWNER: Cell<u64> = const { Cell::new(0) };
+    static BUDGET_OWNER: Cell<u64> = const { Cell::new(0) };
     static REQUEST_BUDGET: Cell<Option<ExecutionBudget>> = const { Cell::new(None) };
     static PLACEMENT: Cell<WorthQueryExecutionPlacementForTest> =
         const { Cell::new(WorthQueryExecutionPlacementForTest::World) };
@@ -48,6 +51,23 @@ thread_local! {
 pub fn place_managed_computations_on_this_thread_for_test(
     placement: WorthQueryExecutionPlacementForTest,
 ) -> WorthQueryExecutionPlacementForTest {
+    // Law 2, scope: this pre-request placement is owned by the arming guard.
+    let owner = owned_control_scope::current_id();
+    if PLACEMENT_OWNER.get() != owner {
+        let previous = (PLACEMENT.get(), PLACEMENT_OWNER.get());
+        owned_control_scope::register(move || {
+            if PLACEMENT_OWNER.get() == owner {
+                let (placement, owner) = if owned_control_scope::is_live(previous.1) {
+                    previous
+                } else {
+                    (WorthQueryExecutionPlacementForTest::World, 0)
+                };
+                PLACEMENT.set(placement);
+                PLACEMENT_OWNER.set(owner);
+            }
+        });
+    }
+    PLACEMENT_OWNER.set(owner);
     PLACEMENT.replace(placement)
 }
 
@@ -77,6 +97,10 @@ pub(in crate::domain_computation::primary_graph) fn test_policy(
 pub(super) fn placed(
     world: RuntimeWorldExecutionPlacement<'_>,
 ) -> RuntimeWorldExecutionPlacement<'_> {
+    let placement = match PLACEMENT.get() {
+        WorthQueryExecutionPlacementForTest::World => return world,
+        chosen => chosen,
+    };
     let policy = match world {
         RuntimeWorldExecutionPlacement::Serial(policy)
         | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
@@ -93,25 +117,6 @@ pub(super) fn placed(
             ),
         )
     };
-    // A whole host integration binary can certify its declared policy on a
-    // lease, including worker threads; explicit per-thread placement wins.
-    let placement = match PLACEMENT.get() {
-        WorthQueryExecutionPlacementForTest::World => {
-            std::env::var("WORTH_QUERY_TEST_REQUEST_WORKERS")
-                .ok()
-                .map(|value| {
-                    WorthQueryExecutionPlacementForTest::Leased(
-                        value
-                            .parse::<usize>()
-                            .ok()
-                            .and_then(NonZeroUsize::new)
-                            .expect("test request workers is a positive width"),
-                    )
-                })
-                .unwrap_or(WorthQueryExecutionPlacementForTest::World)
-        }
-        chosen => chosen,
-    };
     match placement {
         WorthQueryExecutionPlacementForTest::World => world,
         WorthQueryExecutionPlacementForTest::Serial => {
@@ -120,7 +125,7 @@ pub(super) fn placed(
         WorthQueryExecutionPlacementForTest::Leased(workers)
         | WorthQueryExecutionPlacementForTest::Certified { workers, .. } => {
             RuntimeWorldExecutionPlacement::Leased {
-                authority: test_execution_authority(),
+                authority: query_test_execution_authority_for_test(),
                 policy: request_policy(workers),
             }
         }
@@ -186,7 +191,77 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
 pub fn bound_advancement_requests_on_this_thread_for_test(
     budget: Option<ExecutionBudget>,
 ) -> Option<ExecutionBudget> {
+    // Law 2, scope: every request-budget arm ends with its owned guard.
+    let owner = owned_control_scope::current_id();
+    if BUDGET_OWNER.get() != owner {
+        let previous = (REQUEST_BUDGET.get(), BUDGET_OWNER.get());
+        owned_control_scope::register(move || {
+            if BUDGET_OWNER.get() == owner {
+                let (budget, owner) = if owned_control_scope::is_live(previous.1) {
+                    previous
+                } else {
+                    (None, 0)
+                };
+                REQUEST_BUDGET.set(budget);
+                BUDGET_OWNER.set(owner);
+            }
+        });
+    }
+    BUDGET_OWNER.set(owner);
     REQUEST_BUDGET.replace(budget)
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::*;
+    use crate::domain_computation::execution_observation::WorthQueryExecutionObservation as Observation;
+    #[test]
+    fn unwinding_clears_placement_and_budget_before_the_thread_is_reused() {
+        assert!(std::panic::catch_unwind(|| {
+            let _guard = Observation::install_on_this_thread();
+            place_managed_computations_on_this_thread_for_test(
+                WorthQueryExecutionPlacementForTest::Serial,
+            );
+            bound_advancement_requests_on_this_thread_for_test(Some(ExecutionBudget::new(
+                NonZeroUsize::MIN,
+                7,
+                9,
+            )));
+            panic!("exercise placement cleanup");
+        })
+        .is_err());
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
+        assert!(REQUEST_BUDGET.get().is_none());
+    }
+    #[test]
+    fn dropping_an_older_guard_cannot_clear_a_newer_guards_placement() {
+        let outer = Observation::install_on_this_thread();
+        place_managed_computations_on_this_thread_for_test(
+            WorthQueryExecutionPlacementForTest::Serial,
+        );
+        let inner = Observation::install_on_this_thread();
+        let leased = WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN);
+        place_managed_computations_on_this_thread_for_test(leased);
+        drop(outer);
+        assert_eq!(PLACEMENT.get(), leased);
+        drop(inner);
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
+    }
+    #[test]
+    fn an_inner_guard_restores_only_a_still_owned_outer_placement() {
+        let outer = Observation::install_on_this_thread();
+        place_managed_computations_on_this_thread_for_test(
+            WorthQueryExecutionPlacementForTest::Serial,
+        );
+        let inner = Observation::install_on_this_thread();
+        place_managed_computations_on_this_thread_for_test(
+            WorthQueryExecutionPlacementForTest::Leased(NonZeroUsize::MIN),
+        );
+        drop(inner);
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::Serial);
+        drop(outer);
+        assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
+    }
 }
 
 /// The host call uses exactly the computation fixture's declared budget.

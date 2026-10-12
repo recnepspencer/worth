@@ -139,7 +139,7 @@ fn is_exported_macro_definition(item: &Item) -> bool {
 
 /// Every dependency key a crate's manifest declares, as Rust idents.
 fn manifest_dependency_idents(manifest: &Path) -> Result<BTreeSet<String>, String> {
-    let text = fs::read_to_string(manifest)
+    let text = crate::source_documents::read_to_string(manifest)
         .map_err(|error| format!("read {}: {error}", manifest.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|error| format!("parse {}: {error}", manifest.display()))?;

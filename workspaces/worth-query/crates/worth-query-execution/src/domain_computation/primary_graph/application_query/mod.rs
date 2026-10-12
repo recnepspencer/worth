@@ -36,7 +36,6 @@ mod one_shot;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
 mod projection;
 mod read_execution;
-#[cfg(feature = "test-query-execution-observer")]
 pub use read_execution::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test,

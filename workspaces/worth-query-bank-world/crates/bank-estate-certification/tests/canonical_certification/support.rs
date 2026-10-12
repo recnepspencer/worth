@@ -173,7 +173,7 @@ fn external_identity(subject: &str) -> WorthQueryExternalPrincipalIdentity {
 
 fn request_scope() -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         WorthQueryCancellationSource::new().token(),
     )
 }

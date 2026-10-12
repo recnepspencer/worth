@@ -1,4 +1,3 @@
-#[cfg(feature = "test-request-lifetime-probes")]
 mod advancement_custody;
 use bank_domain::{
     estate::{

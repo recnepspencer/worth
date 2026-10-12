@@ -12,6 +12,8 @@ mod prepared;
 mod run;
 mod scope;
 mod settlement;
+mod thread_capability;
+pub(crate) use thread_capability::HAS_OS_THREADS;
 
 #[cfg(test)]
 mod settlement_order_tests;

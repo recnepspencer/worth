@@ -10,7 +10,7 @@ use worth_query_declaration::facade::domain_computation::{
 fn live_resource_controls_refuse_atomic_before_missing_queue_access() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        std::time::Instant::now() + std::time::Duration::from_secs(30),
+        Some(std::time::Instant::now() + std::time::Duration::from_secs(30)),
         cancellation.token(),
     );
     let controls = WorthQueryApplicationLiveControls::bounded(request, 1, 1, 1).unwrap();

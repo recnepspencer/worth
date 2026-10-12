@@ -4,8 +4,8 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 
 mod attempt_registration;
 pub(in crate::domain_computation::primary_graph) use attempt_registration::WorthQueryApplicationAttemptOperationControl;
-pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPause;
-pub use attempt_registration::WorthQueryApplicationCandidatePreparationPause;
+pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPauseForTest;
+pub use attempt_registration::WorthQueryApplicationCandidatePreparationPauseForTest;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Observes the once-published activation-record identity for certification.
@@ -22,7 +22,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn pause_after_application_candidate_preparation_for_test(
         &self,
         attempts: std::num::NonZeroUsize,
-    ) -> WorthQueryApplicationCandidatePreparationPause {
+    ) -> WorthQueryApplicationCandidatePreparationPauseForTest {
         self.primary_provider
             .application_attempt_operation_control
             .pause_after_candidate_preparation(attempts)
@@ -33,7 +33,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn pause_after_application_attempt_registration_for_test(
         &self,
         attempts: std::num::NonZeroUsize,
-    ) -> WorthQueryApplicationAttemptRegistrationPause {
+    ) -> WorthQueryApplicationAttemptRegistrationPauseForTest {
         self.primary_provider
             .application_attempt_operation_control
             .pause_after_registration(attempts)
@@ -46,18 +46,18 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[doc(hidden)]
     pub fn world_operation_control_for_test(
         &self,
-    ) -> worth_runtime_world::facade::RuntimeWorldOperationControl {
-        self.product_runtime.operation_control()
+    ) -> worth_runtime_world::facade::RuntimeWorldOperationControlForTest {
+        self.product_runtime.operation_control_for_test()
     }
 
     /// Arms real contention at the final Product read for late-request tests.
     #[doc(hidden)]
     pub fn pause_product_currentness_for_test(
         &self,
-    ) -> worth_runtime_world::facade::RuntimeWorldProductCurrentnessPause {
+    ) -> worth_runtime_world::facade::RuntimeWorldProductCurrentnessPauseForTest {
         self.product_runtime
-            .operation_control()
-            .pause_product_currentness(self.product_runtime.default_occurrence)
+            .operation_control_for_test()
+            .pause_product_currentness_for_test(self.product_runtime.default_occurrence)
     }
 
     /// Inspects the World's active-attempt obligations in this installed
@@ -138,7 +138,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Counts branches installed in Query's bounded activation index.
     #[doc(hidden)]
     pub fn indexed_product_branch_count_for_test(&self) -> usize {
-        self.product_runtime.activations.installed_branch_count()
+        self.product_runtime
+            .activations
+            .installed_branch_count_for_test()
     }
 
     /// Holds the exact fork/retirement exclusion barrier for one program while

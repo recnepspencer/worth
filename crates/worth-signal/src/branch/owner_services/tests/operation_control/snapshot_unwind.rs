@@ -1,7 +1,7 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use crate::branch::admit_runtime_signal_branch_observation;
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::owner_services::SignalOwnerCancellationSource;
 use crate::state::SignalSnapshotId;
 
@@ -10,14 +10,14 @@ use super::super::runtime_root::runtime_with_two_branches;
 #[test]
 fn snapshot_post_movement_faults_preserve_cell_metadata_and_release_pending_custody() {
     for boundary in [
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
     ] {
         exercise_snapshot_post_movement_fault(boundary);
     }
 }
 
-fn exercise_snapshot_post_movement_fault(boundary: SignalOwnerOperationBoundary) {
+fn exercise_snapshot_post_movement_fault(boundary: SignalOwnerOperationBoundaryForTest) {
     let (mut runtime, _, branch, basis) = runtime_with_two_branches();
     let (_, mutation, _) = runtime.owner_port_slots().expect("snapshot owner seals");
     let owner = mutation
@@ -29,7 +29,9 @@ fn exercise_snapshot_post_movement_fault(boundary: SignalOwnerOperationBoundary)
         .expect("snapshot target is live");
     let ledger_before = owner.retention_ledger_observation();
     let cell_before = cell.cost_snapshot();
-    owner.operation_control().inject_panic_once(boundary);
+    owner
+        .operation_control_for_test()
+        .inject_panic_once_for_test(boundary);
 
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let reservation = owner

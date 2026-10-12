@@ -3,7 +3,7 @@ use std::thread;
 
 use worth_signal::facade::branch::{
     AdmittedSignalBranchBasis, AdmittedSignalBranchSnapshot, SignalOwnerCancellationSource,
-    SignalOwnerOperationBoundary,
+    SignalOwnerOperationBoundaryForTest,
 };
 
 use super::super::world::{AdversarialWorld, PROGRESS_BOUND};
@@ -63,15 +63,15 @@ fn restore_result(
         .map_err(|denial| format!("{denial:?}"))
 }
 
-fn exercise_capture_boundary(boundary: SignalOwnerOperationBoundary) {
+fn exercise_capture_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
     let world = AdversarialWorld::new();
     let control = world
         .runtime
         .as_ref()
         .expect("the owner root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    let pause = control.arm_pause_once(boundary);
+    let pause = control.arm_pause_once_for_test(boundary);
     let (capture_tx, capture_rx) = mpsc::sync_channel(1);
     let (advance_tx, advance_rx) = mpsc::sync_channel(1);
     let capture_mutation = world.mutation.clone();
@@ -107,7 +107,7 @@ fn exercise_capture_boundary(boundary: SignalOwnerOperationBoundary) {
     });
 }
 
-fn exercise_restore_boundary(boundary: SignalOwnerOperationBoundary) {
+fn exercise_restore_boundary(boundary: SignalOwnerOperationBoundaryForTest) {
     let world = AdversarialWorld::new();
     let (snapshot, captured_basis) = capture_result(&world.mutation, &world.child_basis)
         .expect("restore starts from an owner-issued snapshot");
@@ -116,9 +116,9 @@ fn exercise_restore_boundary(boundary: SignalOwnerOperationBoundary) {
         .runtime
         .as_ref()
         .expect("the owner root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues operation control");
-    let pause = control.arm_pause_once(boundary);
+    let pause = control.arm_pause_once_for_test(boundary);
     let (restore_tx, restore_rx) = mpsc::sync_channel(1);
     let (advance_tx, advance_rx) = mpsc::sync_channel(1);
     let restore_mutation = world.mutation.clone();
@@ -153,10 +153,10 @@ fn exercise_restore_boundary(boundary: SignalOwnerOperationBoundary) {
 #[test]
 fn unrelated_branch_advances_while_snapshot_capture_crosses_every_work_boundary() {
     for boundary in [
-        SignalOwnerOperationBoundary::ExactBasisPreflight,
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::ExactBasisPreflight,
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
     ] {
         exercise_capture_boundary(boundary);
     }
@@ -165,10 +165,10 @@ fn unrelated_branch_advances_while_snapshot_capture_crosses_every_work_boundary(
 #[test]
 fn unrelated_branch_advances_while_restoration_crosses_every_work_boundary() {
     for boundary in [
-        SignalOwnerOperationBoundary::ExactBasisPreflight,
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::ExactBasisPreflight,
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
     ] {
         exercise_restore_boundary(boundary);
     }

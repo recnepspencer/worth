@@ -309,7 +309,6 @@ fn focused_parallel_branch_restore_and_evaluate_dirty_regression() {
     );
 }
 
-#[ignore]
 #[test]
 fn long_geometry_churn_seed_matrix_stays_hard_to_surprise() {
     for seed in [WorkflowSeed(71), WorkflowSeed(89), WorkflowSeed(97)] {
@@ -322,7 +321,6 @@ fn long_geometry_churn_seed_matrix_stays_hard_to_surprise() {
     }
 }
 
-#[ignore]
 #[test]
 fn long_fintech_parallel_churn_seed_matrix_stays_hard_to_surprise() {
     for seed in [WorkflowSeed(101), WorkflowSeed(131), WorkflowSeed(149)] {

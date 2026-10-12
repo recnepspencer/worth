@@ -96,7 +96,8 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             None,
             &mut record_admission(),
         )
-        .expect("the equivalent ordinary demand reopens");
+        .expect("the equivalent ordinary demand reopens")
+        .0;
     let mut short = InvalidationEditAdmission::new(CompanionPreflightBudget {
         maximum_work_visits: 0,
         maximum_preparation_bytes: 8 * 1024 * 1024,
@@ -135,7 +136,8 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             )),
             &mut record_admission(),
         )
-        .unwrap();
+        .unwrap()
+        .0;
     assert!(
         matches!(
             registry.begin(&unrelated),
@@ -158,7 +160,8 @@ fn ready_output_reopens_and_only_its_exact_restored_predecessor_refreshes_it() {
             )),
             &mut record_admission(),
         )
-        .unwrap();
+        .unwrap()
+        .0;
     assert!(matches!(
         registry.begin(&refreshed),
         super::super::WorthQueryOutputDemandAdvanceAdmission::Schedule(None)

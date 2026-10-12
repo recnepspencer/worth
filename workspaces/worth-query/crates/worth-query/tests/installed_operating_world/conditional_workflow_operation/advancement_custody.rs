@@ -5,6 +5,7 @@ fn deferred_start_retry_opens_before_the_same_condition_reader() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     super::super::advancement_custody::verify(
         "deferred workflow retry",
         || {

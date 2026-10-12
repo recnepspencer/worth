@@ -43,7 +43,7 @@ fn late_result_after_retry(
     basis: BridgeAsyncRequestTruthViewBasis,
 ) -> WorthQueryAsyncResultTransitionBatch {
     let bridge = test_bridge();
-    let request = worth_runtime_bridge::certification::retryable_async_request(
+    let request = worth_runtime_bridge::certification_for_test::retryable_async_request_for_test(
         &bridge,
         NodeId::new(410, 0),
         basis,
@@ -63,7 +63,9 @@ fn late_result_after_retry(
         )
         .expect("generation-drift live view should declare");
     let (cancelled, retry) =
-        worth_runtime_bridge::certification::cancel_and_retry_async_request(&bridge, &request);
+        worth_runtime_bridge::certification_for_test::cancel_and_retry_async_request_for_test(
+            &bridge, &request,
+        );
     let cancelled = admit_input(
         &bridge,
         &mut workspace,
@@ -84,8 +86,9 @@ fn late_result_after_retry(
         retried.states()[0].kind(),
         WorthQueryRuntimeAsyncResultStateKind::Retried
     );
-    let late =
-        worth_runtime_bridge::certification::observe_late_async_completion(&bridge, &request);
+    let late = worth_runtime_bridge::certification_for_test::observe_late_async_completion_for_test(
+        &bridge, &request,
+    );
     admit_input(
         &bridge,
         &mut workspace,
@@ -146,8 +149,9 @@ fn late_result_after_revalidation(
             WorthQueryRuntimeAsyncResultStateKind::Revalidating,
         ]
     );
-    let late =
-        worth_runtime_bridge::certification::observe_late_async_completion(&bridge, &request);
+    let late = worth_runtime_bridge::certification_for_test::observe_late_async_completion_for_test(
+        &bridge, &request,
+    );
     admit_input(
         &bridge,
         &mut workspace,

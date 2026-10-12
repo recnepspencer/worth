@@ -139,7 +139,6 @@ fn ten_thousand_back_settlements_keep_warm_navigation_state_bounded() {
         .ptr_eq(&progress.back_edge_iterations));
 }
 
-#[cfg(feature = "allocation-probes")]
 #[test]
 fn progress_snapshot_and_update_allocation_bounds() {
     let output = crate::process_deadline::output(
@@ -159,7 +158,6 @@ fn progress_snapshot_and_update_allocation_bounds() {
     print!("{}", String::from_utf8_lossy(&output.stdout));
 }
 
-#[cfg(feature = "allocation-probes")]
 #[test]
 fn isolated_progress_allocation_probe() {
     if std::env::var_os("WORTH_QUERY_PROGRESS_ALLOCATION_PROBE").is_none() {

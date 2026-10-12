@@ -149,7 +149,7 @@ where
         assert_one_success(left_result, right_result, label);
     });
     owner_root
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the owner root remains live through both race contenders");
 }
 
@@ -187,10 +187,10 @@ fn same_branch_advance_advance_has_one_winner_and_both_orderings() {
             .runtime
             .as_ref()
             .expect("the race retains its owner root")
-            .owner_operation_control()
+            .owner_operation_control_for_test()
             .expect("operation control is issued after sealing");
-        let pause = control.arm_pause_once(
-            worth_signal::facade::branch::SignalOwnerOperationBoundary::BranchRegistryLookup,
+        let pause = control.arm_pause_once_for_test(
+            worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::BranchRegistryLookup,
         );
         let left_mutation = world.mutation.clone();
         let right_mutation = world.mutation.clone();

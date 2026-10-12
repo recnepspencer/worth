@@ -158,7 +158,7 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled_request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let cancelled = cancelled_context

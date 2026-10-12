@@ -45,11 +45,12 @@ impl ScalarLifecycleWorld {
 
     pub(crate) fn retryable(node: NodeId, status: &str) -> Self {
         let bridge = projection_bridge();
-        let request = worth_runtime_bridge::certification::retryable_async_request(
-            &bridge,
-            node,
-            authoritative_async_basis("commit-stable", "snapshot-stable"),
-        );
+        let request =
+            worth_runtime_bridge::certification_for_test::retryable_async_request_for_test(
+                &bridge,
+                node,
+                authoritative_async_basis("commit-stable", "snapshot-stable"),
+            );
         Self::with_workspace(scalar_projection_workspace(true), bridge, request, status)
     }
 

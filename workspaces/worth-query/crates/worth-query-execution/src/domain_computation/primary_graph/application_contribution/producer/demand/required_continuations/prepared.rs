@@ -94,7 +94,6 @@ where
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Funded Vec storage of one required successor result, before dispatch.
     #[doc(hidden)]

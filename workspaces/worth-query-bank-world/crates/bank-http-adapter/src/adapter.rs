@@ -37,12 +37,11 @@ impl AuthentikOidcAdapter {
         Self::discover_with_http_client(configuration, http_client, scope).await
     }
 
-    #[cfg(feature = "cold-certification")]
-    pub(crate) async fn discover_for_cold_certification(
+    pub(crate) async fn discover_for_cold_certification_for_test(
         configuration: AuthentikOidcConfiguration,
         scope: &WorthQueryRequestScope,
     ) -> Result<Self, AuthentikOidcAdapterBuildError> {
-        let http_client = crate::client::cold_certification_http_client()?;
+        let http_client = crate::client::cold_certification_http_client_for_test()?;
         Self::discover_with_http_client(configuration, http_client, scope).await
     }
 

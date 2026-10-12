@@ -19,7 +19,6 @@ use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 use super::execution_denial::{interruption_stop, lease_denial, memory_denial};
 use super::{WorthQueryManagedComputationInterruption, WorthQueryManagedComputationResourceDenial};
 
-#[cfg(any(test, feature = "test-query-execution-observer"))]
 mod test_placement;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use test_placement::test_policy;
@@ -28,18 +27,11 @@ pub(in crate::domain_computation::primary_graph) use test_placement::FixturePlac
 #[cfg(feature = "test-query-execution-observer")]
 pub use test_placement::{
     bound_advancement_requests_on_this_thread_for_test,
-    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
-#[cfg(all(test, not(feature = "test-query-execution-observer")))]
-pub(in crate::domain_computation::primary_graph) use test_placement::{
-    place_managed_computations_on_this_thread_for_test, WorthQueryExecutionPlacementForTest,
-};
-
-#[cfg(any(test, feature = "test-query-execution-observer"))]
 mod test_authority;
-#[cfg(any(test, feature = "test-query-execution-observer"))]
-pub use test_authority::test_execution_authority;
+pub use test_authority::query_test_execution_authority_for_test;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
@@ -80,7 +72,7 @@ impl<'a> QueryRequestExecution<'a> {
         request: &'a WorthQueryRequestScope,
     ) -> Self {
         let cancellation = request.cancellation().execution_token();
-        let deadline = Some(request.deadline());
+        let deadline = request.deadline();
         Self::open_control(placement, cancellation, deadline)
     }
 
@@ -89,7 +81,6 @@ impl<'a> QueryRequestExecution<'a> {
         cancellation: worth_execution::CancellationToken,
         deadline: Option<std::time::Instant>,
     ) -> Self {
-        #[cfg(any(test, feature = "test-query-execution-observer"))]
         let placement = test_placement::placed(placement);
         let declared_work = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy)
@@ -290,7 +281,6 @@ impl QueryDispatch<'_> {
             Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
         Combine: Fn(&R, &R) -> R + Clone + Sync,
     {
-        #[cfg(any(test, feature = "test-query-execution-observer"))]
         let certification = test_placement::certifying()
             .map(|seed| (seed, kernel.clone(), identity.clone(), combine.clone()));
         let ceiling = ExecutionWorkCeiling::new(ceiling);
@@ -321,7 +311,6 @@ impl QueryDispatch<'_> {
             (None, Ok(Ok((reduced, ..)))) => kept_tree_bytes(reduced).unwrap_or(u64::MAX),
             (None, _) => 0,
         };
-        #[cfg(any(test, feature = "test-query-execution-observer"))]
         if let (
             Some((seed, kernel, identity, combine)),
             DispatchForm::Leased(lease),
@@ -343,7 +332,6 @@ impl QueryDispatch<'_> {
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use advancement::{
     advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
 };
@@ -355,5 +343,4 @@ pub use advancement::with_bootstrap_advancement;
 
 pub use advancement::WorthQueryBootstrapAdvancementPhase;
 
-#[cfg(feature = "test-query-execution-observer")]
-pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass;
+pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass_for_test;

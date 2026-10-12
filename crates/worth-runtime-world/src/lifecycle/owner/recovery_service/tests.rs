@@ -263,7 +263,6 @@ fn continuation_settles_relational_effects_without_signal_or_product_publication
     assert_eq!(owner.recovery_record_count(), 0);
 }
 
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn metadata_ceiling_rejects_second_charge_and_cleanup_releases_the_first() {
     let (mut fixture, owner, expected) = setup_with_recovery_limit(2);

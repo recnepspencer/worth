@@ -4,6 +4,7 @@
 //! in for an older one.
 
 use crate::domain_computation::primary_graph::output_lineage::custodied_state_for_test;
+use crate::facade::primary_graph::WorthQueryExecutionObservation as QueryObservation;
 use std::sync::{Arc, Mutex};
 
 use worth_execution::PartitionItemId;
@@ -26,7 +27,7 @@ use super::observed::{
 };
 use super::{
     ComputationPrior, SealedComputationRun, WorthQueryPartitionedComputationFullCause as Cause,
-    WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 use crate::domain_computation::primary_graph::application_attempt::{
     ComputationRead, WorthQueryApplicationObservedFact,

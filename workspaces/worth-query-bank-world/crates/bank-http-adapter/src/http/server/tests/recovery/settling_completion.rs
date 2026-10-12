@@ -167,7 +167,7 @@ async fn settling_completion_asks_to_retry_later_then_answers_already_completed(
 
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     application

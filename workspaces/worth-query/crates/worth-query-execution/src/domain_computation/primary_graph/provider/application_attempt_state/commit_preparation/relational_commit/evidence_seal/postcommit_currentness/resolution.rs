@@ -246,10 +246,7 @@ impl PreparedFactRebase {
                             .charged_work()
                             .saturating_add(indexed_width.remaining_work_amount());
                         Err(RebaseVerificationReason::AdmissionDenied(
-                            CompanionPreflightStop::WorkExhausted {
-                                required: maximum.saturating_add(1),
-                                maximum,
-                            },
+                            CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum },
                         ))
                     }
                     Err(denial) if producer_output => {

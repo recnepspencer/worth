@@ -7,15 +7,7 @@
 
 use super::*;
 
-#[cfg(all(
-    feature = "test-query-execution-observer",
-    feature = "test-invalidation-equivalence"
-))]
 mod seeded;
-#[cfg(all(
-    feature = "test-query-execution-observer",
-    feature = "test-invalidation-equivalence"
-))]
 pub(super) use seeded::{seed, vertices, RING_SPACING};
 
 /// The body key of `role` in `ring`.

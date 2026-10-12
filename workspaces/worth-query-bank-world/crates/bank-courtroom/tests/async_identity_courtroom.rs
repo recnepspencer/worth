@@ -14,6 +14,7 @@ use support::installed_identity::InstalledIdentityWorld;
 use support::protocol_denials::prove_real_state_and_interruption_denials;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-courtroom --test async_identity_courtroom -- --ignored"]
 async fn real_browser_identity_admits_and_real_revocation_fails_closed() {
     prove_real_teardown_after_failed_body().await;
     let world = InstalledIdentityWorld::install()

@@ -11,7 +11,6 @@ impl OpeningCustody {
         ACTIVE.with(|active| {
             if active.replace(true) {
                 let denial = WorthQueryAdvancementDenial::NestedOpening;
-                #[cfg(any(test, feature = "test-query-execution-observer"))]
                 super::observation::record_result::<()>(&Err(denial));
                 Err(denial)
             } else {

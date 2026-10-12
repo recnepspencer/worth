@@ -10,7 +10,6 @@ where
         &self,
         expected: &crate::branch::ProductBranchObservation,
     ) -> bool {
-        #[cfg(feature = "test-execution-observer")]
         crate::lifecycle::read_observation::record_read();
         self.state
             .branches
@@ -23,7 +22,6 @@ where
         &self,
         expected: &crate::branch::ProductBranchObservation,
     ) -> Option<crate::branch::ProductBranchReferenceSnapshot> {
-        #[cfg(feature = "test-execution-observer")]
         crate::lifecycle::read_observation::record_read();
         self.state
             .branches
