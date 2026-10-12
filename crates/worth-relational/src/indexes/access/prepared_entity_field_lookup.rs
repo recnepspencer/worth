@@ -9,12 +9,10 @@ use crate::indexes::data::{
     BoundedIndexParityMode, DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexGeneration,
     DerivedIndexId, DerivedIndexKind,
 };
-use crate::runtime::VisibilityProjectionView;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 
 use super::entity_field_collection::{collect, EntityFieldCollectionRead};
-use super::IndexAccess;
 
 /// One installed field index pinned to an owner-issued exact root. It retains
 /// the admitted observation, not a current-head claim or a registry lock.
@@ -28,6 +26,9 @@ pub struct PreparedEntityFieldLookup {
 }
 
 impl PreparedEntityFieldLookup {
+    pub(super) fn belongs_to_owner(&self, runtime_identity: u64) -> bool {
+        self.runtime_identity == runtime_identity
+    }
     pub fn index_id(&self) -> DerivedIndexId {
         self.definition.index_id
     }
@@ -54,54 +55,6 @@ impl std::fmt::Debug for PreparedEntityFieldLookup {
     }
 }
 
-impl IndexAccess<'_> {
-    pub fn prepare_entity_field_lookup(
-        &self,
-        view: &VisibilityProjectionView,
-        index: DerivedIndexId,
-        kind: KindId,
-        locator: &AspectFieldLocator,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<PreparedEntityFieldLookup, BoundedEntityFieldLookupDenial> {
-        crate::execution::check_request(execution)
-            .map_err(|cause| denied(Denial::Execution(cause), index))?;
-        if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
-            return Err(denied(Denial::SnapshotUnavailable, index));
-        }
-        let pinned = self
-            .runtime
-            .read_truth()
-            .pin_view_read_capability(view, &[index], execution)
-            .map_err(|stop| {
-                use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
-                let kind = match stop {
-                    Pin::Request(stop) => {
-                        Denial::Execution(crate::execution::denial::kernel_stop(stop))
-                    }
-                    Pin::SnapshotUnavailable => Denial::SnapshotUnavailable,
-                    Pin::IndexNotInstalled(_) => Denial::IndexNotInstalled,
-                };
-                denied(kind, index)
-            })?;
-        pinned.prepare_entity_field_lookup(index, kind, locator, execution)
-    }
-
-    /// Validate the installed owner before lending the already-pinned lookup.
-    pub fn execute_prepared_entity_field_lookup<E>(
-        &self,
-        prepared: &PreparedEntityFieldLookup,
-        value: &AspectValue,
-        limit: usize,
-        parity: BoundedIndexParityMode,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        check_live: impl FnMut() -> Result<(), E>,
-    ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
-        if prepared.runtime_identity != self.runtime.runtime_instance_id() {
-            return Err(Stop::ExactBasisRequired);
-        }
-        prepared.execute_prepared_entity_field_lookup(value, limit, parity, execution, check_live)
-    }
-}
 impl PreparedEntityFieldLookup {
     fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
         crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)

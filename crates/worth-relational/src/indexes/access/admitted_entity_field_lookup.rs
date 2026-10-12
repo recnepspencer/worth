@@ -9,56 +9,16 @@ use crate::identity::data::{EntityId, KindId};
 use crate::indexes::data::{
     BoundedEntityFieldLookupAdmissionStop as Stop, BoundedEntityFieldLookupDenial,
     BoundedEntityFieldLookupDenialKind as Denial, BoundedEntityFieldLookupOutcome,
-    BoundedIndexParityMode, DerivedIndexEntries, DerivedIndexId, MAX_BOUNDED_INDEX_CANDIDATES,
+    BoundedIndexParityMode, DerivedIndexEntries, DerivedIndexId,
 };
 use crate::runtime::{RelationalPinnedRead, VisibilityProjectionView};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::storage::overlay::PartitionAccess;
 
-use super::IndexAccess;
-
 mod candidate_comparison;
 use candidate_comparison::borrowed_matches;
 mod navigation;
 use navigation::{btree_navigation_work, ordered_navigation_work};
-
-impl IndexAccess<'_> {
-    /// The exact selected-basis variant of the ordinary bounded lookup. The
-    /// issued view supplies snapshot and schema authority; each index read,
-    /// native candidate comparison and Certification storage visit uses the
-    /// same caller admission before its work or allocation. The callback budgets
-    /// Operation against logical work; OrderedNavigation is one operation plus
-    /// a single capacity-bounded keyed descent, never candidates or payload.
-    pub(super) fn collect_admitted_entity_field_lookup<E>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        view: &VisibilityProjectionView,
-        index: DerivedIndexId,
-        kind: KindId,
-        locator: &AspectFieldLocator,
-        value: &AspectValue,
-        limit: usize,
-        parity: BoundedIndexParityMode,
-        mut prepare: impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
-    ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
-        if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
-            return Err(Stop::ExactBasisRequired);
-        }
-        if limit == 0 || limit > MAX_BOUNDED_INDEX_CANDIDATES {
-            return Err(denied(Denial::InvalidCandidateLimit, index));
-        }
-        self.runtime
-            .performance_access()
-            .count_query_index_attempt();
-        let read = self
-            .runtime
-            .read_truth()
-            .pin_selected_field_read_capability(view, index, locator, execution, &mut prepare)?;
-        read.collect_admitted_entity_field_lookup(
-            execution, index, kind, locator, value, limit, parity, prepare,
-        )
-    }
-}
 
 impl RelationalPinnedRead<()> {
     pub(super) fn collect_admitted_entity_field_lookup<E>(

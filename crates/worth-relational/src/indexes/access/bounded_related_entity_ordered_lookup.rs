@@ -6,14 +6,11 @@ use crate::indexes::data::{
     RelatedEntityOrderingField,
 };
 use crate::runtime::RelationalPinnedRead;
-use crate::visibility::snapshot_states::resolve_snapshot_handle;
 
 use super::super::projected_field_values::{
     build_related_entity_ordering_index, compare_related_entries, RelatedEntityOrderingProjection,
 };
-use super::IndexAccess;
 
-mod runtime_entry;
 impl RelationalPinnedRead {
     /// Traverse the ordered generation selected when this capability was pinned.
     pub fn execute_bounded_related_entity_ordered_lookup(
@@ -36,7 +33,7 @@ impl RelationalPinnedRead {
     }
 }
 impl RelationalPinnedRead {
-    fn lookup_pinned_related_ordering(
+    pub(super) fn lookup_pinned_related_ordering(
         &self,
         request: BoundedRelatedEntityOrderedLookupRequest,
         parity_mode: BoundedIndexParityMode,
@@ -353,7 +350,7 @@ fn corrupt(
     )
 }
 
-fn denial(
+pub(super) fn denial(
     kind: BoundedRelatedEntityOrderedLookupDenialKind,
     request: &BoundedRelatedEntityOrderedLookupRequest,
 ) -> BoundedRelatedEntityOrderedLookupDenial {

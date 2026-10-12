@@ -1,5 +1,12 @@
 //! Installed entry pins its exact ordering generation, then delegates.
-use super::*;
+use super::super::bounded_related_entity_ordered_lookup::denial;
+use super::IndexAccess;
+use crate::indexes::data::{
+    BoundedIndexParityMode, BoundedRelatedEntityOrderedLookupDenial,
+    BoundedRelatedEntityOrderedLookupDenialKind, BoundedRelatedEntityOrderedLookupOutcome,
+    BoundedRelatedEntityOrderedLookupRequest,
+};
+use crate::visibility::snapshot_states::resolve_snapshot_handle;
 impl IndexAccess<'_> {
     pub fn execute_bounded_related_entity_ordered_lookup(
         &self,
