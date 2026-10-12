@@ -140,7 +140,7 @@ fn recovery_execution<'scope>(
 {
     phase
         .checked_execution_request_for(runtime)
-        .map_err(|cause| WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause))
+        .map_err(WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied)
 }
 
 #[cfg(test)]
