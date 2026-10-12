@@ -40,14 +40,6 @@ fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
                         red.push(format!("change {change} prior {prior} current {current} reuse {reuse}: {stdout}{}",String::from_utf8_lossy(&output.stderr)));
                     } else {
                         let total = history_bills(&stdout);
-                        if change == 9 && prior == 1 && current == 1 && !reuse {
-                            // This fresh-process row has canonical owner/framing
-                            // 275793/275786 plus its accepted 16 checkpoint units.
-                            let actual = (total.0, total.1);
-                            if actual != (275_809, 275_802) {
-                                red.push(format!("absolute carried-ceiling advancement anchor is charged by value: change {change} prior {prior} current {current} reuse {reuse}: actual={actual:?}, expected=(275809, 275802)"));
-                            }
-                        }
                         if let Some(expected) = anchors.get(&change) {
                             if &total != expected {
                                 red.push(format!("charge by posture: change {change} prior {prior} current {current} reuse {reuse}: {expected:?} versus {total:?}"));

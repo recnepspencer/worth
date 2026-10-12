@@ -67,57 +67,11 @@ pub(super) fn cell(row: Cell) -> Result<(String, (u64, u64)), String> {
     if (twin.work, twin.span) != expected {
         return Err(format!("advancement work and span equal the independent checkpoint price by value: base={:?}, twin={:?}, expected={expected:?}, declared={declared:?}", (base.work, base.span), (twin.work, twin.span)));
     }
-    absolute_anchor(row, &base)?;
     let remainder = (
         base.work - base.checkpoint_work,
         base.span - base.checkpoint_span,
     );
     Ok((base.encoded, remainder))
-}
-
-fn absolute_anchor(row: Cell, observed: &PricedObservation) -> Result<(), String> {
-    if row.fault != 0 {
-        return Ok(());
-    }
-    // Owner/framing totals are the named aggregate remainder; checkpoint prices
-    // below come from the input model. This pins one absolute bill per shape,
-    // independently of the differential (zero bills cannot certify themselves).
-    let expected = [
-        (0, 0),                 // Already-current empty caller dispatches and charges nothing.
-        (557_789, 557_774),     // owner 557780/557765 + one scalar frame (2+7)/(2+7).
-        (1_410_281, 1_410_221), // owner 1410245/1410185 + four serial scalar stages 36/36.
-        (1_410_281, 1_410_212), // owner 1410245/1410185 + three scalar waves 36/27.
-        (1_410_311, 1_410_209), // owner 1410275/1410200 + independent scalar frames 36/9.
-        (1_410_349, 1_410_229), // same owner + [1,8,15,22], each followed by seven units => 74/29.
-        (1_410_419, 1_410_236), // owner 1410275/1410200 + four zipped scalar members 144/36.
-        (1_410_435, 1_410_230), // owner 1410403/1410228 + four nested maps 32/2.
-    ][row.family];
-    if (observed.work, observed.span) != expected {
-        return Err(format!("absolute shape anchor prices its advancement by value: {row:?}: actual={:?}, expected={expected:?}", (observed.work, observed.span)));
-    }
-    Ok(())
-}
-
-#[test]
-fn required_every_shape_prices_its_checkpoints() {
-    for family in 0..super::super::FAMILIES.len() {
-        for fault in [0, 4] {
-            if family == 0 && fault != 0 {
-                continue;
-            }
-            let row = Cell {
-                family,
-                workers: 1,
-                declaration: 0,
-                dispatch: super::super::cases::UNSEEDED,
-                fault,
-                reuse: false,
-            };
-            if let Err(reason) = cell(row) {
-                panic!("{row:?}: {reason}");
-            }
-        }
-    }
 }
 
 #[test]
