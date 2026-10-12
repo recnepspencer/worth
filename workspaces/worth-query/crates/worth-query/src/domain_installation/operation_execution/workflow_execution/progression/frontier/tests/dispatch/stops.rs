@@ -87,19 +87,16 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
     let root = super::reservation::framework(&lease, 1);
     let mut sample = Policy::width(0).workspace(request_execution, &probe);
     let sample_run = start(&mut sample);
-    let (requested, admitted) = sample
-        .advancement_owner()
-        .with_advancement(|_phase| {
-            let nested = super::reservation::framework(&lease, 1);
-            let map = super::reservation::framework(&lease, 3);
+    let owner = sample.advancement_owner();
+    let (requested, admitted) = owner
+        .with_advancement(|phase| {
             let mut declaration = members(1, None);
             declaration[0].1 = domain::WorthQueryWorkflowValue::Text("1:9:131072".into());
-            (
-                map + super::reservation::declared_reservation(
-                    sample_run.prepare_frontier_computation(declaration),
-                ),
-                bytes - root - nested,
-            )
+            let (scope, map) = super::reservation::scoped_map_reservation(
+                phase.execution_request_for(&owner).unwrap(),
+                sample_run.prepare_frontier_computation(declaration),
+            );
+            (map, bytes - root - scope)
         })
         .unwrap();
     assert!(requested > bytes);

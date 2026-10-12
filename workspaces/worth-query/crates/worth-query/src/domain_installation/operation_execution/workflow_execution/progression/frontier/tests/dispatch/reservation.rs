@@ -29,14 +29,34 @@ pub(super) fn start_reservation(
         })
         .unwrap();
     let root = framework(&lease, 1);
-    workspace
-        .advancement_owner()
-        .with_advancement(|_phase| {
-            // Serial root has one token; its nested request scope and map each
-            // inherit that token and add the same request's token once. Neither
-            // allocates another physical activity cell (run_context.rs).
-            let nested = framework(&lease, 1);
-            root + nested + nested + declared_reservation(declaration)
+    let owner = workspace.advancement_owner();
+    owner
+        .with_advancement(|phase| {
+            let request = phase.execution_request_for(&owner).unwrap();
+            let (scope, map) = scoped_map_reservation(request, declaration);
+            root + scope + map
+        })
+        .unwrap()
+}
+
+/// Quote the computation scope at entry and the map inside that actual scope.
+/// Each inherits the active tokens and adds its lease lineage; their storage
+/// declarations therefore have different cancellation-vector extents.
+pub(super) fn scoped_map_reservation(
+    request: worth_execution::ExecutionRequest<'_, '_>,
+    frontier: PreparedWorkflowFrontier,
+) -> (u64, u64) {
+    let count = frontier.members.len();
+    let storage = declared_reservation(frontier);
+    request
+        .in_scope(|lease| {
+            let scope = framework(lease.expect("Query carries a lease"), 1);
+            let (map, _) = request
+                .run(worth_execution::ExecutionWorkCeiling::new(0), |lease| {
+                    framework(lease.expect("Query carries a lease"), count) + storage
+                })
+                .unwrap();
+            (scope, map)
         })
         .unwrap()
 }
