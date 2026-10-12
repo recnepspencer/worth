@@ -22,12 +22,15 @@ struct Case {
     balance_after: i64,
 }
 fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(Placement::Serial), bound(None));
     let fixture = ordinary_read_world("posting-lease", 0);
     let owner = fixture.authenticate(OWNER);
     let source = WorthQueryCancellationSource::new();
-    let scope =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(120), source.token());
+    let scope = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(120)),
+        source.token(),
+    );
     let balance = || {
         fixture
             .world
