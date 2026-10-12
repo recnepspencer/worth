@@ -44,6 +44,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
         graph,
         &read_plan::ReadPlan::of(plan),
         &[index_id],
+        WorthQueryApplicationReadExecutionDenialKind::ContinuationIndexUnavailable,
     )?;
     let runtime = &pinned;
     let selection = select_bounded_roots(

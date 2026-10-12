@@ -20,6 +20,8 @@ pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C
         Option<PreparedBatchRead>,
     pub(in crate::domain_computation::primary_graph::application_query) second_batch:
         Option<PreparedBatchRead>,
+    pub(in crate::domain_computation::primary_graph::application_query) pins:
+        WorthQueryPairReadPins,
 }
 
 impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
@@ -38,6 +40,7 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
             batch: None,
             first_batch: None,
             second_batch: None,
+            pins: WorthQueryPairReadPins::default(),
         }
     }
     /// Carry the same genuine shared read loan into closed pair preparation.
@@ -54,6 +57,18 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
             batch: Some(batch.retained_meter()),
             first_batch: None,
             second_batch: None,
+            pins: WorthQueryPairReadPins::default(),
         }
     }
+}
+
+/// Owner-held pins for the fixed first/second query contracts of one map.
+#[derive(Default)]
+pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryPairReadPins {
+    pub(in crate::domain_computation::primary_graph::application_query) first: Option<
+        std::sync::Arc<crate::domain_computation::provider_session::WorthQueryPreparedQueryPin>,
+    >,
+    pub(in crate::domain_computation::primary_graph::application_query) second: Option<
+        std::sync::Arc<crate::domain_computation::provider_session::WorthQueryPreparedQueryPin>,
+    >,
 }

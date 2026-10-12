@@ -82,6 +82,24 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
 }
 
 impl ReadPlan<'_> {
+    /// After session custody accepts the same exact root/World selection,
+    /// Native work uses the shared capability's operational snapshot. The
+    /// session retains and seals its own original receipt after the join.
+    pub(in crate::domain_computation::primary_graph::application_query) fn with_snapshot<'b>(
+        &'b self,
+        snapshot: &'b SnapshotHandle,
+    ) -> ReadPlan<'b> {
+        ReadPlan {
+            name: self.name,
+            contract: self.contract,
+            root: self.root,
+            snapshot,
+            parameters: self.parameters,
+            governance: self.governance,
+            maximum_work: self.maximum_work,
+            maximum_result_count: self.maximum_result_count,
+        }
+    }
     pub(in crate::domain_computation::primary_graph::application_query) fn selected_indexes(
         &self,
         graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,

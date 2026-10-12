@@ -59,6 +59,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
         graph,
         &super::read_plan::ReadPlan::of(plan),
         &extra,
+        WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable,
     )?;
     let runtime = &pinned;
     let selection = select_bounded_roots(

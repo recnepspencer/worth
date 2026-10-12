@@ -87,3 +87,30 @@ pub(super) fn relational_cause_denial(
     };
     read_execution_denial(kind, subject)
 }
+
+pub(in crate::domain_computation::primary_graph::application_query) fn managed_read_denial(
+    cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
+    subject: &str,
+) -> super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial {
+    use super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
+    use crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial as Cause;
+    match cause {
+        Cause::SnapshotUnavailable => Denial::Read(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+            subject,
+        )),
+        Cause::IndexNotInstalled(_) => Denial::Read(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+            subject,
+        )),
+        Cause::RequestStop(stop) => Denial::Read(relational_cause_denial(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::from(stop),
+            subject,
+        )),
+        Cause::MutationSession
+        | Cause::ForeignBasis
+        | Cause::ForeignGraph
+        | Cause::ForeignReadProof
+        | Cause::TerminalReleaseMismatch => Denial::Session,
+    }
+}

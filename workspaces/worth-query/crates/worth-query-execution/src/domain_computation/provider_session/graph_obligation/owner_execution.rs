@@ -50,7 +50,7 @@ impl WorthQueryGraphReadOwnerPort {
         let selected_indexes = select_indexes(&self.layout);
         let read = self
             .source
-            .with_runtime(execution, |runtime| {
+            .with_runtime_mut_unwind_isolated(execution, |runtime| {
                 runtime
                     .read_truth()
                     .pin_read_capability(snapshot, &selected_indexes, execution)
@@ -59,7 +59,8 @@ impl WorthQueryGraphReadOwnerPort {
                 use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as Pin;
                 match denial {
                     Pin::Request(stop) => Denial::RequestStop(stop),
-                    Pin::SnapshotUnavailable | Pin::IndexNotInstalled(_) => Denial::ForeignBasis,
+                    Pin::SnapshotUnavailable => Denial::SnapshotUnavailable,
+                    Pin::IndexNotInstalled(index) => Denial::IndexNotInstalled(index),
                 }
             })?;
         Ok((read, Arc::clone(&self.layout)))

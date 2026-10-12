@@ -22,7 +22,7 @@ mod query_preparation;
 mod query_read;
 pub(in crate::domain_computation) use admitted_mutation::WorthQueryAdmittedMutationSessionStartStop;
 pub(in crate::domain_computation) use prepared_query_read::{
-    WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
 };
 pub(in crate::domain_computation) use query_preparation::{
     WorthQueryAdmittedQuerySessionStartStop, WorthQueryPreparedQuerySessionIdentity,
@@ -361,6 +361,8 @@ impl WorthQueryManagedGraphWorkSession {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryManagedGraphReadDenial {
     RequestStop(worth_execution::MapKernelStop),
+    SnapshotUnavailable,
+    IndexNotInstalled(worth_relational::facade::indexes::DerivedIndexId),
     MutationSession,
     ForeignBasis,
     ForeignGraph,

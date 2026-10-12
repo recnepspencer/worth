@@ -182,6 +182,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         }
                         Ok(())
                     })?;
+                    let mut pinned_sides = Default::default();
                     let partitions = plans
                         .iter_mut()
                         .zip(roots.as_slice())
@@ -191,7 +192,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             Ok((
                                 PartitionIdentity::new(index as u64 + 1),
                                 KeylessPartition {
-                                    value: pair.worker(&request, self, *root)?,
+                                    value: pair.worker_with_pins(&request, self, *root, &mut pinned_sides)?,
                                     kernel_scratch_bytes: 0,
                                     max_result_bytes: capacity,
                                 },
@@ -253,12 +254,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                 .first
                                 .graph_work
                                 .seal_prepared_read(output.first.proof)
-                                .map_err(denial::session)?;
+                                .map_err(|cause| denial::session(cause, root, pair.first.query.name()))?;
                             let second_proof = pair
                                 .second
                                 .graph_work
                                 .seal_prepared_read(output.second.proof)
-                                .map_err(denial::session)?;
+                                .map_err(|cause| denial::session(cause, root, pair.second.query.name()))?;
                             let first = finalize_one_shot(
                                 self,
                                 pair.first,

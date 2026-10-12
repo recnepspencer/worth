@@ -211,6 +211,7 @@ impl PreparedRead<'_> {
             if let Some(witness) = witness {
                 witness.native_read_enter(root);
             }
+            let plan = plan.with_snapshot(runtime.snapshot());
             let answer = super::read_prepared_root_rows(
                 runtime,
                 execution,
@@ -261,15 +262,12 @@ impl PreparedRead<'_> {
             Err(WorthQueryManagedGraphReadDenial::RequestStop(stop)) => {
                 Err(MapKernelFailure::Stop(stop))
             }
-            Err(
-                WorthQueryManagedGraphReadDenial::MutationSession
-                | WorthQueryManagedGraphReadDenial::ForeignBasis
-                | WorthQueryManagedGraphReadDenial::ForeignGraph
-                | WorthQueryManagedGraphReadDenial::ForeignReadProof
-                | WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch,
-            ) => Err(MapKernelFailure::Domain(Denial::ReadDenied {
+            Err(cause) => Err(MapKernelFailure::Domain(Denial::ReadDenied {
                 root,
-                denial: map_authorized_read_denial(ReadDenial::Session, plan.name),
+                denial: map_authorized_read_denial(
+                    super::managed_read_denial(cause, plan.name),
+                    plan.name,
+                ),
             })),
         }
     }

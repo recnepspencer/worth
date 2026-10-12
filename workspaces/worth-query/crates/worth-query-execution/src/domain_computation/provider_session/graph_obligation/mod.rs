@@ -5,7 +5,7 @@ mod owner_execution;
 mod read_terminal;
 mod session;
 pub(in crate::domain_computation) use session::{
-    WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
+    WorthQueryManagedGraphReadDenial, WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion,
     WorthQueryPreparedSessionRead,
 };
 mod session_identity;

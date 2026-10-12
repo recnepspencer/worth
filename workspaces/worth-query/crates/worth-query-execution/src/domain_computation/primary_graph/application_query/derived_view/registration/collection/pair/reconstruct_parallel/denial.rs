@@ -144,10 +144,18 @@ impl ChargedBytes for Denial {
 
 pub(super) fn session(
     cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
+    root: EntityId,
+    subject: &str,
 ) -> Denial {
     use crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial as Cause;
     match cause {
         Cause::RequestStop(stop) => kernel(stop, None),
+        Cause::SnapshotUnavailable | Cause::IndexNotInstalled(_) => Denial::ReadDenied {
+            root,
+            denial: crate::domain_computation::primary_graph::application_query::one_shot::map_authorized_read_denial(
+                crate::domain_computation::primary_graph::application_query::read_execution::managed_read_denial(cause, subject), subject,
+            ),
+        },
         Cause::MutationSession
         | Cause::ForeignBasis
         | Cause::ForeignGraph

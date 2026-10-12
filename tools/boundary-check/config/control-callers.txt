@@ -283,3 +283,4 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-ui/crates/worth-ui-query-binding/src/product_projection/status_integrity/lease_tests.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/native_concurrency.rs
 crates/worth-relational/ crates/worth-relational/src/tests/query/execution/empty_request_seams.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pinning_reasons.rs

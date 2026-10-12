@@ -13,7 +13,7 @@ mod live_target;
 mod pinning;
 pub(super) mod prepared_pair;
 pub(super) mod read_plan;
-use pinning::pin_runtime_read;
+pub(super) use pinning::pin_runtime_read;
 mod root_selection;
 mod tree_materialization;
 mod work_observation;
@@ -30,7 +30,7 @@ use super::{
     },
     WorthQueryAdmittedApplicationQueryPlan,
 };
-pub(super) use denial::read_execution_denial;
+pub(super) use denial::{managed_read_denial, read_execution_denial};
 pub(super) use denial::{
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };
@@ -101,7 +101,14 @@ pub(super) fn read_bounded_root_rows<
     maximum_work: usize,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
     let read = read_plan::ReadPlan::of(plan);
-    let pinned = pin_runtime_read(runtime, execution, graph, &read, &[])?;
+    let pinned = pin_runtime_read(
+        runtime,
+        execution,
+        graph,
+        &read,
+        &[],
+        WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+    )?;
     read_prepared_root_rows(
         &pinned,
         execution,
