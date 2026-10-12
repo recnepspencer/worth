@@ -469,7 +469,8 @@ completion; the ordinary candidate-building and commit steps follow on the
 owner. A handler that does not compute can keep its `decide` implementation:
 the default `prepare_decision` wraps it in an immediate plan.
 
-Partition reuse applies only to the runs of a producer. A producer is a
+Partition reuse is distinct from clean reuse of an entire output and from
+input cutoff. It applies only to the runs of a producer. A producer is a
 `WorthQueryApplicationProducerBinding` declared with
 `contracts.producer::<Binding>()` and registered with `setup.producer`; its
 `Operation` is the mutation binding the producer runs. Installation decides
@@ -502,13 +503,16 @@ Otherwise the run names and keys again only what changed, and gathers and
 computes again only the partitions whose members or facts changed. A partition
 is carried only when every fact its owner calls read in the previous run has
 the same content at this attempt's snapshot; a fact that cannot be observed
-counts as changed. A run's result value, its charged work, and the partition a work
-ceiling names never depend on reuse: carried charges replay in a full run's
+counts as changed. A run's result, charged work, structural span, and the
+partition a work ceiling names never depend on reuse: carried charges replay in a full run's
 order, `charged_work()` counts every partition's kernel and every combine
 whether the partition was computed again or carried, and a work ceiling names
-the partition a full run would name. A reused run holds less request memory and
-meets fewer checkpoints than a full run, so a memory limit, a deadline, or a
-cancellation can stop one and not the other.
+the partition a full run would name. A carried partition replays its accepted
+kernel charges; if the remaining ceiling lies inside those charges, it replays
+the original checkpoint steps to preserve the full run's stop. Memory reserves
+what is physically held, so a memory denial may depend on reuse. An in-flight
+cancellation or deadline can also distinguish physical runs; neither is a
+promise that a computation reaches the same checkpoint at the same time.
 
 The example groups warehouse quantities by storage zone and sums them. Stable
 item IDs identify inventory lines; the zone key defines partition membership.
@@ -520,6 +524,11 @@ in this section are compiled as written: the consumer fixture builds and runs
 `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/warehouse_inventory.rs`
 and `.../sensor_telemetry.rs`, and a test fails when a block here and its file
 differ.
+
+The executable examples are exercised by
+[`compiled_examples_warehouse_inventory_total` and `compiled_examples_sensor_telemetry_peak`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/compiled_examples.rs).
+They assert a warehouse sum of `13.0` and a sensor maximum of `850` through a
+host mutation.
 
 <!-- compiled: warehouse_inventory.rs -->
 ```rust
@@ -739,6 +748,12 @@ denied. Keys use canonical encoding, and partitions are ordered by the
 identity derived from that encoding, not by the numeric order of zones. The
 reducer fixes its association tree, so floating-point reduction preserves the
 same result bits at every admitted worker count.
+
+Choose partition membership from the input and observed facts before placement.
+The host's installed policy bounds worker count, memory and aggregate request
+work. Serial placement uses a bounded inline lease with no worker pool; leased
+placement can use the process authority's workers. Neither may rename a partition
+or change its reduction association.
 
 `checkpoint.advance` charges kernel work and checks interruption. Framework
 planning and reduction also contribute charged work; `charged_work()` reports
@@ -1329,11 +1344,21 @@ An interruption observed after admission keeps the executing owner's cancellatio
 or timeout outcome.
 For an output demand refresh these are `Cancelled` and `TimedOut`; they are
 separate from admission's `ExecutionRequest(Interrupted(..))` refusals.
+Serial and leased placement both use checked leases. A reservation denied by
+the policy reports `MemoryLimit { requested, admitted, level }` with the policy
+level; the request's memory limit is not waived by serial placement.
+
+A stopped read is not a missing record or a stale index. Entity resolution
+separates `Stopped(cause)` from `Refused(kind)`; handle the typed stop instead
+of retrying it as absence. A pinned read checks the live request when the pin
+is acquired and holds the selected root and index payload for later reads.
+
 Zero memory reports a policy `MemoryLimit { requested, admitted: 0, level }`
 at every placement, including its requested bytes.
 
 A **request scope** carries an optional deadline and a cancellation token. With no deadline,
-the request is unbounded but remains cancellable. It is
+there is no time limit; work and memory remain policy-bounded, and the request
+remains cancellable. It is
 not an entity and grants nothing:
 
 ```rust
