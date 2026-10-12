@@ -182,7 +182,7 @@ fn baseline_and_amend(
     host: &mut FinancialCourtroomWorld,
 ) {
     assert!(matches!(
-        host.conditional_clock(request_execution, &host.curve_clock)
+        host.conditional_clock(&host.curve_clock)
             .unwrap()
             .observe(request_execution),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -197,7 +197,7 @@ fn observe(
     host: &mut FinancialCourtroomWorld,
 ) -> WorthQueryConditionalClockObservationReceipt<CourtroomClock> {
     match host
-        .conditional_clock(request_execution, &host.curve_clock)
+        .conditional_clock(&host.curve_clock)
         .unwrap()
         .observe(request_execution)
     {

@@ -86,7 +86,12 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence(
                 .on_branch(sibling)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")
@@ -171,7 +176,12 @@ pub(super) fn selected_sibling_mutation_carries_one_world_occurrence(
                 .on_branch(sibling)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")

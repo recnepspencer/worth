@@ -65,7 +65,6 @@ pub struct FinancialCourtroomWorld {
 impl FinancialCourtroomWorld {
     pub fn conditional_clock<'world, Node>(
         &'world self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &'world primary_graph::WorthQueryConditionalClockHandle<
             FinancialHostSchema,
             Node,
@@ -86,7 +85,12 @@ impl FinancialCourtroomWorld {
                     .on_branch(self.application.current_world())
                     .select(&host_phase)
                     .unwrap()
-                    .conditional_clock(request_execution, handle)
+                    .conditional_clock(
+                        &host_phase
+                            .execution_request_for(self.application.product_runtime())
+                            .expect("phase belongs to application"),
+                        handle,
+                    )
             })
             .expect("installed host call opens")
     }

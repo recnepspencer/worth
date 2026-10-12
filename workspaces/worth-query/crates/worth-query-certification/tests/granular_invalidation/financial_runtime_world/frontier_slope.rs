@@ -51,7 +51,7 @@ fn observe(
     let mut host = FinancialCourtroomWorld::publish_portfolio();
     let mut query = query::build_portfolio_with_unrelated_rows(request_execution, &host, 64);
     assert!(matches!(
-        host.conditional_clock(request_execution, &host.portfolio_clock)
+        host.conditional_clock(&host.portfolio_clock)
             .unwrap()
             .observe(request_execution),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -64,7 +64,7 @@ fn observe(
     }
     host.portfolio_clock_control.push(2, 11);
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .conditional_clock(request_execution, &host.portfolio_clock)
+        .conditional_clock(&host.portfolio_clock)
         .unwrap()
         .observe(request_execution)
     else {

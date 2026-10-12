@@ -133,7 +133,12 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .on_branch(source_branch)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")
@@ -159,7 +164,12 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .on_branch(sibling)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")
@@ -206,7 +216,12 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .on_branch(source_branch)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")
@@ -270,7 +285,12 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
                 .on_branch(sibling)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")
@@ -293,45 +313,7 @@ pub(crate) fn publishes_delivers_executes_and_cleans_up(
         3
     );
 
-    for (label, branch, expected_suppressed, expected_clocks) in [
-        ("B", sibling, 1, 3),
-        ("new A occurrence", source_branch, 0, 4),
-        ("B-return", sibling, 1, 4),
-    ] {
-        let outcome = world
-            .application
-            .with_host_advancement(|phase| {
-                world
-                    .application
-                    .on_branch(branch)
-                    .select(&phase)
-                    .unwrap()
-                    .conditional_clock(request_execution, &world.clock)
-                    .unwrap()
-            })
-            .expect("installed host call opens")
-            .observe(request_execution);
-        let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt) =
-            outcome
-        else {
-            panic!(
-                "a retained product binding must remain observable: {}",
-                outcome_kind(&outcome)
-            )
-        };
-        assert_eq!(
-            receipt.retained_suppressed_wake_count(),
-            expected_suppressed
-        );
-        assert_eq!(
-            world
-                .application
-                .inspect_conditional_runtime()
-                .managed_clock_count(),
-            expected_clocks,
-            "{label} must create or reuse the binding for its exact product occurrence"
-        );
-    }
+    retained_bindings::assert_retained_bindings(&world, request_execution, source_branch, sibling);
 
     for (branch, expected) in [
         (sibling, "payload"),
@@ -375,3 +357,6 @@ mod product_readback;
 
 #[path = "conditional_execution/publication_delivery.rs"]
 mod publication_delivery;
+
+#[path = "conditional_execution/retained_bindings.rs"]
+mod retained_bindings;
