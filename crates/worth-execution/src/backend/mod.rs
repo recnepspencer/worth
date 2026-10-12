@@ -33,7 +33,9 @@ pub use meter::NestedComputationStop;
 pub(crate) use meter::RunLimits;
 pub(crate) use meter::StructuralSpanFailure;
 pub use meter::{KernelContext, KernelFailure, KernelStop};
-pub(crate) use ordered::{run_ordered, run_ordered_until, OrderedOutcome, OrderedStep};
+pub(crate) use ordered::{
+    ordered_memory_requirement, run_ordered, run_ordered_until, OrderedOutcome, OrderedStep,
+};
 pub use port::BatchStop;
 pub(crate) use port::{
     run_checked_batch, run_checked_batch_prepared, run_checked_batch_taking,

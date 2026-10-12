@@ -90,7 +90,7 @@ impl WorthQueryApplicationInvariantRule<HookSchema> for AccountingRule {
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
     fn supports_checked_preparation(&self) -> bool {
-        !self.contacts.armed.load(Ordering::SeqCst) || self.checked
+        self.checked
     }
     fn prepare_scope_checked(
         &self,

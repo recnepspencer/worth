@@ -54,6 +54,7 @@ struct RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority> 
     performance: &'access crate::performance::PerformanceAccess<'runtime>,
     control: &'access InvariantPreparationControl<'scope, 'authority>,
     scopes: BTreeMap<KindId, PreparedRelationIntegrityScope>,
+    created_key_count: usize,
     minimum_candidate_kinds: BTreeMap<KindId, BTreeSet<KindId>>,
     create_scan_directions: BTreeMap<KindId, (bool, bool, bool, bool)>,
     touched_relation_sources: BTreeSet<EntityId>,
@@ -98,6 +99,7 @@ impl<'access, 'runtime, 'scope, 'authority>
             ),
             performance,
             control,
+            created_key_count: 0,
             scopes: requirements
                 .into_iter()
                 .map(|(kind_id, requirement)| {
@@ -211,6 +213,7 @@ impl<'access, 'runtime, 'scope, 'authority>
         client_key: crate::symbols::data::ClientKey,
     ) -> Result<(), TransactionCommitError> {
         self.check_live()?;
+        self.created_key_count += 1;
         let created = crate::transactions::data::CreatedEntityRef {
             partition_id,
             kind_id,

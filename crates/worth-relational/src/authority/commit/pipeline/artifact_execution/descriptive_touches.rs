@@ -4,7 +4,7 @@ use worth_execution::{ExecutionResourceLease, MapKernelFailure};
 use worth_foundational::facade::{AspectBinding, AspectShape, CanonicalFieldPath};
 
 use crate::authority::mutation::{
-    changed_fields, AdjacencyDelta, AdjacencyDeltaKind, CanonicalRecordAspectDelta,
+    visit_changed_fields, AdjacencyDelta, AdjacencyDeltaKind, CanonicalRecordAspectDelta,
     EvaluatedAspectBinding,
 };
 use crate::execution::{PacketBudgetDenial, PacketPreparationBudget};
@@ -219,12 +219,18 @@ fn maximum_touch_count(
             if !binding.changed {
                 continue;
             }
-            visit_possible_fields(binding, |field| {
-                budget.checkpoint(1)?;
+            budget.checkpoint(possible_field_count(binding) as u64)?;
+            visit_changed_fields(binding, delta.structural_change, |field, _| {
                 let definitions =
                     runtime
                         .index_definitions
-                        .with_field(&binding.aspect_key, field, |defs| defs.len());
+                        .with_field(&binding.aspect_key, field, |defs| {
+                            defs.iter()
+                                .filter(|definition| {
+                                    index::targets_field(binding, &delta.target, field, definition)
+                                })
+                                .count()
+                        });
                 total = total
                     .checked_add(1)
                     .and_then(|count| count.checked_add(definitions))
@@ -234,27 +240,6 @@ fn maximum_touch_count(
         }
     }
     Ok(total)
-}
-
-fn visit_possible_fields(
-    binding: &EvaluatedAspectBinding,
-    mut visit: impl FnMut(&worth_foundational::facade::FieldKey) -> Result<(), Failure>,
-) -> Result<(), Failure> {
-    match &binding.aspect_shape {
-        AspectShape::Struct(shape) => {
-            for field in shape.fields() {
-                visit(field.key())?;
-            }
-        }
-        AspectShape::Scalar(_) => match &binding.binding {
-            AspectBinding::EntityField { field } | AspectBinding::RelationField { field } => {
-                visit(field)?;
-            }
-            _ => {}
-        },
-        _ => {}
-    }
-    Ok(())
 }
 
 fn append_delta(
@@ -294,26 +279,8 @@ fn append_delta(
         if !binding.changed {
             continue;
         }
-        let mut possible_count = 0usize;
-        let mut possible_heap = 0u64;
-        visit_possible_fields(binding, |field| {
-            budget.checkpoint(1)?;
-            possible_count += 1;
-            possible_heap =
-                possible_heap.saturating_add(field.owned_allocation_capacity_bytes() as u64);
-            Ok(())
-        })?;
-        let scratch = (possible_count as u64)
-            .checked_mul(
-                (size_of::<(
-                    worth_foundational::facade::FieldKey,
-                    crate::storage::data::RelationalFieldPresence,
-                )>() * 2) as u64,
-            )
-            .and_then(|slots| slots.checked_add(possible_heap))
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        budget.claim(scratch)?;
-        for (field, presence) in changed_fields(binding, delta.structural_change) {
+        budget.checkpoint(possible_field_count(binding) as u64)?;
+        visit_changed_fields(binding, delta.structural_change, |field, presence| {
             budget.checkpoint(1)?;
             let path_bytes = (binding.aspect_key.owned_allocation_capacity_bytes()
                 + field.owned_allocation_capacity_bytes()
@@ -329,16 +296,17 @@ fn append_delta(
             });
             runtime
                 .index_definitions
-                .with_field(&binding.aspect_key, &field, |definitions| {
+                .with_field(&binding.aspect_key, field, |definitions| {
                     for definition in definitions {
                         append_index(
-                            runtime, selected, working, delta, binding, &field, definition,
-                            touches, budget,
+                            runtime, selected, working, delta, binding, field, definition, touches,
+                            budget,
                         )?;
                     }
                     Ok::<(), Failure>(())
                 })?;
-        }
+            Ok::<(), Failure>(())
+        })?;
     }
     Ok(())
 }
@@ -348,3 +316,16 @@ mod merge;
 use index::append_index;
 
 mod extent;
+
+// Field discovery prices the declared schema extent; the retained projection
+// borrows only the changed fields and allocates only their emitted paths.
+fn possible_field_count(binding: &EvaluatedAspectBinding) -> usize {
+    match (&binding.aspect_shape, &binding.binding) {
+        (AspectShape::Struct(shape), _) => shape.fields().len(),
+        (
+            AspectShape::Scalar(_),
+            AspectBinding::EntityField { .. } | AspectBinding::RelationField { .. },
+        ) => 1,
+        _ => 0,
+    }
+}

@@ -9,6 +9,9 @@ use super::{PacketExecutionStop, ReadOnlyPacket};
 
 const PREPARATION_MEMORY_DIVISOR: u64 = 8;
 
+#[cfg(test)]
+mod memory_tests;
+
 pub(crate) struct PacketPreparationBudget<'a, 'b, 'c> {
     context: &'a mut MapKernelContext<'b, 'c>,
     ceiling: u64,
@@ -84,25 +87,17 @@ pub(crate) fn prepare_borrowed_artifact<T>(
         lease,
         work_budget,
         |child_lease| {
-            scan.run(
-                Some(child_lease),
-                (),
-                0,
-                ceiling,
-                0,
-                ceiling,
-                |_, _, context| {
-                    let mut budget = PacketPreparationBudget {
-                        context,
-                        ceiling,
-                        claimed: 0,
-                    };
-                    budget.checkpoint(0)?;
-                    let (value, owned_bytes) =
-                        build.take().expect("one artifact preparation")(&mut budget)?;
-                    Ok(((), PreparedArtifact { value, owned_bytes }))
-                },
-            )
+            scan.run(Some(child_lease), (), 0, ceiling, 0, 0, |_, _, context| {
+                let mut budget = PacketPreparationBudget {
+                    context,
+                    ceiling,
+                    claimed: 0,
+                };
+                budget.checkpoint(0)?;
+                let (value, owned_bytes) =
+                    build.take().expect("one artifact preparation")(&mut budget)?;
+                Ok(((), PreparedArtifact { value, owned_bytes }))
+            })
         },
         ScanOutcome::report,
     );

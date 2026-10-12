@@ -1,5 +1,5 @@
 use worth_foundational::facade::{
-    AspectBinding, AspectShape, ContractValidatedAspectValueView, FieldKey, StructAspectValue,
+    AspectBinding, AspectShape, ContractValidatedAspectValueView, FieldKey,
 };
 
 use crate::authority::mutation::canonical_deltas::{
@@ -70,25 +70,61 @@ pub(crate) fn changed_fields(
     binding: &EvaluatedAspectBinding,
     structural: crate::publication::patch::data::RecordStructuralChange,
 ) -> Vec<(FieldKey, RelationalFieldPresence)> {
+    let mut fields = Vec::new();
+    visit_changed_fields(binding, structural, |field, presence| {
+        fields.push((field.clone(), presence));
+        Ok::<(), std::convert::Infallible>(())
+    })
+    .unwrap();
+    fields
+}
+
+/// Visits the exact owner-certified changes without cloning their keys or array.
+pub(crate) fn visit_changed_fields<E>(
+    binding: &EvaluatedAspectBinding,
+    structural: crate::publication::patch::data::RecordStructuralChange,
+    visit: impl FnMut(&FieldKey, RelationalFieldPresence) -> Result<(), E>,
+) -> Result<(), E> {
     if let Some(changes) = &binding.field_revision_changes {
-        return changes.clone();
+        let mut visit = visit;
+        for (field, presence) in changes {
+            visit(field, *presence)?;
+        }
+        return Ok(());
     }
-    field_changes_for_evidence(
+    visit_field_changes_for_evidence(
         &binding.binding,
         &binding.aspect_shape,
         &binding.evidence,
         structural,
+        visit,
     )
 }
 
 pub(super) fn field_changes_for_evidence(
     binding: &AspectBinding,
-    aspect_shape: &AspectShape,
+    shape: &AspectShape,
     evidence: &CanonicalAspectDeltaEvidence,
     structural: crate::publication::patch::data::RecordStructuralChange,
 ) -> Vec<(FieldKey, RelationalFieldPresence)> {
+    let mut fields = Vec::new();
+    visit_field_changes_for_evidence(binding, shape, evidence, structural, |field, presence| {
+        fields.push((field.clone(), presence));
+        Ok::<(), std::convert::Infallible>(())
+    })
+    .unwrap();
+    fields
+}
+
+fn visit_field_changes_for_evidence<E>(
+    binding: &AspectBinding,
+    shape: &AspectShape,
+    evidence: &CanonicalAspectDeltaEvidence,
+    structural: crate::publication::patch::data::RecordStructuralChange,
+    mut visit: impl FnMut(&FieldKey, RelationalFieldPresence) -> Result<(), E>,
+) -> Result<(), E> {
     use RelationalFieldPresence::{Absent, Present};
-    match (aspect_shape, evidence) {
+    match (shape, evidence) {
         (
             AspectShape::Struct(shape),
             CanonicalAspectDeltaEvidence::StructAspectValueTransition {
@@ -96,24 +132,15 @@ pub(super) fn field_changes_for_evidence(
                 new_value,
                 ..
             },
-        ) => shape
-            .fields()
-            .iter()
-            .filter_map(|field| {
+        ) => {
+            for field in shape.fields() {
                 let old = old_value.as_ref().and_then(|value| value.get(field.key()));
                 let new = new_value.as_ref().and_then(|value| value.get(field.key()));
-                (old != new || starts_new_record(structural)).then(|| {
-                    (
-                        field.key().clone(),
-                        if new.is_some() { Present } else { Absent },
-                    )
-                })
-            })
-            .collect(),
-        (
-            AspectShape::Struct(shape),
-            CanonicalAspectDeltaEvidence::AuthoritativePatch { operation, .. },
-        ) => patch_fields(shape, operation),
+                if old != new || starts_new_record(structural) {
+                    visit(field.key(), if new.is_some() { Present } else { Absent })?;
+                }
+            }
+        }
         (
             AspectShape::Scalar(_),
             CanonicalAspectDeltaEvidence::ScalarAspectValueTransition {
@@ -121,76 +148,63 @@ pub(super) fn field_changes_for_evidence(
                 new_value,
                 ..
             },
-        ) => bound_field(binding)
-            .filter(|_| old_value != new_value || starts_new_record(structural))
-            .map(|field| {
-                vec![(
-                    field.clone(),
-                    if new_value.is_some() { Present } else { Absent },
-                )]
-            })
-            .unwrap_or_default(),
+        ) => {
+            if let Some(field) = bound_field(binding)
+                .filter(|_| old_value != new_value || starts_new_record(structural))
+            {
+                visit(field, if new_value.is_some() { Present } else { Absent })?;
+            }
+        }
+        (
+            AspectShape::Struct(shape),
+            CanonicalAspectDeltaEvidence::AuthoritativePatch { operation, .. },
+        ) => match operation {
+            AuthoritativePatchDeltaOperation::FieldLevelPatch { patch } => {
+                for (field, _) in patch.field_sets() {
+                    visit(field, Present)?;
+                }
+                for field in patch.field_clears() {
+                    visit(field, Absent)?;
+                }
+            }
+            AuthoritativePatchDeltaOperation::WholeAspectClear { .. } => {
+                for field in shape.fields() {
+                    visit(field.key(), Absent)?;
+                }
+            }
+            AuthoritativePatchDeltaOperation::WholeAspectSet { value } => {
+                if let ContractValidatedAspectValueView::Struct(value) = value.view() {
+                    for field in shape.fields() {
+                        visit(
+                            field.key(),
+                            if value.get(field.key()).is_some() {
+                                Present
+                            } else {
+                                Absent
+                            },
+                        )?;
+                    }
+                }
+            }
+        },
         (
             AspectShape::Scalar(_),
             CanonicalAspectDeltaEvidence::AuthoritativePatch { operation, .. },
-        ) => bound_field(binding)
-            .map(|field| {
-                vec![(
-                    field.clone(),
+        ) => {
+            if let Some(field) = bound_field(binding) {
+                visit(
+                    field,
                     match operation {
                         AuthoritativePatchDeltaOperation::WholeAspectClear { .. } => Absent,
-                        _ => Present,
+                        AuthoritativePatchDeltaOperation::WholeAspectSet { .. }
+                        | AuthoritativePatchDeltaOperation::FieldLevelPatch { .. } => Present,
                     },
-                )]
-            })
-            .unwrap_or_default(),
-        _ => Vec::new(),
-    }
-}
-
-fn patch_fields(
-    shape: &worth_foundational::facade::StructAspectShape,
-    operation: &AuthoritativePatchDeltaOperation,
-) -> Vec<(FieldKey, RelationalFieldPresence)> {
-    use RelationalFieldPresence::{Absent, Present};
-    match operation {
-        AuthoritativePatchDeltaOperation::FieldLevelPatch { patch } => patch
-            .field_sets()
-            .map(|(field, _)| (field.clone(), Present))
-            .chain(patch.field_clears().map(|field| (field.clone(), Absent)))
-            .collect(),
-        AuthoritativePatchDeltaOperation::WholeAspectClear { .. } => shape
-            .fields()
-            .iter()
-            .map(|field| (field.key().clone(), Absent))
-            .collect(),
-        AuthoritativePatchDeltaOperation::WholeAspectSet { value } => {
-            let ContractValidatedAspectValueView::Struct(value) = value.view() else {
-                return Vec::new();
-            };
-            all_struct_fields(shape, value)
+                )?;
+            }
         }
+        _ => {}
     }
-}
-
-fn all_struct_fields(
-    shape: &worth_foundational::facade::StructAspectShape,
-    value: &StructAspectValue,
-) -> Vec<(FieldKey, RelationalFieldPresence)> {
-    shape
-        .fields()
-        .iter()
-        .map(|field| {
-            (
-                field.key().clone(),
-                if value.get(field.key()).is_some() {
-                    RelationalFieldPresence::Present
-                } else {
-                    RelationalFieldPresence::Absent
-                },
-            )
-        })
-        .collect()
+    Ok(())
 }
 
 fn bound_field(binding: &AspectBinding) -> Option<&FieldKey> {

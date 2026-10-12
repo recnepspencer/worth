@@ -66,7 +66,9 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
         .store(true, std::sync::atomic::Ordering::SeqCst);
     let before = contacts.snapshot();
     reports();
-    place(Placement::Leased(NonZeroUsize::MIN));
+    place(Placement::Leased(
+        NonZeroUsize::new(if checked { 1 } else { 2 }).unwrap(),
+    ));
     bound(ceiling.map(|work| {
         worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work)
     }));
@@ -181,7 +183,7 @@ fn undeclared_application_rule_is_refused_before_any_rule_work() {
     let unchecked = run_case(false, true, None, false);
     let WorthQueryApplicationCommitOutcome::Denied(denial) = unchecked.outcome else {
         panic!(
-            "the lease must refuse the undeclared rule: {:?}",
+            "the multiworker request must refuse the undeclared rule: {:?}",
             unchecked.outcome
         );
     };

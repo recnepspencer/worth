@@ -122,7 +122,15 @@ pub(super) fn eligible_registrations<'state>(
                     work,
                 });
             }
-            let prepared_execution = if let Some(budget) = preparation_budget {
+            let prepared_execution = if !registration.supports_checked_preparation()
+                && runtime.custom_kernel_posture == worth_foundational::ExecutionPosture::Serial
+            {
+                // The request cannot schedule this kernel on another worker.
+                // Scope capture still uses the same request-backed meter.
+                registration
+                    .executable()
+                    .prepare_for_execution(runtime, &mut planner)
+            } else if let Some(budget) = preparation_budget {
                 match registration.executable().prepare_for_execution_checked(
                     runtime,
                     &mut planner,

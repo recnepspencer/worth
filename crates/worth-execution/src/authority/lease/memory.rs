@@ -34,6 +34,21 @@ impl ExecutionResourceLease<'_> {
             .map_or(0, |usage| usage.charged_memory_bytes)
     }
 
+    /// Observes the room left by every ancestor and the process. It is not a
+    /// reservation: admission checks those limits again under the ledger lock.
+    pub fn available_memory_bytes(&self) -> u64 {
+        let ledger = self
+            .authority
+            .ledger
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        room::available(
+            &ledger,
+            self.authority.config.charged_memory_bytes,
+            std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref()),
+        )
+    }
+
     /// Holds `bytes` on this lease, every ancestor and the process until the
     /// reservation drops or is resized.
     pub fn reserve_memory(
@@ -134,6 +149,46 @@ impl LeaseMemory {
         self.node = Arc::clone(&lease.node);
         self.bytes = bytes;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod room_tests {
+    use super::*;
+    use std::num::NonZeroUsize;
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+
+    #[test]
+    fn available_room_includes_the_ancestors_other_holds() {
+        let request = |bytes| super::super::LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(NonZeroUsize::MIN, bytes, 100),
+            ),
+            cancellation: crate::CancellationToken::new(),
+            deadline: None,
+        };
+        let parent = ExecutionResourceLease::serial(request(1_000)).unwrap();
+        let parent_hold = parent.reserve_memory(300).unwrap();
+        let child = parent.child(request(800)).unwrap();
+        assert_eq!(child.available_memory_bytes(), 700);
+        let child_hold = child.reserve_memory(100).unwrap();
+        assert_eq!(child.available_memory_bytes(), 600);
+        let sibling_hold = parent.reserve_memory(200).unwrap();
+        assert_eq!(child.available_memory_bytes(), 400);
+        assert_eq!(
+            child.reserve_memory(401).unwrap_err(),
+            MemoryLimitDenial::refused(401, 400, crate::MemoryLimitLevel::Policy { ancestor: 1 })
+        );
+        drop(sibling_hold);
+        assert_eq!(child.available_memory_bytes(), 600);
+        drop(child_hold);
+        assert_eq!(child.available_memory_bytes(), 700);
+        drop(parent_hold);
+        assert_eq!(child.available_memory_bytes(), 800);
     }
 }
 

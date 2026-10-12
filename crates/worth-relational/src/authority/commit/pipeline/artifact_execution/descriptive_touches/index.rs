@@ -208,3 +208,19 @@ pub(super) fn authoritative_state<'a>(
         }
     }
 }
+
+pub(super) fn targets_field(
+    binding: &EvaluatedAspectBinding,
+    record: &RecordRef,
+    field: &worth_foundational::facade::FieldKey,
+    definition: &crate::indexes::data::DerivedIndexDefinition,
+) -> bool {
+    matches!(
+        (record, &definition.kind),
+        (RecordRef::Entity(_), DerivedIndexKind::EntityField { .. })
+            | (
+                RecordRef::Relation(_),
+                DerivedIndexKind::RelationField { .. }
+            )
+    ) && binding_targets_field(binding, record, field)
+}

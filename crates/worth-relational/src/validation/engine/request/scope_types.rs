@@ -36,6 +36,9 @@ impl std::borrow::Borrow<EntityReference> for PreparedRelationEndpointKey {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PreparedRelationIntegrityScope {
+    pub(crate) created_endpoint_count: usize,
+    pub(crate) created_source_keys: usize,
+    pub(crate) created_target_keys: usize,
     pub(crate) created_candidate_entities: BTreeSet<CreatedEntityRef>,
     pub(crate) minimum_touched_entities: BTreeSet<EntityId>,
     pub(crate) planned_edges: Vec<PlannedRelationEdge>,
@@ -54,11 +57,20 @@ pub(crate) struct PreparedRelationIntegrityScope {
 #[derive(Debug, Clone)]
 pub(crate) struct PreparedRelationIntegrityScopes(
     Arc<BTreeMap<KindId, PreparedRelationIntegrityScope>>,
+    usize,
 );
 
 impl PreparedRelationIntegrityScopes {
     pub(crate) fn new(scopes: BTreeMap<KindId, PreparedRelationIntegrityScope>) -> Self {
-        Self(Arc::new(scopes))
+        Self(Arc::new(scopes), 0)
+    }
+
+    pub(crate) fn with_created_key_count(mut self, count: usize) -> Self {
+        self.1 = count;
+        self
+    }
+    pub(crate) fn created_key_count(&self) -> usize {
+        self.1
     }
 
     pub(crate) fn scope_for(
@@ -98,18 +110,28 @@ impl PreparedRelationIntegrityScope {
     }
 
     pub(crate) fn increment_counts(&mut self, source: EntityReference, target: EntityReference) {
-        *self
+        let source_count = self
             .source_counts
             .entry(PreparedRelationEndpointKey {
                 entity_id: source.clone(),
             })
-            .or_insert(0) += 1;
-        *self
+            .or_insert(0);
+        if matches!(source, EntityReference::Created(_)) {
+            self.created_endpoint_count += 1;
+            self.created_source_keys += usize::from(*source_count == 0);
+        }
+        *source_count += 1;
+        let target_count = self
             .target_counts
             .entry(PreparedRelationEndpointKey {
                 entity_id: target.clone(),
             })
-            .or_insert(0) += 1;
+            .or_insert(0);
+        if matches!(target, EntityReference::Created(_)) {
+            self.created_endpoint_count += 1;
+            self.created_target_keys += usize::from(*target_count == 0);
+        }
+        *target_count += 1;
         *self
             .directed_pair_counts
             .entry(PreparedRelationPairKey {
