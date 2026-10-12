@@ -906,7 +906,7 @@ The governed controls include:
 - history-selection budgets;
 - candidate reservations.
 
-**Execution authority.** A process constructs one execution authority. It owns
+**Execution authority.** A process constructs one physical execution authority. It owns
 its computation workers and the process memory ledger. On a target without
 OS threads it builds no worker pool. An installed execution
 policy admits request leases with worker, charged-memory, and work ceilings.
@@ -1165,8 +1165,9 @@ takes every stage through three phases that its types keep apart.
 | Compute | Any worker | Its task and a work meter: checkpoints and work accounting, no lease for starting nested work. It is a plain function pointer, never a closure over owner state. |
 | Apply | Owner, in canonical stage order | The owner and the computed result. Every effect happens here. |
 
-- **Canonical order** is ascending stage identity. Empty or noncanonical
-  membership is denied. A singleton uses the same metered map.
+- **Canonical order** is ascending stage identity. The multi-stage frontier
+  entry sorts identities and refuses fewer than two members or duplicates.
+  Ordinary single-stage advancement uses the same metered map.
 - **What runs in parallel.** Across stages, only the compute steps run
   concurrently. They go through one owned-map dispatch under the frontier's
   request, in serial placement too. A stage's apply runs alone on the owner,
