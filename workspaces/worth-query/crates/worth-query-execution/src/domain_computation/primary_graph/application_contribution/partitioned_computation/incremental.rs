@@ -18,6 +18,8 @@
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
+mod kernel_steps;
+pub(super) use kernel_steps::KernelSteps;
 mod carriage;
 mod deposit;
 mod next_tree;

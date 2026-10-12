@@ -91,12 +91,19 @@ where
                 |input, context| {
                     let result = match input.disposition {
                         Disposition::Carried(partition) => {
-                            context.checkpoint_cost(
-                                partition.kernel_units,
-                                partition
-                                    .kernel_span
-                                    .expect("only span-bearing records are reused"),
-                            )?;
+                            if partition.kernel_units <= context.remaining_work() {
+                                context.checkpoint_cost(
+                                    partition.kernel_units,
+                                    partition
+                                        .kernel_span
+                                        .expect("only span-bearing records are reused"),
+                                )?;
+                            } else {
+                                // The full kernel's accepted steps run in its original
+                                // canonical slot. Settlement owns the global prefix;
+                                // no width-dependent second ledger selects this slot.
+                                partition.kernel_steps.replay(context)?;
+                            }
                             Ok(SettledPartition::Carried)
                         }
                         Disposition::Recomputed(marked) => {

@@ -51,6 +51,10 @@ impl RemainingWork {
         Ok(())
     }
 
+    pub(super) fn restrict(&mut self, ceiling: u64) {
+        self.remaining = self.remaining.min(ceiling);
+    }
+
     /// The work a ceiling may still admit.
     pub(super) const fn remaining(self) -> u64 {
         self.remaining

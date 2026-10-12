@@ -95,6 +95,10 @@ where
     Key: Send + Sync + 'static,
     Gathered: Send + Sync + worth_execution::ChargedBytes,
 {
+    pub(in super::super) fn restrict_compute_ceiling(&mut self, ceiling: u64) {
+        self.remaining_work.restrict(ceiling);
+    }
+
     /// Settles every partition through one independent map, computing only
     /// marked partitions. Carried kernels contribute retained work and span;
     /// a recomputed result with the
@@ -107,6 +111,7 @@ where
         self,
         execution: &QueryRequestExecution<'_>,
         kernel: Kernel,
+        receipts: &std::sync::Mutex<BTreeMap<PartitionIdentity, ((u64, u64), super::KernelSteps)>>,
         reducer: &WorthQueryDeterministicReducer<Reduced>,
         transport: &mut NestedFailureTransport<'_>,
     ) -> Result<
@@ -186,6 +191,9 @@ where
         })?;
         let mut values = settled_wave.values;
         let costs = settled_wave.costs;
+        let mut receipts = receipts
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut results_held = 0_u64;
         for (identity, disposition) in dispositions {
             let (units, span) = costs[&identity];
@@ -219,7 +227,13 @@ where
             if replaced {
                 results.insert(identity, value);
             }
-            match marked.gather {
+            let ((_, _), kernel_steps) = receipts
+                .remove(&identity)
+                .expect("a computed kernel records its checkpoints");
+            match marked
+                .gather
+                .filter(|_| kernel_steps.accounts_for(units, span))
+            {
                 Some(gather) => {
                     let partition = RetainedPartition {
                         key: marked.key,
@@ -227,6 +241,7 @@ where
                         gather,
                         kernel_units: units,
                         kernel_span: Some(span),
+                        kernel_steps,
                     };
                     partitions.insert(identity, Arc::new(partition));
                 }

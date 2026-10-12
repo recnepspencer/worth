@@ -62,7 +62,31 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         }
     }
     let _restore = Restore(previous);
+    let ceiling_family = matches!(change, Change::CarriedCeiling);
+    execution::CARRIED_CEILING.set(ceiling_family);
+    execution::COMPUTE_CEILING.set(false);
+    struct CeilingRestore;
+    impl Drop for CeilingRestore {
+        fn drop(&mut self) {
+            execution::CARRIED_CEILING.set(false);
+            execution::COMPUTE_CEILING.set(false);
+        }
+    }
+    let _ceiling = CeilingRestore;
     let mut model = facts();
+    if ceiling_family {
+        let first = model
+            .members()
+            .min_by_key(|item| super::tree_work::identity(item.key))
+            .unwrap()
+            .key;
+        model
+            .items
+            .iter_mut()
+            .find(|item| item.key == first)
+            .unwrap()
+            .work = 20;
+    }
     let application = install(|graph| seed(&model, graph));
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
@@ -99,6 +123,7 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         std::num::NonZeroUsize::new(current).unwrap(),
     ));
     observations();
+    execution::COMPUTE_CEILING.set(ceiling_family);
     let (retained, retained_work) = only_run(demand(&request, &application));
     let retained_total = observations().iter().fold((0, 0), |sum, r| {
         (
@@ -116,6 +141,34 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     println!(
         "REUSE_TOTAL:retained={retained_total:?}:fresh={fresh_total:?}:declared={declared_work}"
     );
+    if ceiling_family {
+        use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
+        let first = model
+            .members()
+            .min_by_key(|item| super::tree_work::identity(item.key))
+            .unwrap();
+        assert_eq!(
+            retained.outcome,
+            Err(WorthQueryPartitionedComputationDenial::Partition {
+                partition: super::tree_work::identity(first.key),
+                cause: WorthQueryComputationPartitionStop::Resource(
+                    WorthQueryManagedComputationResourceDenial::WorkExhausted
+                ),
+            }),
+            "a ceiling inside carried work reports its exact canonical partition and work stop"
+        );
+        assert_eq!(
+            retained.outcome, reference.outcome,
+            "carried checkpoint ceiling preserves the typed stop"
+        );
+
+        assert_eq!(
+            retained.calls.kernels,
+            if reuse { 1 } else { 4 },
+            "the ceiling row really carries three kernels"
+        );
+        return;
+    }
     for (label, run, charge) in [
         ("retained", &retained, retained_work),
         ("fresh", &reference, fresh_work),
@@ -251,4 +304,9 @@ fn authority_encoding_boundary_keeps_declared_compute_charge() {
         Some(expected),
         "declared compute and tree charge is independent of authority encoding width"
     );
+}
+
+#[test]
+fn ceiling_inside_carried_work() {
+    case(Change::CarriedCeiling);
 }

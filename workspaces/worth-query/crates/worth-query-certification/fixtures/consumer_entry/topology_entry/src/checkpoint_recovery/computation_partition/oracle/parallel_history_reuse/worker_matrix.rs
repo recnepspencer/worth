@@ -1,6 +1,6 @@
 //! Every seeded reuse edit is evaluated across the prior and current width.
 use super::*;
-const CHANGES: [Change; 9] = [
+const CHANGES: [Change; 10] = [
     Change::Gather,
     Change::Shared,
     Change::Key,
@@ -10,6 +10,7 @@ const CHANGES: [Change; 9] = [
     Change::Leave,
     Change::DigestSwap,
     Change::Replacement,
+    Change::CarriedCeiling,
 ];
 #[test]
 fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
@@ -52,7 +53,11 @@ fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
             }
         }
     }
-    assert_eq!(count, 9 * 3 * 3 * 2, "complete seeded reuse product");
+    assert_eq!(
+        count,
+        CHANGES.len() * 3 * 3 * 2,
+        "complete seeded reuse product"
+    );
     for finding in &red {
         println!("REUSE_NAMED_RED:{finding}");
     }

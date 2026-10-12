@@ -116,7 +116,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// work. `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Reduced>(
         self,
-        mut kernel_units: BTreeMap<PartitionIdentity, (u64, u64)>,
+        mut kernel_units: BTreeMap<PartitionIdentity, ((u64, u64), super::KernelSteps)>,
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         tree_memory: QueryMemoryReservation,
         reduction_work: u64,
@@ -131,23 +131,28 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             WorthQueryPartitionedComputationRunForTest::Full(cause),
             Some(report),
         );
-        let accounted = kernel_units
-            .values()
-            .try_fold(reduction_work, |sum, (units, _)| sum.checked_add(*units))
-            == Some(report.charged_work());
+        let accounted =
+            kernel_units
+                .values()
+                .try_fold(reduction_work, |sum, ((units, span), steps)| {
+                    steps.accounts_for(*units, *span).then_some(())?;
+                    sum.checked_add(*units)
+                })
+                == Some(report.charged_work());
         let partitions = self
             .partitions
             .into_iter()
             .map(|(identity, (key, key_bytes, gather))| {
                 kernel_units
                     .remove(&identity)
-                    .map(|(kernel_units, kernel_span)| {
+                    .map(|((kernel_units, kernel_span), kernel_steps)| {
                         let partition = RetainedPartition {
                             key,
                             key_bytes,
                             gather,
                             kernel_units,
                             kernel_span: Some(kernel_span),
+                            kernel_steps,
                         };
                         (identity, Arc::new(partition))
                     })

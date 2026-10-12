@@ -32,8 +32,11 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
         setup: &mut WorthQueryApplicationContributionSetup<'_, CheckpointSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
         let installed = setup
-            .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner)?;
+            .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner {
+                steps: CARRIED_CEILING.get(),
+            })?;
         let reuse = REUSE_ON.get();
+        let ceiling = CARRIED_CEILING.get();
         let handler = RegionOutputHandler::running(move |reader, set| {
             super::super::decision_plan::begin();
             let prepared = if reuse {
@@ -41,6 +44,13 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
             } else {
                 installed.prepare_without_reuse_for_test(reader, set)
             };
+            let prepared = prepared.map(|prepared| {
+                if ceiling && COMPUTE_CEILING.get() {
+                    prepared.with_compute_ceiling_for_test(16)
+                } else {
+                    prepared
+                }
+            });
             super::super::decision_plan::prepared(prepared, |observations| {
                 REPORTS.with(|reports| reports.borrow_mut().extend(observations));
             })
@@ -213,3 +223,5 @@ thread_local! {
 }
 
 thread_local! {pub(super) static REUSE_ON:std::cell::Cell<bool>=const{std::cell::Cell::new(true)};}
+
+thread_local! { pub(super) static CARRIED_CEILING: std::cell::Cell<bool> = const {std::cell::Cell::new(false)}; pub(super) static COMPUTE_CEILING: std::cell::Cell<bool> = const {std::cell::Cell::new(false)}; }

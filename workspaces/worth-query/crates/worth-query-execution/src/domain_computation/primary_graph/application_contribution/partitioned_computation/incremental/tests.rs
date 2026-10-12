@@ -72,6 +72,7 @@ struct Owner {
     bump: Mutex<u64>,
     /// The work of each kernel, odd parity first.
     work: Mutex<[usize; 2]>,
+    steps: Mutex<Option<[Vec<usize>; 2]>>,
     gathered: Mutex<Vec<u64>>,
     calls: Mutex<[usize; 4]>,
 }
@@ -135,7 +136,13 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
     ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
         self.calls.lock().unwrap()[3] += 1;
         let work = self.work.lock().unwrap()[usize::from(partition.key().0 == 0)];
-        checkpoint.advance(work)?;
+        if let Some(steps) = &*self.steps.lock().unwrap() {
+            for step in &steps[usize::from(partition.key().0 == 0)] {
+                checkpoint.advance(*step)?;
+            }
+        } else {
+            checkpoint.advance(work)?;
+        }
         Ok(*partition.gathered())
     }
 
@@ -159,6 +166,7 @@ fn installed_over(modulus: u64, status: StatusRead, reducer: fn(&u64, &u64) -> u
         reducer,
         bump: Mutex::new(0),
         work: Mutex::new([1, 1]),
+        steps: Mutex::new(None),
         gathered: Mutex::default(),
         calls: Mutex::default(),
     };

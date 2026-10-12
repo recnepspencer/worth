@@ -157,6 +157,7 @@ impl WorthQueryPublishedComputationStateForTest {
                         && partition.key_bytes == next.key_bytes
                         && partition.kernel_units == next.kernel_units
                         && partition.kernel_span == next.kernel_span
+                        && partition.kernel_steps == next.kernel_steps
                         && a.tree.leaf(*identity).map(bits) == b.tree.leaf(*identity).map(bits)
                 })
             })

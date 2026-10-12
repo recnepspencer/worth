@@ -169,6 +169,7 @@ pub(super) struct RetainedPartition<Key> {
     pub(super) key_bytes: u64,
     pub(super) gather: ComputationCallCharge,
     pub(super) kernel_units: u64,
+    pub(super) kernel_steps: super::KernelSteps,
     /// Absent records rebuild; a carried kernel never guesses its dependency span.
     pub(super) kernel_span: Option<u64>,
 }
@@ -215,6 +216,7 @@ where
             .values()
             .try_fold(item_keys, |sum, partition| {
                 sum.checked_add(size(std::mem::size_of::<RetainedPartition<Key>>())?)?
+                    .checked_add(partition.kernel_steps.additional_charged_bytes())?
                     .checked_add(partition.key_bytes)?
                     .checked_add(partition.gather.additional_bytes()?)
             })?;

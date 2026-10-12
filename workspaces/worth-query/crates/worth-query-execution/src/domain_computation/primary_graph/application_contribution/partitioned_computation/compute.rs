@@ -101,6 +101,19 @@ where
     Computation: ApplicationManagedComputation<Schema, Feature>,
     Owner: WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
 {
+    /// Restrict this owned prepared run's compute allowance for certification.
+    #[doc(hidden)]
+    pub fn with_compute_ceiling_for_test(mut self, ceiling: u64) -> Self {
+        crate::domain_computation::execution_observation::owned_control_scope::current_id();
+        match &mut self.run {
+            PreparedRun::Full { remaining_work, .. } => {
+                *remaining_work = (*remaining_work).min(ceiling)
+            }
+            PreparedRun::Incremental(prepared) => prepared.restrict_compute_ceiling(ceiling),
+        }
+        self
+    }
+
     /// Computes every partition through the execution map and reduces the
     /// results over the canonical tree, inside what `prepare` left of the
     /// computation's declared work.
@@ -144,9 +157,11 @@ where
         let kernel_units = Mutex::new(BTreeMap::new());
         let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                       context: &mut MapKernelContext<'_, '_>| {
+            let mut steps = super::incremental::KernelSteps::default();
             let (computed, refused) = {
                 let mut charge = |work| {
                     context.checkpoint(work)?;
+                    steps.accepted(work);
                     Ok(())
                 };
                 let mut checkpoint =
@@ -160,7 +175,7 @@ where
             kernel_units
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .insert(partition.identity, context.charged_cost());
+                .insert(partition.identity, (context.charged_cost(), steps));
             match refused {
                 Some(refused) => Err(kernel_failure(refused.into())),
                 None => computed.map_err(kernel_failure),
@@ -236,7 +251,13 @@ where
                     reduced,
                     computed_work,
                     completed,
-                } = prepared.compute(execution.request, kernel, &reducer, transport)?;
+                } = prepared.compute(
+                    execution.request,
+                    kernel,
+                    &kernel_units,
+                    &reducer,
+                    transport,
+                )?;
                 (reduced, computed_work, completed)
             }
         };

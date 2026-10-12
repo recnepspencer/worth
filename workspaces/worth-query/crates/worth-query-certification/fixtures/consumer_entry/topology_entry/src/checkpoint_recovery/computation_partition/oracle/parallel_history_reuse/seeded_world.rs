@@ -60,11 +60,31 @@ pub(super) enum Change {
     Leave,
     DigestSwap,
     Replacement,
+    CarriedCeiling,
 }
 impl Change {
     pub(super) fn apply(self, model: &mut ReuseFacts) -> Option<EntryEdit> {
         let item = &mut model.items[0];
         match self {
+            Self::CarriedCeiling => {
+                let first = model
+                    .members()
+                    .min_by_key(|item| super::super::tree_work::identity(item.key))
+                    .unwrap()
+                    .key;
+                let item = model
+                    .items
+                    .iter_mut()
+                    .find(|item| item.member && item.key != first)
+                    .unwrap();
+                item.value += 7;
+                Some(EntryEdit::new(
+                    "even",
+                    item.number,
+                    EntryFact::Value,
+                    (item.value as f64).to_bits(),
+                ))
+            }
             Self::Gather => {
                 item.value += 7;
                 Some(EntryEdit::new(

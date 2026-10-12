@@ -45,10 +45,77 @@ fn carrying_every_partition_has_the_full_bill_and_the_same_one_unit_short_stop()
         unretained.outcome.is_err(),
         "one unit below the full bill must refuse"
     );
+    assert_eq!(
+        retained.bill.charged_span(),
+        unretained.bill.charged_span(),
+        "the one-unit-short stop preserves span"
+    );
     assert_eq!(retained.bill.charged_work(), full_cost.0 - 1);
     assert_eq!(
         retained.bill.charged_work(),
         unretained.bill.charged_work(),
         "carried and computed refusals have the same exact bill"
     );
+}
+
+#[test]
+fn a_ceiling_inside_carried_checkpoint_steps_has_the_full_runs_exact_stop() {
+    use super::super::super::super::request_execution::{
+        place_managed_computations_on_this_thread_for_test as place,
+        WorthQueryExecutionPlacementForTest as Placement,
+    };
+    let _observation = QueryObservation::install_on_this_thread();
+    for width in [1, 2] {
+        let previous = place(Placement::Leased(
+            std::num::NonZeroUsize::new(width).unwrap(),
+        ));
+        for steps in [vec![1; 20], vec![3, 5, 7, 9]] {
+            let world = installed_authorization_world(true);
+            let installed = installed(StatusRead::Gather(1), sum);
+            // The even partition is carried, while the status-reading odd one
+            // is gathered again. Each kernel must encounter the same local
+            // ceiling before canonical settlement accepts or discards it.
+            *installed.owner.steps.lock().unwrap() = Some([vec![1], steps.clone()]);
+            let request = live_scope();
+            let policy = crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy(std::num::NonZeroUsize::MIN, 1 << 30);
+            let billed = |prior, ceiling| {
+                projected_attempt::attempt_billed(
+                    &world,
+                    &installed,
+                    prior,
+                    &request,
+                    RuntimeWorldExecutionPlacement::Serial(policy),
+                    Some(ceiling),
+                )
+            };
+            let first = billed(
+                Some(ComputationPrior::new(edition(), Err(Cause::FirstRun), None)),
+                u64::MAX,
+            );
+            let retained = billed(Some(prior_of(first, true)), 16);
+            let full = billed(None, 16);
+            assert_eq!(
+                retained.gathered,
+                [1],
+                "the refusal crosses mixed carried and recomputed slots"
+            );
+            assert!(full.outcome.is_err());
+            assert_eq!(
+                retained.outcome, full.outcome,
+                "carried checkpoints preserve the typed canonical stop"
+            );
+            assert_eq!(
+                (retained.bill.charged_work(), retained.bill.charged_span()),
+                (full.bill.charged_work(), full.bill.charged_span()),
+                "a refusal inside carried work preserves the accepted checkpoint work and span"
+            );
+            if steps[0] == 3 {
+                assert!(
+                    full.bill.charged_work() < 16,
+                    "an unequal next step refuses below the ceiling"
+                );
+            }
+        }
+        place(previous);
+    }
 }
