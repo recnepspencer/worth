@@ -14,8 +14,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         let request_execution = &borrowed_execution;
 
         let request = live_scope();
-        let execution = serial_request(&request);
-        let external = world.authenticate("alice", Duration::from_secs(60), &request);
+            let external = world.authenticate("alice", Duration::from_secs(60), &request);
         let selected = world.selected_product(
             &(host_custody.phase_for_application(&world.application)).test_host_request(),
         );
@@ -150,7 +149,7 @@ fn certified_membership_changes_retain_clean_arcs_and_read_only_new_or_dirty_ent
         let keys = world
             .application
             .reconstruct_managed_derived_collection_pair(
-                worth_execution::ExecutionRequest::serial(&execution),
+                *request_execution,
                 &view,
                 selected.product(),
                 &membership,
