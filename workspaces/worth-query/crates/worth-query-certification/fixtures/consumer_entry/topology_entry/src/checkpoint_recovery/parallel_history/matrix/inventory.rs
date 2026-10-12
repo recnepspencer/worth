@@ -7,12 +7,10 @@ fn matrix_rows_name_the_unplaceable_deadline_and_the_missing_base_slice() {
             rows.push((format!("{family:?}/width-{workers}/in-flight-deadline"),"deadline and cancellation use the same meter safe point; placing a deadline requires a clock control, and none is added"));
         }
     }
-    for law in ["cross-placement incremental prior"] {
-        rows.push((
-            law.to_owned(),
-            "7.6 part two supplies the placement-prior contract; it is not in this base",
-        ));
-    }
+    rows.push((
+        "cross-placement incremental prior".to_owned(),
+        "7.6 part two supplies the placement-prior contract; it is not in this base",
+    ));
     assert_eq!(
         rows.len(),
         8 * 3 + 1,
