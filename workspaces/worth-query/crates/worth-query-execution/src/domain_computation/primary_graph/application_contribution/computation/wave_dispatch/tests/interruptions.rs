@@ -13,11 +13,10 @@ struct Schedule {
 #[test]
 fn cancellation_during_compute_has_a_witness_and_a_safe_canonical_prefix() {
     for selected in 0..4 {
-        for width in [None, Some(1), Some(2), Some(4)] {
+        for width in [None, Some(1), Some(2), Some(5)] {
             let cancellation = WorthQueryCancellationSource::new();
             let schedule = Arc::new((Mutex::new(Schedule::default()), Condvar::new()));
-            let expires = Instant::now() + Duration::from_secs(60);
-            let scope = WorthQueryRequestScope::new(Some(expires), cancellation.token());
+            let scope = WorthQueryRequestScope::new(None, cancellation.token());
             let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), 1 << 24);
             let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
                 RuntimeWorldExecutionPlacement::Leased {

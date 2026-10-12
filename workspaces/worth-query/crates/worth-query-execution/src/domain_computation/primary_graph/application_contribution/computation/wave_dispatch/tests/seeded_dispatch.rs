@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_contribution::request_
     place_managed_computations_on_this_thread_for_test as place,
     WorthQueryExecutionPlacementForTest as Placement,
 };
+const CHARGES: [u64; 2] = [3, 7];
 thread_local! { static ORDERS: std::cell::RefCell<Vec<Vec<usize>>> = const { std::cell::RefCell::new(Vec::new()) }; }
 pub(in super::super) fn record(order: Vec<usize>) {
     ORDERS.with(|orders| orders.borrow_mut().push(order));
@@ -22,7 +23,7 @@ fn certified_placement_perturbs_the_actual_owned_wave() {
             ORDERS.with(|orders| orders.borrow_mut().clear());
             let (settled, report) = run(
                 Some(width),
-                vec![charged(0, 3, false), charged(1, 7, false)],
+                vec![charged(0, CHARGES[0], false), charged(1, CHARGES[1], false)],
             );
             let values = settled
                 .into_iter()
@@ -44,7 +45,11 @@ fn certified_placement_perturbs_the_actual_owned_wave() {
         );
         assert_eq!(
             histories[0],
-            (vec![(0, false), (1, false)], 3 + 7, 3_u64.max(7))
+            (
+                vec![(0, false), (1, false)],
+                CHARGES.iter().sum::<u64>(),
+                *CHARGES.iter().max().unwrap()
+            )
         );
     }
     assert_ne!(
