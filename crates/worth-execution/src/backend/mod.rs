@@ -4,6 +4,8 @@ mod evaluation;
 mod input;
 mod meter;
 mod native;
+mod owner_context;
+pub use owner_context::ExecutionOwnerContext;
 mod ordered;
 mod panic_boundary;
 mod perturbation;
