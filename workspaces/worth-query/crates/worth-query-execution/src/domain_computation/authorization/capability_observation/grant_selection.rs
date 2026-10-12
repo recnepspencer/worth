@@ -139,13 +139,20 @@ fn observe_candidate_paths(
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
+    #[cfg(test)]
+    late_cancellation::cancel_at_observation();
     relational
         .observe_authorization(plan, execution)
-        .map_err(|_| {
-            denial(
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
-                installed.contract().name(),
-            )
+        .map_err(|refusal| {
+            use worth_relational::facade::authorization::RelationalAuthorizationObservationDenial as Refusal;
+            let kind = match refusal {
+                Refusal::Execution(cause) => execution_denial_kind(cause),
+                Refusal::ForeignRuntime { .. } | Refusal::SnapshotUnavailable
+                | Refusal::PrincipalUnavailableOrWrongKind | Refusal::ScopeUnavailableOrWrongKind
+                | Refusal::ObservationIdentityExhausted | Refusal::PreparationAccountingOverflow =>
+                    WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+            };
+            denial(kind, installed.contract().name())
         })
 }
 
@@ -284,29 +291,7 @@ fn grant_lookup_denial_kind(
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
     use WorthQueryOperationAuthorizationDenialKind as Denial;
     match refusal {
-        Kind::Execution(cause) => match cause {
-            Cause::Cancelled => Denial::Cancelled,
-            Cause::DeadlineElapsed => Denial::DeadlineExceeded,
-            Cause::WorkerLimitExceedsParent
-            | Cause::MemoryLimitExceedsParent
-            | Cause::WorkLimitExceedsParent
-            | Cause::PolicyMemoryExhausted { .. }
-            | Cause::ProcessMemoryExhausted { .. }
-            | Cause::DeclaredMemoryExhausted { .. }
-            | Cause::ChargedBytesOverflow
-            | Cause::UnrelatedNestedLease
-            | Cause::NoActiveExecutionScope
-            | Cause::EquivalenceContractUnavailable
-            | Cause::WorkCounterOverflow
-            | Cause::WorkExhausted
-            | Cause::NestedStopped
-            | Cause::ResultCapacityExceeded
-            | Cause::WorkerFailed
-            | Cause::ScratchCapacityExceeded
-            | Cause::UncheckedCustomKernel
-            | Cause::ExpectedIdentitiesNotCanonical
-            | Cause::MemoryOverflow => Denial::CanonicalWorkDenied,
-        },
+        Kind::Execution(cause) => execution_denial_kind(cause),
         Kind::InvalidCandidateLimit
         | Kind::SnapshotUnavailable
         | Kind::IndexNotInstalled
@@ -319,3 +304,33 @@ fn grant_lookup_denial_kind(
 #[cfg(test)]
 #[path = "grant_selection/denial_tests.rs"]
 mod denial_tests;
+
+fn execution_denial_kind(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> WorthQueryOperationAuthorizationDenialKind {
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+    use WorthQueryOperationAuthorizationDenialKind as Denial;
+    match cause {
+        Cause::Cancelled => Denial::Cancelled,
+        Cause::DeadlineElapsed => Denial::DeadlineExceeded,
+        Cause::WorkerLimitExceedsParent
+        | Cause::MemoryLimitExceedsParent
+        | Cause::WorkLimitExceedsParent
+        | Cause::PolicyMemoryExhausted { .. }
+        | Cause::ProcessMemoryExhausted { .. }
+        | Cause::DeclaredMemoryExhausted { .. }
+        | Cause::ChargedBytesOverflow
+        | Cause::WorkCounterOverflow
+        | Cause::WorkExhausted
+        | Cause::ResultCapacityExceeded
+        | Cause::ScratchCapacityExceeded
+        | Cause::ExpectedIdentitiesNotCanonical
+        | Cause::MemoryOverflow => Denial::CanonicalWorkDenied,
+        Cause::UnrelatedNestedLease
+        | Cause::NoActiveExecutionScope
+        | Cause::EquivalenceContractUnavailable
+        | Cause::NestedStopped
+        | Cause::WorkerFailed
+        | Cause::UncheckedCustomKernel => Denial::RelationalExecution(cause),
+    }
+}

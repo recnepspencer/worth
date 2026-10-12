@@ -44,3 +44,20 @@ fn grant_selection_names_deadlines_and_every_ceiling_as_operational_stops() {
         WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected
     );
 }
+
+#[test]
+fn grant_selection_retains_every_structural_execution_cause() {
+    for cause in [
+        Cause::NoActiveExecutionScope,
+        Cause::UnrelatedNestedLease,
+        Cause::EquivalenceContractUnavailable,
+        Cause::NestedStopped,
+        Cause::WorkerFailed,
+        Cause::UncheckedCustomKernel,
+    ] {
+        assert_eq!(
+            grant_lookup_denial_kind(Kind::Execution(cause)),
+            WorthQueryOperationAuthorizationDenialKind::RelationalExecution(cause)
+        );
+    }
+}

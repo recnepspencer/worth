@@ -34,6 +34,8 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     MutationPreconditionRejected,
     /// The bounded canonical work for the decision was refused.
     CanonicalWorkDenied,
+    /// A structural failure in the caller's execution retains its native cause.
+    RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The trusted clock needed for the decision was unavailable.
     TrustedTimeUnavailable,
     /// The operation input could not be evaluated for authorization.

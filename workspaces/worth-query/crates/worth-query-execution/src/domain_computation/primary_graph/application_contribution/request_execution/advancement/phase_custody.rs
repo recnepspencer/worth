@@ -197,14 +197,6 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         Ok(self.admitted_request())
     }
 
-    /// Lends the existing request after accepting the concrete native owner.
-    pub fn execution_request_for_relational_runtime(
-        &self,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
-        self.request_for_source(runtime.runtime_instance_id())
-    }
-
     pub(crate) fn request_for_source(
         &self,
         source_instance: u64,

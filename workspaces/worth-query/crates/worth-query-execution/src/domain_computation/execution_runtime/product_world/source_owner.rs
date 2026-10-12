@@ -30,7 +30,7 @@ pub struct WorthQueryRelationalSourceOwner {
     #[cfg(test)]
     read_acquisitions: Arc<std::sync::atomic::AtomicU64>,
     #[cfg(test)]
-    bridge_lock_observations: Arc<
+    _bridge_lock_observations: Arc<
         Mutex<
             Vec<worth_relational::facade::change_source::RelationalRuntimeLockObservationForTest>,
         >,
@@ -87,7 +87,7 @@ impl WorthQueryRelationalSourceOwner {
             #[cfg(test)]
             read_acquisitions,
             #[cfg(test)]
-            bridge_lock_observations,
+            _bridge_lock_observations: bridge_lock_observations,
         })
     }
 
@@ -211,21 +211,10 @@ impl WorthQueryRelationalSourceOwner {
         partition: worth_relational::facade::identity::PartitionId,
         role: worth_foundational::facade::TruthPartitionRole,
     ) -> Result<(), RelationalBridgeSourceConfigurationError> {
-        self.source = RuntimeBridgeRelationalSource::for_shared_graph_partition(
-            Arc::clone(&self.runtime),
-            graph_role,
-            partition,
-            role,
-        )?;
-        #[cfg(test)]
-        {
-            let count = Arc::clone(&self.read_acquisitions);
-            self.bridge_lock_observations.lock().unwrap().push(
-                self.source.observe_runtime_locks_for_test(move || {
-                    count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                }),
-            );
-        }
+        self.source = self
+            .source
+            .clone()
+            .with_graph_partition(graph_role, partition, role)?;
         Ok(())
     }
 }
