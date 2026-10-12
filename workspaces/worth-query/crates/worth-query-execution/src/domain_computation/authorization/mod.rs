@@ -13,6 +13,7 @@ mod capability_registry;
 mod capability_revalidation;
 mod capability_revocation_progression;
 mod decision_facts;
+pub(in crate::domain_computation) use decision_facts::AuthorizationCurrentnessStop;
 mod delegation_admission;
 mod delegation_progression;
 mod denial;

@@ -138,7 +138,13 @@ impl WorthQueryApplicationObservedFact {
         );
         let movement = self
             .source_currentness_in(runtime, execution, snapshot, &mut admission)
-            .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)??;
+            .map_err(|stop| match stop {
+                CompanionPreflightStop::Interrupted(event) => WorthQuerySourceCurrentnessFailure::Execution(match event.interruption() {
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled => worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,
+                    worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut => worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed,
+                }),
+                _ => WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
+            })??;
         let work = usize::try_from(admission.charged_work())
             .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
         Ok((movement, work))

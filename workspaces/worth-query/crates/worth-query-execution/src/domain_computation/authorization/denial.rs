@@ -4,6 +4,8 @@ use crate::domain_computation::application_outcome_identity::WorthQueryApplicati
 mod capacity;
 mod relational_read;
 pub(super) use relational_read::denial as relational_read_denial;
+pub(in crate::domain_computation) use relational_read::principal_currentness;
+pub(super) use relational_read::{is_request_stop, kernel_stop_kind};
 
 /// The specific reason authorization refused an operation or query.
 ///

@@ -289,6 +289,9 @@ fn require_witnessed_output(
             | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | CompanionPreflightStop::WorkCounterOverflow,
         ) => Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)),
+        Err(CompanionPreflightStop::Interrupted(event)) => {
+            Err(super::super::output_reuse::interruption_denial(event))
+        }
         Err(_) => Err(denial(
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
         )),
@@ -314,6 +317,12 @@ fn require_current_facts(
             WorthQueryOutputDemandDenialKind::Superseded,
             moved.locator_identity(),
         )),
+        Err(RetainedFactStop::Execution(cause)) => {
+            Err(super::super::output_reuse::read_denial(cause))
+        }
+        Err(RetainedFactStop::Interrupted(event)) => {
+            Err(super::super::output_reuse::interruption_denial(event))
+        }
         Err(RetainedFactStop::Work) => {
             Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
         }

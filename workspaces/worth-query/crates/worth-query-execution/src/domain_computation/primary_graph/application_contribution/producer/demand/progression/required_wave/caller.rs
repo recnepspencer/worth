@@ -131,6 +131,11 @@ where
                 ))
             }
             Err(ConsumedOutputVerificationStop::WorkExhausted) => return Err(work_denial()),
+            Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+                return Err(
+                    crate::domain_computation::primary_graph::output_reuse::read_denial(cause),
+                )
+            }
             Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
                 return Err(denial(
                     WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),

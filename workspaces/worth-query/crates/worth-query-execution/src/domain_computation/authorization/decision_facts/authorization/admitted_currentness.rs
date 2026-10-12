@@ -32,7 +32,7 @@ impl WorthQueryAuthorizationDecisionFact {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, CompanionPreflightStop> {
+    ) -> Result<bool, super::super::admitted_currentness::AuthorizationCurrentnessStop> {
         admission.charge_external_work(2)?;
         if self.delegation.is_some() || self.delegation_activation.is_some() {
             return Ok(false);
@@ -61,13 +61,19 @@ impl WorthQueryAuthorizationDecisionFact {
             &mut CurrentnessAdmission(admission),
             execution,
         ) {
-            Err(RelationalAuthorizationBudgetedObservationStop::Execution(_)) => return Ok(false),
+            Err(RelationalAuthorizationBudgetedObservationStop::Execution(cause)) => {
+                return Err(
+                    super::super::admitted_currentness::AuthorizationCurrentnessStop::Execution(
+                        cause,
+                    ),
+                )
+            }
             Ok(freshness) => freshness,
             Err(RelationalAuthorizationBudgetedObservationStop::Admission(stop)) => {
-                return Err(stop);
+                return Err(stop.into());
             }
             Err(RelationalAuthorizationBudgetedObservationStop::AccountingOverflow) => {
-                return Err(CompanionPreflightStop::WorkCounterOverflow);
+                return Err(CompanionPreflightStop::WorkCounterOverflow.into());
             }
             Err(
                 RelationalAuthorizationBudgetedObservationStop::Native(_)

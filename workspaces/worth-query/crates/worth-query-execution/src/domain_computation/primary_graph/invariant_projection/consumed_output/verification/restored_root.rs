@@ -33,6 +33,7 @@ impl ConsumedOutputEvidence {
             owner,
             admission,
         )
+        .map_err(map_admission_stop)
         .and_then(|witness| {
             let Some(witness) = witness else {
                 return Ok(None);
@@ -40,15 +41,9 @@ impl ConsumedOutputEvidence {
             let current = witness
                 .get()
                 .expect("checkpoint constructor sealed its witness")
-                .checkpoint_facts_current_in(
-                    execution,
-                    runtime,
-                    snapshot,
-                    source_facts,
-                    admission,
-                )?;
+                .checkpoint_facts_current_in(execution, runtime, snapshot, source_facts, admission)
+                .map_err(map_verification_stop)?;
             Ok(current.then_some(witness))
         })
-        .map_err(map_admission_stop)
     }
 }

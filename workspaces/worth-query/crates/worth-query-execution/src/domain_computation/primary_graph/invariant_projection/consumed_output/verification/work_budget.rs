@@ -41,8 +41,8 @@ pub(super) fn map_verification_stop(
 ) -> ConsumedOutputVerificationStop {
     match stop {
         SettlementVerificationStop::SourceRead(WorthQuerySourceCurrentnessFailure::Execution(
-            _,
-        )) => ConsumedOutputVerificationStop::Unavailable,
+            cause,
+        )) => ConsumedOutputVerificationStop::Execution(cause),
         SettlementVerificationStop::Admission(stop) => map_admission_stop(stop),
         SettlementVerificationStop::SourceRead(
             WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
@@ -104,8 +104,8 @@ pub(super) fn fact_is_current(
         .source_currentness_in(runtime, execution, snapshot, admission)
         .map_err(map_admission_stop)?
     {
-        Err(WorthQuerySourceCurrentnessFailure::Execution(_)) => {
-            Err(ConsumedOutputVerificationStop::Unavailable)
+        Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+            Err(ConsumedOutputVerificationStop::Execution(cause))
         }
         Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {

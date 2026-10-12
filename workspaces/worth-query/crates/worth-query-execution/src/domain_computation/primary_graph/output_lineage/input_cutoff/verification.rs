@@ -60,6 +60,7 @@ pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selec
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) enum InputCutoffVerificationStop {
     Admission(CompanionPreflightStop),
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     WorkExhausted,
     CapacityExhausted,
     PendingUpstream,
@@ -222,6 +223,9 @@ impl RetainedInputCutoffCandidate {
                     Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
                         return Err(InputCutoffVerificationStop::CapacityExhausted);
                     }
+                    Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+                        return Err(InputCutoffVerificationStop::Execution(cause))
+                    }
                     Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
                         return Err(InputCutoffVerificationStop::Admission(
                             CompanionPreflightStop::Interrupted(event),
@@ -319,6 +323,9 @@ impl RetainedInputCutoffCandidate {
             Err(ConsumedOutputVerificationStop::WorkExhausted) => {
                 return Err(InputCutoffVerificationStop::WorkExhausted);
             }
+            Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+                return Err(InputCutoffVerificationStop::Execution(cause))
+            }
             Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
                 return Err(InputCutoffVerificationStop::Admission(
                     CompanionPreflightStop::Interrupted(event),
@@ -339,62 +346,10 @@ impl RetainedInputCutoffCandidate {
 /// reuse. An exhausted currentness allowance proves nothing about the prior
 /// output, so it answers `false` and the demand executes fresh instead of
 /// stopping; every other stop stays a stop.
-fn marked_facts_permit_reuse<'fact>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    currentness: &mut InvalidationEditAdmission,
-) -> Result<bool, InputCutoffVerificationStop> {
-    match facts_are_current(execution, facts, runtime, snapshot, currentness) {
-        Ok(current) => Ok(current),
-        Err(
-            InputCutoffVerificationStop::WorkExhausted
-            | InputCutoffVerificationStop::Admission(
-                CompanionPreflightStop::WorkExhausted { .. }
-                | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. },
-            ),
-        ) => Ok(false),
-        Err(stop) => Err(stop),
-    }
-}
-
-/// Re-verifies marked facts, or the full-verification prefix, on the
-/// host-bounded source-currentness allowance.
-fn facts_are_current<'fact>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    currentness: &mut InvalidationEditAdmission,
-) -> Result<bool, InputCutoffVerificationStop> {
-    for fact in facts {
-        currentness.charge_external_work(1)?;
-        if !fact_is_current(execution, fact, runtime, snapshot, currentness)? {
-            return Ok(false);
-        }
-    }
-    Ok(true)
-}
-
-fn fact_is_current(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    fact: &WorthQueryApplicationObservedFact,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, InputCutoffVerificationStop> {
-    match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
-        Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
-        Err(WorthQuerySourceCurrentnessFailure::Execution(_))
-        | Err(WorthQuerySourceCurrentnessFailure::Unavailable) => Ok(false),
-        Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
-            Err(InputCutoffVerificationStop::WorkExhausted)
-        }
-    }
-}
-
 mod matched_roots;
 mod pending_upstream;
 #[cfg(test)]
 mod tests;
+
+mod source_facts;
+use source_facts::marked_facts_permit_reuse;

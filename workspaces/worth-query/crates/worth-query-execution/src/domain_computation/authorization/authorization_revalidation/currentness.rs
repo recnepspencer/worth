@@ -49,11 +49,19 @@ pub(super) fn validate_observed_currentness(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-    if !authorization.principal_remains_current_in(execution, runtime, snapshot) {
+    if !authorization
+        .principal_remains_current_in(execution, runtime, snapshot)
+        .map_err(|kind| {
+            WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+        })?
+    {
         return Err(stale_principal());
     }
     authorization
         .decisions_remain_current_in(execution, runtime, snapshot, bridge)
+        .map_err(|kind| {
+            WorthQueryOperationAuthorizationDenial::new(kind, "authorization currentness")
+        })?
         .then_some(())
         .ok_or_else(stale_authorization)
 }

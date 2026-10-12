@@ -31,7 +31,7 @@ pub(crate) trait WorthQuerySourceProgramResolver {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &crate::basis::WorthQueryProductBranchLease,
-    ) -> Option<ApplicationProgramRevision>;
+    ) -> Result<Option<ApplicationProgramRevision>, super::WorthQueryProductBranchAdmissionDenial>;
 }
 
 #[derive(Debug)]
@@ -148,7 +148,10 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             .admit_product_occurrence(source.occurrence())
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
         let source_program = source_program_resolver
-            .and_then(|resolver| resolver.source_program(execution, &source));
+            .map(|resolver| resolver.source_program(execution, &source))
+            .transpose()
+            .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?
+            .flatten();
         let cancellation = RuntimeWorldCancellationSource::new();
         match runtime
             .create_product_branch(

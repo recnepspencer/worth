@@ -116,6 +116,10 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
+    let fact_seal_bytes = match placement {
+        RuntimeWorldExecutionPlacement::Serial(_) => 288,
+        RuntimeWorldExecutionPlacement::Leased { .. } => 1_618,
+    };
     let _placement =
         super::super::super::super::request_execution::FixturePlacement::enter(placement);
     let mut observed = None;
@@ -154,15 +158,24 @@ where
                     (Some(projection), work)
                 }
                 Err(denial) => {
-                    let interruption = request
-                        .interruption()
-                        .expect("only interrupted custody is refused");
-                    assert_eq!(
-                        denial
-                            .invariant_denial()
-                            .and_then(|denial| denial.source_retention_interruption()),
-                        Some(interruption)
-                    );
+                    if let Some(interruption) = request.interruption() {
+                        assert_eq!(
+                            denial.invariant_denial().and_then(|denial| denial.source_retention_interruption()),
+                            Some(interruption),
+                        );
+                    } else {
+                        // This fixed status fact needs its placement's native backing
+                        // after the first gather holds the entire policy.
+                        // The computation's own boundary is asserted by its outcome.
+                        assert_eq!(
+                            denial.invariant_denial().map(|denial| denial.kind()),
+                            Some(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                                worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                                    requested: fact_seal_bytes, admitted: 0, ancestor: 0,
+                                }
+                            )),
+                        );
+                    }
                     (
                         None,
                         denial.projection_work().expect("the reader performed work"),
@@ -171,16 +184,14 @@ where
             };
             let outcome = outcome.expect("the admitted computation ran");
             ComputationPrior::hand_in_test(None);
-            // An interrupted request retains no sealed projection or computation run.
-            let sealed = if request.interruption().is_some() {
-                Err(())
-            } else {
+            // A refused projection retains no sealed projection or computation run.
+            let sealed = if let Some(projection) = projection {
                 world
                     .application
                     .begin_projected_application_read_attempt(
                         &phase_custody.phase_for_application(&world.application),
                         admission,
-                        projection.expect("an uninterrupted projection sealed"),
+                        projection,
                         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                     )
                     .unwrap()
@@ -190,6 +201,8 @@ where
                     )
                     .map(|_| SealedComputationRun::kept_in_test())
                     .map_err(|_| ())
+            } else {
+                Err(())
             };
             let mut gathered = installed.owner.gathered().lock().unwrap().clone();
             gathered.sort_unstable();

@@ -227,6 +227,11 @@ where
                         Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
                             Err(retry(WorthQueryOutputDemandDenialKind::PublicationStale))
                         }
+                        Err(ConsumedOutputVerificationStop::Execution(cause)) => Err(
+                            crate::domain_computation::primary_graph::output_reuse::read_denial(
+                                cause,
+                            ),
+                        ),
                         Err(ConsumedOutputVerificationStop::Interrupted(event)) => Err(denial(
                             WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
                             Family::IDENTITY,

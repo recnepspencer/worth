@@ -43,6 +43,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 ) -> ProducerExecutionStop {
     use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
     let kind = match stop {
+        CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::Execution(cause)) => return crate::domain_computation::primary_graph::output_reuse::read_denial(cause).into(),
         CurrentAcceptedStop::Closure(ConsumedOutputVerificationStop::WorkExhausted)
         | CurrentAcceptedStop::Registration(SettlementRegistrationStop::Admission(
             worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }

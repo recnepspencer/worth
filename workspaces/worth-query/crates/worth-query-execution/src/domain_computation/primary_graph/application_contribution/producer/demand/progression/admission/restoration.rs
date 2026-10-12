@@ -1,3 +1,4 @@
+mod verification_denial;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -198,7 +199,7 @@ where
                 relational.read_truth().positioned_snapshot(snapshot).ok(),
             )
         });
-        if !current.map_err(restoration_resource_denial)? {
+        if !current.map_err(verification_denial::from_stop)? {
             return Ok(None);
         }
         // Qualification runs only after original completeness/currentness has
@@ -366,6 +367,9 @@ fn restoration_resource_denial(
         match stop {
             Stop::PreparationMemoryExhausted { .. } | Stop::PreparationMemoryCounterOverflow => {
                 WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+            }
+            Stop::Interrupted(event) => {
+                WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }
             _ => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         },

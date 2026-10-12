@@ -169,6 +169,11 @@ where
                     input_digest,
                     remaining_work,
                 )
+                .map_err(|denial| {
+                    WorthQueryPartitionedComputationDenial::Read(
+                        super::reader::WorthQueryComputationReadDenial::RetainedFact(denial.kind()),
+                    )
+                })?
             }
         };
         let deposit = reader.computation_deposit();

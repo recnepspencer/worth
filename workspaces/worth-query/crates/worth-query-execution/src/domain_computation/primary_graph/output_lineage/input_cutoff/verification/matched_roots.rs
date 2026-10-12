@@ -96,6 +96,9 @@ pub(super) fn rebound(
         Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
             return Err(InputCutoffVerificationStop::CapacityExhausted)
         }
+        Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+            return Err(InputCutoffVerificationStop::Execution(cause))
+        }
         Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
             return Err(InputCutoffVerificationStop::Admission(
                 CompanionPreflightStop::Interrupted(event),

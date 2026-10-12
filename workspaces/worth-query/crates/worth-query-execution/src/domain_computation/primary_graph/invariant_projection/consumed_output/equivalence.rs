@@ -70,6 +70,7 @@ fn compare(
         Err(FullVerificationStop::Admission(stop)) => {
             return EquivalenceComparison::Inconclusive(super::verification::map_admission_stop(stop));
         }
+        Err(FullVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(cause))) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Execution(cause)),
         Err(FullVerificationStop::SourceRead(
             crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
         )) => return EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::WorkExhausted),
@@ -88,6 +89,27 @@ fn compare(
 mod tests {
     use super::*;
     use worth_relational::facade::mvcc::CompanionPreflightStop;
+
+    #[test]
+    fn source_request_stops_keep_their_value_in_equivalence() {
+        use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure as Read;
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+        for cause in [
+            Cause::Cancelled,
+            Cause::DeadlineElapsed,
+            Cause::WorkExhausted,
+        ] {
+            assert_eq!(
+                compare(
+                    Ok(ConsumedOutputVerification::Current),
+                    Err(FullVerificationStop::SourceRead(Read::Execution(cause)))
+                ),
+                EquivalenceComparison::Inconclusive(ConsumedOutputVerificationStop::Execution(
+                    cause
+                ))
+            );
+        }
+    }
 
     #[test]
     fn observer_capacity_is_not_missing_evidence() {

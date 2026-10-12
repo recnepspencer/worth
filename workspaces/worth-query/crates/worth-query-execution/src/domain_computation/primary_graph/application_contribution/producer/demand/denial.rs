@@ -159,10 +159,21 @@ impl WorthQueryOutputDemandDenial {
         denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
         subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
-        Self::new(
-            WorthQueryOutputDemandDenialKind::ProductSelection(denial),
-            subject,
-        )
+        use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        let kind = match denial {
+            Branch::ReadExecution(Err(Control::Cancelled)) | Branch::ObservationCancelled => {
+                WorthQueryOutputDemandDenialKind::Cancelled
+            }
+            Branch::ReadExecution(Err(Control::TimedOut)) | Branch::ObservationDeadlineExceeded => {
+                WorthQueryOutputDemandDenialKind::TimedOut
+            }
+            Branch::ReadExecution(Ok(cause)) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
+                crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause),
+            ),
+            other => WorthQueryOutputDemandDenialKind::ProductSelection(other),
+        };
+        Self::new(kind, subject)
     }
 
     pub(in crate::domain_computation::primary_graph) fn with_recovery_posture(

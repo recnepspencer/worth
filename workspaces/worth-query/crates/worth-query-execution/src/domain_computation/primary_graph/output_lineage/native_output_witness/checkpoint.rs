@@ -18,7 +18,7 @@ impl SealedNativeOutputWitness {
         snapshot: &SnapshotHandle,
         facts: &[Fact],
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, CompanionPreflightStop> {
+    ) -> Result<bool, super::super::invalidation::SettlementVerificationStop> {
         if !self.unchanged_in(execution, relational, snapshot, admission)? {
             return Ok(false);
         }
@@ -37,7 +37,10 @@ impl SealedNativeOutputWitness {
             // and settles the actual probe debit on success or failure.
             match fact.source_currentness_in(relational, execution, snapshot, admission)? {
                 Ok(movement) if movement.movement() == Movement::Unmoved => {}
-                Ok(_) | Err(_) => return Ok(false),
+                Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                    return Err(super::super::invalidation::SettlementVerificationStop::SourceRead(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Execution(cause)));
+                }
+                Ok(_) | Err(crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::Unavailable | crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => return Ok(false),
             }
         }
         Ok(true)

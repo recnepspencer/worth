@@ -10,6 +10,7 @@ use worth_query_host::facade::application_contribution::{
 };
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandProgress;
 
+mod every_consult;
 mod program;
 mod required_refresh;
 use program::{FinalConnection, NoReuseProgram};

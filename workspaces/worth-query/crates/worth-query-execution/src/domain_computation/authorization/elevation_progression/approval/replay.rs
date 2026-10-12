@@ -87,6 +87,20 @@ where
     {
         let draft = match bind_approval(execution, self, &requested, &access, operation) {
             Ok(draft) => draft,
+            Err(denial)
+                if crate::domain_computation::authorization::denial::is_request_stop(
+                    denial.kind(),
+                ) =>
+            {
+                return Err((
+                    Some(
+                        WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
+                            denial,
+                        ),
+                    ),
+                    requested,
+                ))
+            }
             Err(_) => return Err((None, requested)),
         };
         let admission = match progress_capability_operation(
@@ -98,6 +112,20 @@ where
             WorthQueryCapabilityOperationProgression::ElevationLifecycle,
         ) {
             Ok(admission) => admission,
+            Err(denial)
+                if crate::domain_computation::authorization::denial::is_request_stop(
+                    denial.kind(),
+                ) =>
+            {
+                return Err((
+                    Some(
+                        WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
+                            denial,
+                        ),
+                    ),
+                    requested,
+                ))
+            }
             Err(_) => return Err((None, requested)),
         };
         let mut admission = admission

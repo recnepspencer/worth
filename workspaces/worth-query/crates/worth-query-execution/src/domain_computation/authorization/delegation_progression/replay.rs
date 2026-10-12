@@ -131,25 +131,37 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let Ok(proposed) = access.capability_input().delegation_request() else {
             return Ok(None);
         };
-        let Some(Ok(resolved)) = access.with_exact_observation(execution, self, |observation| {
+        let resolved = match access.with_exact_observation(execution, self, |observation| {
             observation.resolve_delegation_replay_target(execution, target, &proposed)
-        }) else {
-            return Ok(None);
+        }) {
+            Some(Ok(resolved)) => resolved,
+            Some(Err(denial)) if super::super::denial::is_request_stop(denial.kind()) => {
+                return Err(
+                    WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
+                )
+            }
+            Some(Err(_)) | None => return Ok(None),
         };
         let Ok(prepared) = super::binding::bind_activation(
             self, installed, &proposed, resolved, target, operation,
         ) else {
             return Ok(None);
         };
-        let Ok(admission) = progress_capability_operation(
+        let admission = match progress_capability_operation(
             execution,
             self,
             access,
             operation,
             preconditions,
             WorthQueryCapabilityOperationProgression::DelegationActivation,
-        ) else {
-            return Ok(None);
+        ) {
+            Ok(admission) => admission,
+            Err(denial) if super::super::denial::is_request_stop(denial.kind()) => {
+                return Err(
+                    WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
+                )
+            }
+            Err(_) => return Ok(None),
         };
         let Ok(admission) = prepared.finish(admission) else {
             return Ok(None);

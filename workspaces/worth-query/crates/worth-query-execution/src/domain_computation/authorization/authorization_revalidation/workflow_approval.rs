@@ -81,7 +81,7 @@ where
             let snapshot = security.snapshot_handle();
             if !authority
                 .principal()
-                .remains_current_in(execution, runtime, snapshot, graph.layout())
+                .remains_current_in(execution, runtime, snapshot, graph.layout()).map_err(|denial| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::denial::principal_currentness(denial), "workflow approval principal"))?
             {
                 return Err(stale_principal());
             }
@@ -151,12 +151,7 @@ where
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::DelegationTarget => authority
                         .dependencies()
                         .delegation_target_support_matches(execution, observed.decision(), runtime, snapshot)
-                        .map_err(|stop| WorthQueryOperationAuthorizationDenial::new(
-                            match stop {
-                                worth_execution::MapKernelStop::Cancelled => super::super::WorthQueryOperationAuthorizationDenialKind::Cancelled,
-                                worth_execution::MapKernelStop::DeadlineElapsed => super::super::WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded,
-                                _ => super::super::WorthQueryOperationAuthorizationDenialKind::CanonicalWorkDenied,
-                            }, "workflow approval support"))?,
+                        .map_err(|kind| WorthQueryOperationAuthorizationDenial::new(kind, "workflow approval support"))?,
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::ElevationUpperBound => authority
                         .dependencies()
                         .support_matches(observed.decision()),

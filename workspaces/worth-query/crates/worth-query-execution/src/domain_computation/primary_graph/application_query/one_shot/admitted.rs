@@ -173,6 +173,14 @@ fn map_selected_read_stop(
         | SelectedAuthorizedReadStop::Currentness(
             SelectedAuthorizationCurrentnessStop::Admission(stop),
         ) => return WorthQueryAdmittedOneShotStop::Admission(stop),
+        SelectedAuthorizedReadStop::Currentness(SelectedAuthorizationCurrentnessStop::Execution(cause)) => {
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            match crate::facade::primary_graph::relational_execution_kind(cause, None) {
+                Ok(kind) => WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind),
+                Err(Control::Cancelled) => WorthQueryApplicationOneShotDenialKind::Cancelled,
+                Err(Control::TimedOut) => WorthQueryApplicationOneShotDenialKind::DeadlineExceeded,
+            }
+        }
         SelectedAuthorizedReadStop::WorkUnavailable => {
             return WorthQueryAdmittedOneShotStop::WorkUnavailable;
         }

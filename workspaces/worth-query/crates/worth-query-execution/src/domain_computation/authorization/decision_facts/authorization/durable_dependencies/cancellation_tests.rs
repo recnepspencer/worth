@@ -27,10 +27,15 @@ impl WorthQueryAuthorizationDecisionFact {
             retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
             Ok(true)
         );
+        crate::test_read_stops::every_consult(
+            |request| retained.matches_with_retained_activation(request, &observed, runtime, snapshot),
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Cancelled,
+            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }),
+        );
         source.cancel();
         assert_eq!(
             retained.matches_with_retained_activation(execution, &observed, runtime, snapshot),
-            Err(worth_execution::MapKernelStop::Cancelled)
+            Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Cancelled)
         );
     }
 }

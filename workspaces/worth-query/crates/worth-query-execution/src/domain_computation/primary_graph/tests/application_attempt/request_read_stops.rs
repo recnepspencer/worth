@@ -11,13 +11,13 @@ type Admission = WorthQueryAdmittedApplicationOperation<
     Account,
 >;
 #[test]
-fn cancelled_principal_and_authorization_fact_dispatch_keeps_the_stop() {
+fn authorization_fact_keeps_the_stop_at_every_consult() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
         admission.assert_cancelled_fact_dispatch(runtime, execution, snapshot, source)
     });
 }
 #[test]
-fn cancelled_retained_activation_native_read_keeps_the_stop() {
+fn retained_activation_keeps_the_stop_at_every_consult() {
     with_admitted_facts(|admission, runtime, execution, snapshot, source| {
         admission.assert_cancelled_retained_activation_read(runtime, execution, snapshot, source)
     });

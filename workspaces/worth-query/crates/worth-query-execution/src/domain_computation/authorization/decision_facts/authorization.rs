@@ -181,18 +181,23 @@ impl WorthQueryAuthorizationDecisionFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> bool {
-        self.bridge_is_retained(bridge)
-            && observation_is_current(execution, runtime, snapshot, &self.relational)
-            && self.delegation.as_ref().is_none_or(|delegation| {
-                delegation.remains_current_in(execution, runtime, snapshot, bridge)
-            })
-            && self
-                .delegation_activation
-                .as_ref()
-                .is_none_or(|activation| {
-                    activation.remains_current_in(execution, runtime, snapshot, bridge)
-                })
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        if !self.bridge_is_retained(bridge)
+            || !observation_is_current(execution, runtime, snapshot, &self.relational)?
+        {
+            return Ok(false);
+        }
+        if let Some(delegation) = &self.delegation {
+            if !delegation.remains_current_in(execution, runtime, snapshot, bridge)? {
+                return Ok(false);
+            }
+        }
+        if let Some(activation) = &self.delegation_activation {
+            if !activation.remains_current_in(execution, runtime, snapshot, bridge)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
     }
 
     pub(in crate::domain_computation) fn remains_equal_in(
@@ -200,17 +205,23 @@ impl WorthQueryAuthorizationDecisionFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> bool {
-        bridge_matches(&self.relational, &self.bridge)
-            && observation_is_current(execution, runtime, snapshot, &self.relational)
-            && self
-                .delegation
-                .as_ref()
-                .is_none_or(|delegation| delegation.remains_equal_in(execution, runtime, snapshot))
-            && self
-                .delegation_activation
-                .as_ref()
-                .is_none_or(|activation| activation.remains_equal_in(execution, runtime, snapshot))
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        if !bridge_matches(&self.relational, &self.bridge)
+            || !observation_is_current(execution, runtime, snapshot, &self.relational)?
+        {
+            return Ok(false);
+        }
+        if let Some(delegation) = &self.delegation {
+            if !delegation.remains_equal_in(execution, runtime, snapshot)? {
+                return Ok(false);
+            }
+        }
+        if let Some(activation) = &self.delegation_activation {
+            if !activation.remains_equal_in(execution, runtime, snapshot)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
     }
 
     pub(in crate::domain_computation::authorization) fn has_same_lineage(
@@ -230,9 +241,12 @@ pub(super) fn observation_is_current(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     observation: &RelationalAuthorizationObservationEvidence,
-) -> bool {
-    runtime.compare_authorization_observation(observation, snapshot.clone(), execution)
-        == RelationalAuthorizationObservationFreshness::Fresh
+) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+    match runtime.compare_authorization_observation(observation, snapshot.clone(), execution) {
+        RelationalAuthorizationObservationFreshness::ExecutionStopped(cause) => Err(cause),
+        RelationalAuthorizationObservationFreshness::Fresh => Ok(true),
+        RelationalAuthorizationObservationFreshness::Stale => Ok(false),
+    }
 }
 
 fn bridge_matches(

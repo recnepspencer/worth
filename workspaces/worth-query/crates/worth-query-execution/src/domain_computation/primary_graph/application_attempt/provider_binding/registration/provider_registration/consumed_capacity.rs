@@ -43,6 +43,9 @@ pub(super) fn request_meter(
 
 fn backing_stop(stop: ConsumedOutputVerificationStop) -> ApplicationAttemptRegistrationStop {
     match stop {
+        ConsumedOutputVerificationStop::Execution(_) => {
+            unreachable!("admit_backing has no request or native read")
+        }
         ConsumedOutputVerificationStop::Interrupted(event) => {
             ApplicationAttemptRegistrationStop::Interrupted(event.interruption())
         }

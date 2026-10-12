@@ -238,18 +238,25 @@ where
         if !authorization
             .principal()
             .remains_current_in(execution, runtime, snapshot)
+            .map_err(|kind| {
+                WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+            })?
         {
             return Err(denial(
                 WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
                 refresh.installed.contract().name(),
             ));
         }
-        if !authorization.decision().remains_current_in(
-            execution,
-            runtime,
-            snapshot,
-            self.authorization.bridge(),
-        ) {
+        if !authorization
+            .decision()
+            .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+            .map_err(|cause| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    "authorization currentness",
+                )
+            })?
+        {
             return Err(denial(
                 WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
                 refresh.installed.contract().name(),

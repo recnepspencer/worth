@@ -119,6 +119,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
         let inspection = inspect_selected_program(execution, self, basis);
+        if let Err(WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) = &inspection {
+            return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(*stop));
+        }
         let interpretation = if let (Some(support), Ok(selected)) =
             (self.installed_program_support(), &inspection)
         {

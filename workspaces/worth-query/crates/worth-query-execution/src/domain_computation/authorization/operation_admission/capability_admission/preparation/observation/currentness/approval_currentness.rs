@@ -56,18 +56,26 @@ pub(super) fn validate_approval_support<Schema, Principal, Identity, Capability,
 where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
-    if prepared.approved().is_some_and(|approved| {
-        !approved.support_remains_current_in(
-            execution,
-            relational,
-            snapshot,
-            prepared.runtime().authorization.bridge(),
-        )
-    }) {
-        return Err(denial::authorization_denial(
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
-            prepared.capability().contract().name(),
-        ));
+    if let Some(approved) = prepared.approved() {
+        if !approved
+            .support_remains_current_in(
+                execution,
+                relational,
+                snapshot,
+                prepared.runtime().authorization.bridge(),
+            )
+            .map_err(|cause| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    "elevation support currentness",
+                )
+            })?
+        {
+            return Err(denial::authorization_denial(
+                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+                prepared.capability().contract().name(),
+            ));
+        }
     }
     Ok(())
 }

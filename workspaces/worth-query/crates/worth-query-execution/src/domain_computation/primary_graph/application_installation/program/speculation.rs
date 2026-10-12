@@ -33,6 +33,7 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
     ForeignRuntime,
     ForeignPhase,
     SourceUnavailable,
+    SourceSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     AdmissionRejected,
     CleanupRejected,
 }
@@ -73,10 +74,15 @@ impl WorthQueryApplicationPreviewSession {
             .select_with_request(execution)
         {
             Ok(current) => current,
-            Err(_) => {
+            Err(cause) => {
                 self.discard_active()
                     .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
-                return Err(WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable);
+                return Err(match cause {
+                    crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(_)
+                    | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCancelled
+                    | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationDeadlineExceeded => WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(cause),
+                    _ => WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable,
+                });
             }
         };
         if current.product().selected_commit() != &self.source_commit {

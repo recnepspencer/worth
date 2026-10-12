@@ -1,3 +1,4 @@
+mod basis_interruption;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
@@ -252,7 +253,14 @@ where
             .retain_product_application_basis(execution, product.observation())
         {
             Ok(basis) => basis,
-            Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
+            Err(cause) => {
+                return match basis_interruption::authorization(cause) {
+                    Some(denial) => {
+                        WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(denial))
+                    }
+                    None => WorthQueryApplicationLiveOutcome::Unavailable,
+                }
+            }
         };
         let controls = WorthQueryApplicationQueryControls::product_live(
             product,

@@ -68,8 +68,13 @@ impl WorthQueryDurableAuthorizationDependencies {
         observed: &Self,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, worth_execution::MapKernelStop> {
-        execution.check_live()?;
+    ) -> Result<
+        bool,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    > {
+        execution
+            .check_live()
+            .map_err(crate::domain_computation::authorization::denial::kernel_stop_kind)?;
         if self.primary != observed.primary
             || self.delegation != observed.delegation
             || observed.activation.is_some()
@@ -84,8 +89,32 @@ impl WorthQueryDurableAuthorizationDependencies {
             return Ok(false);
         };
         let observed = stamp.source_revisions_match(runtime, execution, snapshot);
-        execution.check_live()?;
-        Ok(observed.unwrap_or(false))
+        execution
+            .check_live()
+            .map_err(crate::domain_computation::authorization::denial::kernel_stop_kind)?;
+        use worth_relational::facade::authorization::RelationalAuthorizationDependencyDenial as Stop;
+        match observed {
+            Ok(current) => Ok(current),
+            Err(Stop::Execution(cause)) => Err(
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    "retained activation",
+                )
+                .kind(),
+            ),
+            Err(
+                Stop::ForeignRuntime
+                | Stop::SnapshotUnavailable
+                | Stop::InexactSnapshot
+                | Stop::IncompleteObservation
+                | Stop::DependencyUnavailable
+                | Stop::UnsupportedFieldLocator
+                | Stop::DependencyBudgetExceeded
+                | Stop::ByteBudgetExceeded
+                | Stop::MalformedWire
+                | Stop::UnsupportedVersion,
+            ) => Ok(false),
+        }
     }
 }
 

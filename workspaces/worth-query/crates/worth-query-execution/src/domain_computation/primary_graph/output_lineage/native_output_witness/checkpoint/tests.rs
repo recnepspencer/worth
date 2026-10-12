@@ -181,7 +181,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         // a completed read would require: preserve the incoming refusal law.
         assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             std::slice::from_ref(&indexed), &mut exhausted),
-            Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
+            Err(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop::Admission(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum }))
                 if maximum == u64::try_from(witness_work + 2).unwrap()));
         // One visit cannot fund the index lookup and a candidate visit.
         // The refused probe refunds that reservation without reading a row.

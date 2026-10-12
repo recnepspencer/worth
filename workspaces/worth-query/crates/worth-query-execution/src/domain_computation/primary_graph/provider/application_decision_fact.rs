@@ -136,10 +136,19 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
                 fact.remains_equal_in(runtime, execution, snapshot)?
             }
             Self::Principal(dependency) => {
-                dependency.remains_current_in(execution, runtime, snapshot)
+                dependency.remains_current_in(execution, runtime, snapshot).map_err(|kind| {
+                    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
+                    use super::super::WorthQueryApplicationAttemptDenialKind as Attempt;
+                    SelfDenial::new(match kind {
+                        Authorization::ExecutionRequest(kind) => Attempt::ExecutionRequest(kind),
+                        Authorization::Cancelled => Attempt::Cancelled,
+                        Authorization::DeadlineExceeded => Attempt::DeadlineExceeded,
+                        _ => Attempt::CurrentAuthorityDenied,
+                    }, "principal fact comparison")
+                })?
             }
             Self::Authorization { decision, .. } => {
-                decision.remains_equal_in(execution, runtime, snapshot)
+                decision.remains_equal_in(execution, runtime, snapshot).map_err(|cause| SelfDenial::relational_read_stopped(cause, "authorization decision fact"))?
             }
         };
         execution

@@ -19,6 +19,7 @@ use settlement::PublishedSuspensionSettlement;
 /// handed back to continue again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputSuspensionRecoveryStage {
+    SourceSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     /// The host request was refused before inspecting recovery facts.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The unpublished product state could not be inspected.
@@ -289,9 +290,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let selected = match self.on_branch(retry.branch).select_with_request(execution) {
             Ok(selected) => selected,
-            Err(_) => {
+            Err(cause) => {
                 return Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
+                    WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(cause),
                     RecoveryState::World { recovery, retry },
                 ));
             }

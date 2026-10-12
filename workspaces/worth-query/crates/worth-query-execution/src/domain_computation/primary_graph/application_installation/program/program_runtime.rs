@@ -119,10 +119,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    ) -> Result<
-        WorthQueryProgramSupportRetirementReceipt,
-        worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial,
-    >
+    ) -> Result<WorthQueryProgramSupportRetirementReceipt, WorthQueryProgramSupportRetirementFailure>
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
@@ -149,11 +146,19 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             .begin_program_retirement(revision)
         {
             Ok(barrier) => barrier,
-            Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),
+            Err(_) => {
+                return Err(retirement
+                    .inventory_unavailable(retained_program_bytes)
+                    .into())
+            }
         };
         let occurrences = match self.runtime.product_runtime.activations.live_occurrences() {
             Ok(occurrences) => occurrences,
-            Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),
+            Err(_) => {
+                return Err(retirement
+                    .inventory_unavailable(retained_program_bytes)
+                    .into())
+            }
         };
         let mut current_branches = 0usize;
         for occurrence in occurrences.iter().copied() {
@@ -165,7 +170,9 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 Ok(selected) => selected,
                 Err(BranchDenial::RetiredBranch | BranchDenial::IncarnationChanged) => continue,
                 Err(_) => {
-                    return Err(retirement.inventory_unavailable(retained_program_bytes));
+                    return Err(retirement
+                        .inventory_unavailable(retained_program_bytes)
+                        .into());
                 }
             };
             let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
@@ -173,13 +180,19 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
-                    Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes)),
+                    Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => {
+                        let policy = retirement.inventory_unavailable(retained_program_bytes);
+                        return Err(WorthQueryProgramSupportRetirementFailure::ReadExecution { stop, inventory: policy.partial_inventory().expect("partial inventory was recorded").clone() });
+                    }
+                    Err(_) => return Err(retirement.inventory_unavailable(retained_program_bytes).into()),
                 };
             if inspection.revision() == revision {
                 current_branches = match current_branches.checked_add(1) {
                     Some(current_branches) => current_branches,
                     None => {
-                        return Err(retirement.inventory_unavailable(retained_program_bytes));
+                        return Err(retirement
+                            .inventory_unavailable(retained_program_bytes)
+                            .into());
                     }
                 };
             }
@@ -210,5 +223,28 @@ where
         crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
         self.runtime.close_conditional_runtime()
+    }
+}
+
+/// A retirement's inventory denial or the exact request that stopped reading it.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryProgramSupportRetirementFailure {
+    Policy(worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial),
+    ReadExecution {
+        stop: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+        inventory:
+            worth_query_installation::facade::WorthQueryProgramSupportPartialRetirementInventory,
+    },
+}
+impl From<worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial>
+    for WorthQueryProgramSupportRetirementFailure
+{
+    fn from(
+        denial: worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial,
+    ) -> Self {
+        Self::Policy(denial)
     }
 }

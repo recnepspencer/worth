@@ -81,8 +81,10 @@ pub(super) fn verify(
             )) => WorthQueryProviderSessionCommitStop::ControlStopped(
                 super::stops::interruption_control_stopped(event),
             ),
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
             other => {
                 let detail = match other {
+                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(_)) => unreachable!("request execution routed above"),
                     PrecommitOutputStop::SelectedUnavailable => {
                         "selected native root is unavailable for output evidence"
                     }

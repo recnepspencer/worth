@@ -115,6 +115,8 @@ where
 /// Why a read through the lent reader was refused.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryComputationReadDenial {
+    /// The retained computation's fact comparison stopped under its request.
+    RetainedFact(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind),
     Field(WorthQueryInvariantDecisionPlanDenial),
     Relations(WorthQueryInvariantProjectionTraversalDenial),
 }

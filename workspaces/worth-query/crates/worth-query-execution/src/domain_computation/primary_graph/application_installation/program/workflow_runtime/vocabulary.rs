@@ -86,16 +86,11 @@ where
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignPhase)?;
         let execution = &phase_request;
-        Ok(
-            match self
-                .runtime
-                .on_branch(branch)
-                .select_with_request(execution)
-            {
-                Ok(selected) => self.workflow_spec_for(&selected),
-                Err(_) => self.initial,
-            },
-        )
+        let selected = self
+            .runtime
+            .on_branch(branch)
+            .select_with_request(execution)?;
+        Ok(self.workflow_spec_for(&selected))
     }
 
     pub const fn authentication_owner(

@@ -220,22 +220,29 @@ impl WorthQueryRetainedCapabilityAuthorization {
     ) -> Result<(), super::WorthQueryOperationAuthorizationDenialKind> {
         if !self
             .principal
-            .remains_current_in(execution, runtime, snapshot)
+            .remains_current_in(execution, runtime, snapshot)?
         {
             return Err(super::WorthQueryOperationAuthorizationDenialKind::StalePrincipal);
         }
         if !self
             .decision
             .remains_current_in(execution, runtime, snapshot, bridge)
+            .map_err(|cause| {
+                super::denial::relational_read_denial(cause, "capability currentness").kind()
+            })?
         {
             return Err(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization);
         }
-        if self.supporting.as_ref().is_some_and(|supporting| {
-            !supporting
+        if let Some(supporting) = &self.supporting {
+            if !supporting
                 .decision()
                 .remains_current_in(execution, runtime, snapshot, bridge)
-        }) {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization);
+                .map_err(|cause| {
+                    super::denial::relational_read_denial(cause, "support currentness").kind()
+                })?
+            {
+                return Err(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization);
+            }
         }
         Ok(())
     }

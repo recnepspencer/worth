@@ -290,6 +290,9 @@ fn cutoff_basis_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDem
         | InputCutoffVerificationStop::Admission(_) => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
+        InputCutoffVerificationStop::Execution(cause) => {
+            return crate::domain_computation::primary_graph::output_reuse::read_denial(cause)
+        }
         InputCutoffVerificationStop::SelectedSourceUnavailable => {
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable
         }
@@ -318,6 +321,7 @@ fn cutoff_admission_denial(
 
 fn cutoff_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDemandDenial {
     match stop {
+        InputCutoffVerificationStop::Execution(cause) => crate::domain_computation::primary_graph::output_reuse::read_denial(cause),
         InputCutoffVerificationStop::Admission(stop) => cutoff_admission_denial(stop),
         InputCutoffVerificationStop::CapacityExhausted => denial(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded, String::new()),
         InputCutoffVerificationStop::WorkExhausted => denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, String::new()),

@@ -7,6 +7,12 @@
 /// rejected (choose another branch).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchAdmissionDenial {
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ForeignPhase,
     /// The runtime's branch-observation state is unusable after an internal failure.
     ObservationStatePoisoned,
@@ -66,7 +72,8 @@ impl WorthQueryProductBranchAdmissionDenial {
     pub const fn is_transient(self) -> bool {
         matches!(
             self,
-            Self::OwnerUnavailable
+            Self::ReadExecution(_)
+                | Self::OwnerUnavailable
                 | Self::ObservationCancelled
                 | Self::ObservationDeadlineExceeded
                 | Self::ObservationCapacityExhausted

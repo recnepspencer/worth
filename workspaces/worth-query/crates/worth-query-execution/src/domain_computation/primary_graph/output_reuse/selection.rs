@@ -35,6 +35,8 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
         Err(RetainedFactStop::Work) => Err(work_denial()),
+        Err(RetainedFactStop::Execution(cause)) => Err(read_denial(cause)),
+        Err(RetainedFactStop::Interrupted(event)) => Err(interruption_denial(event)),
         Err(RetainedFactStop::Unavailable(fact)) => Err(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
             fact.locator_identity(),
@@ -46,6 +48,8 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
     /// The snapshot cannot answer this fact.
     Unavailable(&'fact WorthQueryApplicationObservedFact),
 }
@@ -63,11 +67,14 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
         match fact.source_currentness_in(runtime, execution, snapshot, admission) {
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
-            Ok(Err(WorthQuerySourceCurrentnessFailure::Execution(_))) => {
-                return Err(RetainedFactStop::Unavailable(fact))
+            Ok(Err(WorthQuerySourceCurrentnessFailure::Execution(cause))) => {
+                return Err(RetainedFactStop::Execution(cause))
             }
             Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)) => {
                 return Err(RetainedFactStop::Unavailable(fact));
+            }
+            Err(CompanionPreflightStop::Interrupted(event)) => {
+                return Err(RetainedFactStop::Interrupted(event))
             }
             Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) | Err(_) => {
                 return Err(RetainedFactStop::Work);
@@ -145,6 +152,7 @@ fn owner_read<Answer>(
         CompanionPreflightStop::WorkExhausted { .. }
         | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => work_denial(),
+        CompanionPreflightStop::Interrupted(event) => interruption_denial(event),
         _ => WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
             unavailable,
@@ -169,6 +177,32 @@ fn reusable_facts(
     facts
         .filter(|facts| !facts.is_empty())
         .ok_or(OutputDependencySelection::FreshRequired)
+}
+
+pub(in crate::domain_computation::primary_graph) fn read_denial(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> WorthQueryOutputDemandDenial {
+    use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Execution;
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    let kind = match crate::facade::primary_graph::relational_execution_kind(cause, None) {
+        Ok(kind) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
+            Execution::ExecutionRequest(kind),
+        ),
+        Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
+        Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
+    };
+    WorthQueryOutputDemandDenial::new(kind, "retained output comparison")
+}
+
+pub(in crate::domain_computation::primary_graph) fn interruption_denial(
+    event: worth_relational::facade::mvcc::RelationalInterruptionEvent,
+) -> WorthQueryOutputDemandDenial {
+    use worth_relational::facade::mvcc::RelationalOperationInterruption;
+    let kind = match event.interruption() {
+        RelationalOperationInterruption::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+        RelationalOperationInterruption::TimedOut => WorthQueryOutputDemandDenialKind::TimedOut,
+    };
+    WorthQueryOutputDemandDenial::new(kind, "retained output comparison")
 }
 
 #[cfg(test)]

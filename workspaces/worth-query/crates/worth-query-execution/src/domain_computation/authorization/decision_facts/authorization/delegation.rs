@@ -178,14 +178,16 @@ impl WorthQueryDelegationDecisionFact {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
-    ) -> bool {
-        self.remains_equal_in(execution, runtime, snapshot)
-            && match self {
-                Self::Root { .. } => true,
-                Self::Delegated { parent, .. } => {
-                    parent.remains_current_in(execution, runtime, snapshot, bridge)
-                }
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        if !self.remains_equal_in(execution, runtime, snapshot)? {
+            return Ok(false);
+        }
+        match self {
+            Self::Root { .. } => Ok(true),
+            Self::Delegated { parent, .. } => {
+                parent.remains_current_in(execution, runtime, snapshot, bridge)
             }
+        }
     }
 
     pub(super) fn remains_equal_in(
@@ -193,7 +195,7 @@ impl WorthQueryDelegationDecisionFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> bool {
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
         match self {
             Self::Root { discovery, .. } => {
                 observation_is_current(execution, runtime, snapshot, discovery)
@@ -203,11 +205,11 @@ impl WorthQueryDelegationDecisionFact {
                 transition,
                 parent,
                 ..
-            } => {
-                observation_is_current(execution, runtime, snapshot, discovery)
-                    && observation_is_current(execution, runtime, snapshot, transition)
-                    && parent.remains_equal_in(execution, runtime, snapshot)
-            }
+            } => Ok(
+                observation_is_current(execution, runtime, snapshot, discovery)?
+                    && observation_is_current(execution, runtime, snapshot, transition)?
+                    && parent.remains_equal_in(execution, runtime, snapshot)?,
+            ),
         }
     }
 

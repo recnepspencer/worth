@@ -144,7 +144,10 @@ pub(super) fn begin<Key, Item, Reduced, Schema, Operation>(
     installation: &ComputationInstallation,
     input_digest: [u8; 32],
     remaining_work: RemainingWork,
-) -> Begun<Key, Item, Reduced>
+) -> Result<
+    Begun<Key, Item, Reduced>,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+>
 where
     Key: Send + Sync + 'static,
     Item: Send + Sync + 'static,
@@ -153,16 +156,18 @@ where
     let prior = match reader.take_computation_prior() {
         Ok(prior) => prior,
         Err(reason) => {
-            return Begun::Full {
+            return Ok(Begun::Full {
                 basis: Err(reason.suppression()),
                 cause: reason.full_cause(),
-            }
+            });
         }
     };
     let basis = RetainedBasis::new(installation.clone(), prior.edition, input_digest);
-    let full = |basis, cause| Begun::Full {
-        basis: Ok(RetainedBasisToken(basis)),
-        cause,
+    let full = |basis, cause| {
+        Ok(Begun::Full {
+            basis: Ok(RetainedBasisToken(basis)),
+            cause,
+        })
     };
     if super::certification_reuse::disabled() {
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
@@ -203,6 +208,11 @@ where
                 Movement::Unmoved => KeyMovement::Unchanged,
                 Movement::Moved => KeyMovement::Changed,
             },
+            Err(denial) if matches!(denial.kind(),
+                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(_)
+                | crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::Cancelled
+                | crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+            ) => return Err(denial),
             Err(_) => KeyMovement::NotObservable,
         };
         let moved = movement != KeyMovement::Unchanged;
@@ -228,7 +238,7 @@ where
             keys.push(key.clone());
         }
     }
-    Begun::Incremental(run)
+    Ok(Begun::Incremental(run))
 }
 
 #[cfg(test)]
