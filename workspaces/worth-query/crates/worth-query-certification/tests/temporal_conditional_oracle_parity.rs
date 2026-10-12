@@ -183,7 +183,12 @@ fn assert_case(request_execution: &worth_execution::ExecutionRequest<'_, '_>, ca
                         .on_branch(product)
                         .select(&host_phase)
                         .unwrap()
-                        .conditional_clock(request_execution, &world.clock)
+                        .conditional_clock(
+                            &host_phase
+                                .execution_request_for(world.application.product_runtime())
+                                .expect("phase belongs to application"),
+                            &world.clock,
+                        )
                         .unwrap()
                 })
                 .expect("installed host call opens");
@@ -208,7 +213,12 @@ fn assert_case(request_execution: &worth_execution::ExecutionRequest<'_, '_>, ca
                         .on_branch(product)
                         .select(&host_phase)
                         .unwrap()
-                        .conditional_clock(request_execution, &world.clock)
+                        .conditional_clock(
+                            &host_phase
+                                .execution_request_for(world.application.product_runtime())
+                                .expect("phase belongs to application"),
+                            &world.clock,
+                        )
                         .unwrap()
                 })
                 .expect("installed host call opens");
