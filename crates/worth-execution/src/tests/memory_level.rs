@@ -38,13 +38,13 @@ fn a_refusal_names_the_process_or_the_policy_that_refused() {
 
     let nested = roomy.child(request(1, 1_000, 10)).unwrap();
     assert_eq!(
-        nested.reserve_memory(400).unwrap_err(),
-        MemoryLimitDenial {
+        nested.reserve_memory(400).err(),
+        Some(MemoryLimitDenial {
             requested: 400,
             admitted: 200,
             level: MemoryLimitLevel::Policy { ancestor: 1 },
-        },
-        "a parent's policy is named by how far out it is"
+        }),
+        "nested memory must respect its parent's remaining policy room"
     );
     drop(on_roomy);
     assert_eq!(nested.reserve_memory(400).unwrap().bytes(), 400);
