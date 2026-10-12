@@ -166,8 +166,8 @@ impl DemandRegistryState {
                         .map(|upstream| (upstream.as_ref().clone(), 3)),
                 )
                 .collect();
-            let followup = (selection.must_scan_again
-                && self.records[&key].framework_required_count == 0)
+            let followup = selection
+                .must_scan_again
                 .then_some(self.records.len().saturating_sub(1));
             let priced = super::cleanup_price::price_cascade_mutation(
                 self,
@@ -178,9 +178,9 @@ impl DemandRegistryState {
             )?;
             if let Some(rows) = followup {
                 let rows = u64::try_from(rows).map_err(|_| work_denial())?;
-                // This row will retire without a claim transfer. Pay the
-                // unavoidable continuation before that first effect, retaining
-                // its header credit across removal (no insertion is possible).
+                // Even if a claim keeps this row, the unavoidable continuation
+                // scans at least these headers. Fund that lower bound before
+                // transfers or removal; no insertion is possible here.
                 admission
                     .charge_external_work(rows)
                     .map_err(|_| work_denial())?;

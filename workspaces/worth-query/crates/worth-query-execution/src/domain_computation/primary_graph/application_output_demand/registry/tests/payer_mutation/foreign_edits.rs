@@ -35,7 +35,7 @@ impl Context {
     fn make(&self, entry: u8, seed: u64, debt: bool) -> Twin {
         // Both sides have the same map cardinality and prerequisite edges.
         // The foreign pending source in the clean twin has no cleanup debt.
-        let (registry, interest) = fixture(seed * 2, &self.completion, entry == 0 || entry == 4);
+        let (registry, interest) = fixture(seed, &self.completion, entry == 0 || entry == 4);
         let foreign = key("foreign-completed", seed * 2 + 1, 200);
         {
             let mut state = registry.state.lock().unwrap();
@@ -169,98 +169,122 @@ fn invalidation_owner() -> SourceInvalidationOwner {
 
 fn check(entry: u8) {
     let context = Context::new();
-    // One real edit per door, with every work ceiling. Shifting generations
-    // alone would repeat this identical three-row shape and its prices.
-    let seed = 0;
-    let complete = context.make(entry, seed, false);
-    let mut full = admission(1_000_000);
-    let (expected_answer, _owner) = run(entry, &complete, &context, &mut full).unwrap();
-    let expected = context.own_value(&complete);
-    assert_ne!(
-        expected,
-        context.own_value(&context.make(entry, seed, false))
-    );
-    // Find the debt-free entry's own ceiling; optional cleanup after the
-    // edit may spend slack, so ample charged work is only the upper bound.
-    let mut own_price = None;
-    for k in 0..=full.charged_work() {
-        let clean = context.make(entry, seed, false);
-        let noted = context.make(entry, seed, true);
-        let clean_before = value(&clean.registry.state.lock().unwrap());
-        let noted_before = value(&noted.registry.state.lock().unwrap());
-        let mut clean_paid = admission(k);
-        let mut noted_paid = admission(k);
-        match run(entry, &clean, &context, &mut clean_paid) {
-            Err(stop) => {
-                assert_eq!(stop, WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
-                assert_eq!(
-                    value(&clean.registry.state.lock().unwrap()),
-                    clean_before,
-                    "clean stop entry {entry}, seed {seed}, k {k}"
-                );
-                let stopped = run(entry, &noted, &context, &mut noted_paid);
-                assert!(matches!(
-                    stopped,
-                    Err(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
-                ));
-                assert_eq!(noted_paid.charged_work(), clean_paid.charged_work());
-                assert_eq!(value(&noted.registry.state.lock().unwrap()), noted_before);
-                let (retried, _owner) =
-                    run(entry, &noted, &context, &mut admission(1_000_000)).unwrap();
-                assert_eq!(retried, expected_answer);
-                assert_eq!(
-                    context.own_value(&noted),
-                    expected,
-                    "retry entry {entry}, seed {seed}, k {k}"
-                );
-            }
-            Ok((answer, _clean_owner)) => {
-                assert_eq!(answer, expected_answer);
-                assert_eq!(context.own_value(&clean), expected);
-                let (answer, _noted_owner) = run(entry, &noted, &context, &mut noted_paid).unwrap();
-                assert_eq!(answer, expected_answer);
-                assert_eq!(context.own_value(&noted), expected);
-                assert_eq!(clean_paid.charged_work(), k);
-                assert_eq!(noted_paid.charged_work(), k);
-                let after = value(&noted.registry.state.lock().unwrap());
-                assert_eq!(
-                    after.rows.iter().find(|row| row.key == noted.foreign),
-                    noted_before
-                        .rows
-                        .iter()
-                        .find(|row| row.key == noted.foreign)
-                );
-                assert_eq!(after.custodians, noted_before.custodians);
-                {
-                    let state = noted.registry.state.lock().unwrap();
-                    assert!(state.records[&noted.foreign].closed_cleanup.queued());
-                    assert!(state.source_custody[&context.commit].cleanup.queued);
+    // Preserve the original ordinary/claimed-superseded mutation shapes. The
+    // terminal and admission fixtures need only their one real edit per door.
+    let seeds = if entry < 3 { 16 } else { 1 };
+    for seed in 0..seeds {
+        let complete = context.make(entry, seed, false);
+        let mut full = admission(1_000_000);
+        let (expected_answer, _owner) = run(entry, &complete, &context, &mut full).unwrap();
+        let expected = context.own_value(&complete);
+        assert_ne!(
+            expected,
+            context.own_value(&context.make(entry, seed, false))
+        );
+        // Find the debt-free entry's own ceiling; optional cleanup after the
+        // edit may spend slack, so ample charged work is only the upper bound.
+        let mut own_price = None;
+        for k in 0..=full.charged_work() {
+            let clean = context.make(entry, seed, false);
+            let noted = context.make(entry, seed, true);
+            let clean_before = value(&clean.registry.state.lock().unwrap());
+            let noted_before = value(&noted.registry.state.lock().unwrap());
+            let mut clean_paid = admission(k);
+            let mut noted_paid = admission(k);
+            match run(entry, &clean, &context, &mut clean_paid) {
+                Err(stop) => {
+                    assert_eq!(stop, WorthQueryOutputDemandDenialKind::WorkBudgetExceeded);
+                    assert_eq!(
+                        value(&clean.registry.state.lock().unwrap()),
+                        clean_before,
+                        "clean stop entry {entry}, seed {seed}, k {k}"
+                    );
+                    let stopped = run(entry, &noted, &context, &mut noted_paid);
+                    assert!(matches!(
+                        stopped,
+                        Err(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
+                    ));
+                    assert_eq!(noted_paid.charged_work(), clean_paid.charged_work());
+                    assert_eq!(value(&noted.registry.state.lock().unwrap()), noted_before);
+                    let (retried, _owner) =
+                        run(entry, &noted, &context, &mut admission(1_000_000)).unwrap();
+                    assert_eq!(retried, expected_answer);
+                    assert_eq!(
+                        context.own_value(&noted),
+                        expected,
+                        "retry entry {entry}, seed {seed}, k {k}"
+                    );
                 }
-                // The own reclamation ceiling is deliberately zero in the
-                // fixture; the next request has retention as well as work.
-                noted.registry.state.lock().unwrap().required_budget_bytes = 8 * 1024 * 1024;
-                let _reader = noted
-                    .registry
-                    .admit(
-                        key("foreign-reader", seed * 2 + 2, 200),
-                        None,
-                        context.scope,
-                        occurrence(),
-                        super::super::super::DemandAdmissionKind::Ordinary,
-                        None,
-                        None,
-                        &mut admission(1_000_000),
-                    )
-                    .unwrap();
-                let state = noted.registry.state.lock().unwrap();
-                assert!(!state.records.contains_key(&noted.foreign));
-                assert!(!state.source_custody.contains_key(&context.commit));
-                own_price = Some(k);
-                break;
+                Ok((answer, _clean_owner)) => {
+                    assert_eq!(answer, expected_answer);
+                    assert_eq!(context.own_value(&clean), expected);
+                    let (answer, _noted_owner) =
+                        run(entry, &noted, &context, &mut noted_paid).unwrap();
+                    assert_eq!(answer, expected_answer);
+                    assert_eq!(context.own_value(&noted), expected);
+                    assert_eq!(clean_paid.charged_work(), k);
+                    assert_eq!(noted_paid.charged_work(), k);
+                    if entry < 3 && seed == 0 {
+                        assert_eq!(k, model_own_price(entry));
+                    }
+                    let after = value(&noted.registry.state.lock().unwrap());
+                    assert_eq!(
+                        after.rows.iter().find(|row| row.key == noted.foreign),
+                        noted_before
+                            .rows
+                            .iter()
+                            .find(|row| row.key == noted.foreign)
+                    );
+                    assert_eq!(after.custodians, noted_before.custodians);
+                    {
+                        let state = noted.registry.state.lock().unwrap();
+                        assert!(state.records[&noted.foreign].closed_cleanup.queued());
+                        assert!(state.source_custody[&context.commit].cleanup.queued);
+                    }
+                    // The own reclamation ceiling is deliberately zero in the
+                    // fixture; the next request has retention as well as work.
+                    noted.registry.state.lock().unwrap().required_budget_bytes = 8 * 1024 * 1024;
+                    let _reader = noted
+                        .registry
+                        .admit(
+                            key("foreign-reader", seed * 2 + 2, 200),
+                            None,
+                            context.scope,
+                            occurrence(),
+                            super::super::super::DemandAdmissionKind::Ordinary,
+                            None,
+                            None,
+                            &mut admission(1_000_000),
+                        )
+                        .unwrap();
+                    let state = noted.registry.state.lock().unwrap();
+                    assert!(!state.records.contains_key(&noted.foreign));
+                    assert!(!state.source_custody.contains_key(&context.commit));
+                    own_price = Some(k);
+                    break;
+                }
             }
         }
+        assert!(own_price.is_some(), "entry {entry}, seed {seed}");
     }
-    assert!(own_price.is_some(), "entry {entry}, seed {seed}");
+}
+
+/// Independent three-row model: one Ready, its one upstream edge, and one
+/// foreign row. No production quote or measured counter supplies these prices.
+fn model_own_price(entry: u8) -> u64 {
+    const ROWS: u64 = 3;
+    const TWO_SEEKS: u64 = 2;
+    const INSPECTED_ROW: u64 = 1;
+    let walk = TWO_SEEKS + INSPECTED_ROW;
+    // Joined: the map pass + activation, then quote + three upstream walks.
+    let joined = ROWS + 4 + walk * (1 + 3);
+    // Unheld: selection + stale-owner map pass; quote + two own walks;
+    // then quote + three walks releasing the single prerequisite.
+    let unheld = 2 * ROWS + walk * (1 + 2 + 1 + 3);
+    // Cache must also inspect the two remaining headers before returning.
+    let cache = unheld + (ROWS - 1);
+    assert_eq!([joined, cache, unheld], [19, 29, 27]);
+    [joined, cache, unheld][usize::from(entry)]
 }
 
 #[test]
