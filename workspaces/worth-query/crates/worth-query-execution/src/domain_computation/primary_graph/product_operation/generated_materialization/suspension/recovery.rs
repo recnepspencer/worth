@@ -138,7 +138,7 @@ impl WorthQueryGeneratedOutputSuspensionRecoveryFailure {
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn continue_generated_output_suspension_recovery<Producer>(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryGeneratedOutputSuspensionRecovery,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<
@@ -163,7 +163,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::Unpublished { product, retry } => {
                     let needs_settlement = product.relational_requires_settlement();
                     self.continue_world(
-                        execution,
                         phase,
                         product.into_recovery(),
                         retry,
@@ -181,14 +180,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             ));
                         }
                     };
-                    self.continue_world(
-                        execution,
-                        phase,
-                        recovery,
-                        retry,
-                        needs_settlement,
-                        request,
-                    )
+                    self.continue_world(phase, recovery, retry, needs_settlement, request)
                 }
                 RecoveryState::HandoffWorld { old, next, retry } => {
                     self.finish_handoff(old, next, retry)
@@ -244,7 +236,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
     fn continue_world(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
@@ -260,12 +251,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled(execution, phase, recovery, retry, request)
+        self.adopt_settled(phase, recovery, retry, request)
     }
 
     fn adopt_settled(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
@@ -276,7 +266,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let source_read = {
             let _read = self.product_runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
-            self.on_branch(retry.branch).select_with_request(execution)
+            self.on_branch(retry.branch).select(phase)
         };
         let selected = match source_read {
             Ok(selected) => selected,
