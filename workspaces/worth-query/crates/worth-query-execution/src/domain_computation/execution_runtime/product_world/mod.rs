@@ -66,3 +66,5 @@ pub(crate) use read_observation::record_read_for_test as record_installed_source
 pub(crate) mod publication_denial;
 
 mod adoption_preparation;
+
+pub(crate) mod read_consult;

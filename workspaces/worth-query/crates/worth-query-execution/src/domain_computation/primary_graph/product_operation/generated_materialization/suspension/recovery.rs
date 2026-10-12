@@ -274,7 +274,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
-        let selected = match self.on_branch(retry.branch).select_with_request(execution) {
+        let source_read = {
+            let _read = self.product_runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
+            self.on_branch(retry.branch).select_with_request(execution)
+        };
+        let selected = match source_read {
             Ok(selected) => selected,
             Err(cause) => {
                 return Err(failure(

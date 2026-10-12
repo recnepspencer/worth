@@ -171,3 +171,26 @@ fn clear_observations() {
     TREES.with(|records| *records.borrow_mut() = Default::default());
     FULL_PREPARATIONS.with(|records| *records.borrow_mut() = Default::default());
 }
+
+#[cfg(test)]
+thread_local! { static RETAINED_FACT_READ: std::cell::Cell<usize> = const { std::cell::Cell::new(0) }; }
+#[cfg(test)]
+pub(super) struct RetainedFactComparison;
+#[cfg(test)]
+impl RetainedFactComparison {
+    pub(super) fn enter() -> Self {
+        RETAINED_FACT_READ.set(RETAINED_FACT_READ.get() + 1);
+        Self
+    }
+}
+#[cfg(test)]
+impl Drop for RetainedFactComparison {
+    fn drop(&mut self) {
+        RETAINED_FACT_READ.set(RETAINED_FACT_READ.get() - 1);
+    }
+}
+#[cfg(test)]
+pub(crate) fn retained_fact_comparison_is_active_for_test() -> bool {
+    crate::domain_computation::execution_observation::is_installed()
+        && RETAINED_FACT_READ.get() != 0
+}

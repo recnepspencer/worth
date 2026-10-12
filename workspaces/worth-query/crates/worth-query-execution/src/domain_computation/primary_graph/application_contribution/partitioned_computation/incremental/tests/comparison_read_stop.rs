@@ -17,6 +17,8 @@ fn incremental_comparison_keeps_the_retained_fact_read_stop() {
         std::num::NonZeroUsize::MIN,
         64 << 20,
     );
+    let at_read = std::rc::Rc::new(std::cell::Cell::new(None));
+    let fired = std::rc::Rc::clone(&at_read);
     let mut observer = None;
     let mut source = Some(source);
     let next = projected_attempt::attempt_admitted_placed_observing(
@@ -27,16 +29,25 @@ fn incremental_comparison_keeps_the_retained_fact_read_stop() {
         RuntimeWorldExecutionPlacement::Serial(policy),
         |_| {
             let source = source.take().unwrap();
+            let fired = std::rc::Rc::clone(&fired);
             observer = Some(crate::test_read_stops::observe_consults_for_test(
                 move |at| {
-                    if at == 2 {
+                    if super::super::observed::retained_fact_comparison_is_active_for_test()
+                        && fired.get().is_none()
+                    {
+                        fired.set(Some(at));
                         source.cancel();
                     }
                 },
             ));
         },
     );
-    assert!(crate::test_read_stops::consult_count_for_test(observer.as_ref().unwrap()) >= 2);
+    assert!(
+        crate::test_read_stops::consult_count_for_test(observer.as_ref().unwrap())
+            >= at_read
+                .get()
+                .expect("the retained fact comparison consult was reached")
+    );
     drop(observer);
     assert_eq!(next.outcome, Err(WorthQueryPartitionedComputationDenial::Read(WorthQueryComputationReadDenial::RetainedFact(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::Cancelled))));
     assert!(

@@ -197,10 +197,18 @@ fn branch_creation_keeps_the_source_program_resolver_read_stop() {
     let before = runtime.current_world();
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(None, source.token());
+    let _named = runtime
+        .product_runtime()
+        .observe_named_read_consults_for_test();
+    let observed_runtime = runtime.product_runtime().clone();
+    let reached = std::rc::Rc::new(std::cell::Cell::new(false));
+    let fired = std::rc::Rc::clone(&reached);
     let result = runtime
         .with_application_advancement(&request, |phase| {
-            let _guard = crate::test_read_stops::observe_consults_for_test(move |at| {
-                if at == 1 {
+            let _guard = crate::test_read_stops::observe_consults_for_test(move |_| {
+                if observed_runtime.source_program_resolution_is_active_for_test()
+                    && !fired.replace(true)
+                {
                     source.cancel();
                 }
             });
@@ -211,6 +219,10 @@ fn branch_creation_keeps_the_source_program_resolver_read_stop() {
                 .create(&phase)
         })
         .unwrap();
+    assert!(
+        reached.get(),
+        "the source program resolver consult was reached"
+    );
     assert!(matches!(
         result,
         Err(

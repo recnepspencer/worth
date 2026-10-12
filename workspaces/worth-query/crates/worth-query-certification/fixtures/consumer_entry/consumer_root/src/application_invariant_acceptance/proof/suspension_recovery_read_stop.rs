@@ -118,9 +118,19 @@ fn prove(at_preparation: bool) {
         None,
     );
     let execution = worth_execution::ExecutionRequest::serial(&host);
+    let _named = application
+        .product_runtime()
+        .observe_named_read_consults_for_test();
+    let observed_runtime = application.product_runtime().clone();
+    let at_read = std::rc::Rc::new(std::cell::Cell::new(None));
+    let fired = std::rc::Rc::clone(&at_read);
     let (result, consults) = worth_execution::with_request_consult_observer_for_test(
         move |at| {
-            if !at_preparation && at == 3 {
+            if !at_preparation
+                && observed_runtime.generated_recovery_source_selection_is_active_for_test()
+                && fired.get().is_none()
+            {
+                fired.set(Some(at));
                 cancellation.cancel();
             }
         },
@@ -129,7 +139,12 @@ fn prove(at_preparation: bool) {
         },
     );
     if !at_preparation {
-        assert!(consults >= 3);
+        assert!(
+            consults
+                >= at_read
+                    .get()
+                    .expect("the generated recovery source selection consult was reached")
+        );
     }
     let failure = match result {
         Err(failure) => failure,

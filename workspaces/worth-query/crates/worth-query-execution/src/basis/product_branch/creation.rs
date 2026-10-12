@@ -151,7 +151,10 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             .admit_product_occurrence(source.occurrence())
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
         let source_program = source_program_resolver
-            .map(|resolver| resolver.source_program(execution, &source))
+             .map(|resolver| {
+                let _read = runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::SourceProgramResolution);
+                resolver.source_program(execution, &source)
+            })
             .transpose()
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?
             .flatten();

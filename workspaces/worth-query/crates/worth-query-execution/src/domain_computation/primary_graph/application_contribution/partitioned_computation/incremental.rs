@@ -203,6 +203,8 @@ where
         partitions: BTreeMap::new(),
     };
     for (key, fact, readers) in retained.facts.facts() {
+        #[cfg(test)]
+        let _read = observed::RetainedFactComparison::enter();
         let movement = match reader.observe_retained(execution, &COMPARATOR, key) {
             Ok(observed) => match FactMovement::between(fact, &observed).movement() {
                 Movement::Unmoved => KeyMovement::Unchanged,
