@@ -132,7 +132,10 @@ impl QueryRequestExecution<'_> {
             ));
         }
         let mut body_unwind = None;
-        let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |_| {
+        let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |lease| {
+            observation::record_workers(
+                lease.map_or(1, |lease| lease.policy().budget().max_workers().get()),
+            );
             let active = ActiveAdvancement {
                 execution: self,
                 owner,

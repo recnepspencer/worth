@@ -24,29 +24,35 @@ pub struct Control {
     pub world: World,
     pub reuse: bool,
     pub overlap: bool,
+    pub declaration: u64,
+    pub declarations: Mutex<std::collections::BTreeMap<u64, Vec<u64>>>,
     pub state: Mutex<State>,
     wake: Condvar,
 }
 impl Control {
-    pub fn new(world: World, reuse: bool, overlap: bool) -> Self {
+    pub fn new(world: World, reuse: bool, overlap: bool, declaration: u64) -> Self {
         Self {
             world,
             reuse,
             overlap,
+            declaration,
+            declarations: Mutex::default(),
             state: Mutex::new(State::default()),
             wake: Condvar::new(),
         }
     }
     pub fn input(&self, key: u64) -> (Vec<u64>, Vec<Partition>) {
         if key == 100 {
-            return (
-                self.world
-                    .requested
-                    .iter()
-                    .map(|i| self.world.members[*i].key)
-                    .collect(),
-                vec![],
-            );
+            let mut required = self
+                .world
+                .requested
+                .iter()
+                .map(|i| self.world.members[*i].key)
+                .collect::<Vec<_>>();
+            if self.declaration == 1 {
+                required.reverse();
+            }
+            return (required, vec![]);
         }
         let member = self
             .world
@@ -54,14 +60,26 @@ impl Control {
             .iter()
             .find(|member| member.key == key)
             .unwrap();
-        (
-            member
-                .upstream
-                .iter()
-                .map(|i| self.world.members[*i].key)
-                .collect(),
-            member.partitions.clone(),
-        )
+        let mut upstream = member
+            .upstream
+            .iter()
+            .map(|i| self.world.members[*i].key)
+            .collect::<Vec<_>>();
+        if self.declaration == 1 {
+            upstream.reverse();
+        }
+        (upstream, member.partitions.clone())
+    }
+    pub fn declare_begin(&self, key: u64) {
+        self.declarations.lock().unwrap().insert(key, Vec::new());
+    }
+    pub fn declare_edge(&self, key: u64, upstream: u64) {
+        self.declarations
+            .lock()
+            .unwrap()
+            .get_mut(&key)
+            .unwrap()
+            .push(upstream);
     }
     pub fn fails(&self, key: u64, phase: Phase) -> bool {
         let state = self.state.lock().unwrap();

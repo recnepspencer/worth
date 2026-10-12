@@ -53,6 +53,11 @@ fn aggregate_reports_add_stages_and_waves_and_keep_failed_advancements() {
             let [observed] = observations.as_slice() else {
                 panic!("one report: {observations:?}")
             };
+            assert_eq!(
+                observed.workers,
+                Some(root.execution_request().unwrap().max_workers()),
+                "the observer reads the lease lent to the admitted scope"
+            );
             let dispatched = &COSTS;
             assert_eq!(
                 observed.report.charged_work(),
@@ -105,6 +110,10 @@ fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
         .is_err());
     let refused = observation::advancement_observations_on_this_thread_for_test();
     assert_eq!(refused.len(), 1);
+    assert_eq!(
+        refused[0].workers, None,
+        "a refused admission ran no dispatch scope"
+    );
     assert_eq!(refused[0].report.charged_work(), 0);
     assert_eq!(refused[0].report.charged_span(), 0);
     assert_eq!(

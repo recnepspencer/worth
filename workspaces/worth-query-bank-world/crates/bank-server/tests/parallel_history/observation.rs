@@ -148,6 +148,18 @@ impl<'a> Observer<'a> {
             ))
             .execute();
         self.last = observations();
+        let expected_width = match posture {
+            Posture::Serial => 1,
+            Posture::Leased(width) => width.get(),
+        };
+        assert!(
+            self.last.iter().any(|r| r.workers == Some(expected_width)),
+            "the Bank request dispatch reaches its named width"
+        );
+        assert!(
+            self.last.iter().all(|r| r.workers == Some(expected_width)),
+            "Bank dispatches preserve the requested width"
+        );
         place(previous);
         match result {
             Ok(WorthQueryApplicationMutationOutcome::Committed { result, receipt }) => {

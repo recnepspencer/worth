@@ -1,4 +1,5 @@
 //! One declared product; inapplicable rows carry a name and reason.
+pub const UNSEEDED: u64 = u64::MAX;
 use super::control::Phase;
 #[derive(Clone, Copy, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Cell {
@@ -49,6 +50,7 @@ pub fn table() -> Vec<Cell> {
             }
         }
     }
+    cells.extend(unseeded());
     cells
 }
 pub fn iteration() -> Vec<Cell> {
@@ -92,4 +94,21 @@ impl Cell {
             reuse: v[5] != 0,
         }
     }
+}
+
+pub fn unseeded() -> Vec<Cell> {
+    (0..7)
+        .flat_map(|family| {
+            [1, 2, 5].into_iter().flat_map(move |workers| {
+                [0, 2].map(move |fault| Cell {
+                    family,
+                    workers,
+                    declaration: 0,
+                    dispatch: UNSEEDED,
+                    fault,
+                    reuse: false,
+                })
+            })
+        })
+        .collect()
 }

@@ -41,12 +41,16 @@ pub struct WorthQueryAdvancementEventForTest {
 /// A refusal before admission reports zero work/span and no application events.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryAdvancementObservationForTest {
+    /// The width of the lease actually lent to the admitted dispatch scope.
+    /// None means admission refused before a scope ran.
+    pub workers: Option<usize>,
     pub report: ExecutionReport,
     pub refusal: Option<WorthQueryAdvancementDenial>,
     pub applied: Vec<WorthQueryAdvancementEventForTest>,
 }
 
 struct ActiveObservation {
+    workers: Option<usize>,
     posture: ExecutionPosture,
     applied: Vec<WorthQueryAdvancementEventForTest>,
 }
@@ -61,9 +65,20 @@ pub(super) fn begin(posture: ExecutionPosture) {
     ACTIVE.with(|active| {
         let previous = active.replace(Some(ActiveObservation {
             posture,
+            workers: None,
             applied: Vec::new(),
         }));
         assert!(previous.is_none(), "one observation per active advancement");
+    });
+}
+pub(super) fn record_workers(workers: usize) {
+    if !observing() {
+        return;
+    }
+    ACTIVE.with(|active| {
+        if let Some(active) = active.borrow_mut().as_mut() {
+            active.workers = Some(workers);
+        }
     });
 }
 pub(super) fn record_report(report: ExecutionReport) {
@@ -80,6 +95,7 @@ fn finish(report: ExecutionReport, refusal: Option<WorthQueryAdvancementDenial>)
         requests
             .borrow_mut()
             .push(WorthQueryAdvancementObservationForTest {
+                workers: active.workers,
                 report,
                 refusal,
                 applied: active.applied,

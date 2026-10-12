@@ -155,8 +155,10 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                 phase: super::control::Phase::Prepare,
             }));
         }
+        self.control.declare_begin(input.key);
         let mut upstream = 0;
         for key in &input.upstream {
+            self.control.declare_edge(input.key, *key);
             let node = reader
                 .resolve_entity(NodeKey::reference(), format!("member-{:03}", key))
                 .unwrap();

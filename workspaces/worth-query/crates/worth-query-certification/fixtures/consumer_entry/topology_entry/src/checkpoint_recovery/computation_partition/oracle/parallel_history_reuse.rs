@@ -33,6 +33,7 @@ fn fresh(model: &ReuseFacts) -> (OracleRun, Option<u64>) {
     if model.odd {
         adjust(&request, &application, ODD_Y, 1);
     }
+    worth_query_host::facade::primary_graph::advancement_observations_on_this_thread_for_test();
     only_run(demand(&request, &application))
 }
 fn case(change: Change) {
@@ -125,7 +126,16 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     observations();
     execution::COMPUTE_CEILING.set(ceiling_family);
     let (retained, retained_work) = only_run(demand(&request, &application));
-    let retained_total = observations().iter().fold((0, 0), |sum, r| {
+    let records = observations();
+    assert!(
+        records.iter().any(|r| r.workers == Some(current)),
+        "the reuse request reaches its declared current dispatch width"
+    );
+    assert!(
+        records.iter().all(|r| r.workers == Some(current)),
+        "every reused demand dispatch has the named width"
+    );
+    let retained_total = records.iter().fold((0, 0), |sum, r| {
         (
             sum.0 + r.report.charged_work(),
             sum.1 + r.report.charged_span(),

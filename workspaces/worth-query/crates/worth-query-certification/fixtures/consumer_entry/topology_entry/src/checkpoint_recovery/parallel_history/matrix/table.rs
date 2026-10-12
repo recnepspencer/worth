@@ -36,9 +36,11 @@ fn matrix(rows: Vec<Cell>) {
     let mut red = Vec::new();
     let mut remainders = BTreeMap::new();
     for row in rows {
-        if row.family == 0 && row.fault > 0 {
-            counts[0][1] += 1;
-            println!("NOT_RUN:{row:?}:empty family has no failure member");
+        if row.fault > 0
+            && (row.family == 0 || (row.family == 1 && row.dispatch == cases::UNSEEDED))
+        {
+            counts[row.family][1] += 1;
+            println!("NOT_RUN:{row:?}:unseeded rank >= 1 failure needs at least two members; empty families have none");
         } else {
             counts[row.family][0] += 1;
             match cell(row) {
@@ -89,13 +91,13 @@ fn required_wave_full_declared_matrix() {
     let rows = cases::table();
     assert_eq!(
         rows.len(),
-        1400,
+        1442,
         "one-worker seed is equivalent and counted once"
     );
     for family in 0..7 {
         assert_eq!(
             rows.iter().filter(|row| row.family == family).count(),
-            200,
+            206,
             "declared product per family"
         );
     }
@@ -133,4 +135,46 @@ fn required_price_all_failure_remainders() {
             })
             .collect(),
     );
+}
+
+#[test]
+fn required_axis_witnesses() {
+    matrix(vec![
+        Cell {
+            family: 4,
+            workers: 1,
+            declaration: 0,
+            dispatch: 0,
+            fault: 0,
+            reuse: false,
+        },
+        Cell {
+            family: 4,
+            workers: 1,
+            declaration: 1,
+            dispatch: 0,
+            fault: 0,
+            reuse: false,
+        },
+        Cell {
+            family: 1,
+            workers: 2,
+            declaration: 0,
+            dispatch: 0,
+            fault: 0,
+            reuse: false,
+        },
+        Cell {
+            family: 1,
+            workers: 5,
+            declaration: 0,
+            dispatch: 0,
+            fault: 0,
+            reuse: false,
+        },
+    ]);
+}
+#[test]
+fn required_unseeded_dispatch_slice() {
+    matrix(cases::unseeded());
 }

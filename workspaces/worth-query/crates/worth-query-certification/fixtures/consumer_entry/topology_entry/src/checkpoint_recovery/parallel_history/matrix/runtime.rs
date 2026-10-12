@@ -40,23 +40,26 @@ macro_rules! settle {
     };
 }
 pub fn run(cell: cases::Cell) -> Observed {
-    let _restore = Restore(place(Placement::Certified {
-        workers: NonZeroUsize::new(cell.workers).unwrap(),
-        seed: cell.dispatch,
+    let workers = NonZeroUsize::new(cell.workers).unwrap();
+    let _restore = Restore(place(if cell.dispatch == cases::UNSEEDED {
+        Placement::Leased(workers)
+    } else {
+        Placement::Certified {
+            workers,
+            seed: cell.dispatch,
+        }
     }));
     let world = seeded_world::world(FAMILIES[cell.family], SEED);
     let control = Arc::new(control::Control::new(
         world.clone(),
         cell.reuse,
         cell.workers > 1,
+        cell.declaration,
     ));
     let app = installation::install(control.clone());
     let (scope, principal) = installation::authenticate(&app);
     let request = app.request(&principal, &scope);
-    let mut declaration = world.members.iter().map(|m| m.key).collect::<Vec<_>>();
-    if cell.declaration == 1 {
-        declaration.reverse();
-    }
+    let declaration = world.members.iter().map(|m| m.key).collect::<Vec<_>>();
     let mut demands = BTreeMap::new();
     for key in declaration {
         demands.insert(
@@ -81,6 +84,34 @@ pub fn run(cell: cases::Cell) -> Observed {
         settle!(demands.get_mut(&m.key).unwrap(), request);
     }
     settle!(caller, request);
+    let declarations = control.declarations.lock().unwrap();
+    for key in world.members.iter().map(|m| m.key).chain([100]) {
+        let mut expected = if key == 100 {
+            world
+                .requested
+                .iter()
+                .map(|i| world.members[*i].key)
+                .collect::<Vec<_>>()
+        } else {
+            world
+                .members
+                .iter()
+                .find(|m| m.key == key)
+                .unwrap()
+                .upstream
+                .iter()
+                .map(|i| world.members[*i].key)
+                .collect()
+        };
+        if cell.declaration == 1 {
+            expected.reverse();
+        }
+        assert_eq!(
+            declarations[&key], expected,
+            "the handler declares the chosen dependency permutation by value"
+        );
+    }
+    drop(declarations);
     let initial = observations();
     let mut bindings = initial
         .iter()
@@ -167,6 +198,11 @@ pub fn run(cell: cases::Cell) -> Observed {
     let [record] = records.as_slice() else {
         panic!("one caller advancement: {records:?}")
     };
+    assert_eq!(
+        record.workers,
+        Some(cell.workers),
+        "the request dispatch receives the width named by its cell"
+    );
     let mut committed = Vec::new();
     for pair in record.applied.chunks(2) {
         assert_eq!(pair.len(), 2, "commit/publication pair");
