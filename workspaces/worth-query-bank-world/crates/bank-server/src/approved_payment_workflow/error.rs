@@ -33,8 +33,8 @@ pub enum BankApprovedPaymentWorkflowError {
     ConditionAcceptance(WorthQueryWorkflowConditionAcceptanceDenial),
     OperationBinding(WorthQueryWorkflowOperationBindingDenial),
     OperationMutation(WorthQueryApplicationRequestMutationDenial),
-    OperationOwnerAcceptance(WorthQueryWorkflowOperationOwnerAcceptanceDenial),
-    OperationRecoveryPreparation(WorthQueryWorkflowOperationRecoveryPreparationDenial),
+    OperationOwnerAcceptance(Box<WorthQueryWorkflowOperationOwnerAcceptanceDenial>),
+    OperationRecoveryPreparation(Box<WorthQueryWorkflowOperationRecoveryPreparationDenial>),
 }
 
 impl BankApprovedPaymentWorkflowError {
@@ -90,8 +90,8 @@ impl std::error::Error for BankApprovedPaymentWorkflowError {
             Self::ConditionRead(denial) => Some(denial.as_ref()),
             Self::ConditionAcceptance(denial) => Some(denial),
             Self::OperationMutation(denial) => Some(denial),
-            Self::OperationOwnerAcceptance(denial) => Some(denial),
-            Self::OperationRecoveryPreparation(denial) => Some(denial),
+            Self::OperationOwnerAcceptance(denial) => Some(denial.as_ref()),
+            Self::OperationRecoveryPreparation(denial) => Some(denial.as_ref()),
         }
     }
 }

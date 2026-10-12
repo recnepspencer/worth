@@ -59,11 +59,9 @@ fn pending_rail_dispatch_remains_under_the_committed_outbox_owner() {
         .expect_err("pending rail settlement cannot complete the workflow operation");
     assert!(matches!(
         denied,
-        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
-            WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(denial) if matches!(denial.as_ref(), WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
                 WorthQueryWorkflowOperationOwnerPosture::DispatchPending
-            )
-        )
+            ))
     ));
 }
 
@@ -103,11 +101,9 @@ fn lost_dispatch_recovery_remains_pending_until_authenticated_inbound() {
         .expect_err("an unresolved dispatch cannot complete the workflow operation");
     assert!(matches!(
         denied,
-        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
-            WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+        bank_server::BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(denial) if matches!(denial.as_ref(), WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
                 WorthQueryWorkflowOperationOwnerPosture::DispatchPending
-            )
-        )
+            ))
     ));
     let required = match workflow
         .advance(
@@ -213,11 +209,9 @@ fn unpublished_product_retains_owner_recovery_and_never_dispatches_the_rail() {
         .expect("outbox recovery cannot precede owner product publication");
     assert!(matches!(
         denied,
-        bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(
-            WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
+        bank_server::BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(denial) if matches!(denial.as_ref(), WorthQueryWorkflowOperationRecoveryPreparationDenial::Owner(
                 WorthQueryWorkflowOperationOwnerPosture::ProductUnpublished(_)
-            )
-        )
+            ))
     ));
     let recovery = partial.into_recovery();
     recovery

@@ -71,11 +71,9 @@ fn owner_remains_pending(ready: &ReadyPaymentWorld, command_key: &str) {
         .expect_err("the rail response is not an authenticated inbound terminal");
     assert!(matches!(
         denied,
-        BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(
-            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
+        BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(denial) if matches!(denial.as_ref(), worth_query_host::facade::application_entry::WorthQueryWorkflowOperationOwnerAcceptanceDenial::Owner(
                 worth_query_host::facade::application_entry::WorthQueryWorkflowOperationOwnerPosture::DispatchPending
-            )
-        )
+            ))
     ));
 }
 
