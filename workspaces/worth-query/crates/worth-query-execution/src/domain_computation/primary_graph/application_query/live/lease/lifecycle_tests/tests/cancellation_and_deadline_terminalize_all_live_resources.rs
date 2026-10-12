@@ -116,7 +116,7 @@ fn read_stops_survive_a_failed_live_lease_termination() {
         });
         // Hold the real owned read work away from finalization: Bridge can end,
         // but the managed read cannot finish without this completion evidence.
-        let held_work = lease
+        let _held_work = lease
             .initial_read_work
             .take()
             .expect("an open lease owns read work");
@@ -162,6 +162,5 @@ fn read_stops_survive_a_failed_live_lease_termination() {
             (_, answer) => panic!("mode {mode}: the request stop remains the answer, got {:?}", std::mem::discriminant(&answer)),
         }
         assert!(lease.termination_failed());
-        drop(held_work);
     }
 }
