@@ -55,7 +55,9 @@ worth_query_application! {
 
 impl TopologySchemaBinding for CheckpointSchema {
     // Keep the planar allowance, plus the bootstrap's LARGEST_SET entries,
-    // LARGEST_SET sets and at most two membership edges per entry. Unrelated
+    // LARGEST_SET sets and 2 * LARGEST_SET membership edges in total: the
+    // large-entry rows use two sets; the high-fanout rows use one entry.
+    // Unrelated
     // entities pay one slot visit + one intent; relations pay one slot visit
     // + one intent + two bulk endpoint visits, even when filtered out of Body.
     fn planar_invariant_work() -> u64 {
