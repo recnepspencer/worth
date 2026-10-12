@@ -70,7 +70,8 @@ fn checkpoint_transition_refuses_real_accepted_output_before_authoring() {
     )
     .unwrap();
     assert_eq!(
-        runtime
+        restored
+            .runtime()
             .with_host_advancement(|host_phase| restored
                 .runtime()
                 .capture_application_checkpoint_with_sections(
