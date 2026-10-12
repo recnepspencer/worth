@@ -1,7 +1,7 @@
 //! A caller refused required custody stops for itself, never for its rows.
 
 use super::*;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use support::capacity_region::Attempt;
 use worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial;
 

@@ -267,3 +267,24 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # The fresh-success calibration proof reads Signal charges before the refused run.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/advancement_custody/budget_measurement.rs
+
+# Wave-driver certification proofs: exact callers of the sealed single-build doors.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/decision_plan.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/owner/decision_plan.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/abandonment.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/abandonment_thaw.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/deferral_freeze.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/frozen_truth.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/history.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/ordinary_reads.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/queue_failures.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/three_members.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/two_owners.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/caller_boundary.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/checkpoint_failures.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/current_acknowledgement.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/current_consumption.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/pending_queue.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/request_stops/requested_custody.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/selection_at_inspection.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/unfunded_refresh.rs

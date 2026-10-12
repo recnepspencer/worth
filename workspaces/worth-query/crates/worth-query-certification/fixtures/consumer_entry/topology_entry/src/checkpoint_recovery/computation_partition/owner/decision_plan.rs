@@ -88,12 +88,14 @@ where
 
 /// Execution's report of the decision's one run, which ran in full. How a
 /// run ran is the observer's, never the handler's value.
-
 fn observed_report(
-    runs: Vec<(WorthQueryPartitionedComputationRun, Option<ExecutionReport>)>,
+    runs: Vec<(
+        WorthQueryPartitionedComputationRunForTest,
+        Option<ExecutionReport>,
+    )>,
 ) -> ExecutionReport {
     assert_eq!(runs.len(), 1, "one run per decision");
-    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRun::Full(
+    assert_eq!(runs[0].0, WorthQueryPartitionedComputationRunForTest::Full(
         worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause::Unretained));
     runs[0]
         .1

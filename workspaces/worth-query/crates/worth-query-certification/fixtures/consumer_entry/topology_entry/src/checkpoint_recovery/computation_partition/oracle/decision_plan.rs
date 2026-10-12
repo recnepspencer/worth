@@ -43,7 +43,7 @@ where
     let preparations = full_partitioned_computation_preparations_on_this_thread_for_test();
     type ComputeObservation = (
         Vec<(
-            WorthQueryPartitionedComputationRun,
+            WorthQueryPartitionedComputationRunForTest,
             Option<worth_foundational::facade::ExecutionReport>,
         )>,
         Vec<WorthQueryPartitionedTreeRun>,

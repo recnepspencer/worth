@@ -91,5 +91,3 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
 }
 
 // Custody probes share this module's existing observer boundary.
-#[path = "cached_locator_checkpoint.rs"]
-mod cached_locator_checkpoint;

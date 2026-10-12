@@ -2,7 +2,6 @@ pub(super) mod capacity_region;
 mod execution_policy;
 pub(super) mod observation;
 pub(super) mod retained_inventory;
-pub(super) use execution_policy::CHECKPOINT_EXECUTION_POLICY;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,

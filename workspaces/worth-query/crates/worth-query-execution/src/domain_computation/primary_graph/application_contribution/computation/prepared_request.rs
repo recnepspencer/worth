@@ -40,6 +40,7 @@ impl PreparedCompute {
         let input_heap = self.input_heap;
         let result_capacity = self.result_capacity;
         let callback = move |member: WorthQueryMemberExecution<'_>| {
+            let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
             before();
             let result = self.run(member);
             after();
