@@ -187,11 +187,21 @@ fn work_ceiling_settles_the_same_boundary_at_all_widths() {
 
     let probe = phased_workflow::fold_executor::ComputeProbe::new();
     for workers in [1, 2, 4] {
-        let policy = Policy {
-            work: COSTS[0],
-            ..Policy::width(workers)
-        };
-        let (record, work, failed) = observe(request_execution, 7, None, policy, &probe);
+        // The caller funds the real first-stage effect as well as computation.
+        // Only the map declaration is short: later tasks still attempt their
+        // original work, so the second task meets the exact computation ceiling.
+        let mut workspace = Policy::width(workers).workspace(request_execution, &probe);
+        let mut input = members(7, None);
+        for (rank, (_, value)) in input.iter_mut().enumerate() {
+            let declared_work = if rank == 0 { COSTS[rank] } else { 0 };
+            *value = domain::WorthQueryWorkflowValue::Text(format!(
+                "{}:0:{}:{declared_work}",
+                7 + rank as u64,
+                COSTS[rank],
+            ));
+        }
+        let (record, work, failed) =
+            observe_members(start(&mut workspace), input, &mut workspace, None);
         assert!(!failed, "width {workers}: {record:?}");
         assert_eq!(work, COSTS[0]);
         assert_eq!(
