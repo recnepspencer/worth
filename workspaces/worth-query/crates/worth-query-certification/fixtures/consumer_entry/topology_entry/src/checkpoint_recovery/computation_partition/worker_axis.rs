@@ -52,7 +52,7 @@ pub(super) fn axis() -> Vec<Placement> {
 }
 }
 
-/// The workers `placement` asks for: none when it holds no lease.
+/// Parallel worker width: zero for the serial-backed and default postures.
 pub(super) fn workers_of(placement: Placement) -> usize {
     match placement {
         Placement::Leased(workers) | Placement::Certified { workers, .. } => workers.get(),
@@ -147,8 +147,8 @@ type Compared = Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>;
 
 /// Demands each of `demands` from `sets` under every placement, and requires
 /// each placement's outcomes to be the serial ones. A completed total says
-/// whether its run held a lease, so a placement that never reached the run
-/// fails here. On two workers or more each demand, denied ones too, must
+/// its serial backing or worker-limit fallback, so a placement that never
+/// reached the run fails here. On two workers or more each demand, denied ones too, must
 /// hold two kernels at once, so one that ran on one worker fails.
 /// Returns the serial outcomes.
 fn across_the_axis(

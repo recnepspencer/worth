@@ -101,7 +101,7 @@ fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
     with_region_totals(&[("sensitive", &entries), ("exact", &exact)], |demand| {
         let first = total(demand("sensitive"));
         assert!(f64::from_bits(first.bits).is_finite());
-        // No lease reaches a managed computation, so the serial backend ran.
+        // The serial-backed request runs the managed computation inline.
         {
             assert_eq!(
                 first.report.fallback(),

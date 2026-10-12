@@ -1329,8 +1329,8 @@ An interruption observed after admission keeps the executing owner's cancellatio
 or timeout outcome.
 For an output demand refresh these are `Cancelled` and `TimedOut`; they are
 separate from admission's `ExecutionRequest(Interrupted(..))` refusals.
-Zero memory reports `PolicyMemoryLimit` at serial placement and a policy
-`MemoryLimit { requested, admitted: 0, level }` at leased placement.
+Zero memory reports a policy `MemoryLimit { requested, admitted: 0, level }`
+at every placement, including its requested bytes.
 
 A **request scope** carries an optional deadline and a cancellation token. With no deadline,
 the request is unbounded but remains cancellable. It is

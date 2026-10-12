@@ -67,14 +67,19 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
             };
             match (placement, zero_memory) {
                 (_, false) => assert_eq!(cause, Denial::Resource(Resource::WorkExhausted)),
-                (Placement::Serial | Placement::Leased(_), true) => assert!(matches!(
-                    cause,
-                    Denial::Resource(Resource::MemoryLimit {
-                        level: Level::Policy,
-                        admitted: 0,
-                        ..
-                    })
-                )),
+                (Placement::Serial | Placement::Leased(_), true) => {
+                    let Denial::Resource(Resource::MemoryLimit {
+                        level,
+                        requested,
+                        admitted,
+                    }) = cause
+                    else {
+                        panic!("the opening refusal names its memory limit: {cause:?}");
+                    };
+                    assert_eq!(level, Level::Policy);
+                    assert_eq!(admitted, 0);
+                    assert!(requested > 0);
+                }
                 (Placement::World | Placement::Certified { .. }, true) => {
                     panic!("the custody matrix selects serial and leased placement explicitly")
                 }

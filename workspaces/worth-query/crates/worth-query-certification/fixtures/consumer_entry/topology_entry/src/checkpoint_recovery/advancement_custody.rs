@@ -30,6 +30,7 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    let mut memory_causes = Vec::new();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let before = reads();
@@ -74,6 +75,7 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
                 };
                 assert_eq!(level, Level::Policy);
                 assert_eq!(admitted, 0);
+                memory_causes.push(cause);
                 assert!(
                     requested > 0,
                     "the active scope holds its owner's framework bytes"
@@ -87,6 +89,11 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
             assert_eq!(reports(), vec![Err(cause)]);
         }
     }
+    assert_eq!(memory_causes.len(), 2);
+    assert_eq!(
+        memory_causes[0], memory_causes[1],
+        "serial and one-worker leases refuse the same bytes"
+    );
 }
 
 #[test]

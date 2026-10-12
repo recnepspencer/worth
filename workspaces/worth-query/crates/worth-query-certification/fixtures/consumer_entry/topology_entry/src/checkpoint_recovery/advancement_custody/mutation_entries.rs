@@ -99,14 +99,14 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                     panic!("no handler ran before opening: {denial:?}");
                 };
                 assert_eq!(reads(), before);
-                assert_opening_cause(cause, placement, zero_memory);
+                assert_opening_cause(cause, zero_memory);
                 key += 1;
             }
         }
     }
 }
 
-fn assert_opening_cause(cause: Denial, _placement: Placement, zero_memory: bool) {
+fn assert_opening_cause(cause: Denial, zero_memory: bool) {
     if !zero_memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
     } else {
