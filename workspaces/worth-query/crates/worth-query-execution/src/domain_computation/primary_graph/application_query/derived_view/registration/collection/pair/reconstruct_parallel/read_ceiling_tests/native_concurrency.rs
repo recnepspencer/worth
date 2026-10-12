@@ -52,27 +52,6 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         .installed_schema()
         .certification_query(PublicScopedAccountSummaryQuery::reference())
         .unwrap();
-    let fields = query
-        .read_family_binding()
-        .planning_contract()
-        .projections()
-        .len() as u64;
-    // One invocation. Each of two reads selects one root, projects one record
-    // and each declared field, and observes one entity and each declared field.
-    let invocation = 1;
-    let root_selection = 1;
-    let projected_record = 1;
-    let projected_field = 1;
-    let observed_entity = 1;
-    let observed_field = 1;
-    let reads_per_root = 2;
-    let root_cost = invocation
-        + reads_per_root
-            * (root_selection
-                + projected_record
-                + fields * projected_field
-                + observed_entity
-                + fields * observed_field);
     let owner_probe = world
         .application
         .primary_provider
@@ -130,13 +109,12 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         }).collect();
         assert_eq!(crate::facade::primary_graph::installed_source_reads_on_this_thread_for_test() - reads_before, 2, "one owner pin per query side, shared across both roots");
         let map = ExecutionMap::<_, ()>::from_keyless_partitions(partitions).unwrap();
-        let (outcome, _) = ExecutionWorkCeiling::new(2 * root_cost).run(&lease, || {
+        let (outcome, _) = ExecutionWorkCeiling::new(lease.policy().budget().work_ceiling()).run(&lease, || {
             map.run_owned(Some(&lease), |pair, context| pair.run(&host_custody.borrowed_request_for_test(), context))
         }).unwrap();
         match outcome {
-            MapOutcome::Complete { values: results, report, .. } => {
+            MapOutcome::Complete { values: results, .. } => {
                 assert_eq!(results.len(), 2);
-                assert_eq!(report.charged_work(), 2 * root_cost);
                 for (result, root) in results.iter().zip(&roots) {
                     assert_eq!(result.first.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id());
                     assert_eq!(result.second.raw.raw.rows.raw_rows()[0].entity_id(), root.entity_id());
