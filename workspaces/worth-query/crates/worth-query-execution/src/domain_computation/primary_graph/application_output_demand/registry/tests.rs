@@ -29,6 +29,7 @@ pub(super) mod closed_retirement;
 mod completed_custody_stages;
 
 mod consumer_custody;
+mod consumption_guards;
 mod current_successor;
 mod custody_drain;
 mod custody_note;
