@@ -63,7 +63,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 - [6. Author, publish, and run workflows](#6-author-publish-and-run-workflows)
 - [7. Adopt a new program on a branch](#7-adopt-a-new-program-on-a-branch)
 - [8. Rules for AI agents](#8-rules-for-ai-agents)
-- [9. Names that do not exist](#9-names-that-do-not-exist)
+- [9. Use the consumer vocabulary](#9-use-the-consumer-vocabulary)
 - [10. Where to go deeper](#10-where-to-go-deeper)
 
 ---
@@ -447,15 +447,27 @@ returned handle in the handler that uses it.
 The owner separates reads from computation. `partitions`, `partition_key`, and
 `gather` receive an operation-scoped reader on the caller thread. They can read
 only what the operation declares. `compute_partition` receives gathered data
-and a checkpoint, with no graph reader. `partition_key`, `gather`, and
+and a checkpoint, with no graph reader. `partitions`, `partition_key`, `gather`, and
 `compute_partition` must be pure in the declared input, partition key, and
 facts read through the reader: no ambient clocks, mutable globals, changing
 owner state, or effects. A completed producer run keeps its partition state.
 The next run of the same installed producer, on an equal input value, reuses
 an unchanged partition without gathering or computing it again. An impure
-function can therefore yield a stale reused result. `complete` receives the reduced result
-back on the caller thread. Preparation precedes kernel dispatch; completion
+function can therefore yield a stale reused result. `complete` receives the
+reduced result back on the caller thread. Preparation precedes kernel dispatch; completion
 follows successful computation and reduction.
+
+In the executable examples below, `run_inventory` and `run_peak` call
+`installed.prepare(reader, input)` and return
+`prepared.into_decision_plan(..)`. The plan carries compute inputs, not a live
+reader. Its completion closure handles the typed computation result and returns
+a `HandlerResult`. Use this shape when a producer's computation can run beside
+another required producer: Query dispatches compute and invokes completion in
+canonical member order. Override `OperationHandler::prepare_decision` to return
+this plan. Keep graph reads in preparation and return the decision from
+completion; the ordinary candidate-building and commit steps follow on the
+owner. A handler that does not compute can keep its `decide` implementation:
+the default `prepare_decision` wraps it in an immediate plan.
 
 Partition reuse applies only to the runs of a producer. A producer is a
 `WorthQueryApplicationProducerBinding` declared with
@@ -490,7 +502,7 @@ Otherwise the run names and keys again only what changed, and gathers and
 computes again only the partitions whose members or facts changed. A partition
 is carried only when every fact its owner calls read in the previous run has
 the same content at this attempt's snapshot; a fact that cannot be observed
-counts as changed. A run's result, its charged work, and the partition a work
+counts as changed. A run's result value, its charged work, and the partition a work
 ceiling names never depend on reuse: carried charges replay in a full run's
 order, `charged_work()` counts every partition's kernel and every combine
 whether the partition was computed again or carried, and a work ceiling names
@@ -962,6 +974,17 @@ where
 Planning does not depend on the order the input holds its readings in: items
 are met in item identity order and partitions in partition identity order.
 
+To use either example, declare the artifact and managed computation on the
+feature, install the owner during contribution setup, and store the returned
+handle with that operation's handler. Call its `run_inventory` or `run_peak`
+function from `prepare_decision`. Declare every graph fact read by
+`partitions`, `partition_key`, and `gather` on the operation. For retained
+per-partition reuse, also declare and install the producer that runs that
+operation; a direct mutation computes successfully but keeps no producer state.
+The inventory example sums warehouse quantities; the telemetry example reduces
+sensor peaks. Both use the same consumer API, through `worth-query-host`'s
+facade and the declarations exported by `worth-query-decl`.
+
 ---
 
 ## 4. Install the application graph
@@ -1400,6 +1423,27 @@ original handler again. Once recovery has performed,
 `promote_recovered_required_outputs` transfers that original source into its
 required-output handle once, also without invoking the handler; a refusal
 returns the recovery owner intact.
+
+One `advance` can process the caller's dependency chain and other queued
+required outputs in several waves. The required-set owner admits a wave only
+against a basis where its consumed upstream outputs have committed. Compute
+steps of independent members can overlap; completion, commits, and publications
+follow canonical producer and source keys. Every wave and nested computation
+shares this call's request bounds. Match the typed stop rather than treating
+work exhaustion, memory refusal, cancellation, deadline, panic, or a domain
+denial as interchangeable. Earlier performed effects remain recoverable; no
+member beyond a stopping boundary is published. A queued stopped member does
+not prevent unrelated required work from advancing.
+An owner-completion failure does not refund compute already settled, even if
+that failure is earlier than the compute stop. Treat the applied prefix and
+charged compute prefix as different boundaries.
+
+Closing a continuation releases its interest, while other holders can keep an
+output required. Drop performs bounded local cleanup and leaves remaining debt
+for funded admissions; it does not scan the registry for claimants. Readers
+still see the effective successor of a deferred claim. The advancement's
+execution accounting covers all waves, including a failed call; ordinary output
+progress remains `Pending` or `Settled`, with failures returned as typed denials.
 
 ---
 
@@ -2106,19 +2150,19 @@ but did not publish is recovered with
 
 ---
 
-## 9. Names that do not exist
+## 9. Use the consumer vocabulary
 
-The milestone plans for this work (`plans/WORTH-query/milestone-9.17.4.md`,
-`-9.17.5.md`, and `-9.17.6.md`) describe intent, and some of their names never
-shipped. If you see one of these, use the real name instead.
+Plans describe intent; they do not define the consumer API. Use the declarations
+and host functions exported by `worth-query-decl` and `worth-query-host`.
+The table separates authoring tasks from unsupported shortcuts.
 
-| Plan name | Status | Use instead |
+| Task or shortcut | Status | Use instead |
 |---|---|---|
-| `ApplicationCompositionSpec`, `ApplicationModuleSpec` | Do not exist | `impl ApplicationProgramDefinition` plus `ApplicationFeatureSpec` |
-| `ApplicationActionSpec` | Does not exist | Builder methods on `ApplicationFeatureSpec` (`mutation`, `operation`, ...); `ApplicationActionDeclaration` is the read-back type |
-| `.adopt(revision).requirements(..).idempotency(..).controls(..)` | Not the API | `compare(&revision)` → `adopt(&requirements)` → `[.migration(..)] [.workflow(..)]` → `prepare(max)` |
+| A separate composition or module specification | Unsupported | `impl ApplicationProgramDefinition` plus `ApplicationFeatureSpec` |
+| A stand-alone action specification | Unsupported | Builder methods on `ApplicationFeatureSpec` (`mutation`, `operation`, ...); `ApplicationActionDeclaration` is the read-back type |
+| Adopting a revision before comparing it | Unsupported | `compare(&revision)` → `adopt(&requirements)` → `[.migration(..)] [.workflow(..)]` → `prepare(max)` |
 | "unchanged / additive / restricting / meaning-changing" diff classes | Not the API | `ApplicationSemanticChangeKind::{Added, Removed, Changed}` per family |
-| `PublishedWorkflowDefinition` | Does not exist | `PublishedWorkflowDefinitionRef` |
+| A separately owned published-definition value | Unsupported | `PublishedWorkflowDefinitionRef` |
 | `CompiledWorkflowDefinition`, `AdmittedWorkflowTransition` | Crate-private | Nothing to call: the kernel uses them internally |
 | A workflow slot on the program | Does not exist | `retain_workflow_spec` on the program runtime, then `support_workflow_spec` on the workflow runtime it returns |
 
