@@ -122,36 +122,67 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
     for leased in [false, true] {
         let policy = test_policy(NonZeroUsize::new(2).unwrap(), 1 << 30);
         let token = worth_execution::CancellationToken::new();
-        let scope = if leased {
-            let root = query_test_execution_authority_for_test()
-                .request_lease(worth_execution::LeaseRequest {
-                    policy,
-                    deadline: None,
-                    cancellation: token,
-                })
-                .unwrap();
-            let child = root
-                .child(worth_execution::LeaseRequest {
-                    policy,
-                    deadline: None,
-                    cancellation: worth_execution::CancellationToken::new(),
-                })
-                .unwrap();
-            worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(Some(&child), None)
-                .unwrap()
+        let policy = if leased {
+            policy
         } else {
-            let request = worth_execution::SerialRequest::from_policy(&policy, token, None);
-            worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(None, Some(&request))
-                .unwrap()
+            worth_foundational::ExecutionRequestPolicy::new(
+                worth_foundational::ExecutionPosture::Serial,
+                policy.determinism(),
+                worth_foundational::ExecutionBudget::new(
+                    NonZeroUsize::MIN,
+                    policy.budget().charged_memory_bytes(),
+                    policy.budget().work_ceiling(),
+                ),
+            )
         };
+        let authority = if leased {
+            query_test_execution_authority_for_test()
+        } else {
+            worth_execution::ExecutionAuthority::serial()
+        };
+        let root = authority
+            .request_lease(worth_execution::LeaseRequest {
+                policy,
+                deadline: None,
+                cancellation: token,
+            })
+            .unwrap();
+        let child = root
+            .child(worth_execution::LeaseRequest {
+                policy,
+                deadline: None,
+                cancellation: worth_execution::CancellationToken::new(),
+            })
+            .unwrap();
+        // Both the owned host scope and its nested tree-stage scope remain live.
+        // Quote the nested scope under that actual parent checkpoint lineage.
+        let host_scope =
+            worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(Some(&root), None)
+                .unwrap();
+        let (tree_scope, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+            .run(&root, || {
+                worth_execution::ExecutionWorkCeiling::scope_memory_bound_for_test(
+                    Some(&child),
+                    None,
+                )
+                .unwrap()
+            })
+            .unwrap();
+        let scope = host_scope + tree_scope;
         let build =
             ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_build_memory_bound(4, DECLARED)
                 .unwrap();
         // The rebuild holds its tree bound, four inline leaf copies, one
-        // replacement result, and this posture's one-stage framework scope.
+        // replacement result, and both live one-stage framework scopes.
+        // The recomputed kernel records one RLE run (all advances are one
+        // unit). Its reserved vector remains live through the rebuild.
+        let mut steps = super::super::KernelSteps::default();
+        assert!(steps.accepted(1, |_| true));
+        let checkpoint_hold = worth_execution::ChargedBytes::additional_charged_bytes(&steps);
         let admitted = build
             + 5 * u64::try_from(size_of::<(worth_foundational::PartitionIdentity, u64)>()).unwrap()
-            + scope;
+            + scope
+            + checkpoint_hold;
         let refused = admitted - 1;
         for (outcome, combines) in rebuilt_under(Some(refused), leased) {
             let requested = refused_by_memory(&outcome)
@@ -162,8 +193,8 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
             );
             assert_eq!(combines, 0, "nothing is combined before the bound is held");
         }
-        for (_, combines) in rebuilt_under(Some(admitted), leased) {
-            assert_eq!(combines, reached, "with its bound held the rebuild runs");
+        for (outcome, combines) in rebuilt_under(Some(admitted), leased) {
+            assert_eq!(combines, reached, "with its bound held the rebuild runs: leased={leased} build={build} scope={scope} steps={checkpoint_hold} admitted={admitted} outcome={outcome:?}");
         }
     }
 }
