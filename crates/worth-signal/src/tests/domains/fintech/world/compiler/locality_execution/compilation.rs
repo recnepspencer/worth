@@ -6,7 +6,7 @@ use crate::tests::domains::fintech::execution_tier::FintechTier;
 use super::super::super::FinancialWorldDefinition;
 use super::super::locality_evaluation::runtime_baseline_values;
 use super::super::locality_topology::build_locality_topology;
-use super::CompiledFinancialLocalityWorld;
+use super::{CompiledFinancialLocalityWorld, FinancialLocalityResourceRequest};
 
 pub(crate) fn compile_financial_locality_world(
     definition: FinancialWorldDefinition,
@@ -26,8 +26,10 @@ pub(crate) fn compile_financial_locality_world_at_tier(
 
 pub(crate) fn compile_financial_locality_world_with_policy(
     definition: FinancialWorldDefinition,
-    policy: SignalRuntimePolicy,
+    request: impl Into<FinancialLocalityResourceRequest>,
 ) -> Result<super::super::CompiledFinancialWorld, SignalError> {
+    let resources = request.into();
+    let policy = resources.policy;
     let locality = definition.locality().cloned().ok_or_else(|| {
         SignalError::invalid_input("financial locality compiler requires a locality courtroom")
     })?;
@@ -41,6 +43,7 @@ pub(crate) fn compile_financial_locality_world_with_policy(
     let baseline_values = runtime_baseline_values(&locality)?;
     let mut compiled = CompiledFinancialLocalityWorld {
         runtime,
+        resources,
         definition,
         handles,
         baseline_values,

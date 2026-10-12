@@ -48,13 +48,22 @@ fn family_evidence(
         FinancialLocalityScenario::BranchRestoreLocalityReplay => {
             return RESTORE
                 .get_or_init(|| {
-                    certify_restore_family(41, LocalityLane::OrdinaryChangeGate, &cases).unwrap()
+                    certify_restore_family(41, LocalityLane::OrdinaryChangeGate, &cases, crate::tests::domains::fintech::locality_resource_request::FinancialLocalityResourceRequest::ordinary(crate::facade::SignalRuntimePolicy::operational())).unwrap()
                 })
                 .cases();
         }
     };
     cache.get_or_init(|| {
-        certify_family(41, LocalityLane::OrdinaryChangeGate, &cases, scenario).unwrap()
+        certify_family(
+            41,
+            LocalityLane::OrdinaryChangeGate,
+            &cases,
+            scenario,
+            crate::tests::domains::fintech::locality_resource_request::FinancialLocalityResourceRequest::ordinary(
+                crate::facade::SignalRuntimePolicy::operational(),
+            ),
+        )
+        .unwrap()
     })
 }
 

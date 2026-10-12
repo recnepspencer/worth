@@ -24,7 +24,16 @@ pub(super) fn contract_evidence(
         .iter()
         .position(|case| case.scale == scale)
         .unwrap();
-    CONTRACTS[index].get_or_init(|| certify_contract(41, contracts[index]).unwrap())
+    CONTRACTS[index].get_or_init(|| {
+        certify_contract(
+            41,
+            contracts[index],
+            crate::tests::domains::fintech::locality_resource_request::FinancialLocalityResourceRequest::ordinary(
+                crate::facade::SignalRuntimePolicy::operational(),
+            ),
+        )
+        .unwrap()
+    })
 }
 
 fn assert_contract(total_outputs: u32, axis: SparseFanoutAxis) {

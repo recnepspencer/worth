@@ -14,6 +14,7 @@ mod fixture;
 mod hierarchy;
 mod invalidation;
 mod keyed_cache;
+mod locality_resource_request;
 mod market_seed;
 mod market_state;
 mod node_families;

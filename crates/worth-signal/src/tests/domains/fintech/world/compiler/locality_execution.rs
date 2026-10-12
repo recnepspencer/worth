@@ -20,6 +20,7 @@ mod red_observation;
 mod surface_selection_tests;
 mod world_access;
 
+use crate::tests::domains::fintech::locality_resource_request::FinancialLocalityResourceRequest;
 pub(in crate::tests::domains::fintech) use actions::FinancialRestoreLifecycleEvidence;
 pub(crate) use compilation::{
     compile_financial_locality_world, compile_financial_locality_world_at_tier,
@@ -51,6 +52,7 @@ type LocalityRuntime = SignalRuntime<(), (), (), (), FintechTier>;
 
 pub(in crate::tests::domains::fintech) struct CompiledFinancialLocalityWorld {
     runtime: LocalityRuntime,
+    resources: FinancialLocalityResourceRequest,
     definition: FinancialWorldDefinition,
     handles: BTreeMap<LocalitySemanticOutputId, NodeId>,
     baseline_values: BTreeMap<LocalitySemanticOutputId, i64>,
