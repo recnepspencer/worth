@@ -1571,16 +1571,16 @@ member beyond the applied prefix is published. A queued stopped member does
 not prevent unrelated required work from advancing.
 An owner-completion failure does not refund compute already settled, even if
 that failure is earlier than the compute stop. Treat the applied prefix and
-charged compute prefix as different boundaries.
+canonical compute prefix as different boundaries.
 
 Closing a continuation releases its interest, while other holders can keep an
-output required. Drop does a fixed, small amount of cleanup, charges no work,
+output required. Drop cleans up at most two rows, charges no work,
 starts no computation, and never searches the registry. It may hand on at most
 one existing closed-leaf claim; remaining cleanup stays recorded for a later
-funded call. Readers
-still see the effective successor of a deferred claim. The advancement's
-execution accounting covers all waves, including a failed call; ordinary output
-progress remains `Pending` or `Settled`, with failures returned as typed denials.
+funded call. Readers still see the effective successor of a deferred claim.
+The advancement's execution accounting covers all waves, including a failed
+call; ordinary output progress remains `Pending` or `Settled`, with failures
+returned as typed denials.
 
 **Two independent members in one wave.** The planar geometry application has
 two separate source rings, `diamond-left` and `diamond-right`. Each producer

@@ -1139,7 +1139,7 @@ with that member; its siblings in the wave still commit and publish.
 Application keeps only the applied prefix. A compute request stop charges only its
 canonical compute prefix. An earlier owner-completion failure can be reported
 instead, but does not refund computation already settled, including work past
-that earlier member. The applied prefix and the charged compute prefix are
+that earlier member. The applied prefix and the canonical compute prefix are
 therefore distinct. Earlier performed effects remain performed and retain their
 recovery obligations. A queued member's domain refusal can be held while other
 required work progresses; the held member leaves the runnable queue for the
@@ -1150,8 +1150,8 @@ same result, applied order, and charged work. Live cancellation or a deadline
 can change the reached prefix, but never allow publication beyond its boundary.
 
 Closing a demand releases that holder's interest; another holder can keep the
-output required. Drop has no request budget: it does a fixed, small amount of
-cleanup, charges no work, starts no computation, and never searches the registry.
+output required. Drop has no request budget: it cleans up at most two rows,
+charges no work, starts no computation, and never searches the registry.
 It may hand on at most one existing closed-leaf claim. Cleanup it cannot finish
 stays recorded for a later funded call. A reader already sees the successor
 output before that cleanup runs; deferral does not weaken currentness.

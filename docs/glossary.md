@@ -602,7 +602,7 @@ explained). Rust names are given where a type embodies the term.
 : Charged operation units accumulated in canonical settlement order. Failed
   computation charges its canonical compute prefix. An owner-completion failure
   discards results without refunding compute already
-  settled; the applied prefix can be shorter than the charged compute prefix.
+  settled; the applied prefix can be shorter than the canonical compute prefix.
   Work is not elapsed time or total process memory.
 
 **Workflow**
