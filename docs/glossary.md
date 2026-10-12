@@ -626,8 +626,8 @@ explained). Rust names are given where a type embodies the term.
 : A declared set of independent stages in an installed domain operation's
   staged run. Preparation fixes each stage's facts on the owner; compute takes
   only its inert task; application returns to the owner in canonical stage
-  order. The least failing stage bounds the applied prefix. An owner-completion
-  failure does not refund compute work already settled. This frontier is
+  order. The least failing stage bounds the applied prefix. An apply failure
+  does not refund compute work already settled. This frontier is
   separate from a required wave and from application workflow control steps.
   **See** [How WORTH Works §9.9](how-it-works.md#99-resources-execution-and-cost).
 

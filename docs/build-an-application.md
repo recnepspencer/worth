@@ -1574,8 +1574,9 @@ that failure is earlier than the compute stop. Treat the applied prefix and
 canonical compute prefix as different boundaries.
 
 Closing a continuation releases its interest, while other holders can keep an
-output required. Drop cleans up at most two rows, charges no work,
-starts no computation, and never searches the registry. It may hand on at most
+output required. Drop releases this holder's interest and that row's own claims,
+follows closed claims through at most two rows, charges no work, starts no
+computation, and never scans the whole registry. It may hand on at most
 one existing closed-leaf claim; remaining cleanup stays recorded for a later
 funded call. Readers still see the effective successor of a deferred claim.
 The advancement's execution accounting covers all waves, including a failed
@@ -1600,6 +1601,8 @@ workers; the host chooses placement, not the application.
 `Program`, `PlanarRead`, `PlanarSourceAdjustment`, `PlanarOutputRead`, and
 `length` are this application's declarations and value constructor. The
 imported Query API comes from `worth-query-decl` and `worth-query-host`.
+`application`, `principal`, `scope`, and the dependent's demand `join` come from
+the setup above.
 
 <!-- compiled: checkpoint_recovery/required_chain/concurrent_waves/application.rs -->
 ```rust

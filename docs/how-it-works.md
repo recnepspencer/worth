@@ -1150,8 +1150,9 @@ same result, applied order, and charged work. Live cancellation or a deadline
 can change the reached prefix, but never allow publication beyond its boundary.
 
 Closing a demand releases that holder's interest; another holder can keep the
-output required. Drop has no request budget: it cleans up at most two rows,
-charges no work, starts no computation, and never searches the registry.
+output required. Drop has no request budget: it releases this holder's interest
+and that row's own claims, follows closed claims through at most two rows,
+charges no work, starts no computation, and never scans the whole registry.
 It may hand on at most one existing closed-leaf claim. Cleanup it cannot finish
 stays recorded for a later funded call. A reader already sees the successor
 output before that cleanup runs; deferral does not weaken currentness.
@@ -1261,7 +1262,7 @@ takes every stage through three phases that its types keep apart.
   prefix through the least failure across all three phases. A failing
   application keeps the partial owner effects it made. Computation is
   charged for the canonical prefix through its least failure, and a later
-  owner-completion failure does not refund it.
+  apply failure does not refund it.
 - **Purity.** Prepare and compute must be pure functions of the values they
   are given: no clock, no static or global state, no environment, no
   interior-mutable state shared with the owner or another stage, and no

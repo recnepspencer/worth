@@ -2788,10 +2788,11 @@ The next phase may trust that partition-granular reuse is exact.
   - One execution report per advancement, a failed one included, lists its
     commits and publications in order.
   - A handler that does not compute needs no change.
-  - Drop is bounded by a fixed two-row quota, charges no work and starts no
-    computation. It performs no registry pass and may hand on at most one
-    existing closed-leaf claim; further claim transfers wait for a funded
-    admission.
+  - Drop's closed-claim release is bounded by a fixed two-row quota; Drop charges
+    no work and starts no computation. It walks the rows of its own interest's
+    occurrence and releases the prerequisites of a terminal row. It performs no
+    registry pass and may hand on at most one existing closed-leaf claim;
+    further claim transfers wait for a funded admission.
 - **7.8** A neutral application and the Bank reference prove identical results,
   charged work and commit order at one worker and many, and span strictly
   less than work wherever independence exists.
