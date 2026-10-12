@@ -89,7 +89,8 @@ impl Change {
                     (item.value as f64).to_bits(),
                 ))
             }
-            Self::Gather | Self::CodeIdentity => {
+            Self::CodeIdentity => None,
+            Self::Gather => {
                 item.value += 7;
                 Some(EntryEdit::new(
                     "even",

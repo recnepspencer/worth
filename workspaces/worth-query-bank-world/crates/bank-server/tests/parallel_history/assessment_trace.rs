@@ -123,12 +123,10 @@ impl Trace {
                 );
             }
         }
-        if name == "settle" || name == "retry" {
-            assert!(
-                records.iter().all(|record| record.workers == Some(width)),
-                "every assessment demand advancement has the named width"
-            );
-        }
+        assert!(
+            records.iter().all(|record| record.workers == Some(width)),
+            "every public assessment preparation and execution scope has its named width"
+        );
         let judged = records
             .iter()
             .map(|record| {

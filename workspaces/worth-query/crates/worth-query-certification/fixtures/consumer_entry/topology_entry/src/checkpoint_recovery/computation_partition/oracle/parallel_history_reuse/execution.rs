@@ -210,6 +210,7 @@ pub(super) fn demand(
     application: &Application,
 ) -> (usize, Vec<OracleRun>, Vec<Option<u64>>) {
     room().clear();
+    published_states();
     REPORTS.with(|reports| reports.borrow_mut().clear());
     let mut demand = request
         .demand(RegionOutputDemand(SCOPE.to_owned()))
@@ -227,7 +228,16 @@ pub(super) fn demand(
         })
         .expect("the region output demand settles");
     let contacts = settled.producer_contacts_in_this_demand();
-    let runs = take_runs(None);
+    let mut runs = take_runs(None);
+    let published = published_states();
+    if let Some(last) = runs.last_mut() {
+        last.published = published;
+    } else {
+        assert!(
+            published.is_empty(),
+            "a demand with no run publishes no computation state"
+        );
+    }
     (
         contacts,
         runs,

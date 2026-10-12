@@ -122,18 +122,23 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         } else {
             Cause::Unretained
         })],
-        "the first demand has no prior when enabled, and policy refuses retention when disabled"
+        "the first demand has no prior when enabled, and policy declines prior reuse when disabled"
     );
-    assert_eq!(first.outcome.unwrap().0, before_value.unwrap());
+    assert_eq!(first.outcome.as_ref().unwrap().0, before_value.unwrap());
     assert_eq!(
         first_work,
         Some(before_work),
         "declared full compute and tree work"
     );
     let pair = ceiling_family.then(|| ceiling_pair::branches(&application));
+    let code_branch =
+        matches!(change, Change::CodeIdentity).then(|| ceiling_pair::branches(&application)[0]);
     let request = match pair {
         Some([a, _]) => request.on_branch(a),
-        None => request,
+        None => match code_branch {
+            Some(branch) => request.on_branch(branch),
+            None => request,
+        },
     };
     if let Some(edits) = change.apply(&mut model) {
         if let Some([_, b]) = pair {
@@ -145,15 +150,15 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
             );
         }
         edit(&request, &application, edits, 1);
-    } else {
+    } else if !matches!(change, Change::CodeIdentity) {
         adjust(&request, &application, ODD_Y, 1);
     }
     let declared_work = declaration::computed_work(&model);
-    if matches!(change, Change::EmptyStable) {
+    if matches!(change, Change::EmptyStable | Change::CodeIdentity) {
         assert_eq!(
             model.expected_value(),
             before_value,
-            "empty input replacement keeps the declared reducer identity"
+            "empty input replacement and code identity alone preserve the declared value"
         );
     } else {
         assert_ne!(
@@ -180,6 +185,7 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     let (retained, retained_work) = only_run(demand(&request, &application));
     let records = observations();
     engagement::assert_kernels(change, &before, &model, reuse, &retained);
+    engagement::assert_empty_history(change, &before, &model, &first, &retained);
     assert!(
         records.iter().any(|r| r.workers == Some(current)),
         "the reuse request reaches its declared current dispatch width"
