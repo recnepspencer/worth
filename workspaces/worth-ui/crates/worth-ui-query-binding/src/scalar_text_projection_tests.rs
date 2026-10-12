@@ -40,8 +40,8 @@ fn installed_scalar_text_meaning_executes_and_consumes_native_status() {
         .iter()
         .any(|operation| operation.aspect_touch().native_aspect_key().as_str() == "query_text"));
     workspace
-        .with_execution_request_mut(|execution, mut workspace| {
-            assert_independent_detail_read(execution, &mut workspace)
+        .with_execution_request_mut(|execution, workspace| {
+            assert_independent_detail_read(execution, workspace)
         })
         .expect("workspace host call opens");
     let installed = workspace.worth_ui().expect("Worth UI domain installed");

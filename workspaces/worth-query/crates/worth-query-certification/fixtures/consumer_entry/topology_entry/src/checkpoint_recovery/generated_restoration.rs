@@ -203,7 +203,7 @@ fn suspend_and_restore(
         .expect("the producer source is readable")
         .observed_sources()[0]
         .clone();
-    let suspended = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+    let suspended = crate::checkpoint_recovery::support::host_call(application, |phase| {
         application
             .on_branch(application.current_world())
             .select(phase)

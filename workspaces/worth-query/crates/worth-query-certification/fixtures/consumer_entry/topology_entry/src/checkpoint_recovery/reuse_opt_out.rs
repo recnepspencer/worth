@@ -96,13 +96,15 @@ fn check_live_output(
         .execute()
         .unwrap();
     assert_eq!(
-        crate::checkpoint_recovery::support::host_call(&application, |phase| {
-            application.select_output_producer::<PlanarFinalOutputFamily>(
-                phase,
-                &source.observed_sources()[0],
-                "planar-final",
-                4096,
-            )
+        crate::checkpoint_recovery::support::host_call(application, |phase| {
+            application
+                .select_output_producer::<PlanarFinalOutputFamily>(
+                    phase,
+                    &source.observed_sources()[0],
+                    "planar-final",
+                    4096,
+                )
+                .map_err(Box::new)
         })
         .unwrap()
         .applicability()
@@ -135,13 +137,15 @@ fn check_live_output(
         })
         .execute()
         .unwrap();
-    let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
-        application.select_output_producer::<PlanarFinalOutputFamily>(
-            phase,
-            &source.observed_sources()[0],
-            "planar-final",
-            4096,
-        )
+    let selected = crate::checkpoint_recovery::support::host_call(application, |phase| {
+        application
+            .select_output_producer::<PlanarFinalOutputFamily>(
+                phase,
+                &source.observed_sources()[0],
+                "planar-final",
+                4096,
+            )
+            .map_err(Box::new)
     })
     .unwrap();
     assert_eq!(

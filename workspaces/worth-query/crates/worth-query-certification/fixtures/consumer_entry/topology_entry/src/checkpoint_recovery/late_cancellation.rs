@@ -60,7 +60,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
                     Ok(WorthQueryApplicationOutputDemandProgress::Pending) => {
                         std::thread::yield_now()
                     }
-                    terminal => return terminal,
+                    terminal => return terminal.map_err(Box::new),
                 }
             }
             panic!("the bounded progression never reached its final guard");
@@ -68,7 +68,7 @@ fn cancellation_during_final_product_guard_wait_refuses_stable_publication() {
         let reached = pause.wait_until_reader_contended(Duration::from_secs(5));
         cancellation.cancel();
         pause.release();
-        let terminal = advancing.join().unwrap();
+        let terminal = advancing.join().unwrap().map_err(|denial| *denial);
         assert!(
             reached,
             "the real final Product read must contend after preparation"

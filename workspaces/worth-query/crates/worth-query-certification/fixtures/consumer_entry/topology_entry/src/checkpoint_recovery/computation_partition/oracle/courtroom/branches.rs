@@ -4,11 +4,12 @@ use super::*;
 use worth_query_host::facade::product::WorthQueryProductBranch as Branch;
 
 fn fork<const MODE: u8>(app: &Application<false, TOTALS_WORK, 1, MODE>, parent: Branch) -> Branch {
-    crate::checkpoint_recovery::support::host_call(&app, |phase| {
+    crate::checkpoint_recovery::support::host_call(app, |phase| {
         app.branches()
             .fork(parent)
             .components(|components| components.fork_relational().reuse_exact_signal_basis())
             .create(phase)
+            .map_err(Box::new)
     })
     .unwrap()
 }

@@ -184,6 +184,7 @@ fn scenario(direct: bool) {
                         .limits(),
                     &receipt,
                 )
+                .map_err(Box::new)
         })
         .expect_err("the direct refresh door refuses a genuinely admitted Recovery");
         assert_eq!(stop.kind(), WorthQueryOutputDemandDenialKind::Superseded);

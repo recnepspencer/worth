@@ -57,7 +57,7 @@ pub(super) fn republish(application: &Application<false, TOTALS_WORK, 1, 2>, tot
         .unwrap()
         .rows()[0]
         .value;
-    let suspended = crate::checkpoint_recovery::support::host_call(&application, |phase| {
+    let suspended = crate::checkpoint_recovery::support::host_call(application, |phase| {
         application
             .on_branch(application.current_world())
             .select(phase)
