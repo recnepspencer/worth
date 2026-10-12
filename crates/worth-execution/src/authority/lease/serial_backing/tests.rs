@@ -51,10 +51,8 @@ fn serial_children_share_memory_and_interruption() {
     source.cancel();
     assert!(child.is_cancelled());
     drop(held);
-    assert_eq!(
-        lease.authority.ledger.lock().unwrap().charged_memory_bytes,
-        0
-    );
+    // The inline authority is shared; this request owns only its lineage.
+    assert_eq!(lease.charged_memory_bytes(), 0);
 }
 
 #[test]
