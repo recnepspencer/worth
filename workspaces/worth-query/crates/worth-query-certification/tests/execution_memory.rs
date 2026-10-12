@@ -119,6 +119,29 @@ fn assert_source(app: &ExampleApplication) {
 
 #[test]
 fn execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_reopen() {
+    // The process-memory ceiling belongs to this proof's composition root.
+    // Other tests in this binary construct the shared placement authority.
+    const CHILD: &str = "WORTH_QUERY_MEMORY_LEDGER_PROOF_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let name = format!(
+            "{}::execution_memory_is_shared_by_installed_worlds_and_reselected_on_checkpoint_reopen",
+            module_path!().split_once("::").unwrap().1
+        );
+        let output = crate::process_deadline::output(
+            std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", &name, "--nocapture"])
+                .env(CHILD, "1"),
+        )
+        .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+        return;
+    }
     let mut omitted = ExampleApplication::publish("blocked");
     assert!(matches!(
         omitted.runtime.runtime().request_execution_lease(request()),
