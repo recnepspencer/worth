@@ -6,7 +6,7 @@ use crate::indexes::data::{
 };
 use crate::runtime::RelationalPinnedRead;
 use worth_foundational::facade::AspectFieldLocator;
-impl RelationalPinnedRead {
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
     /// Prepare an installed field lookup from this capability's selected handles.
     /// A cold index stays cold even if its owner later builds a generation.
     pub fn prepare_entity_field_lookup(

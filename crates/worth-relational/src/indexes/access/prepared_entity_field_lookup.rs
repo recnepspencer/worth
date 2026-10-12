@@ -68,32 +68,22 @@ impl IndexAccess<'_> {
         if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
             return Err(denied(Denial::SnapshotUnavailable, index));
         }
-        let definition = self
+        let pinned = self
             .runtime
-            .indexes
-            .definition(index)
-            .ok_or_else(|| denied(Denial::IndexNotInstalled, index))?;
-        PreparedEntityFieldLookup::pin(
-            self.runtime.runtime_instance_id(),
-            view.retain_exact_basis()
-                .expect("exact basis checked above"),
-            definition,
-            kind,
-            locator,
-            self.runtime.services.instrumentation.clone(),
-            |definition| {
-                self.runtime.indexes.exact_generation(
-                    index,
-                    definition
-                        .branch_scoped
-                        .then_some(view.selected_branch_id()),
-                    view.version_id(),
-                    view.selected_schema_authority()
-                        .expect("exact projection carries its root schema")
-                        .schema_version(),
-                )
-            },
-        )
+            .read_truth()
+            .pin_view_read_capability(view, &[index], execution)
+            .map_err(|stop| {
+                use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
+                let kind = match stop {
+                    Pin::Request(stop) => {
+                        Denial::Execution(crate::execution::denial::kernel_stop(stop))
+                    }
+                    Pin::SnapshotUnavailable => Denial::SnapshotUnavailable,
+                    Pin::IndexNotInstalled(_) => Denial::IndexNotInstalled,
+                };
+                denied(kind, index)
+            })?;
+        pinned.prepare_entity_field_lookup(index, kind, locator, execution)
     }
 
     /// Validate the installed owner before lending the already-pinned lookup.

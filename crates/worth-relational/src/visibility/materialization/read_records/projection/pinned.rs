@@ -2,7 +2,7 @@
 use super::{schema_custody::ProjectionSchemaCustody, VisibilityProjectionView};
 use crate::runtime::RelationalPinnedRead;
 impl VisibilityProjectionView {
-    pub(crate) fn from_pinned(read: &RelationalPinnedRead) -> Self {
+    pub(crate) fn from_pinned<Snapshot>(read: &RelationalPinnedRead<Snapshot>) -> Self {
         Self {
             runtime_identity: read.query_context().runtime_instance_id,
             current_version: read.pinned_current_version(),
@@ -25,5 +25,21 @@ impl RelationalPinnedRead {
         _request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Option<VisibilityProjectionView> {
         (handle == self.snapshot()).then(|| VisibilityProjectionView::from_pinned(self))
+    }
+}
+
+impl VisibilityProjectionView {
+    pub(in crate::visibility::materialization::read_records) fn retain_pinning_metadata(
+        &self,
+    ) -> (
+        crate::identity::data::VersionId,
+        crate::runtime::RuntimeInstrumentation,
+        crate::symbols::data::StringInterner,
+    ) {
+        (
+            self.current_version,
+            self.instrumentation.clone(),
+            self.symbols.clone(),
+        )
     }
 }

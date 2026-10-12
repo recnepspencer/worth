@@ -8,6 +8,7 @@ use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, Locator
 
 pub(super) struct World {
     pub runtime: RelationalRuntime,
+    pub index: DerivedIndexId,
     pub snapshot: SnapshotHandle,
     pub entities: [EntityId; 3],
     pub relations: [RelationId; 2],
@@ -72,6 +73,7 @@ impl World {
         let snapshot = runtime.visibility_authority().snapshot();
         Self {
             runtime,
+            index: definition.index_id,
             snapshot,
             entities,
             relations,

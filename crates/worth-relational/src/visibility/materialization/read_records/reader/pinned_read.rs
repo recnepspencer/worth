@@ -20,6 +20,8 @@ mod tests;
 /// An exact root, its schema/frontiers/revisions, frozen symbols, and selected
 /// index handles. Cloning establishes another immutable observer; it copies
 /// neither rows nor an index. No runtime, request, or registry guard is retained.
+/// Snapshot-backed pins carry their handle. Observation-backed pins carry `()`;
+/// only snapshot-backed pins expose snapshot/plan doors, by type.
 ///
 /// Only the native owner can construct this capability.
 /// ```compile_fail,E0451
@@ -46,10 +48,10 @@ mod tests;
 /// fn snapshot(read: &RelationalPinnedRead) -> &SnapshotHandle { read.snapshot() }
 /// ```
 #[derive(Clone, Debug)]
-pub struct RelationalPinnedRead {
+pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
     pub(super) current_version: crate::identity::data::VersionId,
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
-    pub(super) snapshot: SnapshotHandle,
+    pub(super) snapshot: Snapshot,
     pub(super) basis: VisibilitySnapshotBasis,
     pub(super) context: QueryPlanContextId,
     pub(super) symbols: StringInterner,
@@ -74,6 +76,9 @@ impl RelationalPinnedRead {
     pub fn snapshot(&self) -> &SnapshotHandle {
         &self.snapshot
     }
+}
+
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
     /// Schema and canonical source revisions captured at pin time.
     pub fn query_context(&self) -> &QueryPlanContextId {
         &self.context
@@ -102,7 +107,7 @@ impl RelationalPinnedRead {
     }
 }
 
-impl RelationalPinnedRead {
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
     pub(crate) fn pinned_basis(&self) -> &VisibilitySnapshotBasis {
         &self.basis
     }
@@ -117,12 +122,12 @@ impl RelationalPinnedRead {
     }
 }
 
-impl RelationalPinnedRead {
+impl<Snapshot> RelationalPinnedRead<Snapshot> {
     pub(crate) fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
         crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)
     }
 }
-impl super::super::projection::ProjectionRecordSource for RelationalPinnedRead {
+impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPinnedRead<Snapshot> {
     fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
         Some(self.basis.root())
     }
