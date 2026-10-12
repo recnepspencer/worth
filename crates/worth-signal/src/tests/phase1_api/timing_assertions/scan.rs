@@ -1,3 +1,5 @@
+//! Does not trace a clock carried through a struct field.
+//! Does not trace a clock captured by a closure defined elsewhere.
 use std::collections::BTreeSet;
 use syn::parse::Parser;
 use syn::visit::{self, Visit};
@@ -12,14 +14,20 @@ pub(super) fn violations(source: &str) -> Vec<String> {
 
 pub(super) fn violations_with_helpers(source: &str, helpers: &BTreeSet<String>) -> Vec<String> {
     let file = syn::parse_file(source).expect("timing guard source must parse");
-    struct PredicateFunctions(BTreeSet<String>);
+    let clocks = named_clocks(&file);
+    struct PredicateFunctions {
+        names: BTreeSet<String>,
+        clocks: BTreeSet<String>,
+    }
     impl<'ast> Visit<'ast> for PredicateFunctions {
         fn visit_item_fn(&mut self, function: &'ast ItemFn) {
             if matches!(&function.sig.output, syn::ReturnType::Type(_, t)
                 if matches!(&**t, syn::Type::Path(p) if p.path.is_ident("bool")))
             {
                 let mut body = Body {
-                    predicates: self.0.clone(),
+                    predicates: self.names.clone(),
+                    clocks: self.clocks.clone(),
+                    direct_clocks: self.clocks.clone(),
                     ..Body::default()
                 };
                 body.visit_block(&function.block);
@@ -29,17 +37,20 @@ pub(super) fn violations_with_helpers(source: &str, helpers: &BTreeSet<String>) 
                     block: (*function.block).clone(),
                 });
                 if compares_clock(&expression, &body.clocks, &body.predicates, true) {
-                    self.0.insert(function.sig.ident.to_string());
+                    self.names.insert(function.sig.ident.to_string());
                 }
             }
             visit::visit_item_fn(self, function);
         }
     }
-    let mut functions = PredicateFunctions(BTreeSet::new());
+    let mut functions = PredicateFunctions {
+        names: BTreeSet::new(),
+        clocks: clocks.clone(),
+    };
     loop {
-        let before = functions.0.len();
+        let before = functions.names.len();
         functions.visit_file(&file);
-        if functions.0.len() == before {
+        if functions.names.len() == before {
             break;
         }
     }
@@ -47,6 +58,7 @@ pub(super) fn violations_with_helpers(source: &str, helpers: &BTreeSet<String>) 
         found: Vec<String>,
         functions: BTreeSet<String>,
         helpers: BTreeSet<String>,
+        clocks: BTreeSet<String>,
     }
     impl<'ast> Visit<'ast> for Tests {
         fn visit_item_fn(&mut self, function: &'ast ItemFn) {
@@ -56,6 +68,8 @@ pub(super) fn violations_with_helpers(source: &str, helpers: &BTreeSet<String>) 
                 let mut body = Body {
                     predicates: self.functions.clone(),
                     helpers: self.helpers.clone(),
+                    clocks: self.clocks.clone(),
+                    direct_clocks: self.clocks.clone(),
                     ..Body::default()
                 };
                 body.visit_block(&function.block);
@@ -68,11 +82,34 @@ pub(super) fn violations_with_helpers(source: &str, helpers: &BTreeSet<String>) 
     }
     let mut tests = Tests {
         found: Vec::new(),
-        functions: functions.0,
+        functions: functions.names,
         helpers: helpers.clone(),
+        clocks,
     };
     tests.visit_file(&file);
     tests.found
+}
+
+fn named_clocks(file: &syn::File) -> BTreeSet<String> {
+    #[derive(Default)]
+    struct Constants(BTreeSet<String>);
+    impl<'ast> Visit<'ast> for Constants {
+        fn visit_item_const(&mut self, item: &'ast syn::ItemConst) {
+            if matches!(&*item.ty, syn::Type::Path(p) if p.path.segments.iter().any(|s| is_clock_type(&s.ident.to_string())))
+                || clock_operand(&item.expr, &BTreeSet::new(), false)
+            {
+                self.0.insert(item.ident.to_string());
+            }
+            visit::visit_item_const(self, item);
+        }
+    }
+    let mut constants = Constants::default();
+    constants.visit_file(file);
+    constants.0
+}
+
+fn is_clock_type(name: &str) -> bool {
+    matches!(name, "Duration" | "Instant" | "SystemTime")
 }
 
 #[derive(Default)]
@@ -110,12 +147,12 @@ impl<'ast> Visit<'ast> for Body {
         };
         if let (Pat::Ident(name), Some(init)) = (pattern, &local.init) {
             if clock_operand(&init.expr, &self.direct_clocks, false)
-                || matches!(&local.pat, Pat::Type(p) if matches!(&*p.ty, syn::Type::Path(t) if t.path.segments.last().is_some_and(|s| s.ident == "Duration")))
+                || matches!(&local.pat, Pat::Type(p) if matches!(&*p.ty, syn::Type::Path(t) if t.path.segments.iter().any(|s| is_clock_type(&s.ident.to_string()))))
             {
                 self.direct_clocks.insert(name.ident.to_string());
             }
             if is_clock(&init.expr, &self.clocks)
-                || matches!(&local.pat, Pat::Type(p) if matches!(&*p.ty, syn::Type::Path(t) if t.path.segments.last().is_some_and(|s| s.ident == "Duration")))
+                || matches!(&local.pat, Pat::Type(p) if matches!(&*p.ty, syn::Type::Path(t) if t.path.segments.iter().any(|s| is_clock_type(&s.ident.to_string()))))
             {
                 self.clocks.insert(name.ident.to_string());
             }
@@ -193,7 +230,11 @@ fn clock_operand(expression: &Expr, clocks: &BTreeSet<String>, reports: bool) ->
     }
     impl<'ast> Visit<'ast> for Clock<'_> {
         fn visit_expr_path(&mut self, path: &'ast syn::ExprPath) {
-            self.found |= path.path.segments.iter().any(|s| s.ident == "Duration")
+            self.found |= path
+                .path
+                .segments
+                .iter()
+                .any(|s| is_clock_type(&s.ident.to_string()))
                 || path
                     .path
                     .get_ident()
@@ -209,7 +250,13 @@ fn clock_operand(expression: &Expr, clocks: &BTreeSet<String>, reports: bool) ->
             visit::visit_expr_field(self, field);
         }
         fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-            self.found |= call.method == "elapsed";
+            self.found |= matches!(
+                call.method.to_string().as_str(),
+                "elapsed"
+                    | "duration_since"
+                    | "checked_duration_since"
+                    | "saturating_duration_since"
+            );
             visit::visit_expr_method_call(self, call);
         }
     }

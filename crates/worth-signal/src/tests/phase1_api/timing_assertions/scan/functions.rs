@@ -15,6 +15,10 @@ pub(in super::super) fn clock_helpers(
         })
         .collect();
     let mut helpers = BTreeSet::new();
+    let clocks: BTreeSet<_> = files
+        .iter()
+        .flat_map(|(_, syntax)| super::named_clocks(syntax))
+        .collect();
     loop {
         let before = helpers.len();
         for (file, syntax) in &files {
@@ -22,6 +26,7 @@ pub(in super::super) fn clock_helpers(
                 file,
                 hang_guards,
                 helpers: &mut helpers,
+                clocks: &clocks,
             }
             .visit_file(syntax);
         }
@@ -35,6 +40,7 @@ struct Functions<'a> {
     file: &'a str,
     hang_guards: &'a [(&'a str, &'a str, &'a str)],
     helpers: &'a mut BTreeSet<String>,
+    clocks: &'a BTreeSet<String>,
 }
 
 impl Functions<'_> {
@@ -55,6 +61,8 @@ impl Functions<'_> {
         let mut body = Body {
             helpers: self.helpers.clone(),
             ignore_reports: true,
+            clocks: self.clocks.clone(),
+            direct_clocks: self.clocks.clone(),
             ..Body::default()
         };
         for argument in &signature.inputs {
@@ -64,7 +72,7 @@ impl Functions<'_> {
             let syn::Pat::Ident(pattern) = &*argument.pat else {
                 continue;
             };
-            if matches!(&*argument.ty, syn::Type::Path(p) if p.path.segments.last().is_some_and(|s| s.ident == "Duration"))
+            if matches!(&*argument.ty, syn::Type::Path(p) if p.path.segments.iter().any(|s| super::is_clock_type(&s.ident.to_string())))
             {
                 body.clocks.insert(pattern.ident.to_string());
                 body.direct_clocks.insert(pattern.ident.to_string());
