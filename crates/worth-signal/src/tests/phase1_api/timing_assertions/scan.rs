@@ -3,7 +3,14 @@ use syn::parse::Parser;
 use syn::visit::{self, Visit};
 use syn::{BinOp, Expr, ItemFn, Pat};
 
+mod functions;
+pub(super) use functions::clock_helpers;
+
 pub(super) fn violations(source: &str) -> Vec<String> {
+    violations_with_helpers(source, &clock_helpers(&[("fixture.rs", source)], &[]))
+}
+
+pub(super) fn violations_with_helpers(source: &str, helpers: &BTreeSet<String>) -> Vec<String> {
     let file = syn::parse_file(source).expect("timing guard source must parse");
     struct PredicateFunctions(BTreeSet<String>);
     impl<'ast> Visit<'ast> for PredicateFunctions {
@@ -21,7 +28,7 @@ pub(super) fn violations(source: &str) -> Vec<String> {
                     label: None,
                     block: (*function.block).clone(),
                 });
-                if compares_clock(&expression, &body.clocks, &body.predicates) {
+                if compares_clock(&expression, &body.clocks, &body.predicates, true) {
                     self.0.insert(function.sig.ident.to_string());
                 }
             }
@@ -39,6 +46,7 @@ pub(super) fn violations(source: &str) -> Vec<String> {
     struct Tests {
         found: Vec<String>,
         functions: BTreeSet<String>,
+        helpers: BTreeSet<String>,
     }
     impl<'ast> Visit<'ast> for Tests {
         fn visit_item_fn(&mut self, function: &'ast ItemFn) {
@@ -47,6 +55,7 @@ pub(super) fn violations(source: &str) -> Vec<String> {
             {
                 let mut body = Body {
                     predicates: self.functions.clone(),
+                    helpers: self.helpers.clone(),
                     ..Body::default()
                 };
                 body.visit_block(&function.block);
@@ -60,6 +69,7 @@ pub(super) fn violations(source: &str) -> Vec<String> {
     let mut tests = Tests {
         found: Vec::new(),
         functions: functions.0,
+        helpers: helpers.clone(),
     };
     tests.visit_file(&file);
     tests.found
@@ -70,10 +80,17 @@ struct Body {
     clocks: BTreeSet<String>,
     direct_clocks: BTreeSet<String>,
     predicates: BTreeSet<String>,
+    helpers: BTreeSet<String>,
+    ignore_reports: bool,
     found: bool,
 }
 
 impl<'ast> Visit<'ast> for Body {
+    fn visit_expr_call(&mut self, call: &'ast syn::ExprCall) {
+        self.found |= matches!(&*call.func, Expr::Path(p) if p.path.segments.last()
+            .is_some_and(|s| self.helpers.contains(&s.ident.to_string())));
+        visit::visit_expr_call(self, call);
+    }
     fn visit_expr_binary(&mut self, binary: &'ast syn::ExprBinary) {
         if is_comparison(&binary.op) {
             self.found |= clock_operand(&binary.left, &self.direct_clocks, false)
@@ -83,6 +100,7 @@ impl<'ast> Visit<'ast> for Body {
     }
     fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
         self.found |= method_compares_clock(call, &self.direct_clocks, false);
+        self.found |= self.helpers.contains(&call.method.to_string());
         visit::visit_expr_method_call(self, call);
     }
     fn visit_local(&mut self, local: &'ast syn::Local) {
@@ -101,7 +119,7 @@ impl<'ast> Visit<'ast> for Body {
             {
                 self.clocks.insert(name.ident.to_string());
             }
-            if compares_clock(&init.expr, &self.clocks, &self.predicates) {
+            if compares_clock(&init.expr, &self.clocks, &self.predicates, true) {
                 self.predicates.insert(name.ident.to_string());
             }
         }
@@ -122,9 +140,20 @@ impl<'ast> Visit<'ast> for Body {
                 .parse2(mac.tokens.clone())
                 .expect("assertion arguments must parse");
             if name.ends_with("_eq") || name.ends_with("_ne") {
-                self.found |= arguments.iter().take(2).any(|e| is_clock(e, &self.clocks));
+                self.found |= arguments
+                    .iter()
+                    .take(2)
+                    .any(|e| clock_operand(e, &self.clocks, !self.ignore_reports));
             } else if let Some(condition) = arguments.first() {
-                self.found |= compares_clock(condition, &self.clocks, &self.predicates);
+                self.found |= compares_clock(
+                    condition,
+                    &self.clocks,
+                    &self.predicates,
+                    !self.ignore_reports,
+                );
+            }
+            for argument in arguments {
+                self.visit_expr(&argument);
             }
         }
     }
@@ -197,22 +226,24 @@ fn compares_clock(
     expression: &Expr,
     clocks: &BTreeSet<String>,
     predicates: &BTreeSet<String>,
+    reports: bool,
 ) -> bool {
     struct Comparisons<'a> {
         clocks: &'a BTreeSet<String>,
         predicates: &'a BTreeSet<String>,
         found: bool,
+        reports: bool,
     }
     impl<'ast> Visit<'ast> for Comparisons<'_> {
         fn visit_expr_binary(&mut self, binary: &'ast syn::ExprBinary) {
             if is_comparison(&binary.op) {
-                self.found |=
-                    is_clock(&binary.left, self.clocks) || is_clock(&binary.right, self.clocks);
+                self.found |= clock_operand(&binary.left, self.clocks, self.reports)
+                    || clock_operand(&binary.right, self.clocks, self.reports);
             }
             visit::visit_expr_binary(self, binary);
         }
         fn visit_expr_method_call(&mut self, call: &'ast syn::ExprMethodCall) {
-            self.found |= method_compares_clock(call, self.clocks, true);
+            self.found |= method_compares_clock(call, self.clocks, self.reports);
             visit::visit_expr_method_call(self, call);
         }
         fn visit_expr_path(&mut self, path: &'ast syn::ExprPath) {
@@ -227,6 +258,7 @@ fn compares_clock(
         clocks,
         predicates,
         found: false,
+        reports,
     };
     comparison.visit_expr(expression);
     comparison.found

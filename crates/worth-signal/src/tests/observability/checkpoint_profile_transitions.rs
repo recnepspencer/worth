@@ -1,17 +1,14 @@
-use std::time::Instant;
-
 use crate::facade::{DiagnosticsAvailability, SignalObservationCompletion};
 use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, restore_lifecycle_definition,
     CompiledFinancialWorld, FinancialWorldDefinition,
 };
 use crate::tests::performance_profiles::throughput_definition::{
-    assert_within_throughput_budget, profiles, PerformanceProfile, PERFORMANCE_SEED,
+    profiles, PerformanceProfile, PERFORMANCE_SEED,
 };
 
 #[test]
 fn restore_lifecycle_survives_every_installed_profile() {
-    let started = Instant::now();
     let definition = restore_lifecycle_definition(PERFORMANCE_SEED);
     for profile in profiles() {
         let mut world =
@@ -33,12 +30,10 @@ fn restore_lifecycle_survives_every_installed_profile() {
             );
         }
     }
-    assert_within_throughput_budget(started, "same-profile restore matrix");
 }
 
 #[test]
 fn named_restore_transitions_preserve_truth_and_typed_absence() {
-    let started = Instant::now();
     let definition = restore_lifecycle_definition(PERFORMANCE_SEED);
     let idle = profile("throughput_idle");
     let forensic = profile("introspective");
@@ -46,7 +41,6 @@ fn named_restore_transitions_preserve_truth_and_typed_absence() {
     forensic_to_idle(&definition, forensic, idle);
     idle_to_forensic(&definition, idle, forensic);
     session_interrupted_by_checkpoint(&definition, idle);
-    assert_within_throughput_budget(started, "named restore transitions");
 }
 
 fn assert_destination_policy_unchanged(

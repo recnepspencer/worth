@@ -2,17 +2,13 @@ use crate::tests::domains::fintech::{
     FinancialPerformanceBatchReport, LocalityOptionalObservationInventory,
 };
 
-use std::time::Instant;
-
 use super::throughput_definition::{
-    assert_profile_report, assert_within_throughput_budget, operational_digest_for,
-    ordinary_definition, profiles, PerformancePacketContext, ORDINARY_OUTPUT_FLOOR,
-    PERFORMANCE_BATCHES,
+    assert_profile_report, operational_digest_for, ordinary_definition, profiles,
+    PerformancePacketContext, ORDINARY_OUTPUT_FLOOR, PERFORMANCE_BATCHES,
 };
 
 #[test]
 fn measured_idle_versus_introspective_records_diagnostic_pressure_benefit() {
-    let started = Instant::now();
     let (idle_report, pressure_report, idle_inventory, pressure_inventory) = pressure_reports();
     assert_profile_report(
         &idle_report,
@@ -38,7 +34,6 @@ fn measured_idle_versus_introspective_records_diagnostic_pressure_benefit() {
         pressure_report.completed_batches_per_second_milli,
         ORDINARY_OUTPUT_FLOOR
     );
-    assert_within_throughput_budget(started, "measured idle/introspective pressure packet");
 }
 
 #[test]
