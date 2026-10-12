@@ -62,15 +62,18 @@ impl ExecutionWorkCeiling {
         }
     }
 
-    /// Runs a sealed diagnostic on its own meter. Its report and stops never
-    /// reach the invoking request; the caller drops this diagnostic's bill.
+    /// Runs a sealed diagnostic on its own meter and memory ledger, sharing
+    /// the physical pool and cancellation/deadline lineage. Its caller drops
+    /// the diagnostic bill and returns any request stop with its true cause.
     pub fn run_detached_for_test<R>(
         self,
         lease: &ExecutionResourceLease<'_>,
-        computation: impl FnOnce() -> R,
+        computation: impl FnOnce(&ExecutionResourceLease<'_>) -> R,
     ) -> Result<(R, ExecutionReport), WorkCeilingDenial> {
+        let resources = lease.diagnostic_resources_for_test();
+        let diagnostic = resources.lease_for_test();
         let _detached = crate::backend::detach_meter_for_test();
-        self.run(lease, computation)
+        self.run(&diagnostic, || computation(&diagnostic))
     }
 
     pub const fn new(work_units: u64) -> Self {

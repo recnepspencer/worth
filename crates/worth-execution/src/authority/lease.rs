@@ -19,6 +19,7 @@ static PROCESS_AUTHORITY: OnceLock<()> = OnceLock::new();
 static CONSTRUCTION_LOCK: Mutex<()> = Mutex::new(());
 mod array_backing;
 mod byte_backing;
+mod diagnostic;
 mod fixed_backing;
 mod limits;
 mod memory;
@@ -102,7 +103,7 @@ pub struct ExecutionAuthority {
 #[derive(Debug)]
 struct AuthorityInner {
     config: ExecutionAuthorityConfig,
-    pool: Option<ThreadPool>,
+    pool: Option<Arc<ThreadPool>>,
     equivalences: EquivalenceRegistry,
     ledger: Mutex<Ledger>,
 }
@@ -167,13 +168,13 @@ impl ExecutionAuthority {
         let pool = if !crate::backend::HAS_OS_THREADS {
             None
         } else {
-            Some(
+            Some(Arc::new(
                 ThreadPoolBuilder::new()
                     .num_threads(config.max_workers.get())
                     .thread_name(|index| format!("worth-execution-{index}"))
                     .build()
                     .map_err(|error| ConstructionDenial::PoolConstruction(error.to_string()))?,
-            )
+            ))
         };
         let authority = Self {
             inner: Arc::new(AuthorityInner {

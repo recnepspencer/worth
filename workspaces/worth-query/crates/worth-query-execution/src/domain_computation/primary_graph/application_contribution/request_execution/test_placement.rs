@@ -154,42 +154,67 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
     combine: Combine,
     max_value_bytes: u64,
     (run, report): (&ReductionTree<R, Combine>, &ExecutionReport),
-) where
+) -> Result<(), worth_execution::WorkCeilingDenial>
+where
     T: Sync + ChargedBytes,
     R: Send + Sync + ChargedBytes + Clone + CanonicalBits,
     E: Send + ChargedBytes,
     Kernel: Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
     Combine: Fn(&R, &R) -> R + Clone + Sync,
 {
-    worth_execution::ExecutionWorkCeiling::new(u64::MAX)
-        .run_detached_for_test(lease, || {
-            let (certified, certified_report, _) = map
-        .certify_reduce(lease, seed, kernel, identity, combine, max_value_bytes, 0)
-        .unwrap_or_else(|failure| match failure {
-            ReduceCertificationFailure::Run(_) => {
-                panic!(
-                    "the oracle or the perturbed run of seed {seed} stopped where the run did not"
-                )
-            }
-            ReduceCertificationFailure::Mismatch(mismatch) => {
-                panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}")
-            }
-        });
-            let same_bits = compare_canonical_values(lease, run.result(), certified.result())
-                .unwrap_or_else(|stop| {
-                    panic!("the certified result could not be compared: {stop:?}")
-                });
-            assert!(
-                same_bits,
-                "the run's result differs from the certified one under seed {seed}"
-            );
-            assert_eq!(
-                report.charged_work(),
-                certified_report.charged_work(),
-                "the run's charged work differs from the certified one under seed {seed}"
-            );
-        })
-        .expect("the detached diagnostic can enter its own meter");
+    use worth_execution::{MapKernelStop, WorkCeilingDenial};
+    let request_stop = |lease: &ExecutionResourceLease<'_>| {
+        if lease.is_cancelled() {
+            Some(WorkCeilingDenial::Stopped(MapKernelStop::Cancelled))
+        } else if lease.deadline_elapsed() {
+            Some(WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed))
+        } else {
+            None
+        }
+    };
+    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
+        .run_detached_for_test(lease, |diagnostic| {
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let (certified, certified_report, _) = match map.certify_reduce(
+                    diagnostic, seed, kernel, identity, combine, max_value_bytes, 0) {
+                    Ok(value) => value,
+                    Err(failure) => {
+                        if let Some(stop) = request_stop(diagnostic) { return Err(stop); }
+                        match failure {
+                            ReduceCertificationFailure::Run(_) => panic!("the oracle or perturbed run of seed {seed} stopped where the run did not"),
+                            ReduceCertificationFailure::Mismatch(mismatch) => panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}"),
+                        }
+                    }
+                };
+                let same_bits = match compare_canonical_values(diagnostic, run.result(), certified.result()) {
+                    Ok(same) => same,
+                    Err(stop) => {
+                        if let Some(stop) = request_stop(diagnostic) { return Err(stop); }
+                        panic!("the certified result could not be compared: {stop:?}");
+                    }
+                };
+                Ok((same_bits, certified_report.charged_work(), certified_report.charged_span()))
+            }))
+        })?;
+    let (same_bits, work, span) = match checked {
+        Ok(result) => result?,
+        Err(payload) => std::panic::resume_unwind(payload),
+    };
+    assert!(
+        same_bits,
+        "the run's result differs from the certified one under seed {seed}"
+    );
+    assert_eq!(
+        report.charged_work(),
+        work,
+        "the run's charged work differs from the certified one under seed {seed}"
+    );
+    assert_eq!(
+        report.charged_span(),
+        span,
+        "the run's charged span differs from the certified one under seed {seed}"
+    );
+    Ok(())
 }
 
 /// Bounds the test thread's requests with a host's declared budget.
@@ -269,3 +294,6 @@ mod scope_tests {
         assert_eq!(PLACEMENT.get(), WorthQueryExecutionPlacementForTest::World);
     }
 }
+
+#[cfg(test)]
+mod certification_tests;

@@ -333,7 +333,7 @@ impl QueryDispatch<'_> {
                 combine,
                 max_value_bytes,
                 (tree, report),
-            );
+            )?;
         }
         reduced
     }

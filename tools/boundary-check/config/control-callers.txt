@@ -303,3 +303,6 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/
 
 # Exact reader of the one-stage framework reservation.
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/partitioned_computation/incremental/tests/tree_memory.rs
+
+# Diagnostic resource proof uses the same sealed detached meter.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement/certification_tests.rs
