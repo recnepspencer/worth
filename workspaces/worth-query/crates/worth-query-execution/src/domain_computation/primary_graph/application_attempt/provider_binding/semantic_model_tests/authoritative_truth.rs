@@ -358,6 +358,7 @@ fn field_fact(
             KindId::new(11),
             locator,
         )
+        .expect("native field request remains live")
         .expect("committed field observation succeeds"),
     }
 }

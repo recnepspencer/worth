@@ -23,6 +23,7 @@ pub(in crate::domain_computation::primary_graph) enum IndexedSelectionReobserveD
 /// Why an indexed lookup yields no selection fact.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryIndexedSelectionRefusal {
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// More entities hold the value than the lookup's candidate limit.
     Overflowed,
     /// The index could not answer at the snapshot.
@@ -81,6 +82,9 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_candidates(
 fn selection_refusal(denial: IndexedSelectionReobserveDenial) -> WorthQueryIndexedSelectionRefusal {
     match denial {
         IndexedSelectionReobserveDenial::Overflow => WorthQueryIndexedSelectionRefusal::Overflowed,
+        IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::Execution(
+            cause,
+        )) => WorthQueryIndexedSelectionRefusal::Execution(cause),
         _ => WorthQueryIndexedSelectionRefusal::Unavailable,
     }
 }

@@ -196,7 +196,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_workflow_proposal(
         proposal,
         kind,
         &layout.proposal.identity,
-    )
+    )?
     .ok_or_else(|| denial("workflow proposal identity is unavailable"))?;
     if value != expected_identity {
         return Err(denial("workflow proposal identity changed"));
@@ -271,7 +271,7 @@ fn required_text(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow operation input field is unavailable"))?;
     let AspectValue::String(InternedString::Raw(text)) = &value else {
         return Err(denial("workflow operation input field has the wrong type"));
@@ -295,7 +295,7 @@ fn required_u64(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow proposal numeric field is unavailable"))?;
     let AspectValue::UInt64(number) = value else {
         return Err(denial("workflow proposal numeric field has the wrong type"));
@@ -318,7 +318,7 @@ fn optional_identity(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<[u8; 32]>, WorthQueryApplicationAttemptDenial> {
-    let Some(value) = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let Some(value) = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
     else {
         return Ok(None);
     };

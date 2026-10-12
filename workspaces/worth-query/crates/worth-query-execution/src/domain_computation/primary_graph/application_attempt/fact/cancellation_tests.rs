@@ -1,4 +1,5 @@
 //! Cancellation is a typed stop through native adjacency and indexed equality.
+mod exhaustion;
 use super::*;
 use crate::domain_computation::primary_graph::{
     tests::fixture::{installed_authorization_world, AccountOwner, AccountStatus},
@@ -165,7 +166,7 @@ fn cancelled_adjacency_read_and_equality_keep_the_native_stop() {
     );
 }
 
-fn with_indexed_fact(
+fn with_indexed_fact<R>(
     body: impl FnOnce(
         &worth_relational::facade::runtime::RelationalRuntime,
         &ExecutionRequest<'_, '_>,
@@ -173,8 +174,8 @@ fn with_indexed_fact(
         &WorthQueryApplicationObservedFact,
         &CancellationSource,
         KindId,
-    ),
-) {
+    ) -> R,
+) -> R {
     let world = installed_authorization_world(true);
     world
         .application
@@ -211,8 +212,10 @@ fn with_indexed_fact(
                         2,
                     )
                     .unwrap();
-                    body(runtime, &execution, snapshot, &fact, &source, relation_kind);
-                });
+                    body(runtime, &execution, snapshot, &fact, &source, relation_kind)
+                })
         })
-        .unwrap();
+        .unwrap()
 }
+
+mod counted;

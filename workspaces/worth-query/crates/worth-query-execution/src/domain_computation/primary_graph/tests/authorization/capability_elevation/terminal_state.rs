@@ -207,6 +207,7 @@ where
             crate::domain_computation::primary_graph::application_attempt::observe_field_value(
                 relational, execution, snapshot, entity, kind, locator,
             )
+            .expect("native field request remains live")
             .unwrap()
         })
 }

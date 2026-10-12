@@ -345,7 +345,7 @@ fn optional_value(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<AspectValue>, WorthQueryApplicationAttemptDenial> {
-    match observe_field(runtime, execution, snapshot, entity, kind, locator)
+    match observe_field(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow evidence dependency field is unavailable"))?
     {
         WorthQueryApplicationFieldObservation::Present(value) => {

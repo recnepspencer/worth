@@ -8,7 +8,6 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
 };
-use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLifecycleState};
 
 type SelectedWithEntry<'a, Schema> = (
     WorthQuerySelectedApplicationProducer,
@@ -16,6 +15,7 @@ type SelectedWithEntry<'a, Schema> = (
 );
 
 mod recovered_candidates;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) mod retained_liveness;
 mod selected_basis;
 pub(super) use selected_basis::source_basis_is_admitted;
 use selected_basis::{charge, selection_budget_denial};
@@ -274,11 +274,7 @@ where
                 let mut current = Vec::with_capacity(live_candidates.len());
                 use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
                 for (candidate, entity) in &live_candidates {
-                    let live = view.entity_record_with_projection_scope(execution,
-                        *entity,
-                        ProjectionAspectScope::empty(),
-                        |record| Some(record.lifecycle()),
-                    ).ok().flatten() == Some(RecordLifecycleState::Live);
+                    let live=retained_liveness::read(execution,&view,*entity)?;
                     let identity_current = candidate.source_identity.is_some_and(|identity| {
                         match identity {
                             RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),

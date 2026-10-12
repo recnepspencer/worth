@@ -285,3 +285,5 @@ fn admitted_touch_parts(
 }
 
 mod current_output_source_adjacency_tracks_actual_anchor_retirement;
+
+mod counted_read_stops;

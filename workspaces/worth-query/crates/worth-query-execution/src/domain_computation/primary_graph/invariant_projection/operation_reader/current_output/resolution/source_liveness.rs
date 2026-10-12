@@ -23,25 +23,32 @@ where
     {
         self.require_current_output_budget(1, Producer::IDENTIFIER)?;
         self.reader.work_budget.consume(1);
-        let live = self
+        let state = match self
             .reader
             .runtime
             .read_truth()
             .project_snapshot(self.reader.snapshot)
-            .and_then(|view| {
-                view.entity_record_with_projection_scope(
+        {
+            Some(view) => view
+                .entity_record_with_projection_scope(
                     execution,
                     producer.entity_id(),
                     ProjectionAspectScope::empty(),
                     |record| Some((record.kind_id(), record.lifecycle())),
                 )
-                .ok()
-                .flatten()
-            })
-            .is_some_and(|(kind, lifecycle)| {
-                lifecycle == RecordLifecycleState::Live
-                    && self.reader.layout.entity_name(kind) == Some(Producer::IDENTIFIER)
-            });
+                .map_err(|cause| {
+                    self.reader.native_read_stop.get_or_insert(cause);
+                    WorthQueryCurrentOutputDenial::new(
+                        super::super::WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause),
+                        Producer::IDENTIFIER,
+                    )
+                })?,
+            None => None,
+        };
+        let live = state.is_some_and(|(kind, lifecycle)| {
+            lifecycle == RecordLifecycleState::Live
+                && self.reader.layout.entity_name(kind) == Some(Producer::IDENTIFIER)
+        });
         Ok(live)
     }
 }

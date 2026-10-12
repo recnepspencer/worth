@@ -195,8 +195,9 @@ where
                             ProjectionAspectScope::empty(),
                             |record| Some(record.lifecycle()),
                         )
-                        .ok()
-                        .flatten()
+                        .map_err(|cause| {
+                            super::super::super::selection::retained_liveness::denial(cause)
+                        })?
                         == Some(RecordLifecycleState::Live);
                     let selected = truth
                         .positioned_snapshot(snapshot)

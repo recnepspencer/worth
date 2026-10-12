@@ -127,7 +127,7 @@ where
             .field_locator(field.entity(), field.aspect(), field.field())?
             .clone();
         self.work.record_field();
-        crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(
+        let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(
             self.runtime,
             execution,
             self.snapshot,
@@ -136,7 +136,14 @@ where
             &locator,
             |raw| raw.and_then(|value| Field::Binding::decode(value).ok()),
         )
-        .flatten()
+        ;
+        match observed {
+            Ok(value) => value.flatten(),
+            Err(cause) => {
+                self.native_read_stop.get_or_insert(cause);
+                None
+            }
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn identity_is_local<

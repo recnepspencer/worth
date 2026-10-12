@@ -4,6 +4,7 @@ use super::super::WorthQueryApplicationOutputProjectionDenial;
 /// Absence of the binding is distinct from a missing member in present output.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPriorOutputDenialKind {
+    ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Unavailable,
     /// The selected correspondence was committed under a different output
     /// contract than the role's.

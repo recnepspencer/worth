@@ -44,7 +44,7 @@ pub(super) fn observe_recorded_cancellation(
         instance,
         layout.instance.entity_kind,
         &layout.instance.cancellation_identity,
-    );
+    )?;
     if recorded
         != Some(AspectValue::String(InternedString::Raw(
             identity.to_owned(),

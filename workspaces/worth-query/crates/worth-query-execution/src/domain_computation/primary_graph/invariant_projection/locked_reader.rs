@@ -48,6 +48,9 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     /// ends as that capacity's stop, whatever the closure made of the read's
     /// refusal, as it ends for an exceeded work budget.
     pub(super) retention_exhausted: bool,
+    /// The first native read refusal vetoes the closure's output at completion.
+    pub(super) native_read_stop:
+        Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
     pub(super) realized_scope: WorthQueryRealizedProjectionScope,
     pub(super) aggregate_projections:
         Arc<std::sync::Mutex<super::super::aggregate_projection::WorthQueryAggregateProjections>>,
@@ -194,6 +197,7 @@ where
                     work: WorthQueryInvariantProjectionWork::default(),
                     work_budget,
                     retention_exhausted: false,
+                    native_read_stop: None,
                     realized_scope: WorthQueryRealizedProjectionScope::default(),
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
                     output_lineage: Arc::clone(&self.graph.output_lineage),
@@ -217,6 +221,7 @@ where
                     reader.dependent_source_facts.finish(retention_control),
                     reader.work_budget.exceeded(),
                     reader.retention_exhausted,
+                    reader.native_read_stop,
                 )
             }))
         });
@@ -228,6 +233,7 @@ where
             dependent_source_facts,
             exceeded,
             retention_exhausted,
+            native_read_stop,
         ) = match projected {
             Ok(completed) => completed,
             Err(payload) => {
@@ -235,7 +241,9 @@ where
                 resume_unwind(payload)
             }
         };
-        let stopped = if exceeded {
+        let stopped = if let Some(cause) = native_read_stop {
+            Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, Some(work)))
+        } else if exceeded {
             Some(WorthQueryInvariantProjectionDenial::work_budget_exceeded(
                 work,
             ))

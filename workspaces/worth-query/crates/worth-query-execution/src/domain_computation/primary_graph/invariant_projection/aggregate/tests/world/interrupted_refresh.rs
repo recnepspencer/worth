@@ -57,6 +57,10 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                     )
                     .unwrap();
                 let committed = transaction.commit(&healthy, runtime).unwrap();
+                let retained = world.authority.graph.aggregate_projections.lock().unwrap().clone();
+                let runtime_cell = std::cell::RefCell::new(&mut *runtime);
+                crate::test_read_stops::every_consult(|request| retained.clone().refresh_after_commit(request, &mut runtime_cell.borrow_mut(), &before, &committed.snapshot, committed.patch()), worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled, worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted);
+                drop(runtime_cell);
                 let map = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([(
                     PartitionIdentity::new(0),
                     KeylessPartition {
@@ -78,7 +82,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                                     healthy.consult(),
                                     Err(WorkCeilingDenial::Stopped(MapKernelStop::WorkCeiling))
                                 );
-                                world
+                                let stopped = world
                                     .authority
                                     .graph
                                     .aggregate_projections
@@ -91,6 +95,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                                         &committed.snapshot,
                                         committed.patch(),
                                     );
+                                assert_eq!(stopped, Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
                                 refreshed.store(true, std::sync::atomic::Ordering::SeqCst);
                                 Ok(0)
                             },

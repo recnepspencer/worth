@@ -126,7 +126,7 @@ fn positive_field(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
     malformed: &'static str,
 ) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
-    match observe_field_value(runtime, execution, snapshot, entity_id, kind, locator) {
+    match observe_field_value(runtime, execution, snapshot, entity_id, kind, locator)? {
         None => {
             facts.push(WorthQueryApplicationObservedFact::AbsentField {
                 entity_id,

@@ -107,7 +107,8 @@ pub(super) fn inherited_effects(
             node,
             layout.node.entity_kind,
             &layout.node.path,
-        ) else {
+        )?
+        else {
             return Err(unmapped("a prior effect's node path is unavailable"));
         };
         facts.push(WorthQueryApplicationObservedFact::Field {

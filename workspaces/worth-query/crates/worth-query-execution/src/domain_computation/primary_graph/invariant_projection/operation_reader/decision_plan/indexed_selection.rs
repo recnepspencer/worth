@@ -101,6 +101,10 @@ impl<Schema: ApplicationSchema, Operation>
                 self.reader.work_budget.consume(1 + examined);
                 self.reader.work.record_lookup(examined);
                 let kind = match denial.kind() {
+                        BoundedEntityFieldLookupDenialKind::Execution(cause) => {
+                            self.reader.native_read_stop.get_or_insert(cause);
+                            return HandlerExecutionDenial::new(super::super::super::WorthQueryInvariantProjectionDenial::execution_request_stopped(cause,None));
+                        }
                     BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
                     | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
                         WorthQueryEntityResolutionDenialKind::CorruptIdentityIndex

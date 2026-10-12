@@ -64,7 +64,7 @@ pub(super) fn read_activation(
 > {
     let read = branch
         .bounded_entities_of_kind(execution, layout.entity_kind, maximum_work_units)
-        .map_err(|_| denial("recovered program activation scan exceeded its bound"))?
+        .map_err(super::request_read_denial::read)?
         .map_err(|_| denial("recovered program activation scan exceeded its bound"))?;
     let work = read.work_units();
     let records = read.into_records();

@@ -33,6 +33,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPendingApplica
     emitted_effect_count: usize,
     outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     aggregate_published: bool,
+    source_read_stop: Option<worth_relational::facade::transactions::RelationalExecutionDenialCause>,
     receipt_basis_lease:
         Option<worth_relational::facade::branch::RelationalBranchRetentionLease>,
     required_prerequisites:
@@ -61,6 +62,7 @@ impl WorthQueryPendingApplicationPublication {
             .committed_product_publication()
             .product_incarnation();
         let idempotency = application.commit_evidence().idempotency();
+        let source_read_stop = application.commit_evidence().source_request_stop();
         let emitted_effect_count = attempt.emitted_effect_count();
         let outcome_identity = attempt.outcome_identity();
         Self {
@@ -74,6 +76,7 @@ impl WorthQueryPendingApplicationPublication {
             emitted_effect_count,
             outcome_identity,
             aggregate_published: false,
+            source_read_stop,
             receipt_basis_lease: None,
             required_prerequisites,
             prepared_lineage_slot,
@@ -232,6 +235,16 @@ fn publish_with_snapshot(
             "application commit basis does not select the published commit",
         ));
     }
+    // Custody is already registered in pending publication. Report the exact
+    // read stop once; recovery keeps the evidence and can verify its source.
+    if let Some(cause) = pending.source_read_stop.take() {
+        return Err(WorthQueryProviderSessionFailure::checked_read_stopped(
+            super::relational_execution_denial::relational_execution_kind(cause, None),
+            WorthQueryProviderSessionProtocolStage::Commit,
+            "postcommit source read stopped",
+        )
+        .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired));
+    }
     let committed_product_publication = pending
         .application
         .as_ref()
@@ -245,7 +258,7 @@ fn publish_with_snapshot(
                 .map_err(basis_retention_failure)?,
         );
     }
-    publish_aggregate_projection(execution, provider, runtime, pending, after);
+    publish_aggregate_projection(execution, provider, runtime, pending, after)?;
     provider
         .graph
         .bind_truth_head_basis_in_runtime(runtime, &pending.next_basis)

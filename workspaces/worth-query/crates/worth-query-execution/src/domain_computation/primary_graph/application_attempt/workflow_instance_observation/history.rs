@@ -181,7 +181,7 @@ pub(super) fn observe(
             transition.to,
             layout.transition.entity_kind,
             &layout.transition.identity,
-        ) {
+        )? {
             Some(AspectValue::String(InternedString::Raw(identity))) => identity,
             _ => return Err(denial("workflow transition identity is unavailable")),
         };
@@ -201,7 +201,7 @@ pub(super) fn observe(
                         settlement.node(),
                         layout.node.entity_kind,
                         &layout.node.path,
-                    )
+                    )?
                 else {
                     return Err(denial("history node path is unavailable"));
                 };

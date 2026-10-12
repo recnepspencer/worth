@@ -73,7 +73,9 @@ impl PreparedFactRebase {
         if producer_output && reads_source(fact) {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
-                    Err(WorthQuerySourceCurrentnessFailure::Execution(_)) => Err(unavailable),
+                    Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                        Err(RebaseVerificationReason::Execution(cause))
+                    }
                     Ok(movement) => Ok(match movement.movement() {
                         Movement::Unmoved => Self::Keep,
                         Movement::Moved => Self::KeepSuperseded,
@@ -136,14 +138,13 @@ impl PreparedFactRebase {
                     locator.aspect().aspect_key().clone(),
                     locator.field_path().clone(),
                 );
-                match runtime
-                    .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| {
-                        view.entity_field_revision(execution, *entity_id, &locator)
-                            .ok()
-                            .flatten()
-                    }) {
+                let revision = match runtime.read_truth().project_snapshot(snapshot) {
+                    Some(view) => view
+                        .entity_field_revision(execution, *entity_id, &locator)
+                        .map_err(RebaseVerificationReason::Execution)?,
+                    None => None,
+                };
+                match revision {
                     Some(revision) => Ok(Self::Field { locator, revision }),
                     None if producer_output => Err(unavailable),
                     None => Ok(Self::Keep),
@@ -183,7 +184,9 @@ impl PreparedFactRebase {
                     *direction,
                     (*comparison_work_limit).min(maximum_pair_rebase_work),
                 ) {
-                    Err(AdjacencyStructuralRevisionDenial::Execution(_)) => Err(unavailable),
+                    Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => {
+                        Err(RebaseVerificationReason::Execution(cause))
+                    }
                     Ok(comparison) => Ok(Self::Adjacency(comparison.revision())),
                     // The request paid the lookup above; a refusal here is
                     // the fact's own recorded limit, or a missing anchor or
@@ -208,7 +211,9 @@ impl PreparedFactRebase {
                     fact,
                     maximum_pair_rebase_work,
                     prepared_endpoints,
-                ) {
+                )
+                .map_err(RebaseVerificationReason::Execution)?
+                {
                     Some(rebased) => Ok(Self::Replace(rebased)),
                     None if producer_output => Err(unavailable),
                     None => Ok(Self::Keep),
@@ -238,6 +243,7 @@ impl PreparedFactRebase {
                     .map_err(RebaseVerificationReason::AdmissionDenied)?;
                 match observed {
                     Ok(observed) => Ok(Self::Replace(observed)),
+                    Err(IndexedSelectionReobserveDenial::Lookup(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause)))=>Err(RebaseVerificationReason::Execution(cause)),
                     Err(IndexedSelectionReobserveDenial::WorkBudgetExceeded) => {
                         let maximum = indexed_width.charged_work().saturating_add(
                             u64::try_from(indexed_width.remaining_work()).unwrap_or(u64::MAX),

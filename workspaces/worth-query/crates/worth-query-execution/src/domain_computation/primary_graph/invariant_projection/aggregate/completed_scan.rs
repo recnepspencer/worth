@@ -137,7 +137,15 @@ impl AggregateScanReader<'_, '_> {
                 record.source,
                 self.plan.source_kind(),
                 &self.plan.key().field,
-            );
+            )
+            .map_err(|cause| {
+                denial(
+                    WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    self.plan.field_member(),
+                )
+            })?;
         Ok(value)
     }
 

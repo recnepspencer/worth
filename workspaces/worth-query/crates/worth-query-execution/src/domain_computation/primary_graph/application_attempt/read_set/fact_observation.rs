@@ -50,7 +50,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
             let exists = runtime
                 .read_truth()
                 .project_snapshot(snapshot)
-                .and_then(|view| {
+                .map(|view| {
                     view.entity_record_with_projection_scope(
                         execution,
                         *entity_id,
@@ -62,9 +62,12 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
                             )
                         },
                     )
-                    .ok()
-                    .flatten()
+                    .map_err(|cause| {
+                        WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, entity)
+                    })
                 })
+                .transpose()?
+                .flatten()
                 .unwrap_or(false);
             if !exists {
                 return Err(denial(
@@ -90,7 +93,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
             })?;
             let observation = super::super::observation::observe_field(
                 runtime, execution, snapshot, *entity_id, kind, locator,
-            )
+            )?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,

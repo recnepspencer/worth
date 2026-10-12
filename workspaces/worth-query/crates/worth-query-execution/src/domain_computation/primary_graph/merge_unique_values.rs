@@ -213,6 +213,14 @@ fn admit_fields(
                     locator,
                 ))
             }
+            Err(WorthQueryIndexedSelectionRefusal::Execution(cause)) => {
+                return Err(denial(
+                    WorthQueryMergeUniqueValueDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    "unique field lookup",
+                ))
+            }
             Err(WorthQueryIndexedSelectionRefusal::Unavailable) => {
                 return Err(field_denial(
                     WorthQueryMergeUniqueValueDenialKind::IndexUnavailable,

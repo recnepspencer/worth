@@ -41,7 +41,7 @@ pub(super) fn successor_identity(
             successor.from,
             layout.instance.entity_kind,
             &layout.instance.identity,
-        ) {
+        )? {
             Some(AspectValue::String(InternedString::Raw(identity))) => Some(identity),
             _ => None,
         },

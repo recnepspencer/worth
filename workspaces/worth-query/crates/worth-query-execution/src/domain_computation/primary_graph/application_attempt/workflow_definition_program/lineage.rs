@@ -177,7 +177,7 @@ fn exact_field_fact(
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     if super::super::observation::observe_field_value(
         runtime, execution, snapshot, entity_id, kind, &locator,
-    )
+    )?
     .as_ref()
         != Some(&expected)
     {

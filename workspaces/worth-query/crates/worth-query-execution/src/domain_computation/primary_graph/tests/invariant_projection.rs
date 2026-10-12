@@ -18,14 +18,21 @@ fn installed_invariant_projection_reads_one_pinned_typed_graph_snapshot() {
         .with_host_advancement(|phase| world.invariant.snapshot(&phase))
         .expect("installed host call opens")
         .expect("invariant snapshot");
-    let accounts = snapshot.entities(execution, Account::reference());
-    let principals = snapshot.entities(execution, Principal::reference());
-    let owners = snapshot.relations(execution, AccountOwner::reference());
+    let accounts = snapshot
+        .entities(execution, Account::reference())
+        .expect("inventory request remains live");
+    let principals = snapshot
+        .entities(execution, Principal::reference())
+        .expect("inventory request remains live");
+    let owners = snapshot
+        .relations(execution, AccountOwner::reference())
+        .expect("inventory request remains live");
     let mut statuses = accounts
         .iter()
         .map(|account| {
             snapshot
                 .field(execution, account, AccountStatus::reference())
+                .expect("request remains live")
                 .expect("installed account status must project")
         })
         .collect::<Vec<String>>();
@@ -60,15 +67,17 @@ fn independently_installed_graphs_mint_distinct_projection_identities() {
         .expect("second snapshot");
     let first_account = first_snapshot
         .entities(execution, Account::reference())
+        .expect("inventory request remains live")
         .remove(0);
     let second_account = second_snapshot
         .entities(execution, Account::reference())
+        .expect("inventory request remains live")
         .remove(0);
 
     assert_ne!(first_account, second_account);
     assert_eq!(
         second_snapshot.field(execution, &first_account, AccountStatus::reference()),
-        None,
+        Ok(None),
         "a foreign projection identity must not be reinterpreted in this graph"
     );
 }
@@ -317,3 +326,5 @@ fn admitted_projection_supplies_its_exact_root_without_an_equality_lookup() {
 }
 
 mod admitted_projection_budget_exhaustion_mints_no_snapshot_authorit;
+
+mod counted_read_stops;

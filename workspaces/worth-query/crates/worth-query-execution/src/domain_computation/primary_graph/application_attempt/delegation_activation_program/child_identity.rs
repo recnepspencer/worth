@@ -132,6 +132,12 @@ fn observe_created_values(
             }
             let selection = observe(index_id, *kind, locator.clone(), value.clone());
             appended.push(selection.map_err(|refusal| match refusal {
+                WorthQueryIndexedSelectionRefusal::Execution(cause) => {
+                    WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                        cause,
+                        "delegation child identity",
+                    )
+                }
                 // More holders than the limit: the value is held.
                 WorthQueryIndexedSelectionRefusal::Overflowed => denial(
                     WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,

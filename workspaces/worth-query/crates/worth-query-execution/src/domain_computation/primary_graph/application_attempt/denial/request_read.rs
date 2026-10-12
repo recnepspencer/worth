@@ -2,6 +2,13 @@
 use super::{
     AttemptDenialCause, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
+impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause>
+    for WorthQueryApplicationAttemptDenial
+{
+    fn from(cause: worth_relational::facade::transactions::RelationalExecutionDenialCause) -> Self {
+        Self::relational_read_stopped(cause, "field observation")
+    }
+}
 impl WorthQueryApplicationAttemptDenial {
     pub(in crate::domain_computation::primary_graph) fn relational_read_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,

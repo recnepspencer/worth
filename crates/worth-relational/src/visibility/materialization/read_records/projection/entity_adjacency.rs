@@ -20,6 +20,73 @@ use crate::visibility::materialization::read_records::reader::{
 };
 
 impl VisibilityProjectionView<'_> {
+    /// Reads the whole selected adjacency under the caller's request alone.
+    pub fn outgoing_relations_of_kind(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        kind_id: KindId,
+    ) -> Result<
+        Vec<crate::storage::data::RelationReadRecord>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        super::super::read_work::metered(
+            execution,
+            |context| {
+                let mut ledger = AdjacencyLeaseLedger::default();
+                let result = (|| {
+                    let Some(root) = self.basis.root() else {
+                        return Ok(Vec::new());
+                    };
+                    let basis = AdjacencyKindBasis::of_current_version(
+                        self.basis.root_version() == Some(self.version_id()),
+                    );
+                    let ids = ledger.lease(
+                        root.get_partition(entity_id.partition_id)
+                            .and_then(|partition| {
+                                AdjacencyDirection::Outgoing
+                                    .table(partition)
+                                    .get(entity_id.slot_index())
+                            }),
+                        basis,
+                        kind_id,
+                    );
+                    let mut records = Vec::new();
+                    for relation_id in ids.iter().copied() {
+                        context
+                            .checkpoint(1)
+                            .map_err(crate::execution::denial::kernel_stop)?;
+                        let Some(record) = self.project_relation_record(relation_id) else {
+                            continue;
+                        };
+                        if record.kind.kind_id != kind_id
+                            || record.lifecycle != RecordLifecycleState::Live
+                            || !AdjacencyDirection::Outgoing.matches_endpoint(&record, entity_id)
+                        {
+                            continue;
+                        }
+                        context
+                            .checkpoint(1)
+                            .map_err(crate::execution::denial::kernel_stop)?;
+                        records.push(record);
+                    }
+                    records.sort_by_key(relation_identity_order_key);
+                    Ok(records)
+                })();
+                ledger.settle(self.runtime);
+                result
+            },
+            |result: &Result<
+                Vec<crate::storage::data::RelationReadRecord>,
+                crate::execution::RelationalExecutionDenialCause,
+            >| {
+                result
+                    .as_ref()
+                    .map_or(0, super::super::read_footprint::relations)
+            },
+        )?
+    }
+
     pub fn bounded_outgoing_relations_of_kind(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

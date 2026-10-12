@@ -15,27 +15,28 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
     kind: KindId,
     locator: &AspectFieldLocator,
     action: impl for<'raw> FnOnce(Option<&'raw AspectValue>) -> Output,
-) -> Option<Output> {
-    let field = locator.field_path().fields().first()?.clone();
+) -> Result<Option<Output>, worth_relational::facade::transactions::RelationalExecutionDenialCause>
+{
+    let Some(field) = locator.field_path().fields().first().cloned() else {
+        return Ok(None);
+    };
     let scope = ProjectionAspectScope::from_requirements([ProjectionAspectRequirement::fields(
         locator.aspect().aspect_key().clone(),
         [field.clone()],
     )]);
     let mut action = Some(action);
-    runtime
-        .read_truth()
-        .project_snapshot(snapshot)?
-        .entity_record_with_projection_scope(execution, entity_id, scope, |record| {
-            if record.kind_id() != kind || record.lifecycle() != RecordLifecycleState::Live {
-                return None;
-            }
-            let action = action
-                .take()
-                .expect("single-entity projection invokes once");
-            Some(action(
-                record.aspect_field_value(locator.aspect().aspect_key(), &field),
-            ))
-        })
-        .ok()
-        .flatten()
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+        return Ok(None);
+    };
+    view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
+        if record.kind_id() != kind || record.lifecycle() != RecordLifecycleState::Live {
+            return None;
+        }
+        let action = action
+            .take()
+            .expect("single-entity projection invokes once");
+        Some(action(
+            record.aspect_field_value(locator.aspect().aspect_key(), &field),
+        ))
+    })
 }

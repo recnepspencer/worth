@@ -37,34 +37,35 @@ pub(in crate::domain_computation::primary_graph) fn observe_field(
     entity_id: worth_relational::facade::identity::EntityId,
     kind: worth_relational::facade::identity::KindId,
     locator: &worth_foundational::facade::AspectFieldLocator,
-) -> Option<WorthQueryApplicationFieldObservation> {
+) -> Result<
+    Option<WorthQueryApplicationFieldObservation>,
+    worth_relational::facade::transactions::RelationalExecutionDenialCause,
+> {
     #[cfg(test)]
     NATIVE_FIELD_CONTACTS.with(|count| count.set(count.get() + 1));
-    let field = locator.field_path().fields().first()?.clone();
+    let Some(field) = locator.field_path().fields().first().cloned() else {
+        return Ok(None);
+    };
     let scope = ProjectionAspectScope::from_requirements([ProjectionAspectRequirement::fields(
         locator.aspect().aspect_key().clone(),
         [field.clone()],
     )]);
-    runtime
-        .read_truth()
-        .project_snapshot(snapshot)?
-        .entity_record_with_projection_scope(execution, entity_id, scope, |record| {
-            (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(
-                || {
-                    let value = record
-                        .aspect_field_value(locator.aspect().aspect_key(), &field)
-                        .cloned();
-                    #[cfg(test)]
-                    read_rendezvous::reached();
-                    value.map_or(
-                        WorthQueryApplicationFieldObservation::Absent,
-                        WorthQueryApplicationFieldObservation::Present,
-                    )
-                },
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+        return Ok(None);
+    };
+    view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
+        (record.kind_id() == kind && record.lifecycle() == RecordLifecycleState::Live).then(|| {
+            let value = record
+                .aspect_field_value(locator.aspect().aspect_key(), &field)
+                .cloned();
+            #[cfg(test)]
+            read_rendezvous::reached();
+            value.map_or(
+                WorthQueryApplicationFieldObservation::Absent,
+                WorthQueryApplicationFieldObservation::Present,
             )
         })
-        .ok()
-        .flatten()
+    })
 }
 
 pub(in crate::domain_computation::primary_graph) fn observe_field_value(
@@ -74,10 +75,13 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value(
     entity_id: worth_relational::facade::identity::EntityId,
     kind: worth_relational::facade::identity::KindId,
     locator: &worth_foundational::facade::AspectFieldLocator,
-) -> Option<worth_foundational::facade::AspectValue> {
+) -> Result<
+    Option<worth_foundational::facade::AspectValue>,
+    worth_relational::facade::transactions::RelationalExecutionDenialCause,
+> {
     match observe_field(runtime, execution, snapshot, entity_id, kind, locator)? {
-        WorthQueryApplicationFieldObservation::Present(value) => Some(value),
-        WorthQueryApplicationFieldObservation::Absent => None,
+        Some(WorthQueryApplicationFieldObservation::Present(value)) => Ok(Some(value)),
+        Some(WorthQueryApplicationFieldObservation::Absent) | None => Ok(None),
     }
 }
 

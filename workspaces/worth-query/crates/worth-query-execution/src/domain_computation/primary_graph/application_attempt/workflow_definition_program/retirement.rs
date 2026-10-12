@@ -203,7 +203,7 @@ fn observe_retirement<Spec: ApplicationWorkflowSpec>(
         definition,
         layout.definition.entity_kind,
         &layout.definition.content_identity,
-    )
+    )?
     .as_ref()
         != Some(&content)
     {

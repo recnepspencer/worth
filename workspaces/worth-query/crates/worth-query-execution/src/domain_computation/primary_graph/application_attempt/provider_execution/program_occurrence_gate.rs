@@ -143,6 +143,13 @@ fn resolve_at_lease<'support, Schema>(
                 &layout.program_revision_locator,
             )
         })
+        .map_err(|cause| {
+            WorthQueryApplicationCommitDenial::provider_execution_denied(
+                super::super::WorthQueryApplicationCommitDenialStage::ProviderPlan,
+                crate::facade::primary_graph::relational_execution_kind(cause, None),
+                "program activation field read stopped",
+            )
+        })?
         .ok_or_else(|| unresolved(WorthQueryProgramActivationUnresolved::Unreadable))?;
     let entry = support
         .rostered_for_rendering(&rendering)

@@ -1,6 +1,8 @@
 /// Why an invariant projection could not take its snapshot or finish.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionDenialKind {
+    /// A required native read stopped; its exact request cause is retained.
+    ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The main branch basis could not be observed.
     BasisUnavailable,
     ForeignPhase,
@@ -33,6 +35,16 @@ pub struct WorthQueryInvariantProjectionDenial {
 }
 
 impl WorthQueryInvariantProjectionDenial {
+    pub(super) const fn execution_request_stopped(
+        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        work: Option<super::WorthQueryInvariantProjectionWork>,
+    ) -> Self {
+        Self {
+            kind: WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause),
+            projection_work: work,
+            retention_denial: None,
+        }
+    }
     pub const fn kind(&self) -> WorthQueryInvariantProjectionDenialKind {
         self.kind
     }

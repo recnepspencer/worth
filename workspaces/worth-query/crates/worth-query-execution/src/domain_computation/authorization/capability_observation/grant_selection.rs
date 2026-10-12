@@ -74,7 +74,10 @@ fn lookup_candidate_grants(
             BoundedIndexParityMode::Production,
             execution,
         )
-        .map_err(|_| {
+        .map_err(|denied| {
+            if let worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind::Execution(cause)=denied.kind() {
+                return super::super::denial::relational_read_denial(cause,installed.contract().name());
+            }
             denial(
                 WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
                 installed.contract().name(),

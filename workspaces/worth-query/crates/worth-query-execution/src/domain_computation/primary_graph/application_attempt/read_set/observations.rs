@@ -94,7 +94,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                     identity.entity_kind(),
                     &graph_layout,
                 )
-            })
+            })?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
