@@ -130,7 +130,7 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
         }
     }
     let build =
-        ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_build_memory_bound(4, DECLARED)
+        ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_serial_build_memory_bound(4, DECLARED)
             .unwrap();
     for (outcome, combines) in rebuilt_under(Some(refused)) {
         let requested = refused_by_memory(&outcome).expect("one byte short is a memory refusal");

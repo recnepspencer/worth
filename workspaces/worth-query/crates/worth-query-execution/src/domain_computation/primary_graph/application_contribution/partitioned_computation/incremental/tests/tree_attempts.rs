@@ -49,7 +49,7 @@ fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebui
     let declared = 4096;
     let results_bytes = u64::try_from(keys.len() * size_of::<(Id, u64)>()).unwrap();
     let full_hold =
-        Tree::checked_build_memory_bound(keys.len(), declared).unwrap() + 2 * results_bytes;
+        Tree::checked_serial_build_memory_bound(keys.len(), declared).unwrap() + 2 * results_bytes;
     // Reserve exactly the full build. A dense edit batch accumulates path
     // scratch beyond that bound, then must release it before rebuilding.
     let request = live_scope();
