@@ -1,6 +1,6 @@
 //! Pin immutable native custody at the runtime borrowing boundary.
 use super::*;
-pub(in crate::domain_computation::primary_graph::application_query) fn pin_runtime_read(
+pub(super) fn pin_runtime_read(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,

@@ -13,7 +13,7 @@ mod live_target;
 mod pinning;
 pub(super) mod prepared_pair;
 pub(super) mod read_plan;
-pub(super) use pinning::pin_runtime_read;
+use pinning::pin_runtime_read;
 mod root_selection;
 mod tree_materialization;
 mod work_observation;

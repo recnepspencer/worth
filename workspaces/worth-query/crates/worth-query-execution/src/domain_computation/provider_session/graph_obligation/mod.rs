@@ -29,3 +29,6 @@ pub(in crate::domain_computation) use session::{
 pub use session_identity::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,
 };
+
+#[cfg(test)]
+pub(in crate::domain_computation) use owner_execution::pin_panic;

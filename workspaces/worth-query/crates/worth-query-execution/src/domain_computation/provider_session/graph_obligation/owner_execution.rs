@@ -51,9 +51,14 @@ impl WorthQueryGraphReadOwnerPort {
         let read = self
             .source
             .with_runtime_mut_unwind_isolated(execution, |runtime| {
-                runtime
-                    .read_truth()
-                    .pin_read_capability(snapshot, &selected_indexes, execution)
+                let result = runtime.read_truth().pin_read_capability(
+                    snapshot,
+                    &selected_indexes,
+                    execution,
+                );
+                #[cfg(test)]
+                pin_panic::panic_if_armed();
+                result
             })
             .map_err(|denial| {
                 use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as Pin;
@@ -104,5 +109,26 @@ impl WorthQuerySessionGraphReadProof {
             plan,
             basis,
         }
+    }
+}
+
+#[cfg(test)]
+pub(in crate::domain_computation) mod pin_panic {
+    use std::cell::Cell;
+    thread_local! { static ARMED: Cell<bool> = const { Cell::new(false) }; }
+    pub(in crate::domain_computation) struct PanicDuringPinGuardForTest(bool);
+    impl PanicDuringPinGuardForTest {
+        pub(in crate::domain_computation) fn install_on_this_thread() -> Self {
+            assert!(crate::domain_computation::execution_observation::is_installed());
+            Self(ARMED.replace(true))
+        }
+    }
+    impl Drop for PanicDuringPinGuardForTest {
+        fn drop(&mut self) {
+            ARMED.set(self.0);
+        }
+    }
+    pub(super) fn panic_if_armed() {
+        assert!(!ARMED.replace(false), "injected panic inside owner pin");
     }
 }
