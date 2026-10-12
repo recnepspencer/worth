@@ -47,7 +47,7 @@ It is:
 - runtime-owned observation semantics for committed derived-state change
 - explicit separation between dependency topology, event subscribers, and
   runtime-local observers
-- policy-bearing classification of touched, recomputed, and meaningfully
+- policy-bearing classification of visited, recomputed, and meaningfully
   changed state
 - extensible delivery and coalescing strategies resolved before notification
   dispatch
@@ -231,7 +231,7 @@ under those conditions, the milestone has failed.
 - default delivery is commit-bounded; rolled-back state must not produce normal
   observer delivery
 - observation semantics are policy-driven:
-  - touched
+  - visited
   - recomputed
   - meaningful change
   are distinct contracts
@@ -252,7 +252,7 @@ Normative consequence:
   event bus is out of spec
 - any implementation that fires observers before commit finalization is out of
   spec
-- any implementation that cannot distinguish touched from meaningfully changed
+- any implementation that cannot distinguish visited from meaningfully changed
   delivery is out of spec
 - any implementation that lets adapters redefine observation truth is out of
   spec
@@ -315,7 +315,7 @@ Normative consequence:
 - transaction-staged observation packets
 - commit-only delivery and rollback suppression
 - node and node-set observation
-- touched / recomputed / meaningful-change classification
+- visited / recomputed / meaningful-change classification
 - deterministic observer ordering
 - diagnostics-visible observation provenance
 - easy-surface watcher/effect support built on the new substrate
@@ -394,7 +394,7 @@ Not acceptable:
 
 - asking listeners how they want to classify change during callback dispatch
 - rescanning graph state from each observer callback
-- deciding touched vs meaningful-change separately in different adapters
+- deciding visited vs meaningful-change separately in different adapters
 
 ### 10.2.1 Change Classification Must Be Runtime-Locked
 
@@ -403,9 +403,9 @@ runtime facts.
 
 At minimum, the contract must distinguish:
 
-- `Touched`
-  The observer's scope intersected the committed transaction's touched derived
-  surface, whether or not the node ultimately recomputed or emitted meaningful
+- `Visited`
+  The observer's scope included a node considered during the committed
+  transaction, whether or not the node ultimately recomputed or emitted meaningful
   output change.
 - `Recomputed`
   The observer's scope intersected a node whose committed evaluation verdict was
@@ -705,7 +705,7 @@ Must prove:
 Deliver:
 
 - staged observation packets in `TransactionScratch`
-- policy-based classification for touched / recomputed / meaningful-change
+- policy-based classification for visited / recomputed / meaningful-change
 - coalescing logic per transaction
 - lowered classification facts derived once from runtime artifacts
 
@@ -752,7 +752,7 @@ It is done only when the runtime can certify all of the following:
 - commit-bounded observer delivery
 - rollback suppression
 - deterministic observer ordering
-- touched vs meaningful-change classification
+- visited vs meaningful-change classification
 - transaction-local coalescing
 - diagnostics-visible observer provenance
 - easy watcher/effect compilation onto the same substrate

@@ -585,7 +585,7 @@ apart. These are the places the code enforces that separation.
 ## 9. Query: the life of one request
 
 This section follows one request through the consumer facades. The running
-example is an order application with an operation `approve_order`. That
+example is an order application with an operation for approving an order. That
 operation reads `Order.status`, writes `Order.status`, and links the order to
 an `Approval`.
 
@@ -599,9 +599,11 @@ publish.
 - Schema: `worth_query_application_schema`, `worth_query_entity`,
   `worth_query_aspect`, `worth_query_field`, `worth_query_relation`.
 - Operations: `worth_query_operation` and the family that declares what it
-  touches: `worth_query_operation_reads`, `_writes`, `_creates`, `_deletes`,
-  `_links`, `_unlinks`, `_emits`, `_requires`, `_expects_fact`,
-  `_expects_version`.
+  touches: `worth_query_operation_reads`, `worth_query_operation_writes`,
+  `worth_query_operation_creates`, `worth_query_operation_deletes`,
+  `worth_query_operation_links`, `worth_query_operation_unlinks`,
+  `worth_query_operation_emits`, `worth_query_operation_requires`,
+  `worth_query_operation_expects_fact`, `worth_query_operation_expects_version`.
 - Bindings: `worth_query_mutation_binding`, `worth_query_query_binding`.
 - Capabilities and policy: `worth_query_capability`, `worth_query_ability`,
   `worth_query_policy`, `worth_query_principal_binding`.
@@ -731,13 +733,27 @@ only narrow: an attempt to widen them is a typed `Limit` denial.
 
 **Mutations** declare what they were based on, which is a typestate step:
 
+The planar geometry example uses the installed program `Program<E>` and its
+declared `RegionTotalsDemand`. The current call order is:
+
 ```rust
 let outcome = request
-    .mutate(ApproveOrder { order })
-    .expect_source(observed_source)   // or .expect_result_set(..) / .without_source()
-    .idempotency(&key)
-    .execute()?;   // runtime installed without a program; see "Ways to execute" below
+    .mutate(RegionTotalsDemand {
+        scope_key: "anchor-a".to_owned(),
+        entries: "example".to_owned(),
+        replacement_y: length(3),
+    })
+    .expect_source(observed.observed_sources()[0].clone())
+    .idempotency(&1_u64)
+    .execute_in_program::<Program<E>>(
+        &application,
+        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
 ```
+
+Choose `expect_source`, `expect_result_set`, or `without_source` as the binding
+permits, and supply `idempotency` before execution. This example executes in
+its program. On a runtime without a program, use `execute()` instead.
 
 - **Source expectation.** A `WorthQueryObservedSource<Query>` comes from a
   published query row. It records the branch, basis, query identity,
@@ -759,21 +775,56 @@ sources a later mutation can pass to `expect_source`.
 
 **Mutations** run the handler. A handler implements `OperationHandler`:
 
+The current contract includes the default `prepare_decision`. A handler with
+no compute step implements `decide`, `candidate_requirements`, and
+`build_candidate`; the default preparation wraps its decision in an immediate
+plan. A computing handler overrides preparation, as the
+[compiled build-guide handler](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+does.
+
 ```rust
-impl OperationHandler<Schema, ApproveOrderBinding> for ApproveOrderHandler {
-    fn decide(&self, input, reader: &mut DecisionReader<..>)
-        -> HandlerResult<Decision, Denial> { .. }
+pub trait OperationHandler<Schema, Binding>: Send + Sync + 'static
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+{
+    fn decide(
+        &self,
+        input: &Binding::Input,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> HandlerResult<Binding::Decision, Binding::Denial>;
 
-    fn candidate_requirements(&self, input, decision)
-        -> ApplicationCandidateRequirements { .. }
+    /// Prepare every read on the owner and return compute plus owner completion.
+    /// A handler without computation keeps its decision implementation unchanged.
+    fn prepare_decision(
+        &self,
+        input: &Binding::Input,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> WorthQueryDecisionPlan<Binding::Decision, Binding::Denial> {
+        WorthQueryDecisionPlan::immediate(self.decide(input, reader))
+    }
 
-    fn build_candidate(&self, input, decision, candidate: &mut CandidateWriter<..>)
-        -> HandlerResult<Result, Denial> { .. }
+    fn candidate_requirements(
+        &self,
+        input: &Binding::Input,
+        decision: &Binding::Decision,
+    ) -> ApplicationCandidateRequirements;
+
+    fn build_candidate(
+        &self,
+        input: &Binding::Input,
+        decision: Binding::Decision,
+        candidate: &mut CandidateWriter<'_, Schema, Binding>,
+    ) -> HandlerResult<Binding::Result, Binding::Denial>;
 }
 ```
 
-1. **Decide.** The handler reads through `DecisionReader` and decides. It may
-   deny with a domain denial, such as "the order is already approved".
+1. **Decide.** `prepare_decision` reads through `DecisionReader` and returns a
+   `WorthQueryDecisionPlan`. Its default calls `decide` and returns an immediate
+   decision, so a noncomputing handler needs no change. A computing handler
+   overrides it to prepare inert inputs for Query to dispatch, with decision completion
+   on the owner. It may deny with a domain denial, such as "the order is already
+   approved".
 2. **Reserve.** The handler states its resource requirements. The runtime
    reserves them against the installed ceiling *before* any allocation.
 3. **Build.** The handler writes the candidate through `CandidateWriter`.
@@ -906,12 +957,11 @@ its computation workers and the process memory ledger. On a `wasm32` target
 it builds no worker pool. An installed execution
 policy admits request leases with worker, charged-memory, and work ceilings.
 Child leases share ancestor worker and memory limits. Nested work inherits
-its caller's remaining work. Under leased placement, managed partition
-execution draws a child from the handler's request lease; nested partition
-work must descend from the active lease. An unrelated lease, or a run without
-a lease nested under a leased parent, is denied. Under serial placement,
-execution runs on the caller thread without a lease. Serial placement is the
-same request with a serial backing, not an unbounded mode: the policy's
+its caller's remaining work. Managed partition execution descends from the
+advancement's request, and nested work descends from its active member. An
+unrelated lease cannot open a second budget inside that member. Under serial
+placement, the request has a serial backing and runs on the calling thread.
+The policy's
 memory limit, the request's cancellation and deadline, and every declared
 work ceiling still bind it, and it has one worker.
 
@@ -953,10 +1003,10 @@ runtime below works under that request.
   The Bridge takes the request to read a committed patch or a snapshot and
   to deliver a change. Signal takes it to advance a branch and to receive a
   committed patch. The Runtime World takes it to run a publication, and
-  hands it to the Relational and Signal legs. Relational takes the request's
-  lease in its leased doors for commit, preparation, validation, and index
-  build; a lease-free caller of commit, preparation, or validation supplies
-  an allocation policy. Every lease-free door runs on the calling thread.
+  hands it to the Relational and Signal legs. Relational query execution,
+  preparation, validation, commit execution, and index construction use the
+  caller's request rather than opening another budget. A native caller that
+  has no process lease still supplies a bounded request with serial backing.
 - **Closing.** The request closes when the callback returns. Delivery of a
   performed change through the Bridge needs the phase, so the final delivery
   happens inside the advancement.
@@ -969,6 +1019,14 @@ runtime below works under that request.
   phase handed to `initial_state` cannot open an installed runtime's public
   entries.
 
+**Pinned read.** A read selects and retains one exact immutable source root.
+Later branch movement cannot change that read's rows. Releasing its read hold
+ends that access; a later read must select a basis again. A pin establishes
+snapshot stability, not present currentness or permission to write.
+A pin does not make reads concurrent: reads of one installed source still run
+one at a time. Commit validation still compares
+the selected basis and the attempt's consumed facts before any effect.
+
 Admission checks capacity before dispatching kernels. A memory refusal means
 the run could not reserve its declared bytes within the applicable limit; it
 is not a domain result. A managed computation reports memory refusals as
@@ -976,11 +1034,17 @@ policy, process, or declared-capacity limits; ancestor refusals are policy
 refusals at this application boundary. Work exhaustion, cancellation, deadline,
 kernel panic, domain failure, and result capacity remain distinguishable. A
 busy worker pool can admit inline execution without creating another worker.
+Native read, index, and commit execution preserve these causes through their
+Query denial. A stopped read is not an empty result, an absent fact, or an
+authorization decision. Match the typed cause at the call that stopped.
 
-**Determinism.** For the same admitted inputs and declared computation, results
+**Determinism.** For the same admitted inputs and declared computation, with
+sufficient memory and no interruption arriving during computation, results
 and charged work do not depend on worker count or scheduling. The default
 contract preserves canonical result bits; an explicitly installed equivalence
-contract supplies its comparison predicate. Partition identity comes from the
+contract at the execution layer supplies its comparison predicate. Query
+managed-computation installation currently refuses `ContractEquivalent`.
+Partition identity comes from the
 data, never the worker. Results are settled and published in canonical
 partition order. If several partitions fail, the least failing identity is
 reported. Only the canonical prefix through that failure contributes charged
@@ -998,6 +1062,10 @@ when placement executes them serially. Coordination and sequential reduction
 also contribute their own charged costs. The execution layer exposes work and
 span in its execution report. A managed partitioned computation exposes
 charged work; its application-facing result does not expose span.
+An advancement has one report, across all its waves, including a failed
+advancement. Admission refusal contributes zero work and span.
+`advance` returns `Pending`, `Settled`, or a typed denial; it does not return
+the report.
 
 **Partitioned managed computation.** A *partitioned managed computation*
 splits one input into partitions, computes each partition on its own, and
@@ -1047,7 +1115,48 @@ and regathers only the partitions an item left or joined. A first run, a
 restored record, a reinstalled owner, a changed input value, or state too
 large to keep computes every partition; *Per-partition reuse* below lists
 every cause. Reuse requires the [owner's purity contract](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
-The advancement driver runs producer handlers synchronously.
+
+**Parallel advancement.** One caller-pumped `advance` can run several waves
+of required outputs. The required-set owner admits each wave against its
+selected source basis: a member's consumed upstream outputs must already be
+committed on that basis. Members at the same dependency depth do not form a
+wave unless each one's upstream outputs are committed on that basis.
+After a commit moves the basis, readiness is checked on the new basis before
+another wave is dispatched. The call keeps one bounded request for all waves;
+each member's nested computation shares its remaining work and resource bounds.
+
+Preparation reads declared facts on the owner thread and produces inert compute
+inputs. Independent members' compute steps can run concurrently. Completion,
+candidate authoring, commits, and publications run on the owner in canonical
+key order, never worker completion order. The member key orders by producer
+identity, then by observed source epoch; partition kernels within a member use
+their own canonical partition identities. A handler that has no compute step
+continues to return its immediate decision without an application change.
+
+A wave stops at a request-wide stop or at a failure of the caller's own member.
+The least canonical such member decides the reported failure, and no member
+after it is committed or published. A failure of another queued member is held
+with that member; its siblings in the wave still commit and publish.
+Application keeps only the applied prefix. A compute request stop charges only its
+canonical compute prefix. An earlier owner-completion failure can be reported
+instead, but does not refund computation already settled, including work past
+that earlier member. The applied prefix and the canonical compute prefix are
+therefore distinct. Earlier performed effects remain performed and retain their
+recovery obligations. A queued member's domain refusal can be held while other
+required work progresses; the held member leaves the runnable queue for the
+rest of this call and is requeued when the call ends. A
+request-wide stop ends this call with its distinct cause. With sufficient
+memory and no live interruption, serial and parallel placement produce the
+same result, applied order, and charged work. Live cancellation or a deadline
+can change the reached prefix, but never allow publication beyond its boundary.
+
+Closing a demand releases that holder's interest; another holder can keep the
+output required. Drop has no request budget: it releases this holder's interest
+and that row's own claims, follows closed claims through at most two rows,
+charges no work, starts no computation, and never scans the whole registry.
+It may hand on at most one existing closed-leaf claim. Cleanup it cannot finish
+stays recorded for a later funded call. A reader already sees the successor
+output before that cleanup runs; deferral does not weaken currentness.
 
 **Per-partition reuse.** A *producer* is an installed binding between an
 output and the operation that produces it. When a producer's handler runs a
@@ -1083,7 +1192,8 @@ and is never compared.
   again from every leaf, so the run fails where a full run fails.
 - **Dispatch.** Each recomputed partition is dispatched on its own, in
   partition identity order, under the request's execution.
-- **Cost.** An outcome never depends on reuse. A carried call charges what it
+- **Cost.** Result values, charged work, and the work-ceiling boundary do not
+  depend on reuse. A carried call charges what it
   charged, at the place a full run makes that call, so a work ceiling stops
   at the partition a full run would name. A call the remaining work would not
   pass is made instead, and fails as a full run fails. Comparing a retained
@@ -1107,8 +1217,10 @@ and is never compared.
   of run it was.
 - **Retention bounds.** Kept state is charged by its bytes against a bounded
   retention ledger: a maximum number of bytes that output records may keep.
-  A refusal drops only the incoming state, and existing holders keep theirs. A successor record
-  takes over its predecessor's reservation when it is the sole holder. A
+  A refusal drops only the incoming state, and existing holders keep theirs.
+  A successor can take its exact displaced predecessor's reservation only
+  when that state is unpinned and solely held, after growth is admitted and
+  the prior state is consumed. A
   record that a forked branch shares keeps its own reservation, and the
   successor reserves in full. A branch with no record of its own takes its
   prior state from the record at its fork point, and the same three matches
@@ -1151,7 +1263,7 @@ takes every stage through three phases that its types keep apart.
   prefix through the least failure across all three phases. A failing
   application keeps the partial owner effects it made. Computation is
   charged for the canonical prefix through its least failure, and a later
-  application failure does not refund it.
+  apply failure does not refund it.
 - **Purity.** Prepare and compute must be pure functions of the values they
   are given: no clock, no static or global state, no environment, no
   interior-mutable state shared with the owner or another stage, and no
@@ -1193,7 +1305,7 @@ count.
 | Query: partitioned computation | Partition kernels (`compute_partition`). | Naming, keying, gathering, and completing run on the calling thread. Results settle in partition identity order. |
 | Query: workflow frontier | The compute steps of a frontier's stages. | Prepare and apply run on the owner in canonical stage order. |
 | Query: derived collections | Rebuilding a derived collection dispatches one partition per unique root through a map. | The map supplies canonical order, charging, and one execution authority. It does not make native reads concurrent: reads serialize at the Relational owner. Projection and link checks run on the calling thread in entity identity order. Only the canonical completed prefix reaches the owner, and retention changes only on success. |
-| Query: advancement | — | The advancement driver runs producer handlers synchronously. |
+| Query: advancement | Compute steps of independently admitted required members, under one request across all waves. | The required-set owner checks upstream commitment against the selected basis. Owner preparation, completion, commits, and publications follow canonical member order; an owner-completion failure ends the applied prefix without refunding compute already settled. |
 
 Sessions, runs, subscriptions, continuations, leases, checkpoints, recovery
 handles, and admitted capacity are *managed resources*. Close them explicitly.
@@ -1294,7 +1406,8 @@ denied with `TouchedRecordsRequired` if the commit sealed no touched records.
 
 ### 10.4 Example
 
-`approve_order` declares that it writes `Order.status` and links an order to
+The operation for approving an order declares that it writes `Order.status`
+and links an order to
 an `Approval`.
 
 - A candidate that also writes `Order.total` fails touch admission, because
@@ -1746,7 +1859,7 @@ to see the two facades used end to end.
   `receipt.mutation_work()`, which is an `Option`.
 - Workflows move only when a request pumps them. Plan for `Awaiting*` outcomes.
   An inbound completion finishes an operation; it never runs a step.
-- Keep `partition_key`, `gather`, and `compute_partition` pure. A partition
+- Keep `partitions`, `partition_key`, `gather`, and `compute_partition` pure. A partition
   whose facts did not change keeps its last result without being gathered or
   computed again, so an impure function yields a stale result.
 - Expect one execution request per public call. With sufficient memory,

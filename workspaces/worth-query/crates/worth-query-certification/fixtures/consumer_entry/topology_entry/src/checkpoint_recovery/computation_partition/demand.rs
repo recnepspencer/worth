@@ -106,6 +106,7 @@ impl<Schema: TopologySchemaBinding> ApplicationMutationIntent<Schema> for Region
     }
 }
 
+// compiled-example: begin
 pub(super) type Decision<'borrow, 'reader, 'runtime, Schema> =
     DecisionReader<'borrow, 'reader, 'runtime, Schema, RegionTotalsDemandBinding<Schema>>;
 
@@ -210,6 +211,8 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandB
         }
     }
 }
+
+// compiled-example: end
 
 /// The entry facts, and the operation that reads them. A decision reads the
 /// demanded set's membership and five facts of every entry.

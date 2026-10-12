@@ -16,7 +16,7 @@ Milestone 11 is complete.
 
 - framework-owned observer registration and lifecycle
 - node and node-set observation
-- explicit observation policies for `Touched`, `Recomputed`, and `MeaningfulChange`
+- explicit observation policies for `Visited`, `Recomputed`, and `MeaningfulChange`
 - transaction-staged observation packets
 - commit-bounded delivery
 - rollback suppression

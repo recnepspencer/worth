@@ -836,6 +836,8 @@ unchanged.
   local to it, capped at the computation's remaining ceiling. After the join,
   exhaustion is decided by canonical prefix sums of partition work, and work
   past the first exceeding partition is discarded as physical, uncharged work.
+  An owner-completion failure ends the applied prefix without refunding compute
+  already settled in the canonical compute prefix.
 - A kernel panic becomes a typed failure. It never poisons the pool or leaks a
   lease.
 
@@ -1206,7 +1208,9 @@ The one-call advancement above runs its waves in parallel.
   apply in canonical order.
 
 The authenticated request stays the principal, and no work outlives the call.
-Charged work is identical at every worker count.
+Charged work is identical at every worker count. An owner-completion failure
+keeps compute already settled in that wave charged, identically at every worker
+count, even when its result lies beyond the applied prefix.
 
 The workflow parallel frontier runs admitted stage preparation as worker-local
 computation on the lease and applies stage effects in canonical order.
@@ -2312,7 +2316,8 @@ Work admission and capacity follow these rules. *Completed.*
 - Conditional continuation installation reserves its maximum on the original
   request meter before Fresh effects and settles only the installation it
   reached. The other branches refund that reservation without refunding
-  nested work.
+  nested work. An owner-completion failure likewise does not refund compute
+  already settled in the canonical compute prefix.
 - Prepared and retained memory stay separate capacity claims, each with its
   actual lifetime.
 - Static diagnostic subjects are borrowed and need no speculative String
@@ -2775,12 +2780,19 @@ The next phase may trust that partition-granular reuse is exact.
     descends from the member.
   - Commits and publications apply in canonical key order, and apply accepts
     only canonical order, by type. The least canonical failure is reported;
-    nothing after it is kept or charged.
+    nothing after it is kept. Compute already settled in the wave stays charged
+    after an owner-completion failure, identically at every worker count. The
+    applied prefix and the canonical compute prefix are distinct boundaries.
     - Canonical order is one declared identity with a total key at every
       deciding sort in Query, World, Bridge and Execution. *Completed.*
   - One execution report per advancement, a failed one included, lists its
     commits and publications in order.
   - A handler that does not compute needs no change.
+  - Drop's closed-claim release is bounded by a fixed two-row quota; Drop charges
+    no work and starts no computation. It walks the rows of its own interest's
+    occurrence and releases the prerequisites of a terminal row. It performs no
+    registry pass and may hand on at most one existing closed-leaf claim;
+    further claim transfers wait for a funded admission.
 - **7.8** A neutral application and the Bank reference prove identical results,
   charged work and commit order at one worker and many, and span strictly
   less than work wherever independence exists.
@@ -2798,7 +2810,7 @@ The next phase may trust that advancement exploits every declared independence.
   is committed before Phase 7 closes. *Completed.*
 - **8.2** Complete the public documentation for partition-granular reuse,
   parallel advancement and the workflow frontier; an independent review
-  checks every public statement against the code.
+  checks every public statement against the code. *written, awaiting independent review*
 - **8.3** Run the complete certification and the mutation probes on x86-64 and
   wasm32.
 

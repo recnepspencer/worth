@@ -32,6 +32,12 @@ explained). Rust names are given where a type embodies the term.
   **See** [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch)
   and [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption).
 
+**Advancement**
+: One execution of a public Query entry, from its first read through final
+  delivery. It owns one bounded execution request. An output-demand `advance`
+  can dispatch several *required waves* within that request; it does not open
+  a new budget per wave. **See** *Lease* and *Required wave*.
+
 **Aftermath**
 : What can happen to a committed change afterward. Every operation declares a
   posture: *reversible*, *compensatable*, *reconcilable*, or *irreversible*.
@@ -207,7 +213,11 @@ explained). Rust names are given where a type embodies the term.
 : The declared comparison rule under which an execution result is independent
   of placement. The default is canonical bitwise equality; an installed
   equivalence contract supplies a predicate. Charged work follows canonical
-  settlement, independent of worker count. Physical metrics can differ.
+  settlement, independent of worker count, with sufficient memory and no
+  interruption arriving during compute. Live cancellation and deadlines can
+  change the reached prefix. Physical metrics can differ. Query managed
+  computation accepts canonical bitwise equality and currently refuses
+  `ContractEquivalent` at installation.
 
 **Digest**
 : A SHA-256 identity derived from a canonical basis through Foundational
@@ -266,7 +276,9 @@ explained). Rust names are given where a type embodies the term.
 
 **Handler**
 : Application code that implements an operation (`OperationHandler`): it
-  decides, states its resource requirements, and builds a candidate. Workflow
+  prepares a decision plan, states its resource requirements, and builds a
+  candidate. The default `prepare_decision` calls `decide`; a computing handler
+  overrides preparation and completes on the owner after compute. Workflow
   control steps have no handler.
 
 ## I
@@ -306,6 +318,9 @@ explained). Rust names are given where a type embodies the term.
   `SignalBranchRetentionLease`) is an owner-issued obligation that is
   released or dropped exactly once and exposes no read or mutation
   capability.
+  A Query advancement uses the same bounded request throughout Bridge,
+  Relational, Signal, and World execution. Serial placement supplies serial
+  backing and one worker; nested computation still shares its parent's bounds.
 
 **Lineage**
 : (1) A continuity claim about evidence (attested, replay-derived, restored,
@@ -362,17 +377,18 @@ explained). Rust names are given where a type embodies the term.
 
 **Partition (execution)**
 : A data-identified unit dispatched to one kernel and settled in canonical
-  order. Its identity does not depend on the worker. It is distinct from a
-  Signal observation scope selected by `whole_partition`, which matches a
-  subtree of scope paths.
+  order. Its identity does not depend on the worker.
   **Not** a Signal *conflict group* (`DisjointApplyGroup`): a conflict group
   is ready graph work admitted because its worker-local proposal surfaces do
   not overlap another group's, and it carries no data identity.
-  **Not** a whole-partition subscription: a Signal subscription built by
-  `PartitionSubscription::whole_partition` selects the subtree of scope paths
-  under one partition segment. That selection decides which subscriptions a
-  changed region reaches. It names no unit of work.
-  **See** *Conflict group* and *Scope path*.
+  **Not** a *Partition (observation scope)*.
+  **See** *Conflict group*, *Partitioner*, and *Scope path*.
+
+**Partition (observation scope)**
+: The subtree of scope paths under one partition segment, selected by a Signal
+  subscription's `whole_partition`. It decides which subscriptions a changed
+  region reaches. It names no kernel or ready batch and supplies no parallel
+  independence proof. **See** *Partition (execution)* and *Conflict group*.
 
 **Partitioner**
 : The owner of the rule assigning stable item identities to execution
@@ -392,6 +408,12 @@ explained). Rust names are given where a type embodies the term.
 **Phase**
 : A stage in a typed progression, carried in the type so that skipping or
   reordering steps does not compile.
+
+**Pinned read**
+: Access to one retained immutable source root selected by an exact owner
+  observation. A later commit does not change that read. Its hold preserves
+  availability, not live currentness or write authority. Releasing the hold
+  ends access. **See** *Currentness* and *Residency (retention)*.
 
 **Placement rule**
 : Where new vocabulary lives. First *yes* wins: legality goes in
@@ -453,6 +475,13 @@ explained). Rust names are given where a type embodies the term.
   Membership can have several holders; closing one demand does not remove
   an output still required by another.
 
+**Required wave**
+: Required producer occurrences admitted together by the required-set owner
+  against one selected basis. Each member's consumed upstream outputs are
+  already committed on that basis. Independent compute can run concurrently;
+  completion, commits, and publications follow canonical member keys. Every
+  wave of an advancement shares its request. **See** *Advancement*.
+
 **Residency (retention)**
 : Keeping a basis available in memory under a lease. A resident basis is not
   necessarily current: the lease holds the root its observation selected,
@@ -480,8 +509,7 @@ explained). Rust names are given where a type embodies the term.
 **Scope path**
 : A hierarchical address that refines an affected region. Signal subscriptions
   can select an exact path or its subtree. A whole-partition subscription
-  selects the subtree under one partition segment; this observation scope is
-  distinct from an execution partition.
+  selects a *Partition (observation scope)*.
   A path has one to eight non-empty segments (`ScopePath::MAX_DEPTH`); a
   longer path is refused. The Bridge lowers each change it delivers into
   changed regions on these paths. A partition-local dependency yields the
@@ -572,8 +600,10 @@ explained). Rust names are given where a type embodies the term.
 
 **Work**
 : Charged operation units accumulated in canonical settlement order. Failed
-  execution charges its accepted canonical prefix; discarded later work does
-  not change that total. Work is not elapsed time or total process memory.
+  computation charges its canonical compute prefix. An owner-completion failure
+  discards results without refunding compute already
+  settled; the applied prefix can be shorter than the canonical compute prefix.
+  Work is not elapsed time or total process memory.
 
 **Workflow**
 : A branch-local, versioned graph of steps (operations, assessments,
@@ -586,11 +616,20 @@ explained). Rust names are given where a type embodies the term.
   authorizes and records them, never a handler. Applications reach the kernel
   through the workflow runtime (`WorthQueryWorkflowApplicationRuntime`).
   Progress is caller-pumped.
-  **Not** `worth_query::facade::workflow` (preview, promotion, writeback, and
-  branch merge) or `worth_query::facade::installed::workflow` (staged runs of
-  installed domain operations).
+  **Not** preview, promotion, writeback, branch merge, or a staged run of
+  installed domain operations. Applications import only `worth-query-decl`
+  and `worth-query-host`.
   **See** [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows)
   and [How WORTH Works §13](how-it-works.md#13-workflows).
+
+**Workflow frontier**
+: A declared set of independent stages in an installed domain operation's
+  staged run. Preparation fixes each stage's facts on the owner; compute takes
+  only its inert task; application returns to the owner in canonical stage
+  order. The least failing stage bounds the applied prefix. An apply failure
+  does not refund compute work already settled. This frontier is
+  separate from a required wave and from application workflow control steps.
+  **See** [How WORTH Works §9.9](how-it-works.md#99-resources-execution-and-cost).
 
 **World (Runtime World)**
 : The runtime that composes exact component bases into product branches and
