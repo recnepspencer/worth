@@ -2,6 +2,8 @@
 use super::*;
 #[test]
 fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
@@ -50,6 +52,8 @@ fn an_exact_sibling_product_cannot_substitute_at_provider_plan_binding() {
 
 #[test]
 fn the_exact_selected_product_binds_at_provider_plan_boundary() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,
@@ -89,9 +93,10 @@ fn the_exact_selected_product_binds_at_provider_plan_boundary() {
         .expect("fixture owner admits its advancement");
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 #[test]
 fn foreign_installed_phase_refuses_provider_readmission_before_read_or_charge() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     use crate::domain_computation::primary_graph::{
         advancement_requests_on_this_thread_for_test as reports,
         installed_source_reads_on_this_thread_for_test as reads,

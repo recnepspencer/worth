@@ -143,7 +143,7 @@ where
         );
         let installed = destination.capture_and_install(source_cell, &source, cancellation)?;
         admission.reach_operation_boundary(
-            crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary::OutcomeConstruction,
+            crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
         );
         let destination_cell_incarnation = installed.cell().incarnation().get();
         let (created_branch, observation) = installed.into_handoff_parts();

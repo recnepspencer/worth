@@ -12,7 +12,7 @@ fn predispatch_cancellation_is_identical_at_every_first_compute_position_and_wid
             let source = CancellationSource::new();
             source.cancel();
             let scope = WorthQueryRequestScope::new(
-                std::time::Instant::now() + std::time::Duration::from_secs(60),
+                Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
                 source.token(),
             );
             let mut input = members(7, None);
@@ -60,7 +60,7 @@ fn cancellation_during_middle_and_last_compute_obeys_each_constructed_schedule()
                 let source = CancellationSource::new();
                 probe.cancel_at_checkpoint(source.clone(), phased_workflow::MEMBERS[at], held);
                 let scope = WorthQueryRequestScope::new(
-                    std::time::Instant::now() + std::time::Duration::from_secs(60),
+                    Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
                     source.token(),
                 );
                 let mut workspace = Policy::width(workers).workspace(&probe);

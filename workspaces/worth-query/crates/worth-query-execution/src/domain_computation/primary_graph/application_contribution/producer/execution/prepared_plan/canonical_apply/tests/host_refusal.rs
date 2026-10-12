@@ -1,6 +1,6 @@
 //! Author-held handles return their cause to owner completion.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::request_execution::test_execution_authority as test_authority;
+use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as test_authority;
 use crate::domain_computation::primary_graph::{tests::fixture, WorthQueryAdvancementDenial};
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
@@ -11,7 +11,7 @@ fn a_refused_author_host_call_completes_on_the_owner_and_applies_only_its_prefix
         for product in [false, true] {
             let cancel = WorthQueryCancellationSource::new();
             let scope = WorthQueryRequestScope::new(
-                Instant::now() + Duration::from_secs(60),
+                Some(Instant::now() + Duration::from_secs(60)),
                 cancel.token(),
             );
             let execution = QueryRequestExecution::open(

@@ -28,9 +28,9 @@ where
         setup.partitioned_computation::<PlanarFinalOutputFeature, Computation, _>(owner)?;
     Ok(RegionTotalsHandler::running(move |reader, set| {
         let prepared = installed.prepare(reader, set);
-        #[cfg(feature = "test-query-execution-observer")]
+
         let observed = std::rc::Rc::new(std::cell::RefCell::new(None));
-        #[cfg(feature = "test-query-execution-observer")]
+
         let completing = std::rc::Rc::clone(&observed);
         let finish = move |computed: Result<
             WorthQueryCompletedPartitionedComputation<
@@ -44,7 +44,7 @@ where
             let outcome: RegionOutcome = (|| {
                 let computed = computed?;
                 let charged_work = computed.charged_work();
-                #[cfg(feature = "test-query-execution-observer")]
+
                 let report = observed_report(
                     completing
                         .borrow_mut()
@@ -54,7 +54,7 @@ where
                 Ok(RegionTotal {
                     bits: computed.complete()?.to_bits(),
                     charged_work,
-                    #[cfg(feature = "test-query-execution-observer")]
+
                     report,
                 })
             })();
@@ -64,7 +64,7 @@ where
         match prepared {
             Ok(prepared) => {
                 let plan = prepared.into_decision_plan(finish);
-                #[cfg(feature = "test-query-execution-observer")]
+
                 let plan = plan.observe_computes_for_test(
                     || {
                         runs_on_this_thread();
@@ -88,7 +88,7 @@ where
 
 /// Execution's report of the decision's one run, which ran in full. How a
 /// run ran is the observer's, never the handler's value.
-#[cfg(feature = "test-query-execution-observer")]
+
 fn observed_report(
     runs: Vec<(WorthQueryPartitionedComputationRun, Option<ExecutionReport>)>,
 ) -> ExecutionReport {

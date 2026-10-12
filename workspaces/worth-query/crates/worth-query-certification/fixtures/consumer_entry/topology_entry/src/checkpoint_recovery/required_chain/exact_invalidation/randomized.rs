@@ -228,6 +228,8 @@ fn run(seed: u64, observations: u64, steps: usize, driven: &mut Driven) {
 
 #[test]
 fn randomized_marking_agrees_with_full_verification() {
+    let _equivalence =
+        primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
     let mut driven = Driven::default();
     for seed in SEEDS {
@@ -253,6 +255,8 @@ fn randomized_marking_agrees_with_full_verification() {
 /// produced again by its next demand.
 #[test]
 fn randomized_marking_makes_room_on_a_branch_with_few_observations() {
+    let _equivalence =
+        primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
     let mut driven = Driven::default();
     for seed in SEEDS {

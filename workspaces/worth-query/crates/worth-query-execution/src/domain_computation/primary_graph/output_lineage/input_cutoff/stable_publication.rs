@@ -128,7 +128,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     let actual = lineage
         .prior_input_cutoff_candidate::<Binding>(scope, observation, partition, admission)
         .map_err(|stop| match stop {
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
                 denial(Kind::WorkBudgetExceeded)
             }

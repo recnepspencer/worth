@@ -3,7 +3,7 @@ use super::super::prepared_request::PreparedCompute;
 use super::super::wave_dispatch::{self, PreparedMember};
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    test_execution_authority as test_authority, test_policy,
+    query_test_execution_authority_for_test as test_authority, test_policy,
 };
 use crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution;
 use crate::domain_computation::primary_graph::{tests::fixture, WorthQueryAdvancementDenial};
@@ -21,7 +21,7 @@ fn author_held_application_and_product_handles_receive_nested_opening() {
     let application = Arc::new(fixture::installed_authorization_world(false).application);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     for workers in [0, 1, 2, 4] {

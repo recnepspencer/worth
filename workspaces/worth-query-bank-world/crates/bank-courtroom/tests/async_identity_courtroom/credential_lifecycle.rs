@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use bank_domain::model::BankPrincipalId;
 use bank_http_adapter::{
-    cold_certification, AuthentikBankAuthenticationError, AuthentikBankIdentity,
+    cold_certification_for_test, AuthentikBankAuthenticationError, AuthentikBankIdentity,
     AuthentikOidcConfiguration, AuthentikOidcCredential,
 };
 use bank_server::BankPrincipalSeed;
@@ -111,7 +111,7 @@ async fn install_identity(
         world.fixture.primary_participant().username(),
     )
     .expect("real certification mapping should admit");
-    cold_certification::install_identity(
+    cold_certification_for_test::install_identity_for_test(
         configuration,
         [BankPrincipalSeed::enabled(
             BankPrincipalId::new(principal_id).expect("certification principal id should admit"),

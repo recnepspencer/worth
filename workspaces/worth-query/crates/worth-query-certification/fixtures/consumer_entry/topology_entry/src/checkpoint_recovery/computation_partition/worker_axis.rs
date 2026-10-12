@@ -21,8 +21,8 @@ use super::execution::{association_sensitive_entries, entry, heavy_regions, seve
 use super::facts::{self, RegionEntry};
 use super::owner::{with_region_totals, RegionOutcome};
 
-needs_os_threads! {
-use worth_query_host::facade::primary_graph::test_execution_workers;
+worth_execution::needs_os_threads! {
+use worth_query_host::facade::primary_graph::test_execution_workers_for_test;
 
 /// The perturbation seeds of the certified placements.
 const SEEDS: [u64; 3] = [0x6_7000_0001, 0x6_7000_0002, 0x6_7000_0003];
@@ -33,7 +33,7 @@ const SEEDS: [u64; 3] = [0x6_7000_0001, 0x6_7000_0002, 0x6_7000_0003];
 pub(super) fn axis() -> Vec<Placement> {
     let width = std::thread::available_parallelism().map_or(1, NonZeroUsize::get);
     assert!(
-        test_execution_workers().get() >= 2 * width,
+        test_execution_workers_for_test().get() >= 2 * width,
         "the authority admits twice the machine's width"
     );
     let workers = |count: usize| NonZeroUsize::new(count).expect("a worker count is not zero");
@@ -81,6 +81,7 @@ static OVERLAP: (Mutex<Overlap>, Condvar) = (Mutex::new(DISARMED), Condvar::new(
 
 /// How long a lone kernel waits for a second. A run that placed a second
 /// worker never waits it out.
+// Hang guard for the kernel-overlap rendezvous; elapsed time is not the fact under test.
 const PATIENCE: Duration = Duration::from_secs(30);
 
 fn overlap() -> MutexGuard<'static, Overlap> {
@@ -104,7 +105,7 @@ impl Drop for Overlapping {
     fn drop(&mut self) {
         let met = std::mem::replace(&mut *overlap(), DISARMED).met;
         if !std::thread::panicking() {
-            assert!(met, "two kernels held workers at once");
+            assert!(met, "two-worker kernel-overlap rendezvous did not occur");
         }
     }
 }
@@ -129,6 +130,7 @@ pub(super) fn enter_overlapped() {
 /// Runs `test` with this thread's managed computations at `placement`, and
 /// returns them to the World's placement after, even when `test` panics.
 pub(super) fn placed<T>(placement: Placement, test: impl FnOnce() -> T) -> T {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     struct Restore(Placement);
     impl Drop for Restore {
         fn drop(&mut self) {
@@ -197,12 +199,12 @@ fn across_the_axis(
     serial.expect("the axis has a serial placement")
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[test]
 fn the_floating_point_sum_keeps_its_bits_and_its_work_at_every_worker_count() { assert_floating_point(axis()); }
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[cfg(panic = "unwind")]
 #[test]
 fn the_least_failing_partition_is_the_same_at_every_worker_count() {
@@ -211,7 +213,7 @@ fn the_least_failing_partition_is_the_same_at_every_worker_count() {
 }
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[test]
 fn the_work_boundary_is_the_same_at_every_worker_count() { assert_work_boundary(axis()); }
 }

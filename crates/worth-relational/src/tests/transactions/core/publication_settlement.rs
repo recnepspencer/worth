@@ -155,7 +155,7 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
     };
     let commit_id = performed.canonical_commit().commit.commit_id;
     let position = performed.patch_position();
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let error = runtime
         .settle_performed_publication(performed)
         .expect_err("injected append fault defers settlement after performance");
@@ -287,7 +287,7 @@ fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() 
     };
     let commit_id = performed.canonical_commit().commit.commit_id;
 
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let error = runtime
         .settle_performed_publication(performed)
         .expect_err("injected append fault defers settlement after performance");

@@ -172,7 +172,6 @@ impl<Query> Clone for WorthQueryObservedSource<Query> {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
-    #[cfg(feature = "test-query-execution-observer")]
     #[doc(hidden)]
     pub fn root_entity_for_test(&self) -> EntityId {
         self.model_root
@@ -242,7 +241,6 @@ impl<Query> WorthQueryObservedSource<Query> {
         )
     }
 
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
     pub(in crate::domain_computation::primary_graph) fn checkpoint_observation_identity(
         &self,
     ) -> [u8; 32] {

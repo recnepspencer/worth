@@ -32,14 +32,13 @@ pub use contracts::{
     WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
 };
 pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
-#[cfg(feature = "test-query-execution-observer")]
 pub use partitioned_computation::{
     discarded_computation_retention_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeMetrics,
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest,
 };
@@ -75,15 +74,13 @@ pub use producer::{
     WorthQueryProducerOutputFamily, WorthQuerySelectedApplicationProducer,
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
-#[cfg(any(test, feature = "test-query-execution-observer"))]
-pub use request_execution::test_execution_authority;
+pub use request_execution::query_test_execution_authority_for_test;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
 pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
-#[cfg(feature = "test-query-execution-observer")]
 pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,
-    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
 pub use request_execution::{
@@ -94,21 +91,18 @@ pub use setup::WorthQueryApplicationContributionSetup;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::sealed_run_for_lineage_test;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
 pub(in crate::domain_computation::primary_graph) use request_execution::{
     with_serial_host_advancement, with_world_advancement,
 };
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use request_execution::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEvent,
-    WorthQueryAdvancementEventKind, WorthQueryAdvancementIdentity,
-    WorthQueryAdvancementObservation,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 
 #[cfg(test)]
@@ -118,5 +112,4 @@ pub use request_execution::with_bootstrap_advancement;
 
 pub use request_execution::WorthQueryBootstrapAdvancementPhase;
 
-#[cfg(any(test, feature = "test-query-execution-observer"))]
 pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;

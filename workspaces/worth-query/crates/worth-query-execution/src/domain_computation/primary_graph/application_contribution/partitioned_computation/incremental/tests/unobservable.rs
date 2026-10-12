@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::application_attempt::{
 
 #[test]
 fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
@@ -48,6 +50,8 @@ fn an_unobservable_key_gathers_its_partition_again_and_denies_nothing() {
 
 #[test]
 fn more_retained_keys_than_the_declared_work_runs_in_full_uncompared() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
@@ -93,6 +97,8 @@ fn more_retained_keys_than_the_declared_work_runs_in_full_uncompared() {
 
 #[test]
 fn a_few_adjacency_keys_whose_worst_case_passes_the_declared_work_run_in_full() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);

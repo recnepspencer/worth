@@ -1,6 +1,6 @@
 //! Admit one real required successor from the existing Fresh disclosure.
 //!
-//! The disclosure stays intact for ScheduleÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢Execute. A paid shallow source
+//! The disclosure stays intact for Schedule -> Execute. A paid shallow source
 //! copy moves to the registry's retained readmission owner. This child is
 //! registered only with the selected execution continuation.
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
@@ -146,7 +146,7 @@ where
                 Ok(_) => RequiredFreshOutcome::Advanced,
                 Err(refusal) => {
                     successor.unpublished_selected_checkpoint = refusal.checkpoint;
-                    #[cfg(feature = "test-query-execution-observer")]
+
                     crate::domain_computation::primary_graph::application_output_demand::observe_required_refresh_stop(successor.observed_source.source_root(), refusal.denial.kind());
                     RequiredFreshOutcome::Refused(refusal.denial)
                 }
@@ -222,6 +222,7 @@ fn observed_clone_denial(
         WorthQueryObservedSourceCloneStop::AccountingOverflow => work_denial(),
         WorthQueryObservedSourceCloneStop::Admission(
             CompanionPreflightStop::WorkExhausted { .. }
+            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | CompanionPreflightStop::WorkCounterOverflow,
         ) => work_denial(),
         WorthQueryObservedSourceCloneStop::Admission(_) => denial(

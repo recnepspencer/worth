@@ -170,14 +170,14 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
 
     let cancellation = WorthQueryCancellationSource::new();
     let recovery_scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
+        Some(Instant::now() + Duration::from_secs(30)),
         cancellation.token(),
     );
     let recovery_principal = authenticate_operator(host.installed_schema(), &recovery_scope);
     let pause = host
         .runtime()
         .world_operation_control_for_test()
-        .pause_before_product_compare(NonZeroUsize::new(1).unwrap());
+        .pause_before_product_compare_for_test(NonZeroUsize::new(1).unwrap());
     let outcome = std::thread::scope(|threads| {
         let recovering = threads.spawn(|| {
             host.runtime()

@@ -113,9 +113,9 @@ fn requested_read_denial(
         CompanionPreflightStop as Stop, RelationalOperationInterruption,
     };
     let kind = match stop {
-        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        }
+        Stop::WorkExhausted { .. }
+        | Stop::WorkExhaustedWithoutRequirement { .. }
+        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
         | Stop::RetainedCompanionCapacityExhausted { .. } => {

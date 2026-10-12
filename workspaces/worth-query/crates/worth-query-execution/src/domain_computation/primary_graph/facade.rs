@@ -58,9 +58,7 @@ pub use super::application_checkpoint::{
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryNativeCheckpointSectionBytes,
 };
-#[cfg(feature = "test-query-execution-observer")]
-pub use super::application_contribution::test_execution_authority;
-#[cfg(feature = "test-query-execution-observer")]
+pub use super::application_contribution::query_test_execution_authority_for_test;
 pub use super::application_contribution::{
     bound_advancement_requests_on_this_thread_for_test,
     discarded_computation_retention_on_this_thread_for_test,
@@ -68,9 +66,9 @@ pub use super::application_contribution::{
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test,
-    published_partitioned_computations_on_this_thread_for_test, test_execution_workers,
+    published_partitioned_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest, WorthQueryPartitionedComputationFullCause,
-    WorthQueryPartitionedComputationRun, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeMetrics,
     WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest,
 };
@@ -112,7 +110,6 @@ pub use super::application_entry::mutation::{
     WorthQueryDecisionPlan, WorthQueryMutationHandlerExecutionReport,
     WorthQueryMutationHandlerProjectionWork, WorthQueryMutationHandlerWork,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_output_demand::{
     required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
@@ -127,7 +124,6 @@ pub use super::application_program::{
     WorthQueryApplicationRequiredOutputSource, WorthQueryPreparedRequiredOutputSource,
     WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_query::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test,
@@ -261,7 +257,6 @@ pub use super::ordinary_read::{
     WorthQueryOrdinaryReadBatch, WorthQueryOrdinaryReadMetadata, WorthQueryOrdinaryReadProjection,
     WorthQueryOrdinaryReadVersion,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::output_lineage::invalidation::inexact_native_deliveries_on_this_thread_for_test;
 pub use super::output_lineage::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub use super::principal_key::{
@@ -368,15 +363,13 @@ pub use crate::domain_computation::{
 /// Exhaustive translation of a Relational execution refusal.
 pub use super::provider::relational_execution_denial::relational_execution_kind;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::application_contribution::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEvent,
-    WorthQueryAdvancementEventKind, WorthQueryAdvancementIdentity,
-    WorthQueryAdvancementObservation,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
 pub use worth_execution::ExecutionRequest;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;

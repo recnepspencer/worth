@@ -87,9 +87,9 @@ fn a_terminal_delivery_stop_releases_the_head_with_a_peer_still_present() {
         .unwrap();
     world.application.with_application_advancement(&request, |phase| {
         let owner = registry.admit(key.clone(), None, scope, occurrence,
-            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None, &mut admission()).unwrap();
+            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None, &mut admission()).map(|(interest, _pause)| interest).unwrap();
         let peer = registry.admit(key.clone(), None, scope, occurrence,
-            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None, &mut admission()).unwrap();
+            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary, None, None, &mut admission()).map(|(interest, _pause)| interest).unwrap();
         assert!(matches!(registry.begin(&owner), Admission::Schedule(None)));
         registry.finish_scheduling(&owner, None, &mut Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled));
         let finish = registry.prepare_selected_execution_finish(&owner, &mut admission()).unwrap();

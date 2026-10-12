@@ -4,10 +4,8 @@ mod denial_matrix;
 mod equivalence;
 #[path = "owner_service_completion/healthy_bundle.rs"]
 mod healthy_bundle;
-#[cfg(feature = "test-operation-control")]
 #[path = "owner_service_completion/lifecycle_locality.rs"]
 mod lifecycle_locality;
-#[cfg(feature = "test-operation-control")]
 #[path = "owner_service_completion/owner_lifecycle_observation.rs"]
 mod owner_lifecycle_observation;
 #[path = "owner_service_completion/owner_loss.rs"]

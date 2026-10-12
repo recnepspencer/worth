@@ -4,7 +4,7 @@ use super::{Case, Observation, ScopeInterruption};
 mod denial_custody;
 mod verification;
 use crate::domain_computation::primary_graph::application_contribution::{
-    test_execution_authority, test_policy,
+    query_test_execution_authority_for_test, test_policy,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
     NestedAccountQuery, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
@@ -47,14 +47,16 @@ pub(super) fn observe_case(
     let query_cancel =
         worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
     let scope = worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
-        std::time::Instant::now()
-            + Duration::from_secs(
-                if matches!(case.query_interruption, Some(ScopeInterruption::Deadline)) {
-                    5
-                } else {
-                    60
-                },
-            ),
+        Some(
+            std::time::Instant::now()
+                + Duration::from_secs(
+                    if matches!(case.query_interruption, Some(ScopeInterruption::Deadline)) {
+                        5
+                    } else {
+                        60
+                    },
+                ),
+        ),
         query_cancel.token(),
     );
     let caller_cancel = worth_execution::CancellationSource::new();
@@ -143,7 +145,7 @@ pub(super) fn observe_case(
         deadline,
     );
     let lease = workers.map(|workers| {
-        test_execution_authority()
+        query_test_execution_authority_for_test()
             .request_lease(LeaseRequest {
                 policy: test_policy(NonZeroUsize::new(workers).unwrap(), serial.memory().limit()),
                 cancellation: caller_cancel.token(),
@@ -202,7 +204,9 @@ pub(super) fn observe_case(
             ScopeInterruption::Deadline => Interrupt::QueryDeadline {
                 root,
                 earlier,
-                deadline: scope.deadline(),
+                deadline: scope
+                    .deadline()
+                    .expect("this case supplies a query deadline"),
             },
         });
     }

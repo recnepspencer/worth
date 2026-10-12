@@ -9,11 +9,6 @@ repository = "https://github.com/recnepspencer/WORTH"
 keywords = ["graph", "runtime", "transactions", "replay", "simulation"]
 categories = ["data-structures", "database-implementations", "science"]
 
-[features]
-allocation-probes = []
-test-durability-faults = []
-test-operation-control = ["test-durability-faults"]
-
 [dependencies]
 worth-foundational = { path = "../worth-foundational" }
 worth-proof = { path = "../worth-proof" }

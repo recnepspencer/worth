@@ -391,6 +391,5 @@ where
     (running, graph)
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod readmission_custody;
 mod request_control;

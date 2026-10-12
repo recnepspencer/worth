@@ -22,18 +22,13 @@ mod carriage;
 mod deposit;
 mod next_tree;
 mod observed;
-#[cfg(feature = "test-query-execution-observer")]
 pub use observed::full_partitioned_computation_preparations_on_this_thread_for_test;
 pub(super) use observed::observe_full_preparation;
 mod prepare;
 mod prior_absence;
-#[cfg(feature = "test-query-execution-observer")]
 mod published_state;
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation) use published_state::observe_discarded;
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) use published_state::observe_published;
-#[cfg(feature = "test-query-execution-observer")]
 pub use published_state::{
     discarded_computation_retention_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test,
@@ -52,10 +47,8 @@ mod tree_attempt;
 mod tree_edits;
 mod tree_report;
 mod tree_update;
-#[cfg(feature = "test-query-execution-observer")]
 pub use observed::partitioned_computation_tree_work_on_this_thread_for_test;
 pub(in super::super) use observed::{observe_full_tree, FullTreeMapWork};
-#[cfg(feature = "test-query-execution-observer")]
 pub use tree_report::{
     WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
     WorthQueryPartitionedTreeRun,
@@ -68,13 +61,11 @@ use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;
 
 pub(super) use next_tree::{ComputedIncremental, PreparedIncremental};
-#[cfg(feature = "test-query-execution-observer")]
 pub use observed::partitioned_computation_runs_on_this_thread_for_test;
 pub(super) use recording::{observe_unretained, FullRecording};
 pub(in crate::domain_computation::primary_graph) use retained::ComputationInstallation;
 pub use retained::WorthQueryPartitionedComputationFullCause;
-#[cfg(any(test, feature = "test-query-execution-observer"))]
-pub use retained::WorthQueryPartitionedComputationRun;
+pub use retained::WorthQueryPartitionedComputationRunForTest;
 pub(in crate::domain_computation) use retained::{
     ComputationPrior, RetainedComputation, SealedComputationRun,
 };
@@ -172,7 +163,6 @@ where
         basis: Ok(RetainedBasisToken(basis)),
         cause,
     };
-    #[cfg(feature = "test-query-execution-observer")]
     if super::certification_reuse::disabled() {
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
     }

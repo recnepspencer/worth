@@ -16,7 +16,7 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
         .runtime
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
-    let control = RelationalOperationControl::uninterrupted().with_injected_interruption(
+    let control = RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         RelationalInterruptionBoundary::BeforeCriticalSection,
         RelationalOperationInterruption::Cancelled,
         1,
@@ -71,7 +71,7 @@ fn cancellation_inside_the_supply_chain_critical_section_is_deferred() {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
     let control = RelationalOperationControl::from(source.token())
-        .with_critical_section_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_critical_section_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let transaction = world
         .runtime
         .begin_branch_transaction_with_control(

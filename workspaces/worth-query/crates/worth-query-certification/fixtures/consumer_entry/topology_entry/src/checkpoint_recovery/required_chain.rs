@@ -4,24 +4,17 @@ use super::*;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryOutputSettlementPosture,
 };
-#[cfg(feature = "test-query-execution-observer")]
 use worth_query_host::facade::primary_graph::query_read_kernel_entries_on_this_thread_for_test as query_entries;
 
 mod binding;
 mod contact_readings;
-#[cfg(feature = "test-query-execution-observer")]
 mod diamond;
-#[cfg(all(
-    feature = "test-query-execution-observer",
-    feature = "test-invalidation-equivalence"
-))]
 mod exact_invalidation;
 mod mixed_mode;
 mod producer;
 mod program;
 mod readiness;
 mod reopened_consumer;
-#[cfg(feature = "test-query-execution-observer")]
 mod required_queue;
 mod restored_currentness;
 mod ring_world;
@@ -174,7 +167,6 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     );
     drop((before_input, after_input, changed));
     let before = request.retain_read().unwrap();
-    #[cfg(feature = "test-query-execution-observer")]
     let before_entries = query_entries();
     let settled = match c
         .advance(&request)
@@ -186,7 +178,6 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         }
     };
     let after = request.retain_read().unwrap();
-    #[cfg(feature = "test-query-execution-observer")]
     assert!(
         query_entries() > before_entries,
         "the actual dirty upstream is re-evidenced inside this advance"
@@ -219,5 +210,4 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
     drop((a, b, c));
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod concurrent_waves;

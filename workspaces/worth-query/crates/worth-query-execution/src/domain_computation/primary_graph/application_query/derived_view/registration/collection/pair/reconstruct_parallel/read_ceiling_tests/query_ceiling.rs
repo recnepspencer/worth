@@ -57,7 +57,7 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
     let serial = SerialRequest::from_memory(
         SerialMemoryBudget::new(16 << 20),
         scope.cancellation().execution_token(),
-        Some(scope.deadline()),
+        scope.deadline(),
     );
     let mut plans = WorthQueryDerivedPairReadPlans::new(admit(100000), admit(3));
     ExecutionRequest::serial(&serial)

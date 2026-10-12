@@ -1,7 +1,7 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use crate::branch::admit_runtime_signal_branch_observation;
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::owner_services::SignalOwnerCancellationSource;
 use crate::branch::SignalBranchBasisObservationDenial;
 
@@ -10,14 +10,14 @@ use super::super::cancellation::restore::{restore_fixture, PopulatedRestoreFixtu
 #[test]
 fn restore_post_movement_faults_preserve_performed_truth_and_release_output_custody() {
     for boundary in [
-        SignalOwnerOperationBoundary::AfterCanonicalMovement,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
     ] {
         exercise_restore_post_movement_fault(boundary);
     }
 }
 
-fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundary) {
+fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundaryForTest) {
     // This standalone caller declares the operational serial memory policy.
     let serial_request = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(
@@ -45,7 +45,9 @@ fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundary) 
     let metadata_before = owner.metadata.pending_snapshot_reservation_count();
     let expected_generation = current_basis.observation().generation().get() + 1;
     let snapshot_id = snapshot.snapshot().meta.snapshot_id;
-    owner.operation_control().inject_panic_once(boundary);
+    owner
+        .operation_control_for_test()
+        .inject_panic_once_for_test(boundary);
 
     let fault = catch_unwind(AssertUnwindSafe(|| {
         let ready = owner
@@ -101,7 +103,7 @@ fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundary) 
     assert_eq!(owner.retention_ledger_observation(), released);
 
     match boundary {
-        SignalOwnerOperationBoundary::AfterCanonicalMovement => {
+        SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement => {
             assert!(matches!(
                 cell.observe_exact(&admission),
                 Err(SignalBranchBasisObservationDenial::QuarantinedBranch { branch_id })
@@ -109,7 +111,7 @@ fn exercise_restore_post_movement_fault(boundary: SignalOwnerOperationBoundary) 
             ));
             assert!(cell.poison_recovery().is_some());
         }
-        SignalOwnerOperationBoundary::OutcomeConstruction => {
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction => {
             assert_eq!(cell.poison_recovery(), None);
             let observation = cell
                 .observe_exact(&admission)

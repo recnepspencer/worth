@@ -103,7 +103,6 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn prepared_source_count(&self) -> usize {
         self.state
             .lock()
@@ -114,7 +113,6 @@ impl WorthQueryOutputDemandRegistry {
             .sum()
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn retained_source_custody_count(
         &self,
     ) -> usize {
@@ -125,7 +123,6 @@ impl WorthQueryOutputDemandRegistry {
             .len()
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn output_checkpoint_snapshot_state(
         &self,
     ) -> (usize, usize) {

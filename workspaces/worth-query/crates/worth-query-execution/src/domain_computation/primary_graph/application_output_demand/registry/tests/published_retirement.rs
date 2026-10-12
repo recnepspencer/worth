@@ -12,7 +12,7 @@ pub(super) fn admit(
     registry.admit(key.clone(), None,
         crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(root(1)),
         occurrence(), super::super::DemandAdmissionKind::Ordinary, None, None,
-        &mut record_admission()).unwrap()
+        &mut record_admission()).map(|(interest, _pause)| interest).unwrap()
 }
 
 pub(super) fn publish(

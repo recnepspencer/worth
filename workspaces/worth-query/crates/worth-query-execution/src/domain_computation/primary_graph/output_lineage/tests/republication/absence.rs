@@ -43,6 +43,8 @@ fn republication_keeps_a_performed_read_without_inventing_cutoff_proofs() {
 
 #[test]
 fn restoring_existing_unverified_facts_drops_state_as_restored() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     staged(|mut stage| {
         let facts: Arc<[Fact]> = Arc::from([source_entity(1)]);
         let computation = stage.lineage.retain_computation(

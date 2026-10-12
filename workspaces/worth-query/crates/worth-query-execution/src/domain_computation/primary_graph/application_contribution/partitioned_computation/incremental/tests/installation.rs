@@ -68,6 +68,8 @@ impl TestOwner for Doubling {
 
 #[test]
 fn another_owner_with_the_same_types_runs_in_full() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
@@ -100,6 +102,8 @@ fn another_owner_with_the_same_types_runs_in_full() {
 
 #[test]
 fn a_reinstalled_owner_runs_in_full() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let reinstalled = installed(StatusRead::Gather(1), sum);
@@ -116,6 +120,8 @@ fn a_reinstalled_owner_runs_in_full() {
 
 #[test]
 fn a_clone_of_the_installation_reuses_its_state() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
@@ -129,6 +135,8 @@ fn a_clone_of_the_installation_reuses_its_state() {
 
 #[test]
 fn a_reinstalled_reducer_runs_in_full_with_its_own_reduction() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let first = first_run(&world, &installed(StatusRead::Gather(1), sum));
     let expected = (0..2)

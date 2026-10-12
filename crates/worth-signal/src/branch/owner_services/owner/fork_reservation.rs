@@ -13,7 +13,7 @@ use super::super::branch_execution_cell::SignalBranchForkSourceCustody;
 use super::super::branch_registry::{
     SignalBranchReservation, SignalPreparedBranchCell, SignalPreparedBranchInstallation,
 };
-use super::super::operation_control::SignalOwnerOperationBoundary;
+use super::super::operation_control::SignalOwnerOperationBoundaryForTest;
 use super::super::owner_metadata::SignalOwnerForkLineageReservation;
 use super::super::{
     SignalBranchCellState, SignalBranchExecutionCell, SignalOwnerCancellationToken,
@@ -363,8 +363,9 @@ where
         let cell = Arc::clone(installation.cell());
         lineage.commit();
         installation.commit();
-        admission
-            .reach_operation_boundary(SignalOwnerOperationBoundary::ForkDestinationInstallation);
+        admission.reach_operation_boundary(
+            SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
+        );
         Ok(SignalInstalledOwnerFork {
             handle,
             observation: destination_observation,

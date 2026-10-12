@@ -6,7 +6,8 @@ use worth_signal::facade::branch::{
     AdmittedSignalBranchBasis, ManagedSignalBranchReference,
     ManagedSignalBranchReferenceAdmissionDenial, SignalBranchBasisObservationDenial,
     SignalBranchObservation, SignalBranchRetirementDenial, SignalBranchRetirementReceipt,
-    SignalOwnerCancellationSource, SignalOwnerOperationBoundary, SignalOwnerOperationControl,
+    SignalOwnerCancellationSource, SignalOwnerOperationBoundaryForTest,
+    SignalOwnerOperationControlForTest,
 };
 use worth_signal::facade::history::RuntimeBranchId;
 
@@ -17,11 +18,11 @@ fn run_order(observe_first: bool) {
     let world = AdversarialWorld::new();
     let branch_id = world.child_basis.branch_id();
     let expected = world.child_basis.observation().clone();
-    let control: SignalOwnerOperationControl = world
+    let control: SignalOwnerOperationControlForTest = world
         .runtime
         .as_ref()
         .expect("the observer and retirement share a live owner root")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("operation control is issued after sealing");
     let reference = world
         .basis
@@ -57,7 +58,8 @@ fn run_order(observe_first: bool) {
         } else {
             // The observer reaches this boundary before acquiring its managed basis; pausing it
             // lets the retirement complete first and makes the terminal denial deterministic.
-            let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+            let pause = control
+                .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
             scope.spawn(move || {
                 let _ = observe_tx.send(observation_port.observe_current(&observed_reference));
             });

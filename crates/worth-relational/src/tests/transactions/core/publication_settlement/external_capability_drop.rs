@@ -20,7 +20,7 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
         panic!("runtime recovery candidate performs before its injected append fault");
     };
     let commit_id = performed.canonical_commit().commit.commit_id;
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let error = runtime
         .settle_performed_publication(performed)
         .expect_err("durable append fault returns deferred settlement");

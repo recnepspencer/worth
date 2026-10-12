@@ -13,7 +13,7 @@ fn cancellation_after_world_preparation_reaches_execution_before_owner_effects()
     let world = installed_authorization_world(true);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let prepared = prepare_relational_mutation_on_application(

@@ -30,6 +30,7 @@ fn check(entry: u8) {
             None,
             &mut record_admission(),
         )
+        .map(|(interest, _pause)| interest)
         .unwrap();
     let own_price = match entry {
         0 => 2, // Empty terminal header, with no terminal row to retire.

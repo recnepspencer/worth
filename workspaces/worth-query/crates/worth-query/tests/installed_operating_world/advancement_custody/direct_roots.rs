@@ -82,6 +82,7 @@ fn promoted(current: Current, workspace: &mut Workspace) -> Live {
 
 #[test]
 fn direct_execute_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "direct execute",
         || {
@@ -102,6 +103,7 @@ fn direct_execute_opens_before_its_reader() {
 
 #[test]
 fn direct_promotion_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "direct promotion",
         || {
@@ -124,6 +126,7 @@ fn direct_promotion_opens_before_its_reader() {
 
 #[test]
 fn direct_replacement_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "direct replacement",
         || {
@@ -151,6 +154,7 @@ fn direct_replacement_opens_before_its_reader() {
 
 #[test]
 fn direct_rebinding_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "direct rebinding",
         || {

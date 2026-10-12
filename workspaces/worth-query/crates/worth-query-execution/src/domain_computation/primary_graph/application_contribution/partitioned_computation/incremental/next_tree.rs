@@ -32,7 +32,7 @@ use super::super::{
 use super::observed::{observe, observe_tree};
 use super::retained::{
     CarriedCalls, CompletedComputationRun, RetainedBasis, RetainedCall, RetainedPartition,
-    RetainedPartitions, TypedPrior, WorthQueryPartitionedComputationRun,
+    RetainedPartitions, TypedPrior, WorthQueryPartitionedComputationRunForTest,
 };
 use super::tree_update::{next_tree, same_bits};
 use super::{CompletedComputationRetention, PriorAbsence};
@@ -366,7 +366,10 @@ where
                 tree,
             });
 
-        observe(WorthQueryPartitionedComputationRun::Incremental, None);
+        observe(
+            WorthQueryPartitionedComputationRunForTest::Incremental,
+            None,
+        );
         Ok(ComputedIncremental {
             reduced,
             computed_work,

@@ -250,6 +250,7 @@ fn work_denial(_: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
 fn footprint_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
     match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => denial(Kind::WorkBudgetExceeded),
         _ => denial(Kind::RetentionBudgetExceeded),
     }

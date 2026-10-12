@@ -384,7 +384,7 @@ pub(super) fn admit_identity_adapter(
 pub fn request_scope() -> admission::authenticated_principal::WorthQueryRequestScope {
     let cancellation = admission::authenticated_principal::WorthQueryCancellationSource::new();
     admission::authenticated_principal::WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     )
 }

@@ -1,7 +1,6 @@
 //! The partitioned owner binding executes: every partition's kernel, the
 //! canonical reduction and the completion, under a real request.
 
-#[cfg(feature = "test-query-execution-observer")]
 use worth_foundational::facade::ExecutionFallbackCause;
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_decl::facade::application_operation::application_computation_partition_identity;
@@ -103,7 +102,6 @@ fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
         let first = total(demand("sensitive"));
         assert!(f64::from_bits(first.bits).is_finite());
         // No lease reaches a managed computation, so the serial backend ran.
-        #[cfg(feature = "test-query-execution-observer")]
         {
             assert_eq!(
                 first.report.fallback(),

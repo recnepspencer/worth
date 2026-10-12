@@ -118,7 +118,7 @@ impl<Schema, Operation, Input, Scope>
     }
 }
 
-#[cfg(all(test, not(feature = "certification-invalidation-equivalence")))]
+#[cfg(test)]
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>
 {

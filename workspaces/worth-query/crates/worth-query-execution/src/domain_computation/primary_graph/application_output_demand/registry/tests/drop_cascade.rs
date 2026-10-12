@@ -105,7 +105,6 @@ fn registry_drop_cascade_names_its_released_row_bound() {
     assert_eq!(contacts, [1, 1, 1]);
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 #[test]
 fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
     let receipts = walk_bounds::receipt_batch();

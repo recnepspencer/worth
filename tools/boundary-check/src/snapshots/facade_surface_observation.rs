@@ -3,7 +3,6 @@ use super::facade_reexport_validation::validate_exact_public_reexport;
 use super::facade_visibility::validate_facade_only_surface;
 use crate::manifest_types::Road1Package;
 use std::collections::{BTreeMap, BTreeSet};
-use std::fs;
 use std::path::{Path, PathBuf};
 use syn::{Item, UseTree, Visibility};
 
@@ -81,9 +80,9 @@ pub(super) fn observe_facade_document(
 }
 
 fn extract_namespace_exports(path: &Path, namespace: Option<&str>) -> Result<Vec<String>, String> {
-    let text =
-        fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
-    let syntax = crate::source_syntax::parse_file(&text)
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|error| format!("read {}: {error}", path.display()))?;
+    let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|error| format!("parse {}: {error}", path.display()))?;
     let mut exports = BTreeSet::new();
     let items = match namespace {
@@ -181,12 +180,12 @@ fn qualify(prefix: &str, name: &str) -> String {
 }
 
 fn extract_exports(path: &Path) -> Result<Vec<String>, String> {
-    let text =
-        fs::read_to_string(path).map_err(|e| format!("read facade {}: {e}", path.display()))?;
-    let syntax = crate::source_syntax::parse_file(&text)
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|e| format!("read facade {}: {e}", path.display()))?;
+    let syntax = crate::source_syntax::parse_named(path, &text)
         .map_err(|e| format!("parse facade {}: {e}", path.display()))?;
     let mut exports = BTreeSet::new();
-    for item in syntax.items {
+    for item in syntax.items.clone() {
         match item {
             Item::Use(item_use) if matches!(item_use.vis, Visibility::Public(_)) => {
                 if item_use.attrs.iter().any(|attribute| {
@@ -252,13 +251,14 @@ fn collect(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn direct_grouped_and_renamed_exports_are_exact() {
         let syntax =
             crate::source_syntax::parse_file("pub use x::{A, B as C};\nuse x::Private;").unwrap();
         let mut exports = BTreeSet::new();
-        for item in syntax.items {
+        for item in syntax.items.clone() {
             if let Item::Use(item) = item {
                 if matches!(item.vis, Visibility::Public(_)) {
                     collect(&item.tree, None, &mut exports, Path::new("facade.rs")).unwrap();

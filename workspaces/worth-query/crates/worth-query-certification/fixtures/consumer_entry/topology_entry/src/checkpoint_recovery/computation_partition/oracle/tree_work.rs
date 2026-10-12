@@ -39,7 +39,7 @@ pub(super) fn assert_reconciled(run: &OracleRun, stop: TreeStop<'_>) {
     let full_completed = run
         .runs
         .iter()
-        .any(|run| matches!(run, WorthQueryPartitionedComputationRun::Full(_)));
+        .any(|run| matches!(run, WorthQueryPartitionedComputationRunForTest::Full(_)));
     // Two diagnostic certification builds follow the reported boundary.
     // The owner independently gathered P leaves; each diagnostic build
     // completes P valid f64 pairs. Exclude those later calls from this run.
@@ -53,12 +53,12 @@ pub(super) fn assert_reconciled(run: &OracleRun, stop: TreeStop<'_>) {
     let reported_calls: u128 = run
         .tree_runs
         .iter()
-        .map(|tree| tree.metrics().combine_calls)
+        .map(|tree| tree.metrics_for_test().combine_calls)
         .sum();
     let reported_nodes: u128 = run
         .tree_runs
         .iter()
-        .map(|tree| tree.metrics().recombined_nodes)
+        .map(|tree| tree.metrics_for_test().recombined_nodes)
         .sum();
     let counted_calls = u128::try_from(run.combines)
         .unwrap()
@@ -223,7 +223,7 @@ fn recomputed_partition_with_identical_bits_reports_zero_tree_work() {
     );
     assert_eq!(
         next[0].runs,
-        [WorthQueryPartitionedComputationRun::Incremental]
+        [WorthQueryPartitionedComputationRunForTest::Incremental]
     );
     assert_edited(&next[0], 0);
     assert_eq!(

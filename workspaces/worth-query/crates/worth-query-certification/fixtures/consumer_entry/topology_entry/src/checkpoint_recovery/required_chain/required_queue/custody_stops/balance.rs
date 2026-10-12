@@ -15,10 +15,8 @@ fn cancelled_refresh_rows_return_to_the_same_live_custody_and_ledger() {
     let mut selected = None;
     for attempt in 0..4 {
         let cancellation = authentication::WorthQueryCancellationSource::new();
-        let cancelled_scope = authentication::WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(120),
-            cancellation.token(),
-        );
+        let cancelled_scope =
+            authentication::WorthQueryRequestScope::new(None, cancellation.token());
         let cancelled = application.request(&principal, &cancelled_scope);
         take_decisions("anchor-b");
         super::super::super::binding::cancel_during_next_decision("anchor-b", cancellation);

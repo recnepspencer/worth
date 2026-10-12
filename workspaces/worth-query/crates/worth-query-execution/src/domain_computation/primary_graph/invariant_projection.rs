@@ -12,7 +12,6 @@ mod realized_scope;
 mod relation_identity;
 mod traversal;
 mod work;
-#[cfg(feature = "certification-invalidation-equivalence")]
 pub(in crate::domain_computation::primary_graph) use consumed_output::EvidenceView;
 
 use std::cmp::Ordering;

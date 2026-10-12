@@ -1,8 +1,6 @@
 //! Resources and observations used by observer-backed checkpoint proofs.
 pub(in crate::checkpoint_recovery) use super::execution_policy::CHECKPOINT_EXECUTION_POLICY;
 use super::*;
-pub(in crate::checkpoint_recovery) mod capacity_region;
-pub(in crate::checkpoint_recovery) mod retained_inventory;
 
 pub(in crate::checkpoint_recovery) fn limits_with_history_room(
     retained_composite_commits: u64,

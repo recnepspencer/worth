@@ -38,7 +38,7 @@ winit = { workspace = true }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query = { path = "../../../worth-query/crates/worth-query" }
 worth-query-certification = { path = "../../../worth-query/crates/worth-query-certification" }
-worth-runtime-bridge = { workspace = true, features = ["certification-construction"] }
+worth-runtime-bridge = { workspace = true }
 worth-signal.workspace = true
 worth-ui-inspection = { path = "../worth-ui-inspection" }
 worth-ui-platform-pulse = { path = "../../apps/platform-pulse" }

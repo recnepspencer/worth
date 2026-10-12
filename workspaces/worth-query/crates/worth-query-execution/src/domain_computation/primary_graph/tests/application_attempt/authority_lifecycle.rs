@@ -88,7 +88,7 @@ fn cancellation_after_program_preparation_prevents_provider_commit() {
     let world = installed_authorization_world(true);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let principal = authenticated_principal(&world, &request);
@@ -113,7 +113,7 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
     let world = installed_authorization_world(true);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let principal = authenticated_principal(&world, &request);

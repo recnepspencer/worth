@@ -49,6 +49,7 @@ fn assert_refused(denial: BankEstateProgressionDenial, placement: Placement, mem
 
 #[test]
 fn revocation_refuses_before_its_admitted_principal_reader() {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for refusal in [None, Some(false), Some(true)] {

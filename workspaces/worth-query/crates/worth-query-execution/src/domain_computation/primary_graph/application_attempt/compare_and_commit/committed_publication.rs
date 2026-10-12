@@ -233,7 +233,6 @@ impl WorthQueryCommittedProductPublication {
         self.performed()?.take_client_observation()
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn has_output_demand_observation_for_test(
         &self,
     ) -> bool {

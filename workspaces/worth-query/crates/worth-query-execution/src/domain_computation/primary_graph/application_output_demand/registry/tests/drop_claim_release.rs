@@ -1,5 +1,4 @@
 //! Direct Drop release stays bounded and leaves unvisited debt noted.
-#![cfg(feature = "test-query-execution-observer")]
 use super::*;
 fn stopped_ready() -> DemandState {
     let DemandState::Output(mut output) = closed_retirement::ready() else {

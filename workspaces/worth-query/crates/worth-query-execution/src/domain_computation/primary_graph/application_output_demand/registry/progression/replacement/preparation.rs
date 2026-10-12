@@ -185,7 +185,7 @@ fn scratch(
             u64::try_from(bytes).map_err(|_| admission::performed_obligation_capacity_denial())?,
         )
         .map_err(|stop| match stop {
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
                 replacement_work_denial()
             }

@@ -27,7 +27,7 @@ use crate::domain_computation::primary_graph::output_lineage::CustodiedComputati
 
 /// How one run of a partitioned computation ran.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryPartitionedComputationRun {
+pub enum WorthQueryPartitionedComputationRunForTest {
     /// Only the partitions whose facts changed were gathered and computed.
     Incremental,
     /// Every partition was gathered and computed.

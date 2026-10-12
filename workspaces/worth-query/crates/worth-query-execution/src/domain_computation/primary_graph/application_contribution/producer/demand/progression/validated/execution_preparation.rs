@@ -310,6 +310,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 result,
                 selected_execution_finish,
                 retained_resources,
+                &self.primary_provider.application_attempt_operation_control,
                 request_admission,
                 performed,
                 readiness,

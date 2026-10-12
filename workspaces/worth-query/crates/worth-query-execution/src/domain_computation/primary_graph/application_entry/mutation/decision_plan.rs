@@ -101,7 +101,7 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
 
     /// Captures a fixture's existing compute probes on the computing thread and
     /// delivers them to its owner-only completion. No preparation loan is lent.
-    #[cfg(feature = "test-query-execution-observer")]
+
     pub fn observe_computes_for_test<Observation: Send + 'static>(
         self,
         before: impl Fn() + Send + Sync + 'static,

@@ -6,7 +6,7 @@
 //! the sequence's, not each demand's.
 
 use super::super::worker_axis::{placed, workers_of, Overlapping};
-needs_os_threads! { use super::super::worker_axis::axis; }
+worth_execution::needs_os_threads! { use super::super::worker_axis::axis; }
 use super::differential::sequence;
 use super::*;
 use worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement;
@@ -14,7 +14,7 @@ use worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest
 /// A run's outcome and how it ran.
 type Ran = (
     Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-    Vec<WorthQueryPartitionedComputationRun>,
+    Vec<WorthQueryPartitionedComputationRunForTest>,
     Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun>,
 );
 
@@ -31,7 +31,7 @@ fn demands() -> Vec<(usize, Vec<Ran>)> {
     demands
 }
 
-needs_os_threads! {
+worth_execution::needs_os_threads! {
 #[test]
 fn every_demand_of_the_sequence_runs_the_same_at_every_worker_count() { compare_sequence(axis().into_iter().skip(1).collect()); }
 }

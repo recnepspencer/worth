@@ -110,7 +110,7 @@ pub fn authentication_configuration() -> BankAuthenticationConfiguration {
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     )
 }

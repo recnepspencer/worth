@@ -142,7 +142,6 @@ type Run<Schema> = Box<
 pub(super) enum OwnWriteRead {
     Observed,
     /// Only the computation's gather reads the value.
-    #[cfg(feature = "test-query-execution-observer")]
     Blind,
 }
 
@@ -159,7 +158,6 @@ pub(super) struct OwnWrite {
 static OWN_WRITE: Mutex<Option<OwnWrite>> = Mutex::new(None);
 
 /// Arms every next decision to make `write`, or disarms them.
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn arm_own_write(write: Option<OwnWrite>) {
     *OWN_WRITE.lock().unwrap_or_else(PoisonError::into_inner) = write;
 }
@@ -182,7 +180,6 @@ impl<Schema: TopologySchemaBinding> RegionOutputHandler<Schema> {
         Self(None, false, false)
     }
 
-    #[cfg(feature = "test-query-execution-observer")]
     pub(super) fn running(
         run: impl Fn(
                 &mut Decision<'_, '_, '_, Schema>,
@@ -197,13 +194,11 @@ impl<Schema: TopologySchemaBinding> RegionOutputHandler<Schema> {
 }
 
 impl<Schema: TopologySchemaBinding> RegionOutputHandler<Schema> {
-    #[cfg(feature = "test-query-execution-observer")]
     pub(super) fn preserving_payload(mut self) -> Self {
         self.2 = true;
         self
     }
 
-    #[cfg(feature = "test-query-execution-observer")]
     pub(super) fn with_generated_payload(mut self) -> Self {
         self.1 = true;
         self

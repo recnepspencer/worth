@@ -2,7 +2,7 @@
 
 use super::super::entry_edit::EntryFact;
 use super::*;
-use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRun as Run;
+use worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationRunForTest as Run;
 use worth_query_host::facade::application_entry::WorthQueryOutputSettlementPosture;
 
 fn settle(

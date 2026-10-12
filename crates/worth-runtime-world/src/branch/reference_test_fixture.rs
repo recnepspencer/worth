@@ -56,7 +56,6 @@ pub(crate) struct RealReferenceFixture {
 }
 
 impl RealReferenceFixture {
-    #[cfg(feature = "test-durability-faults")]
     pub(crate) fn fail_next_relational_durable_append(&self) {
         self._relational_runtime.fail_next_durable_append_for_test();
     }

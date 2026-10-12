@@ -27,9 +27,8 @@ pub(crate) use ordered_index::{
 };
 pub(crate) use preparation::{RetainedStoragePreparation, RetainedStoragePreparationDenial};
 
-#[cfg(feature = "test-execution-observer")]
 pub use preparation::{
     observed_signal_request_work_on_this_thread_for_test,
     signal_request_charges_on_this_thread_for_test,
-    signal_request_refusals_on_this_thread_for_test,
+    signal_request_refusals_on_this_thread_for_test, SignalRequestWorkObservation,
 };

@@ -5,7 +5,7 @@ mod races;
 mod settlement;
 use super::*;
 use std::{sync::mpsc, time::Duration};
-use worth_signal::facade::branch::SignalOwnerOperationBoundary as Boundary;
+use worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest as Boundary;
 const WAIT: Duration = Duration::from_secs(5);
 fn signal_prepared(
     court: &CompositeSupplyChainCourt,

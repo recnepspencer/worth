@@ -74,8 +74,10 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let recovery = partial.into_recovery();
 
     let stopped = WorthQueryCancellationSource::new();
-    let stopped_scope =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(30), stopped.token());
+    let stopped_scope = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(30)),
+        stopped.token(),
+    );
     stopped.cancel();
     assert!(matches!(
         runtime

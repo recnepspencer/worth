@@ -10,7 +10,7 @@ use super::lifecycle_state::{
     SignalOwnerAdmissionMismatch, SignalOwnerLifecycleIdentity, SignalOwnerLifecycleState,
     SignalOwnerOperationAdmission,
 };
-use super::operation_control::SignalOwnerOperationBoundary;
+use super::operation_control::SignalOwnerOperationBoundaryForTest;
 
 #[path = "branch_registry/retirement.rs"]
 mod retirement;
@@ -121,7 +121,8 @@ impl<S> SignalBranchRegistry<S> {
         branch_id: SignalBranchId,
     ) -> Result<Arc<SignalBranchExecutionCell<S>>, SignalBranchRegistryDenial> {
         self.validate_admission(admission)?;
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::BranchRegistryLookup);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
         let _metadata_hold = admission
             .hold_owner_metadata()
             .map_err(map_metadata_hold_denial)?;
@@ -155,7 +156,9 @@ impl<S> SignalBranchRegistry<S> {
         name: Option<&str>,
     ) -> Result<(), SignalBranchRegistryDenial> {
         self.validate_admission(admission)?;
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::BranchRegistryReservation);
+        admission.reach_operation_boundary(
+            SignalOwnerOperationBoundaryForTest::BranchRegistryReservation,
+        );
         let _metadata_hold = admission
             .hold_owner_metadata()
             .map_err(map_metadata_hold_denial)?;

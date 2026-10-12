@@ -9,7 +9,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_execution::ReductionTree;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
-use super::super::super::super::request_execution::{test_execution_authority, test_policy};
+use super::super::super::super::request_execution::{
+    query_test_execution_authority_for_test, test_policy,
+};
 use super::super::super::super::WorthQueryManagedComputationResourceDenial as Resource;
 use super::*;
 
@@ -40,7 +42,7 @@ fn rebuilt_under(memory: Option<u64>) -> Vec<(Outcome, usize)> {
             let policy = move || test_policy(NonZeroUsize::new(2).unwrap(), memory);
             vec![
                 Box::new(move || RuntimeWorldExecutionPlacement::Leased {
-                    authority: test_execution_authority(),
+                    authority: query_test_execution_authority_for_test(),
                     policy: policy(),
                 }),
                 Box::new(move || RuntimeWorldExecutionPlacement::Serial(policy())),
@@ -96,6 +98,8 @@ fn refused_by_memory(outcome: &Outcome) -> Option<u64> {
 
 #[test]
 fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let unbounded = rebuilt_under(None);
     let [(outcome, reached)] = unbounded.as_slice() else {
         panic!("one unbounded placement");

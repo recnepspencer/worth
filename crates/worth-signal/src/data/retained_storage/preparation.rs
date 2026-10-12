@@ -95,7 +95,6 @@ impl<'observer> RetainedStoragePreparation<'observer> {
     ) -> Result<(), RetainedStoragePreparationDenial> {
         if let Some(checkpoint) = self.checkpoint.as_deref_mut() {
             let result = checkpoint(units);
-            #[cfg(feature = "test-execution-observer")]
             request_charge_observation::record(units, &result);
             result?;
         }
@@ -105,11 +104,9 @@ impl<'observer> RetainedStoragePreparation<'observer> {
 mod limit;
 pub(crate) use limit::{RetainedStoragePreparationCheckpoint, RetainedStoragePreparationLimit};
 
-#[cfg(feature = "test-execution-observer")]
 mod request_charge_observation;
-#[cfg(feature = "test-execution-observer")]
 pub use request_charge_observation::{
     observed_signal_request_work_on_this_thread_for_test,
     signal_request_charges_on_this_thread_for_test,
-    signal_request_refusals_on_this_thread_for_test,
+    signal_request_refusals_on_this_thread_for_test, SignalRequestWorkObservation,
 };

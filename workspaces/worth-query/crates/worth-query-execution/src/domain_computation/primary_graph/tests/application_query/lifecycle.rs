@@ -193,7 +193,7 @@ fn cancellation_after_admission_releases_basis_before_projection() {
     let world = installed_authorization_world(true);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let external = world.authenticate("alice", Duration::from_secs(60), &request);

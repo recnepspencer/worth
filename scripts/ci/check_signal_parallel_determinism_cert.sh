@@ -26,6 +26,6 @@ for iteration in $(seq 1 "${ITERATIONS}"); do
 done
 
 echo "[signal-determinism-cert] Running hostile ignored parity loop"
-cargo test -p worth-signal --lib --features parallel adversarial_parallel -- --ignored --nocapture
+cargo test -p worth-signal --lib adversarial_parallel -- --ignored --nocapture
 
 echo "[signal-determinism-cert] PASS"

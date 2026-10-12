@@ -35,8 +35,10 @@ fn cancelled_in_reducer(
     prior: Option<ComputationPrior>,
 ) -> (Attempt, usize) {
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     COMBINES.set(0);
     ARMED.set(Some(source));
     let attempt = attempt_in(world, installed, prior, &request);
@@ -54,6 +56,8 @@ fn cancelled() -> Outcome {
 /// inside the first combine, the run stops before the second.
 #[test]
 fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
     COMBINES.set(0);
@@ -76,8 +80,8 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
         tree,
         super::super::tree_report::WorthQueryPartitionedTreeRun::Full(Cause::NoProducerPrior, _)
     ));
-    assert_eq!(tree.metrics().combine_calls, 1);
-    assert_eq!(tree.metrics().recombined_nodes, 0);
+    assert_eq!(tree.metrics_for_test().combine_calls, 1);
+    assert_eq!(tree.metrics_for_test().recombined_nodes, 0);
 }
 
 /// A moved fact recombines its leaf's path, two combines a node. Cancelled
@@ -85,6 +89,8 @@ fn a_full_run_cancelled_inside_a_combine_stops_at_the_next_tree_node() {
 /// the tree.
 #[test]
 fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = installed_over(4, StatusRead::Gather(1), cancelling_sum);
     let first = attempt(
@@ -110,11 +116,11 @@ fn an_incremental_run_cancelled_inside_a_recombine_stops_and_does_not_rebuild() 
     let [tree] = stopped.tree_runs.as_slice() else {
         panic!("one stopped tree report")
     };
-    assert_eq!(tree.partitions(), Run::Incremental);
+    assert_eq!(tree.partitions_for_test(), Run::Incremental);
     assert!(matches!(
         tree,
         super::super::tree_report::WorthQueryPartitionedTreeRun::Edited(_)
     ));
-    assert_eq!(tree.metrics().combine_calls, 1);
-    assert_eq!(tree.metrics().recombined_nodes, 0);
+    assert_eq!(tree.metrics_for_test().combine_calls, 1);
+    assert_eq!(tree.metrics_for_test().recombined_nodes, 0);
 }

@@ -175,7 +175,6 @@ impl InvalidationEditAdmission {
         self.budget.maximum_work_visits - self.charged_work()
     }
 
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
     pub(in crate::domain_computation::primary_graph) fn exhaust_work_for_test(
         &mut self,
     ) -> Result<(), CompanionPreflightStop> {

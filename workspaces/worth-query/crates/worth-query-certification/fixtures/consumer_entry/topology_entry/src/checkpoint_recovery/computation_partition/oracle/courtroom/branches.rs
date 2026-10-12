@@ -58,7 +58,7 @@ fn judge(
         assert_eq!(
             run.tree_runs
                 .iter()
-                .map(|tree| tree.metrics().recombined_nodes)
+                .map(|tree| tree.metrics_for_test().recombined_nodes)
                 .sum::<u128>(),
             tree::expected_nodes(&now, prior.as_ref())
         );

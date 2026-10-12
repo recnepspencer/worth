@@ -282,7 +282,9 @@ fn cutoff_basis_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDem
     use worth_relational::facade::mvcc::CompanionPreflightStop as Admission;
     let kind = match stop {
         InputCutoffVerificationStop::Admission(
-            Admission::WorkExhausted { .. } | Admission::WorkCounterOverflow,
+            Admission::WorkExhausted { .. }
+            | Admission::WorkExhaustedWithoutRequirement { .. }
+            | Admission::WorkCounterOverflow,
         )
         | InputCutoffVerificationStop::WorkExhausted => {
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
@@ -308,9 +310,9 @@ fn cutoff_admission_denial(
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
     denial(
         match stop {
-            Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-            }
+            Stop::WorkExhausted { .. }
+            | Stop::WorkExhaustedWithoutRequirement { .. }
+            | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
             Stop::Interrupted(event) => {
                 WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }

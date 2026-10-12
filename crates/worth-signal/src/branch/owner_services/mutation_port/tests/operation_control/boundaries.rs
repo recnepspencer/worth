@@ -1,4 +1,4 @@
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::validate_signal_branch_name;
 
 use super::super::super::super::SignalOwnerCancellationSource;
@@ -7,7 +7,7 @@ use super::run_paused;
 
 #[derive(Clone, Copy)]
 struct AdvanceBoundaryCost {
-    boundary: SignalOwnerOperationBoundary,
+    boundary: SignalOwnerOperationBoundaryForTest,
     lookups: u64,
     retention_contacts: u64,
     target_contacts: u64,
@@ -18,49 +18,49 @@ struct AdvanceBoundaryCost {
 fn mutation_port_reaches_every_common_boundary_at_its_exact_cost_stage() {
     for expected in [
         AdvanceBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::OwnerLifecycleAdmission,
+            boundary: SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission,
             lookups: 0,
             retention_contacts: 0,
             target_contacts: 0,
             movements: 0,
         },
         AdvanceBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::BranchRegistryLookup,
+            boundary: SignalOwnerOperationBoundaryForTest::BranchRegistryLookup,
             lookups: 0,
             retention_contacts: 0,
             target_contacts: 0,
             movements: 0,
         },
         AdvanceBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::TargetCellAdmission,
+            boundary: SignalOwnerOperationBoundaryForTest::TargetCellAdmission,
             lookups: 1,
             retention_contacts: 1,
             target_contacts: 0,
             movements: 0,
         },
         AdvanceBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::ExactBasisPreflight,
+            boundary: SignalOwnerOperationBoundaryForTest::ExactBasisPreflight,
             lookups: 1,
             retention_contacts: 1,
             target_contacts: 1,
             movements: 0,
         },
         AdvanceBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::BeforeCanonicalMovement,
+            boundary: SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
             lookups: 1,
             retention_contacts: 1,
             target_contacts: 1,
             movements: 0,
         },
         AdvanceBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::AfterCanonicalMovement,
+            boundary: SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement,
             lookups: 1,
             retention_contacts: 1,
             target_contacts: 1,
             movements: 1,
         },
         AdvanceBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::OutcomeConstruction,
+            boundary: SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
             lookups: 1,
             retention_contacts: 1,
             target_contacts: 1,
@@ -79,7 +79,7 @@ fn exercise_advance_boundary(expected: AdvanceBoundaryCost) {
     let derived = world.derived;
     let input_b = world.input_b;
     let result = run_paused(
-        &world.owner.operation_control(),
+        &world.owner.operation_control_for_test(),
         expected.boundary,
         move || {
             let serial_request = worth_execution::SerialRequest::from_memory(
@@ -134,7 +134,7 @@ fn exercise_advance_boundary(expected: AdvanceBoundaryCost) {
 
 #[derive(Clone, Copy)]
 struct ForkBoundaryCost {
-    boundary: SignalOwnerOperationBoundary,
+    boundary: SignalOwnerOperationBoundaryForTest,
     reservations: u64,
     target_contacts: u64,
     movements: u64,
@@ -149,7 +149,7 @@ struct ForkBoundaryCost {
 fn mutation_port_reaches_every_fork_boundary_before_returning_exact_custody() {
     for expected in [
         ForkBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::BranchRegistryReservation,
+            boundary: SignalOwnerOperationBoundaryForTest::BranchRegistryReservation,
             reservations: 0,
             target_contacts: 0,
             movements: 0,
@@ -160,7 +160,7 @@ fn mutation_port_reaches_every_fork_boundary_before_returning_exact_custody() {
             pending: 0,
         },
         ForkBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::ForkSourceCapture,
+            boundary: SignalOwnerOperationBoundaryForTest::ForkSourceCapture,
             reservations: 1,
             target_contacts: 1,
             movements: 0,
@@ -171,7 +171,7 @@ fn mutation_port_reaches_every_fork_boundary_before_returning_exact_custody() {
             pending: 1,
         },
         ForkBoundaryCost {
-            boundary: SignalOwnerOperationBoundary::ForkDestinationInstallation,
+            boundary: SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
             reservations: 1,
             target_contacts: 1,
             movements: 0,
@@ -192,7 +192,7 @@ fn exercise_fork_boundary(expected: ForkBoundaryCost) {
     let port = world.port.clone();
     let basis = world.source_basis.clone();
     let result = run_paused(
-        &world.owner.operation_control(),
+        &world.owner.operation_control_for_test(),
         expected.boundary,
         move || {
             port.fork_exact(

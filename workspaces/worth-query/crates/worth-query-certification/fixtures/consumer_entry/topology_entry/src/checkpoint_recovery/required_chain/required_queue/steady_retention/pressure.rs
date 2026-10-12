@@ -1,8 +1,6 @@
 //! A hundred cycles certify queued pressure, then reopening and retry.
 use super::*;
-use support::observation::capacity_region::{
-    settle as setup_settle, start as setup_start, Attempt,
-};
+use support::capacity_region::{settle as setup_settle, start as setup_start, Attempt};
 pub(super) fn run(custody_budget: usize, tight: bool) -> Attempt {
     let retained_positions = 8;
     let (application, invalidation) =

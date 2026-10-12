@@ -112,7 +112,7 @@ fn applied<const REUSE: bool, const MODE: u8>(redo: bool) -> OracleRun {
         assert_eq!(
             run.tree_runs
                 .iter()
-                .map(|r| r.metrics().recombined_nodes)
+                .map(|r| r.metrics_for_test().recombined_nodes)
                 .sum::<u128>(),
             super::super::tree::expected_nodes(&case.after, Some(&case.before))
         );

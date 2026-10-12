@@ -20,6 +20,14 @@ pub use execution_stop::{
 pub enum SignalError {
     ExecutionStopped(Box<SignalExecutionStop>),
     ExecutionPanicked,
+    /// Checked epoch admission refused an undeclared footprint before dispatch.
+    MissingBoundedInputsAtEpochAdmission {
+        node: NodeId,
+    },
+    /// A checked evaluator lacks the bounded input declaration it must consume.
+    MissingBoundedInputsAtEvaluation {
+        node: NodeId,
+    },
     RetainedStorageChargeOverflow,
     RetainedStorageChargeUnderflow,
     RetainedStorageHistoryUnavailable,
@@ -198,6 +206,10 @@ impl SignalError {
 impl fmt::Display for SignalError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::MissingBoundedInputsAtEpochAdmission { node } => write!(f,
+                "missing bounded inputs at epoch admission for {node}"),
+            Self::MissingBoundedInputsAtEvaluation { node } => write!(f,
+                "missing bounded inputs at checked evaluation for {node}"),
             Self::ExecutionPanicked => write!(f, "Signal execution scope panicked"),
             Self::RetainedStorageChargeOverflow => write!(f, "retained storage charge overflow"),
             Self::RetainedStorageChargeUnderflow => write!(f, "retained storage charge underflow"),
@@ -328,7 +340,9 @@ impl std::error::Error for SignalError {}
 impl ChargedBytes for SignalError {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
-            Self::ExecutionPanicked
+            Self::MissingBoundedInputsAtEpochAdmission { .. }
+            | Self::MissingBoundedInputsAtEvaluation { .. }
+            | Self::ExecutionPanicked
             | Self::RetainedStorageChargeOverflow
             | Self::RetainedStorageChargeUnderflow
             | Self::RetainedStorageHistoryUnavailable => 0,

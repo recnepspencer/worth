@@ -49,7 +49,6 @@ impl InvalidationEditAdmission {
     pub(in crate::domain_computation::primary_graph) fn charged_navigation(&self) -> u64 {
         self.with_totals(|totals| totals.navigation)
     }
-    #[cfg(feature = "test-query-execution-observer")]
     pub(in crate::domain_computation::primary_graph) fn charged_ordered_operations(&self) -> u64 {
         self.with_totals(|totals| totals.ordered_operations)
     }

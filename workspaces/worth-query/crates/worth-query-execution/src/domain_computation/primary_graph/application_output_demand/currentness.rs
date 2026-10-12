@@ -277,6 +277,7 @@ fn require_witnessed_output(
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
         Err(
             CompanionPreflightStop::WorkExhausted { .. }
+            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | CompanionPreflightStop::WorkCounterOverflow,
         ) => Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)),
         Err(_) => Err(denial(

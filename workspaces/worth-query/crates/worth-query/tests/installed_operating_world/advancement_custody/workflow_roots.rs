@@ -20,6 +20,7 @@ pub(super) fn run_setup() -> (worth_query::facade::runtime::WorthQueryWorkspace,
 
 #[test]
 fn workflow_stage_advance_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify("workflow advance", run_setup, |run, workspace| {
         match run.advance(
             "start",
@@ -40,6 +41,7 @@ fn workflow_stage_advance_opens_before_its_reader() {
 
 #[test]
 fn workflow_parallel_frontier_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "workflow parallel frontier",
         || {
@@ -76,6 +78,7 @@ fn workflow_parallel_frontier_opens_before_its_reader() {
 
 #[test]
 fn workflow_projection_promotion_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "workflow projection promotion",
         || {
@@ -99,6 +102,7 @@ fn workflow_projection_promotion_opens_before_its_reader() {
 
 #[test]
 fn workflow_projection_replacement_opens_before_its_reader() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "workflow projection replacement",
         || {

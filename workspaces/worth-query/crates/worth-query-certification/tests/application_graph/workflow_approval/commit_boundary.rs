@@ -24,6 +24,7 @@ mod guarded_program;
 
 #[test]
 fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     use worth_query_execution::publication_boundary::workflow_advance::WorthQueryWorkflowAdvanceAdapter;
 
     let (application, _, instance, proposal, approval, _) = approval_journey("applied", 960);
@@ -206,7 +207,6 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
 }
 
 // This court alone exercises the workflow owner below publication.
-#[cfg(feature = "request-lifetime-probes")]
 mod advancement_identity {
     //! The real workflow publication adapter accepts only its installed owner's phase.
     use super::super::super::document_retention_model::{
@@ -303,6 +303,7 @@ mod advancement_identity {
     }
     #[test]
     fn foreign_phase_cannot_advance_another_workflow() {
+        let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
         for placement in [
             Placement::Serial,
             Placement::Leased(std::num::NonZeroUsize::MIN),

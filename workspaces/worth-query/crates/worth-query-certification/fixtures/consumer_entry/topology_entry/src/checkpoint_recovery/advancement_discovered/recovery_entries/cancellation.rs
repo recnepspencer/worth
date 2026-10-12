@@ -1,11 +1,8 @@
 //! Cancellation at the consumer input boundary reaches the real recovery reader.
 use super::*;
-use std::{
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-    time::{Duration, Instant},
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
 };
 use worth_query_decl::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent,
@@ -43,10 +40,7 @@ fn cancellation_in_recovery_authorization_uses_the_opening_spelling() {
         let (live_scope, principal) = authenticate(&application);
         let source = source!(application.request(&principal, &live_scope));
         let cancellation = Arc::new(authentication::WorthQueryCancellationSource::new());
-        let scope = authentication::WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(30),
-            cancellation.token(),
-        );
+        let scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
         let encoded = Arc::new(AtomicBool::new(false));
         let intent = CancelOnInput {
             edit: crate::PlanarEdit(crate::PlanarMutation {

@@ -7,7 +7,7 @@ fn request_exhaustion_reports_the_declared_prefix_at_every_width() {
         for width in [None, Some(1), Some(2), Some(4)] {
             let cancellation = WorthQueryCancellationSource::new();
             let scope = WorthQueryRequestScope::new(
-                Instant::now() + Duration::from_secs(60),
+                Some(Instant::now() + Duration::from_secs(60)),
                 cancellation.token(),
             );
             let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), 1 << 24);

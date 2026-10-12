@@ -275,7 +275,6 @@ where
             ),
         );
     };
-    #[cfg(feature = "test-world-operation-control")]
     provider.after_application_attempt_registration_for_test();
     let commit_lane = application
         .primary_provider

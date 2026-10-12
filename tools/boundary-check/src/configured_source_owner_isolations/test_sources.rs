@@ -6,6 +6,7 @@
 //! declares a test. A file whose parent module file lies outside the owner
 //! roots is always production, since that parent may declare it.
 
+use std::borrow::Borrow;
 use std::collections::BTreeSet;
 
 #[cfg(test)]
@@ -25,13 +26,14 @@ struct Declaration {
 }
 
 impl TestSources {
-    pub(super) fn new(sources: &[(String, syn::File)]) -> Self {
+    pub(super) fn new<S: Borrow<syn::File>>(sources: &[(String, S)]) -> Self {
         let stems = sources
             .iter()
             .map(|(path, _)| module_stem(&normalized(path)).to_owned())
             .collect::<BTreeSet<_>>();
         let mut declarations = Vec::new();
         for (path, file) in sources {
+            let file = file.borrow();
             let path = normalized(path);
             let (directory, name) = path.rsplit_once('/').unwrap_or(("", path.as_str()));
             let file_stem = name.trim_end_matches(".rs");

@@ -1,7 +1,7 @@
 //! A fresh owner receipt is the observation source for commits and product publications.
 use super::{
-    WorthQueryAdvancementEvent, WorthQueryAdvancementEventKind as Kind,
-    WorthQueryAdvancementIdentity as Identity,
+    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest as Kind,
+    WorthQueryAdvancementIdentityForTest as Identity,
 };
 use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 thread_local! {
@@ -39,12 +39,12 @@ pub(in crate::domain_computation::primary_graph) fn record_commit(
                 intent: *binding.intent_identity(),
             }
         });
-    super::record_event(WorthQueryAdvancementEvent {
+    super::record_event(WorthQueryAdvancementEventForTest {
         kind: Kind::Commit,
         identity: identity.clone(),
     });
     // A fresh application's closed receipt certifies its landed product publication.
-    super::record_event(WorthQueryAdvancementEvent {
+    super::record_event(WorthQueryAdvancementEventForTest {
         kind: Kind::Publication,
         identity,
     });

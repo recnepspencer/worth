@@ -13,11 +13,11 @@ use worth_query_host::facade::application_installation::WorthQueryCheckpointCapt
 #[test]
 fn an_unreclaimed_root_reopens_under_the_same_custody_profile() {
     let _guard = checkpoint_recovery_test_guard();
-    support::observation::capacity_region::search(
+    support::capacity_region::search(
         "root checkpoint",
         1,
         128 * 1024,
-        support::observation::capacity_region::Goal::Hit,
+        support::capacity_region::Goal::Hit,
         run_root,
     )
     .require_hit("root checkpoint");
@@ -26,11 +26,11 @@ fn an_unreclaimed_root_reopens_under_the_same_custody_profile() {
 #[test]
 fn a_reclaimed_ready_keeps_its_native_prior_locator_across_checkpoint() {
     let _guard = checkpoint_recovery_test_guard();
-    support::observation::capacity_region::search(
+    support::capacity_region::search(
         "cached pair checkpoint",
         1,
         128 * 1024,
-        support::observation::capacity_region::Goal::Hit,
+        support::capacity_region::Goal::Hit,
         run_pair,
     )
     .require_hit("cached pair checkpoint");

@@ -86,7 +86,7 @@ impl Drop for WorthQueryUnpublishedIdempotencyReservation {
         if !self.armed {
             return;
         }
-        #[cfg(all(test, feature = "test-world-operation-control"))]
+        #[cfg(test)]
         UNWIND_RECOVERY_INSPECTIONS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let retained = !matches!(
             self.recovery.inspect_effects(&self.recovery_handle),
@@ -105,11 +105,11 @@ impl Drop for WorthQueryUnpublishedIdempotencyReservation {
     }
 }
 
-#[cfg(all(test, feature = "test-world-operation-control"))]
+#[cfg(test)]
 static UNWIND_RECOVERY_INSPECTIONS: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(0);
 
-#[cfg(all(test, feature = "test-world-operation-control"))]
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn unwind_recovery_inspection_count() -> u64 {
     UNWIND_RECOVERY_INSPECTIONS.load(std::sync::atomic::Ordering::Relaxed)
 }

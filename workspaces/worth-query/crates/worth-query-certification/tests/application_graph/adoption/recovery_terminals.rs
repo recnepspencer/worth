@@ -30,7 +30,7 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
         .owned_revision();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
+        Some(Instant::now() + Duration::from_secs(30)),
         cancellation.token(),
     );
     let principal = authenticate_operator(host.installed_schema(), &scope);
@@ -54,7 +54,7 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
     let pause = host
         .runtime()
         .world_operation_control_for_test()
-        .pause_before_product_compare(NonZeroUsize::new(1).unwrap());
+        .pause_before_product_compare_for_test(NonZeroUsize::new(1).unwrap());
 
     let outcome = std::thread::scope(|threads| {
         let recovering = threads.spawn(|| {

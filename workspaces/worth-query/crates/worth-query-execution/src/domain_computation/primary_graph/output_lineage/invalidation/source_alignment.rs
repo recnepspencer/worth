@@ -83,7 +83,6 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
     pub(super) fn recovery_state(&self) -> Arc<MarkState> {
         Arc::clone(&self.state)
     }
-    #[cfg(feature = "certification-invalidation-equivalence")]
     pub(super) fn into_full_verification_state(self) -> Arc<MarkState> {
         self.state
     }

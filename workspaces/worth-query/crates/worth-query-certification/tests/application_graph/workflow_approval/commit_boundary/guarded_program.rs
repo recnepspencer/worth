@@ -3,6 +3,7 @@ use super::*;
 
 #[test]
 fn guarded_action_cannot_commit_through_public_program_owner_without_workflow_authority() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let application =
         super::super::super::document_retention_model::host::publish_workflow_on_first_program();
     let runtime = application.runtime();

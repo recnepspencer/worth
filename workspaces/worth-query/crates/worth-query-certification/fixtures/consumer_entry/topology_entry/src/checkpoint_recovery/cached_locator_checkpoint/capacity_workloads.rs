@@ -1,6 +1,6 @@
 //! Capacity regions exercise the ordinary checkpoint lifecycle.
 use super::*;
-use support::observation::capacity_region::{settle as setup_settle, Attempt};
+use support::capacity_region::{settle as setup_settle, Attempt};
 use worth_query_host::facade::application_contribution::WorthQueryApplicationProducerBinding;
 pub(super) fn run_root(budget: usize) -> Attempt {
     let profile = WorthQueryOutputDemandResourceProfile::standard()
@@ -69,7 +69,7 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
     );
     assert_eq!(original.producer_contacts_in_this_demand(), 1);
     drop((first, original));
-    let mut final_initial = support::observation::capacity_region::start!(
+    let mut final_initial = support::capacity_region::start!(
         request
             .demand(PlanarFinalOutputDemand::new("anchor-a"))
             .start_dependent_in_program::<CheckpointProgram, FinalConnection>(&application),
@@ -103,7 +103,7 @@ pub(super) fn run_pair(budget: usize) -> Attempt {
     // not part of the custody law.
     let mut held = Vec::new();
     for key in ["anchor-isolated", "anchor-island"] {
-        let mut other = support::observation::capacity_region::start!(
+        let mut other = support::capacity_region::start!(
             request
                 .demand(PlanarOutputDemand::new(key))
                 .start_in_program::<CheckpointProgram, CheckpointRoot>(&application),

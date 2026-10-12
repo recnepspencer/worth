@@ -51,6 +51,7 @@ fn scratch_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial 
     use WorthQueryOutputDemandDenialKind as Kind;
     match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => denial(Kind::WorkBudgetExceeded),
         _ => denial(Kind::RetentionBudgetExceeded),
     }

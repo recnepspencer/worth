@@ -16,7 +16,6 @@ use crate::domain_computation::primary_graph::{
     SourceInvalidationOwner,
 };
 
-#[cfg(feature = "certification-invalidation-equivalence")]
 mod equivalence;
 mod pending_dependency;
 mod publication_recovery;
@@ -28,7 +27,6 @@ mod test_support;
 mod verification;
 pub(in crate::domain_computation::primary_graph) use pending_dependency::SelectedPendingConsumedOutput;
 pub(in crate::domain_computation::primary_graph::invariant_projection) use verification::map_admission_stop;
-#[cfg(feature = "certification-invalidation-equivalence")]
 pub(in crate::domain_computation::primary_graph) use verification::EvidenceView;
 pub(in crate::domain_computation::primary_graph) use verification::{
     ConsumedOutputVerification, ConsumedOutputVerificationStop,

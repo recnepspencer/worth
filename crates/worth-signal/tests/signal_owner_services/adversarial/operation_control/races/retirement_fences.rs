@@ -64,7 +64,7 @@ fn same_branch_advance_retire_fences_retention_then_retires_uncontended() {
     runtime
         .as_ref()
         .expect("the owner root remains live after the retirement fence")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the owner remains callable after the healthy follow-up");
 }
 
@@ -116,6 +116,6 @@ fn same_branch_restore_retire_fences_retention_then_retires_uncontended() {
     runtime
         .as_ref()
         .expect("the owner root remains live after the retirement fence")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the owner remains callable after the healthy follow-up");
 }

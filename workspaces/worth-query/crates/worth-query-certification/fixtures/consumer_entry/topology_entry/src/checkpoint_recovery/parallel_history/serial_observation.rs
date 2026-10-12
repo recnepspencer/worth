@@ -14,7 +14,8 @@ use worth_query_host::facade::primary_graph::{
     advancement_observations_on_this_thread_for_test as advancements,
     partitioned_computation_runs_on_this_thread_for_test as runs,
     place_managed_computations_on_this_thread_for_test as place,
-    WorthQueryAdvancementEventKind as EventKind, WorthQueryAdvancementIdentity as AppliedIdentity,
+    WorthQueryAdvancementEventKindForTest as EventKind,
+    WorthQueryAdvancementIdentityForTest as AppliedIdentity,
     WorthQueryExecutionPlacementForTest as Placement,
 };
 #[derive(Clone, Copy)]
@@ -106,11 +107,11 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
                 assert_eq!(
                     observed.applied,
                     [
-                        worth_query_host::facade::primary_graph::WorthQueryAdvancementEvent {
+                        worth_query_host::facade::primary_graph::WorthQueryAdvancementEventForTest {
                             kind: EventKind::Commit,
                             identity: identity.clone()
                         },
-                        worth_query_host::facade::primary_graph::WorthQueryAdvancementEvent {
+                        worth_query_host::facade::primary_graph::WorthQueryAdvancementEventForTest {
                             kind: EventKind::Publication,
                             identity
                         },
@@ -146,7 +147,7 @@ pub(super) fn observe(world: &World, posture: Posture) -> Observed {
         let reports = runs();
         use worth_query_host::facade::application_contribution::{
             WorthQueryPartitionedComputationFullCause as Cause,
-            WorthQueryPartitionedComputationRun as Run,
+            WorthQueryPartitionedComputationRunForTest as Run,
         };
         let [(Run::Full(Cause::Unretained), Some(report))] = reports.as_slice() else {
             panic!("exactly one full computation run per completed member: {reports:?}");

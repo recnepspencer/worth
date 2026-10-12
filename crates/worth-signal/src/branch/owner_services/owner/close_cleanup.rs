@@ -1,6 +1,6 @@
 use super::super::lifecycle_state::SignalOwnerCloseCoordinator;
 use super::{SignalOwner, OWNER_CLOSE_BATCH_SIZE};
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::branch::owner_services) enum SignalOwnerCloseBatchKind {
@@ -42,7 +42,7 @@ where
             if !registry_batch.is_empty() {
                 debug_assert!(registry_batch.cleaned_entries() <= OWNER_CLOSE_BATCH_SIZE);
                 self.counters.record_close_batch();
-                self.reach_operation_boundary(SignalOwnerOperationBoundary::OwnerCloseBatch);
+                self.reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OwnerCloseBatch);
                 observe_detached_batch(
                     SignalOwnerCloseBatchKind::Registry,
                     registry_batch.cleaned_entries(),
@@ -58,7 +58,7 @@ where
             }
             debug_assert!(metadata_batch.cleaned_entries() <= OWNER_CLOSE_BATCH_SIZE);
             self.counters.record_close_batch();
-            self.reach_operation_boundary(SignalOwnerOperationBoundary::OwnerCloseBatch);
+            self.reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OwnerCloseBatch);
             observe_detached_batch(
                 SignalOwnerCloseBatchKind::Metadata,
                 metadata_batch.cleaned_entries(),

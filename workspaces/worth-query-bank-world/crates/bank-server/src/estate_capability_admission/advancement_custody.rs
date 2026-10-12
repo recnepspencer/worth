@@ -40,6 +40,7 @@ enum Entry {
 }
 #[test]
 fn elevation_entries_refuse_before_reading_at_both_placements() {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for entry in [Entry::Request, Entry::Approval, Entry::Close] {

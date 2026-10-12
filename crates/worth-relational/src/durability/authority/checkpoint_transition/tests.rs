@@ -183,7 +183,7 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
 fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
     let (mut runtime, authority) = recovered_world();
     let prepared = candidate(&runtime, "deferred-transition");
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
         .commit_checkpoint_transition(authority, prepared)
@@ -255,7 +255,7 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
 fn repair_carries_performed_successor_even_after_owner_repair_and_later_movement() {
     let (mut runtime, authority) = recovered_world();
     let prepared = candidate(&runtime, "captured-successor");
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
         .commit_checkpoint_transition(authority, prepared)

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
-use worth_signal::facade::branch::SignalOwnerOperationBoundary;
+use worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest;
 
 use crate::history::CompositeRuntimeWorldCommit;
 use crate::retention::component_obligation::ObservationRetentionObligation;
@@ -67,9 +67,10 @@ fn parked_real_batch_has_one_claimant_and_actual_joiners_with_shared_success() {
     let owner = Arc::new(fixture.owner.clone());
     let control = fixture
         ._signal_runtime
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("real Signal owner exposes operation control");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     let before_relational = fixture.relational_runtime.branch_basis_cost_counters();
     let before_signal = fixture
         .signal_port
@@ -130,10 +131,11 @@ fn parked_real_batch_shares_denial_rolls_back_and_retries_cleanly() {
     let owner = Arc::new(fixture.owner.clone());
     let control = fixture
         ._signal_runtime
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("real Signal owner exposes operation control");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
-    control.inject_panic_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     let before_relational = fixture.relational_runtime.branch_basis_cost_counters();
     let before_signal = fixture
         .signal_port
@@ -224,9 +226,9 @@ fn reserved_pair_owner_denial_preserves_credit_without_unwind_panic() {
     let fixture = real_fixture(4, 4);
     let control = fixture
         ._signal_runtime
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("real Signal owner exposes operation control");
-    control.inject_panic_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     let reservation = fixture
         .owner
         .reserve_product_publication_pair()
@@ -277,9 +279,10 @@ fn reclaim_skips_husk_while_batch_reacquisition_flight_is_active() {
 
     let control = fixture
         ._signal_runtime
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("real Signal owner exposes operation control");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     let batch = start_claimant(Arc::clone(&owner), Arc::clone(&root));
     assert!(pause.wait_until_reached(Duration::from_secs(5)));
 

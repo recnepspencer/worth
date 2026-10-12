@@ -156,7 +156,7 @@ fn keyed_telemetry_stays_coherent_under_mixed_hit_and_miss_workload() {
 }
 
 #[test]
-#[ignore = "stress coverage for keyed-cardinality and memoization churn"]
+#[ignore = "scheduled stress; isolated debug trial exceeded the five-minute command bound"]
 fn stress_thousands_of_keyed_lookups_and_memo_keys() {
     // This standalone caller declares the operational serial memory policy.
     let serial_request = worth_execution::SerialRequest::from_memory(

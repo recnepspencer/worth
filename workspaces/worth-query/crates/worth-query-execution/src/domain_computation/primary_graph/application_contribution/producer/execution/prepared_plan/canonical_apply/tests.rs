@@ -24,7 +24,7 @@ fn every_compute_precedes_owner_completion_and_failure_destroys_the_suffix() {
     for failure in 0..3 {
         let cancellation = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let execution = QueryRequestExecution::open(

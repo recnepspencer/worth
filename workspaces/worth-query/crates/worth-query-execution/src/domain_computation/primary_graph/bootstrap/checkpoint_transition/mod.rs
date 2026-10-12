@@ -99,3 +99,5 @@ fn denial(subject: impl Into<String>) -> WorthQueryPrimaryGraphInstallationDenia
         subject,
     )
 }
+
+mod certification_controls;

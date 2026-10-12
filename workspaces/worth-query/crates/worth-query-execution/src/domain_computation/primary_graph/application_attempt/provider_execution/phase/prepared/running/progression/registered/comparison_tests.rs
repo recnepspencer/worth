@@ -23,6 +23,9 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
                 &foreign.application.primary_provider,
             );
         let _ = self.staged.abort();
-        assert_eq!(world.application.provider_session_resource_count(), 0);
+        assert_eq!(
+            world.application.provider_session_resource_count_for_test(),
+            0
+        );
     }
 }

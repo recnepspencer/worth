@@ -4,6 +4,8 @@ use super::*;
 
 #[test]
 fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let template = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);
@@ -25,11 +27,11 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert_eq!(
-        next.report.metrics().combine_calls,
+        next.report.metrics_for_test().combine_calls,
         u128::from(failed_entry + 64)
     );
     assert_eq!(
-        next.report.metrics().recombined_nodes,
+        next.report.metrics_for_test().recombined_nodes,
         u128::from(first_depth + 32)
     );
     assert_eq!(*next.outcome.unwrap().result(), 35);
@@ -37,6 +39,8 @@ fn successful_edits_failed_attempt_and_rebuild_are_all_reported() {
 
 #[test]
 fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebuild() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     use crate::domain_computation::primary_graph::application_contribution::request_execution::test_policy;
     use std::num::NonZeroUsize;
     let template = template();
@@ -78,18 +82,20 @@ fn edit_memory_refusal_keeps_prior_work_and_releases_transient_hold_before_rebui
         TreeRun::Rebuilt(Rebuild::EditMemory, _)
     ));
     assert!(
-        next.report.metrics().recombined_nodes > 32,
+        next.report.metrics_for_test().recombined_nodes > 32,
         "some edits ran before rebuilding"
     );
     assert_eq!(
-        next.report.metrics().combine_calls,
-        2 * next.report.metrics().recombined_nodes
+        next.report.metrics_for_test().combine_calls,
+        2 * next.report.metrics_for_test().recombined_nodes
     );
     assert_eq!(*next.outcome.unwrap().result(), 64);
 }
 
 #[test]
 fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let template = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);
@@ -132,8 +138,8 @@ fn a_failed_edit_followed_by_a_stopped_rebuild_preserves_both_attempts() {
         TreeRun::Rebuilt(Rebuild::ReducerPanicked, _)
     ));
     assert!(next.outcome.is_err());
-    assert_eq!(next.report.metrics().combine_calls, 2);
-    assert_eq!(next.report.metrics().recombined_nodes, 0);
+    assert_eq!(next.report.metrics_for_test().combine_calls, 2);
+    assert_eq!(next.report.metrics_for_test().recombined_nodes, 0);
     PANIC_AT.set(None);
 }
 
@@ -152,6 +158,8 @@ fn phase_panicking(left: &u64, right: &u64) -> u64 {
 
 #[test]
 fn a_work_stopped_rebuild_reports_the_work_it_entered() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let template = template();
     let keys: Vec<_> = (0..32).map(Id::new).collect();
     let retained = retained(&template, &keys);
@@ -168,5 +176,5 @@ fn a_work_stopped_rebuild_reports_the_work_it_entered() {
         TreeRun::Rebuilt(Rebuild::WorkCeiling, _)
     ));
     assert!(next.outcome.is_err());
-    assert!(next.report.metrics().combine_calls > 0);
+    assert!(next.report.metrics_for_test().combine_calls > 0);
 }

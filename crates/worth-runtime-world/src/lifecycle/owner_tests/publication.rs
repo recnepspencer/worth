@@ -4,13 +4,11 @@ use worth_relational::facade::mvcc::RelationalTransactionIntent;
 
 use crate::branch::reference_test_fixture::{self, RealReferenceFixture};
 use crate::branch::ProductBranchObservation;
-#[cfg(feature = "test-operation-control")]
 use crate::branch::ProductBranchReferenceSnapshot;
 use crate::lifecycle::{
     RuntimeWorldObservationService, RuntimeWorldOwnerExecutionService,
     RuntimeWorldPreparationService, RuntimeWorldProductPublicationService,
 };
-#[cfg(feature = "test-operation-control")]
 use crate::publication::{
     CompositeAttemptProgress, RelationalAttemptProgress, SignalAttemptProgress,
 };
@@ -18,7 +16,6 @@ use crate::publication::{
     CompositeLateCancellationPosture, CompositePublicationIntent, OwnerExecutionOutcome,
     PreparedCompositePublicationWithoutSignal, RuntimeWorldPublicationOutcome,
 };
-#[cfg(feature = "test-operation-control")]
 use crate::recovery::{ProductUnpublishedCause, ProductUnpublishedRetentionPosture};
 
 pub(super) type TestOwner = super::super::RuntimeWorldOwnerRoot<(), (), (), (), ()>;
@@ -31,7 +28,6 @@ pub(super) fn setup() -> (
     setup_with_budgets(8, 8, super::bootstrap_budgets())
 }
 
-#[cfg(feature = "test-durability-faults")]
 pub(super) fn setup_with_retention_capacity(
     unique_pin_limit: u64,
     reservation_limit: u64,
@@ -186,7 +182,6 @@ fn complete_ready_publish_path_derives_and_installs_the_successor_snapshot() {
 /// One resolved post-effect retention denial: the record it installed is in the
 /// `ReacquisitionPending` posture, holding a reserved component pin pair instead
 /// of issued pins.
-#[cfg(feature = "test-operation-control")]
 pub(super) struct PendingRetentionDenial {
     /// Keeps the component fixture carrying the injected Signal retention panic
     /// alive for as long as the owner under proof.
@@ -198,7 +193,6 @@ pub(super) struct PendingRetentionDenial {
 
 /// Drive one publication past its component effect and deny its post-effect
 /// retention reacquisition, which is the only way to reach the pending posture.
-#[cfg(feature = "test-operation-control")]
 pub(super) fn resolve_post_effect_retention_denial() -> PendingRetentionDenial {
     let (mut fixture, owner, expected) = setup();
     let cancellation = crate::publication::RuntimeWorldCancellationSource::new();
@@ -247,7 +241,6 @@ pub(super) fn resolve_post_effect_retention_denial() -> PendingRetentionDenial {
     }
 }
 
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn post_effect_retention_denial_installs_recovery_and_preserves_retry_capacity() {
     let PendingRetentionDenial {
@@ -305,7 +298,6 @@ fn post_effect_retention_denial_installs_recovery_and_preserves_retry_capacity()
 
 /// The reacquisition capacity a pending record keeps reserved for its retry:
 /// one exact pin pair and one in-flight acquisition pair.
-#[cfg(feature = "test-operation-control")]
 #[track_caller]
 fn assert_retry_capacity(owner: &TestOwner, expected: usize) {
     assert_eq!(
@@ -320,7 +312,6 @@ fn assert_retry_capacity(owner: &TestOwner, expected: usize) {
         expected
     );
 }
-#[cfg(feature = "test-operation-control")]
 fn cell_snapshot(owner: &TestOwner) -> ProductBranchReferenceSnapshot {
     owner
         .state

@@ -23,6 +23,7 @@ impl Drop for Restore {
 }
 #[test]
 fn wake_pump_refuses_before_clock_truth_reads_or_operation_reentry() {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = CourtroomWorld::publish("ready");
     let mut port = world.conditional_clock();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {

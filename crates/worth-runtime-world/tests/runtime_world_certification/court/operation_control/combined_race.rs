@@ -1,10 +1,10 @@
 use super::*;
 use std::sync::Arc;
 use worth_relational::facade::mvcc::{
-    RelationalOperationControl, RelationalPatchPositionReservationGate,
+    RelationalOperationControl, RelationalPatchPositionReservationGateForTest,
 };
 
-struct ReleaseRelational(Arc<RelationalPatchPositionReservationGate>);
+struct ReleaseRelational(Arc<RelationalPatchPositionReservationGateForTest>);
 impl Drop for ReleaseRelational {
     fn drop(&mut self) {
         self.0.open();
@@ -23,13 +23,13 @@ fn combined_loser_retains_relational_movement_without_calling_signal_after_head_
     let root = court.bootstrap();
     let token = RuntimeWorldCancellationSource::new().token();
     let (reached, received) = mpsc::sync_channel(1);
-    let gate = Arc::new(RelationalPatchPositionReservationGate::default());
+    let gate = Arc::new(RelationalPatchPositionReservationGateForTest::default());
     let candidate = court.records.candidate_with_control(
         root.basis().relational_basis(),
         "grain",
         "5",
         RelationalOperationControl::uninterrupted()
-            .with_patch_position_reservation_pause(reached, Arc::clone(&gate)),
+            .with_patch_position_reservation_pause_for_test(reached, Arc::clone(&gate)),
     );
     let combined = court
         .world

@@ -5,7 +5,8 @@ use std::{collections::BTreeMap, num::NonZeroUsize};
 use worth_query_host::facade::primary_graph::{
     advancement_observations_on_this_thread_for_test as observations,
     place_managed_computations_on_this_thread_for_test as place,
-    WorthQueryAdvancementEventKind as Kind, WorthQueryAdvancementIdentity as Identity,
+    WorthQueryAdvancementEventKindForTest as Kind,
+    WorthQueryAdvancementIdentityForTest as Identity,
     WorthQueryExecutionPlacementForTest as Placement,
 };
 struct Restore(Placement);
@@ -133,7 +134,7 @@ fn run(workers: usize) -> Vec<String> {
         outcome.as_ref().err()
     );
     let commits = |records: Vec<
-        worth_query_host::facade::primary_graph::WorthQueryAdvancementObservation,
+        worth_query_host::facade::primary_graph::WorthQueryAdvancementObservationForTest,
     >| {
         records
             .into_iter()

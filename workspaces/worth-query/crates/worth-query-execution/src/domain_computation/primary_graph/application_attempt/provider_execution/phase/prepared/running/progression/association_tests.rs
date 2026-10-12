@@ -220,7 +220,10 @@ fn finish_peer(
         (expected, actual) => panic!("peer must reach {expected:?}, got {actual:?}"),
     }
     assert_eq!(world.invariant.active_snapshot_count(), baseline);
-    assert_eq!(world.application.provider_session_resource_count(), 0);
+    assert_eq!(
+        world.application.provider_session_resource_count_for_test(),
+        0
+    );
 }
 
 #[derive(Clone, Copy, Debug)]

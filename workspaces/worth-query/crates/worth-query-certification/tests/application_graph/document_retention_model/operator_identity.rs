@@ -88,7 +88,7 @@ pub fn authenticate_operator(
 pub fn request_scope() -> WorthQueryRequestScope {
     let cancellation = WorthQueryCancellationSource::new();
     WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
+        Some(Instant::now() + Duration::from_secs(30)),
         cancellation.token(),
     )
 }

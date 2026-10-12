@@ -189,7 +189,6 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
         else {
             panic!("fresh exact native comparison grants live clearing");
         };
-        #[cfg(feature = "certification-invalidation-equivalence")]
         let diagnostic_image = owner
             .capture_full_verification(
                 runtime,
@@ -201,7 +200,6 @@ fn native_reverification_clears_only_the_verified_live_image_with_admitted_work(
         owner
             .clear_verified_dirty(verified, &mut admission)
             .unwrap();
-        #[cfg(feature = "certification-invalidation-equivalence")]
         {
             diagnostic_image
                 .fence_semantic_image(&OrdSet::unit(identity.clone()), &mut owner.edit_admission())

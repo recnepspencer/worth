@@ -298,7 +298,6 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
             .sum()
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(super) fn active_attempt_count(&self) -> usize {
         self.attempts.len()
     }

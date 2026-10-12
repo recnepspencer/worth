@@ -138,7 +138,6 @@ pub(super) fn commit(
         .map_err(index_preparation_stop)?;
     let managed_views =
         managed_views::prepare(provider, &product, before.as_snapshot(), &candidate);
-    #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(
         execution,

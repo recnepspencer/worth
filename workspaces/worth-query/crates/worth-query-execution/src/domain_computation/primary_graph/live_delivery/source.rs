@@ -339,7 +339,6 @@ impl WorthQueryLiveDeliverySource {
         state.subscriber_count
     }
 
-    #[cfg(feature = "test-world-operation-control")]
     pub(in crate::domain_computation::primary_graph) fn active_subscriber_count(&self) -> usize {
         self.state
             .lock()

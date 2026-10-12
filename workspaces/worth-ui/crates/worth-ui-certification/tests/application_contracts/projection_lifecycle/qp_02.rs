@@ -75,8 +75,10 @@ fn failed_cancelled_retried_superseded_and_denied_remain_distinct() {
 fn assert_failed_preserves_pending() {
     let (mut failed, _) = ScalarLifecycleWorld::standard(NodeId::new(3131, 0), "Failed");
     let pending = initial_fact(&mut failed);
-    let rejected =
-        worth_runtime_bridge::certification::reject_async_request(&failed.bridge, &failed.request);
+    let rejected = worth_runtime_bridge::certification_for_test::reject_async_request_for_test(
+        &failed.bridge,
+        &failed.request,
+    );
     let failed_receipt = failed.advance(
         BridgeMixedCauseOrderingInput::AsyncDeniedCompletion(rejected),
         Some(pending),
@@ -91,10 +93,11 @@ fn assert_failed_preserves_pending() {
 fn assert_cancelled_and_retried_preserve_pending() {
     let mut retried = ScalarLifecycleWorld::retryable(NodeId::new(3132, 0), "Retry");
     let pending = initial_fact(&mut retried);
-    let (cancelled, retry) = worth_runtime_bridge::certification::cancel_and_retry_async_request(
-        &retried.bridge,
-        &retried.request,
-    );
+    let (cancelled, retry) =
+        worth_runtime_bridge::certification_for_test::cancel_and_retry_async_request_for_test(
+            &retried.bridge,
+            &retried.request,
+        );
     let cancelled = retried.advance(
         BridgeMixedCauseOrderingInput::AsyncDeniedCompletion(cancelled),
         Some(pending),
@@ -119,10 +122,11 @@ fn assert_cancelled_and_retried_preserve_pending() {
 fn assert_superseded_preserves_pending() {
     let (mut superseded, _) = ScalarLifecycleWorld::standard(NodeId::new(3133, 0), "Superseded");
     let pending = initial_fact(&mut superseded);
-    let (denied, _replacement) = worth_runtime_bridge::certification::supersede_async_request(
-        &superseded.bridge,
-        &superseded.request,
-    );
+    let (denied, _replacement) =
+        worth_runtime_bridge::certification_for_test::supersede_async_request_for_test(
+            &superseded.bridge,
+            &superseded.request,
+        );
     let superseded_receipt = superseded.advance(
         BridgeMixedCauseOrderingInput::AsyncDeniedCompletion(denied),
         Some(pending),
@@ -137,10 +141,11 @@ fn assert_superseded_preserves_pending() {
 fn assert_denied_preserves_pending() {
     let (mut denied, _) = ScalarLifecycleWorld::standard(NodeId::new(3134, 0), "Denied");
     let pending = initial_fact(&mut denied);
-    let oversized = worth_runtime_bridge::certification::deny_oversized_async_completion(
-        &denied.bridge,
-        &denied.request,
-    );
+    let oversized =
+        worth_runtime_bridge::certification_for_test::deny_oversized_async_completion_for_test(
+            &denied.bridge,
+            &denied.request,
+        );
     let denied_receipt = denied.advance(
         BridgeMixedCauseOrderingInput::AsyncDeniedCompletion(oversized),
         Some(pending),
@@ -203,7 +208,7 @@ fn assert_basis_drift() {
         Some(current),
     );
     let (revalidating, _) = revalidating.into_fact_and_predecessor();
-    let late = worth_runtime_bridge::certification::observe_late_async_completion(
+    let late = worth_runtime_bridge::certification_for_test::observe_late_async_completion_for_test(
         &world.bridge,
         &world.request,
     );
@@ -224,10 +229,11 @@ fn assert_basis_drift() {
 fn assert_generation_drift() {
     let mut world = ScalarLifecycleWorld::retryable(NodeId::new(3137, 0), "Generation");
     let pending = initial_fact(&mut world);
-    let (cancelled, retry) = worth_runtime_bridge::certification::cancel_and_retry_async_request(
-        &world.bridge,
-        &world.request,
-    );
+    let (cancelled, retry) =
+        worth_runtime_bridge::certification_for_test::cancel_and_retry_async_request_for_test(
+            &world.bridge,
+            &world.request,
+        );
     let cancelled = world.advance(
         BridgeMixedCauseOrderingInput::AsyncDeniedCompletion(cancelled),
         Some(pending),
@@ -248,7 +254,7 @@ fn assert_generation_drift() {
         UiProjectionUnavailableKind::Pending,
     );
     let (_, pending) = retried.into_fact_and_predecessor();
-    let late = worth_runtime_bridge::certification::observe_late_async_completion(
+    let late = worth_runtime_bridge::certification_for_test::observe_late_async_completion_for_test(
         &world.bridge,
         &world.request,
     );

@@ -6,7 +6,7 @@ use crate::facade::mvcc::{
     BranchBoundRelationalTransaction, PreparedRelationalCommitCandidate,
     RelationalOperationControl, RelationalTransactionIntent,
 };
-use crate::runtime::RelationalPatchPositionReservationGate;
+use crate::runtime::RelationalPatchPositionReservationGateForTest;
 use crate::tests::support::*;
 
 /// Failure budget for the pause handshake. Ordering comes from the seam signal,
@@ -50,13 +50,13 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         .expect("the deferred branch has an observable reference");
 
     let (reached, reached_signal) = std::sync::mpsc::sync_channel::<()>(1);
-    let release = Arc::new(RelationalPatchPositionReservationGate::default());
+    let release = Arc::new(RelationalPatchPositionReservationGateForTest::default());
     let winner = prepared_write_on(
         &runtime,
         "winner",
         "contention-winner",
         RelationalOperationControl::uninterrupted()
-            .with_patch_position_reservation_pause(reached, Arc::clone(&release)),
+            .with_patch_position_reservation_pause_for_test(reached, Arc::clone(&release)),
     );
     let winner_cell = winner.publication_cell_for_test();
     let loser = prepared_write_on(

@@ -156,7 +156,7 @@ where
     A: BankHttpApplicationAuthenticator,
 {
     let request = &job.request;
-    let scope = WorthQueryRequestScope::new(request.deadline, job.cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token());
     let principal = match application
         .authenticate(request.credential.clone(), &scope)
         .await
@@ -229,7 +229,7 @@ where
     A: BankHttpApplicationAuthenticator,
 {
     let request = &job.request.page;
-    let scope = WorthQueryRequestScope::new(request.deadline, job.cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), job.cancellation.token());
     let principal = match application
         .authenticate(request.credential.clone(), &scope)
         .await

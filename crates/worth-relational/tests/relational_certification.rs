@@ -40,15 +40,12 @@ mod mvcc_archive_retention;
 mod mvcc_branch_fork_fixture;
 #[path = "relational_certification/mvcc/cancellation.rs"]
 mod mvcc_cancellation;
-#[cfg(feature = "test-operation-control")]
 #[path = "relational_certification/mvcc/cancellation_publication_boundaries.rs"]
 mod mvcc_cancellation_publication_boundaries;
 #[path = "relational_certification/mvcc/model_sequences.rs"]
 mod mvcc_model_sequences;
-#[cfg(feature = "test-operation-control")]
 #[path = "relational_certification/mvcc/owner_phase_locality.rs"]
 mod mvcc_owner_phase_locality;
-#[cfg(feature = "test-operation-control")]
 #[path = "relational_certification/mvcc/owner_phase_locality_court.rs"]
 mod mvcc_owner_phase_locality_court;
 #[path = "relational_certification/mvcc/preparation_owner.rs"]
@@ -123,7 +120,6 @@ mod root_sharing_observation;
 mod scale_invariant_admission;
 #[path = "relational_certification/schema_contracts.rs"]
 mod schema_contracts;
-#[cfg(feature = "test-operation-control")]
 #[path = "relational_certification/schema_transition_cancellation.rs"]
 mod schema_transition_cancellation;
 #[path = "relational_certification/schema_transition_replay.rs"]

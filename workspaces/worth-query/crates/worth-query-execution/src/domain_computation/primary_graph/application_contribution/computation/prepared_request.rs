@@ -32,7 +32,6 @@ impl PreparedCompute {
         }
     }
 
-    #[cfg(feature = "test-query-execution-observer")]
     pub(in crate::domain_computation::primary_graph) fn observe(
         self,
         before: impl Fn() + Send + Sync + 'static,

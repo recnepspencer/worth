@@ -15,7 +15,6 @@ impl WorthQueryPrimaryGraphProvider {
     }
 
     /// Exact completed evidence entries retained for idempotency.
-    #[cfg(feature = "test-query-execution-observer")]
     pub(in crate::domain_computation::primary_graph) fn completed_evidence_retained(
         &self,
     ) -> usize {

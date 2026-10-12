@@ -38,7 +38,6 @@ where
 {
     /// Capture the same native truth with no derived Query records, so the
     /// certification reference must execute a fresh producer computation.
-    #[cfg(feature = "test-query-execution-observer")]
     #[doc(hidden)]
     pub fn capture_native_truth_checkpoint_for_test(
         &self,

@@ -53,7 +53,7 @@ impl authentication::WorthQueryAuthenticationAdapter for WorthUiLocalSourceAdapt
 pub(super) fn request_scope() -> authentication::WorthQueryRequestScope {
     let cancellation = authentication::WorthQueryCancellationSource::new();
     authentication::WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
+        Some(Instant::now() + Duration::from_secs(120)),
         cancellation.token(),
     )
 }

@@ -45,6 +45,8 @@ impl SourceInvalidationOwner {
         resources: WorthQueryInvalidationResources,
         runtime_instance_id: u64,
     ) -> Self {
+        // Law 2, scope: this runtime owns its oracle and native recorder arms.
+        resources.attach_runtime_observations();
         Self {
             runtime_instance_id,
             resources,

@@ -41,7 +41,6 @@ pub(super) struct InboundWorld {
     invariant: WorthQueryApplicationInvariantProjectionAuthority<InboundTestSchema>,
     pub verifier: WorthQueryInboundVerifierHandle,
 }
-#[cfg(feature = "test-world-operation-control")]
 mod cost;
 mod installation;
 mod wide;

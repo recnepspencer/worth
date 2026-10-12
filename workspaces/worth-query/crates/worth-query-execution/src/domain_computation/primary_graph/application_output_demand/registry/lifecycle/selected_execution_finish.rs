@@ -285,9 +285,9 @@ fn empty_admission_denial(
 ) -> WorthQueryOutputDemandDenial {
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
     let kind = match stop {
-        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
-        }
+        Stop::WorkExhausted { .. }
+        | Stop::WorkExhaustedWithoutRequirement { .. }
+        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
         _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
     };
     WorthQueryOutputDemandDenial::new(kind, "")

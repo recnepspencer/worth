@@ -2,7 +2,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::mpsc;
 use std::thread;
 
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::owner_services::{
     SignalOwnerCancellationSource, SignalOwnerServiceCostSnapshot,
 };
@@ -19,14 +19,14 @@ use super::super::runtime_root::runtime_with_two_branches_from_graph;
 #[test]
 fn fork_post_capture_faults_preserve_performed_destination_and_release_source_custody() {
     for boundary in [
-        SignalOwnerOperationBoundary::ForkDestinationInstallation,
-        SignalOwnerOperationBoundary::OutcomeConstruction,
+        SignalOwnerOperationBoundaryForTest::ForkDestinationInstallation,
+        SignalOwnerOperationBoundaryForTest::OutcomeConstruction,
     ] {
         exercise_fork_post_install_fault(boundary);
     }
 }
 
-fn exercise_fork_post_install_fault(boundary: SignalOwnerOperationBoundary) {
+fn exercise_fork_post_install_fault(boundary: SignalOwnerOperationBoundaryForTest) {
     // This standalone caller declares the operational serial memory policy.
     let serial_request = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(
@@ -90,8 +90,12 @@ fn exercise_fork_post_install_fault(boundary: SignalOwnerOperationBoundary) {
     let ledger_before = owner.retention_ledger_observation();
     let cost_before = owner.cost_snapshot();
     let failed_destination_id = SignalBranchId(source.id.0.max(sibling.id.0) + 1);
-    let pause = owner.operation_control().arm_pause_once(boundary);
-    owner.operation_control().inject_panic_once(boundary);
+    let pause = owner
+        .operation_control_for_test()
+        .arm_pause_once_for_test(boundary);
+    owner
+        .operation_control_for_test()
+        .inject_panic_once_for_test(boundary);
     let (fault_tx, fault_rx) = mpsc::sync_channel(1);
     let fault_owner = owner.clone();
     let fault_cell = source_cell.clone();
@@ -260,8 +264,8 @@ fn fork_source_capture_fault_quarantines_only_source_and_releases_destination_cu
     let ledger_before = owner.retention_ledger_observation();
     let cost_before = owner.cost_snapshot();
     owner
-        .operation_control()
-        .inject_panic_once(SignalOwnerOperationBoundary::ForkSourceCapture);
+        .operation_control_for_test()
+        .inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::ForkSourceCapture);
 
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ = owner

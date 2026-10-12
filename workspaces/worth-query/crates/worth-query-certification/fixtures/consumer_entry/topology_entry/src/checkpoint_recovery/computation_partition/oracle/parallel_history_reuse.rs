@@ -4,7 +4,7 @@ use super::*;
 use crate::checkpoint_recovery::parallel_history::reuse_cases::ReuseFacts;
 use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationFullCause as Cause,
-    WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 mod computation;
 mod declaration;

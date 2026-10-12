@@ -13,7 +13,7 @@ use super::{
     SignalBranchCellAdmissionDenial, SignalBranchCellRetirementPosture, SignalBranchCellWork,
     SignalBranchExecutionCell, CELL_LIVE, CELL_RETIRED, CELL_RETIRING,
 };
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 
 pub(crate) struct SignalBranchRetirementCellOutcome {
     pub(crate) receipt: SignalBranchRetirementReceipt,
@@ -79,7 +79,8 @@ where
             lifecycle_posture: &self.lifecycle_posture,
             retired: false,
         };
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::ExactBasisPreflight);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
         if plan.branch().id != state.branch_id()
             || state.observation().map_or(true, |live| {
                 live.compare(plan.admitted_basis().observation()).is_err()
@@ -88,7 +89,8 @@ where
             return Err(SignalBranchRetirementDenial::CanonicalBasisMismatch);
         }
         before_movement();
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
         let permit = cancellation
             .preflight_movement()
             .map_err(|_| SignalBranchRetirementDenial::CancelledNoMovement)?;
@@ -135,7 +137,8 @@ where
         self.lifecycle_posture
             .store(CELL_RETIRED, Ordering::Release);
         posture.retired = true;
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::AfterCanonicalMovement);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
         after_movement();
         Ok(SignalBranchRetirementCellOutcome { receipt })
     }

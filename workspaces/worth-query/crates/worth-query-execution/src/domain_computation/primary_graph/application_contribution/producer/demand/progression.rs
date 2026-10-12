@@ -249,7 +249,6 @@ where
         let stop = match advance(demand, &mut admission, &performed) {
             Ok(progress) => {
                 demand.settled |= matches!(progress, WorthQueryOutputDemandAdvance::Settled(_));
-                #[cfg(feature = "test-query-execution-observer")]
                 caller_pass_observation::observe_request_work(&admission);
                 return Ok(progress);
             }
@@ -265,7 +264,6 @@ where
             stop
         };
         let stop = self.caller_custody_stop(demand, stop, &mut admission);
-        #[cfg(feature = "test-query-execution-observer")]
         caller_pass_observation::observe_request_work(&admission);
         Err(stop)
     }
@@ -315,5 +313,4 @@ pub(super) fn denial(
     WorthQueryOutputDemandDenial::new(kind, subject)
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod caller_pass_observation;

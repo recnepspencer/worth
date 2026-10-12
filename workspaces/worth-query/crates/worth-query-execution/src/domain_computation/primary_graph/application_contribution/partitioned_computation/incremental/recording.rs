@@ -14,7 +14,7 @@ use super::super::routing::ComputationPartitionRouting;
 use super::observed::observe;
 use super::retained::{
     CompletedComputationRun, RetainedCall, RetainedPartition, RetainedPartitions,
-    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRun,
+    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRunForTest,
 };
 use super::{CompletedComputationRetention, PriorAbsence, RetainedBasisToken};
 use crate::domain_computation::primary_graph::invariant_projection::ComputationCallCharge;
@@ -128,7 +128,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         Reduced: Send + Sync + ChargedBytes + 'static,
     {
         observe(
-            WorthQueryPartitionedComputationRun::Full(cause),
+            WorthQueryPartitionedComputationRunForTest::Full(cause),
             Some(report),
         );
         let accounted = kernel_units
@@ -185,7 +185,7 @@ pub(in super::super) fn observe_unretained(
     report: ExecutionReport,
 ) {
     observe(
-        WorthQueryPartitionedComputationRun::Full(cause),
+        WorthQueryPartitionedComputationRunForTest::Full(cause),
         Some(report),
     );
 }

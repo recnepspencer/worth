@@ -151,3 +151,15 @@ fn installed_query_rejects_same_runtime_package_identity_drift() {
         WorthQueryApplicationQueryInstallationDenialKind::PackageIdentityChanged
     );
 }
+
+#[test]
+fn certification_indexes_are_lazy_and_preserve_installed_authority() {
+    let schema = installed_schema();
+    assert!(!schema.query_catalog.certification_maps_are_initialized());
+    let query = schema.certification_query(query_reference()).unwrap();
+    assert!(schema.query_catalog.certification_maps_are_initialized());
+    schema.validate_installed_query(&query).unwrap();
+    let again = schema.certification_query(query_reference()).unwrap();
+    assert_eq!(query.identity(), again.identity());
+    schema.validate_installed_query(&again).unwrap();
+}

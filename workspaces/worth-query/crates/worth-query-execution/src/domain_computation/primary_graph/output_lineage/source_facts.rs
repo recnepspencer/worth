@@ -28,7 +28,6 @@ impl RetainedSourceFacts {
             facts: Arc::clone(&self.facts),
         })
     }
-    #[cfg(feature = "certification-invalidation-equivalence")]
     pub(super) fn same_binding(&self, other: &Self) -> bool {
         self.source == other.source && Arc::ptr_eq(&self.facts, &other.facts)
     }

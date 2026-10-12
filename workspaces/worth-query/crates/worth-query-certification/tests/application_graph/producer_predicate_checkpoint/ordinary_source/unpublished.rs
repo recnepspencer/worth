@@ -106,7 +106,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let cancellation = WorthQueryCancellationSource::new();
     let stopped = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(30),
+        Some(Instant::now() + Duration::from_secs(30)),
         cancellation.token(),
     );
     cancellation.cancel();

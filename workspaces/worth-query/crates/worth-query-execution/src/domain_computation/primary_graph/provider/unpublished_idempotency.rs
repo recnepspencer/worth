@@ -13,7 +13,7 @@ pub(in crate::domain_computation::primary_graph::provider) use managed_recovery:
     ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop,
 };
 pub(in crate::domain_computation) use release::WorthQueryUnpublishedReleaseReservation;
-#[cfg(all(test, feature = "test-world-operation-control"))]
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use reservation::unwind_recovery_inspection_count;
 pub(in crate::domain_computation::primary_graph) use reservation::WorthQueryUnpublishedIdempotencyReservation;
 #[cfg(test)]

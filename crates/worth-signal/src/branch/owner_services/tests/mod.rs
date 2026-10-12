@@ -42,11 +42,13 @@ fn with_movement_permit(operation: impl FnOnce(&super::SignalOwnerMovementPermit
     operation(&permit);
 }
 
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn test_operation_control_build_preserves_kernel_authority_boundary() {
-    use super::super::SignalOwnerOperationBoundary;
+    use super::super::SignalOwnerOperationBoundaryForTest;
 
-    let boundary = SignalOwnerOperationBoundary::TargetCellAdmission;
-    assert_eq!(boundary, SignalOwnerOperationBoundary::TargetCellAdmission);
+    let boundary = SignalOwnerOperationBoundaryForTest::TargetCellAdmission;
+    assert_eq!(
+        boundary,
+        SignalOwnerOperationBoundaryForTest::TargetCellAdmission
+    );
 }

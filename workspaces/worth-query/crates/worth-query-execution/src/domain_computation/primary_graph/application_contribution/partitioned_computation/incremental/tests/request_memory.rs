@@ -8,7 +8,9 @@ use std::num::NonZeroUsize;
 use worth_execution::KeyedPartitioner;
 use worth_foundational::ExecutionRequestPolicy;
 
-use super::super::super::super::request_execution::{test_execution_authority, test_policy};
+use super::super::super::super::request_execution::{
+    query_test_execution_authority_for_test, test_policy,
+};
 use super::super::super::super::WorthQueryManagedComputationResourceDenial as Resource;
 use super::super::super::super::WorthQueryMemoryLimitLevel;
 use super::*;
@@ -35,7 +37,7 @@ fn under(memory: u64) -> [Attempt; 2] {
     let installed = installed(StatusRead::Gather(1), sum);
     [
         RuntimeWorldExecutionPlacement::Leased {
-            authority: test_execution_authority(),
+            authority: query_test_execution_authority_for_test(),
             policy: policy(memory),
         },
         RuntimeWorldExecutionPlacement::Serial(policy(memory)),
@@ -60,6 +62,8 @@ fn refused(requested: u64, admitted: u64) -> Outcome {
 /// routing is refused and nothing is gathered.
 #[test]
 fn one_byte_short_of_the_routing_refuses_before_any_gather() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let routing = routing_bytes();
     for run in under(routing - 1) {
         assert_eq!(run.outcome, refused(routing, routing - 1));
@@ -73,6 +77,8 @@ fn one_byte_short_of_the_routing_refuses_before_any_gather() {
 /// before the second, the same way leased and serial.
 #[test]
 fn one_byte_short_of_a_gathers_declared_bytes_refuses_before_that_gather() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let routing = routing_bytes();
     let declared = declared_bytes();
     for run in under(routing + declared - 1) {

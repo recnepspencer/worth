@@ -4,7 +4,8 @@ use std::{collections::BTreeMap, sync::Arc};
 use worth_query_host::facade::application_contribution::WorthQueryApplicationContributionTuple;
 use worth_query_host::facade::primary_graph::{
     advancement_observations_on_this_thread_for_test as observations,
-    WorthQueryAdvancementEventKind as Kind, WorthQueryAdvancementIdentity as Identity,
+    WorthQueryAdvancementEventKindForTest as Kind,
+    WorthQueryAdvancementIdentityForTest as Identity,
 };
 
 struct RestoreSchedule;

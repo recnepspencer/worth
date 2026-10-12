@@ -103,6 +103,7 @@ impl IndexAdmission for MarkingMeter<'_, '_> {
 pub(super) const fn degrades_delivery(stop: &CompanionPreflightStop) -> bool {
     match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow => true,

@@ -128,7 +128,6 @@ impl Drop for RequiredWorkQueue {
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {

@@ -39,7 +39,10 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                 );
                 let right = finish_application_commit(phase, &world.application, right);
                 assert_eq!(world.invariant.active_snapshot_count(), snapshot_baseline);
-                assert_eq!(world.application.provider_session_resource_count(), 0);
+                assert_eq!(
+                    world.application.provider_session_resource_count_for_test(),
+                    0
+                );
 
                 let (executed, recovered) = match (left, right) {
                     (

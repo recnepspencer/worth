@@ -70,7 +70,6 @@ fn rollback_heavy_workload_leaves_runtime_consistent() {
 }
 
 #[test]
-#[ignore = "long-running stress test for CI/nightly profiles"]
 fn stress_100k_nodes_transaction_commit() {
     // This standalone caller declares the operational serial memory policy.
     let serial_request = worth_execution::SerialRequest::from_memory(

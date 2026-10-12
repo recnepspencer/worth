@@ -6,7 +6,6 @@ mod correspondence;
 mod cost;
 mod model;
 mod observation;
-#[cfg(feature = "test-operation-control")]
 mod operation_control;
 mod operations;
 mod oracle;

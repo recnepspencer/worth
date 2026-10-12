@@ -30,7 +30,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
         .unwrap();
     let replay_before = world.runtime.publication().latest_replay();
     let cost_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
-    let control = RelationalOperationControl::uninterrupted().with_injected_interruption(
+    let control = RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         RelationalInterruptionBoundary::BeforeCriticalSection,
         RelationalOperationInterruption::Cancelled,
         1,

@@ -1,6 +1,6 @@
 //! An owner can hold a queued failure while consuming its independent sibling.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::request_execution::test_execution_authority as test_authority;
+use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as test_authority;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -16,7 +16,7 @@ fn a_queued_member_failure_does_not_withhold_its_independent_sibling() {
         for width in [None, Some(1), Some(2), Some(4)] {
             let cancellation = WorthQueryCancellationSource::new();
             let scope = WorthQueryRequestScope::new(
-                Instant::now() + Duration::from_secs(60),
+                Some(Instant::now() + Duration::from_secs(60)),
                 cancellation.token(),
             );
             let policy = test_policy(
@@ -93,7 +93,7 @@ fn a_completion_that_catches_a_compute_denial_applies_the_whole_wave() {
     for width in [None, Some(1), Some(2), Some(4)] {
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let policy = test_policy(

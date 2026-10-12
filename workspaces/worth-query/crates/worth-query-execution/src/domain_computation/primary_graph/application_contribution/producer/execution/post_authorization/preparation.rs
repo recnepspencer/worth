@@ -50,8 +50,8 @@ where
         >,
 {
     require_selected_program(selected, &commit_authority, request_admission)?;
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
-    let application_identity = crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentity::Producer {
+
+    let application_identity = crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
         producer: Binding::IDENTITY.to_owned(),
         query: *observed_source.query_identity.as_bytes(),
         parameters: *observed_source.parameter_binding_identity.bytes(),
@@ -121,7 +121,7 @@ where
     } else {
         None
     };
-    #[cfg(feature = "test-query-execution-observer")]
+
     let contact_root = observed_source.model_root;
     let prepared_source = runtime
         .prepare_application_source_expectation::<Operation<Schema, Binding>, _>(
@@ -170,10 +170,10 @@ where
                     move |slots, admission_work| {
                         assert!(slots.is_empty(), "stable reuse has no compute slots");
                         let published = publish(&admission, admission_work)?;
-                        #[cfg(any(test, feature = "test-query-execution-observer"))]
+
                         crate::domain_computation::primary_graph::application_contribution::request_execution::record_event(
-                            crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEvent {
-                                kind: crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventKind::Publication,
+                            crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventForTest {
+                                kind: crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventKindForTest::Publication,
                                 identity: application_identity,
                             });
                         Ok(ProducerExecutionOutcome::Stable(published))
@@ -204,7 +204,7 @@ where
         admission,
         || {
             *producer_contacts += 1;
-            #[cfg(feature = "test-query-execution-observer")]
+
             super::super::contact_observation::record(
                 runtime.runtime.authority_identity().as_u64(),
                 contact_root,
@@ -245,7 +245,7 @@ where
     Ok(super::super::prepared_plan::ProducerExecutionPlan::new(
         requests,
         move |slots, request_admission| {
-            #[cfg(any(test, feature = "test-query-execution-observer"))]
+
             let _observation = crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::application::apply_identity(application_identity);
             let identities = owned_identities.borrow();
             let completed = completed_handler(

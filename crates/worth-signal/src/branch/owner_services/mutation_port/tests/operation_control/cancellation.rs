@@ -1,4 +1,4 @@
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::{
     validate_signal_branch_name, SignalBranchAdvanceDenial, SignalBranchForkOperationDenial,
     SignalBranchRestoreDenial, SignalBranchSnapshotCaptureDenial,
@@ -24,8 +24,8 @@ fn cancel_fork_before_movement() {
     let port = world.port.clone();
     let basis = world.source_basis.clone();
     let denied = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
         move || {
             matches!(
                 port.fork_exact(
@@ -61,8 +61,8 @@ fn cancel_advance_before_movement() {
     let port = world.port.clone();
     let basis = world.source_basis.clone();
     let denied = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
         move || {
             let serial_request = worth_execution::SerialRequest::from_memory(
                 worth_execution::SerialMemoryBudget::new(
@@ -106,8 +106,8 @@ fn cancel_capture_before_movement() {
     let port = world.port.clone();
     let basis = world.source_basis.clone();
     let denied = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
         move || {
             matches!(
                 port.capture_exact(&basis, &worker_cancellation.token()),
@@ -160,8 +160,8 @@ fn cancel_restore_before_movement() {
     let basis = current.advanced_basis().clone();
     let snapshot = captured.admitted_snapshot().clone();
     let denied = run_paused(
-        &world.owner.operation_control(),
-        SignalOwnerOperationBoundary::BeforeCanonicalMovement,
+        &world.owner.operation_control_for_test(),
+        SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement,
         move || {
             matches!(
                 port.restore_exact(&basis, &snapshot, &worker_cancellation.token()),

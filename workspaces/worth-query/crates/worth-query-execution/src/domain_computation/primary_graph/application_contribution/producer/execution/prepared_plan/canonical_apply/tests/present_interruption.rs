@@ -1,6 +1,6 @@
 //! A shared interruption before dispatch has one settlement at every width.
 use super::*;
-use crate::domain_computation::primary_graph::application_contribution::request_execution::test_execution_authority as authority;
+use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as authority;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial as Denial, WorthQueryManagedComputationInterruption as Interruption,
 };
@@ -10,8 +10,10 @@ fn interruption_present_at_dispatch_has_equal_outcome_charge_and_commits() {
     let mut serial = None;
     for width in [None, Some(1), Some(2), Some(4)] {
         let cancel = WorthQueryCancellationSource::new();
-        let scope =
-            WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), cancel.token());
+        let scope = WorthQueryRequestScope::new(
+            Some(Instant::now() + Duration::from_secs(60)),
+            cancel.token(),
+        );
         let policy = test_policy(
             std::num::NonZeroUsize::new(width.unwrap_or(1)).unwrap(),
             1 << 20,

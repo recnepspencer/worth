@@ -47,7 +47,7 @@ impl WorthQueryPreparedProductPublication {
 
 pub(crate) struct WorthQueryProductPublicationRequestControl {
     cancellation: RuntimeWorldCancellationToken,
-    deadline: worth_runtime_world::facade::RuntimeWorldInstant,
+    deadline: Option<worth_runtime_world::facade::RuntimeWorldInstant>,
     _request_cancellation: Pin<Box<dyn Future<Output = ()> + Send>>,
 }
 
@@ -56,7 +56,9 @@ impl WorthQueryProductPublicationRequestControl {
         &self.cancellation
     }
 
-    pub(crate) const fn deadline(&self) -> worth_runtime_world::facade::RuntimeWorldInstant {
+    pub(crate) const fn deadline(
+        &self,
+    ) -> Option<worth_runtime_world::facade::RuntimeWorldInstant> {
         self.deadline
     }
 }
@@ -111,7 +113,7 @@ impl WorthQueryProductPublicationBinding {
         }
         WorthQueryProductPublicationRequestControl {
             cancellation: cancellation.0.token(),
-            deadline: self.deadline(request.deadline()),
+            deadline: request.deadline().map(|deadline| self.deadline(deadline)),
             _request_cancellation: request_cancellation,
         }
     }
@@ -136,7 +138,7 @@ impl WorthQueryProductPublicationBinding {
             self.observation().clone(),
             intent,
             control.cancellation(),
-            Some(control.deadline()),
+            control.deadline(),
         )?;
         Ok(WorthQueryPreparedProductPublication {
             publication: self.publication().clone(),

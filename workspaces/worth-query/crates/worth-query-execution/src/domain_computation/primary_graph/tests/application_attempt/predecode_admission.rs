@@ -59,6 +59,30 @@ fn actual_admission_denial_is_preserved_without_a_decoded_value() {
 
 #[test]
 fn large_carrier_denial_allocates_only_projection_metadata_before_decoder() {
+    // The counting allocator is process-wide; isolate this measurement from
+    // concurrent owner tests while retaining the same real call and bound.
+    if std::env::var_os("WORTH_QUERY_PREDECODE_ALLOCATION_PROBE").is_none() {
+        let filter = concat!(
+            module_path!(),
+            "::large_carrier_denial_allocates_only_projection_metadata_before_decoder"
+        )
+        .split_once("::")
+        .unwrap()
+        .1;
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", filter, "--test-threads=1", "--nocapture"])
+            .env("WORTH_QUERY_PREDECODE_ALLOCATION_PROBE", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "predecode allocation probe failed:\n{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+        return;
+    }
     // Serial focused lane measures this real call, excluding fixture/label seed.
     // Any eager scalar clone or String binding decode would allocate >=128KiB.
     let payload = "q".repeat(128 * 1024);

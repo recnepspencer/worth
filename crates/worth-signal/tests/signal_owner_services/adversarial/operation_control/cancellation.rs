@@ -5,7 +5,8 @@ use worth_proof::TransitionOutcome;
 use worth_signal::facade::branch::{
     AdmittedSignalBranchSnapshot, SignalBranchAdvanceDenial, SignalBranchForkOperationDenial,
     SignalBranchRestoreDenial, SignalBranchRetirementDenial, SignalBranchRetirementReason,
-    SignalBranchSnapshotCaptureDenial, SignalOwnerCancellationSource, SignalOwnerOperationBoundary,
+    SignalBranchSnapshotCaptureDenial, SignalOwnerCancellationSource,
+    SignalOwnerOperationBoundaryForTest,
 };
 
 use super::super::world::{AdversarialWorld, PROGRESS_BOUND};
@@ -128,9 +129,10 @@ fn cancellation_at_the_pre_movement_park_is_still_effect_free() {
         .runtime
         .as_ref()
         .expect("the owner root stays live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("operation control is available after sealing");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let cancellation = SignalOwnerCancellationSource::new();
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
@@ -183,9 +185,10 @@ fn cancellation_after_canonical_movement_keeps_the_performed_advance() {
         .runtime
         .as_ref()
         .expect("the owner root stays live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("operation control is available after sealing");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::AfterCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
     let cancellation = SignalOwnerCancellationSource::new();
     let mutation = world.mutation.clone();
     let basis = world.child_basis.clone();
@@ -222,9 +225,10 @@ fn cancellation_after_fork_movement_keeps_the_owner_issued_child() {
         .runtime
         .as_ref()
         .expect("the owner root stays live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("operation control is available after sealing");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::AfterCanonicalMovement);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
     let cancellation = SignalOwnerCancellationSource::new();
     let mutation = world.mutation.clone();
     let basis = world.root_basis.clone();

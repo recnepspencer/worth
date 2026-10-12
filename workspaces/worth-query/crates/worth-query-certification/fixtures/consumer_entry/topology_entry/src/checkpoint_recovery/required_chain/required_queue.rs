@@ -330,7 +330,6 @@ mod exhausted_index;
 mod pending_queue;
 mod recovery_isolation;
 mod reopened_dependent;
-#[cfg(feature = "test-output-delivery-faults")]
 mod request_stops;
 mod steady_retention;
 

@@ -12,6 +12,7 @@ pub(super) fn finish(
     >,
     selected_execution_finish: RunningSelectedExecution<'_>,
     retained_resources: Option<crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerDemandResources>,
+    control: &crate::domain_computation::primary_graph::application_runtime::WorthQueryApplicationAttemptOperationControl,
     _request_admission: &mut InvalidationEditAdmission,
     performed: &std::cell::RefCell<PerformedMembers>,
     readiness: super::super::required_wave::performed::PublicationReadiness,
@@ -56,8 +57,9 @@ pub(super) fn finish(
     let (receipt, recorded) = record
         .publication(readiness, receipt, |member| member.performed())
         .into_parts();
-    #[cfg(feature = "test-query-execution-observer")]
+
     super::super::caller_pass_observation::exhaust_after_commit(
+        control,
         _request_admission,
         receipt.published_in_this_advance(),
         *recorded,

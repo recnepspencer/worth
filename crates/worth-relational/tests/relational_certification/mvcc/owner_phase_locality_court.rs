@@ -166,7 +166,7 @@ impl OwnerPhasePause {
         &self,
         boundary: RelationalInterruptionBoundary,
     ) -> RelationalOperationControl {
-        RelationalOperationControl::uninterrupted().with_boundary_pause(
+        RelationalOperationControl::uninterrupted().with_boundary_pause_for_test(
             boundary,
             Arc::clone(&self.reached),
             Arc::clone(&self.release),

@@ -57,6 +57,7 @@ fn wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths() {
 }
 
 fn capture(placement: Placement) {
+    let _observer = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(placement), bound(None));
     for reconsider in [false, true] {
         let world = CourtroomWorld::publish(if reconsider { "blocked" } else { "ready" });

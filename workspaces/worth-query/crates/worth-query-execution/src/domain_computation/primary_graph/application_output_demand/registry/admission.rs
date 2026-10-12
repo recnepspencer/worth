@@ -14,6 +14,8 @@ use crate::domain_computation::primary_graph::{
 mod obligation_capacity;
 mod occurrence_notes;
 mod performed;
+mod semantic_join;
+pub(super) use semantic_join::{accepts_semantic_join, newest_semantic_key};
 mod selected_output;
 pub(super) use obligation_capacity::performed_obligation_capacity_denial;
 pub(in crate::domain_computation::primary_graph) use selected_output::SelectedOutputAdmission;
@@ -29,7 +31,13 @@ impl WorthQueryOutputDemandRegistry {
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         successor_of: Option<OutputRefreshPredecessor<'_>>,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
+    ) -> Result<
+        (
+            WorthQueryOutputDemandInterest,
+            Option<super::join_observation::JoinLatch>,
+        ),
+        WorthQueryOutputDemandDenial,
+    > {
         let mut state = self
             .state
             .lock()
@@ -285,6 +293,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(prepared) = prepared_record {
             state.install_prepared_record(prepared);
         }
+        let mut joined_stable = false;
         let mut record = state.records.get_mut(&key).expect("admitted record exists");
         if let Some(successor) = successor_of {
             let reopens_exact_ready = matches!(
@@ -297,8 +306,8 @@ impl WorthQueryOutputDemandRegistry {
                     })
             );
             if existing_record && reopens_exact_ready {
-                #[cfg(feature = "test-query-execution-observer")]
                 if stable_refresh {
+                    joined_stable = true;
                     super::join_observation::joined(key.source.root_entity_for_test());
                 }
                 let DemandState::Output(reopened) =
@@ -329,50 +338,20 @@ impl WorthQueryOutputDemandRegistry {
         record.required_interests += usize::from(admission_kind.is_required());
         let interest = interest(self, key, &record, admission_kind.is_required());
         record.finish();
+        let pause = if joined_stable {
+            super::join_observation::take_pause(
+                &mut state,
+                interest.key.source.root_entity_for_test(),
+            )
+        } else {
+            None
+        };
         state.install_required_member(required_member);
         let retired = state.take_optional_closed_cleanup(admission);
         drop(state);
         self.finish_foreign_cleanup(retired);
-        Ok(interest)
+        Ok((interest, pause))
     }
-}
-
-pub(super) fn accepts_semantic_join(record: &DemandRecord) -> bool {
-    match &record.state {
-        DemandState::Failed(_) => false,
-        DemandState::Output(output) => !matches!(
-            output.advancement(),
-            super::WorthQueryOutputAdvancement::Stopped { .. }
-        ),
-        _ => true,
-    }
-}
-
-pub(super) fn newest_semantic_key(
-    state: &super::DemandRegistryState,
-    requested: &WorthQueryOutputDemandKey,
-    admission: &mut InvalidationEditAdmission,
-    accepts: impl Fn(&DemandRecord) -> bool,
-) -> Result<Option<WorthQueryOutputDemandKey>, WorthQueryOutputDemandDenial> {
-    let mut newest = None;
-    for (key, record) in
-        super::refreshed_rejoin::occurrence_rows(&state.records, requested, admission)?
-    {
-        admission
-            .charge_external_work(1)
-            .map_err(|_| super::refreshed_rejoin::work_denial())?;
-        if key.same_semantic_source(requested)
-            && accepts(record)
-            && newest
-                .as_ref()
-                .is_none_or(|prior: &WorthQueryOutputDemandKey| {
-                    key.source.observation_generation() > prior.source.observation_generation()
-                })
-        {
-            newest = Some(key.clone());
-        }
-    }
-    Ok(newest)
 }
 
 pub(super) fn interest(

@@ -301,16 +301,19 @@ impl<'a> World<'a> {
             maximum_work_visits: ceiling,
             maximum_preparation_bytes: u64::MAX,
         });
-        let mut interest = self.registry.admit(
-            key("oracle-reader", self.generation, 250),
-            None,
-            self.context.scope,
-            occurrence(),
-            super::super::super::DemandAdmissionKind::Ordinary,
-            None,
-            None,
-            &mut admission,
-        )?;
+        let mut interest = self
+            .registry
+            .admit(
+                key("oracle-reader", self.generation, 250),
+                None,
+                self.context.scope,
+                occurrence(),
+                super::super::super::DemandAdmissionKind::Ordinary,
+                None,
+                None,
+                &mut admission,
+            )
+            .map(|(interest, _pause)| interest)?;
         // This request row is unrelated to the compared domain; release through real Drop.
         self.registry
             .state
@@ -341,6 +344,7 @@ impl<'a> World<'a> {
                 None,
                 &mut admission,
             )
+            .map(|(interest, _pause)| interest)
             .unwrap();
         let work = admission.charged_work();
         drop(interest);

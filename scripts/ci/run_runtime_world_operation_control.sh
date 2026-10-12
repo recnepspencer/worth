@@ -6,7 +6,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 output=$(mktemp)
 trap 'rm -f "$output"' EXIT
 status=0
-cargo test -p worth-runtime-world --features test-operation-control \
+cargo test -p worth-runtime-world \
   --test runtime_world_certification operation_control:: -- --color never 2>&1 \
   | tee "$output" || status=$?
 if (( status != 0 )); then

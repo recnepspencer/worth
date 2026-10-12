@@ -58,6 +58,7 @@ use setup::PaymentCourt;
 const TIMEOUT: Duration = Duration::from_secs(5);
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-courtroom --test transport_process_courtroom -- --ignored"]
 async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
     let PaymentCourt {
         rail,
@@ -75,7 +76,7 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
 
     let request_cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         request_cancellation.token(),
     );
     let authority = ApprovePayment {

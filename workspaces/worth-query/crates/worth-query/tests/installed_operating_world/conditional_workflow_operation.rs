@@ -338,5 +338,4 @@ fn changed_result() -> Result<worth_signal::facade::NodeEvaluationResult, String
     ))
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_custody;

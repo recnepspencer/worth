@@ -27,9 +27,9 @@ fn cancellation_before_and_after_signal_movement_has_honest_terminal_truth() {
             .owner_service_cost_snapshot()
             .unwrap()
             .canonical_movements();
-        let control = court.signal.owner_operation_control().unwrap();
+        let control = court.signal.owner_operation_control_for_test().unwrap();
         std::thread::scope(|scope| {
-            let pause = control.arm_pause_once(boundary);
+            let pause = control.arm_pause_once_for_test(boundary);
             let worker = scope.spawn(move || {
                 port.execute_with_signal(
                     worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),
@@ -99,9 +99,9 @@ fn injected_signal_unwind_retains_any_moved_truth() {
             .canonical_movements();
         court
             .signal
-            .owner_operation_control()
+            .owner_operation_control_for_test()
             .unwrap()
-            .inject_panic_once(boundary);
+            .inject_panic_once_for_test(boundary);
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             court.world.publication_port().execute_with_signal(
                 worth_execution::ExecutionRequest::serial(&super::serial_request(policy)),

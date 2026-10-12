@@ -98,13 +98,14 @@ fn placements() -> [Placement; 3] {
 
 #[test]
 fn cancellation_during_bridge_read_remains_cancellation_in_the_advancement() {
+    let _observer = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let _restore = Restore(place(Placement::World));
     for placement in placements() {
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let (entered, ready) = sync_channel(1);
@@ -192,13 +193,14 @@ fn cancellation_during_signal_evaluation_remains_cancellation_in_the_advancement
         Aspect, AspectVersion, BoundedSignalInputs, RunMode, SignalError, SignalExecutionFailure,
         SignalExecutionStopReason, SignalGraph,
     };
+    let _observer = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let _restore = Restore(place(Placement::World));
     for placement in placements() {
         place(placement);
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let (entered, ready) = sync_channel(1);

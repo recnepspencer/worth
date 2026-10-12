@@ -2,7 +2,6 @@
 
 use super::super::contact_readings::Reading;
 use super::*;
-use std::time::{Duration, Instant};
 use worth_query_host::facade::application_contribution::{
     WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
 };
@@ -16,7 +15,7 @@ macro_rules! cancelled_middle_advance {
     ($application:expr, $principal:expr, $demand:expr, $cancel:expr, $decisions:expr, $expected_kind:expr) => {{
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let cancelled_scope = authentication::WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(120),
+            None,
             cancellation.token(),
         );
         let cancelled = $application.request(&$principal, &cancelled_scope);

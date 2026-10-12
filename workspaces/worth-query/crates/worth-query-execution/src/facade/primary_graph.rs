@@ -7,33 +7,27 @@ pub use crate::domain_computation::{
     WorthQueryInvariantExecutionFailurePosture, WorthQueryProviderSessionFailure,
 };
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::inexact_native_deliveries_on_this_thread_for_test;
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
     bound_advancement_requests_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
-    place_managed_computations_on_this_thread_for_test, test_execution_workers,
+    place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
     required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
     required_ready_custody_bytes_for_test, RequiredCustodyLayoutForTest,
 };
 
-#[cfg(feature = "test-query-execution-observer")]
-pub use crate::domain_computation::primary_graph::test_execution_authority;
+pub use crate::domain_computation::primary_graph::query_test_execution_authority_for_test;
 
 pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
@@ -295,32 +289,37 @@ pub use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
 };
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEvent,
-    WorthQueryAdvancementEventKind, WorthQueryAdvancementIdentity,
-    WorthQueryAdvancementObservation,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use worth_signal::facade::{
     signal_request_charges_on_this_thread_for_test, signal_request_refusals_on_this_thread_for_test,
 };
 
 /// The Signal owner's typed safe-point refusal, exposed for request-custody probes.
-#[cfg(feature = "test-query-execution-observer")]
-pub use worth_signal::facade::SignalCheckpointDenial;
+pub use worth_signal::facade::SignalCheckpointDenial as SignalCheckpointDenialForTest;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
 pub use crate::domain_computation::primary_graph::ExecutionRequest;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
 pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;
 
-#[cfg(feature = "test-query-execution-observer")]
 pub use crate::domain_computation::primary_graph::carried_read_basis_custody_for_test;
 
+/// Owns this thread's Signal checkpoint observation; grants no request authority.
+pub use worth_signal::facade::SignalRequestWorkObservation;
+
+/// Owns this thread's actual World read observation; grants no publication authority.
+pub use worth_runtime_world::facade::RuntimeWorldReadObservation;
+
+pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
+
+/// Owns passive execution observation without granting request authority.
+pub use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
 /// Native delivery causes carried by the Query host audience.
 pub use worth_runtime_bridge::facade::{
     BridgeConditionalDenialKind, BridgeCorrespondenceDeliveryStop,

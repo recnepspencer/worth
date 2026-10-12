@@ -140,7 +140,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "scheduled 10^3/10^4/10^5 scale courtroom"]
+    #[ignore = "requires scale waiter admission; ordinary policy allows 4,194,304 visits"]
     fn scheduled_run_seals_all_declared_scale_contracts() {
         let run = certify_scheduled_locality_run(41).unwrap();
         assert_eq!(run.lane(), LocalityLane::Scheduled);

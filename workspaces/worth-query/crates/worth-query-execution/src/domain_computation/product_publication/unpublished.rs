@@ -44,7 +44,7 @@ impl WorthQueryProductUnpublishedApplication {
     pub(in crate::domain_computation) fn prepare_settled_relational_adoption(
         &self,
         cancellation: &worth_runtime_world::facade::RuntimeWorldCancellationToken,
-        deadline: worth_runtime_world::facade::RuntimeWorldInstant,
+        deadline: Option<worth_runtime_world::facade::RuntimeWorldInstant>,
     ) -> Result<
         worth_runtime_world::facade::PreparedCompositePublicationWithoutSignal,
         worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial,
@@ -52,7 +52,7 @@ impl WorthQueryProductUnpublishedApplication {
         self.recovery.prepare_settled_relational_adoption(
             self.effects.effects(),
             cancellation,
-            Some(deadline),
+            deadline,
         )
     }
 

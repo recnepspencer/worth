@@ -4,19 +4,47 @@ use std::sync::Arc;
 use super::WorthQueryInvalidationResourceDenial;
 
 #[derive(Debug)]
-pub(super) struct InvalidationRetentionLedger {
+pub(in crate::domain_computation) struct InvalidationRetentionLedger {
+    pub(in crate::domain_computation) oracle_guards: std::sync::atomic::AtomicUsize,
+    pub(in crate::domain_computation) oracle_checks: AtomicU64,
     maximum_bytes: u64,
     retained_bytes: AtomicU64,
+    pub(super) exhaust_delivery: std::sync::atomic::AtomicBool,
+    pub(super) native: super::native_reservation_observation::NativeReservationRecorder,
 }
 
 impl InvalidationRetentionLedger {
     pub(super) const fn new(maximum_bytes: u64) -> Self {
         Self {
             maximum_bytes,
+            oracle_guards: std::sync::atomic::AtomicUsize::new(0),
+            oracle_checks: AtomicU64::new(0),
             retained_bytes: AtomicU64::new(0),
+            exhaust_delivery: std::sync::atomic::AtomicBool::new(false),
+            native: super::native_reservation_observation::NativeReservationRecorder::new(),
         }
     }
 
+    pub(super) fn install(maximum_bytes: u64) -> Arc<Self> {
+        let ledger = Arc::new(Self::new(maximum_bytes));
+        ledger.attach_native_observation();
+        // Law 2: construction may finish on a worker after resource installation.
+        crate::domain_computation::invalidation_equivalence_control::attach_constructed_receiver(
+            &ledger,
+        );
+        ledger
+    }
+    pub(super) fn attach_native_observation(self: &Arc<Self>) {
+        if crate::domain_computation::execution_observation::is_installed() {
+            self.native.install();
+            let receiver = Arc::downgrade(self);
+            crate::domain_computation::execution_observation::register_owned_cleanup(move || {
+                if let Some(ledger) = receiver.upgrade() {
+                    ledger.native.clear();
+                }
+            });
+        }
+    }
     pub(super) fn retained_bytes(&self) -> u64 {
         self.retained_bytes.load(Ordering::Acquire)
     }
@@ -55,27 +83,23 @@ pub(in crate::domain_computation) struct RetainedInvalidationCapacity {
 }
 
 impl RetainedInvalidationCapacity {
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
     pub(in crate::domain_computation) fn observe_custody(
         &self,
         site: &'static std::panic::Location<'static>,
     ) {
-        super::native_reservation_observation::observe(
-            self as *const Self as usize,
-            Arc::as_ptr(&self.ledger) as usize,
-            self.bytes,
-            site,
-        );
+        self.ledger
+            .native
+            .observe(self as *const Self as usize, self.bytes, site);
     }
-    #[cfg(feature = "test-query-execution-observer")]
     pub(in crate::domain_computation) fn observe_native(&self, kind: super::NativeRetainedKind) {
-        super::native_reservation_observation::retain(
-            self as *const Self as usize,
-            Arc::as_ptr(&self.ledger) as usize,
-            kind,
-            self.bytes,
-        );
+        self.ledger
+            .native
+            .retain(self as *const Self as usize, kind, self.bytes);
     }
+    pub(in crate::domain_computation) fn observe_consumed(self: &Arc<Self>, runtime: u64) {
+        self.ledger.native.observe_consumed(runtime, self);
+    }
+
     pub(in crate::domain_computation) const fn bytes(&self) -> u64 {
         self.bytes
     }
@@ -83,8 +107,7 @@ impl RetainedInvalidationCapacity {
 
 impl Drop for RetainedInvalidationCapacity {
     fn drop(&mut self) {
-        #[cfg(any(test, feature = "test-query-execution-observer"))]
-        super::native_reservation_observation::release(self as *const Self as usize);
+        self.ledger.native.release(self as *const Self as usize);
         self.ledger
             .retained_bytes
             .fetch_sub(self.bytes, Ordering::AcqRel);

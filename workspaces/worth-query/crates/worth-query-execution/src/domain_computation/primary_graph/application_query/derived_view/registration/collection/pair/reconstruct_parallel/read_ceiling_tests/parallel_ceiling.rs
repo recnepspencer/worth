@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
     use crate::domain_computation::primary_graph::application_contribution::{
-        test_execution_authority, test_policy,
+        query_test_execution_authority_for_test, test_policy,
     };
     use crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner;
     let _owner = isolated_request_owner();
@@ -43,11 +43,11 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
     // and each declared field, and observes one entity and each declared field.
     let root_cost = 1 + 2 * (1 + (1 + fields) + (1 + fields));
     for workers in [2, 4] {
-        let lease = test_execution_authority()
+        let lease = query_test_execution_authority_for_test()
             .request_lease(worth_execution::LeaseRequest {
                 policy: test_policy(NonZeroUsize::new(workers).unwrap(), 16 << 20),
                 cancellation: scope.cancellation().execution_token(),
-                deadline: Some(scope.deadline()),
+                deadline: scope.deadline(),
             })
             .unwrap();
         let request = worth_execution::ExecutionRequest::leased(&lease);

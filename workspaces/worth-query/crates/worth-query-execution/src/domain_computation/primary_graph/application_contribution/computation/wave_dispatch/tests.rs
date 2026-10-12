@@ -1,7 +1,7 @@
 //! Declared charges and canonical outcomes judge the one production dispatch.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    test_execution_authority as test_authority, test_policy,
+    query_test_execution_authority_for_test as test_authority, test_policy,
 };
 use std::{
     num::NonZeroUsize,
@@ -22,8 +22,10 @@ fn run(
     worth_foundational::ExecutionReport,
 ) {
     let cancel = WorthQueryCancellationSource::new();
-    let scope =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), cancel.token());
+    let scope = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        cancel.token(),
+    );
     let policy = test_policy(NonZeroUsize::new(width.unwrap_or(1)).unwrap(), 1 << 24);
     let placement = width.map_or(RuntimeWorldExecutionPlacement::Serial(policy), |_| {
         RuntimeWorldExecutionPlacement::Leased {

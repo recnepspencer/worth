@@ -17,7 +17,7 @@ pub(super) async fn execute_inspection<A>(
 where
     A: BankHttpApplicationAuthenticator,
 {
-    let scope = WorthQueryRequestScope::new(request.deadline, cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
     let principal = match application.authenticate(request.credential, &scope).await {
         Ok(principal) => principal,
         Err(denial) => return inspection_denied(Some(request.request_id), denial),

@@ -148,6 +148,7 @@ fn run(
                 None,
                 paid,
             )
+            .map(|(interest, _pause)| interest)
             .map(|owner| (Answer::Joined(owner.key.clone()), Some(owner))),
         _ => panic!("unknown entry"),
     };
@@ -256,6 +257,7 @@ fn check(entry: u8) {
                             None,
                             &mut admission(1_000_000),
                         )
+                        .map(|(interest, _pause)| interest)
                         .unwrap();
                     let state = noted.registry.state.lock().unwrap();
                     assert!(!state.records.contains_key(&noted.foreign));

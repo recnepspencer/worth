@@ -85,16 +85,18 @@ fn admit(
     admission: &mut InvalidationEditAdmission,
 ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
     let (scope, occurrence) = fixture_scope();
-    registry.admit(
-        key.clone(),
-        None,
-        scope,
-        occurrence,
-        DemandAdmissionKind::Ordinary,
-        None,
-        None,
-        admission,
-    )
+    registry
+        .admit(
+            key.clone(),
+            None,
+            scope,
+            occurrence,
+            DemandAdmissionKind::Ordinary,
+            None,
+            None,
+            admission,
+        )
+        .map(|(interest, _pause)| interest)
 }
 
 #[test]

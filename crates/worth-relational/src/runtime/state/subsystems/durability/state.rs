@@ -23,8 +23,6 @@ pub(crate) struct DurabilityState {
     log_commit_index: HashMap<CommitId, usize>,
     checkpoint_commit_index: HashMap<CommitId, CheckpointEnvelopeLocation>,
     pub(super) store: Option<Arc<DurableStore>>,
-    #[cfg(any(test, feature = "test-durability-faults"))]
-    pub(super) fail_next_append: bool,
 }
 
 impl DurabilityState {
@@ -41,8 +39,6 @@ impl DurabilityState {
                     checkpoints: Vec::new(),
                 })
             }),
-            #[cfg(any(test, feature = "test-durability-faults"))]
-            fail_next_append: false,
         }
     }
 

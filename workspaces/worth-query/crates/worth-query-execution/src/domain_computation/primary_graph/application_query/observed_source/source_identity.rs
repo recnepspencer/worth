@@ -329,7 +329,6 @@ impl WorthQueryObservedSourceEpoch {
         })
     }
 
-    #[cfg(feature = "test-query-execution-observer")]
     pub(in crate::domain_computation::primary_graph) fn root_entity_for_test(
         &self,
     ) -> worth_relational::facade::identity::EntityId {

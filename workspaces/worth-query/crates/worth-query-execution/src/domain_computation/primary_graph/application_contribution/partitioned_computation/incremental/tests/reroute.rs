@@ -225,6 +225,7 @@ fn apply(edit: Edit, entries: &mut BTreeMap<u64, (u64, u64)>, seeded: &mut Seede
 
 #[test]
 fn every_edit_retains_what_a_fresh_full_run_retains() {
+    let _observation = QueryObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let mut applied = std::collections::BTreeSet::new();
     for seed in [0x9e37_79b9_7f4a_7c15_u64, 7, 0x00c0_ffee, 31_337] {
@@ -285,6 +286,7 @@ fn every_edit_retains_what_a_fresh_full_run_retains() {
 
 #[test]
 fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
+    let _observation = QueryObservation::install_on_this_thread();
     use super::super::prior_absence::PriorAbsence;
     let world = installed_authorization_world(true);
     let installed = WorthQueryInstalledPartitionedComputation::<_, _, Computation, _>::new(
@@ -352,6 +354,7 @@ fn every_record_absence_rebuilds_the_same_state_as_a_fresh_run() {
 
 #[test]
 fn a_missing_call_measurement_is_recorded_as_unmeasured_at_the_discard() {
+    let _observation = QueryObservation::install_on_this_thread();
     use super::super::{
         recording::FullRecording, CompletedComputationRetention, PriorAbsence, RetainedBasisToken,
     };

@@ -54,6 +54,7 @@ fn selected_delivery_keeps_both_producer_and_applicability_identity() {
                 None,
                 &mut record_admission(),
             )
+            .map(|(interest, _pause)| interest)
             .unwrap();
         assert_eq!(joined.key, own, "other producer: {other_producer}");
         let state = registry.state.lock().unwrap();

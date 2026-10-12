@@ -24,7 +24,6 @@ impl WorthQueryPrimaryGraphProvider {
             attempts: std::sync::Arc::new(std::sync::Mutex::new(
                 super::application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore::default(),
             )),
-            #[cfg(feature = "test-world-operation-control")]
             application_attempt_operation_control: Default::default(),
             application_attempt_work: Default::default(),
             completed_commit_evidence: std::sync::Mutex::new(

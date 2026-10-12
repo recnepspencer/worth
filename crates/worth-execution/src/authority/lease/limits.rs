@@ -83,7 +83,7 @@ impl<'a> ExecutionResourceLease<'a> {
     /// Why the lease resolves serial, if it does: the platform, a serial
     /// posture anywhere in its lineage, or a single worker.
     pub(crate) fn serial_cause(&self) -> Option<ExecutionFallbackCause> {
-        if cfg!(target_arch = "wasm32") {
+        if !crate::backend::HAS_OS_THREADS {
             Some(ExecutionFallbackCause::PlatformSerial)
         } else if self
             .lineage()

@@ -236,7 +236,6 @@ where
                 &mut admission,
             )
             .map_err(|stop| self.starting_custody_stop(stop, &mut admission));
-        #[cfg(feature = "test-query-execution-observer")]
         super::caller_pass_observation::observe_admission_work(&admission);
         result
     }

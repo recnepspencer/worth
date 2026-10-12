@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 #
-# The allocation-slope evidence for runtime.bounded_adjacency.read lives behind
-# the `allocation-probes` feature, so an automation lane that forgets the
-# feature compiles every probe out and still exits zero. A contract proved only
-# by tests nothing runs is not proved.
+# The allocation-slope court always compiles in the unit-test binary, which
+# owns its counting allocator. Named selection proves the drivers execute.
 #
 # This lane is a declaration, not a second selection engine: the shared named
 # selection authority does the listing, the executability preflight and the run.
@@ -23,7 +21,6 @@ echo "[relational-allocation-probes] enforcing executed allocation-slope evidenc
 
 exec bash "${ROOT_DIR}/scripts/ci/run_relational_named_test_selection.sh" \
   --lib \
-  --features allocation-probes \
   --selection "$SELECTOR" \
   --expect-name "${SELECTOR}::bounded_adjacency_allocation_is_flat_in_fanout_beyond_the_budget" \
   --expect-name "${SELECTOR}::bounded_adjacency_allocation_is_flat_in_partitions_the_anchor_is_not_in" \

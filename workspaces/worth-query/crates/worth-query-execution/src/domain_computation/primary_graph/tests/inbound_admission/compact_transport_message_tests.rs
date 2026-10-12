@@ -67,7 +67,7 @@ fn transport_winner_retains_compact_signed_meaning_until_cutoff() {
     let cancellation = WorthQueryCancellationSource::new();
     cancellation.cancel();
     let cancelled = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let accepted = world
