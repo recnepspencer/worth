@@ -73,6 +73,7 @@ impl ExecutionWorkCeiling {
         let resources = lease.diagnostic_resources_for_test();
         let diagnostic = resources.lease_for_test();
         let _detached = crate::backend::detach_meter_for_test();
+        let _worker = resources.detach_worker_context();
         self.run(&diagnostic, || computation(&diagnostic))
     }
 
