@@ -72,6 +72,20 @@ pub(super) fn assert_kernel_observations(
         );
     }
     let state = control.state.lock().unwrap();
+    for wave in &expected.dispatch_waves {
+        let workers = state
+            .member_threads
+            .iter()
+            .filter(|(key, _)| wave.contains(key))
+            .map(|(_, thread)| *thread)
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(
+            workers.len(),
+            cell.workers.min(wave.len()),
+            "actual owned-wave workers fill every available computing-member slot"
+        );
+    }
+
     assert_eq!(
         state.kernel_active, 0,
         "every partition kernel releases its in-flight witness"

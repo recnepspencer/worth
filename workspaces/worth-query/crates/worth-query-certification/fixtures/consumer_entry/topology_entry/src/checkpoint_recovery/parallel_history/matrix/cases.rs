@@ -12,7 +12,7 @@ pub struct Cell {
 }
 impl Cell {
     pub fn failure(self, order: &[u64]) -> Option<(u64, Phase)> {
-        if self.fault == 0 {
+        if self.fault == 0 || self.fault == 10 {
             return None;
         }
         let phase = match (self.fault - 1) / 3 {
@@ -52,6 +52,7 @@ pub fn table() -> Vec<Cell> {
             }
         }
     }
+    cells.extend(deadlines());
     cells
 }
 pub fn iteration() -> Vec<Cell> {
@@ -109,6 +110,21 @@ pub fn unseeded() -> Vec<Cell> {
                     fault,
                     reuse: false,
                 })
+            })
+        })
+        .collect()
+}
+
+pub fn deadlines() -> Vec<Cell> {
+    (0..super::FAMILIES.len())
+        .flat_map(|family| {
+            [1, 2, 5].map(|workers| Cell {
+                family,
+                workers,
+                declaration: 0,
+                dispatch: UNSEEDED,
+                fault: 10,
+                reuse: false,
             })
         })
         .collect()

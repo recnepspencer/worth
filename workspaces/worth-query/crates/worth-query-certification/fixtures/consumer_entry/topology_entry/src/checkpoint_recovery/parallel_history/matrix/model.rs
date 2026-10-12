@@ -47,6 +47,7 @@ pub fn values(world: &World, multiplier: u64) -> BTreeMap<u64, u64> {
 pub struct Advancement {
     pub kept: Vec<u64>,
     pub dispatched: Vec<u64>,
+    pub dispatch_waves: Vec<Vec<u64>>,
     pub witnesses: Vec<u64>,
     pub work: u64,
     pub span: u64,
@@ -61,6 +62,7 @@ pub fn advancement(
     let mut kept = Vec::new();
     let mut witnesses = Vec::new();
     let mut dispatched = Vec::new();
+    let mut dispatch_waves = Vec::new();
     let mut work = 0;
     let mut span = 0;
     for wave in waves {
@@ -81,12 +83,16 @@ pub fn advancement(
                 }
             })
             .collect::<Vec<(u64, u64)>>();
-        dispatched.extend(
-            wave.iter()
-                .zip(&costs)
-                .filter(|(_, cost)| cost.0 > 0)
-                .map(|(i, _)| world.members[*i].key),
-        );
+        let computing = wave
+            .iter()
+            .zip(&costs)
+            .filter(|(_, cost)| cost.0 > 0)
+            .map(|(i, _)| world.members[*i].key)
+            .collect::<Vec<_>>();
+        dispatched.extend(computing.iter().copied());
+        if !computing.is_empty() {
+            dispatch_waves.push(computing.clone());
+        }
         work += costs.iter().map(|cost| cost.0).sum::<u64>();
         span += costs.iter().map(|cost| cost.1).max().unwrap_or(0);
         if witnesses.is_empty() {
@@ -97,7 +103,7 @@ pub fn advancement(
                 .map(|(i, _)| world.members[*i].key)
                 .collect::<Vec<_>>();
             if computing.len() > 1 {
-                witnesses = computing[..2].to_vec();
+                witnesses = computing;
             }
         }
         for i in wave {
@@ -106,6 +112,7 @@ pub fn advancement(
                 return Advancement {
                     kept,
                     dispatched,
+                    dispatch_waves,
                     witnesses,
                     work,
                     span,
@@ -121,8 +128,22 @@ pub fn advancement(
     Advancement {
         kept,
         dispatched,
+        dispatch_waves,
         witnesses,
         work,
         span,
+    }
+}
+
+impl Advancement {
+    pub fn present_interruption() -> Self {
+        Self {
+            kept: vec![],
+            dispatched: vec![],
+            dispatch_waves: vec![],
+            witnesses: vec![],
+            work: 0,
+            span: 0,
+        }
     }
 }

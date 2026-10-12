@@ -1,4 +1,5 @@
 //! Application bindings are measured before edits; the model receives only identity metadata.
+mod interruption;
 mod kernel_observation;
 use super::*;
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
@@ -200,16 +201,39 @@ pub fn run(cell: cases::Cell) -> Observed {
             "source edit commits"
         );
     }
-    let expected = model::advancement(&world, &waves, failure, cell.family == 7);
+    let expected = if cell.fault == 10 {
+        model::Advancement::present_interruption()
+    } else {
+        model::advancement(&world, &waves, failure, cell.family == 7)
+    };
     {
         let mut state = control.state.lock().unwrap();
         state.armed = true;
         state.failure = failure;
-        state.witnesses = expected.witnesses.clone();
+        state.witnesses = expected
+            .witnesses
+            .iter()
+            .take(cell.workers)
+            .copied()
+            .collect();
     }
     observations();
-    let outcome = caller.advance(&request);
+    let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
+    let expired_scope =
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
+            Some(std::time::Instant::now()),
+            cancellation.token(),
+        );
+    let expired_request = app.request(&principal, &expired_scope);
+    let outcome = caller.advance(if cell.fault == 10 {
+        &expired_request
+    } else {
+        &request
+    });
     let records = observations();
+    if cell.fault == 10 {
+        interruption::assert_deadline(&outcome, &records);
+    }
     if let Some((_, phase)) = failure {
         let Err(worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(cause))=&outcome else{panic!("declared member failure returns a typed domain refusal")};
         assert_eq!(cause.kind(),worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerDomainDenied,"declared failure keeps its domain kind");
@@ -228,7 +252,11 @@ pub fn run(cell: cases::Cell) -> Observed {
     };
     assert_eq!(
         record.workers,
-        Some(cell.workers),
+        if cell.fault == 10 {
+            None
+        } else {
+            Some(cell.workers)
+        },
         "the request dispatch receives the width named by its cell"
     );
     let mut committed = Vec::new();
@@ -249,7 +277,7 @@ pub fn run(cell: cases::Cell) -> Observed {
     let settled = matches!(outcome, Ok(Progress::Settled(_)));
     assert_eq!(
         settled,
-        failure.is_none(),
+        failure.is_none() && cell.fault != 10,
         "declared failure prevents settlement: {:?}",
         outcome.as_ref().err()
     );

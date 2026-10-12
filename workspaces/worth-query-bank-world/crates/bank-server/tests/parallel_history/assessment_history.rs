@@ -175,6 +175,20 @@ fn assessment_history_settles_at_each_request_width() {
             )
             .unwrap()
     );
+    if std::env::var_os("WORTH_BANK_PRESENT_DEADLINE").is_some() {
+        use worth_query_host::facade::admission::authenticated_principal::{
+            WorthQueryCancellationSource, WorthQueryRequestScope,
+        };
+        let cancellation = WorthQueryCancellationSource::new();
+        let expired =
+            WorthQueryRequestScope::new(Some(std::time::Instant::now()), cancellation.token());
+        let stopped = fixture
+            .world
+            .runtime
+            .approved_business_payment(&approver, &expired);
+        super::deadline::assessment(width, || stopped.settle_payment_assessment(&mut demand));
+        return;
+    }
     let assessment = match judged!(
         "settle",
         workflow.settle_payment_assessment(&mut demand).unwrap()

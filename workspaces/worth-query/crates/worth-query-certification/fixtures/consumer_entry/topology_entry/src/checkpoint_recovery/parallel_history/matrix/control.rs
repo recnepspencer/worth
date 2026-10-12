@@ -19,6 +19,7 @@ pub struct State {
     pub peak: usize,
     pub kernel_active: usize,
     pub kernel_peak: usize,
+    pub member_threads: Vec<(u64, std::thread::ThreadId)>,
     pub worker_threads: Vec<(u64, std::thread::ThreadId)>,
     pub witnesses: Vec<u64>,
     pub hang_guard_expired: bool,
@@ -108,6 +109,9 @@ impl Control {
         let mut state = self.state.lock().unwrap();
         if state.armed {
             state.entered.push(key);
+            state
+                .member_threads
+                .push((key, std::thread::current().id()));
             state.active += 1;
             state.peak = state.peak.max(state.active);
         }

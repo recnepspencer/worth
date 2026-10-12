@@ -8,12 +8,15 @@ fn matrix(rows: Vec<Cell>) {
     let mut anchors = BTreeMap::new();
     let mut red = Vec::new();
     let mut remainders = BTreeMap::new();
+    let declared = rows.len();
+    let expected_not_run = rows
+        .iter()
+        .filter(|row| row.family == 0 && (1..10).contains(&row.fault))
+        .count();
     for row in rows {
-        if row.fault > 0
-            && (row.family == 0 || (row.family == 1 && row.dispatch == cases::UNSEEDED))
-        {
+        if row.family == 0 && (1..10).contains(&row.fault) {
             counts[row.family][1] += 1;
-            println!("NOT_RUN:{row:?}:unseeded rank >= 1 failure needs at least two members; empty families have none");
+            println!("NOT_RUN:{row:?}:empty family has no member at which a preparation, compute or completion failure can be placed");
         } else {
             counts[row.family][0] += 1;
             match cell(row) {
@@ -50,6 +53,16 @@ fn matrix(rows: Vec<Cell>) {
         println!("MATRIX_FAMILY:{}:{count:?}", super::FAMILY_NAMES[family]);
     }
     println!("MATRIX_COUNTS:{counts:?}");
+    assert_eq!(
+        counts.iter().map(|c| c[0]).sum::<usize>(),
+        declared - expected_not_run,
+        "every runnable declared row was executed"
+    );
+    assert_eq!(
+        counts.iter().map(|c| c[1]).sum::<usize>(),
+        expected_not_run,
+        "only the named empty-family failures are not run"
+    );
     for finding in &red {
         println!("NAMED_RED:{finding}");
     }
@@ -67,13 +80,13 @@ fn required_wave_full_declared_matrix() {
     let rows = cases::table();
     assert_eq!(
         rows.len(),
-        960,
+        984,
         "plain leased placement has no unobserved seed axis"
     );
     for family in 0..super::FAMILIES.len() {
         assert_eq!(
             rows.iter().filter(|row| row.family == family).count(),
-            120,
+            123,
             "declared product per family"
         );
     }
@@ -175,4 +188,34 @@ fn required_nested_parallel_shape() {
         fault: 0,
         reuse: false,
     }]);
+}
+
+#[test]
+fn required_present_deadlines_and_singleton_failures_are_rows() {
+    let mut rows = cases::deadlines();
+    rows.extend(
+        cases::unseeded()
+            .into_iter()
+            .filter(|row| row.family == 1 && row.fault == 2),
+    );
+    matrix(rows);
+}
+
+#[test]
+fn required_actual_worker_witnesses() {
+    matrix(
+        [4, 7]
+            .into_iter()
+            .flat_map(|family| {
+                [2, 5].map(move |workers| Cell {
+                    family,
+                    workers,
+                    declaration: 0,
+                    dispatch: cases::UNSEEDED,
+                    fault: 0,
+                    reuse: false,
+                })
+            })
+            .collect(),
+    );
 }

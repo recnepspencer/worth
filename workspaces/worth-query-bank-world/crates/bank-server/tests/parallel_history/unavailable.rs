@@ -1,10 +1,5 @@
-//! Bank's one producer cannot supply independent computing-member witnesses.
-use std::collections::BTreeSet;
-const REASON: &str = "one producer, no independent computing-member wave: bank-server/src/application_definition/providers.rs:82,103; transfers are ordinary mutations";
-
-#[test]
-fn bank_unavailable_axes_are_named_rows() {
-    let mut rows = BTreeSet::new();
+//! Named capability rows are data, not a self-cardinality test.
+pub(super) fn rows() {
     for posture in [0, 1, 2, 5] {
         for history in ["transfer", "assessment"] {
             for law in [
@@ -12,17 +7,17 @@ fn bank_unavailable_axes_are_named_rows() {
                 "overlap-witness",
                 "completion-order-mutant",
             ] {
-                assert!(
-                    rows.insert((posture, history, law)),
-                    "each unavailable Bank row has its own name"
-                );
-                println!("BANK_NOT_RUN:{history}:width={posture}:{law}:{REASON}");
+                let reason = match (history, law) {
+                    ("transfer", "span-below-work") => "ordinary mutation has no independent required-producer wave, so this span law has no two branches",
+                    ("transfer", "overlap-witness") => "ordinary transfer computes no required producer members to overlap",
+                    ("transfer", "completion-order-mutant") => "ordinary transfer has no independent producer completion order to permute",
+                    ("assessment", "span-below-work") => "one assessment producer has no independent sibling in this required wave",
+                    ("assessment", "overlap-witness") => "one assessment producer cannot overlap two computing members",
+                    ("assessment", "completion-order-mutant") => "one assessment producer has no pair whose completion order differs from canonical order",
+                    _ => unreachable!(),
+                };
+                println!("BANK_NOT_RUN:{history}:width={posture}:{law}:{reason}; application_definition/providers.rs:82,103");
             }
         }
     }
-    assert_eq!(
-        rows.len(),
-        4 * 2 * 3,
-        "all Bank unavailable axes are counted"
-    );
 }

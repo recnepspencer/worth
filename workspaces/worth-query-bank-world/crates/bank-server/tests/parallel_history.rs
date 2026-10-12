@@ -3,6 +3,7 @@ mod support;
 mod parallel_history {
     mod assessment_history;
     mod assessment_trace;
+    mod deadline;
     mod journal_model;
     mod observation;
     mod seeded_world;
