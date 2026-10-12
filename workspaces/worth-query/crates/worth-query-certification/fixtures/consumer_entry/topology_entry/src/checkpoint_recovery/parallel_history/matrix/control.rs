@@ -20,22 +20,32 @@ pub struct State {
     pub witnesses: Vec<u64>,
     pub hang_guard_expired: bool,
 }
+pub struct NestedMeter {
+    pub member: u64,
+    pub cost: Option<(u128, u128)>,
+}
 pub struct Control {
     pub world: World,
     pub reuse: bool,
     pub overlap: bool,
     pub declaration: u64,
+    pub nested: bool,
+    pub nested_meters: Mutex<Vec<NestedMeter>>,
+    pub partition_declarations: Mutex<Vec<(u64, Vec<u64>)>>,
     pub declarations: Mutex<std::collections::BTreeMap<u64, Vec<u64>>>,
     pub state: Mutex<State>,
     wake: Condvar,
 }
 impl Control {
-    pub fn new(world: World, reuse: bool, overlap: bool, declaration: u64) -> Self {
+    pub fn new(world: World, reuse: bool, overlap: bool, declaration: u64, nested: bool) -> Self {
         Self {
             world,
             reuse,
             overlap,
             declaration,
+            nested,
+            nested_meters: Mutex::default(),
+            partition_declarations: Mutex::default(),
             declarations: Mutex::default(),
             state: Mutex::new(State::default()),
             wake: Condvar::new(),
@@ -95,6 +105,22 @@ impl Control {
         let mut state = self.state.lock().unwrap();
         if state.armed {
             state.entered.push(key);
+            state.active += 1;
+            state.peak = state.peak.max(state.active);
+        }
+    }
+    pub fn nested_meter(&self, member: u64, cost: Option<(u128, u128)>) {
+        self.nested_meters
+            .lock()
+            .unwrap()
+            .push(NestedMeter { member, cost });
+    }
+    pub fn declared_partitions(&self, key: u64, parts: Vec<u64>) {
+        if self.state.lock().unwrap().armed {
+            self.partition_declarations
+                .lock()
+                .unwrap()
+                .push((key, parts));
         }
     }
     pub fn enter_compute(&self, key: u64, part: u64, units: u64) -> u64 {
@@ -102,8 +128,6 @@ impl Control {
         if !state.armed {
             return 0;
         }
-        state.active += 1;
-        state.peak = state.peak.max(state.active);
         if part == 0 {
             state.kernel_entered.push(key);
         }
@@ -122,7 +146,7 @@ impl Control {
         }
         units
     }
-    pub fn exit_compute(&self, _: u64, _: u64) {
+    pub fn exit_member(&self) {
         let mut state = self.state.lock().unwrap();
         if state.armed {
             state.active -= 1;

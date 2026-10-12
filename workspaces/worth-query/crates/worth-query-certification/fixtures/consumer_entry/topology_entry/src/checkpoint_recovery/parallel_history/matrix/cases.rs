@@ -30,7 +30,7 @@ impl Cell {
 }
 pub fn table() -> Vec<Cell> {
     let mut cells = Vec::new();
-    for family in 0..7 {
+    for family in 0..super::FAMILIES.len() {
         for workers in [1, 2, 5] {
             for declaration in [0, 1] {
                 for dispatch in 0..if workers == 1 { 1 } else { 2 } {
@@ -97,7 +97,7 @@ impl Cell {
 }
 
 pub fn unseeded() -> Vec<Cell> {
-    (0..7)
+    (0..super::FAMILIES.len())
         .flat_map(|family| {
             [1, 2, 5].into_iter().flat_map(move |workers| {
                 [0, 2].map(move |fault| Cell {

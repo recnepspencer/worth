@@ -55,6 +55,7 @@ pub fn run(cell: cases::Cell) -> Observed {
         cell.reuse,
         cell.workers > 1,
         cell.declaration,
+        cell.family == 7,
     ));
     let app = installation::install(control.clone());
     let (scope, principal) = installation::authenticate(&app);
@@ -172,7 +173,7 @@ pub fn run(cell: cases::Cell) -> Observed {
             "source edit commits"
         );
     }
-    let expected = model::advancement(&world, &waves, failure);
+    let expected = model::advancement(&world, &waves, failure, cell.family == 7);
     {
         let mut state = control.state.lock().unwrap();
         state.armed = true;
@@ -242,7 +243,75 @@ pub fn run(cell: cases::Cell) -> Observed {
         );
         facts.push((m.key, value));
     }
+    if cell.family == 7 {
+        let meters = control.nested_meters.lock().unwrap();
+        let mut measured = meters
+            .iter()
+            .map(|meter| {
+                let member = world
+                    .members
+                    .iter()
+                    .find(|member| member.key == meter.member)
+                    .unwrap();
+                assert_eq!(
+                    meter.cost,
+                    Some((
+                        u128::from(member.partitions.iter().map(|part| part.work).sum::<u64>()),
+                        u128::from(
+                            member
+                                .partitions
+                                .iter()
+                                .map(|part| part.work)
+                                .max()
+                                .unwrap()
+                        )
+                    )),
+                    "nested kernels charge their declared sum and critical path by value"
+                );
+                meter.member
+            })
+            .collect::<Vec<_>>();
+        measured.sort_unstable();
+        let mut healthy = expected
+            .dispatched
+            .iter()
+            .copied()
+            .filter(|key| failure != Some((*key, control::Phase::Compute)))
+            .collect::<Vec<_>>();
+        healthy.sort_unstable();
+        assert_eq!(
+            measured, healthy,
+            "every completed nested map has one measured kernel cost"
+        );
+        let declared = control.partition_declarations.lock().unwrap();
+        let mut keys = declared
+            .iter()
+            .map(|(key, parts)| {
+                let expected = if cell.declaration == 1 {
+                    vec![3, 2, 1, 0]
+                } else {
+                    vec![0, 1, 2, 3]
+                };
+                assert_eq!(
+                    *parts, expected,
+                    "a nested member declares all four partitions in one map"
+                );
+                *key
+            })
+            .collect::<Vec<_>>();
+        keys.sort_unstable();
+        let mut expected = expected.dispatched.clone();
+        expected.sort_unstable();
+        assert_eq!(
+            keys, expected,
+            "one nested map declaration per dispatched computing member"
+        );
+    }
     let state = control.state.lock().unwrap();
+    assert_eq!(
+        state.active, 0,
+        "every original member compute releases its overlap witness"
+    );
     let mut entered = state.entered.clone();
     let mut dispatched = expected.dispatched.clone();
     entered.sort_unstable();

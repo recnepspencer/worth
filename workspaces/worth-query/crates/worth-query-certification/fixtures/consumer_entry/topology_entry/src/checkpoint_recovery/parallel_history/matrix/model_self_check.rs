@@ -35,7 +35,7 @@ fn a_prefix_only_model_and_a_summed_span_are_convicted() {
         .collect();
     let waves = model::waves(&world, &ranks);
     let failure = Some((world.members[1].key, control::Phase::Complete));
-    let actual = model::advancement(&world, &waves, failure);
+    let actual = model::advancement(&world, &waves, failure, false);
     charges((actual.work, actual.span), &world);
     let prefix = world.members[..1]
         .iter()

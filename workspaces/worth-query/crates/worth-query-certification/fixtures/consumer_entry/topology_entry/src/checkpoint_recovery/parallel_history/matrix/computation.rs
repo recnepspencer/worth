@@ -11,7 +11,7 @@ use worth_query_host::facade::application_contribution::*;
 pub struct ReadInput {
     pub node: u64,
     pub upstream_stamp: u64,
-    pub part: super::super::expected_history::Partition,
+    pub parts: Vec<super::super::expected_history::Partition>,
 }
 pub struct InputType;
 impl ApplicationComputationInput for InputType {
@@ -72,21 +72,30 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         input: &ReadInput,
     ) -> Result<WorthQueryComputationPartitionPlan<Item>, WorthQueryComputationInputDenial<u64>>
     {
-        Ok(WorthQueryComputationPartitionPlan::keyed(
-            vec![Item {
+        let mut items = input
+            .parts
+            .iter()
+            .map(|part| Item {
                 node: input.node,
-                part: input.part.clone(),
-            }],
-            |_| PartitionItemId(0),
-        ))
+                part: part.clone(),
+            })
+            .collect::<Vec<_>>();
+        if self.0.declaration == 1 {
+            items.reverse();
+        }
+        self.0
+            .declared_partitions(input.node, items.iter().map(|item| item.part.key).collect());
+        Ok(WorthQueryComputationPartitionPlan::keyed(items, |item| {
+            PartitionItemId(item.part.key)
+        }))
     }
     fn partition_key(
         &self,
         _: &mut Reader<'_, '_, '_>,
-        input: &ReadInput,
-        _: &Item,
+        _: &ReadInput,
+        item: &Item,
     ) -> Result<Key, WorthQueryComputationInputDenial<u64>> {
-        Ok(Key(input.part.key))
+        Ok(Key(item.part.key))
     }
     fn gather(
         &self,
@@ -108,7 +117,6 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         let result = checkpoint
             .advance(usize::try_from(work).unwrap())
             .map_err(WorthQueryManagedComputationDenial::from);
-        self.0.exit_compute(item.node, item.part.key);
         result?;
         if item.part.key == 0 && self.0.fails(item.node, Phase::Compute) {
             Err(WorthQueryManagedComputationDenial::Owner(item.node))

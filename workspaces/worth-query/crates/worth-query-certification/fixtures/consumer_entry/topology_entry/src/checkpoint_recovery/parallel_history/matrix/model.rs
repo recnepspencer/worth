@@ -55,6 +55,7 @@ pub fn advancement(
     world: &World,
     waves: &[Vec<usize>],
     failure: Option<(u64, super::control::Phase)>,
+    nested: bool,
 ) -> Advancement {
     use super::control::Phase;
     let mut kept = Vec::new();
@@ -68,14 +69,17 @@ pub fn advancement(
             .map(|i| {
                 let member = &world.members[*i];
                 if failure == Some((member.key, Phase::Prepare)) {
-                    0
+                    (0, 0)
+                } else if nested {
+                    super::nested_cost::checkpoints(
+                        &member.partitions,
+                        failure == Some((member.key, Phase::Compute)),
+                    )
                 } else {
-                    member
+                    let work = member
                         .partitions
                         .iter()
                         .map(|p| {
-                            // A completed scalar frame builds its one-leaf tree;
-                            // a refused kernel never enters that reduction stage.
                             let reduction =
                                 if p.key == 0 && failure == Some((member.key, Phase::Compute)) {
                                     0
@@ -84,23 +88,24 @@ pub fn advancement(
                                 };
                             p.work + reduction
                         })
-                        .sum()
+                        .sum();
+                    (work, work)
                 }
             })
-            .collect::<Vec<u64>>();
+            .collect::<Vec<(u64, u64)>>();
         dispatched.extend(
             wave.iter()
                 .zip(&costs)
-                .filter(|(_, cost)| **cost > 0)
+                .filter(|(_, cost)| cost.0 > 0)
                 .map(|(i, _)| world.members[*i].key),
         );
-        work += costs.iter().sum::<u64>();
-        span += costs.iter().copied().max().unwrap_or(0);
+        work += costs.iter().map(|cost| cost.0).sum::<u64>();
+        span += costs.iter().map(|cost| cost.1).max().unwrap_or(0);
         if witnesses.is_empty() {
             let computing = wave
                 .iter()
                 .zip(&costs)
-                .filter(|(_, cost)| **cost > 0)
+                .filter(|(_, cost)| cost.0 > 0)
                 .map(|(i, _)| world.members[*i].key)
                 .collect::<Vec<_>>();
             if computing.len() > 1 {

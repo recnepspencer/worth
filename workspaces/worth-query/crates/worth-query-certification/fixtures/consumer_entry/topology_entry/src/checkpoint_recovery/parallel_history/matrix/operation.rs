@@ -184,11 +184,20 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
             }
         }
         let mut plan = WorthQueryDecisionPlan::immediate(HandlerResult::Completed(upstream));
-        for part in &input.partitions {
+        let frames = if self.control.nested {
+            vec![input.partitions.clone()]
+        } else {
+            input
+                .partitions
+                .iter()
+                .map(|part| vec![part.clone()])
+                .collect()
+        };
+        for parts in frames.into_iter().filter(|parts| !parts.is_empty()) {
             let facts = computation::ReadInput {
                 node: input.key,
                 upstream_stamp: upstream,
-                part: part.clone(),
+                parts: parts.clone(),
             };
             let prepared = if self.control.reuse {
                 self.installed.prepare(reader, &facts)
@@ -219,9 +228,40 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                 }),
                 Err(error) => panic!("matrix preparation is admissible: {error:?}"),
             };
-            let next = if part.key == 0 {
-                let control = self.control.clone();
-                next.observe_computes_for_test(move || control.dispatched(node), || (), |_| {})
+            let next = if parts.iter().any(|part| part.key == 0) {
+                let before = self.control.clone();
+                let after = self.control.clone();
+                next.observe_computes_for_test(
+                    move || {
+                        partitioned_computation_runs_on_this_thread_for_test();
+                        partitioned_computation_tree_work_on_this_thread_for_test();
+                        before.dispatched(node);
+                    },
+                    move || {
+                        let runs = partitioned_computation_runs_on_this_thread_for_test();
+                        let trees = partitioned_computation_tree_work_on_this_thread_for_test();
+                        if after.nested
+                            && !after.fails(node, super::control::Phase::Compute)
+                            && after.state.lock().unwrap().armed
+                        {
+                            let cost = match (runs.as_slice(), trees.as_slice()) {
+                                ([(_, Some(report))], [tree]) => {
+                                    let tree = tree.metrics_for_test();
+                                    u128::from(report.charged_work())
+                                        .checked_sub(tree.charged_work)
+                                        .zip(
+                                            u128::from(report.charged_span())
+                                                .checked_sub(tree.charged_span),
+                                        )
+                                }
+                                _ => None,
+                            };
+                            after.nested_meter(node, cost);
+                        }
+                        after.exit_member();
+                    },
+                    |_| {},
+                )
             } else {
                 next
             };

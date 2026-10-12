@@ -31,7 +31,7 @@ fn cell(cell: Cell) -> Result<(String, (u64, u64)), String> {
     ))
 }
 fn matrix(rows: Vec<Cell>) {
-    let mut counts = [[0usize; 3]; 7];
+    let mut counts = [[0usize; 3]; super::FAMILIES.len()];
     let mut anchors = BTreeMap::new();
     let mut red = Vec::new();
     let mut remainders = BTreeMap::new();
@@ -73,6 +73,9 @@ fn matrix(rows: Vec<Cell>) {
             }
         }
     }
+    for (family, count) in counts.iter().enumerate() {
+        println!("MATRIX_FAMILY:{}:{count:?}", super::FAMILY_NAMES[family]);
+    }
     println!("MATRIX_COUNTS:{counts:?}");
     for finding in &red {
         println!("NAMED_RED:{finding}");
@@ -91,10 +94,10 @@ fn required_wave_full_declared_matrix() {
     let rows = cases::table();
     assert_eq!(
         rows.len(),
-        1442,
+        1648,
         "one-worker seed is equivalent and counted once"
     );
-    for family in 0..7 {
+    for family in 0..super::FAMILIES.len() {
         assert_eq!(
             rows.iter().filter(|row| row.family == family).count(),
             206,
@@ -177,4 +180,26 @@ fn required_axis_witnesses() {
 #[test]
 fn required_unseeded_dispatch_slice() {
     matrix(cases::unseeded());
+}
+
+#[test]
+fn required_nested_parallel_family() {
+    matrix(
+        cases::table()
+            .into_iter()
+            .filter(|cell| cell.family == 7 && [0, 4, 8].contains(&cell.fault))
+            .collect(),
+    );
+}
+
+#[test]
+fn required_nested_parallel_shape() {
+    matrix(vec![Cell {
+        family: 7,
+        workers: 1,
+        declaration: 0,
+        dispatch: 0,
+        fault: 0,
+        reuse: false,
+    }]);
 }
