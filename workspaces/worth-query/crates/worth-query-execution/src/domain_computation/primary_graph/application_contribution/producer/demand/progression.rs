@@ -273,9 +273,7 @@ where
         let stop = self.caller_custody_stop(demand, stop, &mut admission);
         if matches!(
             stop.kind(),
-            WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(_)
-            )
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
         ) && stop.recovery_posture() == super::WorthQueryOutputDemandRecoveryPosture::Terminal
         {
             demand.terminal_caller_denial = Some(stop.clone());
