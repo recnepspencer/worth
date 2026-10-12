@@ -283,16 +283,7 @@ mod read_fold_tests {
             },
         );
         let stop = admission.admit_read_scratch(1).unwrap_err();
-        let denial = match preflight_stop(stop) {
-            RetainedFactStop::Memory => memory_denial(),
-            RetainedFactStop::Work => work_denial(),
-            RetainedFactStop::Execution(_)
-            | RetainedFactStop::Interrupted(_)
-            | RetainedFactStop::Refused(_)
-            | RetainedFactStop::Unavailable(_) => {
-                panic!("the preparation meter yields its resource stop")
-            }
-        };
+        let denial = retained_fact_denial(preflight_stop(stop), "retained comparison unavailable");
         assert_eq!(
             denial.kind(),
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded

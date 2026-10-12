@@ -112,8 +112,18 @@ where
                 .and_then(|truth| truth.validate_entity_freshness(execution, scope_identity))
                 .map_err(|cause| {
                     match cause.kind() {
-                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => super::super::denial::relational_read_denial(cause, scope_identity.entity_name()),
-                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => denial(WorthQueryOperationAuthorizationDenialKind::StaleScope, scope_identity.entity_name()),
+                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => {
+                            super::super::denial::relational_read_denial(
+                                cause,
+                                scope_identity.entity_name(),
+                            )
+                        }
+                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => {
+                            denial(
+                                WorthQueryOperationAuthorizationDenialKind::StaleScope,
+                                scope_identity.entity_name(),
+                            )
+                        }
                     }
                 })?;
             self.observe_authorization_requirements(

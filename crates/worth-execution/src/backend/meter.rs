@@ -279,17 +279,23 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     /// done, while canonical settlement determines the accepted prefix.
     pub fn checkpoint(&mut self, units: u64) -> Result<(), KernelStop> {
         crate::authority::consult_observation::reached();
-        crate::authority::consult_observation::charged_prefix(|| {
-            ACTIVE_METER.with(|active| {
-                active
-                    .borrow()
-                    .iter()
-                    .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work))
-                    .unwrap_or(u64::MAX)
-            })
-        });
+        if units > 0 {
+            crate::authority::consult_observation::charged_prefix(|| {
+                ACTIVE_METER.with(|active| {
+                    active
+                        .borrow()
+                        .iter()
+                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work))
+                        .unwrap_or(u64::MAX)
+                })
+            });
+        }
         let mut meter = self.meter.borrow_mut();
         if let Some(stop) = meter.checkpoint_stop {
+            crate::authority::consult_observation::stopped(Some((
+                Rc::as_ptr(&self.meter) as usize,
+                true,
+            )));
             return Err(stop);
         }
         let result = (|| {
@@ -313,6 +319,10 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
             Ok(())
         })();
         if let Err(stop) = result {
+            crate::authority::consult_observation::stopped(Some((
+                Rc::as_ptr(&self.meter) as usize,
+                false,
+            )));
             meter.checkpoint_stop = Some(stop);
         }
         result
@@ -322,6 +332,17 @@ impl<'a, 'lease> KernelContext<'a, 'lease> {
     /// This does not authorize new work or clear the original stop; it keeps
     /// cancellation/deadline reports faithful to work already performed.
     pub fn account_completed_work(&mut self, units: u64) -> Result<(), KernelStop> {
+        if units > 0 {
+            crate::authority::consult_observation::charged_prefix(|| {
+                ACTIVE_METER.with(|active| {
+                    active
+                        .borrow()
+                        .iter()
+                        .try_fold(units, |sum, meter| sum.checked_add(meter.borrow().work))
+                        .unwrap_or(u64::MAX)
+                })
+            });
+        }
         let mut meter = self.meter.borrow_mut();
         let next = meter
             .work

@@ -3,6 +3,8 @@ use std::cell::RefCell;
 struct Probe {
     count: usize,
     charges: Vec<(usize, u64)>,
+    checkpoint_stops: std::collections::HashMap<usize, usize>,
+    stop_origins: Vec<(usize, usize)>,
     observe: Box<dyn FnMut(usize)>,
 }
 thread_local! { static PROBE:RefCell<Option<Probe>>=const{RefCell::new(None)}; }
@@ -18,6 +20,8 @@ impl RequestConsultObservationForTest {
                 p.replace(Some(Probe {
                     count: 0,
                     charges: Vec::new(),
+                    checkpoint_stops: Default::default(),
+                    stop_origins: Vec::new(),
                     observe: Box::new(observe),
                 }))
             }),
@@ -27,6 +31,11 @@ impl RequestConsultObservationForTest {
     /// The cumulative root-scope Work required at each actual charge.
     pub fn charged_prefixes_for_test(&self) -> Vec<(usize, u64)> {
         PROBE.with(|p| p.borrow().as_ref().unwrap().charges.clone())
+    }
+    /// Emission and origin consults; a latched checkpoint retains its first cause.
+    /// Origin zero predates this observation.
+    pub fn stop_origins_for_test(&self) -> Vec<(usize, usize)> {
+        PROBE.with(|p| p.borrow().as_ref().unwrap().stop_origins.clone())
     }
     pub fn count_for_test(&self) -> usize {
         PROBE.with(|p| p.borrow().as_ref().unwrap().count)
@@ -67,6 +76,27 @@ pub fn with_request_consult_observer_for_test<R>(
 mod tests {
     use super::*;
     #[test]
+    fn latched_stop_keeps_its_origin_and_a_late_observer_reports_unknown() {
+        let serial = crate::SerialRequest::from_memory(
+            crate::SerialMemoryBudget::new(64 * 1024),
+            crate::CancellationToken::new(),
+            None,
+        );
+        crate::backend::run_scope_within::<(), (), _>(None, 0, 0, true, 1, Some(&serial), |work| {
+            let observer =
+                RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
+            assert_eq!(work.checkpoint(2), Err(crate::MapKernelStop::WorkCeiling));
+            assert_eq!(work.checkpoint(0), Err(crate::MapKernelStop::WorkCeiling));
+            assert_eq!(observer.stop_origins_for_test(), vec![(1, 1), (2, 1)]);
+            assert_eq!(observer.charged_prefixes_for_test(), vec![(1, 2)]);
+            drop(observer);
+            let late = RequestConsultObservationForTest::install_on_this_thread_for_test(|_| {});
+            assert_eq!(work.checkpoint(0), Err(crate::MapKernelStop::WorkCeiling));
+            assert_eq!(late.stop_origins_for_test(), vec![(1, 0)]);
+            Ok(())
+        });
+    }
+    #[test]
     fn consult_observation_restores_the_outer_count() {
         let (_, count) = with_request_consult_observer_for_test(
             |_| {},
@@ -94,6 +124,24 @@ pub(crate) fn charged_prefix(required: impl FnOnce() -> u64) {
     PROBE.with(|p| {
         if let Some(probe) = p.borrow_mut().as_mut() {
             probe.charges.push((probe.count, required()));
+        }
+    });
+}
+
+pub(crate) fn stopped(checkpoint: Option<(usize, bool)>) {
+    PROBE.with(|p| {
+        if let Some(probe) = p.borrow_mut().as_mut() {
+            let origin = match checkpoint {
+                Some((identity, true)) => {
+                    probe.checkpoint_stops.get(&identity).copied().unwrap_or(0)
+                }
+                Some((identity, false)) => {
+                    probe.checkpoint_stops.insert(identity, probe.count);
+                    probe.count
+                }
+                None => probe.count,
+            };
+            probe.stop_origins.push((probe.count, origin));
         }
     });
 }

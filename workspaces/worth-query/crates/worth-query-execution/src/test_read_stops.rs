@@ -33,9 +33,30 @@ pub(crate) fn every_selected_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     cancelled: E,
     exhausted: E,
 ) {
+    selected_consult_answers(
+        healthy_work,
+        observes,
+        with_door,
+        false,
+        |at, _, error| assert_eq!(error, &cancelled, "consult {at}"),
+        |required, error| assert_eq!(error, &exhausted, "charge {required}"),
+    );
+}
+
+/// Full-value oracles can assert which consult answered and every charged prefix.
+#[allow(dead_code)] // The Host proof imports this shared oracle owner.
+pub(crate) fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
+    healthy_work: u64,
+    observes: impl Fn() -> bool + 'static,
+    with_door: impl Fn(&CountedDoor<'_, T, E>) -> ConsultRun<T, E>,
+    all_charges: bool,
+    assert_cancelled: impl Fn(usize, usize, &E),
+    assert_work: impl Fn(u64, &E),
+) {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let observes = std::rc::Rc::new(observes);
+    let quotes = std::cell::RefCell::new(Vec::new());
     let run = |k: Option<usize>, ceiling: u64| {
         with_door(&|door| {
             let source = CancellationSource::new();
@@ -49,26 +70,74 @@ pub(crate) fn every_selected_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
             let count = std::rc::Rc::new(std::cell::Cell::new(0));
             let recorded = std::rc::Rc::clone(&count);
             let observes = std::rc::Rc::clone(&observes);
-            let ((answer, report), _) = with_request_consult_observer_for_test(
-                move |_| {
-                    if observes() {
-                        let at = recorded.get() + 1;
-                        recorded.set(at);
-                        if Some(at) == k {
-                            cancel.cancel();
-                        }
+            let selected_indices = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
+            let selected = std::rc::Rc::clone(&selected_indices);
+            let observation = observe_consults_for_test(move |global_at| {
+                if observes() {
+                    selected.borrow_mut().push(global_at);
+                    let at = recorded.get() + 1;
+                    recorded.set(at);
+                    if Some(at) == k {
+                        cancel.cancel();
                     }
-                },
-                || {
-                    request
-                        .run(ExecutionWorkCeiling::new(ceiling), |_| door(&request))
-                        .unwrap()
-                },
-            );
-            (answer, report.charged_work(), count.get())
+                }
+            });
+            let (answer, report) = request
+                .run(ExecutionWorkCeiling::new(ceiling), |_| door(&request))
+                .unwrap();
+            *quotes.borrow_mut() = charged_prefixes_for_test(&observation);
+            let indices = selected_indices.borrow();
+            let origin = observation
+                .stop_origins_for_test()
+                .into_iter()
+                .rev()
+                .find(|(emitted, _)| indices.contains(emitted))
+                .and_then(|(_, origin)| indices.iter().position(|at| *at == origin))
+                .map(|origin| origin + 1);
+            let answered_at = if k.is_some() && answer.is_err() {
+                origin.expect("the selected stop has an observed cause consult")
+            } else {
+                count.get()
+            };
+            (answer, report.charged_work(), answered_at)
         })
     };
-    assert_every_consult(run, healthy_work, cancelled, exhausted);
+    let (healthy, work, count) = run(None, healthy_work);
+    assert!(healthy.is_ok(), "healthy door: {healthy:?}");
+    assert!(count > 0);
+    let charges = quotes.borrow().clone();
+    eprintln!(
+        "door consults={count}, work={work}, charges={}",
+        charges.len()
+    );
+    for at in 1..=count {
+        let (answer, _, answered_at) = run(Some(at), healthy_work);
+        assert_cancelled(
+            at,
+            answered_at,
+            &answer.expect_err("the selected consult stopped"),
+        );
+    }
+    assert_eq!(
+        run(Some(count + 1), healthy_work).0,
+        healthy,
+        "one past the last consult"
+    );
+    let prefixes = if all_charges {
+        charges
+            .into_iter()
+            .map(|(_, required)| required)
+            .collect::<std::collections::BTreeSet<_>>()
+    } else {
+        [work].into_iter().collect()
+    };
+    for required in prefixes.into_iter().filter(|required| *required > 0) {
+        let answer = run(None, required - 1).0;
+        assert_work(
+            required,
+            &answer.expect_err("one unit short at an actual charge"),
+        );
+    }
 }
 
 /// The same counted oracle for doors borrowing their request from a phase.

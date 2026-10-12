@@ -45,9 +45,11 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             ),
         };
         if cancelled {
+            consult_observation::stopped(None);
             return Err(crate::MapKernelStop::Cancelled);
         }
         if expired {
+            consult_observation::stopped(None);
             return Err(crate::MapKernelStop::DeadlineElapsed);
         }
         Ok(())
@@ -116,7 +118,10 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             } else {
                 backing.or(active)
             };
-        stop.map_or(Ok(()), |stop| Err(WorkCeilingDenial::Stopped(stop)))
+        stop.map_or(Ok(()), |stop| {
+            consult_observation::stopped(None);
+            Err(WorkCeilingDenial::Stopped(stop))
+        })
     }
 
     /// Adapt only within an active bounded scope. Leased carriage adds no scope.
