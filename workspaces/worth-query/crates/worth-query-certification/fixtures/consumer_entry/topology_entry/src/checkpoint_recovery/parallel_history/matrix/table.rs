@@ -3,7 +3,7 @@ use super::cases::{self, Cell};
 use std::collections::BTreeMap;
 mod price;
 use price::cell;
-fn matrix(rows: Vec<Cell>) {
+fn matrix(rows: Vec<Cell>) -> [[usize; 3]; 8] {
     let mut counts = [[0usize; 3]; super::FAMILIES.len()];
     let mut anchors = BTreeMap::new();
     let mut red = Vec::new();
@@ -70,6 +70,7 @@ fn matrix(rows: Vec<Cell>) {
         red.is_empty(),
         "matrix has named production or fixture findings; all other rows were run"
     );
+    counts
 }
 #[test]
 fn required_wave_iteration_21_cells() {
@@ -90,7 +91,7 @@ fn required_wave_full_declared_matrix() {
             "declared product per family"
         );
     }
-    matrix(rows);
+    assert_full_counts(matrix(rows));
 }
 
 #[test]
@@ -257,4 +258,47 @@ fn required_certified_paths_match_plain_success_and_singleton_stop() {
         }
     }
     matrix(rows);
+}
+
+fn assert_full_counts(counts: [[usize; 3]; 8]) {
+    // Per shape: 3 * 2 * 10 * 2 Certified + 3 * 2 plain + 3 deadline = 129.
+    // Empty failures: 3 * 2 * 9 * 2 Certified + 3 plain = 111; 18 run.
+    // Other seven shapes run all 129; 18 + 7 * 129 = 921, with no red rows.
+    assert_eq!(
+        counts,
+        [
+            [18, 111, 0],
+            [129, 0, 0],
+            [129, 0, 0],
+            [129, 0, 0],
+            [129, 0, 0],
+            [129, 0, 0],
+            [129, 0, 0],
+            [129, 0, 0]
+        ],
+        "the full product executes 921 rows and names only 111 Empty failures"
+    );
+}
+
+#[test]
+fn required_full_matrix_counts_reject_a_dropped_row() {
+    let complete = [
+        [18, 111, 0],
+        [129, 0, 0],
+        [129, 0, 0],
+        [129, 0, 0],
+        [129, 0, 0],
+        [129, 0, 0],
+        [129, 0, 0],
+        [129, 0, 0],
+    ];
+    assert_full_counts(complete);
+    for (family, kind) in [(1, 0), (0, 1)] {
+        let mut missing = complete;
+        missing[family][kind] -= 1;
+        assert!(
+            std::panic::catch_unwind(|| assert_full_counts(missing)).is_err(),
+            "a run or named-not-run row cannot disappear from the full product"
+        );
+    }
 }
