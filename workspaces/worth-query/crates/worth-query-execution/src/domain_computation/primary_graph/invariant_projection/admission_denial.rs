@@ -26,27 +26,37 @@ pub enum WorthQueryInvariantProjectionDenialKind {
 }
 
 /// Refusal to run an invariant projection. No output or snapshot is returned;
-/// [`Self::kind`] says why.
+/// [`Self::kind`] says why. The boxed kind bounds the stack to work evidence
+/// and two pointer words.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryInvariantProjectionDenial {
-    kind: WorthQueryInvariantProjectionDenialKind,
+    kind: Box<WorthQueryInvariantProjectionDenialKind>,
     projection_work: Option<super::WorthQueryInvariantProjectionWork>,
     retention_denial: Option<Box<crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>>,
 }
 
+const PROJECTION_DENIAL_STACK_BOUND: usize = std::mem::size_of::<
+    Option<super::WorthQueryInvariantProjectionWork>,
+>() + 2 * std::mem::size_of::<usize>();
+const _: () = assert!(
+    std::mem::size_of::<WorthQueryInvariantProjectionDenial>() <= PROJECTION_DENIAL_STACK_BOUND
+);
+
 impl WorthQueryInvariantProjectionDenial {
-    pub(super) const fn execution_request_stopped(
+    pub(super) fn execution_request_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         work: Option<super::WorthQueryInvariantProjectionWork>,
     ) -> Self {
         Self {
-            kind: WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause),
+            kind: Box::new(WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                cause,
+            )),
             projection_work: work,
             retention_denial: None,
         }
     }
     pub const fn kind(&self) -> WorthQueryInvariantProjectionDenialKind {
-        self.kind
+        *self.kind
     }
 
     /// Actual reader work before refusal; absent when no reader executed.
@@ -71,7 +81,7 @@ impl WorthQueryInvariantProjectionDenial {
         work: super::WorthQueryInvariantProjectionWork,
     ) -> Self {
         Self {
-            kind: WorthQueryInvariantProjectionDenialKind::SourceRetentionDenied,
+            kind: Box::new(WorthQueryInvariantProjectionDenialKind::SourceRetentionDenied),
             projection_work: Some(work),
             retention_denial: Some(Box::new(denial)),
         }
@@ -83,27 +93,25 @@ impl WorthQueryInvariantProjectionDenial {
         self.retention_denial = Some(Box::new(denial));
         self
     }
-    pub(super) const fn basis_unavailable() -> Self {
+    pub(super) fn basis_unavailable() -> Self {
         Self {
-            kind: WorthQueryInvariantProjectionDenialKind::BasisUnavailable,
+            kind: Box::new(WorthQueryInvariantProjectionDenialKind::BasisUnavailable),
             projection_work: None,
             retention_denial: None,
         }
     }
 
-    pub(super) const fn from_kind(kind: WorthQueryInvariantProjectionDenialKind) -> Self {
+    pub(super) fn from_kind(kind: WorthQueryInvariantProjectionDenialKind) -> Self {
         Self {
-            kind,
+            kind: Box::new(kind),
             projection_work: None,
             retention_denial: None,
         }
     }
 
-    pub(super) const fn work_budget_exceeded(
-        work: super::WorthQueryInvariantProjectionWork,
-    ) -> Self {
+    pub(super) fn work_budget_exceeded(work: super::WorthQueryInvariantProjectionWork) -> Self {
         Self {
-            kind: WorthQueryInvariantProjectionDenialKind::WorkBudgetExceeded,
+            kind: Box::new(WorthQueryInvariantProjectionDenialKind::WorkBudgetExceeded),
             projection_work: Some(work),
             retention_denial: None,
         }
@@ -163,4 +171,22 @@ pub(super) fn from_snapshot_admission_denial(
         }
     };
     WorthQueryInvariantProjectionDenial::from_kind(kind)
+}
+
+#[cfg(test)]
+mod stack_size_tests {
+    use super::*;
+    #[test]
+    fn projection_request_stop_keeps_the_denial_stack_bound() {
+        use std::mem::size_of;
+        let bound = size_of::<Option<super::super::WorthQueryInvariantProjectionWork>>()
+            + 2 * size_of::<usize>();
+        assert!(size_of::<WorthQueryInvariantProjectionDenial>() <= bound);
+        let cause =
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled;
+        assert_eq!(
+            WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, None).kind(),
+            WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause)
+        );
+    }
 }
