@@ -2773,26 +2773,26 @@ The next phase may trust that partition-granular reuse is exact.
     in place of the owner's port, so their reads run concurrently.
   - Bridge's, Signal's and World's seams take it. *Completed.*
 - **7.7** Run the `compute` steps of each dependency-ready wave concurrently
-  under the request lease, with nested partition work.
+  under the request lease, with nested partition work. *Completed.*
   - A wave is admitted by the required-set owner against a basis: every
-    declared upstream of every member is committed in it.
+    declared upstream of every member is committed in it. *Completed.*
   - One lease covers every wave of one advancement; a member's nested work
-    descends from the member.
+    descends from the member. *Completed.*
   - Commits and publications apply in canonical key order, and apply accepts
     only canonical order, by type. The least canonical failure is reported;
     nothing after it is kept. Compute already settled in the wave stays charged
     after an owner-completion failure, identically at every worker count. The
-    applied prefix and the canonical compute prefix are distinct boundaries.
+    applied prefix and the canonical compute prefix are distinct boundaries. *Completed.*
     - Canonical order is one declared identity with a total key at every
       deciding sort in Query, World, Bridge and Execution. *Completed.*
   - One execution report per advancement, a failed one included, lists its
-    commits and publications in order.
-  - A handler that does not compute needs no change.
+    commits and publications in order. *Completed.*
+  - A handler that does not compute needs no change. *Completed.*
   - Drop's closed-claim release is bounded by a fixed two-row quota; Drop charges
     no work and starts no computation. It walks the rows of its own interest's
     occurrence and releases the prerequisites of a terminal row. It performs no
     registry pass and may hand on at most one existing closed-leaf claim;
-    further claim transfers wait for a funded admission.
+    further claim transfers wait for a funded admission. *Completed.*
 - **7.8** A neutral application and the Bank reference prove identical results,
   charged work and commit order at one worker and many, and span strictly
   less than work wherever independence exists.
@@ -2810,7 +2810,7 @@ The next phase may trust that advancement exploits every declared independence.
   is committed before Phase 7 closes. *Completed.*
 - **8.2** Complete the public documentation for partition-granular reuse,
   parallel advancement and the workflow frontier; an independent review
-  checks every public statement against the code. *written, awaiting independent review*
+  checks every public statement against the code. *Completed.*
 - **8.3** Run the complete certification and the mutation probes on x86-64 and
   wasm32.
 
