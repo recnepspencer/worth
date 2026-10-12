@@ -77,14 +77,14 @@ impl RawAccess<'_> {
         }
     }
 
-    fn macro_access(&mut self, tokens: TokenStream) {
+    fn macro_syntax(&mut self, tokens: TokenStream) -> bool {
         // Parsed items own their descendant groups. Recurse through tokens only
         // when this fragment is not an item list, so each body is scanned once.
         if let Ok(file) = syn::parse2::<syn::File>(tokens.clone()) {
             for item in &file.items {
                 self.visit_item(item);
             }
-            return;
+            return true;
         }
         // Expression arguments also own their descendants once parsed. This
         // covers literal aliases in matches!, including nested macro calls.
@@ -95,19 +95,29 @@ impl RawAccess<'_> {
             for expression in &expressions {
                 self.visit_expr(expression);
             }
+            return true;
+        }
+        false
+    }
+
+    fn macro_access(&mut self, tokens: TokenStream) {
+        if self.macro_syntax(tokens.clone()) {
             return;
         }
         let tokens: Vec<_> = tokens.into_iter().collect();
-        // A DSL fragment owns each token group once; path candidates are
-        // disjoint, rather than reparsing every possible start/end pair.
         super::macro_paths::scan(&tokens, |fragment| match fragment {
-            super::macro_paths::Fragment::RawMember(span) => self.refuse(span),
-            super::macro_paths::Fragment::Path(path) => {
-                if !self.qualified_access(path.qself.as_ref(), &path.path) {
-                    self.path_access(&path.path);
-                }
+            super::macro_paths::Fragment::Mention(path) => {
+                let ty = syn::Type::Path(syn::TypePath {
+                    qself: None,
+                    path: path.clone(),
+                });
+                self.aliases.mentions_raw(&ty, &self.scope)
             }
-            super::macro_paths::Fragment::Group(tokens) => self.macro_access(tokens),
+            super::macro_paths::Fragment::Read(span) => {
+                self.refuse(span);
+                false
+            }
+            super::macro_paths::Fragment::Items(tokens) => self.macro_syntax(tokens),
         });
     }
 }
