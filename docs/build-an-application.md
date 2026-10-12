@@ -1153,10 +1153,10 @@ preparation, recovery, seeding, and publication. Its memory and aggregate work
 limits apply in serial placement as well as leased placement. Internal phases
 borrow custody; staged products carry facts and never retain the request.
 
-Reentering an executing public door on the same thread as an active host
-callback is refused with `ExecutionRequest(NestedOpening)`. An unrelated
+Reentering an executing public door from an active host callback or its
+descendant worker is refused with `ExecutionRequest(NestedOpening)`. An unrelated
 execution lease remains the separate `Resource(NestedLeaseMisuse)` cause.
-Another thread's public call owns its own request. Borrow the callback's phase
+An unrelated thread's public call owns its own request. Borrow the callback's phase
 for internal execution rather than opening another budget. A request
 already canceled or past its deadline is refused at request admission as
 `ExecutionRequest(Interrupted(Cancelled))` or
