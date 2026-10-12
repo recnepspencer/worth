@@ -81,14 +81,17 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         .clone();
     let retained = read(request, &vertices[0].body_key);
     successor::require_stale_source_denial(application, scope, branch, stale_source);
-    match application.with_host_advancement(|host_phase| application
-        .on_branch(branch)
-        .select(&host_phase)
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            scope,
-            wrong_source,
-        )).expect("installed host call opens")
+    let selected = application
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the Query-issued output occurrence remains selectable")
+        })
+        .expect("installed host call opens");
+    match selected.suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
+        scope, wrong_source,
+    )
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
@@ -104,11 +107,16 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             )
         })
         .expect("installed host call opens");
-    let recovery = match application.with_host_advancement(|host_phase| application
-        .on_branch(branch)
-        .select(&host_phase)
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)).expect("installed host call opens")
+    let selected = application
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the Query-issued output occurrence remains selectable")
+        })
+        .expect("installed host call opens");
+    let recovery = match selected
+        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(recovery)) => recovery,
         Err(failure) => panic!(
