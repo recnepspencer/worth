@@ -91,6 +91,9 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         let acquisitions = owner_probe.acquisitions_for_test();
         owner_probe.with_owner_lock_for_test(&request, || assert!(owner_probe.is_locked_for_test()));
         assert_eq!(owner_probe.acquisitions_for_test() - acquisitions, 1);
+        let before_bridge = owner_probe.acquisitions_for_test();
+        owner_probe.count_bridge_lock_for_test(&request);
+        assert_eq!(owner_probe.acquisitions_for_test() - before_bridge, 2, "Query basis lookup and cloned Bridge handle both acquire the owner");
 
         let access = roots.iter().map(|root| {
             WorthQueryApplicationQueryAccessContext::new(&principal, root)
@@ -110,8 +113,11 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
         })).unwrap().unwrap();
         let (witness, _installed) = crate::domain_computation::primary_graph::application_query::DispatchWitness::install(None);
         let held: NativeReadRendezvousGuardForTest = witness.hold_native_reads_for_test(
-            [roots[0].entity_id(), roots[1].entity_id()], owner_probe.clone(),
+            [roots[0].entity_id(), roots[1].entity_id()], owner_probe.clone(), &request,
         );
+        let before_release = owner_probe.acquisitions_for_test();
+        witness.release_native_snapshot_for_test();
+        assert_eq!(owner_probe.acquisitions_for_test() - before_release, 1, "a real snapshot release acquires the same owner");
         witness.with_native_owner_lock_for_test(&request, || assert!(owner_probe.is_locked_for_test()));
         let mut pins = Default::default();
         let reads_before = crate::facade::primary_graph::installed_source_reads_on_this_thread_for_test();

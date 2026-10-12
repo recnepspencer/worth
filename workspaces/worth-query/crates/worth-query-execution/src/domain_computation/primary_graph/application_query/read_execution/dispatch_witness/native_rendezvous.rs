@@ -6,6 +6,7 @@ pub(super) struct NativeReadRendezvous {
     owner: ReadLockProbeForTest,
     state: Mutex<NativeState>,
     ready: Condvar,
+    read_snapshot: Mutex<Vec<worth_relational::facade::snapshots::SnapshotHandle>>,
 }
 #[derive(Default)]
 struct NativeState {
@@ -30,13 +31,19 @@ impl DispatchWitness {
         self: &Arc<Self>,
         roots: [EntityId; 2],
         owner: ReadLockProbeForTest,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> NativeReadRendezvousGuardForTest {
         assert_ne!(roots[0], roots[1]);
+        let snapshots = vec![
+            owner.retain_snapshot_for_test(request),
+            owner.retain_snapshot_for_test(request),
+        ];
         let gate = Arc::new(NativeReadRendezvous {
             roots,
             owner,
             state: Mutex::new(NativeState::default()),
             ready: Condvar::new(),
+            read_snapshot: Mutex::new(snapshots),
         });
         let previous = self.native_reads.lock().unwrap().replace(Arc::clone(&gate));
         NativeReadRendezvousGuardForTest {
@@ -54,6 +61,13 @@ impl DispatchWitness {
         match gate {
             Some(gate) => gate.owner.with_owner_lock_for_test(request, read),
             None => read(),
+        }
+    }
+    pub(in crate::domain_computation::primary_graph) fn release_native_snapshot_for_test(&self) {
+        if let Some(gate) = self.native_reads.lock().unwrap().clone() {
+            if let Some(snapshot) = gate.read_snapshot.lock().unwrap().pop() {
+                gate.owner.release_snapshot_for_test(&snapshot);
+            }
         }
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn native_read_exit(
@@ -173,6 +187,9 @@ impl Drop for NativeReadRendezvousGuardForTest {
                 .unwrap_or_else(|poisoned| poisoned.into_inner());
             state.open = true;
             self.gate.ready.notify_all();
+        }
+        if let Some(snapshot) = self.gate.read_snapshot.lock().unwrap().pop() {
+            self.gate.owner.release_snapshot_for_test(&snapshot);
         }
         *self
             .witness
