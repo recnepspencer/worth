@@ -332,7 +332,7 @@ impl WorthQueryOutputDemandRegistry {
         state.install_required_member(required_member);
         let retired = state.take_optional_closed_cleanup(admission);
         drop(state);
-        drop(retired);
+        self.finish_foreign_cleanup(retired);
         Ok(interest)
     }
 }

@@ -39,6 +39,13 @@ impl DemandRegistryState {
         retained_key_bytes: usize,
     ) -> bool {
         // A note is conservative; the paid drain resolves whether a stale owner still awaits it.
+        if !self
+            .records
+            .get(key.as_ref())
+            .is_some_and(DemandRecord::terminal)
+        {
+            return false;
+        }
         let awaited = false;
         self.defer_terminal_cleanup_with_awaited(key, retained_key_bytes, awaited)
     }
@@ -106,17 +113,22 @@ impl DemandRegistryState {
         {
             return false;
         }
+        let closed_note = record.closed_cleanup.queued_note();
         record.pending_cleanup_next = self.pending_cleanup_head.take();
         record.pending_cleanup_queued = true;
         record.pending_cleanup_key_bytes = retained_key_bytes;
+        record.finish();
         self.pending_cleanup_head = Some(Arc::clone(key));
+        if let Some(note) = closed_note {
+            self.take_closed_note(note).prune(|_| ());
+        }
         true
     }
 }
 
 /// Field order preserves the key and removed row through their physical
 /// destruction before the retained membership can refund its capacity.
-struct RetiredTerminalCleanup {
+pub(super) struct RetiredTerminalCleanup {
     _released: Vec<Arc<WorthQueryOutputDemandKey>>,
     _checkpoint: Option<super::prerequisite_claims::CheckpointPrerequisiteClaims>,
     _settlements: Vec<(
@@ -126,11 +138,12 @@ struct RetiredTerminalCleanup {
     _retired_members: Vec<super::required_members::DetachedRequiredMember>,
     _obligations: Vec<super::PerformedOutputObligation>,
     _own_member: super::required_members::DetachedRequiredMember,
+    _newest_member: super::required_members::DetachedRequiredMember,
     _removed: Option<DemandRecord>,
     _head: Arc<WorthQueryOutputDemandKey>,
     _member: Option<Arc<super::required_work::RequiredWorkMembership>>,
-    refund_required_bytes: usize,
-    refund_obligation_bytes: usize,
+    pub(super) refund_required_bytes: usize,
+    pub(super) refund_obligation_bytes: usize,
     _successor: Option<super::held_successor::HeldRequiredSuccessor>,
 }
 

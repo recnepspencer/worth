@@ -60,8 +60,9 @@ impl DemandRegistryState {
             let Some(record) = self.records.get(&key) else {
                 continue;
             };
-            let awaited = awaited_by_stale_owner(&self.records, &key, charge)?;
-            let retirement = match record.idle_disposition(awaited) {
+            // Classify a candidate without repeating the occurrence walk.
+            // held() below resolves the awaited fact before any retirement.
+            let retirement = match record.idle_disposition(false) {
                 super::super::IdleRowDisposition::Retired(reason)
                     if reason.releases_finished_work() =>
                 {

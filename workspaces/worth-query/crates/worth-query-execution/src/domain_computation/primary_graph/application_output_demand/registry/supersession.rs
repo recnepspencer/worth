@@ -38,6 +38,7 @@ pub(super) fn supersede_predecessors(
                 .iter()
                 .map(|upstream| (upstream.as_ref().clone(), 3))
         })
+        .chain(keys.iter().map(|key| (key.clone(), 1)))
         .collect();
     let priced = super::refreshed_rejoin::price_mutation(
         state,
@@ -63,16 +64,24 @@ pub(super) fn supersede_predecessors(
                 priced.release_prerequisites(key);
             }
         }
-        let state = priced.state_mut();
         for key in keys {
+            let unfinished = match priced.disposition(&key).expect("occurrence key exists") {
+                super::IdleRowDisposition::InFlight
+                | super::IdleRowDisposition::KeptAnswer
+                | super::IdleRowDisposition::HeldForStaleOwner => true,
+                super::IdleRowDisposition::Retired(reason) => !reason.releases_finished_work(),
+            };
+            let state = priced.state();
             let record = state.records.get(&key).expect("occurrence key exists");
             let keep = &key == successor
                 || record.interests != 0
                 || record.framework_required_count != 0
                 || record.prepared_prerequisite_claims != 0
                 || record.pending_cleanup_queued
-                || !record.terminal();
+                || unfinished;
             if !keep {
+                priced.release_prerequisites(&key);
+                let state = priced.state_mut();
                 let record = state.remove_record(&key).expect("selected row exists");
                 state.obligation_reserved_bytes = state
                     .obligation_reserved_bytes

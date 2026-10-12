@@ -9,6 +9,7 @@ const CLOSED_CLAIM_RELEASE_QUOTA: usize = 2;
 #[derive(Default)]
 struct ReleasedRowCustody {
     ready: Option<super::super::super::WorthQueryOutputCheckpoint>,
+    row: Option<super::super::super::DemandRecord>,
     prior: Vec<Arc<WorthQueryOutputDemandKey>>,
     batch: Option<super::super::super::claim_readthrough::ClaimBatch>,
     member: super::super::super::required_members::DetachedRequiredMember,
@@ -103,6 +104,14 @@ impl DemandRegistryState {
             self.required_reserved_bytes = self
                 .required_reserved_bytes
                 .saturating_sub(slot.member.refund_required_bytes);
+            if slot.prior.is_empty()
+                && self
+                    .records
+                    .get(key)
+                    .is_some_and(|row| row.settlements.is_empty())
+            {
+                slot.row = self.remove_record(key);
+            }
             cursor = slot.prior.first().map(Arc::clone);
             if cursor.is_none() {
                 break;

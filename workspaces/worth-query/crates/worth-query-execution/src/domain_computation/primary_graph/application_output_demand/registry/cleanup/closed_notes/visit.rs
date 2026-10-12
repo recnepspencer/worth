@@ -49,6 +49,7 @@ impl<'a> ClosedRowNote<'a> {
             .get(&self.node.key_arc())
             .is_some_and(|row| {
                 Arc::ptr_eq(&row.closed_cleanup.0, &self.node)
+                    && !row.pending_cleanup_queued
                     && (row.terminal()
                         || row.prerequisites.iter().any(|upstream| {
                             self.state

@@ -239,21 +239,36 @@ impl From<Map> for DemandRecords {
     }
 }
 #[cfg(feature = "test-query-execution-observer")]
-impl<Schema>
-    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
-{
-    #[doc(hidden)]
-    pub fn registry_row_count_for_test(&self) -> usize {
-        self.output_demands
-            .state
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .records
-            .len()
+mod observation {
+    use super::*;
+    impl<Schema>
+        crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+    {
+        #[doc(hidden)]
+        pub fn registry_row_count_for_test(&self) -> usize {
+            self.output_demands
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .records
+                .len()
+        }
+        #[doc(hidden)]
+        pub fn whole_registry_rows_visited_for_test(&self) -> u64 {
+            whole_rows()
+        }
     }
-    #[doc(hidden)]
-    pub fn whole_registry_rows_visited_for_test(&self) -> u64 {
-        whole_rows()
+
+    impl DemandRecords {
+        pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn publication_count_for_test(
+            &self,
+        ) -> usize {
+            self.3
+                 .0
+                .values()
+                .map(|h| h.undelivered.load(std::sync::atomic::Ordering::Acquire))
+                .sum()
+        }
     }
 }
 
@@ -332,16 +347,5 @@ impl DemandRecords {
         crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
     > {
         self.3.selection(occurrence, admission)
-    }
-}
-
-#[cfg(feature = "test-query-execution-observer")]
-impl DemandRecords {
-    pub(super) fn publication_count_for_test(&self) -> usize {
-        self.3
-             .0
-            .values()
-            .map(|h| h.undelivered.load(std::sync::atomic::Ordering::Acquire))
-            .sum()
     }
 }

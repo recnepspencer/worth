@@ -3,6 +3,36 @@ use super::super::refreshed_rejoin::{occurrence_rows, OccurrenceSearchCharge};
 use super::*;
 
 pub(in super::super) const FOREIGN_CLOSED_DRAIN_QUOTA: usize = 1;
+pub(in super::super) struct RetiredForeignCleanup {
+    rows: RetiredClosedRows,
+    terminal: Option<super::RetiredTerminalCleanup>,
+}
+impl RetiredForeignCleanup {
+    fn closed(rows: RetiredClosedRows) -> Self {
+        Self {
+            rows,
+            terminal: None,
+        }
+    }
+    fn terminal(terminal: super::RetiredTerminalCleanup) -> Self {
+        Self {
+            rows: (Vec::new(), Vec::new()),
+            terminal: Some(terminal),
+        }
+    }
+    fn destroy(self) -> (usize, usize) {
+        let Self { rows, terminal } = self;
+        let refund = terminal.as_ref().map_or((0, 0), |retired| {
+            (
+                retired.refund_required_bytes,
+                retired.refund_obligation_bytes,
+            )
+        });
+        drop(rows);
+        drop(terminal);
+        refund
+    }
+}
 type RetiredClosedRows = (Vec<DemandRecord>, Vec<Arc<WorthQueryOutputDemandKey>>);
 
 impl DemandRegistryState {
@@ -56,7 +86,14 @@ impl DemandRegistryState {
     pub(in super::super) fn take_optional_closed_cleanup(
         &mut self,
         admission: &mut InvalidationEditAdmission,
-    ) -> Option<RetiredClosedRows> {
+    ) -> Option<RetiredForeignCleanup> {
+        if self.pending_cleanup_head.is_some() {
+            if let Some(retired) = admission.optional_cleanup_quote(|admission| {
+                self.take_terminal_cleanup_step(admission, false)
+            }) {
+                return retired.map(RetiredForeignCleanup::terminal);
+            }
+        }
         debug_assert_eq!(FOREIGN_CLOSED_DRAIN_QUOTA, 1);
         let note = self.closed_cleanup.front()?;
         let retired = admission
@@ -64,7 +101,7 @@ impl DemandRegistryState {
         if retired.is_none() {
             self.closed_cleanup.rotate_front();
         }
-        retired
+        retired.map(RetiredForeignCleanup::closed)
     }
 }
 
@@ -83,7 +120,20 @@ impl WorthQueryOutputDemandRegistry {
             state.drain_foreign_custody_quota(admission);
             retired
         };
-        drop(retired);
+        self.finish_foreign_cleanup(retired);
+    }
+
+    pub(in super::super) fn finish_foreign_cleanup(&self, retired: Option<RetiredForeignCleanup>) {
+        if let Some(retired) = retired {
+            let (required, obligations) = retired.destroy();
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            state.required_reserved_bytes = state.required_reserved_bytes.saturating_sub(required);
+            state.obligation_reserved_bytes =
+                state.obligation_reserved_bytes.saturating_sub(obligations);
+        }
     }
 
     #[cfg(test)]
@@ -92,18 +142,32 @@ impl WorthQueryOutputDemandRegistry {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
         let visits = self.state.lock().unwrap().closed_cleanup.len();
-        for _ in 0..visits {
+        for pass in 0..=visits {
+            loop {
+                let retired = {
+                    let mut state = self.state.lock().unwrap();
+                    if state.pending_cleanup_head.is_some() {
+                        state.take_terminal_cleanup_step(admission, false)?
+                    } else {
+                        None
+                    }
+                };
+                let Some(retired) = retired else {
+                    break;
+                };
+                self.finish_foreign_cleanup(Some(RetiredForeignCleanup::terminal(retired)));
+            }
+            if pass == visits {
+                break;
+            }
             let retired = {
-                let mut state = self
-                    .state
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut state = self.state.lock().unwrap();
                 let Some(note) = state.closed_cleanup.front() else {
                     break;
                 };
                 state.take_closed_cleanup_step(note, admission)?
             };
-            drop(retired);
+            self.finish_foreign_cleanup(Some(RetiredForeignCleanup::closed(retired)));
         }
         Ok(())
     }

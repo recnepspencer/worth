@@ -104,55 +104,7 @@ impl DemandRegistryState {
                 .map_err(|_| work_denial())?;
         }
         let edges = record.prerequisites.len();
-        let identities = record.settlements.len();
-        // Static checkpoint destruction was prepaid at admission; detach it
-        // below without charging that per-identity work a second time.
-        let selected_slots = edges.checked_add(identities).ok_or_else(work_denial)?;
-        admission
-            .charge_external_work(selected_slots as u64)
-            .map_err(|_| work_denial())?;
-        let maximum_key_work = record
-            .prerequisites
-            .iter()
-            .map(|key| key_work(key))
-            .try_fold(0u64, |maximum, bytes| bytes.map(|bytes| maximum.max(bytes)))?;
-        let navigation = super::super::prerequisite_work::prior_release_work(
-            self.records.len().max(self.required_keys.len()),
-            edges,
-            usize::try_from(maximum_key_work).map_err(|_| work_denial())?,
-        )?;
-        admission
-            .charge_external_work(
-                (navigation as u64)
-                    .checked_add(edges as u64)
-                    .ok_or_else(work_denial)?,
-            )
-            .map_err(|_| work_denial())?;
-        // Each upstream edge reaches a record decrement, two membership
-        // record probes, and a terminal-defer record probe. A released key
-        // may then rotate/merge three required-set nodes at each level.
-        let required_count = self.required_keys.len();
-        let required_levels = usize::BITS as usize - required_count.max(1).leading_zeros() as usize;
-        let required_node =
-            super::super::required_members::minimum_member_bytes().ok_or_else(work_denial)?;
-        for upstream in &record.prerequisites {
-            for _ in 0..4 {
-                self.charge_record_lookup(upstream, admission)?;
-            }
-            super::super::required_work::charge_required_key_lookup(self, upstream, admission)?;
-            let movement = required_levels
-                .checked_mul(3)
-                .and_then(|nodes| nodes.checked_mul(required_node))
-                .and_then(|work| work.checked_add(4))
-                .ok_or_else(work_denial)?;
-            admission
-                .charge_external_work(
-                    (u64::try_from(movement).map_err(|_| work_denial())?)
-                        .checked_add(1)
-                        .ok_or_else(work_denial)?,
-                )
-                .map_err(|_| work_denial())?;
-        }
+        self.admit_record_prerequisite_release(head.as_ref(), admission)?;
         self.settlement_keys.admit_selected_removal_work(
             record.settlements.iter().map(|(identity, _)| identity),
             admission,
@@ -209,7 +161,7 @@ impl DemandRegistryState {
             .prerequisites
             .iter()
             .map(|upstream| (upstream.as_ref().clone(), 3))
-            .chain(std::iter::once((head.as_ref().clone(), 1)))
+            .chain(std::iter::once((head.as_ref().clone(), 3)))
             .collect();
         let priced = price_mutation(
             self,
@@ -257,11 +209,18 @@ impl DemandRegistryState {
                     && record.performed_source.is_none()
                     && !record.pending_cleanup_queued
             }) {
-                state.remove_record(head.as_ref())
+                if let Some(note) = state.records.get(head.as_ref()).and_then(|row| row.closed_cleanup.queued_note()) {
+                    // This paid terminal step completes its own closed note;
+                    // unrelated stale notes remain the optional drain's debt.
+                    state.take_closed_note(note).prune(|state| state.remove_record(head.as_ref()))
+                } else { state.remove_record(head.as_ref()) }
             } else {
                 None
             };
+            let newest_member = priced.release_newest_member(head.as_ref());
+            let refund_required_bytes = refund_required_bytes.checked_add(newest_member.refund_required_bytes).expect("admitted newest member refund fits");
             Ok(Some(RetiredTerminalCleanup {
+                _newest_member: newest_member,
                 _successor: successor,
                 _released: released,
                 _settlements: settlements,

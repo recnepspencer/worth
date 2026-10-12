@@ -189,6 +189,21 @@ impl PricedMutation<'_> {
         infallible(operation(&mut self))
     }
 
+    pub(in super::super) fn disposition(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> Option<super::super::IdleRowDisposition> {
+        let awaited = infallible(super::awaited_by_stale_owner(
+            &self.state.records,
+            key,
+            &mut self.charge,
+        ));
+        self.state
+            .records
+            .get(key)
+            .map(|row| row.idle_disposition(awaited))
+    }
+
     pub(in super::super) fn state(&self) -> &DemandRegistryState {
         self.state
     }
@@ -216,6 +231,18 @@ impl PricedMutation<'_> {
             self.state
                 .release_record_prerequisites_detached(key, members, &mut self.charge),
         )
+    }
+
+    pub(in super::super) fn release_newest_member(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+    ) -> super::super::required_members::DetachedRequiredMember {
+        let newest = infallible(super::newest_of_occurrence(
+            &self.state.records,
+            key,
+            &mut self.charge,
+        ));
+        newest.map_or_else(Default::default, |newest| self.release_member(&newest))
     }
 
     pub(in super::super) fn release_member(

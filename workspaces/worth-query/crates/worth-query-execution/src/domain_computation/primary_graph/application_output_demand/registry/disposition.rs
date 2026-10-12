@@ -74,6 +74,9 @@ impl RowRetirement {
 
 impl DemandRecord {
     pub(super) fn terminal(&self) -> bool {
-        matches!(self.idle_disposition(false), IdleRowDisposition::Retired(reason) if reason.releases_finished_work())
+        matches!(
+            self.idle_disposition(false),
+            IdleRowDisposition::Retired(RowRetirement::Finished)
+        )
     }
 }

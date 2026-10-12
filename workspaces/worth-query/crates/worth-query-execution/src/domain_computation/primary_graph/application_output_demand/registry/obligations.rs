@@ -73,6 +73,51 @@ impl DemandRegistryState {
         Ok(std::iter::once(upstream.clone()).chain(newest))
     }
 
+    fn release_claim_members<C: OccurrenceSearchCharge<Refusal = Infallible>>(
+        &mut self,
+        upstream: &Arc<WorthQueryOutputDemandKey>,
+        mut retired: Option<&mut Vec<super::required_members::DetachedRequiredMember>>,
+        charge: &mut C,
+    ) -> Result<usize, C::Refusal> {
+        let mut refund = 0usize;
+        for released in self.released_by_claim(upstream, charge)? {
+            // The awaiting fact is read once after the claim decrement and
+            // carried through both membership and cleanup decisions.
+            let awaited =
+                super::refreshed_rejoin::awaited_by_stale_owner(&self.records, &released, charge)?;
+            let funded_key = self.required_keys.get(&released).cloned();
+            let abandoned = self.records.get(&released).is_some_and(|record| {
+                matches!(
+                    record.idle_disposition(awaited),
+                    super::IdleRowDisposition::Retired(reason) if reason.releases_finished_work() && record.interests == 0
+                ) || record.successor_is_orphaned(awaited)
+            });
+            if abandoned
+                && funded_key
+                    .as_ref()
+                    .is_some_and(|key| self.defer_released_member_cleanup(key, awaited))
+            {
+                continue;
+            }
+            let member = self.remove_required_member_with_awaited(&released, awaited);
+            if let Some(retired) = retired.as_deref_mut() {
+                refund = refund
+                    .checked_add(member.refund_required_bytes)
+                    .expect("admitted required member charge fits");
+                retired.push(member);
+            } else {
+                self.required_reserved_bytes = self
+                    .required_reserved_bytes
+                    .saturating_sub(member.refund_required_bytes);
+                drop(member);
+            }
+            if &released == upstream.as_ref() {
+                self.defer_terminal_cleanup_with_awaited(upstream, 0, awaited);
+            }
+        }
+        Ok(refund)
+    }
+
     pub(super) fn release_record_prerequisites_detached<
         C: OccurrenceSearchCharge<Refusal = Infallible>,
     >(
@@ -128,18 +173,13 @@ impl DemandRegistryState {
                 .expect("framework prerequisite record remains retained");
             record.framework_required_count -= 1;
             record.finish();
-            for released in self.released_by_claim(upstream, charge)? {
-                if let Some(retired) = retired_members.as_deref_mut() {
-                    let member =
-                        self.remove_required_member_if_released_detached(&released, charge)?;
-                    refund = refund
-                        .checked_add(member.refund_required_bytes)
-                        .expect("admitted required member charge fits");
-                    retired.push(member);
-                } else {
-                    self.remove_required_member_if_released(&released, charge)?;
-                }
-            }
+            refund = refund
+                .checked_add(self.release_claim_members(
+                    upstream,
+                    retired_members.as_deref_mut(),
+                    charge,
+                )?)
+                .expect("admitted member refund fits");
         }
         for upstream in &prior {
             self.defer_terminal_cleanup(upstream, 0);
@@ -211,9 +251,7 @@ impl DemandRegistryState {
                     .expect("framework prerequisite record remains retained");
                 record.framework_required_count -= 1;
                 record.finish();
-                for released in self.released_by_claim(upstream, charge)? {
-                    self.remove_required_member_if_released(&released, charge)?;
-                }
+                self.release_claim_members(upstream, None, charge)?;
             }
         }
         for prior in &released {

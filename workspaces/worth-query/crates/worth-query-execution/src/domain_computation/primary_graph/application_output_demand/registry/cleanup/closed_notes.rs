@@ -213,7 +213,18 @@ impl DemandRegistryState {
         &mut self,
         key: &WorthQueryOutputDemandKey,
     ) -> Option<DemandRecord> {
-        self.records.remove(key)
+        let row = self.records.remove(key)?;
+        if let Some(member) = &row.work_membership {
+            member.set_required(false);
+        }
+        // Membership is derived from a live row. Once that row leaves, a
+        // stale owner's claim cannot keep a membership with no answer behind it.
+        let member = self.remove_required_member_with_awaited(key, false);
+        self.required_reserved_bytes = self
+            .required_reserved_bytes
+            .saturating_sub(member.refund_required_bytes);
+        drop(member);
+        Some(row)
     }
     pub(in super::super) fn take_closed_note(
         &mut self,

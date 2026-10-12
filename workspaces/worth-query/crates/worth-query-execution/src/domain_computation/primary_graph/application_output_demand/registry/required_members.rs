@@ -135,14 +135,28 @@ impl DemandRegistryState {
         key: &WorthQueryOutputDemandKey,
         charge: &mut C,
     ) -> Result<DetachedRequiredMember, C::Refusal> {
-        // Only a row is required or awaited: the member of one that left
-        // leaves with it.
-        if let Some(record) = self.records.get(key) {
-            if record.is_required()
-                || super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key, charge)?
-            {
-                return Ok(DetachedRequiredMember::default());
-            }
+        if self
+            .records
+            .get(key)
+            .is_some_and(|record| record.is_required())
+        {
+            return Ok(DetachedRequiredMember::default());
+        }
+        let awaited = super::refreshed_rejoin::awaited_by_stale_owner(&self.records, key, charge)?;
+        Ok(self.remove_required_member_with_awaited(key, awaited))
+    }
+
+    pub(super) fn remove_required_member_with_awaited(
+        &mut self,
+        key: &WorthQueryOutputDemandKey,
+        awaited: bool,
+    ) -> DetachedRequiredMember {
+        if self
+            .records
+            .get(key)
+            .is_some_and(|record| record.is_required() || awaited)
+        {
+            return DetachedRequiredMember::default();
         }
         self.note_record_custody(key);
         let mut retired_source = None;
@@ -164,10 +178,10 @@ impl DemandRegistryState {
             .as_ref()
             .map(|member| member_bytes(member.as_ref()).expect("admitted key charge fits"))
             .unwrap_or(0);
-        Ok(DetachedRequiredMember {
+        DetachedRequiredMember {
             _source: retired_source,
             _key: removed_key,
             refund_required_bytes,
-        })
+        }
     }
 }

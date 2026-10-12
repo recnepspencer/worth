@@ -36,11 +36,15 @@ impl WorthQueryOutputDemandRegistry {
                 record.required_interests = record.required_interests.saturating_sub(1);
             }
         }
-        let awaited = infallible(refreshed_rejoin::awaited_by_stale_owner(
-            &state.records,
-            &interest.key,
-            &mut charge,
-        ));
+        let needs_awaited = state.records.get(&interest.key).is_some_and(|row| matches!(&row.state,
+            DemandState::Output(output) if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
+            && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Published { .. } | WorthQueryOutputCheckpoint::Delivered { .. }))));
+        let awaited = needs_awaited
+            && infallible(refreshed_rejoin::awaited_by_stale_owner(
+                &state.records,
+                &interest.key,
+                &mut charge,
+            ));
         let mut retirement = None;
         let remove = state
             .records
@@ -110,7 +114,14 @@ impl WorthQueryOutputDemandRegistry {
             .and_then(|mut record| record.take_unawaited_reopened());
         // A closing stale owner may have been the last one awaiting the
         // newest row of its occurrence.
-        if terminal && !queued {
+        let mut retired_newest = Vec::new();
+        let mut newest_claims = Vec::new();
+        if terminal
+            && !state
+                .records
+                .get(&interest.key)
+                .is_some_and(|row| row.closed_cleanup.queued())
+        {
             if let Some(newest) = infallible(refreshed_rejoin::newest_of_occurrence(
                 &state.records,
                 &interest.key,
@@ -119,6 +130,21 @@ impl WorthQueryOutputDemandRegistry {
                 state.note_record_custody(&newest);
                 infallible(state.remove_required_member_if_released(&newest, &mut charge));
                 finished = finished.or_else(|| state.take_finished_successor(&newest, &mut charge));
+                let awaited = infallible(refreshed_rejoin::awaited_by_stale_owner(
+                    &state.records,
+                    &newest,
+                    &mut charge,
+                ));
+                let abandoned = state.records.get(&newest).is_some_and(|row| {
+                    matches!(
+                        row.idle_disposition(awaited),
+                        IdleRowDisposition::Retired(RowRetirement::AbandonedPublication)
+                    ) && !super::closed_retirement::held_by_row(row)
+                });
+                if abandoned {
+                    newest_claims =
+                        infallible(state.retire_row(&newest, &mut retired_newest, &mut charge));
+                }
             }
         }
         state.obligation_reserved_bytes = state
@@ -129,6 +155,8 @@ impl WorthQueryOutputDemandRegistry {
         drop(finished);
         drop(unawaited);
         drop(released_custody);
+        drop(retired_newest);
+        drop(newest_claims);
     }
 }
 

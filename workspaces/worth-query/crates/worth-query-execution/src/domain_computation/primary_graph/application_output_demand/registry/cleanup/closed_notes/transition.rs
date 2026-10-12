@@ -10,7 +10,7 @@ pub(super) fn publish(row: &DemandRecord, node: &Arc<ClosedNoteBacking>) {
                         || row.prepared_prerequisite_claims != 0
                         || !row.settlements.is_empty()
                         || !row.performed_obligations.is_empty()))));
-    if !debt || node.closed_note.lock().unwrap().visiting {
+    if row.pending_cleanup_queued || !debt || node.closed_note.lock().unwrap().visiting {
         return;
     }
     if let Some(order) = node.order.lock().unwrap().upgrade() {

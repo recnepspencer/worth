@@ -22,6 +22,8 @@ impl WorthQueryOutputDemandRegistry {
                 self.drain_foreign_cleanup(admission);
                 return Ok(());
             };
+            #[cfg(test)]
+            self.state.lock().unwrap().records.note_cleanup_entry();
             let refund = retired.refund_required_bytes;
             let obligation_refund = retired.refund_obligation_bytes;
             let released = std::mem::take(&mut retired._settlements);
