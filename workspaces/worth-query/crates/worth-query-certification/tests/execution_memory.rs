@@ -25,8 +25,9 @@ use worth_query_host::facade::{
     },
 };
 
-// Ample for bootstrap admission; the ledger subject does not depend on this absolute size.
-const AUTHORITY_BYTES: usize = 4 * 1024;
+// Headroom for bootstrap and charged native reads; the ledger proof below fills
+// this capacity and does not depend on its absolute size.
+const AUTHORITY_BYTES: usize = 64 * 1024;
 const RETAINED_BYTES: usize = 96;
 // This proof constrains memory; ordinary principal/product reads also need work.
 const ORDINARY_READ_WORK: u64 = 1024;
