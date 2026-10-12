@@ -293,8 +293,9 @@ impl WorthQueryOutputDemandRegistry {
         }
         output.install_checkpoint(checkpoint);
         match denial {
-            Some(denial) if denial.recovery_posture()
-                != crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable => output.finish_stopped(denial.clone()),
+            Some(denial) if super::required_stop::fails_row(denial) => {
+                output.finish_stopped(denial.clone())
+            }
             _ => output.reopen(),
         };
         let terminal = matches!(
