@@ -27,14 +27,25 @@ fn zero_memory_public_frontier_refuses_without_retaining_start_receipts() {
     // Admission precedes any inspection of the held run or the frontier. The
     // refused call must retain none of that input's earlier start evidence.
     let (record, work, failed) = observe_members(held, members(1, None), &mut workspace, None);
+    let Some(Denial::ExecutionRequest(WorthQueryAdvancementDenial::Resource(
+        WorthQueryManagedComputationResourceDenial::MemoryLimit {
+            level,
+            requested,
+            admitted,
+        },
+    ))) = record.outcome
+    else {
+        panic!(
+            "the serial request retains its leased memory refusal: {:?}",
+            record.outcome
+        );
+    };
     assert_eq!(
-        record.outcome,
-        Some(Denial::ExecutionRequest(
-            WorthQueryAdvancementDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::PolicyMemoryLimit
-            )
-        ))
+        level,
+        worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy
     );
+    assert_eq!(admitted, 0);
+    assert!(requested > 0);
     assert!(!failed);
     assert_eq!(work, 0);
     assert!(probe.take_computes().is_empty());
@@ -76,19 +87,16 @@ fn admitted_opening_refuses_the_owned_maps_declared_reservation() {
     let root = super::reservation::framework(&lease, 1);
     let mut sample = Policy::width(0).workspace(request_execution, &probe);
     let sample_run = start(&mut sample);
-    let (requested, admitted) = sample
-        .advancement_owner()
-        .with_advancement(|_phase| {
-            let nested = super::reservation::framework(&lease, 1);
-            let map = super::reservation::framework(&lease, 3);
+    let owner = sample.advancement_owner();
+    let (requested, admitted) = owner
+        .with_advancement(|phase| {
             let mut declaration = members(1, None);
             declaration[0].1 = domain::WorthQueryWorkflowValue::Text("1:9:131072".into());
-            (
-                map + super::reservation::declared_reservation(
-                    sample_run.prepare_frontier_computation(declaration),
-                ),
-                bytes - root - nested,
-            )
+            let (scope, map) = super::reservation::scoped_map_reservation(
+                phase.checked_execution_request_for(&owner).unwrap(),
+                sample_run.prepare_frontier_computation(declaration),
+            );
+            (map, bytes - root - scope)
         })
         .unwrap();
     assert!(requested > bytes);

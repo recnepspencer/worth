@@ -63,6 +63,12 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
         "one request spans the caller pass and delivery"
     );
     let charged = reports[0].as_ref().unwrap().charged_work();
+    assert!(
+        charged
+            <= super::support::observation::CHECKPOINT_EXECUTION_POLICY
+                .budget()
+                .work_ceiling()
+    );
     let signal_units: u64 = signal_charges().into_iter().sum();
     assert!(
         signal_units > 0,

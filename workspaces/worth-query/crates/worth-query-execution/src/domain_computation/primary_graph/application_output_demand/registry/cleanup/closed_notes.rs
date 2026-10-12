@@ -214,6 +214,20 @@ impl DemandRegistryState {
         key: &WorthQueryOutputDemandKey,
     ) -> Option<DemandRecord> {
         let row = self.records.remove(key)?;
+        if matches!(
+            row.idle_disposition(false),
+            super::super::IdleRowDisposition::Retired(
+                super::super::RowRetirement::AbandonedPublication
+            )
+        ) {
+            if let Some(scope) = row.source_scope {
+                for commit in &row.source_commits {
+                    if let Some(custody) = self.source_custody.get_mut(commit) {
+                        custody.return_undelivered_root(&key.source, scope);
+                    }
+                }
+            }
+        }
         if let Some(member) = &row.work_membership {
             member.set_required(false);
         }

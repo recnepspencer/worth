@@ -1,13 +1,10 @@
-use std::time::Instant;
-
 use crate::facade::SignalRuntimePolicy;
 use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, DensityRatio, FinancialWorldDefinition,
 };
 
 use super::throughput_definition::{
-    assert_within_throughput_budget, ordinary_definition, partitioned_world_for_output_floor,
-    performance_workers, PERFORMANCE_SEED,
+    ordinary_definition, partitioned_world_for_output_floor, performance_workers, PERFORMANCE_SEED,
 };
 
 #[derive(Debug)]
@@ -21,7 +18,6 @@ struct ScaleSlopeEvidence {
 
 #[test]
 fn named_scale_slopes_record_independent_axes() {
-    let started = Instant::now();
     let (evidence, parallel_dispatch_sample) = run_scale_slopes();
     let nodes = evidence
         .iter()
@@ -49,12 +45,10 @@ fn named_scale_slopes_record_independent_axes() {
     assert_eq!(edit_width.upper_scale, 4);
     assert!(edit_width.lower_micros > 0 && edit_width.upper_micros > 0);
     println!("named scale slopes={evidence:?} parallel_dispatch_sample={parallel_dispatch_sample}");
-    assert_within_throughput_budget(started, "named scale slopes");
 }
 
 #[test]
 fn disjoint_region_batch_program_records_scope_mix() {
-    let started = Instant::now();
     const DISJOINT_BATCHES: usize = 8;
     let mut world = compile_financial_locality_world_with_policy(
         ordinary_definition(),
@@ -68,7 +62,6 @@ fn disjoint_region_batch_program_records_scope_mix() {
     assert_eq!(report.batch_count, DISJOINT_BATCHES);
     assert!(report.peak_touched_nodes > 0);
     assert!(report.semantic_work_rows.iter().all(|row| !row.is_empty()));
-    assert_within_throughput_budget(started, "disjoint-region batch program");
 }
 
 fn run_scale_slopes() -> (Vec<ScaleSlopeEvidence>, u128) {

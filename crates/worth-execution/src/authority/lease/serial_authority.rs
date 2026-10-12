@@ -1,5 +1,6 @@
 //! Inline serial admissions share a ledger and never construct a worker pool.
 use super::*;
+use std::sync::OnceLock;
 
 impl ExecutionAuthority {
     /// A ledger for policy-bounded execution on the caller's thread.

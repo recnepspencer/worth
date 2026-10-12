@@ -383,7 +383,7 @@ rollback suppression
 
 per-observer transaction coalescing
 
-touched vs recomputed vs meaningful-change classification stability
+visited vs recomputed vs meaningful-change classification stability
 
 observer ordering determinism
 

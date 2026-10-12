@@ -1,4 +1,7 @@
-use std::{mem::size_of, sync::Arc};
+use std::{
+    mem::size_of,
+    sync::{Arc, OnceLock},
+};
 
 use worth_foundational::PartitionIdentity;
 
@@ -7,7 +10,7 @@ use crate::report::ChargedBytes;
 use super::{
     construction::{Built, FrontierEvent, ShapeNode, SubtreeSpec},
     edit::{deletion_depth, search_depth},
-    Link, Node, ReductionTree,
+    Link, Node, ReductionMetrics, ReductionTree,
 };
 
 /// Why an existing partition's edit memory bound cannot be computed.
@@ -54,6 +57,22 @@ impl<T, F> ReductionTree<T, F> {
     /// nodes. Six value caps cover the parent join's canonical buffers and
     /// temporaries; each parallel task reserves its own six caps separately.
     pub fn checked_build_memory_bound(partitions: usize, max_value_bytes: u64) -> Option<u64> {
+        // Scheduled construction may hold one entry and one admitted input
+        // cell for every frontier task; partitions bound the task count.
+        let task_metrics = u64::try_from(size_of::<OnceLock<ReductionMetrics>>())
+            .ok()?
+            .checked_mul(u64::try_from(partitions).ok()?)?
+            .checked_mul(2)?;
+        Self::checked_serial_build_memory_bound(partitions, max_value_bytes)?
+            .checked_add(task_metrics)
+    }
+
+    /// Checked caller-thread construction holds no scheduled task metric cells.
+    /// Its shape and evaluation buffers otherwise have the same byte law.
+    pub fn checked_serial_build_memory_bound(
+        partitions: usize,
+        max_value_bytes: u64,
+    ) -> Option<u64> {
         let count = u64::try_from(partitions).ok()?;
         let entries = u64::try_from(size_of::<(PartitionIdentity, T)>())
             .ok()?
@@ -175,4 +194,21 @@ fn path_ceiling<T>(depth: usize, max_value_bytes: u64) -> Option<u64> {
     node_ceiling::<T>(max_value_bytes)?
         .checked_mul(staged)?
         .checked_add(max_value_bytes.checked_mul(6)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn only_scheduled_builds_reserve_frontier_metric_cells() {
+        type Tree = ReductionTree<u64, fn(&u64, &u64) -> u64>;
+        for partitions in [0, 1, 3, 8] {
+            let serial = Tree::checked_serial_build_memory_bound(partitions, 8).unwrap();
+            let cells = 2 * partitions as u64 * size_of::<OnceLock<ReductionMetrics>>() as u64;
+            assert_eq!(
+                Tree::checked_build_memory_bound(partitions, 8).unwrap(),
+                serial + cells
+            );
+        }
+    }
 }

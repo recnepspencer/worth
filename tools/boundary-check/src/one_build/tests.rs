@@ -66,12 +66,8 @@ fn implicit_features_and_target_gates_cannot_reopen_two_builds() {
 
 #[test]
 fn an_injected_manifest_and_hidden_source_fail_repository_validation() {
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let temporary = std::env::temp_dir().canonicalize().unwrap();
-    let root = temporary.join(format!("worth-one-build-{}-{nonce}", std::process::id()));
+    let root = worth_harness::tooling::fixture_path::unique_path("worth-one-build");
+    let temporary = root.parent().unwrap().canonicalize().unwrap();
     std::fs::create_dir_all(root.join("workspaces/future-team")).unwrap();
     let owner = root.join("workspaces/future-team");
     std::fs::write(

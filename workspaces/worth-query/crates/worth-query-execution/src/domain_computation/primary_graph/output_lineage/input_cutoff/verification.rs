@@ -1,7 +1,9 @@
 //! Exact prior-output checks before a producer may omit its handler.
 
 mod owned;
+mod refusal;
 pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
+pub(in crate::domain_computation::primary_graph) use refusal::InputCutoffVerificationStop;
 
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop,
@@ -58,25 +60,6 @@ pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selec
         context: PreparedDecisionReuseContext,
     },
     Reuse(VerifiedInputCutoff<'selected>),
-}
-
-#[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum InputCutoffVerificationStop {
-    Admission(CompanionPreflightStop),
-    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    WorkExhausted,
-    CapacityExhausted,
-    PendingUpstream,
-    PendingOutput(std::sync::Arc<super::super::RecordedSettlementIdentity>),
-    CurrentnessRaced,
-    SelectedSourceUnavailable,
-    SelectedSourceMismatch,
-}
-
-impl From<CompanionPreflightStop> for InputCutoffVerificationStop {
-    fn from(stop: CompanionPreflightStop) -> Self {
-        Self::Admission(stop)
-    }
 }
 
 struct VerifiedDependencies {

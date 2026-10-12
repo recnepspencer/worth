@@ -2,39 +2,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan;
-use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint;
 pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
 enum ExecutionPreparation<'owner, Query, Value> {
     Reached(OwnStages<Query, Value>),
     Planned(OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
-}
-
-pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
-struct CompletionRefusal
-{
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) denial:
-        WorthQueryOutputDemandDenial,
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) checkpoint:
-        Option<WorthQueryOutputCheckpoint>,
-}
-impl CompletionRefusal {
-    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn denied(
-        denial: WorthQueryOutputDemandDenial,
-    ) -> Self {
-        Self {
-            denial,
-            checkpoint: None,
-        }
-    }
-    pub(super) fn unpublished(
-        denial: WorthQueryOutputDemandDenial,
-        checkpoint: WorthQueryOutputCheckpoint,
-    ) -> Self {
-        Self {
-            denial,
-            checkpoint: Some(checkpoint),
-        }
-    }
 }
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

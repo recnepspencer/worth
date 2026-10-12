@@ -357,3 +357,6 @@ fn partial_span_is_width_invariant_across_shape_and_frontier_sizes() {
         }
     }
 }
+
+#[path = "reduce_frontier/cancelled_prefix.rs"]
+mod cancelled_prefix;

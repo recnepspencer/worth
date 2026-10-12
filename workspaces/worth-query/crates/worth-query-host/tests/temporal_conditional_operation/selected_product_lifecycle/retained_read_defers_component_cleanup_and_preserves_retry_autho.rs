@@ -34,7 +34,12 @@ fn retained_read_defers_component_cleanup_and_preserves_retry_authority() {
                 .on_branch(survivor)
                 .select(&phase)
                 .expect("the survivor must be selectable before sibling cleanup")
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .checked_execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .expect("the surviving selection must bind its managed clock")
         })
         .expect("installed host call opens")

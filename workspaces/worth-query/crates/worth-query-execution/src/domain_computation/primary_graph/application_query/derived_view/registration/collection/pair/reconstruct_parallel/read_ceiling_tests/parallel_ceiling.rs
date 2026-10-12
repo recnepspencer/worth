@@ -3,10 +3,14 @@ use super::*;
 #[test]
 fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
     use crate::domain_computation::primary_graph::application_contribution::{
-        query_test_execution_authority_for_test, test_policy,
+        place_managed_computations_on_this_thread_for_test as place,
+        WorthQueryExecutionPlacementForTest as Placement,
     };
     use crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner;
     let _owner = isolated_request_owner();
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    place(Placement::Leased(NonZeroUsize::new(4).unwrap()));
     let world = installed_authorization_world(true);
     let scope = live_scope();
     let selected = world
@@ -62,11 +66,25 @@ fn parallel_work_exhaustion_retains_only_the_declared_completed_root_prefix() {
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
             for workers in [2, 4] {
-                let lease = query_test_execution_authority_for_test()
-                    .request_lease(worth_execution::LeaseRequest {
-                        policy: test_policy(NonZeroUsize::new(workers).unwrap(), 16 << 20),
-                        cancellation: scope.cancellation().execution_token(),
-                        deadline: scope.deadline(),
+                let lease = host_custody
+                    .borrowed_request_for_test()
+                    .in_scope(|parent| {
+                        let parent = parent.expect("the active phase carries a lease");
+                        parent
+                            .child(worth_execution::LeaseRequest {
+                                policy: worth_foundational::ExecutionRequestPolicy::new(
+                                    parent.policy().posture(),
+                                    parent.policy().determinism(),
+                                    worth_foundational::ExecutionBudget::new(
+                                        NonZeroUsize::new(workers).unwrap(),
+                                        16 << 20,
+                                        parent.policy().budget().work_ceiling(),
+                                    ),
+                                ),
+                                cancellation: scope.cancellation().execution_token(),
+                                deadline: scope.deadline(),
+                            })
+                            .unwrap()
                     })
                     .unwrap();
                 let request = worth_execution::ExecutionRequest::leased(&lease);

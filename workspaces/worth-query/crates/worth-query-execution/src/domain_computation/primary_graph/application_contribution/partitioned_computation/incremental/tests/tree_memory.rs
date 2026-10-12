@@ -169,9 +169,10 @@ fn a_rebuild_one_byte_short_of_its_bound_refuses_before_it_combines() {
             })
             .unwrap();
         let scope = host_scope + tree_scope;
-        let build =
-            ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_build_memory_bound(4, DECLARED)
-                .unwrap();
+        let build = ReductionTree::<u64, fn(&u64, &u64) -> u64>::checked_serial_build_memory_bound(
+            4, DECLARED,
+        )
+        .unwrap();
         // The rebuild holds its tree bound, four inline leaf copies, one
         // replacement result, and both live one-stage framework scopes.
         // The recomputed kernel records one RLE run (all advances are one

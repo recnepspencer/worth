@@ -68,8 +68,6 @@ fn prepare_patch_fragments(
     }
 
     let lease = lease.expect("serial path returns before packet preparation");
-    let packet_ceiling =
-        lease.policy().budget().charged_memory_bytes() / (packet_count as u64).saturating_mul(8);
     let mut partition_count = None;
     let (inputs, _preparation_report) = crate::execution::prepare_borrowed_packets(
         lease,
@@ -98,11 +96,12 @@ fn prepare_patch_fragments(
                     .try_reserve_exact(1)
                     .map_err(|_| worth_execution::MapKernelFailure::ResultCapacityExceeded)?;
                 let packet_index_floor = packet_index * TARGET_PREPARATION_ITEMS_PER_PACKET;
+                let (scratch_bytes, result_bytes) = checked_fragments::memory_bound(chunk);
                 inputs.push(crate::execution::ReadOnlyPacket {
                     identity: PartitionIdentity::new(packet_index_floor as u64),
                     input_bytes: 0,
-                    kernel_scratch_bytes: packet_ceiling,
-                    max_result_bytes: packet_ceiling,
+                    kernel_scratch_bytes: scratch_bytes,
+                    max_result_bytes: result_bytes,
                     value: (packet_index_floor, chunk),
                 });
             }

@@ -1,6 +1,7 @@
 mod adapter_double;
 mod certification_matrix;
 mod event_projection;
+pub mod fixture_path;
 mod parity_suite;
 pub mod process_deadline;
 mod run_matrix;

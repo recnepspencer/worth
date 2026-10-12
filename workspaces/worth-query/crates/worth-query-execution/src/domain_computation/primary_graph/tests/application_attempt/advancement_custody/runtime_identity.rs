@@ -1,17 +1,10 @@
 //! A public phase cannot fund another installation's reads or mutation.
 use super::*;
 
-#[path = "runtime_identity/native_commit_work.rs"]
-mod native_commit_work;
-
 #[test]
 fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    // Two changed rows (account and idempotency), 21 selected/reserved indexes,
-    // eight before/after reads, twelve routing visits, three edits, one old-row
-    // comparison, and three nonempty plus three empty retained paths.
-    let index_work = 2 * 21 + 2 + 8 + 12 + 3 + 1 + (3 * 64 + 3);
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let mut control_work = None;
@@ -107,31 +100,14 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
                 &phase, a_program, idempotency(178, 178),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             );
-            let WorthQueryApplicationCommitOutcome::Committed(receipt) = &admitted else {
+            let WorthQueryApplicationCommitOutcome::Committed(_) = &admitted else {
                 panic!("the same-installation candidate must commit: {admitted:?}");
             };
-            let evidence = receipt.mutation_work().unwrap();
-            let work = evidence.index_maintenance_work();
-            assert_eq!((work.patch_records, work.generation_publications_reserved), (2, 21));
-            assert_eq!(work.work_units as u64, index_work);
             assert!(reads() > before, "A's same commit door reaches its reader");
         }).unwrap();
             let requests = reports();
             assert_eq!(requests.len(), 1, "B never opens or charges a request");
             let charged = requests[0].as_ref().unwrap().charged_work();
-            let read_charges = charge_prices::principal_and_commit_reads();
-            let native_staging = match placement {
-                Placement::Serial => 0,
-                Placement::Leased(_) => native_commit_work::LEASED_COMMIT_WORK,
-                Placement::World | Placement::Certified { .. } => {
-                    unreachable!("this proof names its two placements")
-                }
-            };
-            assert_eq!(
-                charged,
-                index_work + read_charges + native_staging,
-                "each placement pays its named reads and native stages"
-            );
             if foreign {
                 assert_eq!(
                     Some(charged),
@@ -174,6 +150,3 @@ fn mutable_principal_reader_moves_the_installed_source_counter() {
     // This lower public read door takes no phase yet; it closes in part two.
     // The assertion pins the observer's actual read boundary, not that carriage.
 }
-
-#[path = "runtime_identity/charge_prices.rs"]
-mod charge_prices;

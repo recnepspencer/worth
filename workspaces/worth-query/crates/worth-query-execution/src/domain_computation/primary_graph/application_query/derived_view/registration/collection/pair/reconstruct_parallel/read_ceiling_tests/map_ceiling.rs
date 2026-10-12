@@ -112,13 +112,8 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
             let indexed_inputs =
                 std::collections::BTreeSet::from([root.entity_id(), unrelated.entity_id()]);
             let lookup = (indexed_inputs.len() as u64).min(2); // declared candidate limit two
-            let serial = SerialRequest::from_memory(
-                SerialMemoryBudget::new(16 << 20),
-                scope.cancellation().execution_token(),
-                scope.deadline(),
-            );
             let mut plans = WorthQueryDerivedPairReadPlans::new(first, second);
-            ExecutionRequest::serial(&serial)
+            execution
                 .in_scope(|lease| {
                     owner_stage::run(lease, |context| {
                         plans.admit(execution, &world.application, root.entity_id(), context)
@@ -139,10 +134,14 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                 },
             )]))
             .unwrap();
-            let (outcome, _) = ExecutionWorkCeiling::new(before_lookup + lookup - 1)
-                .run_serial(&serial, || {
-                    map.run_owned(None, |pair, context| pair.run(execution, context))
-                })
+            let memory_before = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
+            let (outcome, _) = execution
+                .run(
+                    ExecutionWorkCeiling::new(before_lookup + lookup - 1),
+                    |lease| map.run_owned(lease, |pair, context| pair.run(execution, context)),
+                )
                 .unwrap();
             match outcome {
                 MapOutcome::Stopped {
@@ -166,7 +165,13 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                 }
                 MapOutcome::Complete { .. } => panic!("one-short lookup must stop"),
             }
-            drop(serial.memory().reserve(serial.memory().limit()).unwrap());
+            let memory_after = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
+            assert_eq!(
+                memory_after, memory_before,
+                "the stopped reconstruction read releases all transient memory"
+            );
         })
         .expect("the fixture block owns its installed host call")
 }

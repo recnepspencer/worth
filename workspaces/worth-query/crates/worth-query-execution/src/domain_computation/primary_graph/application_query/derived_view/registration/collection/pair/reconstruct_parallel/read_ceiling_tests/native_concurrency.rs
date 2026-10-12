@@ -3,9 +3,8 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::NativeReadRendezvousGuardForTest;
 #[test]
 fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
-    use crate::domain_computation::primary_graph::application_contribution::{
-        query_test_execution_authority_for_test, test_policy,
-    };
+    use crate::domain_computation::primary_graph::application_contribution::query_test_execution_authority_for_test;
+    use crate::domain_computation::primary_graph::application_contribution::test_policy;
     use crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner;
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();

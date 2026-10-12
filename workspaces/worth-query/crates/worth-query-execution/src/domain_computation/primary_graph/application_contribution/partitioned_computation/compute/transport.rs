@@ -8,7 +8,7 @@ where
     C: ApplicationManagedComputation<S, F>,
     O: WorthQueryPartitionedComputationOwner<S, F, C>,
 {
-    pub(super) fn transport_bytes(&self) -> u64 {
+    pub(in super::super) fn transport_bytes(&self) -> u64 {
         let Self {
             installed: _,
             prepared_work: _,
@@ -37,19 +37,23 @@ where
             PreparedRun::Incremental(prepared) => prepared.transport_bytes(),
         })
     }
-    pub(super) fn result_capacity(&self) -> u64 {
+    pub(in super::super) fn result_capacity(&self) -> u64 {
         let count = match &self.run {
             PreparedRun::Full { map, .. } => map.partition_count(),
             PreparedRun::Incremental(prepared) => prepared.partition_count(),
         };
         // Use Execution's tree bound, including its construction scratch. The
         // computation declares each reduced value's heap capacity separately.
-        let tree = ReductionTree::<
-            O::PartitionResult,
-            fn(&O::PartitionResult, &O::PartitionResult) -> O::PartitionResult,
-        >::checked_build_memory_bound(
-            count, C::RESOURCES.maximum_retained_bytes() as u64
-        )
+        type Tree<R> = ReductionTree<R, fn(&R, &R) -> R>;
+        let declared = C::RESOURCES.maximum_retained_bytes() as u64;
+        let tree = match &self.run {
+            PreparedRun::Full { .. } => {
+                Tree::<O::PartitionResult>::checked_build_memory_bound(count, declared)
+            }
+            PreparedRun::Incremental(_) => {
+                Tree::<O::PartitionResult>::checked_serial_build_memory_bound(count, declared)
+            }
+        }
         .unwrap_or(u64::MAX);
         self.transport_bytes()
             .saturating_add(tree)

@@ -63,7 +63,7 @@ impl ExecutionResourceLease<'_> {
     ) -> Result<ResourceReservation, Busy::Refusal> {
         if process_workers == 0 && worker_count_per_node == 0 && memory_bytes == 0 {
             return Ok(ResourceReservation {
-                authority: Arc::clone(&self.authority.inner),
+                authority: Arc::clone(&self.authority),
                 memory_lineage: Vec::new(),
                 worker_lineage: Vec::new(),
                 worker_count_per_node: 0,
@@ -72,10 +72,9 @@ impl ExecutionResourceLease<'_> {
             });
         }
         let lineage = self.lineage();
-        let config = self.authority.inner.config;
+        let config = self.authority.config;
         let mut ledger = self
             .authority
-            .inner
             .ledger
             .lock()
             .unwrap_or_else(|error| error.into_inner());
@@ -122,7 +121,7 @@ impl ExecutionResourceLease<'_> {
             usage.charged_memory_bytes += memory_bytes;
         }
         Ok(ResourceReservation {
-            authority: Arc::clone(&self.authority.inner),
+            authority: Arc::clone(&self.authority),
             memory_lineage: lineage.iter().map(|node| node.id).collect(),
             worker_lineage: worker_nodes,
             worker_count_per_node,

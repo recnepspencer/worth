@@ -68,13 +68,8 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 .projections()
                 .len() as u64;
             let first_read = 1 + (1 + fields) + (1 + fields);
-            let serial = SerialRequest::from_memory(
-                SerialMemoryBudget::new(16 << 20),
-                scope.cancellation().execution_token(),
-                scope.deadline(),
-            );
             let mut plans = WorthQueryDerivedPairReadPlans::new(admit(100000), admit(3));
-            ExecutionRequest::serial(&serial)
+            execution
                 .in_scope(|lease| {
                     owner_stage::run(lease, |context| {
                         plans.admit(execution, &world.application, root.entity_id(), context)
@@ -94,9 +89,12 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 },
             )]))
             .unwrap();
-            let (outcome, _) = ExecutionWorkCeiling::new(u64::MAX)
-                .run_serial(&serial, || {
-                    map.run_owned(None, |pair, context| pair.run(execution, context))
+            let memory_before = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
+            let (outcome, _) = execution
+                .run(ExecutionWorkCeiling::new(u64::MAX), |lease| {
+                    map.run_owned(lease, |pair, context| pair.run(execution, context))
                 })
                 .unwrap();
             match outcome {
@@ -123,7 +121,13 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 }
                 MapOutcome::Complete { .. } => panic!("the Query-local read must deny"),
             }
-            drop(serial.memory().reserve(serial.memory().limit()).unwrap());
+            let memory_after = execution
+                .in_scope(|lease| lease.unwrap().charged_memory_bytes())
+                .unwrap();
+            assert_eq!(
+                memory_after, memory_before,
+                "the stopped reconstruction read releases all transient memory"
+            );
         })
         .expect("the fixture block owns its installed host call")
 }

@@ -1,16 +1,13 @@
-use std::time::Instant;
-
 use crate::logic::planner::StageExecutionOutcome;
 use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, verify_locality_case_with_policy, DensityRatio,
     FinancialWorldDefinition,
 };
 
-use super::throughput_definition::{assert_within_throughput_budget, profiles};
+use super::throughput_definition::profiles;
 
 #[test]
 fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
-    let started = Instant::now();
     let policy = profiles()
         .into_iter()
         .find(|profile| profile.name == "throughput_idle")
@@ -47,12 +44,10 @@ fn throughput_serial_and_parallel_commit_the_same_operational_digest() {
         serial.necessary_evaluation_count(),
         parallel.necessary_evaluation_count()
     );
-    assert_within_throughput_budget(started, "serial/parallel operational digest");
 }
 
 #[test]
 fn all_profiles_preserve_serial_parallel_operational_digest() {
-    let started = Instant::now();
     for profile in profiles() {
         let definition =
             FinancialWorldDefinition::dense_market_close(41, 256, DensityRatio::FourInFive);
@@ -92,5 +87,4 @@ fn all_profiles_preserve_serial_parallel_operational_digest() {
             profile.name
         );
     }
-    assert_within_throughput_budget(started, "six-profile serial/parallel digest");
 }

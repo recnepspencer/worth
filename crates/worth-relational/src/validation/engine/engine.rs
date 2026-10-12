@@ -52,14 +52,15 @@ impl<'runtime> InvariantEngine<'runtime> {
     where
         'runtime: 'state,
     {
-        if lease.is_some()
-            && self
-                .runtime
-                .schema_contract_runtime
-                .custom_invariant_registries
-                .iter()
-                .filter(|registration| request.includes_custom_registration(registration))
-                .any(|registration| !registration.supports_checked_preparation())
+        if lease.is_some_and(|lease| {
+            lease.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
+        }) && self
+            .runtime
+            .schema_contract_runtime
+            .custom_invariant_registries
+            .iter()
+            .filter(|registration| request.includes_custom_registration(registration))
+            .any(|registration| !registration.supports_checked_preparation())
         {
             return Err(
                 crate::transactions::data::TransactionCommitError::execution(
@@ -72,7 +73,11 @@ impl<'runtime> InvariantEngine<'runtime> {
                 ),
             );
         }
-        let runtime = self.runtime.with_candidate_input_plan(&request);
+        let mut runtime = self.runtime.with_candidate_input_plan(&request);
+        runtime.custom_kernel_posture = lease.map_or(
+            worth_foundational::ExecutionPosture::Serial,
+            ExecutionResourceLease::resolved_posture,
+        );
         let (planned, retained_bytes) = if let Some(lease) = lease {
             let (planned, retained_bytes, _) =
                 crate::validation::execution::plan_checked_invariant_preparation(

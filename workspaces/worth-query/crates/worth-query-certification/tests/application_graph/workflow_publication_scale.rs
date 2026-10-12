@@ -43,7 +43,7 @@ fn sparse_definition(
         connections,
         connections,
         COMPONENTS,
-        16 * 1024 * 1024,
+        super::document_retention_model::host::WORKFLOW_DEFINITION_BYTES,
     )
     .expect("finite workflow-scale definition limits");
     let mut builder = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
@@ -81,14 +81,16 @@ fn public_ten_thousand_node_definition_publishes() {
         CONNECTIONS,
         CONNECTIONS,
         COMPONENTS,
-        16 * 1024 * 1024,
+        super::document_retention_model::host::WORKFLOW_DEFINITION_BYTES,
         2,
         u32::from(NODES),
         256 * 1024,
     )
     .expect("finite workflow-scale workflow resources");
-    let application =
-        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
+    let application = retain_workflow_with_resources(
+        publish_on_first_program_for_workflow_scale(NODES, CONNECTIONS),
+        resources,
+    );
     let runtime = application.runtime();
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let scope =
@@ -190,14 +192,16 @@ fn cold_compilation_of_large_definition_uses_bounded_start_facts() {
         CONNECTIONS,
         CONNECTIONS,
         COMPONENTS,
-        16 * 1024 * 1024,
+        super::document_retention_model::host::WORKFLOW_DEFINITION_BYTES,
         2,
         u32::from(NODES),
         256 * 1024,
     )
     .expect("finite workflow resources");
-    let application =
-        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
+    let application = retain_workflow_with_resources(
+        publish_on_first_program_for_workflow_scale(NODES, CONNECTIONS),
+        resources,
+    );
     let runtime = application.runtime();
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let scope =

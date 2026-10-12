@@ -4,6 +4,7 @@ mod custom_invariant_budget;
 mod custom_invariants;
 mod custom_rules;
 mod dispatch;
+mod legacy_kernel_posture;
 mod relation_integrity;
 mod relation_integrity_preparation;
 mod request_execution;

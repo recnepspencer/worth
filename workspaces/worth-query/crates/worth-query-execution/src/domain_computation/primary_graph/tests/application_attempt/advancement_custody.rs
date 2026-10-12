@@ -132,11 +132,10 @@ fn product_transaction_refuses_zero_budgets_before_revalidation() {
                 assert_eq!(cause, Resource::WorkExhausted);
             } else {
                 match placement {
-                    Placement::Serial => assert_eq!(cause, Resource::PolicyMemoryLimit),
                     Placement::World | Placement::Certified { .. } => {
                         unreachable!("this probe declares its placement")
                     }
-                    Placement::Leased(_) => {
+                    Placement::Serial | Placement::Leased(_) => {
                         let Resource::MemoryLimit {
                             level,
                             requested,

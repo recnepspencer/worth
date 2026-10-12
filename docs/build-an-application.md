@@ -63,7 +63,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 - [6. Author, publish, and run workflows](#6-author-publish-and-run-workflows)
 - [7. Adopt a new program on a branch](#7-adopt-a-new-program-on-a-branch)
 - [8. Rules for AI agents](#8-rules-for-ai-agents)
-- [9. Names that do not exist](#9-names-that-do-not-exist)
+- [9. Use the consumer vocabulary](#9-use-the-consumer-vocabulary)
 - [10. Where to go deeper](#10-where-to-go-deeper)
 
 ---
@@ -447,17 +447,30 @@ returned handle in the handler that uses it.
 The owner separates reads from computation. `partitions`, `partition_key`, and
 `gather` receive an operation-scoped reader on the caller thread. They can read
 only what the operation declares. `compute_partition` receives gathered data
-and a checkpoint, with no graph reader. `partition_key`, `gather`, and
+and a checkpoint, with no graph reader. `partitions`, `partition_key`, `gather`, and
 `compute_partition` must be pure in the declared input, partition key, and
 facts read through the reader: no ambient clocks, mutable globals, changing
 owner state, or effects. A completed producer run keeps its partition state.
 The next run of the same installed producer, on an equal input value, reuses
 an unchanged partition without gathering or computing it again. An impure
-function can therefore yield a stale reused result. `complete` receives the reduced result
-back on the caller thread. Preparation precedes kernel dispatch; completion
+function can therefore yield a stale reused result. `complete` receives the
+reduced result back on the caller thread. Preparation precedes kernel dispatch; completion
 follows successful computation and reduction.
 
-Partition reuse applies only to the runs of a producer. A producer is a
+In the executable examples below, `run_inventory` and `run_peak` call
+`installed.prepare(reader, input)` and return
+`prepared.into_decision_plan(..)`. The plan carries compute inputs, not a live
+reader. Its completion closure handles the typed computation result and returns
+a `HandlerResult`. Use this shape when a producer's computation can run beside
+another required producer: Query dispatches compute and invokes completion in
+canonical member order. Override `OperationHandler::prepare_decision` to return
+this plan. Keep graph reads in preparation and return the decision from
+completion; the ordinary candidate-building and commit steps follow on the
+owner. A handler that does not compute can keep its `decide` implementation:
+the default `prepare_decision` wraps it in an immediate plan.
+
+Partition reuse is distinct from clean reuse of an entire output and from
+input cutoff. It applies only to the runs of a producer. A producer is a
 `WorthQueryApplicationProducerBinding` declared with
 `contracts.producer::<Binding>()` and registered with `setup.producer`; its
 `Operation` is the mutation binding the producer runs. Installation decides
@@ -490,13 +503,16 @@ Otherwise the run names and keys again only what changed, and gathers and
 computes again only the partitions whose members or facts changed. A partition
 is carried only when every fact its owner calls read in the previous run has
 the same content at this attempt's snapshot; a fact that cannot be observed
-counts as changed. A run's result, its charged work, and the partition a work
-ceiling names never depend on reuse: carried charges replay in a full run's
+counts as changed. A run's result, charged work, structural span, and the
+partition a work ceiling names never depend on reuse: carried charges replay in a full run's
 order, `charged_work()` counts every partition's kernel and every combine
 whether the partition was computed again or carried, and a work ceiling names
-the partition a full run would name. A reused run holds less request memory and
-meets fewer checkpoints than a full run, so a memory limit, a deadline, or a
-cancellation can stop one and not the other.
+the partition a full run would name. A carried partition replays its accepted
+kernel charges; if the remaining ceiling lies inside those charges, it replays
+the original checkpoint steps to preserve the full run's stop. Memory reserves
+what is physically held, so a memory denial may depend on reuse. An in-flight
+cancellation or deadline can also distinguish physical runs; neither is a
+promise that a computation reaches the same checkpoint at the same time.
 
 The example groups warehouse quantities by storage zone and sums them. Stable
 item IDs identify inventory lines; the zone key defines partition membership.
@@ -508,6 +524,11 @@ in this section are compiled as written: the consumer fixture builds and runs
 `workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/warehouse_inventory.rs`
 and `.../sensor_telemetry.rs`, and a test fails when a block here and its file
 differ.
+
+The executable examples are exercised by
+[`compiled_examples_warehouse_inventory_total` and `compiled_examples_sensor_telemetry_peak`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/compiled_examples.rs).
+They assert a warehouse sum of `13.0` and a sensor maximum of `850` through a
+host mutation.
 
 <!-- compiled: warehouse_inventory.rs -->
 ```rust
@@ -727,6 +748,12 @@ denied. Keys use canonical encoding, and partitions are ordered by the
 identity derived from that encoding, not by the numeric order of zones. The
 reducer fixes its association tree, so floating-point reduction preserves the
 same result bits at every admitted worker count.
+
+Choose partition membership from the input and observed facts before placement.
+The host's installed policy bounds worker count, memory and aggregate request
+work. Serial placement uses a bounded inline lease with no worker pool; leased
+placement can use the process authority's workers. Neither may rename a partition
+or change its reduction association.
 
 `checkpoint.advance` charges kernel work and checks interruption. Framework
 planning and reduction also contribute charged work; `charged_work()` reports
@@ -962,6 +989,151 @@ where
 Planning does not depend on the order the input holds its readings in: items
 are met in item identity order and partitions in partition identity order.
 
+To use either example, declare the artifact and managed computation on the
+feature, install the owner during contribution setup, and store the returned
+handle with that operation's handler. Call its `run_inventory` or `run_peak`
+function from `prepare_decision`. Declare every graph fact read by
+`partitions`, `partition_key`, and `gather` on the operation. For retained
+per-partition reuse, also declare and install the producer that runs that
+operation; a direct mutation computes successfully but keeps no producer state.
+The inventory example sums warehouse quantities; the telemetry example reduces
+sensor peaks. Both use the same consumer API, through `worth-query-host`'s
+facade and the declarations exported by `worth-query-decl`.
+
+**The handler contract.** Within `OperationHandler<Schema, Binding>`, the
+current signature and default implementation are:
+
+```rust
+    fn prepare_decision(
+        &self,
+        input: &Binding::Input,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> WorthQueryDecisionPlan<Binding::Decision, Binding::Denial> {
+        WorthQueryDecisionPlan::immediate(self.decide(input, reader))
+    }
+```
+
+Override this method to return the prepared computation's decision plan. The
+following complete handler excerpt is compiled in the planar geometry example.
+Its `Decision` alias expands the reader's three lifetimes and binding. Its
+installed `run` prepares the warehouse or telemetry computation shown above;
+completion maps the computed result to the operation's decision. `decide`
+resolves a declared scope and builds its mutation target. `build_candidate`
+authors the field change after computation completes.
+
+The fixture's schema declares `Body`, `PositionY`, and the entry-set facts;
+`RegionTotalsDemandBinding` binds those reads and writes. The full declarations
+and installation accompany this excerpt in the consumer fixture.
+
+<!-- compiled: checkpoint_recovery/computation_partition/demand.rs -->
+```rust
+pub(super) type Decision<'borrow, 'reader, 'runtime, Schema> =
+    DecisionReader<'borrow, 'reader, 'runtime, Schema, RegionTotalsDemandBinding<Schema>>;
+
+/// What the handler runs over the demanded set inside its decision.
+type Run<Schema> = Box<
+    dyn Fn(
+            &mut Decision<'_, '_, '_, Schema>,
+            &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
+        ) -> WorthQueryDecisionPlan<(), PlanarMutationDenial>
+        + Send
+        + Sync,
+>;
+
+/// Decides a demand: runs what it was installed with over the demanded set,
+/// then moves the scope's source so every decision is a new one.
+pub(super) struct RegionTotalsHandler<Schema: TopologySchemaBinding>(Option<Run<Schema>>);
+
+impl<Schema: TopologySchemaBinding> RegionTotalsHandler<Schema> {
+    /// The topology's own handler: nothing to run.
+    pub(super) const fn idle() -> Self {
+        Self(None)
+    }
+
+    pub(super) fn running(
+        run: impl Fn(
+                &mut Decision<'_, '_, '_, Schema>,
+                &WorthQueryInvariantEntityIdentity<Schema, EntrySet>,
+            ) -> WorthQueryDecisionPlan<(), PlanarMutationDenial>
+            + Send
+            + Sync
+            + 'static,
+    ) -> Self {
+        Self(Some(Box::new(run)))
+    }
+}
+
+impl<Schema: TopologySchemaBinding> OperationHandler<Schema, RegionTotalsDemandBinding<Schema>>
+    for RegionTotalsHandler<Schema>
+{
+    fn decide(
+        &self,
+        input: &RegionTotalsDemand,
+        reader: &mut Decision<'_, '_, '_, Schema>,
+    ) -> HandlerResult<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial> {
+        let decided = (|| {
+            let scope = reader.resolve_entity(BodyKey::reference(), input.scope_key.clone())?;
+            if reader.field(&scope, PositionY::reference())?.is_none() {
+                return Ok(None);
+            }
+            reader.mutation_target(&scope).map(Some)
+        })();
+        match decided {
+            Ok(Some(target)) => HandlerResult::Completed(target),
+            Ok(None) => HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
+            Err(error) => HandlerResult::ExecutionDenied(error),
+        }
+    }
+
+    fn prepare_decision(
+        &self,
+        input: &RegionTotalsDemand,
+        reader: &mut Decision<'_, '_, '_, Schema>,
+    ) -> WorthQueryDecisionPlan<WorthQueryInvariantMutationTarget<Schema, Body>, PlanarMutationDenial>
+    {
+        let plan = if let Some(run) = &self.0 {
+            let set = match reader.resolve_entity(EntrySetKey::reference(), input.entries.clone()) {
+                Ok(set) => set,
+                Err(error) => {
+                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error))
+                }
+            };
+            run(reader, &set)
+        } else {
+            WorthQueryDecisionPlan::immediate(HandlerResult::Completed(()))
+        };
+        let decided = self.decide(input, reader);
+        plan.and_then(move |()| decided)
+    }
+
+    fn candidate_requirements(
+        &self,
+        _: &RegionTotalsDemand,
+        _: &WorthQueryInvariantMutationTarget<Schema, Body>,
+    ) -> ApplicationCandidateRequirements {
+        RegionTotalsDemandBinding::<Schema>::CANDIDATES
+    }
+
+    fn build_candidate(
+        &self,
+        input: &RegionTotalsDemand,
+        target: WorthQueryInvariantMutationTarget<Schema, Body>,
+        writer: &mut CandidateWriter<'_, Schema, RegionTotalsDemandBinding<Schema>>,
+    ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
+        let written = writer.projected_entity(&target).and_then(|entity| {
+            writer.write_field(&entity, PositionY::reference(), input.replacement_y)
+        });
+        match written {
+            Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
+                changed_vertices: 1,
+            }),
+            Err(error) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error)),
+        }
+    }
+}
+
+```
+
 ---
 
 ## 4. Install the application graph
@@ -1172,11 +1344,21 @@ An interruption observed after admission keeps the executing owner's cancellatio
 or timeout outcome.
 For an output demand refresh these are `Cancelled` and `TimedOut`; they are
 separate from admission's `ExecutionRequest(Interrupted(..))` refusals.
-Zero memory reports `PolicyMemoryLimit` at serial placement and a policy
-`MemoryLimit { requested, admitted: 0, level }` at leased placement.
+Serial and leased placement both use checked leases. A reservation denied by
+the policy reports `MemoryLimit { requested, admitted, level }` with the policy
+level; the request's memory limit is not waived by serial placement.
+
+A stopped read is not a missing record or a stale index. Entity resolution
+separates `Stopped(cause)` from `Refused(kind)`; handle the typed stop instead
+of retrying it as absence. A pinned read checks the live request when the pin
+is acquired and holds the selected root and index payload for later reads.
+
+Zero memory reports a policy `MemoryLimit { requested, admitted: 0, level }`
+at every placement, including its requested bytes.
 
 A **request scope** carries an optional deadline and a cancellation token. With no deadline,
-the request is unbounded but remains cancellable. It is
+there is no time limit; work and memory remain policy-bounded, and the request
+remains cancellable. It is
 not an entity and grants nothing:
 
 ```rust
@@ -1400,6 +1582,99 @@ original handler again. Once recovery has performed,
 `promote_recovered_required_outputs` transfers that original source into its
 required-output handle once, also without invoking the handler; a refusal
 returns the recovery owner intact.
+
+One `advance` can process the caller's dependency chain and other queued
+required outputs in several waves. The required-set owner admits a wave only
+against a basis where its consumed upstream outputs have committed. Compute
+steps of independent members can overlap; completion, commits, and publications
+follow canonical keys that order by producer identity, then by observed source
+epoch. Every wave and nested computation
+shares this call's request bounds. Match the typed stop rather than treating
+work exhaustion, memory refusal, cancellation, deadline, panic, or a domain
+denial as interchangeable. Earlier performed effects remain recoverable; no
+member beyond the applied prefix is published. A queued stopped member does
+not prevent unrelated required work from advancing.
+An owner-completion failure does not refund compute already settled, even if
+that failure is earlier than the compute stop. Treat the applied prefix and
+canonical compute prefix as different boundaries.
+
+Closing a continuation releases its interest, while other holders can keep an
+output required. Drop releases this holder's interest and that row's own claims,
+follows closed claims through at most two rows, charges no work, starts no
+computation, and never scans the whole registry. It may hand on at most
+one existing closed-leaf claim; remaining cleanup stays recorded for a later
+funded call. Readers still see the effective successor of a deferred claim.
+The advancement's execution accounting covers all waves, including a failed
+call; ordinary output progress remains `Pending` or `Settled`, with failures
+returned as typed denials.
+
+**Two independent members in one wave.** The planar geometry application has
+two separate source rings, `diamond-left` and `diamond-right`. Each producer
+reads its own ring and returns a managed computation plan. A third output,
+`diamond-join`, consumes both outputs. The application declares and installs
+this program in the consumer fixture's `concurrent_waves/application.rs`.
+
+Before this excerpt, the fixture seeds the three rings, authenticates the
+principal, opens demands for both roots and the dependent, and settles their
+initial outputs. The root demands stay open. The excerpt changes both source
+rings, advances the dependent once, and reads both published results. The
+fixture verifies that both root computations finish before either root's
+owner completion runs, and that each runs once: the roots share one wave.
+The same calls work with serial backing or a host policy admitting parallel
+workers; the host chooses placement, not the application.
+
+`Program`, `PlanarRead`, `PlanarSourceAdjustment`, `PlanarOutputRead`, and
+`length` are this application's declarations and value constructor. The
+imported Query API comes from `worth-query-decl` and `worth-query-host`.
+`application`, `principal`, `scope`, and the dependent's demand `join` come from
+the setup above.
+
+<!-- compiled: checkpoint_recovery/required_chain/concurrent_waves/application.rs -->
+```rust
+    use worth_query_host::facade::application_entry::WorthQueryApplicationPerformedMutationOutcome;
+
+    let request = application.request(&principal, &scope);
+    for (key, y, idempotency) in [
+        ("diamond-left", 5, 0x9176_8200_u64),
+        ("diamond-right", 54, 0x9176_8201_u64),
+    ] {
+        let selected = request
+            .query(PlanarRead {
+                body_key: key.to_owned(),
+            })
+            .execute()
+            .unwrap();
+        let changed = request
+            .mutate(PlanarSourceAdjustment {
+                scope_key: key.to_owned(),
+                replacement_y: length(y),
+            })
+            .expect_source(selected.observed_sources()[0].clone())
+            .idempotency(&idempotency)
+            .execute_performed::<Program, program::ChainRoot>(
+                &application,
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        assert!(matches!(
+            changed,
+            WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+        ));
+    }
+    assert!(matches!(
+        join.advance(&request).unwrap(),
+        WorthQueryApplicationOutputDemandProgress::Settled(_)
+    ));
+    for (key, expected) in [("diamond-left", 6), ("diamond-right", 55)] {
+        let output = request
+            .query(PlanarOutputRead {
+                body_key: key.to_owned(),
+            })
+            .execute()
+            .unwrap();
+        assert_eq!(output.rows()[0].value, length(expected));
+    }
+```
 
 ---
 
@@ -2106,19 +2381,19 @@ but did not publish is recovered with
 
 ---
 
-## 9. Names that do not exist
+## 9. Use the consumer vocabulary
 
-The milestone plans for this work (`plans/WORTH-query/milestone-9.17.4.md`,
-`-9.17.5.md`, and `-9.17.6.md`) describe intent, and some of their names never
-shipped. If you see one of these, use the real name instead.
+Plans describe intent; they do not define the consumer API. Use the declarations
+and host functions exported by `worth-query-decl` and `worth-query-host`.
+The table separates authoring tasks from unsupported shortcuts.
 
-| Plan name | Status | Use instead |
+| Task or shortcut | Status | Use instead |
 |---|---|---|
-| `ApplicationCompositionSpec`, `ApplicationModuleSpec` | Do not exist | `impl ApplicationProgramDefinition` plus `ApplicationFeatureSpec` |
-| `ApplicationActionSpec` | Does not exist | Builder methods on `ApplicationFeatureSpec` (`mutation`, `operation`, ...); `ApplicationActionDeclaration` is the read-back type |
-| `.adopt(revision).requirements(..).idempotency(..).controls(..)` | Not the API | `compare(&revision)` → `adopt(&requirements)` → `[.migration(..)] [.workflow(..)]` → `prepare(max)` |
+| A separate composition or module specification | Unsupported | `impl ApplicationProgramDefinition` plus `ApplicationFeatureSpec` |
+| A stand-alone action specification | Unsupported | Builder methods on `ApplicationFeatureSpec` (`mutation`, `operation`, ...); `ApplicationActionDeclaration` is the read-back type |
+| Adopting a revision before comparing it | Unsupported | `compare(&revision)` → `adopt(&requirements)` → `[.migration(..)] [.workflow(..)]` → `prepare(max)` |
 | "unchanged / additive / restricting / meaning-changing" diff classes | Not the API | `ApplicationSemanticChangeKind::{Added, Removed, Changed}` per family |
-| `PublishedWorkflowDefinition` | Does not exist | `PublishedWorkflowDefinitionRef` |
+| A separately owned published-definition value | Unsupported | `PublishedWorkflowDefinitionRef` |
 | `CompiledWorkflowDefinition`, `AdmittedWorkflowTransition` | Crate-private | Nothing to call: the kernel uses them internally |
 | A workflow slot on the program | Does not exist | `retain_workflow_spec` on the program runtime, then `support_workflow_spec` on the workflow runtime it returns |
 

@@ -24,6 +24,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod owned_affinity;
 mod retention;
+mod undelivered_root;
 
 impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn validate_recovery_root_kind(

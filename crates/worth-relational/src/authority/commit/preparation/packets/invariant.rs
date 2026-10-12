@@ -23,6 +23,7 @@ pub(crate) enum InvariantPacketRegistration {
     CustomNotApplicable {
         registration: CustomInvariantRegistration,
         prepared_scope: crate::validation::data::PreparedCustomInvariantScope,
+        retained_touched: Arc<crate::validation::data::TouchedStructuralSet>,
         work: crate::validation::CustomInvariantWorkMeter,
     },
 }

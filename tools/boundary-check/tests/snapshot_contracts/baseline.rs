@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 struct Repository {
     root: PathBuf,
@@ -17,11 +16,7 @@ fn snapshot_fixture_lives_under_the_builds_temporary_directory() {
 
 impl Repository {
     fn new() -> Self {
-        let id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("snapshot-contract-{id}"));
+        let root = worth_harness::tooling::fixture_path::unique_path("snapshot-contract");
         fs::create_dir_all(&root).unwrap();
         write(
             &root,

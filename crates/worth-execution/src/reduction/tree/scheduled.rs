@@ -1,3 +1,5 @@
+use std::sync::OnceLock;
+
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
@@ -9,8 +11,8 @@ use crate::{
 };
 
 use super::{
-    super::plan::ReductionDenial, staged::FrontierCharge, ReductionMetrics, ReductionPlan,
-    ReductionRunFailure, ReductionRunStop, ReductionTree,
+    super::plan::ReductionDenial, construction::SubtreeSpec, staged::FrontierCharge,
+    ReductionMetrics, ReductionPlan, ReductionRunFailure, ReductionRunStop, ReductionTree,
 };
 
 pub(crate) enum ScheduledReductionError {
@@ -54,7 +56,15 @@ where
                     .ok_or_else(|| {
                         ScheduledReductionError::Admission(LeaseDenial::charged_bytes_overflow())
                     })?;
-                Ok((spec.identity, spec, task_scratch, capacity))
+                Ok((
+                    spec.identity,
+                    ScheduledTask {
+                        spec,
+                        completed: OnceLock::new(),
+                    },
+                    task_scratch,
+                    capacity,
+                ))
             })
             .collect::<Result<Vec<_>, _>>()?;
         let batch = AdmittedBatch::try_admit(entries, 0).map_err(|denial| match denial {
@@ -72,17 +82,26 @@ where
             Some(lease),
             &batch,
             backend,
-            &|spec, child_context| {
+            &|task, child_context| {
                 let before = child_context.cost();
-                let result = Self::evaluate_subtree_checked(
+                let evaluated = Self::evaluate_subtree_checked(
                     &shape,
-                    *spec,
+                    task.spec,
                     &identity,
                     &combine,
                     max_value_bytes,
                     || child_context.checkpoint(1),
-                )
-                .map_err(KernelFailure::Domain)?;
+                );
+                // A request stop replaces a task's result in the backend. Keep
+                // its checked metrics on the admitted input before that boundary.
+                let metrics = match &evaluated {
+                    Ok(result) => result.metrics,
+                    Err(failure) => failure.metrics,
+                };
+                task.completed
+                    .set(metrics)
+                    .expect("a canonical subtree is evaluated once");
+                let result = evaluated.map_err(KernelFailure::Domain)?;
                 child_context
                     .apply_structural_span(
                         before,
@@ -121,7 +140,14 @@ where
                     ))
                 }
                 Some(BatchStop::Failure { identity, cause }) => {
-                    let failure = task_failure(cause);
+                    let completed = batch
+                        .values()
+                        .iter()
+                        .find(|task| task.spec.identity == identity)
+                        .and_then(|task| task.completed.get())
+                        .copied()
+                        .unwrap_or_default();
+                    let failure = task_failure(cause, completed);
                     let target = failure.metrics.charged_work;
                     Some((identity, failure, target))
                 }
@@ -140,11 +166,18 @@ where
                 max_value_bytes,
                 |charge| match charge {
                     FrontierCharge::Node => context.checkpoint_frontier(1),
-                    FrontierCharge::TaskUnit => {
-                        context.checkpoint_frontier(1)?;
-                        accepted_task_work = accepted_task_work
-                            .checked_add(1)
-                            .ok_or_else(KernelStop::work_counter_overflow)?;
+                    FrontierCharge::CompletedNode
+                    | FrontierCharge::PrefixJoin
+                    | FrontierCharge::TaskUnit => {
+                        // Charge the canonical prefix, including joins before a known
+                        // stopped task. The stop keeps its canonical position;
+                        // refused charges still stop before the join runs.
+                        context.account_completed_work(1)?;
+                        if matches!(charge, FrontierCharge::TaskUnit) {
+                            accepted_task_work = accepted_task_work
+                                .checked_add(1)
+                                .ok_or_else(KernelStop::work_counter_overflow)?;
+                        }
                         Ok(())
                     }
                 },
@@ -187,12 +220,33 @@ where
 
 fn task_failure(
     cause: KernelFailure<ReductionRunFailure<KernelStop>>,
+    completed: ReductionMetrics,
 ) -> ReductionRunFailure<KernelStop> {
-    match cause {
-        KernelFailure::Domain(failure) => failure,
-        KernelFailure::Stop(stop) => stopped(ReductionRunStop::Hook(stop)),
-        KernelFailure::Panic => stopped(ReductionRunStop::Panic),
-        KernelFailure::ResultCapacityExceeded => stopped(ReductionRunStop::ResultCapacityExceeded),
+    let reason = match cause {
+        KernelFailure::Domain(failure) => return failure,
+        KernelFailure::Stop(stop) => ReductionRunStop::Hook(stop),
+        KernelFailure::Panic => ReductionRunStop::Panic,
+        KernelFailure::ResultCapacityExceeded => ReductionRunStop::ResultCapacityExceeded,
+    };
+    ReductionRunFailure {
+        reason,
+        metrics: completed,
+    }
+}
+
+/// Inline task state survives replacement of the worker result by a request stop.
+/// Its full size, including the metric cell, is reserved by batch admission.
+struct ScheduledTask {
+    spec: SubtreeSpec,
+    completed: OnceLock<ReductionMetrics>,
+}
+
+impl ChargedBytes for ScheduledTask {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self { spec, completed } = self;
+        // Neither the subtree coordinates nor these scalar metrics own heap bytes.
+        let _ = (spec, completed);
+        0
     }
 }
 

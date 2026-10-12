@@ -6,9 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryProductQueryControls,
 };
 use std::{num::NonZeroUsize, time::Duration};
-use worth_execution::{
-    ExecutionWorkCeiling, MapOutcome, MapStop, SerialMemoryBudget, SerialRequest,
-};
+use worth_execution::{ExecutionWorkCeiling, MapOutcome, MapStop};
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
 use worth_query_installation::facade::ApplicationScalarValueBinding;

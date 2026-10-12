@@ -38,7 +38,18 @@ fn install(
 ) -> ExampleApplication {
     let (clock_source, clock_control) = ClockSource::due();
     let configuration = (TemporalContributionConfiguration { clock_source },);
-    let limits = example_limits(Some(request().policy)).with_execution_authority(authority);
+    // Installation performs the example's checked bootstrap, not one ordinary
+    // read. Keep this proof's exact memory bound and the example's declared work.
+    let work = product_workflow_support::application::product_world_resources()
+        .execution_policy()
+        .budget()
+        .work_ceiling();
+    let policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(NonZeroUsize::MIN, AUTHORITY_BYTES as u64, work),
+    );
+    let limits = example_limits(Some(policy)).with_execution_authority(authority);
     let runtime = match checkpoint {
         Some(checkpoint) => application_installation::in_memory_program_from_checkpoint(
             program::validated_program(),

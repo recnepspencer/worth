@@ -105,25 +105,15 @@ where
     // The chain itself is ordered; an independent nested pattern may still
     // spend the lease's parallel worker budget at a round boundary.
     let limits = RunLimits::for_run(lease, false);
-    let memory_bytes = u64::try_from(size_of::<S>())
-        .ok()
-        .and_then(|bytes| bytes.checked_mul(2))
-        .and_then(|bytes| bytes.checked_add(max_state_bytes.checked_mul(2)?))
-        .and_then(|bytes| {
-            bytes.checked_add(
-                u64::try_from(identities.as_slice().len().checked_mul(size_of::<O>())?).ok()?,
-            )
-        })
-        .and_then(|bytes| {
-            bytes.checked_add(
-                max_output_bytes.checked_mul(u64::try_from(identities.as_slice().len()).ok()?)?,
-            )
-        })
-        .and_then(|bytes| bytes.checked_add(scratch_bytes))
-        .and_then(|bytes| bytes.checked_add(u64::try_from(size_of::<E>()).ok()?))
-        .and_then(|bytes| bytes.checked_add(max_error_bytes))
-        .and_then(|bytes| bytes.checked_add(input_bytes))
-        .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?));
+    let memory_bytes = ordered_memory_requirement::<S, O, E>(
+        &limits,
+        identities.as_slice().len(),
+        max_state_bytes,
+        max_output_bytes,
+        max_error_bytes,
+        scratch_bytes,
+        input_bytes,
+    );
     let Some(memory_bytes) = memory_bytes else {
         return denied(initial, LeaseDenial::charged_bytes_overflow());
     };
@@ -271,4 +261,30 @@ fn denied<S, O, E>(state: S, denial: LeaseDenial) -> OrderedOutcome<S, O, E> {
         boundary: None,
         report,
     }
+}
+
+pub(crate) fn ordered_memory_requirement<S, O, E>(
+    limits: &RunLimits,
+    count: usize,
+    max_state_bytes: u64,
+    max_output_bytes: u64,
+    max_error_bytes: u64,
+    scratch_bytes: u64,
+    input_bytes: u64,
+) -> Option<u64> {
+    u64::try_from(size_of::<S>())
+        .ok()
+        .and_then(|bytes| bytes.checked_mul(2))
+        .and_then(|bytes| bytes.checked_add(max_state_bytes.checked_mul(2)?))
+        .and_then(|bytes| {
+            bytes.checked_add(u64::try_from(count.checked_mul(size_of::<O>())?).ok()?)
+        })
+        .and_then(|bytes| {
+            bytes.checked_add(max_output_bytes.checked_mul(u64::try_from(count).ok()?)?)
+        })
+        .and_then(|bytes| bytes.checked_add(scratch_bytes))
+        .and_then(|bytes| bytes.checked_add(u64::try_from(size_of::<E>()).ok()?))
+        .and_then(|bytes| bytes.checked_add(max_error_bytes))
+        .and_then(|bytes| bytes.checked_add(input_bytes))
+        .and_then(|bytes| bytes.checked_add(limits.framework_context_bytes(1, 1)?))
 }

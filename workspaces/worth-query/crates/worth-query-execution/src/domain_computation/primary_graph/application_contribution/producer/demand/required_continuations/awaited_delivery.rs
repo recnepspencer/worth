@@ -10,11 +10,12 @@ pub(in super::super) struct AwaitedDelivery<'a, Schema: ApplicationSchema> {
 }
 /// Delivery, unlike compute, can thaw a frozen head. No other step mints this.
 pub(in super::super) struct DeliveredAwaited {
-    _ready: SelectedReadyReadmission,
+    _delivery: (),
 }
 impl DeliveredAwaited {
     pub(super) fn from_delivery(ready: SelectedReadyReadmission) -> Self {
-        Self { _ready: ready }
+        drop(ready);
+        Self { _delivery: () }
     }
 }
 impl<Schema: ApplicationSchema + 'static> RequiredContinuations<Schema> {

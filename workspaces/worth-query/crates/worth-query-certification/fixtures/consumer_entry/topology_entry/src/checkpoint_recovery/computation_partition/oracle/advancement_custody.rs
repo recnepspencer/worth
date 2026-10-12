@@ -228,10 +228,7 @@ fn producer_caller_pass_refuses_before_its_source_or_handler_reads() {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
             } else {
                 match placement {
-                    Placement::Serial => {
-                        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit))
-                    }
-                    Placement::Leased(_) => {
+                    Placement::Serial | Placement::Leased(_) => {
                         let Denial::Resource(Resource::MemoryLimit {
                             level,
                             requested,

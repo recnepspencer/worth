@@ -4,7 +4,6 @@ use super::*;
 impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
     pub(super) fn run_reduce_serial<R, E, Kernel, Combine>(
         &self,
-        lease: Option<&ExecutionResourceLease<'_>>,
         kernel: Kernel,
         identity: R,
         combine: Combine,
@@ -19,7 +18,7 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         Kernel: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
         Combine: Fn(&R, &R) -> R,
     {
-        let tree_bytes = ReductionTree::<R, Combine>::checked_build_memory_bound(
+        let tree_bytes = ReductionTree::<R, Combine>::checked_serial_build_memory_bound(
             self.partition_count(),
             max_value_bytes,
         )
@@ -35,29 +34,25 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
             kept: &kept,
         });
         let outcome = run_scope_holding::<ReduceComplete<R, Combine>, ReduceScopeError, _>(
-            lease,
+            None,
             0,
             tree_bytes,
             true,
             hold,
             |context| {
-                let values = match self.run_with_backend_taking(
-                    lease,
-                    BackendKind::Serial,
-                    inputs,
-                    kernel,
-                ) {
-                    MapOutcome::Complete { values, report } => {
-                        map_fallback = report.fallback();
-                        values
-                    }
-                    MapOutcome::Stopped {
-                        boundary, reason, ..
-                    } => {
-                        map_stopped = Some((boundary, reason));
-                        return Err(KernelFailure::Stop(KernelStop::NestedStopped));
-                    }
-                };
+                let values =
+                    match self.run_with_backend_taking(None, BackendKind::Serial, inputs, kernel) {
+                        MapOutcome::Complete { values, report } => {
+                            map_fallback = report.fallback();
+                            values
+                        }
+                        MapOutcome::Stopped {
+                            boundary, reason, ..
+                        } => {
+                            map_stopped = Some((boundary, reason));
+                            return Err(KernelFailure::Stop(KernelStop::NestedStopped));
+                        }
+                    };
                 context.checkpoint(0)?;
                 let plan = match ReductionPlan::try_from_sorted_unique(self.identities().to_vec()) {
                     Ok(plan) => plan,

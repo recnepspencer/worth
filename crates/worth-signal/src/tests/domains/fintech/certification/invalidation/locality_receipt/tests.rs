@@ -154,7 +154,7 @@ fn restore_case_crosses_a_real_checkpoint_boundary_before_completion() {
 }
 
 #[test]
-#[ignore = "requires scale memory admission; the ordinary 64 MiB request refuses this case"]
+#[ignore = "scheduled 100,000-output qualification with explicit memory and waiter admission"]
 fn scheduled_dense_quarter_case_seals_in_isolation() {
     let generation_started = std::time::Instant::now();
     let case = scheduled_locality_cases()
@@ -172,11 +172,17 @@ fn scheduled_dense_quarter_case_seals_in_isolation() {
         "M13 scheduled step: definition generated elapsed_ms={}",
         generation_started.elapsed().as_millis()
     );
-    verify_locality_case(definition, 0, DiagnosticsTier::Operational, 1).unwrap();
+    verify_locality_case_with_admission(
+        definition,
+        0,
+        super::super::scale_admission::scheduled_request(),
+        1,
+    )
+    .unwrap();
 }
 
 #[test]
-#[ignore = "requires scale memory admission; the ordinary 64 MiB request refuses this case"]
+#[ignore = "scheduled 100,000-output qualification with explicit memory and waiter admission"]
 fn retained_dense_restore_benchmark_covers_all_declared_seeds() {
     let case = retained_locality_benchmark_cases()[0];
     let LocalityScaleTuple::BranchRestoreLocalityReplay {
@@ -187,14 +193,18 @@ fn retained_dense_restore_benchmark_covers_all_declared_seeds() {
     };
     for seed in 41..41 + u64::from(canonical_seeds) {
         let definition = FinancialWorldDefinition::locality_case(seed, case);
-        verify_locality_case(
+        verify_locality_case_with_admission(
             FinancialWorldDefinition::locality_case(seed, case),
             0,
-            DiagnosticsTier::Operational,
+            super::super::scale_admission::scheduled_request(),
             1,
         )
         .unwrap();
-        let mut compiled = compile_financial_locality_world(definition).unwrap();
+        let mut compiled = compile_financial_locality_world_with_policy(
+            definition,
+            super::super::scale_admission::scheduled_request(),
+        )
+        .unwrap();
         compiled.certify_restore_locality_lifecycle().unwrap();
     }
 }

@@ -30,11 +30,13 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
     let identity = PartitionIdentity::new(1);
     let scan = crate::execution::admit_ordered_scan(vec![(identity, ())])?;
-    let ceiling = lease.policy().budget().charged_memory_bytes() / 8;
     let outcome = crate::execution::run_with_remaining_request_work(
         lease,
         runtime.commit_work_budget.as_ref(),
         |child_lease| {
+            // Scratch and the retained plan can coexist. The ordered owner's
+            // quote removes its actual carry/input/context allocation first.
+            let ceiling = preparation_ceiling(&scan, child_lease);
             scan.run(
                 Some(child_lease), (), 0, ceiling, 0, ceiling,
                 |_, _, context| {
@@ -93,3 +95,18 @@ fn preparation_failure(stop: CustomPreparationStop) -> MapKernelFailure<PacketBu
         }
     }
 }
+
+fn preparation_ceiling(
+    scan: &worth_execution::ExecutionScan<()>,
+    lease: &ExecutionResourceLease<'_>,
+) -> u64 {
+    let fixed = scan
+        .declared_memory_requirement_for_lease::<(), CheckedPlan<'_>, PacketBudgetDenial>(
+            lease, 0, 0, 0, 0,
+        )
+        .unwrap_or(u64::MAX);
+    lease.available_memory_bytes().saturating_sub(fixed) / 2
+}
+
+#[cfg(test)]
+mod memory_tests;

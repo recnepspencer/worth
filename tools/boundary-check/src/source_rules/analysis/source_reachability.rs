@@ -137,8 +137,7 @@ mod tests {
 
     #[test]
     fn orphan_is_rejected_while_cfg_and_path_modules_are_reachable() {
-        let root =
-            std::env::temp_dir().join(format!("worth-source-reachability-{}", std::process::id()));
+        let root = worth_harness::tooling::fixture_path::unique_path("worth-source-reachability");
         let crate_root = root.join("workspaces/worth-ui/crates/worth-test");
         fs::create_dir_all(crate_root.join("src/group")).unwrap();
         fs::write(

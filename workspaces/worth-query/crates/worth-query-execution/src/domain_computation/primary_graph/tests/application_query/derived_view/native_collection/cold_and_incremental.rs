@@ -4,7 +4,6 @@ use super::*;
 fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entry() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let execution = serial_request(&request);
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world
         .application
@@ -93,7 +92,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let keys = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    worth_execution::ExecutionRequest::serial(&execution),
+                    *request_execution,
                     &view,
                     selected.product(),
                     &membership,
@@ -148,7 +147,7 @@ fn one_collection_cold_reads_two_declared_queries_then_refreshes_only_dirty_entr
             let denied = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    worth_execution::ExecutionRequest::serial(&execution),
+                    *request_execution,
                     &view,
                     selected.product(),
                     &membership,

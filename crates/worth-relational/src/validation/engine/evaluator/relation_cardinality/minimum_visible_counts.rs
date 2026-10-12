@@ -1,3 +1,7 @@
+use crate::validation::engine::request::{PreparedRelationEndpointKey, PreparedRelationPairKey};
+use std::borrow::Cow;
+mod candidate_entities;
+use candidate_entities::record_candidate_entity;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::schema::data::LoweredCardinalityMinimumContract;
@@ -6,24 +10,23 @@ use crate::transactions::data::EntityReference;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::super::state_view::InvariantStateView;
-use super::super::common::contract_candidate_kind_matches;
 use super::minimum_current_index::CurrentVersionMinimumIndex;
 
 #[derive(Default)]
-pub(super) struct VisibleRelationCountSnapshot {
-    pub(super) source_counts: BTreeMap<EntityReference, usize>,
-    pub(super) target_counts: BTreeMap<EntityReference, usize>,
-    pub(super) directed_pair_counts: BTreeMap<(EntityReference, EntityReference), usize>,
+pub(super) struct VisibleRelationCountSnapshot<'scope> {
+    pub(super) source_counts: Cow<'scope, BTreeMap<PreparedRelationEndpointKey, usize>>,
+    pub(super) target_counts: Cow<'scope, BTreeMap<PreparedRelationEndpointKey, usize>>,
+    pub(super) directed_pair_counts: Cow<'scope, BTreeMap<PreparedRelationPairKey, usize>>,
     pub(super) candidate_source_entities: BTreeSet<EntityReference>,
     pub(super) candidate_target_entities: BTreeSet<EntityReference>,
     pub(super) relation_slot_scans: usize,
     pub(super) entity_slot_scans: usize,
 }
 
-pub(super) fn visible_relation_counts(
-    context: &InvariantExecutionContext<'_, '_>,
+pub(super) fn visible_relation_counts<'scope>(
+    context: &'scope InvariantExecutionContext<'_, '_>,
     contract: &LoweredCardinalityMinimumContract,
-) -> VisibleRelationCountSnapshot {
+) -> VisibleRelationCountSnapshot<'scope> {
     if context.merged_plan().is_some() {
         return planned_visible_relation_counts(context, contract);
     }
@@ -90,13 +93,8 @@ pub(super) fn visible_relation_counts(
                     if !context.checkpoint(1) {
                         return snapshot;
                     }
-                    if !context.claim_scratch(
-                        (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>())
-                            as u64,
-                    ) {
-                        return snapshot;
-                    }
                     record_candidate_entity(
+                        context,
                         contract,
                         &mut snapshot,
                         kind_id,
@@ -128,115 +126,8 @@ pub(super) fn visible_relation_counts(
     snapshot
 }
 
-fn planned_visible_relation_counts(
-    context: &InvariantExecutionContext<'_, '_>,
-    contract: &LoweredCardinalityMinimumContract,
-) -> VisibleRelationCountSnapshot {
-    let mut snapshot = VisibleRelationCountSnapshot::default();
-    let Some(scope) = context.relation_integrity_scope(contract.relation_kind_id) else {
-        return snapshot;
-    };
-    for (key, count) in &scope.source_counts {
-        if !context.checkpoint(1) {
-            return snapshot;
-        }
-        if !context.claim_scratch(
-            (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
-        ) {
-            return snapshot;
-        }
-        snapshot.source_counts.insert(key.entity_id.clone(), *count);
-    }
-    for (key, count) in &scope.target_counts {
-        if !context.checkpoint(1) {
-            return snapshot;
-        }
-        if !context.claim_scratch(
-            (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
-        ) {
-            return snapshot;
-        }
-        snapshot.target_counts.insert(key.entity_id.clone(), *count);
-    }
-    for (key, count) in &scope.directed_pair_counts {
-        if !context.checkpoint(1) {
-            return snapshot;
-        }
-        if !context.claim_scratch(
-            (2 * std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
-        ) {
-            return snapshot;
-        }
-        snapshot
-            .directed_pair_counts
-            .insert((key.source.clone(), key.target.clone()), *count);
-    }
-    for edge in &scope.visible_edges {
-        if !context.checkpoint(1) {
-            return snapshot;
-        }
-        if scope.deleted_entities.contains(&edge.source)
-            || scope.deleted_entities.contains(&edge.target)
-        {
-            subtract_relation_references(
-                &mut snapshot,
-                EntityReference::Existing(edge.source),
-                EntityReference::Existing(edge.target),
-            );
-        }
-    }
-    for edge in &scope.planned_edges {
-        if !context.checkpoint(1) {
-            return snapshot;
-        }
-        let deleted_endpoint = [&edge.source, &edge.target].into_iter().any(|endpoint| {
-            matches!(endpoint, EntityReference::Existing(id) if scope.deleted_entities.contains(id))
-        });
-        if deleted_endpoint {
-            subtract_relation_references(&mut snapshot, edge.source.clone(), edge.target.clone());
-        }
-    }
-    let state_view = context.state_view();
-    for id in &scope.minimum_touched_entities {
-        if !context.checkpoint(1) {
-            return snapshot;
-        }
-        if scope.deleted_entities.contains(id) {
-            continue;
-        }
-        if let Some(metadata) = state_view.entity_metadata(*id) {
-            if !context.claim_scratch(
-                (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
-            ) {
-                return snapshot;
-            }
-            record_candidate_entity(
-                contract,
-                &mut snapshot,
-                metadata.kind_id,
-                EntityReference::Existing(*id),
-            );
-        }
-    }
-    for created in &scope.created_candidate_entities {
-        if !context.checkpoint(1) {
-            return snapshot;
-        }
-        if !context.claim_scratch(
-            ((std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64)
-                .saturating_add(created.client_key.owned_allocation_capacity_bytes()),
-        ) {
-            return snapshot;
-        }
-        record_candidate_entity(
-            contract,
-            &mut snapshot,
-            created.kind_id,
-            EntityReference::Created(created.clone()),
-        );
-    }
-    snapshot
-}
+mod planned_counts;
+use planned_counts::planned_visible_relation_counts;
 
 fn collect_historical_relation_counts(
     context: &InvariantExecutionContext<'_, '_>,
@@ -291,12 +182,8 @@ fn collect_historical_candidate_entities(
         else {
             continue;
         };
-        if !context.claim_scratch(
-            (std::mem::size_of::<EntityReference>() + 3 * std::mem::size_of::<usize>()) as u64,
-        ) {
-            return;
-        }
         record_candidate_entity(
+            context,
             contract,
             snapshot,
             metadata.kind_id,
@@ -322,11 +209,24 @@ fn record_relation_references(
     source: EntityReference,
     target: EntityReference,
 ) {
-    *snapshot.source_counts.entry(source.clone()).or_insert(0) += 1;
-    *snapshot.target_counts.entry(target.clone()).or_insert(0) += 1;
+    *snapshot
+        .source_counts
+        .to_mut()
+        .entry(PreparedRelationEndpointKey {
+            entity_id: source.clone(),
+        })
+        .or_insert(0) += 1;
+    *snapshot
+        .target_counts
+        .to_mut()
+        .entry(PreparedRelationEndpointKey {
+            entity_id: target.clone(),
+        })
+        .or_insert(0) += 1;
     *snapshot
         .directed_pair_counts
-        .entry((source, target))
+        .to_mut()
+        .entry(PreparedRelationPairKey { source, target })
         .or_insert(0) += 1;
 }
 
@@ -335,9 +235,22 @@ fn subtract_relation_references(
     source: EntityReference,
     target: EntityReference,
 ) {
-    decrement_count(&mut snapshot.source_counts, source.clone());
-    decrement_count(&mut snapshot.target_counts, target.clone());
-    decrement_count(&mut snapshot.directed_pair_counts, (source, target));
+    decrement_count(
+        snapshot.source_counts.to_mut(),
+        PreparedRelationEndpointKey {
+            entity_id: source.clone(),
+        },
+    );
+    decrement_count(
+        snapshot.target_counts.to_mut(),
+        PreparedRelationEndpointKey {
+            entity_id: target.clone(),
+        },
+    );
+    decrement_count(
+        snapshot.directed_pair_counts.to_mut(),
+        PreparedRelationPairKey { source, target },
+    );
 }
 
 fn decrement_count<Key: Ord>(counts: &mut BTreeMap<Key, usize>, key: Key) {
@@ -346,20 +259,6 @@ fn decrement_count<Key: Ord>(counts: &mut BTreeMap<Key, usize>, key: Key) {
         if *count == 0 {
             counts.remove(&key);
         }
-    }
-}
-
-fn record_candidate_entity(
-    contract: &LoweredCardinalityMinimumContract,
-    snapshot: &mut VisibleRelationCountSnapshot,
-    kind_id: crate::identity::data::KindId,
-    entity: EntityReference,
-) {
-    if contract_candidate_kind_matches(kind_id, &contract.candidate_source_kinds) {
-        snapshot.candidate_source_entities.insert(entity.clone());
-    }
-    if contract_candidate_kind_matches(kind_id, &contract.candidate_target_kinds) {
-        snapshot.candidate_target_entities.insert(entity);
     }
 }
 

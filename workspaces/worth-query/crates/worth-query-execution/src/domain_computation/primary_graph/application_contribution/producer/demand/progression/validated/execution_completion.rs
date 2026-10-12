@@ -1,10 +1,38 @@
 //! Finish the prepaid row publication on the canonical application owner.
-use super::execution_preparation::CompletionRefusal;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution;
 use crate::domain_computation::primary_graph::application_output_demand::RunningSelectedExecution;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint;
 
 #[allow(clippy::too_many_arguments)]
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression)
+struct CompletionRefusal
+{
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) denial:
+        WorthQueryOutputDemandDenial,
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) checkpoint:
+        Option<WorthQueryOutputCheckpoint>,
+}
+impl CompletionRefusal {
+    pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand::progression) fn denied(
+        denial: WorthQueryOutputDemandDenial,
+    ) -> Self {
+        Self {
+            denial,
+            checkpoint: None,
+        }
+    }
+    pub(super) fn unpublished(
+        denial: WorthQueryOutputDemandDenial,
+        checkpoint: WorthQueryOutputCheckpoint,
+    ) -> Self {
+        Self {
+            denial,
+            checkpoint: Some(checkpoint),
+        }
+    }
+}
+
 pub(super) fn finish(
     result: Result<
         execution::outcome::PreparedProducerExecutionOutcome,

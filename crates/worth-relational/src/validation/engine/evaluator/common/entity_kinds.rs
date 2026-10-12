@@ -5,6 +5,9 @@ use crate::validation::data::{InvariantClass, InvariantViolation};
 use super::super::super::context::InvariantExecutionContext;
 use super::{storage_inconsistency_violation, StorageInconsistencyContext};
 
+#[cfg(test)]
+mod work_tests;
+
 pub(crate) fn contract_candidate_kind_matches(
     kind_id: crate::identity::data::KindId,
     candidate_kinds: &[crate::identity::data::KindId],
@@ -90,6 +93,9 @@ fn created_entity_kind_in_plan(
     created: &CreatedEntityRef,
 ) -> Option<crate::identity::data::KindId> {
     let merged_plan = context.merged_plan()?;
+    if context.created_lookup_profitable {
+        return context.created_entity_kind(created);
+    }
     for intent in &merged_plan.merged_intents {
         if !context.checkpoint(1) {
             return None;

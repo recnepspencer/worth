@@ -20,7 +20,10 @@ pub(super) struct CandidateTouchedKinds {
 impl CandidateTouchedKinds {
     /// `None` means a complete footprint could not be proven; all custom rules
     /// then retain the ordinary scope-preparation path.
-    pub(super) fn from_request(request: &InvariantExecutionRequest<'_>) -> Option<Self> {
+    pub(super) fn from_request(
+        request: &InvariantExecutionRequest<'_>,
+        budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
+    ) -> Option<Self> {
         let plan = request.merged_plan()?;
         let observation = request.observation();
         let proposed = InvariantStateView::new(
@@ -45,6 +48,7 @@ impl CandidateTouchedKinds {
         for partition in partitions {
             proposed.state().get_partition(partition)?;
             for slot in proposed.state().touched_entity_slots(partition)? {
+                pay_visit(budget)?;
                 let current = proposed.entity_metadata_for_slot(partition, slot);
                 let previous = before
                     .as_ref()
@@ -57,6 +61,7 @@ impl CandidateTouchedKinds {
                 }
             }
             for slot in proposed.state().touched_relation_slots(partition)? {
+                pay_visit(budget)?;
                 let current = proposed.relation_metadata_for_slot(partition, slot);
                 let previous = before
                     .as_ref()
@@ -76,7 +81,8 @@ impl CandidateTouchedKinds {
             }
         }
         for intent in &plan.merged_intents {
-            kinds.intent(intent, &proposed, before.as_ref())?;
+            pay_visit(budget)?;
+            kinds.intent(intent, &proposed, before.as_ref(), budget)?;
         }
         Some(kinds)
     }
@@ -187,6 +193,7 @@ impl CandidateTouchedKinds {
         intent: &MutationIntent,
         proposed: &InvariantStateView<'_>,
         before: Option<&InvariantStateView<'_>>,
+        budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
     ) -> Option<()> {
         match intent {
             MutationIntent::Create(create) => match create {
@@ -215,6 +222,7 @@ impl CandidateTouchedKinds {
                 CreateIntent::BulkRelations(spec) => {
                     self.relations.insert(spec.kind_id);
                     for (source, target) in &spec.endpoints {
+                        pay_visit(budget)?;
                         self.reference(source, proposed, before)?;
                         self.reference(target, proposed, before)?;
                     }
@@ -250,6 +258,18 @@ impl CandidateTouchedKinds {
             },
         }
     }
+}
+
+// Scope capture prices one unit per touched slot and per merged intent.
+// Narrowing uses that same visit price, including each bulk endpoint pair.
+const CANDIDATE_VISIT_WORK: usize = 1;
+
+fn pay_visit(
+    budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
+) -> Option<()> {
+    budget
+        .is_none_or(|budget| budget.try_visit(CANDIDATE_VISIT_WORK))
+        .then_some(())
 }
 
 #[cfg(test)]

@@ -175,7 +175,6 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
                     )
                     .map_err(|_| WorthQueryManagedDerivedViewDenial::QueryExecutionDenied)
             };
-            let execution = serial_request(&request);
             // Native IDs and labels both come from the actual declared owner adjacency.
             let members = |row: &OwnerMembersResult| row.members.clone();
             let census = read_census();
@@ -199,7 +198,7 @@ fn owner_sized_image_grows_from_actual_census_and_preserves_clean_arcs() {
             let keys = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    worth_execution::ExecutionRequest::serial(&execution),
+                    *request_execution,
                     &view,
                     selected.product(),
                     &census,

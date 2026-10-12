@@ -94,11 +94,8 @@ mod tests {
     }
 
     fn temporary_facade(contents: &str) -> std::path::PathBuf {
-        let id = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let path = std::env::temp_dir().join(format!("boundary-check-route-{id}.rs"));
+        let path = worth_harness::tooling::fixture_path::unique_path("boundary-check-route")
+            .with_extension("rs");
         std::fs::write(&path, contents).unwrap();
         path
     }

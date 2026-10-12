@@ -185,7 +185,7 @@ fn the_naming_signature_has_only_the_canonical_partition_set() {
 #[test]
 fn neutral_helpers_and_preparation_packetizers_are_scanned_by_crate() {
     use std::fs;
-    let root = std::env::temp_dir().join(format!("worth-packet-scope-{}", std::process::id()));
+    let root = worth_harness::tooling::fixture_path::unique_path("worth-packet-scope");
     fs::create_dir_all(&root).unwrap();
     for package in ["worth-execution", "worth-relational"] {
         let owner = root.join("crates").join(package);

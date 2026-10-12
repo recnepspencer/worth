@@ -97,6 +97,16 @@ fn registry_binding_reader_resolves_completed_custody_note() {
             .bind_prepared_output_source(&current_commit, selected.clone())
             .unwrap();
         let deferred = make();
+        assert!(
+            deferred.state.lock().unwrap().source_custody[&completed_commit]
+                .source
+                .is_none()
+        );
+        assert_eq!(
+            deferred.retained_source_custody_count(),
+            1,
+            "a completed cleanup note retains no performed source"
+        );
         assert!(deferred.state.lock().unwrap().pending_custody_prune());
         deferred
             .bind_prepared_output_source(&current_commit, selected.clone())

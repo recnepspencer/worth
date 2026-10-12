@@ -83,3 +83,35 @@ impl KernelContext<'_, '_> {
         result
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::backend::run_scope;
+    use crate::tests::{authority, request, TEST_LOCK};
+    #[test]
+    fn refused_completed_work_keeps_the_checkpoint_stop() {
+        let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
+        let lease = authority().request_lease(request(1, 2_000, 3)).unwrap();
+        let outcome = run_scope(Some(&lease), 0, 0, |context| {
+            assert_eq!(context.account_completed_work(2), Ok(()));
+            assert_eq!(
+                context.account_completed_work(2),
+                Err(KernelStop::WorkCeiling)
+            );
+            assert_eq!(context.checkpoint_stop(), Some(KernelStop::WorkCeiling));
+            assert_eq!(context.checkpoint(0), Err(KernelStop::WorkCeiling));
+            assert_eq!(context.cost().0, 2);
+            Err::<(), _>(crate::backend::KernelFailure::<()>::Stop(
+                KernelStop::WorkCeiling,
+            ))
+        });
+        assert!(matches!(
+            outcome.result,
+            Err(crate::backend::ScopeStop::Failure(
+                crate::backend::KernelFailure::Stop(KernelStop::WorkCeiling)
+            ))
+        ));
+        assert_eq!(outcome.report.charged_work(), 2);
+    }
+}

@@ -5,7 +5,6 @@ use super::*;
 fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let execution = serial_request(&request);
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world
         .application
@@ -77,7 +76,7 @@ fn optional_owner_removal_and_insertion_refresh_at_the_real_current_product() {
             let keys = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    worth_execution::ExecutionRequest::serial(&execution),
+                    *request_execution,
                     &view,
                     selected.product(),
                     &membership,

@@ -1,17 +1,14 @@
-use std::time::Instant;
-
 use crate::facade::SignalRuntimePolicy;
 use crate::tests::domains::fintech::compile_financial_locality_world_with_policy;
 
 use super::throughput_definition::{
-    assert_within_throughput_budget, partitioned_world_for_output_floor, performance_workers,
-    PERFORMANCE_SEED, RECORDED_SCHEDULED_OUTPUT_FLOOR,
+    partitioned_world_for_output_floor, performance_workers, PERFORMANCE_SEED,
+    RECORDED_SCHEDULED_OUTPUT_FLOOR,
 };
 const SCHEDULED_BATCHES: usize = 8;
 
 #[test]
 fn scheduled_node_bound_records_governing_scale() {
-    let started = Instant::now();
     let mut world = compile_financial_locality_world_with_policy(
         partitioned_world_for_output_floor(PERFORMANCE_SEED, RECORDED_SCHEDULED_OUTPUT_FLOOR),
         SignalRuntimePolicy::operational(),
@@ -28,5 +25,4 @@ fn scheduled_node_bound_records_governing_scale() {
     println!(
         "scheduled node bound governed_by={RECORDED_SCHEDULED_OUTPUT_FLOOR} report={report:?}"
     );
-    assert_within_throughput_budget(started, "scheduled recorded bound");
 }

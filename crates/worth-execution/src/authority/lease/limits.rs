@@ -50,7 +50,8 @@ impl<'a> ExecutionResourceLease<'a> {
     fn child_from_validated_request(&self, request: LeaseRequest) -> Self {
         let budget = request.policy.budget();
         Self {
-            authority: self.authority,
+            authority: Arc::clone(&self.authority),
+            _authority: std::marker::PhantomData,
             node: Arc::new(LeaseNode {
                 id: self.authority.next_id(),
                 parent: Some(Arc::clone(&self.node)),

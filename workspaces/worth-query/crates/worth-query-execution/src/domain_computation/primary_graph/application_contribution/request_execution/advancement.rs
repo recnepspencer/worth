@@ -121,11 +121,6 @@ impl QueryRequestExecution<'_> {
                 Resource::WorkExhausted,
             ));
         }
-        if matches!(&self.form, Form::Serial { .. }) && request.memory_limit() == 0 {
-            return Err(WorthQueryAdvancementDenial::Resource(
-                Resource::PolicyMemoryLimit,
-            ));
-        }
         let mut body_unwind = None;
         let outcome = request.run(ExecutionWorkCeiling::new(self.declared_work), |lease| {
             observation::record_workers(

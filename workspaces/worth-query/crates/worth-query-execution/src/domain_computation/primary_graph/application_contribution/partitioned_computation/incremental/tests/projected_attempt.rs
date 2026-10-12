@@ -104,7 +104,7 @@ where
     )
 }
 
-fn admit(
+pub(super) fn admit(
     world: &AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,

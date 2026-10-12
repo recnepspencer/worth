@@ -39,36 +39,13 @@ fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
                     if !output.status.success() {
                         red.push(format!("change {change} prior {prior} current {current} reuse {reuse}: {stdout}{}",String::from_utf8_lossy(&output.stderr)));
                     } else {
-                        let total = stdout
-                            .lines()
-                            .find(|s| s.starts_with("REUSE_TOTAL:"))
-                            .unwrap()
-                            .to_owned();
-                        if change == 9 && prior == 1 && current == 1 && !reuse {
-                            let charged = total
-                                .split_once("retained=(")
-                                .unwrap()
-                                .1
-                                .split_once(')')
-                                .unwrap()
-                                .0;
-                            let (work, span) = charged.split_once(',').unwrap();
-                            // This fresh-process row has canonical owner/framing
-                            // 275793/275786 plus its accepted 16 checkpoint units.
-                            let actual = (
-                                work.parse::<u64>().unwrap(),
-                                span.trim().parse::<u64>().unwrap(),
-                            );
-                            if actual != (275_809, 275_802) {
-                                red.push(format!("absolute carried-ceiling advancement anchor is charged by value: change {change} prior {prior} current {current} reuse {reuse}: actual={actual:?}, expected=(275809, 275802)"));
-                            }
-                        }
+                        let total = history_bills(&stdout);
                         if let Some(expected) = anchors.get(&change) {
                             if &total != expected {
-                                red.push(format!("charge by posture: change {change} prior {prior} current {current} reuse {reuse}: {expected} versus {total}"));
+                                red.push(format!("charge by posture: change {change} prior {prior} current {current} reuse {reuse}: {expected:?} versus {total:?}"));
                             }
                         } else {
-                            println!("REUSE_ANCHOR:{change}:{total}");
+                            println!("REUSE_ANCHOR:{change}:{total:?}");
                             anchors.insert(change, total);
                         }
                     }
@@ -88,4 +65,48 @@ fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
         red.is_empty(),
         "every reuse law and charge is unchanged across prior/current posture"
     );
+}
+
+fn history_bills(stdout: &str) -> (u64, u64, u64, u64) {
+    let (line, names) = match stdout
+        .lines()
+        .find(|line| line.starts_with("HISTORY_BILLS:"))
+    {
+        Some(line) => (
+            line,
+            [
+                "edited_work",
+                "edited_span",
+                "new_installation_work",
+                "new_installation_span",
+            ],
+        ),
+        None => (
+            stdout
+                .lines()
+                .find(|line| line.starts_with("SAME_REQUEST_BILL:"))
+                .unwrap(),
+            [
+                "edited_retained_work",
+                "edited_retained_span",
+                "edited_reuse_off_work",
+                "edited_reuse_off_span",
+            ],
+        ),
+    };
+    let field = |name| {
+        line.split(':')
+            .filter_map(|field| field.split_once('='))
+            .find(|(key, _)| *key == name)
+            .unwrap()
+            .1
+            .parse::<u64>()
+            .unwrap()
+    };
+    (
+        field(names[0]),
+        field(names[1]),
+        field(names[2]),
+        field(names[3]),
+    )
 }

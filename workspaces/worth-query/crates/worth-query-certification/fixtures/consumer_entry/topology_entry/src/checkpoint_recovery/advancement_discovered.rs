@@ -45,7 +45,7 @@ impl Drop for Restore {
         bound(self.1);
     }
 }
-fn assert_cause(denial: &PreparationDenial, memory: bool, placement: Placement) {
+fn assert_cause(denial: &PreparationDenial, memory: bool) {
     let PreparationDenial::Demand(OutputDenial::Demand(denial)) = denial else {
         panic!("opening keeps its cause: {denial:?}")
     };
@@ -55,8 +55,6 @@ fn assert_cause(denial: &PreparationDenial, memory: bool, placement: Placement) 
     };
     if !memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-    } else if placement == Placement::Serial {
-        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
     } else {
         let Denial::Resource(Resource::MemoryLimit {
             level,
@@ -115,8 +113,6 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             let worth_query_host::facade::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)) = cause else { panic!("discovered mutation opens before its handler") };
             if !memory {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-            } else if placement == Placement::Serial {
-                assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,
@@ -172,7 +168,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 .start_required_outputs(&application, &request, Default::default())
                 .err()
                 .expect("zero budget refuses start");
-            assert_cause(failure.denial(), memory, placement);
+            assert_cause(failure.denial(), memory);
             assert_eq!(reads(), before);
             assert_eq!(reports().len(), 1);
             let performed = failure.performed();
@@ -185,7 +181,7 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
                 )
                 .err()
                 .expect("zero budget refuses recovery");
-            assert_cause(&denial, memory, placement);
+            assert_cause(&denial, memory);
             assert_eq!(reads(), before);
             assert_eq!(reports().len(), 1);
             bound(None);

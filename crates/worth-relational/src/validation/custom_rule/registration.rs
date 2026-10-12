@@ -47,8 +47,8 @@ pub trait CustomInvariantRule: Send + Sync + RefUnwindSafe + 'static {
         scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError>;
 
-    /// Opt in to leased execution by checkpointing every candidate and
-    /// claiming retained output before growth. Legacy rules deny the lease.
+    /// Opt in to multiworker execution by checkpointing every candidate and
+    /// claiming retained output before growth. Other rules run on serial backings.
     fn evaluate_checked(
         &self,
         _context: &CustomInvariantExecutionContext<'_>,

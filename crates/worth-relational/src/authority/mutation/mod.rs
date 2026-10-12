@@ -19,7 +19,7 @@ pub(crate) use canonical_deltas::{
 };
 pub(crate) use effect::{AdjacencyDelta, AdjacencyDeltaKind, MutationEffect};
 pub(crate) use execution::{apply_plan_to_working_state, MutationApplyOutcome};
-pub(crate) use field_versions::changed_fields;
+pub(crate) use field_versions::visit_changed_fields;
 pub(crate) use record_changes::apply_adjacency_deltas;
 pub(crate) use workspace::{
     BranchLocalDeleteAllowance, MutationPreparationTelemetry, MutationWorkspace,

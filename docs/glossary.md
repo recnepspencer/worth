@@ -32,6 +32,13 @@ explained). Rust names are given where a type embodies the term.
   **See** [Build an Application §7](build-an-application.md#7-adopt-a-new-program-on-a-branch)
   and [How WORTH Works §12](how-it-works.md#12-branches-programs-and-adoption).
 
+**Advancement**
+: One executing public entry under one bounded request: a query, mutation,
+  live delivery, adoption step, or demand `advance`. Internal phases borrow
+  its custody; descendant work shares its limits. The callback closes the
+  request. Pump output progress with `advance`; workers compute but do not
+  publish. **See** [execution and cost](how-it-works.md#99-resources-execution-and-cost).
+
 **Aftermath**
 : What can happen to a committed change afterward. Every operation declares a
   posture: *reversible*, *compensatable*, *reconcilable*, or *irreversible*.
@@ -116,6 +123,13 @@ explained). Rust names are given where a type embodies the term.
   branch reference once and produces a receipt.
   **Not** settlement (see *Settled*), and **not** external completion.
 
+**Clean reuse**
+: Keeping a settled output without rerunning its producer or source query
+  when its selected lineage is continuous, its settlement is unmarked, and
+  no recorded full-verification requirement applies. This decision uses
+  marking, not a producer opt-in contract. It is distinct from *cutoff* and
+  *partition reuse*.
+
 **Compare-and-publish**
 : Relational's linearization point. The candidate's full expected
   observation is compared with the branch's current reference. If they match,
@@ -162,6 +176,13 @@ explained). Rust names are given where a type embodies the term.
   carries `CurrentValidity`.
   **Not** residency: a retained basis can be available and not current.
 
+**Cutoff**
+: Ending propagation at a proved equality. Input cutoff can skip a producer
+  only under its declared canonical-bitwise input-reuse contract and context
+  requirements. Stable output republication can resolve downstream pending
+  edges through the exact equal, clean successor. Equality never waives the
+  attempt's final consumed-fact checks. **See** *Clean reuse* and *Marking*.
+
 **Custody**
 : Responsibility, held by the runtime, for work that is still owed: a pending
   effect recovery, a source reservation, or an external workflow operation
@@ -206,8 +227,11 @@ explained). Rust names are given where a type embodies the term.
 **Determinism contract**
 : The declared comparison rule under which an execution result is independent
   of placement. The default is canonical bitwise equality; an installed
-  equivalence contract supplies a predicate. Charged work follows canonical
-  settlement, independent of worker count. Physical metrics can differ.
+  equivalence contract supplies a predicate at the execution authority.
+  Without an in-flight interruption and with sufficient memory, canonical
+  settlement preserves the result, charged work and structural span across
+  admitted widths. Physical metrics can differ. Managed partition retention
+  requires canonical bitwise equality.
 
 **Digest**
 : A SHA-256 identity derived from a canonical basis through Foundational
@@ -226,9 +250,11 @@ explained). Rust names are given where a type embodies the term.
   Evidence is not authority.
 
 **Execution authority**
-: The process owner of computation workers and the charged-memory ledger.
-  It admits execution policy and issues request leases. A second authority
-  cannot be constructed in the same process.
+: The physical process owner of computation workers and the charged-memory
+  ledger. It admits execution policy and issues request leases. Only one
+  physical authority may be constructed during a process lifetime. A serial
+  backing owns no physical pool; its bounded lease still charges and reports
+  work. Install policy at the host, not inside a computation.
 
 **External effect**
 : A consequence outside WORTH, such as sending an email or calling a payment
@@ -256,6 +282,15 @@ explained). Rust names are given where a type embodies the term.
   the facts built from its footprint and no others, so an edit outside the
   footprint does not invalidate the source.
 
+**Frontier (staged execution)**
+: Two or more ready stages of one installed staged operation, ordered by
+  unique stage identity.
+  Preparation and application run on the owner; pure task computation can
+  run on workers. Frontier entry sorts the supplied identities and refuses
+  fewer than two members or duplicates. Ordinary single-stage computation
+  uses the underlying checked map. This engine surface is distinct from
+  the application's workflow kernel and its caller-pumped control mutations.
+
 **Freshness**
 : How current a basis is, recorded in its type: `CurrentValidity`,
   `StaleReadable`, `RebindRequired`, or `AuthorityRevalidationRequired`.
@@ -266,7 +301,9 @@ explained). Rust names are given where a type embodies the term.
 
 **Handler**
 : Application code that implements an operation (`OperationHandler`): it
-  decides, states its resource requirements, and builds a candidate. Workflow
+  prepares a decision plan, states its resource requirements, and builds a
+  candidate. The default `prepare_decision` calls `decide`; a computing handler
+  overrides preparation and completes on the owner after compute. Workflow
   control steps have no handler.
 
 ## I
@@ -300,12 +337,17 @@ explained). Rust names are given where a type embodies the term.
 **Lease**
 : A runtime hold issued by an owner. An execution lease carries worker,
   charged-memory, and work ceilings from admitted policy; descendants can
-  narrow them and share ancestor and process accounting. A residency lease
+  narrow them and share ancestor accounting; physical placement also shares
+  the process ledger. A serial execution lease has one worker, no pool and
+  the same checked execution doors. A residency lease
   instead keeps a selected basis available. Neither grants mutation authority.
   A residency lease (`RelationalBranchRetentionLease`,
   `SignalBranchRetentionLease`) is an owner-issued obligation that is
   released or dropped exactly once and exposes no read or mutation
   capability.
+  A Query advancement uses the same bounded request throughout Bridge,
+  Relational, Signal, and World execution. Serial placement supplies serial
+  backing and one worker; nested computation still shares its parent's bounds.
 
 **Lineage**
 : (1) A continuity claim about evidence (attested, replay-derived, restored,
@@ -332,10 +374,11 @@ explained). Rust names are given where a type embodies the term.
 : How a commit invalidates derived outputs. The commit's *touched graph* is
   intersected with the *reverse index*; each matched settlement is marked
   dirty, and every settlement that consumed its output is marked
-  pending-upstream. Marks are per branch lineage, and an unmarked settlement on
-  a continuous basis is current without re-running its source query.
+  pending-upstream. Marks are per branch lineage. An unmarked settlement on
+  a continuous basis, without a full-verification requirement, can certify
+  currentness without re-running its source query.
   A settlement recorded before a delivery discontinuity, or one that carries
-  a recorded verification requirement, is not current and requires full
+  a recorded verification requirement, requires full
   verification. Marking that exceeds its installed ceiling or its retained
   capacity becomes such a discontinuity instead of refusing the writer.
   **See** [How WORTH Works §10.5](how-it-works.md#105-marking-and-currentness).
@@ -362,17 +405,23 @@ explained). Rust names are given where a type embodies the term.
 
 **Partition (execution)**
 : A data-identified unit dispatched to one kernel and settled in canonical
-  order. Its identity does not depend on the worker. It is distinct from a
-  Signal observation scope selected by `whole_partition`, which matches a
-  subtree of scope paths.
+  order. Its identity is a function of the canonical partition set, not the
+  lease, worker count or machine. Define membership before choosing placement.
   **Not** a Signal *conflict group* (`DisjointApplyGroup`): a conflict group
   is ready graph work admitted because its worker-local proposal surfaces do
   not overlap another group's, and it carries no data identity.
-  **Not** a whole-partition subscription: a Signal subscription built by
-  `PartitionSubscription::whole_partition` selects the subtree of scope paths
-  under one partition segment. That selection decides which subscriptions a
-  changed region reaches. It names no unit of work.
-  **See** *Conflict group* and *Scope path*.
+  **Not** a *whole-partition observation scope*.
+  **See** *Conflict group*, *Partitioner* and *Scope path*.
+
+**Partition reuse**
+: A producer's next managed computation carries unchanged owner calls and
+  partition results from its published prior record. Installation, producer
+  edition and input digest must match; recorded facts decide which calls
+  change. Carried accepted charges preserve full-run-equivalent work and
+  span. Memory reserves what is physically held. Missing usable prior state
+  takes the full-run path. Declare stable items, partition keys and pure
+  owner functions; do not select placement in them.
+  **See** [the computation owner](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
 
 **Partitioner**
 : The owner of the rule assigning stable item identities to execution
@@ -392,6 +441,12 @@ explained). Rust names are given where a type embodies the term.
 **Phase**
 : A stage in a typed progression, carried in the type so that skipping or
   reordering steps does not compile.
+
+**Pinned read**
+: Access to one retained immutable source root selected by an exact owner
+  observation. A later commit does not change that read. Its hold preserves
+  availability, not live currentness or write authority. Releasing the hold
+  ends access. **See** *Currentness* and *Residency (retention)*.
 
 **Placement rule**
 : Where new vocabulary lives. First *yes* wins: legality goes in
@@ -453,6 +508,13 @@ explained). Rust names are given where a type embodies the term.
   Membership can have several holders; closing one demand does not remove
   an output still required by another.
 
+**Required wave**
+: Required producer occurrences admitted together by the required-set owner
+  against one selected basis. Each member's consumed upstream outputs are
+  already committed on that basis. Independent compute can run concurrently;
+  completion, commits, and publications follow canonical member keys. Every
+  wave of an advancement shares its request. **See** *Advancement*.
+
 **Residency (retention)**
 : Keeping a basis available in memory under a lease. A resident basis is not
   necessarily current: the lease holds the root its observation selected,
@@ -479,9 +541,7 @@ explained). Rust names are given where a type embodies the term.
 
 **Scope path**
 : A hierarchical address that refines an affected region. Signal subscriptions
-  can select an exact path or its subtree. A whole-partition subscription
-  selects the subtree under one partition segment; this observation scope is
-  distinct from an execution partition.
+  can select an exact path or its subtree. **See** *Whole-partition observation scope*.
   A path has one to eight non-empty segments (`ScopePath::MAX_DEPTH`); a
   longer path is refused. The Bridge lowers each change it delivers into
   changed regions on these paths. A partition-local dependency yields the
@@ -493,9 +553,9 @@ explained). Rust names are given where a type embodies the term.
 **Settled**
 : Performed, and also made durable and published by Query. A commit that
   moved the branch but did not finish settlement is `SettlementDeferred`. The
-  fix is to recover settlement, not to redo the change. Today "durable"
-  means the owners' settlement records are complete in memory. Surviving a
-  process restart arrives when Store is wired in
+  fix is to recover settlement, not to redo the change. Query's in-memory
+  settlement records do not themselves guarantee survival of a process
+  restart; that requires Store's durable ownership
   ([How WORTH Works §15.1](how-it-works.md#151-store-durable-physical-survival)).
 
 **Shard**
@@ -565,15 +625,27 @@ explained). Rust names are given where a type embodies the term.
 
 ## W
 
+**Whole-partition observation scope**
+: A Signal subscription selecting the entire subtree under one partition
+  segment of a scope path (`PartitionSubscription::whole_partition`). It
+  decides which changed regions reach an observer. It does not dispatch a
+  kernel or prove worker-local disjointness. Choose it for whole-subtree
+  observation, not to request an execution width. **See** *Partition (execution)*
+  and *Conflict group*.
+
 **Witness**
 : A zero-sized value proving the caller is in an authorized lane
   (`AuthorityWitness`). A witness proves the lane, not which runtime
   instance.
 
 **Work**
-: Charged operation units accumulated in canonical settlement order. Failed
-  execution charges its accepted canonical prefix; discarded later work does
-  not change that total. Work is not elapsed time or total process memory.
+: The sum of charged operation units, an amount in the execution report,
+  not elapsed time or memory. An execution map reports its accepted canonical
+  prefix and records discarded suffix work as a physical metric. In a
+  producer wave, member denials are data: every member that computed remains
+  charged when owner completion keeps only a prefix. Owner work is charged
+  where it runs; undispatched waves cost nothing. Interpret work together
+  with *span* and the report's physical metrics.
 
 **Workflow**
 : A branch-local, versioned graph of steps (operations, assessments,
@@ -586,11 +658,20 @@ explained). Rust names are given where a type embodies the term.
   authorizes and records them, never a handler. Applications reach the kernel
   through the workflow runtime (`WorthQueryWorkflowApplicationRuntime`).
   Progress is caller-pumped.
-  **Not** `worth_query::facade::workflow` (preview, promotion, writeback, and
-  branch merge) or `worth_query::facade::installed::workflow` (staged runs of
-  installed domain operations).
+  **Not** preview, promotion, writeback, branch merge, or a staged run of
+  installed domain operations. Applications import only `worth-query-decl`
+  and `worth-query-host`.
   **See** [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows)
   and [How WORTH Works §13](how-it-works.md#13-workflows).
+
+**Workflow frontier**
+: A declared set of independent stages in an installed domain operation's
+  staged run. Preparation fixes each stage's facts on the owner; compute takes
+  only its inert task; application returns to the owner in canonical stage
+  order. The least failing stage bounds the applied prefix. An apply failure
+  does not refund compute work already settled. This frontier is
+  separate from a required wave and from application workflow control steps.
+  **See** [How WORTH Works §9.9](how-it-works.md#99-resources-execution-and-cost).
 
 **World (Runtime World)**
 : The runtime that composes exact component bases into product branches and

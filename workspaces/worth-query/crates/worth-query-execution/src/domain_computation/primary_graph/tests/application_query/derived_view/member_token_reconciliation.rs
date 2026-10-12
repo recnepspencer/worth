@@ -8,7 +8,6 @@ use crate::domain_computation::primary_graph::tests::fixture::{
 fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fail_closed() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let execution = serial_request(&request);
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world
         .application
@@ -151,7 +150,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             let keys = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    worth_execution::ExecutionRequest::serial(&execution),
+                    *request_execution,
                     &view,
                     selected.product(),
                     &membership,
@@ -197,7 +196,7 @@ fn changed_member_token_for_same_entity_refreshes_entry_and_duplicate_members_fa
             let denied = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    worth_execution::ExecutionRequest::serial(&execution),
+                    *request_execution,
                     &view,
                     selected.product(),
                     &membership,

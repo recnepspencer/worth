@@ -99,8 +99,7 @@ mod tests {
                 authority_packages: vec!["worth-query".into()],
             }],
         };
-        let root =
-            std::env::temp_dir().join(format!("boundary-query-vocabulary-{}", std::process::id()));
+        let root = worth_harness::tooling::fixture_path::unique_path("boundary-query-vocabulary");
         let snapshot_path = root.join("tools/boundary-check/snapshots/facades.toml");
         fs::create_dir_all(snapshot_path.parent().unwrap()).unwrap();
         fs::write(

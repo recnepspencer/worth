@@ -37,14 +37,22 @@ impl DemandRecord {
                 WorthQueryOutputAdvancement::Stopped { .. } => Retired(RowRetirement::Finished),
                 WorthQueryOutputAdvancement::Idle => match &output.checkpoint {
                     Some(WorthQueryOutputCheckpoint::Ready(_)) => KeptAnswer,
-                    Some(
-                        WorthQueryOutputCheckpoint::Published { .. }
-                        | WorthQueryOutputCheckpoint::Delivered { .. },
-                    ) => {
+                    Some(WorthQueryOutputCheckpoint::Published { .. }) => {
                         if awaited_by_stale_owner {
                             IdleRowDisposition::HeldForStaleOwner
                         } else if self.interests == 0 {
                             Retired(RowRetirement::AbandonedPublication)
+                        } else {
+                            InFlight
+                        }
+                    }
+                    Some(WorthQueryOutputCheckpoint::Delivered { .. }) => {
+                        // Delivery has performed this work. Closing its owner
+                        // retires the checkpoint without re-admitting its root.
+                        if awaited_by_stale_owner {
+                            IdleRowDisposition::HeldForStaleOwner
+                        } else if self.interests == 0 {
+                            Retired(RowRetirement::Finished)
                         } else {
                             InFlight
                         }
