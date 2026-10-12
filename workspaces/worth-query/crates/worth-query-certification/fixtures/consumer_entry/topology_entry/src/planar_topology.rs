@@ -113,6 +113,18 @@ where
     const MINOR: u16 = 0;
 }
 
+// Eight rings of three bodies/successors; price root comparisons and six
+// coordinate reads per body (18 aspect + 18 kind visits), with 4x headroom.
+const PLANAR_SCOPE_RINGS: u64 = 8;
+const PLANAR_SCOPE_BODIES: u64 = PLANAR_SCOPE_RINGS * 3;
+const PLANAR_SCOPE_SUCCESSORS: u64 = PLANAR_SCOPE_BODIES;
+const PLANAR_CHECKED_HEADROOM: u64 = 4;
+const PLANAR_CHECKED_WORK: u64 = PLANAR_CHECKED_HEADROOM
+    * (PLANAR_SCOPE_BODIES * 3 * PLANAR_SCOPE_BODIES
+        + PLANAR_SCOPE_BODIES * 6 * (18 + 18)
+        + PLANAR_SCOPE_SUCCESSORS * 8)
+    * crate::planar_invariant::PLANAR_CANDIDATE_WORK;
+
 pub fn planar_turn_invariant<Schema>() -> ApplicationInvariantDefinition<Schema, PositivePlanarTurn>
 where
     Schema: TopologySchemaBinding,
@@ -120,7 +132,9 @@ where
     ApplicationInvariantDefinition::new(
         PositivePlanarTurn::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(NonZeroU64::new(1024).expect("nonzero fixture budget")),
+        RelationalInvariantWorkBudget::new(
+            NonZeroU64::new(PLANAR_CHECKED_WORK).expect("nonzero declared scope budget"),
+        ),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [
