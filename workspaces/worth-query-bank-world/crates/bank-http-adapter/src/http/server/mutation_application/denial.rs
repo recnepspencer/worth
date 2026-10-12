@@ -129,6 +129,29 @@ pub(in crate::http::server) fn pending_execution_denial(
     }
 }
 
+pub(in crate::http::server) fn unresolved_execution_stop(
+    stop: Result<
+        worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+        worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> BankHttpDenial {
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
+    match stop {
+        Err(control) => pending_execution_stop(Err(control)),
+        Ok(
+            kind @ (Kind::ExecutionResource { .. }
+            | Kind::ExecutionNestedPatternStopped { .. }
+            | Kind::ExecutionWorkerPanicked { .. }
+            | Kind::ExecutionUncheckedCustomKernel { .. }
+            | Kind::ExecutionIdentitiesNotCanonical { .. }),
+        ) => pending_execution_denial(kind),
+        Ok(_) => BankHttpDenial::new(
+            BankHttpDenialKind::Unavailable,
+            BankHttpNextAction::ContactOperator,
+        ),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind as Denial;
@@ -211,3 +234,21 @@ mod tests {
 
 #[cfg(test)]
 mod pending_execution_tests;
+
+#[cfg(test)]
+mod unresolved_execution_tests {
+    use super::*;
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
+    #[test]
+    fn unresolved_controls_use_the_same_http_actions_as_other_request_stops() {
+        for (control, kind) in [
+            (Control::Cancelled, BankHttpDenialKind::Cancelled),
+            (Control::TimedOut, BankHttpDenialKind::DeadlineExceeded),
+        ] {
+            assert_eq!(
+                unresolved_execution_stop(Err(control)),
+                BankHttpDenial::new(kind, BankHttpNextAction::Retry)
+            );
+        }
+    }
+}

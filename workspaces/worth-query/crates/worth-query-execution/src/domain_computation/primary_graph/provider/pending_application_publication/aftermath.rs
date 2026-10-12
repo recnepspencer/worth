@@ -33,6 +33,8 @@ pub(super) fn seal(
     if application.aftermath_causality().is_some() {
         return Ok(());
     }
+    #[cfg(test)]
+    provider.fault_port.aftermath_ready_for_sealing();
     let committed = provider
         .resolve_aftermath_causality_in_snapshot(
             execution,

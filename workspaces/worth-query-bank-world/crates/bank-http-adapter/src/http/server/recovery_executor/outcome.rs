@@ -65,11 +65,26 @@ pub(super) fn commit_denial(outcome: BankMutationCommitOutcome) -> BankHttpDenia
         | BankMutationCommitOutcome::CustomInvariantDenied { .. }
         | BankMutationCommitOutcome::Aborted => unavailable(),
         BankMutationCommitOutcome::Deferred(_)
-        | BankMutationCommitOutcome::SettlementDeferred(_)
-        | BankMutationCommitOutcome::Indeterminate(_) => BankHttpDenial::new(
+        | BankMutationCommitOutcome::SettlementDeferred(_) => BankHttpDenial::new(
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::ContactOperator,
         ),
+        BankMutationCommitOutcome::Indeterminate(evidence) => {
+            use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
+            match evidence.provider_failure_kind() {
+                Err(Control::Cancelled) => {
+                    BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
+                }
+                Err(Control::TimedOut) => deadline_exceeded(),
+                Ok(bank_server::BankProviderFailureKind::ExecutionResource { denial, .. }) => {
+                    super::super::mutation_application::execution_resource(denial).1
+                }
+                Ok(_) => BankHttpDenial::new(
+                    BankHttpDenialKind::Unavailable,
+                    BankHttpNextAction::ContactOperator,
+                ),
+            }
+        }
         BankMutationCommitOutcome::Committed(_)
         | BankMutationCommitOutcome::AlreadyCommitted(_) => unavailable(),
     }

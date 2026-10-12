@@ -62,7 +62,10 @@ pub enum BankProviderFailureStage {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct BankUnresolvedCommitDescription {
     recovery: BankCommitRecoveryKind,
-    provider_failure: BankProviderFailureKind,
+    provider_failure: Result<
+        BankProviderFailureKind,
+        worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+    >,
     provider_stage: BankProviderFailureStage,
 }
 
@@ -75,7 +78,7 @@ impl BankUnresolvedCommitEvidence {
     pub(super) fn from_execution(execution: WorthQueryApplicationUnresolvedCommitEvidence) -> Self {
         let description = BankUnresolvedCommitDescription {
             recovery: recovery_kind(execution.recovery()),
-            provider_failure: provider_failure_kind(execution.denial_kind()),
+            provider_failure: provider_failure_stop(execution.denial_kind()),
             provider_stage: provider_failure_stage(execution.stage()),
         };
         Self { description }
@@ -85,7 +88,12 @@ impl BankUnresolvedCommitEvidence {
         self.description.recovery
     }
 
-    pub const fn provider_failure_kind(&self) -> BankProviderFailureKind {
+    pub const fn provider_failure_kind(
+        &self,
+    ) -> Result<
+        BankProviderFailureKind,
+        worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+    > {
         self.description.provider_failure
     }
 
@@ -119,6 +127,23 @@ const fn recovery_kind(kind: WorthQueryApplicationCommitRecoveryKind) -> BankCom
         WorthQueryApplicationCommitRecoveryKind::AbortRecoveryRequired => {
             BankCommitRecoveryKind::AbortRecoveryRequired
         }
+    }
+}
+
+const fn provider_failure_stop(
+    stop: Result<
+        WorthQueryProviderSessionDenialKind,
+        worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> Result<
+    BankProviderFailureKind,
+    worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+> {
+    use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
+    match stop {
+        Ok(kind) => Ok(provider_failure_kind(kind)),
+        Err(Control::Cancelled) => Err(Control::Cancelled),
+        Err(Control::TimedOut) => Err(Control::TimedOut),
     }
 }
 
@@ -193,5 +218,17 @@ const fn provider_failure_stage(
         Query::StagedPreparation => BankProviderFailureStage::StagedPreparation,
         Query::Commit => BankProviderFailureStage::Commit,
         Query::Abort => BankProviderFailureStage::Abort,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unresolved_commit_controls_keep_their_values() {
+        use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
+        for control in [Control::Cancelled, Control::TimedOut] {
+            assert_eq!(provider_failure_stop(Err(control)), Err(control));
+        }
     }
 }

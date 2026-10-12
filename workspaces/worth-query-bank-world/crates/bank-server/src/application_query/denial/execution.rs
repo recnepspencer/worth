@@ -20,6 +20,12 @@ pub enum BankApplicationPreviewSessionDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProductSelectionDenialKind {
+    ReadExecution(
+        Result<
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ForeignPhase,
     ObservationStatePoisoned,
     OwnerUnavailable,
@@ -37,7 +43,9 @@ pub enum BankProductSelectionDenialKind {
     ProductActivationUnavailable,
     RelationalBasisUnavailable,
     RelationalSnapshotUnavailable,
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
@@ -137,6 +145,7 @@ pub(super) const fn product_selection(
 ) -> BankProductSelectionDenialKind {
     use BankProductSelectionDenialKind as Bank;
     match kind {
+        QueryProductSelection::ReadExecution(stop) => Bank::ReadExecution(stop),
         QueryProductSelection::ForeignPhase => Bank::ForeignPhase,
         QueryProductSelection::ObservationStatePoisoned => Bank::ObservationStatePoisoned,
         QueryProductSelection::OwnerUnavailable => Bank::OwnerUnavailable,

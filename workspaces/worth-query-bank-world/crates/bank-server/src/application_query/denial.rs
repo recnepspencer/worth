@@ -41,9 +41,9 @@ use admission::admission;
 use execution::{authorization, continuation, live, one_shot, product_selection};
 use installation::{capability_installation, query_installation};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BankApplicationQueryLaneDenial<Kind> {
-    kind: Kind,
+    kind: Box<Kind>,
     authorization: Option<BankAuthorizationDenial>,
 }
 
@@ -89,11 +89,11 @@ impl<Kind> BankApplicationQueryLaneDenial<Kind>
 where
     Kind: Copy,
 {
-    pub const fn kind(self) -> Kind {
-        self.kind
+    pub const fn kind(&self) -> Kind {
+        *self.kind
     }
 
-    pub const fn authorization(self) -> Option<BankAuthorizationDenial> {
+    pub const fn authorization(&self) -> Option<BankAuthorizationDenial> {
         self.authorization
     }
 
@@ -102,7 +102,7 @@ where
         authorization: Option<&WorthQueryOperationAuthorizationDenial>,
     ) -> Self {
         Self {
-            kind,
+            kind: Box::new(kind),
             authorization: authorization
                 .cloned()
                 .map(BankAuthorizationDenial::from_query),

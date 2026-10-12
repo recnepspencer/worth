@@ -36,7 +36,7 @@ fn cleanup_failure_keeps_heads_indeterminate_posture_for_execution_refusals() {
             else {
                 panic!("failed cleanup changed HEAD's indeterminate posture: {kind:?}");
             };
-            assert_eq!(evidence.denial_kind(), kind);
+            assert_eq!(evidence.denial_kind(), Ok(kind));
             assert_eq!(evidence.recovery(),
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitRecoveryKind::CommitRecoveryRequired);
         }

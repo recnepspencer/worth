@@ -234,15 +234,13 @@ fn describe_commit_outcome(
                     BankHttpProviderRecoveryKind::AbortRecoveryRequired
                 }
             };
+            let denial = denial::unresolved_execution_stop(evidence.denial_kind());
             BankHttpMutationOutcome::NotApplied {
                 request_id: Some(request_id),
                 failure: BankHttpMutationFailureKind::Indeterminate,
                 stale_fact_count: None,
                 provider_recovery: Some(provider_recovery),
-                denial: BankHttpDenial::new(
-                    BankHttpDenialKind::Unavailable,
-                    BankHttpNextAction::ContactOperator,
-                ),
+                denial,
             }
         }
     }

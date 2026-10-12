@@ -231,7 +231,10 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationUnresolvedCommitEvidence {
     recovery: WorthQueryApplicationCommitRecoveryKind,
-    denial_kind: crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
+    denial_kind: Result<
+        crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
     stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,
     detail: String,
 }
@@ -250,7 +253,7 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
     ) -> Self {
         Self {
             recovery,
-            denial_kind: failure.kind(),
+            denial_kind: failure.checked_read_stop().unwrap_or(Ok(failure.kind())),
             stage: failure.stage(),
             detail: failure.detail().to_owned(),
         }
@@ -262,7 +265,10 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
 
     pub const fn denial_kind(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind {
+    ) -> Result<
+        crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    > {
         self.denial_kind
     }
 

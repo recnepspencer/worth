@@ -309,3 +309,6 @@ fn owner_validated_application_touch_outside_installed_ceiling_is_denied() {
         })
         .expect("the fixture read owns its installed host call");
 }
+
+#[path = "terminal_failures/aftermath_sealing_interruption.rs"]
+mod aftermath_sealing_interruption;

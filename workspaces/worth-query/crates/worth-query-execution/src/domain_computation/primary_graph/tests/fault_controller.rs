@@ -15,11 +15,27 @@ pub(in crate::domain_computation::primary_graph) struct PrimaryGraphFaultControl
     scheduled: AtomicU16,
     staged_validation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
     native_preparation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
+    aftermath_interruption:
+        Mutex<Option<(WorthQueryCancellationSource, Option<std::time::Instant>)>>,
+    aftermath_interruptions: AtomicUsize,
     failed_post_commit_snapshot_consumptions: AtomicUsize,
     panicked_pending_publication_consumptions: AtomicUsize,
 }
 
 impl PrimaryGraphFaultController {
+    pub(in crate::domain_computation::primary_graph) fn interrupt_next_aftermath_seal(
+        &self,
+        source: WorthQueryCancellationSource,
+        deadline: Option<std::time::Instant>,
+    ) {
+        *self.aftermath_interruption.lock().unwrap() = Some((source, deadline));
+    }
+    pub(in crate::domain_computation::primary_graph) fn aftermath_interruption_count(
+        &self,
+    ) -> usize {
+        self.aftermath_interruptions.load(Ordering::Acquire)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn cancel_next_staged_validation(
         &self,
         source: WorthQueryCancellationSource,
@@ -101,6 +117,24 @@ impl PrimaryGraphFaultController {
 }
 
 impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
+    fn aftermath_ready_for_sealing(&self) {
+        if let Some((source, deadline)) = self.aftermath_interruption.lock().unwrap().take() {
+            self.aftermath_interruptions.fetch_add(1, Ordering::AcqRel);
+            match deadline {
+                None => source.cancel(),
+                // Wait for this request's real deadline, at the sealing boundary.
+                // No synthetic stop or timing race chooses the outcome.
+                Some(deadline) => {
+                    while let Some(remaining) =
+                        deadline.checked_duration_since(std::time::Instant::now())
+                    {
+                        std::thread::sleep(remaining);
+                    }
+                }
+            }
+        }
+    }
+
     fn candidate_ready_for_native_preparation(&self) {
         if let Some(source) = self.native_preparation_cancellation.lock().unwrap().take() {
             source.cancel();

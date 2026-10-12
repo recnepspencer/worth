@@ -45,6 +45,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     use BankProductSelectionDenialKind as Selection;
     match kind {
+        Selection::ReadExecution(stop) => super::mutation_application::pending_execution_stop(stop),
         Selection::ForeignPhase => internal_denied(),
         Selection::ForeignOwner
         | Selection::RetiredBranch
