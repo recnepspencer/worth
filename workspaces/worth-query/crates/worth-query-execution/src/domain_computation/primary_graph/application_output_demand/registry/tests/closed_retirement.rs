@@ -150,7 +150,79 @@ fn claims(record: &DemandRecord) -> Vec<WorthQueryOutputDemandKey> {
 fn a_closing_dependent_moves_its_claim_once_the_newest_row_is_ready() {
     let (registry, interest, old, newest) = claim_on_superseded(ready());
     let dependent = interest.key.clone();
+    let reader = key("unrelated-reader", 1, 3);
+    {
+        let mut state = registry.state.lock().unwrap();
+        state.records.insert(
+            reader.clone(),
+            record(occurrence(), DemandState::Admitted, 1),
+        );
+        let member = state.prepare_required_member(&reader).unwrap();
+        state.install_required_member(member);
+    }
     drop(interest);
+    let before = {
+        let state = registry.state.lock().unwrap();
+        assert_eq!(state.records[&old].framework_required_count, 1);
+        assert_eq!(state.records[&newest].framework_required_count, 0);
+        assert_eq!(claims(&state.records[&dependent]), vec![old.clone()]);
+        assert!(state.records[&dependent].closed_cleanup.queued());
+        (
+            state.required_reserved_bytes,
+            state.obligation_reserved_bytes,
+            state
+                .required_custody_retained_bytes
+                .load(std::sync::atomic::Ordering::Acquire),
+        )
+    };
+    let scope = source_custody::real_scope_and_occurrence().0;
+    // Joining an already funded reader needs no preparation storage. The
+    // foreign transfer does: its refused quote must not refuse this admission.
+    let mut small = InvalidationEditAdmission::new(CompanionPreflightBudget {
+        maximum_work_visits: 1_000_000,
+        maximum_preparation_bytes: 0,
+    });
+    let _reader = registry
+        .admit(
+            reader.clone(),
+            None,
+            scope,
+            occurrence(),
+            super::super::DemandAdmissionKind::Ordinary,
+            None,
+            None,
+            &mut small,
+        )
+        .unwrap();
+    {
+        let state = registry.state.lock().unwrap();
+        assert_eq!(state.records[&old].framework_required_count, 1);
+        assert_eq!(state.records[&newest].framework_required_count, 0);
+        assert_eq!(claims(&state.records[&dependent]), vec![old.clone()]);
+        assert!(state.records[&dependent].closed_cleanup.queued());
+        assert_eq!(
+            (
+                state.required_reserved_bytes,
+                state.obligation_reserved_bytes,
+                state
+                    .required_custody_retained_bytes
+                    .load(std::sync::atomic::Ordering::Acquire)
+            ),
+            before
+        );
+    }
+    let _funded_reader = registry
+        .admit(
+            reader,
+            None,
+            scope,
+            occurrence(),
+            super::super::DemandAdmissionKind::Ordinary,
+            None,
+            None,
+            &mut record_admission(),
+        )
+        .unwrap();
     let state = registry.state.lock().unwrap();
     assert!(!state.records.contains_key(&old));
     assert_eq!(state.records[&newest].framework_required_count, 1);
