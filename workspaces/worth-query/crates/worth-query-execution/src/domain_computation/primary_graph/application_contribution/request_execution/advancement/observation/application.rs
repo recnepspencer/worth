@@ -29,6 +29,9 @@ impl Drop for AppliedIdentity {
 pub(in crate::domain_computation::primary_graph) fn record_commit(
     receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
 ) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
     let identity = MEMBER
         .with(|member| member.borrow().clone())
         .unwrap_or_else(|| {

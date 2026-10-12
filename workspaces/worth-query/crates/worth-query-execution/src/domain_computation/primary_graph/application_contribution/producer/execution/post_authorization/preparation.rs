@@ -51,13 +51,15 @@ where
 {
     require_selected_program(selected, &commit_authority, request_admission)?;
 
-    let application_identity = crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
+    let application_identity = crate::domain_computation::execution_observation::is_installed().then(|| {
+        crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementIdentityForTest::Producer {
         producer: Binding::IDENTITY.to_owned(),
         query: *observed_source.query_identity.as_bytes(),
         parameters: *observed_source.parameter_binding_identity.bytes(),
         root: observed_source.source_root(),
         source: observed_source.checkpoint_observation_identity(),
-    };
+        }
+    });
     let source_epoch = observed_source.idempotency_identity();
     let key = provider.idempotency_key(&source, &source_epoch.bytes());
     let owned_identities = super::super::input_identity::encode_owned_input::<
@@ -171,11 +173,13 @@ where
                         assert!(slots.is_empty(), "stable reuse has no compute slots");
                         let published = publish(&admission, admission_work)?;
 
-                        crate::domain_computation::primary_graph::application_contribution::request_execution::record_event(
-                            crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventForTest {
-                                kind: crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventKindForTest::Publication,
-                                identity: application_identity,
-                            });
+                        if let Some(identity) = application_identity {
+                            crate::domain_computation::primary_graph::application_contribution::request_execution::record_event(
+                                crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventForTest {
+                                    kind: crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::WorthQueryAdvancementEventKindForTest::Publication,
+                                    identity,
+                                });
+                        }
                         Ok(ProducerExecutionOutcome::Stable(published))
                     },
                 ));
@@ -246,7 +250,7 @@ where
         requests,
         move |slots, request_admission| {
 
-            let _observation = crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::application::apply_identity(application_identity);
+            let _observation = application_identity.map(crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::application::apply_identity);
             let identities = owned_identities.borrow();
             let completed = completed_handler(
                 Binding::IDENTITY,

@@ -25,6 +25,8 @@ fn members(costs: &[u64], failure: Option<usize>) -> Vec<PreparedMember> {
 
 #[test]
 fn aggregate_reports_add_stages_and_waves_and_keep_failed_advancements() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for posture in [
         Placement::Serial,
         Placement::Leased(NonZeroUsize::MIN),
@@ -93,6 +95,8 @@ fn aggregate_reports_add_stages_and_waves_and_keep_failed_advancements() {
 
 #[test]
 fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     observation::advancement_observations_on_this_thread_for_test();
     let mut root = request();
     root.declared_work = 0;
@@ -134,6 +138,8 @@ fn admission_refusal_has_a_zero_report_and_a_panic_closes_observer_custody() {
 
 #[test]
 fn member_host_refusals_do_not_add_thread_dependent_observations() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let mut serial = None;
     for posture in [
         Placement::Serial,
