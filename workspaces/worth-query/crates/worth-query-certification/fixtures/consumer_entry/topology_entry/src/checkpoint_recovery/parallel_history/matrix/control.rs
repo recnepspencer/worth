@@ -17,6 +17,9 @@ pub struct State {
     pub kernel_entered: Vec<u64>,
     pub active: usize,
     pub peak: usize,
+    pub kernel_active: usize,
+    pub kernel_peak: usize,
+    pub worker_threads: Vec<(u64, std::thread::ThreadId)>,
     pub witnesses: Vec<u64>,
     pub hang_guard_expired: bool,
 }
@@ -128,6 +131,11 @@ impl Control {
         if !state.armed {
             return 0;
         }
+        state.kernel_active += 1;
+        state.kernel_peak = state.kernel_peak.max(state.kernel_active);
+        state
+            .worker_threads
+            .push((key, std::thread::current().id()));
         if part == 0 {
             state.kernel_entered.push(key);
         }
@@ -146,11 +154,24 @@ impl Control {
         }
         units
     }
+    pub fn exit_compute(&self) {
+        let mut state = self.state.lock().unwrap();
+        if state.armed {
+            state.kernel_active -= 1;
+        }
+    }
     pub fn exit_member(&self) {
         let mut state = self.state.lock().unwrap();
         if state.armed {
             state.active -= 1;
             self.wake.notify_all();
         }
+    }
+}
+
+pub struct KernelFlight<'a>(pub &'a Control);
+impl Drop for KernelFlight<'_> {
+    fn drop(&mut self) {
+        self.0.exit_compute();
     }
 }

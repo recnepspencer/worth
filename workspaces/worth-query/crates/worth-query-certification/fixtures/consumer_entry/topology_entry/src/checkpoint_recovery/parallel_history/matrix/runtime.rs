@@ -1,4 +1,5 @@
 //! Application bindings are measured before edits; the model receives only identity metadata.
+mod kernel_observation;
 use super::*;
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 use worth_query_host::facade::application_entry::{
@@ -60,7 +61,10 @@ pub fn run(cell: cases::Cell) -> Observed {
     let app = installation::install(control.clone());
     let (scope, principal) = installation::authenticate(&app);
     let request = app.request(&principal, &scope);
-    let declaration = world.members.iter().map(|m| m.key).collect::<Vec<_>>();
+    let mut declaration = world.members.iter().map(|m| m.key).collect::<Vec<_>>();
+    if cell.declaration == 1 {
+        declaration.reverse();
+    }
     let mut demands = BTreeMap::new();
     for key in declaration {
         demands.insert(
@@ -151,7 +155,15 @@ pub fn run(cell: cases::Cell) -> Observed {
     let failure = cell.failure(&order);
     // Only independent source roots are edited. Downstream inputs are discovered
     // through their retained consumed edges, not replaced simultaneously.
-    for m in world.members.iter().filter(|m| m.upstream.is_empty()) {
+    let mut edits = world
+        .members
+        .iter()
+        .filter(|m| m.upstream.is_empty())
+        .collect::<Vec<_>>();
+    if cell.declaration == 1 {
+        edits.reverse();
+    }
+    for m in edits {
         let source = request
             .query(source::Read { key: m.key })
             .execute()
@@ -243,70 +255,7 @@ pub fn run(cell: cases::Cell) -> Observed {
         );
         facts.push((m.key, value));
     }
-    if cell.family == 7 {
-        let meters = control.nested_meters.lock().unwrap();
-        let mut measured = meters
-            .iter()
-            .map(|meter| {
-                let member = world
-                    .members
-                    .iter()
-                    .find(|member| member.key == meter.member)
-                    .unwrap();
-                assert_eq!(
-                    meter.cost,
-                    Some((
-                        u128::from(member.partitions.iter().map(|part| part.work).sum::<u64>()),
-                        u128::from(
-                            member
-                                .partitions
-                                .iter()
-                                .map(|part| part.work)
-                                .max()
-                                .unwrap()
-                        )
-                    )),
-                    "nested kernels charge their declared sum and critical path by value"
-                );
-                meter.member
-            })
-            .collect::<Vec<_>>();
-        measured.sort_unstable();
-        let mut healthy = expected
-            .dispatched
-            .iter()
-            .copied()
-            .filter(|key| failure != Some((*key, control::Phase::Compute)))
-            .collect::<Vec<_>>();
-        healthy.sort_unstable();
-        assert_eq!(
-            measured, healthy,
-            "every completed nested map has one measured kernel cost"
-        );
-        let declared = control.partition_declarations.lock().unwrap();
-        let mut keys = declared
-            .iter()
-            .map(|(key, parts)| {
-                let expected = if cell.declaration == 1 {
-                    vec![3, 2, 1, 0]
-                } else {
-                    vec![0, 1, 2, 3]
-                };
-                assert_eq!(
-                    *parts, expected,
-                    "a nested member declares all four partitions in one map"
-                );
-                *key
-            })
-            .collect::<Vec<_>>();
-        keys.sort_unstable();
-        let mut expected = expected.dispatched.clone();
-        expected.sort_unstable();
-        assert_eq!(
-            keys, expected,
-            "one nested map declaration per dispatched computing member"
-        );
-    }
+    kernel_observation::assert_kernel_observations(&control, &world, &expected, cell, failure);
     let state = control.state.lock().unwrap();
     assert_eq!(
         state.active, 0,
@@ -362,7 +311,7 @@ fn required_matrix_cell() {
             family: 1,
             workers: 2,
             declaration: 0,
-            dispatch: 0,
+            dispatch: cases::UNSEEDED,
             fault: 0,
             reuse: true,
         });

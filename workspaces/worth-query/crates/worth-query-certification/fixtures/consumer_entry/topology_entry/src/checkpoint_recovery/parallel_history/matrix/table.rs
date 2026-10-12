@@ -94,13 +94,13 @@ fn required_wave_full_declared_matrix() {
     let rows = cases::table();
     assert_eq!(
         rows.len(),
-        1648,
-        "one-worker seed is equivalent and counted once"
+        960,
+        "plain leased placement has no unobserved seed axis"
     );
     for family in 0..super::FAMILIES.len() {
         assert_eq!(
             rows.iter().filter(|row| row.family == family).count(),
-            206,
+            120,
             "declared product per family"
         );
     }
@@ -115,7 +115,7 @@ fn required_price_failure_pair() {
                 family,
                 workers: 1,
                 declaration: 0,
-                dispatch: 0,
+                dispatch: cases::UNSEEDED,
                 fault: 2,
                 reuse: false,
             })
@@ -131,7 +131,7 @@ fn required_price_all_failure_remainders() {
                     family,
                     workers: 1,
                     declaration: 0,
-                    dispatch: 0,
+                    dispatch: cases::UNSEEDED,
                     fault,
                     reuse: false,
                 })
@@ -147,7 +147,7 @@ fn required_axis_witnesses() {
             family: 4,
             workers: 1,
             declaration: 0,
-            dispatch: 0,
+            dispatch: cases::UNSEEDED,
             fault: 0,
             reuse: false,
         },
@@ -155,7 +155,7 @@ fn required_axis_witnesses() {
             family: 4,
             workers: 1,
             declaration: 1,
-            dispatch: 0,
+            dispatch: cases::UNSEEDED,
             fault: 0,
             reuse: false,
         },
@@ -163,7 +163,7 @@ fn required_axis_witnesses() {
             family: 1,
             workers: 2,
             declaration: 0,
-            dispatch: 0,
+            dispatch: cases::UNSEEDED,
             fault: 0,
             reuse: false,
         },
@@ -171,7 +171,7 @@ fn required_axis_witnesses() {
             family: 1,
             workers: 5,
             declaration: 0,
-            dispatch: 0,
+            dispatch: cases::UNSEEDED,
             fault: 0,
             reuse: false,
         },
@@ -198,7 +198,7 @@ fn required_nested_parallel_shape() {
         family: 7,
         workers: 1,
         declaration: 0,
-        dispatch: 0,
+        dispatch: cases::UNSEEDED,
         fault: 0,
         reuse: false,
     }]);

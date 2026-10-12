@@ -33,7 +33,9 @@ pub fn table() -> Vec<Cell> {
     for family in 0..super::FAMILIES.len() {
         for workers in [1, 2, 5] {
             for declaration in [0, 1] {
-                for dispatch in 0..if workers == 1 { 1 } else { 2 } {
+                // The fixture cannot read the owned dispatcher's queue witness.
+                // Seed perturbation is proved by its owner test, not multiplied here.
+                for dispatch in [UNSEEDED] {
                     for fault in 0..10 {
                         for reuse in [false, true] {
                             cells.push(Cell {
@@ -50,7 +52,6 @@ pub fn table() -> Vec<Cell> {
             }
         }
     }
-    cells.extend(unseeded());
     cells
 }
 pub fn iteration() -> Vec<Cell> {
@@ -60,7 +61,7 @@ pub fn iteration() -> Vec<Cell> {
                 family,
                 workers,
                 declaration: 0,
-                dispatch: 0,
+                dispatch: UNSEEDED,
                 fault: 0,
                 reuse: false,
             })

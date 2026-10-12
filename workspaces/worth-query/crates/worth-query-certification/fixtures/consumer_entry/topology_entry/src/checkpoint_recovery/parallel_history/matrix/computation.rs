@@ -114,6 +114,7 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         let work = self
             .0
             .enter_compute(item.node, item.part.key, item.part.work);
+        let _flight = super::control::KernelFlight(&self.0);
         let result = checkpoint
             .advance(usize::try_from(work).unwrap())
             .map_err(WorthQueryManagedComputationDenial::from);
