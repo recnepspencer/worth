@@ -40,7 +40,9 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
         let execution = QueryRequestExecution::open(
             RuntimeWorldExecutionPlacement::Leased {
                 authority: query_test_execution_authority_for_test(),
-                policy: test_policy(NonZeroUsize::MIN, MEMORY),
+                // This half exercises post-shape scheduled admission; one worker
+                // now uses the checked serial tree and has no frontier admission.
+                policy: test_policy(NonZeroUsize::new(2).unwrap(), MEMORY),
             },
             &request,
         );

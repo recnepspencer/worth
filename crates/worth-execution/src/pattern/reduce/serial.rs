@@ -4,6 +4,7 @@ use super::*;
 impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
     pub(super) fn run_reduce_serial<R, E, Kernel, Combine>(
         &self,
+        lease: Option<&ExecutionResourceLease<'_>>,
         kernel: Kernel,
         identity: R,
         combine: Combine,
@@ -34,25 +35,29 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
             kept: &kept,
         });
         let outcome = run_scope_holding::<ReduceComplete<R, Combine>, ReduceScopeError, _>(
-            None,
+            lease,
             0,
             tree_bytes,
             true,
             hold,
             |context| {
-                let values =
-                    match self.run_with_backend_taking(None, BackendKind::Serial, inputs, kernel) {
-                        MapOutcome::Complete { values, report } => {
-                            map_fallback = report.fallback();
-                            values
-                        }
-                        MapOutcome::Stopped {
-                            boundary, reason, ..
-                        } => {
-                            map_stopped = Some((boundary, reason));
-                            return Err(KernelFailure::Stop(KernelStop::NestedStopped));
-                        }
-                    };
+                let values = match self.run_with_backend_taking(
+                    lease,
+                    BackendKind::Serial,
+                    inputs,
+                    kernel,
+                ) {
+                    MapOutcome::Complete { values, report } => {
+                        map_fallback = report.fallback();
+                        values
+                    }
+                    MapOutcome::Stopped {
+                        boundary, reason, ..
+                    } => {
+                        map_stopped = Some((boundary, reason));
+                        return Err(KernelFailure::Stop(KernelStop::NestedStopped));
+                    }
+                };
                 context.checkpoint(0)?;
                 let plan = match ReductionPlan::try_from_sorted_unique(self.identities().to_vec()) {
                     Ok(plan) => plan,

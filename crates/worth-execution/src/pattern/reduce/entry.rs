@@ -101,8 +101,9 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         Kernel: Fn(&T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
         Combine: Fn(&R, &R) -> R + Sync,
     {
-        let Some(lease) = lease else {
+        if lease.is_none_or(|lease| lease.resolved_posture() == ExecutionPosture::Serial) {
             return self.run_reduce_serial(
+                lease,
                 kernel,
                 identity,
                 combine,
@@ -111,7 +112,8 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
                 inputs,
                 tree,
             );
-        };
+        }
+        let lease = lease.expect("parallel reduction has its admitted lease");
         let backend = if lease.resolved_posture() == ExecutionPosture::Automatic {
             BackendKind::Native
         } else {
