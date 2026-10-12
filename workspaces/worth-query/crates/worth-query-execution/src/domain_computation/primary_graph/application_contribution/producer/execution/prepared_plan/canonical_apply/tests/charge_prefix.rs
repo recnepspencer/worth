@@ -1,16 +1,16 @@
-//! The failed-wave model charges only the canonical prefix through its failure.
+//! A settled wave stays charged; only owner application stops at the failure.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::query_test_execution_authority_for_test as test_authority;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
 
 #[test]
-fn completion_failure_charges_only_through_the_least_canonical_member() {
+fn completion_failure_charges_the_whole_dispatched_wave() {
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     // Each scalar is a declared kernel checkpoint, not a report measurement.
     const CHARGES: [u64; 4] = [3, 1, 4, 2];
     const FAILURE: usize = 0;
-    let expected_work = CHARGES[..=FAILURE].iter().sum::<u64>();
-    let expected_span = *CHARGES[..=FAILURE].iter().max().unwrap();
+    let expected_work = CHARGES.iter().sum::<u64>();
+    let expected_span = *CHARGES.iter().max().unwrap();
     let mut observations = Vec::new();
     for width in [None, Some(1), Some(2), Some(5)] {
         let cancellation = WorthQueryCancellationSource::new();
@@ -83,6 +83,25 @@ fn completion_failure_charges_only_through_the_least_canonical_member() {
         .into_iter()
         .map(|width| (width, expected_work, expected_span))
         .collect();
-    assert_eq!(observations, expected,
-        "a failed advancement charges only through its least canonical failure; no suffix work or span survives");
+    let judge = |model| {
+        assert_eq!(
+            observations, model,
+            "a failed advancement charges every member of its dispatched wave"
+        )
+    };
+    judge(expected);
+    let prefix = [None, Some(1), Some(2), Some(5)]
+        .into_iter()
+        .map(|width| {
+            (
+                width,
+                CHARGES[..=FAILURE].iter().sum::<u64>(),
+                *CHARGES[..=FAILURE].iter().max().unwrap(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        std::panic::catch_unwind(|| judge(prefix)).is_err(),
+        "the same law assertion rejects a prefix-only mutant model"
+    );
 }
