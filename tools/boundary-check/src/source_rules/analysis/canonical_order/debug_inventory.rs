@@ -7,12 +7,13 @@ struct Alias {
     parameters: Vec<(usize, String)>,
     ty: Type,
 }
+type AliasKey = (Vec<String>, String);
 
 #[derive(Default)]
 pub(super) struct Inventories {
     collections: BTreeSet<String>,
     renames: Vec<(String, String)>,
-    aliases: BTreeMap<(Vec<String>, String), Alias>,
+    aliases: BTreeMap<AliasKey, Alias>,
     namespace: Vec<String>,
 }
 
@@ -42,13 +43,12 @@ impl Inventories {
         inventory
     }
 
-    fn alias(
-        &self,
-        path: &syn::Path,
-        namespace: &[String],
-    ) -> Option<(&(Vec<String>, String), &Alias)> {
+    fn aliases(&self, path: &syn::Path, namespace: &[String]) -> Vec<(&AliasKey, &Alias)> {
         let mut names: Vec<_> = path.segments.iter().map(|s| s.ident.to_string()).collect();
-        let name = names.pop()?;
+        let Some(name) = names.pop() else {
+            return Vec::new();
+        };
+        let unqualified = names.is_empty();
         let mut base = namespace.to_vec();
         let anchored = names
             .first()
@@ -67,12 +67,22 @@ impl Inventories {
             let mut candidate = base.clone();
             candidate.extend(names.iter().cloned());
             if let Some(alias) = self.aliases.get_key_value(&(candidate, name.clone())) {
-                return Some(alias);
+                return vec![alias];
             }
             if anchored || base.is_empty() {
-                return None;
+                break;
             }
             base.pop();
+        }
+        // A `use` can bring a sibling's alias here. Preserve scoped shadowing,
+        // then conservatively examine every declaration with this bare name.
+        if unqualified {
+            self.aliases
+                .iter()
+                .filter(|(key, _)| key.1 == name)
+                .collect()
+        } else {
+            Vec::new()
         }
     }
 
@@ -155,7 +165,7 @@ struct Members<'a> {
     inventory: &'a Inventories,
     type_ids: &'a BTreeSet<String>,
     parameters: BTreeSet<String>,
-    expanding: BTreeSet<(Vec<String>, String)>,
+    expanding: BTreeSet<AliasKey>,
     namespace: Vec<String>,
     found: bool,
 }
@@ -181,7 +191,7 @@ impl<'ast> Visit<'ast> for Members<'_> {
                     self.found |= contains_identity(key, self.type_ids, &self.parameters);
                 }
             }
-            if let Some((key, alias)) = self.inventory.alias(&prefix, &self.namespace) {
+            for (key, alias) in self.inventory.aliases(&prefix, &self.namespace) {
                 if self.expanding.insert(key.clone()) {
                     let saved_namespace = std::mem::replace(&mut self.namespace, key.0.clone());
                     let saved = self.parameters.clone();
