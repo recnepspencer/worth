@@ -20,6 +20,7 @@ use super::IndexAccess;
 /// the admitted observation, not a current-head claim or a registry lock.
 pub struct PreparedEntityFieldLookup {
     runtime_identity: u64,
+    instrumentation: crate::runtime::RuntimeInstrumentation,
     basis: VisibilitySnapshotBasis,
     definition: Arc<DerivedIndexDefinition>,
     generation: Arc<DerivedIndexGeneration>,
@@ -72,43 +73,30 @@ impl IndexAccess<'_> {
             .indexes
             .definition(index)
             .ok_or_else(|| denied(Denial::IndexNotInstalled, index))?;
-        if !matches!(&definition.kind,
-            DerivedIndexKind::EntityField { field_locator } if field_locator == locator)
-        {
-            return Err(denied(Denial::WrongIndexKind, index));
-        }
-        let schema = view
-            .selected_schema_authority()
-            .expect("exact projection carries its root schema")
-            .schema_version();
-        let generation = self
-            .runtime
-            .indexes
-            .exact_generation(
-                index,
-                definition
-                    .branch_scoped
-                    .then_some(view.selected_branch_id()),
-                view.version_id(),
-                schema,
-            )
-            .ok_or_else(|| denied(Denial::ExactGenerationUnavailable, index))?;
-        if !matches!(generation.entries, DerivedIndexEntries::EntityField(_)) {
-            return Err(denied(Denial::WrongIndexKind, index));
-        }
-        Ok(PreparedEntityFieldLookup {
-            runtime_identity: self.runtime.runtime_instance_id(),
-            basis: view
-                .retain_exact_basis()
+        PreparedEntityFieldLookup::pin(
+            self.runtime.runtime_instance_id(),
+            view.retain_exact_basis()
                 .expect("exact basis checked above"),
             definition,
-            generation,
             kind,
-        })
+            locator,
+            self.runtime.services.instrumentation.clone(),
+            |definition| {
+                self.runtime.indexes.exact_generation(
+                    index,
+                    definition
+                        .branch_scoped
+                        .then_some(view.selected_branch_id()),
+                    view.version_id(),
+                    view.selected_schema_authority()
+                        .expect("exact projection carries its root schema")
+                        .schema_version(),
+                )
+            },
+        )
     }
 
-    /// Complete finite selection. The callback controls interruption; it does
-    /// not claim admission of temporary key or result Vec backing.
+    /// Validate the installed owner before lending the already-pinned lookup.
     pub fn execute_prepared_entity_field_lookup<E>(
         &self,
         prepared: &PreparedEntityFieldLookup,
@@ -116,31 +104,43 @@ impl IndexAccess<'_> {
         limit: usize,
         parity: BoundedIndexParityMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mut check_live: impl FnMut() -> Result<(), E>,
+        check_live: impl FnMut() -> Result<(), E>,
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         if prepared.runtime_identity != self.runtime.runtime_instance_id() {
             return Err(Stop::ExactBasisRequired);
         }
+        prepared.execute_prepared_entity_field_lookup(value, limit, parity, execution, check_live)
+    }
+}
+impl PreparedEntityFieldLookup {
+    fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
+        crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)
+    }
+    /// Complete finite selection. The callback controls interruption; it does
+    /// not claim admission of temporary key or result Vec backing.
+    pub fn execute_prepared_entity_field_lookup<E>(
+        &self,
+        value: &AspectValue,
+        limit: usize,
+        parity: BoundedIndexParityMode,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mut check_live: impl FnMut() -> Result<(), E>,
+    ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         crate::execution::check_request(execution)
-            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), prepared.index_id())))?;
+            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), self.index_id())))?;
         check_live().map_err(Stop::Admission)?;
         if limit == 0 || limit == usize::MAX {
             return Err(Stop::Lookup(denied(
                 Denial::InvalidCandidateLimit,
-                prepared.index_id(),
+                self.index_id(),
             )));
         }
-        self.runtime
-            .performance_access()
-            .count_query_index_attempt();
-        self.collect_prepared_entity_field_lookup(
-            prepared, value, limit, parity, execution, check_live,
-        )
+        self.performance_access().count_query_index_attempt();
+        self.collect_prepared_entity_field_lookup(value, limit, parity, execution, check_live)
     }
 
     pub(super) fn collect_prepared_entity_field_lookup<E>(
         &self,
-        prepared: &PreparedEntityFieldLookup,
         value: &AspectValue,
         limit: usize,
         parity: BoundedIndexParityMode,
@@ -149,13 +149,13 @@ impl IndexAccess<'_> {
     ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
         let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
         crate::execution::check_request(execution)
-            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), prepared.index_id())))?;
+            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), self.index_id())))?;
         check_live().map_err(Stop::Admission)?;
-        let DerivedIndexEntries::EntityField(entries) = &prepared.generation.entries else {
+        let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
             unreachable!("prepared generation is an entity field index")
         };
         let mut read = PreparedCollectionRead {
-            prepared,
+            prepared: self,
             value,
             check_live: &mut check_live,
             execution,
@@ -163,14 +163,14 @@ impl IndexAccess<'_> {
         let (candidates, examined, overflowed) = collect(
             execution,
             entries.get(&key),
-            prepared.index_id(),
-            prepared.kind,
+            self.index_id(),
+            self.kind,
             limit,
             &mut read,
         )?;
         let outcome = BoundedEntityFieldLookupOutcome::new(
-            Arc::clone(&prepared.definition),
-            prepared.generation.generation_id,
+            Arc::clone(&self.definition),
+            self.generation.generation_id,
             candidates,
             examined,
             overflowed,
@@ -179,21 +179,19 @@ impl IndexAccess<'_> {
         if parity == BoundedIndexParityMode::Certification {
             super::prepared_field_certification::certify(
                 execution,
-                self.runtime,
-                prepared,
+                self,
                 value,
                 limit,
                 &outcome,
                 &mut check_live,
             )?;
-            self.runtime
-                .performance_access()
+            self.performance_access()
                 .count_query_index_parity_verification();
         }
         crate::execution::check_request(execution)
-            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), prepared.index_id())))?;
+            .map_err(|cause| Stop::Lookup(denied(Denial::Execution(cause), self.index_id())))?;
         check_live().map_err(Stop::Admission)?;
-        self.runtime.performance_access().count_query_index_path();
+        self.performance_access().count_query_index_path();
         Ok(outcome)
     }
 }
@@ -238,8 +236,47 @@ pub(super) fn denied(kind: Denial, index: DerivedIndexId) -> BoundedEntityFieldL
     BoundedEntityFieldLookupDenial::new(kind, index)
 }
 
+impl crate::visibility::materialization::read_records::ProjectionRecordSource
+    for PreparedEntityFieldLookup
+{
+    fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
+        Some(self.basis.root())
+    }
+    fn is_exact_basis(&self) -> bool {
+        true
+    }
+    fn version_id(&self) -> crate::identity::data::VersionId {
+        self.basis.version_id()
+    }
+}
+
 impl PreparedEntityFieldLookup {
-    pub(super) fn basis(&self) -> &VisibilitySnapshotBasis {
-        &self.basis
+    pub(crate) fn pin(
+        runtime_identity: u64,
+        basis: VisibilitySnapshotBasis,
+        definition: Arc<DerivedIndexDefinition>,
+        kind: KindId,
+        locator: &AspectFieldLocator,
+        instrumentation: crate::runtime::RuntimeInstrumentation,
+        generation: impl FnOnce(&DerivedIndexDefinition) -> Option<Arc<DerivedIndexGeneration>>,
+    ) -> Result<Self, BoundedEntityFieldLookupDenial> {
+        let index = definition.index_id;
+        if !matches!(&definition.kind, DerivedIndexKind::EntityField { field_locator } if field_locator == locator)
+        {
+            return Err(denied(Denial::WrongIndexKind, index));
+        }
+        let generation = generation(&definition)
+            .ok_or_else(|| denied(Denial::ExactGenerationUnavailable, index))?;
+        if !matches!(generation.entries, DerivedIndexEntries::EntityField(_)) {
+            return Err(denied(Denial::WrongIndexKind, index));
+        }
+        Ok(Self {
+            runtime_identity,
+            instrumentation,
+            basis,
+            definition,
+            generation,
+            kind,
+        })
     }
 }

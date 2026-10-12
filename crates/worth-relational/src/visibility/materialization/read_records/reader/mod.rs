@@ -16,6 +16,7 @@ mod query_plan_execution;
 mod query_planning;
 mod query_preparation;
 mod query_preparation_packetization;
+pub(crate) mod record_identity_materialization;
 mod snapshot_reads;
 mod truth_access;
 mod truth_adjacency;

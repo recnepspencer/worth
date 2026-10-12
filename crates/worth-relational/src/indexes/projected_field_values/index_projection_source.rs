@@ -3,6 +3,7 @@ use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::VisibilityProjectionView;
 use crate::schema::data::{AspectContractPlanCatalog, LoweredAspectContractPlan, SchemaVersionId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::visibility::materialization::read_records::ProjectionRecordSource;
 
 /// Schema-qualified storage projection used to derive or certify an index.
 ///

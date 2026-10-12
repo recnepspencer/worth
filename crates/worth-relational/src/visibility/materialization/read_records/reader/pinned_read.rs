@@ -9,7 +9,10 @@ use crate::symbols::data::StringInterner;
 use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 use std::{collections::BTreeMap, sync::Arc};
 
+#[cfg(test)]
+mod commit_tests;
 mod pinning;
+mod record_reads;
 #[cfg(test)]
 mod tests;
 
@@ -43,15 +46,17 @@ mod tests;
 /// ```
 #[derive(Clone, Debug)]
 pub struct RelationalPinnedRead {
+    pub(crate) current_version: crate::identity::data::VersionId,
+    pub(crate) instrumentation: crate::runtime::RuntimeInstrumentation,
     pub(super) snapshot: SnapshotHandle,
-    pub(super) basis: VisibilitySnapshotBasis,
-    pub(super) context: QueryPlanContextId,
+    pub(crate) basis: VisibilitySnapshotBasis,
+    pub(crate) context: QueryPlanContextId,
     pub(super) symbols: StringInterner,
-    pub(super) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
+    pub(crate) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct PinnedIndex {
+pub(crate) struct PinnedIndex {
     pub definition: Arc<DerivedIndexDefinition>,
     pub generation: Option<Arc<DerivedIndexGeneration>>,
 }
@@ -93,5 +98,22 @@ impl RelationalPinnedRead {
             .generation
             .as_ref()
             .map(|generation| generation.generation_id)
+    }
+}
+
+impl RelationalPinnedRead {
+    pub(crate) fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
+        crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)
+    }
+}
+impl super::super::projection::ProjectionRecordSource for RelationalPinnedRead {
+    fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
+        Some(self.basis.root())
+    }
+    fn is_exact_basis(&self) -> bool {
+        true
+    }
+    fn version_id(&self) -> crate::identity::data::VersionId {
+        self.basis.version_id()
     }
 }

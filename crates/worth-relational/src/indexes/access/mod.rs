@@ -1,6 +1,7 @@
 mod admitted_entity_field_lookup;
 mod admitted_generation;
 mod bounded_entity_field_lookup;
+mod pinned_entity_field_lookup;
 #[cfg(test)]
 mod query_index_parity;
 pub use bounded_entity_field_lookup::BoundedEntityFieldLookupRead;

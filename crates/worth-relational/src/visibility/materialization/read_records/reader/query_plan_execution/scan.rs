@@ -1,15 +1,13 @@
 use super::*;
 
-impl VisibilityReadContext<'_> {
+impl RelationalPinnedRead {
     pub(super) fn execute_scan_query_plan(
         &self,
         plan: SnapshotPinnedQueryPlan,
         lease: Option<&ExecutionResourceLease<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
-        let Some(basis) = resolve_snapshot_basis(self.runtime, &plan.snapshot) else {
-            return Ok(None);
-        };
+        let basis = &self.basis;
         let (packets, preparation) = prepare_query_packets(execution, lease, |budget| {
             let (entities, relations) = if query_has_explicit_partition_scope(&plan.packet.scope) {
                 (Vec::new(), Vec::new())
@@ -19,7 +17,7 @@ impl VisibilityReadContext<'_> {
             prepare_scan_packets(&plan.packet, &entities, &relations, budget)
         })?;
         let metrics = PacketizedQueryMetrics::from_packets(&packets);
-        record_query_packet_metrics(self.runtime, &plan, &metrics);
+        record_query_packet_metrics(&self.performance_access(), &plan, &metrics);
         let remaining = lease
             .map(|lease| remaining_work_lease(lease, preparation))
             .transpose()?;
@@ -31,8 +29,7 @@ impl VisibilityReadContext<'_> {
             |packet, ordinal, ceiling, context| {
                 super::super::query_execution::execute_leased_scan_fragment(
                     execution,
-                    self.runtime,
-                    &basis,
+                    self,
                     &plan.packet,
                     packet,
                     ordinal as u64,
@@ -44,7 +41,7 @@ impl VisibilityReadContext<'_> {
         .map_err(|stop| combine_query_stop(stop, preparation))?;
         let report = Some(combine_query_reports(preparation, report));
         Ok(Some(query_execution_outcome_maybe_leased(
-            self.runtime,
+            &self.performance_access(),
             plan,
             metrics.packet_count,
             metrics.touched_partitions,

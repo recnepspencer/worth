@@ -71,30 +71,48 @@ impl IndexAccess<'_> {
         };
         let snapshot =
             resolve_snapshot_handle(self.runtime, request.snapshot()).ok_or_else(unavailable)?;
-        let view = self
+        let pinned = self
             .runtime
             .read_truth()
-            .project_snapshot(&snapshot, execution)
-            .ok_or_else(unavailable)?;
-        let prepared = self.prepare_entity_field_lookup(
-            &view,
+            .pin_read_capability(&snapshot, &[request.index_id()], execution)
+            .map_err(|stop| {
+                use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
+                let kind = match stop {
+                    Pin::SnapshotUnavailable => {
+                        BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+                    }
+                    Pin::IndexNotInstalled(_) => {
+                        BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                    }
+                    Pin::Request(stop) => stop
+                        .execution_denial()
+                        .map(|denial| {
+                            let crate::transactions::data::CommitExecutionDenialKind::Cause(cause) =
+                                denial.kind;
+                            BoundedEntityFieldLookupDenialKind::Execution(cause)
+                        })
+                        .unwrap_or(BoundedEntityFieldLookupDenialKind::SnapshotUnavailable),
+                };
+                BoundedEntityFieldLookupDenial::new(kind, request.index_id())
+            })?;
+        let prepared = pinned.prepare_entity_field_lookup(
             request.index_id(),
             request.entity_kind(),
             request.field_locator(),
             execution,
         )?;
-        self.collect_prepared_entity_field_lookup(
-            &prepared,
-            request.value(),
-            request.candidate_limit(),
-            parity_mode,
-            execution,
-            || Ok::<_, std::convert::Infallible>(()),
-        )
-        .map_err(|stop| match stop {
-            Stop::Lookup(denial) => denial,
-            Stop::Admission(never) => match never {},
-            Stop::ExactBasisRequired | Stop::AccountingOverflow => unavailable(),
-        })
+        prepared
+            .collect_prepared_entity_field_lookup(
+                request.value(),
+                request.candidate_limit(),
+                parity_mode,
+                execution,
+                || Ok::<_, std::convert::Infallible>(()),
+            )
+            .map_err(|stop| match stop {
+                Stop::Lookup(denial) => denial,
+                Stop::Admission(never) => match never {},
+                Stop::ExactBasisRequired | Stop::AccountingOverflow => unavailable(),
+            })
     }
 }

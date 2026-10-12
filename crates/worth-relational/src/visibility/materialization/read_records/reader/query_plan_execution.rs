@@ -21,7 +21,7 @@ use super::*;
 type QueryReadResult =
     Result<Option<(QueryExecutionOutcome, Option<ExecutionReport>)>, QueryReadExecutionStop>;
 
-impl<'runtime> VisibilityReadContext<'runtime> {
+impl RelationalPinnedRead {
     /// Executes the pinned plan within the caller's request.
     pub fn execute_query_plan(
         &self,
@@ -37,13 +37,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     fn count_query_backing(&self, lease: Option<&ExecutionResourceLease<'_>>) {
         if lease.is_some() {
-            self.runtime
-                .performance_access()
+            self.performance_access()
                 .count_query_staged_parallel_strategy();
         } else {
-            self.runtime
-                .performance_access()
-                .count_query_serial_strategy();
+            self.performance_access().count_query_serial_strategy();
         }
     }
 
@@ -53,10 +50,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         lease: Option<&ExecutionResourceLease<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> QueryReadResult {
-        let Some(context_id) = self.query_plan_context(&plan.snapshot) else {
-            return Ok(None);
-        };
-        if plan.packet.context_id != context_id {
+        if plan.snapshot != self.snapshot || plan.packet.context_id != self.context {
             return Ok(None);
         }
         if matches!(plan.packet.scope, QueryScope::ExplicitTargets { .. }) {
@@ -72,5 +66,21 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         }
 
         self.execute_scan_query_plan(plan, lease, execution)
+    }
+}
+
+impl VisibilityReadContext<'_> {
+    /// Pin exact native custody before executing the existing read algorithm.
+    pub fn execute_query_plan(
+        &self,
+        plan: SnapshotPinnedQueryPlan,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<QueryLeasedReadOutcome>, QueryReadExecutionStop> {
+        let read = match self.pin_read_capability(&plan.snapshot, &[], execution) {
+            Ok(read) => read,
+            Err(RelationalPinnedReadAdmissionDenial::Request(stop)) => return Err(stop),
+            Err(_) => return Ok(None),
+        };
+        read.execute_query_plan(plan, execution)
     }
 }

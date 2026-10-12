@@ -3,18 +3,19 @@ use std::collections::BTreeSet;
 use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
-use super::super::VisibilityReadContext;
+use super::super::RelationalPinnedRead;
 use super::leased_map::{QueryPacketBudget, QueryReadPacketDenial};
 use crate::identity::data::VersionId;
 use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerFragment};
-use crate::runtime::VisibilityProjectionView;
+
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionAccess;
 use crate::transactions::data::RecordRef;
-use crate::visibility::snapshot_states::{SnapshotStateBasis, VisibilitySnapshotBasis};
+use crate::visibility::materialization::read_records::ProjectionRecordSource;
+use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_explicit_fragment(
-    reader: &VisibilityReadContext<'_>,
+    reader: &RelationalPinnedRead,
     basis: &VisibilitySnapshotBasis,
     state_access: &(dyn PartitionAccess + Sync),
     registry: &RelationalSchemaRegistry,
@@ -31,8 +32,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         ));
     };
     let mut budget = QueryPacketBudget::new(context, ceiling)?;
-    let projection =
-        VisibilityProjectionView::new(reader.runtime(), SnapshotStateBasis::Exact(basis.clone()));
+    let projection = reader;
     let mut entities = Vec::new();
     let mut relations = Vec::new();
     let mut touched_partitions = BTreeSet::new();

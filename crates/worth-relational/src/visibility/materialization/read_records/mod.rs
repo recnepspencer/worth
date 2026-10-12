@@ -35,3 +35,5 @@ impl RelationalRuntime {
         VisibilityReadContext::new(self)
     }
 }
+
+pub(crate) use projection::ProjectionRecordSource;

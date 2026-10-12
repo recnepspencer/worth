@@ -3,17 +3,17 @@ use std::collections::{BTreeSet, VecDeque};
 use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
+use super::super::RelationalPinnedRead;
 use super::leased_map::{QueryPacketBudget, QueryReadPacketDenial};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::query::data::{
     PlannedQueryPacket, QueryFragmentCounters, QueryOrderingContract, QueryWorkerFragment,
     TraversalEntityVisitKey, TraversalReductionBasis, TraversalRelationVisitKey,
 };
-use crate::runtime::{RelationalRuntime, VisibilityProjectionView};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::partition::{adjacency_queries, AdjacencyDirection};
-use crate::visibility::snapshot_states::{SnapshotStateBasis, VisibilitySnapshotBasis};
+use crate::visibility::materialization::read_records::ProjectionRecordSource;
 
 type PacketFailure = MapKernelFailure<QueryReadPacketDenial>;
 type FrontierEntry = (EntityId, u32, EntityId, Option<RelationId>);
@@ -25,8 +25,7 @@ enum Direction {
 }
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_traversal_fragment(
-    runtime: &RelationalRuntime,
-    basis: &VisibilitySnapshotBasis,
+    reader: &RelationalPinnedRead,
     state: &(dyn PartitionAccess + Sync),
     registry: &RelationalSchemaRegistry,
     version_id: VersionId,
@@ -62,8 +61,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
         }
     };
     let mut budget = QueryPacketBudget::new(context, ceiling)?;
-    let projection =
-        VisibilityProjectionView::new(runtime, SnapshotStateBasis::Exact(basis.clone()));
+    let projection = reader;
     let mut visited_entities = BTreeSet::new();
     let mut emitted_relations = BTreeSet::new();
     let mut frontier = VecDeque::<FrontierEntry>::new();
@@ -86,8 +84,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
     while let Some((entity_id, depth, root_seed, via_relation)) = frontier.pop_front() {
         budget.checkpoint(1)?;
         budget.check_temporary_record(projection.candidate_entity_bytes_for_id(entity_id))?;
-        let Some(entity_record) = runtime
-            .read_truth()
+        let Some(entity_record) = reader
             .authoritative_entity_record_for_id_at_version_with_registry(
                 state, registry, entity_id, version_id,
             )
@@ -125,8 +122,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
             budget.checkpoint(1)?;
             budget
                 .check_temporary_record(projection.candidate_relation_bytes_for_id(relation_id))?;
-            let Some(relation_record) = runtime
-                .read_truth()
+            let Some(relation_record) = reader
                 .authoritative_relation_record_for_id_at_version_with_registry(
                     state,
                     registry,
