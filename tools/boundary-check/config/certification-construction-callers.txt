@@ -63,3 +63,11 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_guard_basis/root_path_guard_reads_its_pinned_truth_version.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses.rs
 installation workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/retained_query_batch/pre_kernel_cancellation_keeps_its_real_execution_cause.rs
+# Closed pinned-read reconstruction proofs; each constructs its installed fixture query.
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/native_concurrency.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pinning_reasons.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/pin_custody_tests.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/derived_view/registration/collection/pair/reconstruct_parallel/read_ceiling_tests/reconstruction_parity.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/branch_reconstruction_parity.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_parity.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/reconstruction_stops.rs
