@@ -20,8 +20,6 @@ pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C
         Option<PreparedBatchRead>,
     pub(in crate::domain_computation::primary_graph::application_query) second_batch:
         Option<PreparedBatchRead>,
-    pub(in crate::domain_computation::primary_graph::application_query) pins:
-        WorthQueryPairReadPins,
 }
 
 impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
@@ -40,7 +38,6 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
             batch: None,
             first_batch: None,
             second_batch: None,
-            pins: WorthQueryPairReadPins::default(),
         }
     }
     /// Carry the same genuine shared read loan into closed pair preparation.
@@ -57,7 +54,6 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
             batch: Some(batch.retained_meter()),
             first_batch: None,
             second_batch: None,
-            pins: WorthQueryPairReadPins::default(),
         }
     }
 }

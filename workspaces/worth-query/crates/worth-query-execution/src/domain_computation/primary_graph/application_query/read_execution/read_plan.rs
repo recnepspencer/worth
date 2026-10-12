@@ -116,3 +116,33 @@ impl ReadPlan<'_> {
             .collect()
     }
 }
+
+impl ReadPlan<'_> {
+    pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_unavailable_denial(
+        &self,
+    ) -> super::WorthQueryApplicationReadExecutionDenial {
+        let predicates = self.contract.predicates();
+        if let [predicate] = predicates {
+            super::read_execution_denial(
+                super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+                predicate.field().2,
+            )
+        } else {
+            super::read_execution_denial(
+                super::WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                self.name,
+            )
+        }
+    }
+    pub(in crate::domain_computation::primary_graph::application_query) fn predicate_unavailable_denial(
+        &self,
+    ) -> super::WorthQueryApplicationReadExecutionDenial {
+        super::read_execution_denial(
+            super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+            match self.contract.predicates() {
+                [predicate] => predicate.field().2,
+                _ => self.name,
+            },
+        )
+    }
+}

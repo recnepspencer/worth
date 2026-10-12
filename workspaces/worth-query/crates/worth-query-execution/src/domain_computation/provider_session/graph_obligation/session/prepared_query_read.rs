@@ -60,13 +60,17 @@ impl WorthQueryManagedGraphWorkSession {
         })
     }
     /// Bind an existing side pin to this already admitted session's identity.
-    /// This consults custody, never an owner port or current native registry.
+    /// Equal roots share immutable custody. A changed admitted root pins its
+    /// own state, so post-read currentness retains its answer and work.
     pub(in crate::domain_computation) fn prepare_query_read_from_pin(
         &self,
         basis: &WorthQueryApplicationBasisIdentity,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         pin: &std::sync::Arc<WorthQueryPreparedQueryPin>,
+        select_indexes: impl FnOnce(
+            &WorthQueryPrimaryGraphLayout,
+        ) -> Vec<worth_relational::facade::indexes::DerivedIndexId>,
     ) -> Result<WorthQueryPreparedSessionRead, WorthQueryManagedGraphReadDenial> {
         execution
             .check_live()
@@ -80,17 +84,25 @@ impl WorthQueryManagedGraphWorkSession {
             // sessions on the same exact Native root and World occurrence.
             || pin.basis.runtime_instance_id() != basis.runtime_instance_id()
             || pin.basis.branch_id() != basis.branch_id()
-            || pin.basis.descriptor() != basis.descriptor()
-            || pin.basis.selection() != basis.selection()
             || snapshot.runtime_instance_id() != basis.runtime_instance_id()
             || snapshot.branch_id() != basis.branch_id()
             || snapshot.snapshot_id() != basis.snapshot_id()
-            || snapshot.version_id() != pin.read.snapshot().version_id()
         {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }
         if pin.binding != self.binding {
             return Err(WorthQueryManagedGraphReadDenial::ForeignGraph);
+        }
+        if pin.basis.descriptor() != basis.descriptor()
+            || pin.basis.selection() != basis.selection()
+        {
+            // This is an admitted member on a different root/World selection,
+            // not foreign custody. Read its own root, as before pin sharing;
+            // owner finalization then reports StaleSource with the same work.
+            return self.prepare_query_read(basis, execution, snapshot, select_indexes);
+        }
+        if snapshot.version_id() != pin.read.snapshot().version_id() {
+            return self.prepare_query_read(basis, execution, snapshot, select_indexes);
         }
         Ok(WorthQueryPreparedSessionRead {
             pin: std::sync::Arc::clone(pin),
@@ -173,5 +185,23 @@ impl worth_execution::ChargedBytes for WorthQueryPreparedReadCompletion {
             plan: _plan,
         } = self;
         0
+    }
+}
+
+#[cfg(test)]
+impl WorthQueryPreparedQueryPin {
+    /// Unit-owner substitution isolates correlated cached-root guards.
+    /// The uniquely owned pin is the entire lifetime of this hostile test state.
+    pub(in crate::domain_computation) fn replace_basis_for_test(
+        &mut self,
+        basis: WorthQueryApplicationBasisIdentity,
+    ) {
+        assert!(crate::domain_computation::execution_observation::is_installed());
+        self.basis = basis;
+    }
+    pub(in crate::domain_computation) fn basis_for_test(
+        &self,
+    ) -> &WorthQueryApplicationBasisIdentity {
+        &self.basis
     }
 }

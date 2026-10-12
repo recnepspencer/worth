@@ -26,18 +26,14 @@ pub(super) fn pin_runtime_read(
                     ),
                     plan.name,
                 ),
-                Pin::IndexNotInstalled(index) => read_execution_denial(
+                Pin::IndexNotInstalled(index) => {
                     if selected[..predicate_count].contains(&index) {
-                        WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable
+                        plan.predicate_unavailable_denial()
                     } else {
-                        additional_denial
-                    },
-                    plan.name,
-                ),
-                Pin::SnapshotUnavailable => read_execution_denial(
-                    WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-                    plan.name,
-                ),
+                        read_execution_denial(additional_denial, plan.name)
+                    }
+                }
+                Pin::SnapshotUnavailable => plan.snapshot_unavailable_denial(),
             }
         })
 }

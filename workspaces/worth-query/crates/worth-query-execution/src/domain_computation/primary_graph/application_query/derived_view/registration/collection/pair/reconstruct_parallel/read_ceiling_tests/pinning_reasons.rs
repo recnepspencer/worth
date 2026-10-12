@@ -129,7 +129,7 @@ fn check(case: Case) {
                         Ok(_) => panic!("the unavailable native source unexpectedly pinned"),
                     };
                     let outer =
-                        super::super::denial::session(cause, root.entity_id(), plan.query.name());
+                        super::super::denial::session(cause, root.entity_id(), &crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan::of(&plan));
                     let expected = if matches!(case, Case::Snapshot) {
                         OneShot::ProjectionUnavailable
                     } else {

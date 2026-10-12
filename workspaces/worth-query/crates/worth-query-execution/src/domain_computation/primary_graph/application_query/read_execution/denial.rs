@@ -88,29 +88,25 @@ pub(super) fn relational_cause_denial(
     read_execution_denial(kind, subject)
 }
 
+/// Both native pinning and prepared execution forward the complete managed stop.
+/// Interruption remains a map stop instead of becoming an application read error.
 pub(in crate::domain_computation::primary_graph::application_query) fn managed_read_denial(
     cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
-    subject: &str,
-) -> super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial {
+    plan: &super::read_plan::ReadPlan<'_>,
+) -> Result<
+    super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial,
+    worth_execution::MapKernelStop,
+> {
     use super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial as Denial;
     use crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial as Cause;
     match cause {
-        Cause::SnapshotUnavailable => Denial::Read(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
-            subject,
-        )),
-        Cause::IndexNotInstalled(_) => Denial::Read(read_execution_denial(
-            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
-            subject,
-        )),
-        Cause::RequestStop(stop) => Denial::Read(relational_cause_denial(
-            worth_relational::facade::transactions::RelationalExecutionDenialCause::from(stop),
-            subject,
-        )),
+        Cause::SnapshotUnavailable => Ok(Denial::Read(plan.snapshot_unavailable_denial())),
+        Cause::IndexNotInstalled(_) => Ok(Denial::Read(plan.predicate_unavailable_denial())),
+        Cause::RequestStop(stop) => Err(stop),
         Cause::MutationSession
         | Cause::ForeignBasis
         | Cause::ForeignGraph
         | Cause::ForeignReadProof
-        | Cause::TerminalReleaseMismatch => Denial::Session,
+        | Cause::TerminalReleaseMismatch => Ok(Denial::Session),
     }
 }

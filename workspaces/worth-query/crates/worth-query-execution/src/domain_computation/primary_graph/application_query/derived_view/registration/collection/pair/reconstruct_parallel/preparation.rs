@@ -151,6 +151,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 execution,
                 self.first.basis.snapshot_handle(),
                 pin,
+                |graph| ReadPlan::public_worker(&self.first).selected_indexes(graph),
             ),
             None => self.first.graph_work.prepare_query_read(
                 self.first.basis.identity(),
@@ -159,13 +160,16 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 |graph| ReadPlan::public_worker(&self.first).selected_indexes(graph),
             ),
         }
-        .map_err(|cause| super::denial::session(cause, root, self.first.query.name()))?;
+        .map_err(|cause| {
+            super::denial::session(cause, root, &ReadPlan::public_worker(&self.first))
+        })?;
         let second = match pins.second.as_ref() {
             Some(pin) => self.second.graph_work.prepare_query_read_from_pin(
                 self.second.basis.identity(),
                 execution,
                 self.second.basis.snapshot_handle(),
                 pin,
+                |graph| ReadPlan::public_worker(&self.second).selected_indexes(graph),
             ),
             None => self.second.graph_work.prepare_query_read(
                 self.second.basis.identity(),
@@ -174,11 +178,11 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 |graph| ReadPlan::public_worker(&self.second).selected_indexes(graph),
             ),
         }
-        .map_err(|cause| super::denial::session(cause, root, self.second.query.name()))?;
+        .map_err(|cause| {
+            super::denial::session(cause, root, &ReadPlan::public_worker(&self.second))
+        })?;
         pins.first = Some(first.retained_pin());
         pins.second = Some(second.retained_pin());
-        self.pins.first = pins.first.clone();
-        self.pins.second = pins.second.clone();
         Ok(PreparedPair {
             root,
             #[cfg(test)]

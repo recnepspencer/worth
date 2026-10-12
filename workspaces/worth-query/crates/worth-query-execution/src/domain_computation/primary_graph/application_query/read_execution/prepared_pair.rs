@@ -259,16 +259,23 @@ impl PreparedRead<'_> {
                 root,
                 denial: map_authorized_read_denial(ReadDenial::Read(read), plan.name),
             })),
-            Err(WorthQueryManagedGraphReadDenial::RequestStop(stop)) => {
-                Err(MapKernelFailure::Stop(stop))
+            Err(
+                cause @ (WorthQueryManagedGraphReadDenial::RequestStop(_)
+                | WorthQueryManagedGraphReadDenial::SnapshotUnavailable
+                | WorthQueryManagedGraphReadDenial::IndexNotInstalled(_)
+                | WorthQueryManagedGraphReadDenial::MutationSession
+                | WorthQueryManagedGraphReadDenial::ForeignBasis
+                | WorthQueryManagedGraphReadDenial::ForeignGraph
+                | WorthQueryManagedGraphReadDenial::ForeignReadProof
+                | WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch),
+            ) => {
+                let read =
+                    super::managed_read_denial(cause, &plan).map_err(MapKernelFailure::Stop)?;
+                Err(MapKernelFailure::Domain(Denial::ReadDenied {
+                    root,
+                    denial: map_authorized_read_denial(read, plan.name),
+                }))
             }
-            Err(cause) => Err(MapKernelFailure::Domain(Denial::ReadDenied {
-                root,
-                denial: map_authorized_read_denial(
-                    super::managed_read_denial(cause, plan.name),
-                    plan.name,
-                ),
-            })),
         }
     }
 }
