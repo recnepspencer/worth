@@ -44,6 +44,8 @@ struct Case {
 }
 
 fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparation: bool) -> Case {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(Placement::Serial), bound(None));
     let source = WorthQueryCancellationSource::new();
     let contacts = Contacts::default();
