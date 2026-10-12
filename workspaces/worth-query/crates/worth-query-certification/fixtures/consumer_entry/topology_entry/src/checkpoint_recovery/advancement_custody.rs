@@ -246,6 +246,10 @@ pub(super) use principal_target_read_work::PRINCIPAL_TARGET_READ_WORK;
 
 #[test]
 fn a_mutation_handler_and_commit_share_one_charged_request() {
+    mutation_commit_report(Placement::Leased(NonZeroUsize::MIN));
+}
+
+fn mutation_commit_report(placement: Placement) -> (u64, u64) {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
@@ -262,7 +266,7 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
     let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     // Admit the mutation's complete work, including its read and native commit.
     let restore = Restore(
-        place(Placement::Leased(NonZeroUsize::MIN)),
+        place(placement),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
             policy.charged_memory_bytes(),
@@ -292,7 +296,8 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
     assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
     let opened = reports();
     assert_eq!(opened.len(), 1);
-    let charged = opened[0].as_ref().unwrap().charged_work();
+    let report = *opened[0].as_ref().unwrap();
+    let charged = report.charged_work();
     assert_eq!(
         charged,
         PRINCIPAL_TARGET_READ_WORK + super::native_commit_work::MUTATION_COMMIT_WORK,
@@ -306,6 +311,50 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
         .execute()
         .unwrap();
     assert_ne!(after.receipt().inspect().basis().version(), before);
+    (report.charged_work(), report.charged_span())
 }
 
 mod mutation_entries;
+
+// Fresh cells keep the native proposal's issued identities identical as inputs.
+fn native_commit_cell(posture: &str) -> String {
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "checkpoint_recovery::advancement_custody::serial_and_one_worker_native_commit_have_equal_work_and_span",
+            "--nocapture",
+        ])
+        .env("WORTH_NATIVE_COMMIT_POSTURE", posture)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{posture}: {}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout)
+        .unwrap()
+        .lines()
+        .find_map(|line| line.strip_prefix("NATIVE_COMMIT_REPORT:"))
+        .expect("the real commit returns its observed work and span")
+        .to_owned()
+}
+#[test]
+fn serial_and_one_worker_native_commit_have_equal_work_and_span() {
+    if let Ok(posture) = std::env::var("WORTH_NATIVE_COMMIT_POSTURE") {
+        let placement = match posture.as_str() {
+            "serial" => Placement::Serial,
+            "one" => Placement::Leased(NonZeroUsize::MIN),
+            other => panic!("unknown declared posture {other}"),
+        };
+        let report = mutation_commit_report(placement);
+        println!("NATIVE_COMMIT_REPORT:{report:?}");
+        return;
+    }
+    assert_eq!(
+        native_commit_cell("serial"),
+        native_commit_cell("one"),
+        "one native proposal has the same exact work and structural span"
+    );
+}

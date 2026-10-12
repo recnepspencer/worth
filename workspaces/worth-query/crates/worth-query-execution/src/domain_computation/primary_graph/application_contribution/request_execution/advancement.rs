@@ -82,13 +82,11 @@ impl QueryRequestExecution<'_> {
     pub(in crate::domain_computation::primary_graph) fn execution_request(
         &self,
     ) -> Result<ExecutionRequest<'_, '_>, Resource> {
-        match &self.form {
-            Form::Leased { lease, .. } => lease
-                .as_ref()
-                .map(ExecutionRequest::leased)
-                .map_err(|denial| execution_denial::lease_denial(*denial)),
-            Form::Serial(request) => Ok(ExecutionRequest::serial(request)),
-        }
+        self.form
+            .lease
+            .as_ref()
+            .map(ExecutionRequest::leased)
+            .map_err(|denial| execution_denial::lease_denial(*denial))
     }
 
     fn run_advancement<R>(
@@ -97,13 +95,13 @@ impl QueryRequestExecution<'_> {
         source_instance: Option<u64>,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
-        observation::begin(match &self.form {
-            Form::Serial(_) => worth_foundational::ExecutionPosture::Serial,
-            Form::Leased { lease, policy } => lease
+        observation::begin(
+            self.form
+                .lease
                 .as_ref()
                 .map(|lease| lease.resolved_posture())
-                .unwrap_or(policy.posture()),
-        });
+                .unwrap_or(self.form.policy.posture()),
+        );
         let result = self.run_admitted_advancement(owner, source_instance, body);
         observation::record_result(&result);
         result
@@ -121,11 +119,6 @@ impl QueryRequestExecution<'_> {
         if self.declared_work == 0 {
             return Err(WorthQueryAdvancementDenial::Resource(
                 Resource::WorkExhausted,
-            ));
-        }
-        if matches!(&self.form, Form::Serial(_)) && request.memory_limit() == 0 {
-            return Err(WorthQueryAdvancementDenial::Resource(
-                Resource::PolicyMemoryLimit,
             ));
         }
         let mut body_unwind = None;
@@ -192,8 +185,7 @@ mod installed_opening;
 
 /// Installation runs serially under the host's memory and aggregate work bounds.
 /// Custody is per thread; another thread's public call owns its own request.
-/// Installation's serial placement reports zero memory as `PolicyMemoryLimit`;
-/// an installed leased opener instead reports a policy `MemoryLimit`.
+/// Every posture reports the lease's exact policy memory denial.
 pub fn with_bootstrap_advancement<R>(
     policy: worth_foundational::ExecutionRequestPolicy,
     body: impl for<'scope> FnOnce(WorthQueryBootstrapAdvancementPhase<'scope>) -> R,
@@ -204,11 +196,14 @@ pub fn with_bootstrap_advancement<R>(
         cancellation: cancellation.clone(),
         deadline: None,
         declared_work: policy.budget().work_ceiling(),
-        form: Form::Serial(worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::from_policy(&policy),
-            cancellation,
-            None,
-        )),
+        form: Form {
+            lease: worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
+                policy,
+                cancellation,
+                deadline: None,
+            }),
+            policy,
+        },
     };
     execution.run_advancement(None, None, |phase| {
         body(WorthQueryBootstrapAdvancementPhase {
@@ -232,11 +227,14 @@ pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement
         cancellation: cancellation.clone(),
         deadline,
         declared_work: policy.budget().work_ceiling(),
-        form: Form::Serial(worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::from_policy(&policy),
-            cancellation,
-            deadline,
-        )),
+        form: Form {
+            lease: worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
+                policy,
+                cancellation,
+                deadline,
+            }),
+            policy,
+        },
     };
     execution.run_advancement(Some(owner), None, body)
 }

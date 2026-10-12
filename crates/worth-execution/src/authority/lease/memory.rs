@@ -26,7 +26,6 @@ impl ExecutionResourceLease<'_> {
     /// This observation grants no room; reservations still check the whole lineage.
     pub fn charged_memory_bytes(&self) -> u64 {
         self.authority
-            .inner
             .ledger
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -42,7 +41,7 @@ impl ExecutionResourceLease<'_> {
         bytes: u64,
     ) -> Result<ExecutionMemoryReservation, MemoryLimitDenial> {
         let mut memory = LeaseMemory {
-            authority: Arc::clone(&self.authority.inner),
+            authority: Arc::clone(&self.authority),
             node: Arc::clone(&self.node),
             bytes: 0,
         };
@@ -96,7 +95,7 @@ impl LeaseMemory {
         lease: &ExecutionResourceLease<'_>,
         bytes: u64,
     ) -> Result<(), LeaseDenial> {
-        if !Arc::ptr_eq(&self.authority, &lease.authority.inner) {
+        if !Arc::ptr_eq(&self.authority, &lease.authority) {
             return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
         }
         let held = self.bytes;

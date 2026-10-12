@@ -3,10 +3,10 @@
 //! a chosen worker count, or on such a lease with each full reduction also
 //! certified against the serial oracle and a seeded perturbed backend.
 //!
-//! Every lease is drawn from the one authority a process may construct. It
-//! admits twice the machine's width, so a lease may ask for more workers than
-//! the machine has. Each policy carries its own budget, far under the
-//! authority's, so tests running at once never meet on its memory.
+//! Leased placements draw from the one physical authority a process may
+//! construct. It admits twice the machine's width; serial placement owns a
+//! pool-free lease backing. Each policy carries its own budget, far under the
+//! physical authority's, so tests running at once never meet on its memory.
 
 use super::test_authority::query_test_execution_authority_for_test;
 pub use super::test_authority::test_execution_workers_for_test;
@@ -120,7 +120,11 @@ pub(super) fn placed(
     match placement {
         WorthQueryExecutionPlacementForTest::World => world,
         WorthQueryExecutionPlacementForTest::Serial => {
-            RuntimeWorldExecutionPlacement::Serial(request_policy(NonZeroUsize::MIN))
+            RuntimeWorldExecutionPlacement::Serial(ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                request_policy(NonZeroUsize::MIN).budget(),
+            ))
         }
         WorthQueryExecutionPlacementForTest::Leased(workers)
         | WorthQueryExecutionPlacementForTest::Certified { workers, .. } => {
@@ -187,7 +191,7 @@ pub(super) fn certify<T, K, R, E, Kernel, Combine>(
 }
 
 /// Bounds the test thread's requests with a host's declared budget.
-/// Placement still decides the backing; a serial request has no policy work ceiling.
+/// Placement decides the backing; every request carries this work ceiling.
 pub fn bound_advancement_requests_on_this_thread_for_test(
     budget: Option<ExecutionBudget>,
 ) -> Option<ExecutionBudget> {
