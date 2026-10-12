@@ -218,6 +218,7 @@ pub(super) fn verify<T, W: ProbeWorkspace>(
     mut setup: impl FnMut() -> (W, T),
     mut execute: impl FnMut(T, &mut worth_query::facade::runtime::WorthQueryWorkspace) -> Option<Denial>,
 ) {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
         for budget in [None, Some(false), Some(true)] {
