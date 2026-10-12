@@ -2,6 +2,8 @@
 
 mod admitted_scope;
 mod freshness;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) mod interruption_control;
 mod product;
 pub(in crate::domain_computation) use product::WorthQueryIssuedSelectedScope;
 mod resolved;
@@ -204,12 +206,26 @@ fn map_index_denial(
     kind: BoundedEntityFieldLookupDenialKind,
     subject: &str,
 ) -> WorthQueryEntityResolutionDenial {
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
     let kind = match kind {
+        BoundedEntityFieldLookupDenialKind::Execution(Cause::Cancelled) => {
+            WorthQueryEntityResolutionDenialKind::Cancelled
+        }
+        BoundedEntityFieldLookupDenialKind::Execution(Cause::DeadlineElapsed) => {
+            WorthQueryEntityResolutionDenialKind::DeadlineExceeded
+        }
         BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
         | BoundedEntityFieldLookupDenialKind::StorageParityMismatch => {
             WorthQueryEntityResolutionDenialKind::CorruptIdentityIndex
         }
-        _ => WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+        BoundedEntityFieldLookupDenialKind::Execution(_)
+        | BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+        | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+        | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+        | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+        | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable => {
+            WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable
+        }
     };
     entity_denial(kind, subject)
 }
