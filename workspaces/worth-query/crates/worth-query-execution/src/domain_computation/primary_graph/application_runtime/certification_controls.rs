@@ -318,5 +318,4 @@ where
     }
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod primary_index_generations;

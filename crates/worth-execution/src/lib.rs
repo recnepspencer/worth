@@ -50,7 +50,6 @@ pub use reduction::{
 };
 pub use report::ChargedBytes;
 
-#[cfg(feature = "test-request-consults")]
 pub use authority::consult_observation::{
-    with_request_consult_observer, RequestConsultObservation,
+    with_request_consult_observer_for_test, RequestConsultObservationForTest,
 };

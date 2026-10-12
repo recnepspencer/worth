@@ -5,9 +5,6 @@ version.workspace = true
 license.workspace = true
 description = "Bounded platform computation authority for WORTH runtimes."
 
-[features]
-test-request-consults = []
-
 [dependencies]
 worth-foundational.workspace = true
 worth-proof.workspace = true

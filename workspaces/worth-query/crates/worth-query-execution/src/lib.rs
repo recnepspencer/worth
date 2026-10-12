@@ -30,5 +30,5 @@ mod bridge_host_request;
 #[path = "test_support/process_deadline.rs"]
 mod process_deadline;
 
-#[cfg(all(test, feature = "test-query-execution-observer"))]
+#[cfg(test)]
 mod test_read_stops;

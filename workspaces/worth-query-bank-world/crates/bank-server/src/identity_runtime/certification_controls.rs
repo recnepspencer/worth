@@ -53,7 +53,6 @@ impl BankIdentityRuntime {
     }
 }
 
-#[cfg(feature = "test-request-lifetime-probes")]
 impl BankIdentityRuntime {
     /// Drops only reconstructible index generations; returns the declared inventory.
     #[doc(hidden)]

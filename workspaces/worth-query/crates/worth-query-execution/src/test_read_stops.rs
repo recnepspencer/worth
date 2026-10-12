@@ -1,14 +1,16 @@
 //! One counted oracle for actual request-backed Query doors.
 use std::fmt::Debug;
 use worth_execution::{
-    with_request_consult_observer, CancellationSource, ExecutionRequest, ExecutionWorkCeiling,
-    SerialMemoryBudget, SerialRequest,
+    with_request_consult_observer_for_test, CancellationSource, ExecutionRequest,
+    ExecutionWorkCeiling, SerialMemoryBudget, SerialRequest,
 };
 pub(crate) fn every_consult<T: Eq + Debug, E: Eq + Debug>(
     door: impl Fn(&ExecutionRequest<'_, '_>) -> Result<T, E>,
     cancelled: E,
     exhausted: E,
 ) {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let run = |k: Option<usize>, ceiling: u64| {
         let source = CancellationSource::new();
         let cancel = source.clone();
@@ -18,7 +20,7 @@ pub(crate) fn every_consult<T: Eq + Debug, E: Eq + Debug>(
             None,
         );
         let request = ExecutionRequest::serial(&host);
-        let ((answer, report), count) = with_request_consult_observer(
+        let ((answer, report), count) = with_request_consult_observer_for_test(
             move |at| {
                 if Some(at) == k {
                     cancel.cancel();

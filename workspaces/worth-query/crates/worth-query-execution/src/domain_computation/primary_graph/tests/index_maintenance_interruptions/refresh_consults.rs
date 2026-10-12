@@ -1,8 +1,10 @@
 //! Cancellation is signalled inside the real refresh pass, at every check.
 use super::*;
-use worth_execution::RequestConsultObservation;
+use worth_execution::RequestConsultObservationForTest;
 #[test]
 fn refresh_preserves_the_stop_at_every_counted_consult() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_world(&[("counted-refresh", WorthQueryPrincipalMappingStatus::Enabled)]);
     let handle = world
         .application
@@ -39,14 +41,16 @@ fn refresh_preserves_the_stop_at_every_counted_consult() {
         let mut observation = None;
         let result = handle.execute_mutation_with_index_refresh(&execution, |runtime| {
             commit_empty(&setup, runtime, "main");
-            observation = Some(RequestConsultObservation::begin(move |at| {
-                if Some(at) == k {
-                    cancel.cancel();
-                }
-            }));
+            observation = Some(
+                RequestConsultObservationForTest::install_on_this_thread_for_test(move |at| {
+                    if Some(at) == k {
+                        cancel.cancel();
+                    }
+                }),
+            );
             Ok::<_, ()>(())
         });
-        let count = observation.as_ref().unwrap().count();
+        let count = observation.as_ref().unwrap().count_for_test();
         drop(observation);
         (result, count)
     };

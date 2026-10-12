@@ -13,11 +13,14 @@ use worth_query_host::facade::primary_graph::{
 };
 #[tokio::test]
 async fn one_unit_short_at_currency_has_the_execution_http_status() {
+    let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let account = AccountId::new(100).unwrap();
     let application = super::fixture::application(account);
     let source = WorthQueryCancellationSource::new();
-    let scope =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let scope = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     let principal = application.authenticate(&scope).await;
     let indexes = application
         .runtime

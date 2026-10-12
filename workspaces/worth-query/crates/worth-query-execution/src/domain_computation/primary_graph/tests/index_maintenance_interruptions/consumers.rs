@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
-use worth_execution::with_request_consult_observer;
+use worth_execution::with_request_consult_observer_for_test;
 fn currency_consumer(consumer: u8) {
     let world = installed_world(&[(
         "counted-currency",
@@ -23,11 +23,11 @@ fn currency_consumer(consumer: u8) {
   commit_empty(&setup,runtime,"main");let (_,basis)=runtime.observe_branch(&runtime.main_branch_identity()).unwrap();
   let discard=|runtime:&mut worth_relational::facade::runtime::RelationalRuntime|for index in handle.primary_index_ids.iter(){runtime.index_authority().discard_generations(worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(*index)).unwrap();};
   discard(runtime);
-  let (healthy,count)=with_request_consult_observer(|_|{},||handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis));healthy.unwrap();assert!(count>2);eprintln!("currency consults={count}");
+  let (healthy,count)=with_request_consult_observer_for_test(|_|{},||handle.ensure_primary_indexes_for_basis(&setup,runtime,&basis));healthy.unwrap();assert!(count>2);eprintln!("currency consults={count}");
   for k in 1..=count+1 {
    discard(runtime);let source=CancellationSource::new();let cancel=source.clone();
    let host=SerialRequest::from_memory(SerialMemoryBudget::new(64*1024*1024),source.token(),None);let execution=ExecutionRequest::serial(&host);
-   let (result,_)=with_request_consult_observer(move |at|if at==k{cancel.cancel();},||handle.ensure_primary_indexes_for_basis(&execution,runtime,&basis));
+   let (result,_)=with_request_consult_observer_for_test(move |at|if at==k{cancel.cancel();},||handle.ensure_primary_indexes_for_basis(&execution,runtime,&basis));
    if k>count {result.unwrap();continue;}
    let Err(crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop))=result else{panic!("consult {k} must return its request stop")};
    assert_eq!(stop,Err(Control::Cancelled),"consult {k}");
@@ -65,13 +65,19 @@ fn assert_consumer(stop: Result<Kind, Control>, consumer: u8) {
 
 #[test]
 fn currency_converter_keeps_each_counted_stop() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     currency_consumer(0)
 }
 #[test]
 fn currency_compare_keeps_each_counted_stop() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     currency_consumer(1)
 }
 #[test]
 fn currency_outcome_keeps_each_counted_stop() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     currency_consumer(2)
 }
