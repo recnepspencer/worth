@@ -47,6 +47,8 @@ pub enum WorthQueryWorkflowDefinitionDiscoveryDenial {
     Cancelled,
     /// The caller's deadline elapsed during discovery.
     DeadlineExceeded,
+    /// The caller's bounded execution refused work, memory or execution structure.
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The lineage's records cannot be read within their fixed bounds, so
     /// no retry of the same discovery can succeed.
     LineageUnreadable,
@@ -67,6 +69,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
+        execution
+            .consult()
+            .map_err(|stop| request_denial(stop.into()))?;
         let graph = &self.application().primary_provider.graph;
         let layout = graph.layout.workflow();
         let snapshot = self.application_basis().snapshot_handle();
@@ -80,22 +85,20 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     runtime,
                     self.product().relational_basis(),
                 )
-                .map_err(|_| WorthQueryWorkflowDefinitionDiscoveryDenial::IndexUnavailable)?;
+                .map_err(|refusal| match refusal {
+                    super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(cause) => request_denial(cause),
+                    super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(_)
+                    | super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(_) => WorthQueryWorkflowDefinitionDiscoveryDenial::IndexUnavailable,
+                })?;
             let runtime = &*runtime;
             let lineage = select_lineage(runtime, execution, snapshot, layout, identity.as_str())
-                .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
+                ?.ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
             let Some(lineage) = lineage else {
                 return Ok(WorthQueryWorkflowDefinitionDiscovery::Unpublished);
             };
-            let spec = observe_field_value(
-                runtime,
-                execution,
-                snapshot,
-                lineage,
-                layout.lineage.entity_kind,
-                &layout.lineage.spec,
-            )
-            .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
+            let spec = read_definition_field(runtime, execution, snapshot, lineage,
+                layout.lineage.entity_kind, &layout.lineage.spec)?
+                .ok_or(WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable)?;
             if spec != text(Spec::IDENTITY.as_str()) {
                 return Err(WorthQueryWorkflowDefinitionDiscoveryDenial::ForeignLineage);
             }
@@ -107,6 +110,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     super::super::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => {
                         WorthQueryWorkflowDefinitionDiscoveryDenial::DeadlineExceeded
                     }
+                    super::super::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(kind) => WorthQueryWorkflowDefinitionDiscoveryDenial::ExecutionRequest(kind),
                     _ => WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable,
                 })? {
                 Some(WorkflowDefinitionCurrentness::Current(current)) => {
@@ -164,9 +168,9 @@ pub(in crate::domain_computation::primary_graph) fn current_definition(
         layout.definition.entity_kind,
         &layout.definition.content_identity,
     );
-    execution.check_live().map_err(|stop| {
-        super::super::WorthQueryApplicationAttemptDenial::request_read_stopped(
-            stop,
+    execution.consult().map_err(|stop| {
+        super::super::WorthQueryApplicationAttemptDenial::relational_read_stopped(
+            stop.into(),
             "workflow definition discovery",
         )
     })?;
@@ -190,7 +194,10 @@ fn select_lineage(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     layout: &WorthQueryWorkflowLayout,
     identity: &str,
-) -> Option<Option<EntityId>> {
+) -> Result<Option<Option<EntityId>>, WorthQueryWorkflowDefinitionDiscoveryDenial> {
+    #[cfg(test)]
+    let _scope = super::super::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(
+        super::super::application_attempt::consult_observation::Door::Discovery);
     let selection = observe_indexed_entity_selection(
         runtime,
         execution,
@@ -201,18 +208,58 @@ fn select_lineage(
         text(identity),
         LINEAGE_LOOKUP_LIMIT,
     )
-    .ok()?;
+    .map_err(|refusal| match refusal {
+        super::super::application_attempt::WorthQueryIndexedSelectionRefusal::Execution(cause) => {
+            request_denial(cause)
+        }
+        super::super::application_attempt::WorthQueryIndexedSelectionRefusal::Overflowed
+        | super::super::application_attempt::WorthQueryIndexedSelectionRefusal::Unavailable => {
+            WorthQueryWorkflowDefinitionDiscoveryDenial::LineageUnreadable
+        }
+    })?;
     let WorthQueryApplicationObservedFact::IndexedEntitySelection { candidates, .. } = selection
     else {
-        return None;
+        return Ok(None);
     };
-    match candidates.as_slice() {
+    Ok(match candidates.as_slice() {
         [] => Some(None),
         [lineage] => Some(Some(*lineage)),
         _ => None,
-    }
+    })
 }
 
 fn text(value: &str) -> AspectValue {
     AspectValue::String(InternedString::Raw(value.to_owned()))
 }
+
+fn request_denial(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> WorthQueryWorkflowDefinitionDiscoveryDenial {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Stop;
+    match super::super::provider::relational_execution_denial::relational_execution_kind(
+        cause, None,
+    ) {
+        Ok(kind) => WorthQueryWorkflowDefinitionDiscoveryDenial::ExecutionRequest(kind),
+        Err(Stop::Cancelled) => WorthQueryWorkflowDefinitionDiscoveryDenial::Cancelled,
+        Err(Stop::TimedOut) => WorthQueryWorkflowDefinitionDiscoveryDenial::DeadlineExceeded,
+    }
+}
+fn read_definition_field(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: EntityId,
+    kind: worth_relational::facade::identity::KindId,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+) -> Result<Option<AspectValue>, WorthQueryWorkflowDefinitionDiscoveryDenial> {
+    execution
+        .consult()
+        .map_err(|stop| request_denial(stop.into()))?;
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator);
+    execution
+        .consult()
+        .map_err(|stop| request_denial(stop.into()))?;
+    Ok(value)
+}
+#[cfg(test)]
+mod request_stops;

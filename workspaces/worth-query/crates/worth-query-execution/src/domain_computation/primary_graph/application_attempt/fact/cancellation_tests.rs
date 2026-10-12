@@ -216,3 +216,30 @@ fn with_indexed_fact(
         })
         .unwrap();
 }
+
+#[test]
+fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
+    with_indexed_fact(|runtime, execution, snapshot, fact, source, _| {
+        let _observation =
+            crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+        let cancel = source.clone();
+        let mut consults = 0;
+        let _probe =
+            worth_execution::ExecutionCheckpointObservationForTest::install_on_this_thread_for_test(
+                move || {
+                    consults += 1;
+                    if consults == 3 {
+                        cancel.cancel();
+                    }
+                },
+            );
+        let mut admission =
+            crate::domain_computation::primary_graph::InvalidationEditAdmission::new(
+                worth_relational::facade::mvcc::CompanionPreflightBudget {
+                    maximum_work_visits: 1_000_000,
+                    maximum_preparation_bytes: 64 << 20,
+                },
+            );
+        assert_eq!(fact.source_currentness_in(runtime, execution, snapshot, &mut admission), Err(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)));
+    });
+}

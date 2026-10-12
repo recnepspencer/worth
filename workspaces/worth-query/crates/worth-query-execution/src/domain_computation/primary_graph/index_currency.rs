@@ -15,6 +15,7 @@ pub(crate) use selected_field::{
 
 #[derive(Debug)]
 pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Basis(super::exact_basis_access::WorthQueryExactBasisSnapshotDenial),
     IndexUnavailable(&'static str),
 }
@@ -55,6 +56,9 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         runtime: &mut RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
+        execution
+            .consult()
+            .map_err(|stop| WorthQueryPrimaryIndexCurrencyDenial::Execution(stop.into()))?;
         let observation = basis.observation();
         let Some(source_commit_id) = observation.commit_id() else {
             return Ok(());
@@ -85,6 +89,9 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             super::index_maintenance_budget::cold_index_reconstruction_budget(),
             execution,
         );
+        execution
+            .consult()
+            .map_err(|stop| WorthQueryPrimaryIndexCurrencyDenial::Execution(stop.into()))?;
         require_complete_build(build, expected)
     }
 }
