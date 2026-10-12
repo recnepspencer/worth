@@ -59,6 +59,8 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
                     RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
                     RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
                 };
+                // This unit pays the index's parent/child endpoint visit. The
+                // keyed authoritative child read below pays its own materialization.
                 budget.borrow_mut().checkpoint(1)?;
                 budget
                     .borrow()

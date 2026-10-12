@@ -31,6 +31,9 @@ impl VisibilityReadContext<'_> {
                         partition_id,
                         slot,
                     ) {
+                        self.runtime.services.instrumentation.count(|counters| {
+                            counters.visible_authoritative_entity_records_materialized += 1;
+                        });
                         records.push(record);
                     }
                 }
@@ -38,6 +41,9 @@ impl VisibilityReadContext<'_> {
             KindScanVisibility::AtVersion(version) => {
                 for slot in partition.entity_arena.occupied_slots_iter() {
                     charge(EXAMINE_SLOT)?;
+                    self.runtime.services.instrumentation.count(|counters| {
+                        counters.visibility_entity_slot_scans += 1;
+                    });
                     let visible = kind.map_or_else(
                         || {
                             super::super::visibility::entity_visible_in_partition_at_version(
@@ -65,6 +71,9 @@ impl VisibilityReadContext<'_> {
                         slot,
                         version,
                     ) {
+                        self.runtime.services.instrumentation.count(|counters| {
+                            counters.visible_authoritative_entity_records_materialized += 1;
+                        });
                         records.push(record);
                     }
                 }
@@ -101,6 +110,9 @@ impl VisibilityReadContext<'_> {
                         partition_id,
                         slot,
                     ) {
+                        self.runtime.services.instrumentation.count(|counters| {
+                            counters.visible_authoritative_relation_records_materialized += 1;
+                        });
                         records.push(record);
                     }
                 }
@@ -108,6 +120,9 @@ impl VisibilityReadContext<'_> {
             KindScanVisibility::AtVersion(version) => {
                 for slot in partition.relation_arena.occupied_slots_iter() {
                     charge(EXAMINE_SLOT)?;
+                    self.runtime.services.instrumentation.count(|counters| {
+                        counters.visibility_relation_slot_scans += 1;
+                    });
                     let visible = kind.map_or_else(
                         || {
                             super::super::visibility::relation_visible_in_partition_at_version(
@@ -135,6 +150,9 @@ impl VisibilityReadContext<'_> {
                         slot,
                         version,
                     ) {
+                        self.runtime.services.instrumentation.count(|counters| {
+                            counters.visible_authoritative_relation_records_materialized += 1;
+                        });
                         records.push(record);
                     }
                 }
@@ -142,5 +160,54 @@ impl VisibilityReadContext<'_> {
         }
         super::truth_record_access::sort_authoritative_relation_records(&mut records);
         Ok(records)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::identity::data::KindId;
+    use crate::tests::support::*;
+    #[test]
+    fn paid_record_walk_reports_materializations_and_historical_slot_visits() {
+        let host = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let runtime = runtime_with_test_schema();
+        let left = create_entity(&execution, &runtime, "left");
+        let right = create_entity(&execution, &runtime, "right");
+        let relation = create_relation_outcome(&execution, &runtime, left, right, "edge");
+        let later = create_entity_outcome(&execution, &runtime, "later");
+        let truth = runtime.read_truth();
+        let current = truth.project_snapshot(&later.snapshot).unwrap();
+        let historical = truth.project_historical_version(relation.version_id);
+        for (view, entities, entity_scans, relation_scans) in
+            [(&current, 3, 0, 0), (&historical, 2, 2, 1)]
+        {
+            runtime.performance_access().reset_counters();
+            assert_eq!(
+                view.authoritative_entity_records(&execution, KindId(1))
+                    .unwrap()
+                    .len(),
+                entities
+            );
+            assert_eq!(
+                view.authoritative_relation_records(&execution, KindId(2))
+                    .unwrap()
+                    .len(),
+                1
+            );
+            let counters = runtime.performance_access().counters();
+            assert_eq!(
+                counters.visible_authoritative_entity_records_materialized,
+                entities
+            );
+            assert_eq!(
+                counters.visible_authoritative_relation_records_materialized,
+                1
+            );
+            assert_eq!(counters.visibility_entity_slot_scans, entity_scans);
+            assert_eq!(counters.visibility_relation_slot_scans, relation_scans);
+        }
+        release_test_commit_snapshot(&runtime, &relation);
+        release_test_commit_snapshot(&runtime, &later);
     }
 }

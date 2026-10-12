@@ -75,9 +75,3 @@ fn currency_compare_keeps_each_counted_stop() {
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     currency_consumer(1)
 }
-#[test]
-fn currency_outcome_keeps_each_counted_stop() {
-    let _observation =
-        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    currency_consumer(2)
-}

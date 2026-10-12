@@ -9,12 +9,7 @@ use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, WorkCeilingDenial};
 #[test]
 fn refused_maintenance_drops_every_owner_without_panicking() {
-    let filter = concat!(module_path!(), "::refused_maintenance_cleanup_probe")
-        .split_once("::")
-        .unwrap()
-        .1;
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", filter, "--nocapture"])
+    let output = probe_command()
         .env("WORTH_QUERY_MAINTENANCE_CLEANUP_PROBE", "1")
         .output()
         .unwrap();
@@ -28,9 +23,18 @@ fn refused_maintenance_drops_every_owner_without_panicking() {
 }
 #[test]
 fn refused_maintenance_cleanup_probe() {
-    if std::env::var_os("WORTH_QUERY_MAINTENANCE_CLEANUP_PROBE").is_none() {
+    // Ordinary suite runs do not enter the subprocess probe. Its exact child
+    // entry requires the payload before it can construct or exercise the fixture.
+    if !std::env::args().any(|argument| argument == probe_filter()) {
         return;
     }
+    assert_eq!(
+        std::env::var("WORTH_QUERY_MAINTENANCE_CLEANUP_PROBE")
+            .expect("cleanup child requires WORTH_QUERY_MAINTENANCE_CLEANUP_PROBE"),
+        "1"
+    );
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let graph = world
         .application
@@ -91,4 +95,28 @@ fn refused_maintenance_cleanup_probe() {
     drop(registry);
     drop(graph);
     drop(world);
+}
+
+fn probe_filter() -> &'static str {
+    concat!(module_path!(), "::refused_maintenance_cleanup_probe")
+        .split_once("::")
+        .unwrap()
+        .1
+}
+fn probe_command() -> std::process::Command {
+    let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+    command
+        .args(["--exact", probe_filter(), "--nocapture"])
+        .env_remove("WORTH_QUERY_MAINTENANCE_CLEANUP_PROBE");
+    command
+}
+#[test]
+fn cleanup_child_rejects_a_missing_probe_environment() {
+    let output = probe_command().output().unwrap();
+    assert!(
+        !output.status.success(),
+        "a child without its probe environment passed vacuously"
+    );
+    assert!(String::from_utf8_lossy(&output.stderr)
+        .contains("cleanup child requires WORTH_QUERY_MAINTENANCE_CLEANUP_PROBE"));
 }

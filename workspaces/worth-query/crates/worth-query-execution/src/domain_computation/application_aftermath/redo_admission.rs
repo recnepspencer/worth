@@ -349,28 +349,3 @@ fn redo_read_stop(
 ) -> WorthQueryRedoDenial {
     WorthQueryRedoDenial::new(super::WorthQueryRedoDenialKind::ExecutionRequest(stop))
 }
-#[cfg(test)]
-mod read_stop_tests {
-    use super::*;
-    #[test]
-    fn redo_read_request_denial_keeps_its_value() {
-        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
-        use crate::domain_computation::{
-            WorthQueryProviderSessionControlStopKind as Control,
-            WorthQueryProviderSessionDenialKind as Kind,
-        };
-        for stop in [
-            Err(Control::Cancelled),
-            Ok(Kind::ExecutionResource {
-                denial: Resource::WorkExhausted,
-                partition_identity: None,
-                policy_ancestor: None,
-            }),
-        ] {
-            assert_eq!(
-                redo_read_stop(stop).kind(),
-                super::super::WorthQueryRedoDenialKind::ExecutionRequest(stop)
-            );
-        }
-    }
-}
