@@ -3,12 +3,13 @@
 //!
 //! | Input | Reachability / evidence |
 //! |---|---|
-//! | Code / computation identity | Proved at owner boundary: `installation::another_owner_with_the_same_types_runs_in_full`; applications cannot carry retained state between installations. |
+//! | Code / computation identity | `parallel_history_reuse` installs two distinct declared computation identities in one application; switching code carries no partition, across prior/current widths. Owner reinstall is also proved by `installation::another_owner_with_the_same_types_runs_in_full`. |
 //! | Reducer installation | Proved at owner boundary: `installation::a_reinstalled_reducer_runs_in_full_with_its_own_reduction`. |
 //! | Owner installation | Proved at owner boundary: `installation::a_reinstalled_owner_runs_in_full`. |
 //! | Producer edition | Proved at owner boundary: `carrying::another_input_or_edition_or_an_evicted_state_runs_in_full`; program adoption preserves the installed edition and is driven by `courtroom::adoption`. |
 //! | Canonical input | Sensitive seeded case: `parallel_history_reuse::canonical_input`. |
 //! | Membership facts | Varied here: `membership_join`, `membership_leave`, `membership_replacement`. |
+//! | Empty membership | Matrix cells cover empty-to-member, member-to-empty, and empty-to-empty input replacement; exact reducer identity and zero/nonzero kernel counts are judged. |
 //! | Item digest | Varied here: `persisting_item_digest_swap`; digest drift on persisting item ids changes their declared operations. |
 //! | Item key facts | Sensitive seeded case: `parallel_history_reuse::key_facts`. |
 //! | Partition gather facts | Sensitive seeded case: `parallel_history_reuse::gather_facts`. |
@@ -23,10 +24,10 @@
 //! | Deep scope hierarchy and sibling-disjoint subtrees | `scope_hierarchy::a_deep_native_leaf_has_identical_work_with_eight_or_sixty_four_sibling_subtrees` proves six ancestor scopes, one marked fact, five downstream edges, and zero sibling candidate/Ready work at 8 and 64 sibling subtrees. |
 //! | Restoration | Proved by `computation_partition::oracle::courtroom::lifecycle`, with restored and republished exact causes and model-derived full-build calls. |
 //! | Eviction | Proved at owner boundary: `carrying::another_input_or_edition_or_an_evicted_state_runs_in_full`; no application control directly evicts this computation's state. |
-//! | Faults | Varied here: `faults`; aggregate failed-run charges wait for slice 7.7 advancement reports. |
+//! | Faults | `faults` and every prior/current width cell pin the canonical typed stop, exact changed/carried partition counts, and whole advancement work/span. |
 //! | Work ceiling | Proved at owner boundary: `carrying::growing_past_the_ceiling_is_denied_as_a_full_run_is_denied`; declarations are fixed for an installed owner. |
 //! | Retained ceiling | Proved by `computation_partition::oracle::seeded_absence` and `branch_sharing::eviction`; refused child state forces a model-derived full build while the parent still reuses. |
-//! | Placement | Full runs with no prior agree: owner test `certified::every_placement_agrees_and_only_a_certified_one_reduces_again`; reuse across placements waits for 7.8 part two. |
+//! | Placement | `parallel_history_reuse::worker_matrix` judges prior/current widths 1/2/5 with observed dispatch widths; serial-versus-leased prior handoff remains named for 7.6 part two. |
 //! | Unobservable reads | Proven at the owner boundary: `unobservable::an_unobservable_key_gathers_its_partition_again_and_denies_nothing`. |
 //! | Routing collision | Proven at the owner boundary: `collision::a_collision_met_routing_again_makes_the_run_in_full`. |
 //! | Request work | `courtroom::request_work::{settled_rows,first_admission}` judges admission, advance, settlement and release for ordinary and performed requests that fit their custody. First-admission populations differ by 1000; settled-row populations cross the ledger's first level with multiple rows on a disjoint triangle; whole-map visits are exactly zero and logical charge is equal. Unrelated means outside the selected branch and scope; key-payload comparison in the selected index is logical work. Navigation is bounded by operations times H. |
@@ -35,8 +36,8 @@
 //! | Occurrence helpers without admission | `refreshed_rejoin::{awaited_by_stale_owner,replaced_under_refresh,replaced_by_published}`, `succession`, `settlement_retirement`, and `supersession::reject_older_successor` use only an occurrence's bounded run where no admission is in scope. They are independent of unrelated population and stay uncharged. |
 //! | Observer scan | `ready_backing::has_required_row_for_test` is a test-only custody assertion, not a request traversal. |
 //! | Cold source supersession | `supersession::supersede_predecessors` uses occurrence seeks and keyed removals on ordinary and performed first admission. `source_custody::retire_stale_records` is triggered by discovered-source binding and uses the maintained source-coordinate index across producers. `source_custody/retention` and completed-custody cleanup use that same index; the cold request oracle convicts their former global probes. |
-//! | Preparation and incremental total charge | Not judged: input/item encodings include the private handler authority, and preparation (including key/routing work) has no separate report. Full compute/tree work is judged through the existing execution observer; incremental compute charges have no separate report on this base. |
-//! | Worker count / wave order | Waits for slice 7.8 part two: the leased posture and canonical wave axis. |
+//! | Preparation and incremental total charge | Declared full-run work and managed-result work are equal with reuse on/off. Whole advancement work/span remainders are compared across every posture per input family; no attribution is invented for private authority encoding or preparation. |
+//! | Worker count / wave order | The core matrix permutes declarations and real dispatch seeds, checks typed outcomes, canonical kept prefix and exact shared work/span remainders, with observed widths 1/2/5. |
 //!
 //! Owner evidence above is existing coverage, not a claim that this module reruns it.
 /// The one declaration of checkpoint units shared by seed, owner, and model.
@@ -75,6 +76,11 @@ impl ReuseFacts {
     pub(crate) fn expected_value(&self) -> Option<u64> {
         if self.members().any(|item| item.fault) {
             return None;
+        }
+        if self.members().next().is_none() {
+            // The declared canonical reducer's identity is -0.0; no kernel
+            // or combine runs when there are no partition members.
+            return Some((-0.0f64).to_bits());
         }
         let sum = self
             .members()

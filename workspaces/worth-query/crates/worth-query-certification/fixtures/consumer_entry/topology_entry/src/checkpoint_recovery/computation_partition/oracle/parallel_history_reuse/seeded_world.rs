@@ -61,6 +61,10 @@ pub(super) enum Change {
     DigestSwap,
     Replacement,
     CarriedCeiling,
+    EmptyBefore,
+    EmptyAfter,
+    EmptyStable,
+    CodeIdentity,
 }
 impl Change {
     pub(super) fn apply(self, model: &mut ReuseFacts) -> Option<EntryEdit> {
@@ -85,7 +89,7 @@ impl Change {
                     (item.value as f64).to_bits(),
                 ))
             }
-            Self::Gather => {
+            Self::Gather | Self::CodeIdentity => {
                 item.value += 7;
                 Some(EntryEdit::new(
                     "even",
@@ -107,7 +111,7 @@ impl Change {
                 item.key = 3;
                 Some(EntryEdit::new("even", item.number, EntryFact::Region, 3))
             }
-            Self::Input => {
+            Self::Input | Self::EmptyStable => {
                 model.odd = true;
                 None
             }
@@ -115,7 +119,7 @@ impl Change {
                 item.fault = true;
                 Some(EntryEdit::new("even", item.number, EntryFact::Fault, 1))
             }
-            Self::Join => {
+            Self::Join | Self::EmptyBefore => {
                 let item = ReuseItem {
                     number: 4,
                     key: 0,
@@ -135,7 +139,7 @@ impl Change {
                 model.items.push(item);
                 Some(edit)
             }
-            Self::Leave => {
+            Self::Leave | Self::EmptyAfter => {
                 item.member = false;
                 item.exists = false;
                 Some(EntryEdit::delete(item.number))

@@ -2,15 +2,12 @@
 #[test]
 fn matrix_rows_name_the_unplaceable_deadline_and_the_missing_base_slice() {
     let mut rows = Vec::new();
-    for family in super::FAMILIES {
+    for family in super::FAMILY_NAMES {
         for workers in [1, 2, 5] {
             rows.push((format!("{family:?}/width-{workers}/in-flight-deadline"),"deadline and cancellation use the same meter safe point; placing a deadline requires a clock control, and none is added"));
         }
     }
-    for law in [
-        "cross-placement incremental prior",
-        "retained prior across a worker-width change",
-    ] {
+    for law in ["cross-placement incremental prior"] {
         rows.push((
             law.to_owned(),
             "7.6 part two supplies the placement-prior contract; it is not in this base",
@@ -18,7 +15,7 @@ fn matrix_rows_name_the_unplaceable_deadline_and_the_missing_base_slice() {
     }
     assert_eq!(
         rows.len(),
-        7 * 3 + 2,
+        8 * 3 + 1,
         "named not-run rows have their declared product"
     );
     for (name, reason) in rows {

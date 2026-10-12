@@ -6,8 +6,10 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationFullCause as Cause,
     WorthQueryPartitionedComputationRunForTest as Run,
 };
+mod code_identity;
 mod computation;
 mod declaration;
+mod engagement;
 mod execution;
 mod seeded_world;
 mod worker_matrix;
@@ -75,6 +77,7 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     }
     let _ceiling = CeilingRestore;
     let mut model = facts();
+    engagement::initialize(change, &mut model);
     if ceiling_family {
         let first = model
             .members()
@@ -88,12 +91,29 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
             .unwrap()
             .work = 20;
     }
-    let application = install(|graph| seed(&model, graph));
+    let code = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let application = execution::install_with_code(|graph| seed(&model, graph), code.clone());
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let before_value = model.expected_value();
     let before_work = declaration::computed_work(&model);
+    let before = model.clone();
+    observations();
     let (first, first_work) = only_run(demand(&request, &application));
+    let prior_records = observations();
+    assert!(
+        prior_records.iter().any(|r| r.workers == Some(prior)),
+        "the prior request dispatches at its named width"
+    );
+    assert!(
+        prior_records.iter().all(|r| r.workers == Some(prior)),
+        "every prior request dispatch has its named width"
+    );
+    assert_eq!(
+        first.runs,
+        [Run::Full(Cause::FirstRun)],
+        "no prior exists on the first demand"
+    );
     assert_eq!(first.outcome.unwrap().0, before_value.unwrap());
     assert_eq!(
         first_work,
@@ -106,11 +126,20 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         adjust(&request, &application, ODD_Y, 1);
     }
     let declared_work = declaration::computed_work(&model);
-    assert_ne!(
-        model.expected_value(),
-        before_value,
-        "each varied input changes the modeled outcome"
-    );
+    if matches!(change, Change::EmptyStable) {
+        assert_eq!(
+            model.expected_value(),
+            before_value,
+            "empty input replacement keeps the declared reducer identity"
+        );
+    } else {
+        assert_ne!(
+            model.expected_value(),
+            before_value,
+            "each varied input changes the modeled outcome"
+        );
+    }
+    code.store(matches!(change, Change::CodeIdentity), Ordering::Relaxed);
     if matches!(
         change,
         Change::Join | Change::Leave | Change::DigestSwap | Change::Replacement
@@ -127,6 +156,7 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     execution::COMPUTE_CEILING.set(ceiling_family);
     let (retained, retained_work) = only_run(demand(&request, &application));
     let records = observations();
+    engagement::assert_kernels(change, &before, &model, reuse, &retained);
     assert!(
         records.iter().any(|r| r.workers == Some(current)),
         "the reuse request reaches its declared current dispatch width"
@@ -231,8 +261,10 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         "reuse-on and reuse-off keep the outcome"
     );
     if !matches!(change, Change::Fault) {
-        let expected = if matches!(change, Change::Input) {
+        let expected = if matches!(change, Change::Input | Change::EmptyStable) {
             Run::Full(Cause::InputChanged)
+        } else if matches!(change, Change::CodeIdentity) {
+            Run::Full(Cause::OtherInstallation)
         } else {
             Run::Incremental
         };
@@ -246,17 +278,16 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
             );
         }
     }
-    if reuse && matches!(change, Change::Gather) {
-        assert_eq!(
-            retained.calls.kernels, 1,
-            "only the changed partition is recomputed"
-        );
-    }
-    if reuse && matches!(change, Change::Shared) {
-        assert_eq!(
-            retained.calls.kernels, 2,
-            "every partition sharing the moved fact is recomputed"
-        );
+}
+#[test]
+fn missing_reuse_inputs_are_executed_and_observed() {
+    for change in [
+        Change::EmptyBefore,
+        Change::EmptyAfter,
+        Change::EmptyStable,
+        Change::CodeIdentity,
+    ] {
+        case(change);
     }
 }
 #[test]

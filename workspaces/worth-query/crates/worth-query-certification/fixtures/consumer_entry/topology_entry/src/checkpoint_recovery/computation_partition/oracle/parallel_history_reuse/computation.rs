@@ -5,8 +5,18 @@ use worth_execution::PartitionItemId;
 pub(super) struct HistoryOwner {
     pub steps: bool,
 }
-impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, OracleTotals>
+impl<C> WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFeature, C>
     for HistoryOwner
+where
+    C: ApplicationManagedComputation<
+        CheckpointSchema,
+        PlanarFinalOutputFeature,
+        Input = RegionEntries,
+        Output = RegionArtifact,
+        Partition = RegionKey,
+        Reuse = NoWarmStart,
+        Stopped = RegionStopped,
+    >,
 {
     type Operation = TotalRegionOutput;
     type Item = Entry;

@@ -1,6 +1,25 @@
 //! Actual retained request composition with declared input-operation costs.
+use super::code_identity::ChangedCodeTotals;
 use super::computation::HistoryOwner;
 use super::*;
+pub(super) struct HistoryConfiguration {
+    topology: TopologyConfiguration,
+    code: std::sync::Arc<std::sync::atomic::AtomicBool>,
+}
+impl Default for HistoryConfiguration {
+    fn default() -> Self {
+        Self {
+            topology: TopologyConfiguration {
+                setup_calls: Default::default(),
+                invariant_calls: Default::default(),
+                invariant_probe: Default::default(),
+                producer_authorization_denials: Default::default(),
+                producer_domain_denial: Default::default(),
+            },
+            code: Default::default(),
+        }
+    }
+}
 pub(super) struct HistoryContribution;
 impl ApplicationSchemaContribution<CheckpointSchema> for HistoryContribution {
     const IDENTITY: ApplicationSchemaContributionIdentity =
@@ -14,7 +33,7 @@ impl ApplicationSchemaContribution<CheckpointSchema> for HistoryContribution {
     }
 }
 impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution {
-    type Configuration = TopologyConfiguration;
+    type Configuration = HistoryConfiguration;
 
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<CheckpointSchema>,
@@ -35,10 +54,25 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
             .partitioned_computation::<PlanarFinalOutputFeature, OracleTotals, _>(HistoryOwner {
                 steps: CARRIED_CEILING.get(),
             })?;
+        let changed = setup
+            .partitioned_computation::<PlanarFinalOutputFeature, ChangedCodeTotals, _>(
+                HistoryOwner { steps: false },
+            )?;
+        let code = configuration.code;
         let reuse = REUSE_ON.get();
         let ceiling = CARRIED_CEILING.get();
         let handler = RegionOutputHandler::running(move |reader, set| {
             super::super::decision_plan::begin();
+            if code.load(Ordering::Relaxed) {
+                let prepared = if reuse {
+                    changed.prepare(reader, set)
+                } else {
+                    changed.prepare_without_reuse_for_test(reader, set)
+                };
+                return super::super::decision_plan::prepared(prepared, |observations| {
+                    REPORTS.with(|reports| reports.borrow_mut().extend(observations));
+                });
+            }
             let prepared = if reuse {
                 installed.prepare(reader, set)
             } else {
@@ -63,7 +97,7 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
         super::super::super::entry_correction::configure(setup)?;
         setup.producer::<RegionOutputProducer<CheckpointSchema>>(RegionOutputProvider)?;
         setup.conditional::<RegionOutputReadiness<CheckpointSchema>>(())?;
-        TopologyContribution::configure_topology(configuration, setup)
+        TopologyContribution::configure_topology(configuration.topology, setup)
     }
 }
 
@@ -79,6 +113,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for HistoryProgram {
             required_chain::output_feature_spec(),
             demand_policy::final_output_feature::<RegionArtifact>()
                 .managed_computation::<OracleTotals>()
+                .managed_computation::<ChangedCodeTotals>()
                 .conditional_operation::<TotalRegionOutput>()
                 .mutation::<EntryEditBinding<CheckpointSchema>>()
                 .finish(),
@@ -104,6 +139,26 @@ pub(super) fn install_after_authority_issuances(
     seed: impl FnOnce(&mut Graph),
     issuances: usize,
 ) -> Application {
+    install_configured(seed, issuances, Default::default())
+}
+pub(super) fn install_with_code(
+    seed: impl FnOnce(&mut Graph),
+    code: std::sync::Arc<std::sync::atomic::AtomicBool>,
+) -> Application {
+    install_configured(
+        seed,
+        0,
+        HistoryConfiguration {
+            code,
+            ..Default::default()
+        },
+    )
+}
+fn install_configured(
+    seed: impl FnOnce(&mut Graph),
+    issuances: usize,
+    configuration: HistoryConfiguration,
+) -> Application {
     let width = u64::try_from(DECISION_FACT_BUDGET + WIDTH_BESIDE_DECISION).unwrap();
     let host = support::candidates();
     let candidates =
@@ -118,18 +173,30 @@ pub(super) fn install_after_authority_issuances(
     let invalidation =
         support::invalidation(128 * 1_024 * 1_024, 1_000_000, RETAINED_COMMITS as usize);
     let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation, candidates);
-    support::install_program_with_limits::<HistoryProgram>(
-        None,
-        Default::default(),
-        limits,
-        |graph| {
+    let program = ApplicationProgramAuthoring::<CheckpointSchema, HistoryProgram>::begin()
+        .validated_program()
+        .unwrap();
+    let declaration = CheckpointSchema::declaration().unwrap();
+    application_installation::in_memory_program(
+        program, declaration, (configuration,), limits,
+        |_phase, graph, installed| {
+            let principal = installed.principal_binding(
+                ConsumerPrincipalBinding::reference::<CheckpointSchema>()
+            ).unwrap();
+            graph.bind_principal(
+                &principal,
+                primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
+                1_u64, support::external_identity(),
+                worth_query_host::facade::declaration::authentication::WorthQueryPrincipalMappingStatus::Enabled,
+            )?;
             support::seed_cycle(graph);
             seed(graph);
             for _ in 0..issuances {
                 drop(graph.retain_invariant_projection_authority());
             }
+            Ok(())
         },
-    )
+    ).unwrap()
 }
 
 /// Demands the scope's output until it settles: the producer's contacts in

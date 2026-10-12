@@ -1,6 +1,6 @@
 //! Every seeded reuse edit is evaluated across the prior and current width.
 use super::*;
-const CHANGES: [Change; 10] = [
+const CHANGES: [Change; 14] = [
     Change::Gather,
     Change::Shared,
     Change::Key,
@@ -11,6 +11,10 @@ const CHANGES: [Change; 10] = [
     Change::DigestSwap,
     Change::Replacement,
     Change::CarriedCeiling,
+    Change::EmptyBefore,
+    Change::EmptyAfter,
+    Change::EmptyStable,
+    Change::CodeIdentity,
 ];
 #[test]
 fn every_seeded_reuse_input_crosses_prior_and_current_worker_counts() {
