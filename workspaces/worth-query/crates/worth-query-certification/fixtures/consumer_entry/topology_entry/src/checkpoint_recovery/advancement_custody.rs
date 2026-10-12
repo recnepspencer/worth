@@ -63,8 +63,6 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
             };
             if work == 0 {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-            } else if placement == Placement::Serial {
-                assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,
@@ -173,9 +171,7 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
             else {
                 panic!("the commit retains its opening cause: {:?}", denial.kind());
             };
-            if zero_memory && placement == Placement::Serial {
-                assert_eq!(resource, Resource::PolicyMemoryLimit);
-            } else if zero_memory {
+            if zero_memory {
                 let Resource::MemoryLimit {
                     level,
                     requested,

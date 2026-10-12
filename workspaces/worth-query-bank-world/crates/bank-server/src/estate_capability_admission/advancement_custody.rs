@@ -51,7 +51,7 @@ fn elevation_entries_refuse_before_reading_at_both_placements() {
         }
     }
 }
-fn run(entry: Entry, placement: Placement, refusal: Option<bool>) {
+fn run(entry: Entry, _placement: Placement, refusal: Option<bool>) {
     bound(None);
     let fixture = emergency_request_world(
         "elevation-custody-probe",
@@ -147,8 +147,6 @@ fn run(entry: Entry, placement: Placement, refusal: Option<bool>) {
         };
         if !memory {
             assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-        } else if placement == Placement::Serial {
-            assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
         } else {
             let Denial::Resource(Resource::MemoryLimit {
                 level,

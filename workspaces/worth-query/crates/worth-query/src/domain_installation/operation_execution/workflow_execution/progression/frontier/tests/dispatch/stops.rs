@@ -27,14 +27,25 @@ fn zero_memory_public_frontier_refuses_without_retaining_start_receipts() {
     // Admission precedes any inspection of the held run or the frontier. The
     // refused call must retain none of that input's earlier start evidence.
     let (record, work, failed) = observe_members(held, members(1, None), &mut workspace, None);
+    let Some(Denial::ExecutionRequest(WorthQueryAdvancementDenial::Resource(
+        WorthQueryManagedComputationResourceDenial::MemoryLimit {
+            level,
+            requested,
+            admitted,
+        },
+    ))) = record.outcome
+    else {
+        panic!(
+            "the serial request retains its leased memory refusal: {:?}",
+            record.outcome
+        );
+    };
     assert_eq!(
-        record.outcome,
-        Some(Denial::ExecutionRequest(
-            WorthQueryAdvancementDenial::Resource(
-                WorthQueryManagedComputationResourceDenial::PolicyMemoryLimit
-            )
-        ))
+        level,
+        worth_query_execution::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy
     );
+    assert_eq!(admitted, 0);
+    assert!(requested > 0);
     assert!(!failed);
     assert_eq!(work, 0);
     assert!(probe.take_computes().is_empty());

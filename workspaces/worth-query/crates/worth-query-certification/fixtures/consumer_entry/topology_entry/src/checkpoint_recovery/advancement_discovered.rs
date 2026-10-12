@@ -45,7 +45,7 @@ impl Drop for Restore {
         bound(self.1);
     }
 }
-fn assert_cause(denial: &PreparationDenial, memory: bool, placement: Placement) {
+fn assert_cause(denial: &PreparationDenial, memory: bool, _placement: Placement) {
     let PreparationDenial::Demand(OutputDenial::Demand(denial)) = denial else {
         panic!("opening keeps its cause: {denial:?}")
     };
@@ -55,8 +55,6 @@ fn assert_cause(denial: &PreparationDenial, memory: bool, placement: Placement) 
     };
     if !memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-    } else if placement == Placement::Serial {
-        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
     } else {
         let Denial::Resource(Resource::MemoryLimit {
             level,
@@ -115,8 +113,6 @@ fn discovered_start_recovery_and_advance_each_open_one_request() {
             let worth_query_host::facade::application_entry::WorthQueryPerformedMutationExecutionDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)) = cause else { panic!("discovered mutation opens before its handler") };
             if !memory {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-            } else if placement == Placement::Serial {
-                assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,

@@ -67,10 +67,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
             };
             match (placement, zero_memory) {
                 (_, false) => assert_eq!(cause, Denial::Resource(Resource::WorkExhausted)),
-                (Placement::Serial, true) => {
-                    assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit))
-                }
-                (Placement::Leased(_), true) => assert!(matches!(
+                (Placement::Serial | Placement::Leased(_), true) => assert!(matches!(
                     cause,
                     Denial::Resource(Resource::MemoryLimit {
                         level: Level::Policy,

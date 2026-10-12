@@ -39,8 +39,6 @@ fn conditional_delivery_refuses_before_its_retained_truth_reader() {
                 .unwrap_err();
             if !memory {
                 assert_eq!(denied, Denial::Resource(Resource::WorkExhausted));
-            } else if placement == Placement::Serial {
-                assert_eq!(denied, Denial::Resource(Resource::PolicyMemoryLimit));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,

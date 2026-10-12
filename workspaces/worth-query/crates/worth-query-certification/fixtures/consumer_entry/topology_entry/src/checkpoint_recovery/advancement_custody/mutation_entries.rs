@@ -106,11 +106,9 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
     }
 }
 
-fn assert_opening_cause(cause: Denial, placement: Placement, zero_memory: bool) {
+fn assert_opening_cause(cause: Denial, _placement: Placement, zero_memory: bool) {
     if !zero_memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-    } else if placement == Placement::Serial {
-        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
     } else {
         let Denial::Resource(Resource::MemoryLimit {
             level,

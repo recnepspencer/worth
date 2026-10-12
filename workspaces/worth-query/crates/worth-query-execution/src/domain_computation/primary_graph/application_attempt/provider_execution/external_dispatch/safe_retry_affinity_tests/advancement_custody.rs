@@ -57,8 +57,6 @@ fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
             };
             if !memory {
                 assert_eq!(cause, Resource::WorkExhausted);
-            } else if placement == Placement::Serial {
-                assert_eq!(cause, Resource::PolicyMemoryLimit);
             } else {
                 let Resource::MemoryLimit {
                     level,

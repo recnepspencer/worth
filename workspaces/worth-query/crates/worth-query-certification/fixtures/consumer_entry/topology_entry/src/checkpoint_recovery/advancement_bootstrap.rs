@@ -94,14 +94,21 @@ fn bootstrap_opens_once_before_its_registry_reader_and_seeding() {
             else {
                 panic!("the typed cause reaches the builder");
             };
-            assert_eq!(
-                cause,
-                if zero_memory {
-                    Resource::PolicyMemoryLimit
-                } else {
-                    Resource::WorkExhausted
-                }
-            );
+            if zero_memory {
+                let Resource::MemoryLimit {
+                    level,
+                    requested,
+                    admitted,
+                } = cause
+                else {
+                    panic!("the bootstrap retains its leased memory refusal");
+                };
+                assert_eq!(level, worth_query_host::facade::application_contribution::WorthQueryMemoryLimitLevel::Policy);
+                assert_eq!(admitted, 0);
+                assert!(requested > 0);
+            } else {
+                assert_eq!(cause, Resource::WorkExhausted);
+            }
             assert_eq!(partition_identity, None);
             assert_eq!(policy_ancestor, None);
             assert_eq!(reads(), before);

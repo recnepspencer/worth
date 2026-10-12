@@ -103,23 +103,11 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
         let requests = reports();
         assert_eq!(requests.len(), 1, "B never opens or charges a request");
         let charged = requests[0].as_ref().unwrap().charged_work();
-        match placement {
-            Placement::Serial => {
-                const UNLEASED_CHECKED_KERNEL_WORK: u64 = 0;
-                assert_eq!(
-                    charged, UNLEASED_CHECKED_KERNEL_WORK,
-                    "the empty output read and unleased commit run no checked kernels"
-                );
-            }
-            Placement::Leased(_) => assert_eq!(
-                charged,
-                native_commit_work::LEASED_COMMIT_WORK,
-                "the empty output read adds no kernel work to the commit invoice"
-            ),
-            Placement::World | Placement::Certified { .. } => {
-                panic!("this fixture declares only Serial and Leased placement")
-            }
-        }
+        assert_eq!(
+            charged,
+            native_commit_work::LEASED_COMMIT_WORK,
+            "both postures charge the same commit; the empty output read adds no kernel work"
+        );
     }
 }
 

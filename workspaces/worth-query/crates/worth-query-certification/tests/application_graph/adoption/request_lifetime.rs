@@ -77,9 +77,7 @@ fn adoption_preparation_and_publication_own_separate_requests() {
                 panic!("publication reports its request admission refusal");
             };
             assert_eq!(reads(), before);
-            if zero_memory && placement == Placement::Serial {
-                assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
-            } else if zero_memory {
+            if zero_memory {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,
                     requested,

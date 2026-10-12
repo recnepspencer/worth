@@ -116,13 +116,10 @@ fn inbound_receive_refuses_before_authentication_or_correlation_reads() {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
             } else {
                 match placement {
-                    Placement::Serial => {
-                        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit))
-                    }
                     Placement::World | Placement::Certified { .. } => {
                         unreachable!("this probe declares its placement")
                     }
-                    Placement::Leased(_) => {
+                    Placement::Serial | Placement::Leased(_) => {
                         let Denial::Resource(Resource::MemoryLimit {
                             level,
                             requested,

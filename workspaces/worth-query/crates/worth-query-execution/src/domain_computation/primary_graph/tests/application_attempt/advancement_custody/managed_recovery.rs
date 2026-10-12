@@ -59,8 +59,6 @@ fn managed_recovery_refuses_before_revalidation_at_both_placements() {
             let Err(crate::domain_computation::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(cause)) = world.application.recover_admitted_unpublished_application(&recovery, &fresh, idempotency(191, 191)) else { panic!("recovery retains opening cause") };
             if !memory {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-            } else if placement == Placement::Serial {
-                assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,

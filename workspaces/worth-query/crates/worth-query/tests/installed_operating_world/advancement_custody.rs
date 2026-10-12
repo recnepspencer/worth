@@ -33,14 +33,12 @@ fn refuse(zero_memory: bool, placement: Placement) -> Restore {
         ))),
     )
 }
-fn expected(zero_memory: bool, placement: Placement) -> Denial {
+fn expected(zero_memory: bool, _placement: Placement) -> Denial {
     let roots = reports();
     assert_eq!(roots.len(), 1);
     let cause = *roots[0].as_ref().expect_err("refused opening");
     if !zero_memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-    } else if placement == Placement::Serial {
-        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
     } else {
         let Denial::Resource(Resource::MemoryLimit {
             level,

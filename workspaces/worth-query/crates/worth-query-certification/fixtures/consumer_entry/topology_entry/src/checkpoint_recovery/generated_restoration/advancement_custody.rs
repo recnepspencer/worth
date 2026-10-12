@@ -36,11 +36,9 @@ fn limit(memory: bool) {
         if memory { policy.work_ceiling() } else { 0 },
     )));
 }
-fn assert_cause(cause: Denial, memory: bool, placement: Placement) {
+fn assert_cause(cause: Denial, memory: bool, _placement: Placement) {
     if !memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-    } else if placement == Placement::Serial {
-        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
     } else {
         let Denial::Resource(Resource::MemoryLimit {
             level,
