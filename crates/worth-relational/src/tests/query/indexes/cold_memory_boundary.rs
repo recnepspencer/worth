@@ -158,10 +158,10 @@ fn retained_commit_cold_reconstruction_fits_its_largest_serial_shape() {
         first + (nodes(n) - nodes(1)) as u64 * node() as u64 + (n - 1) as u64 * row_bytes() as u64
     };
     reconstruct(64, Some((quote(64), true)));
-    let mut low = 1;
+    let mut low: usize = 1;
     let mut high = 100_000;
     while low < high {
-        let mid = (low + high + 1) / 2;
+        let mid = (low + high).div_ceil(2);
         if quote(mid) <= MEMORY - FRAMEWORK {
             low = mid
         } else {

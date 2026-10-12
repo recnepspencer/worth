@@ -45,7 +45,7 @@ fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
     let mut low = 0;
     let mut high = (MEMORY / 48) as usize;
     while low < high {
-        let mid = (low + high + 1) / 2;
+        let mid = (low + high).div_ceil(2);
         if full_bytes(mid) <= MEMORY - FRAMEWORK {
             low = mid
         } else {
