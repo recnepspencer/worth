@@ -839,6 +839,9 @@ descriptive history.
   request, up to the attempt count in the demand's controls, and returns as
   soon as the demand settles. No background sweeper runs: the authenticated
   request stays the principal.
+  Within that call, Query prepares ready independent producers on the owner,
+  computes their managed tasks together, then completes and publishes them in
+  canonical order. The caller pumps progress; a worker does not publish.
 - **Required outputs.** After `execute_performed`, `start_required_outputs`
   opens the outputs the operation requires. `recover_required_outputs` is
   called on a fresh request with the commit receipt. It re-enters the required
@@ -862,7 +865,8 @@ descriptive history.
   a commit receipt alone does not prove output completion.
   Open demands contribute membership to the required set; closing one demand
   does not remove another demand's obligation.
-- **Reuse.** An output whose settlement is unmarked on a continuous basis can
+- **Reuse.** An output whose settlement is unmarked on a continuous basis,
+  with no recorded requirement for full verification, can
   be reused without contacting its producer or re-running its source query.
   That clean reuse depends on the marks alone; no producer contract gates it.
   A dirty output re-verifies its marked facts. Equal declared input can avoid
@@ -873,7 +877,8 @@ descriptive history.
   scope its result depends on. Only canonical-bitwise determinism qualifies.
   A run that reads through a raw reader, takes a checkpoint, runs a managed
   computation, or uses a context value the contract did not declare, leaves
-  nothing to reuse. Stable republication of the output that input cutoff
+  no input-cutoff candidate. Managed partition state has its own reuse rules
+  below. Stable republication of the output that input cutoff
   kept can clear pending marks below the producer without calling consumers.
   [§10.5](#105-marking-and-currentness) gives the rules.
 
@@ -882,11 +887,11 @@ descriptive history.
 Declared resource limits and independent algorithm controls are enforced by their
 owners; caller limits can only restrict the installed policy where that policy applies.
 
-Ordinary callers do not calculate Query's internal traversal or validator work.
-Installed host profiles supply finite operational safeguards; declarations state
-semantic result/effect scope and may add deliberate tighter caps. Candidate
-validation has no aggregate work quota or descriptor-max prediction; installed
-invariants retain their own algorithm controls and actual execution evidence.
+Ordinary callers declare semantic result and effect scope, not Query's internal
+traversal algorithm. Installed host profiles bound the advancement's work and
+memory; a computation may declare a tighter ceiling. Candidate preparation,
+validation and reads spend that same request budget. Installed invariants also
+retain their own algorithm controls and actual execution evidence.
 Composed demand admission intersects host, caller and child ceilings, then checks the child's
 required resources. Work counters are safeguards and diagnostics, not claims
 about elapsed performance or total process memory.
@@ -902,23 +907,30 @@ The governed controls include:
 - candidate reservations.
 
 **Execution authority.** A process constructs one execution authority. It owns
-its computation workers and the process memory ledger. On a `wasm32` target
-it builds no worker pool. An installed execution
+its computation workers and the process memory ledger. On a target without
+OS threads it builds no worker pool. An installed execution
 policy admits request leases with worker, charged-memory, and work ceilings.
 Child leases share ancestor worker and memory limits. Nested work inherits
 its caller's remaining work. Under leased placement, managed partition
 execution draws a child from the handler's request lease; nested partition
 work must descend from the active lease. An unrelated lease, or a run without
 a lease nested under a leased parent, is denied. Under serial placement,
-execution runs on the caller thread without a lease. Serial placement is the
-same request with a serial backing, not an unbounded mode: the policy's
-memory limit, the request's cancellation and deadline, and every declared
-work ceiling still bind it, and it has one worker.
+execution uses a bounded lease with serial backing: it owns no physical pool,
+runs on the caller thread, and admits one worker. Children share its ledger
+and inherit its serial posture, cancellation, deadline and limits. Both
+backings charge and report performed work through the checked execution doors.
 
 **One request per advancement.** An *advancement* is the work of one public
 request entry: a query, a mutation, a live read, an adoption step, or one
 `advance` of a demand. Query opens one execution request for it, and every
 runtime below works under that request.
+
+**Stopped reads.** A stopped request is not a missing record. Read boundaries
+preserve `Stopped(cause)` separately from `Refused(kind)`; consumer surfaces
+report their own typed cancellation, deadline or execution-resource outcome.
+A pinned read consults the request at the pin, before capturing native read
+custody, and keeps the selected immutable basis rather than consulting a newer
+live index generation. Handle the typed stop; do not turn it into empty input.
 
 - **Opening.** A request-scoped entry takes its cancellation and deadline
   from the caller's request. A host-owned entry (an inbound occurrence, a
@@ -954,9 +966,8 @@ runtime below works under that request.
   to deliver a change. Signal takes it to advance a branch and to receive a
   committed patch. The Runtime World takes it to run a publication, and
   hands it to the Relational and Signal legs. Relational takes the request's
-  lease in its leased doors for commit, preparation, validation, and index
-  build; a lease-free caller of commit, preparation, or validation supplies
-  an allocation policy. Every lease-free door runs on the calling thread.
+  request for commit, preparation, validation and index build. Serial backing
+  reaches those same checked doors without creating a worker pool.
 - **Closing.** The request closes when the callback returns. Delivery of a
   performed change through the Bridge needs the phase, so the final delivery
   happens inside the advancement.
@@ -977,24 +988,36 @@ refusals at this application boundary. Work exhaustion, cancellation, deadline,
 kernel panic, domain failure, and result capacity remain distinguishable. A
 busy worker pool can admit inline execution without creating another worker.
 
-**Determinism.** For the same admitted inputs and declared computation, results
-and charged work do not depend on worker count or scheduling. The default
+Reduction reserves its checked construction or edit memory quote before work.
+The quote covers tree nodes and the temporary canonical construction and join
+buffers; scheduled construction also includes its admitted task-metric cells.
+Caller-owned inputs and captured reducer storage are accounted separately.
+An owner's result-byte ceiling is not a ceiling for framework checkpoint
+metadata. Arithmetic overflow refuses the quote rather than under-reserving.
+
+**Determinism.** For the same admitted inputs and declared computation, without
+an interruption arriving during compute and with sufficient memory, results,
+charged work and structural span do not depend on worker count or scheduling. The default
 contract preserves canonical result bits; an explicitly installed equivalence
 contract supplies its comparison predicate. Partition identity comes from the
 data, never the worker. Results are settled and published in canonical
 partition order. If several partitions fail, the least failing identity is
-reported. Only the canonical prefix through that failure contributes charged
-work; results and work beyond it are discarded. A work ceiling stops at its
-canonical prefix boundary. Cancellation and deadlines are live controls, so
+reported. An execution map reports the accepted canonical prefix through its
+failure; later results are discarded and their work is a physical discarded-work
+metric. A producer wave differs: member denials travel as data, so every member
+that computed stays charged even when owner completion keeps only a prefix.
+A work ceiling stops at its canonical boundary. Cancellation and deadlines are live controls, so
 changing when they arrive can change how far a run progresses. Worker use,
 queue activity, and peak memory are physical metrics, not invariant results.
 
 **Work and span.** Work is the sum of charged operation units. Span is the
 structural length of the dependent computation: sequential stages add span,
 independent branches take their maximum, and nested work contributes to its
-calling branch. These are cost measures, not elapsed time. Three independent
-partitions costing 2, 3, and 5 units have 10 units of work and 5 of span, even
-when placement executes them serially. Coordination and sequential reduction
+calling branch. These are cost measures, not elapsed time; serial placement
+preserves structural span. The executable
+[serial and nested-parallel cost example](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/parallel_history/structural_cost.rs)
+is `waves_add_and_nested_independent_children_take_the_maximum`: its declared
+checkpoint expression has work 36 and span 21. Coordination and sequential reduction
 also contribute their own charged costs. The execution layer exposes work and
 span in its execution report. A managed partitioned computation exposes
 charged work; its application-facing result does not expose span.
@@ -1047,7 +1070,9 @@ and regathers only the partitions an item left or joined. A first run, a
 restored record, a reinstalled owner, a changed input value, or state too
 large to keep computes every partition; *Per-partition reuse* below lists
 every cause. Reuse requires the [owner's purity contract](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation).
-The advancement driver runs producer handlers synchronously.
+The handler prepares on the owner; its managed computation can join an
+independent producer wave inside the same advancement. Completion and
+publication remain on the owner.
 
 **Per-partition reuse.** A *producer* is an installed binding between an
 output and the operation that produces it. When a producer's handler runs a
@@ -1058,7 +1083,8 @@ and is never compared.
 - **What is kept.** A completed run leaves its state on the output record its
   attempt published: its items and their digests, the routing of items to
   partitions, each partition's key, the work every owner call charged, each
-  kernel's work, the reduction tree, and the facts the owner calls read.
+  kernel's accepted checkpoints, the reduction tree, and the facts the owner
+  calls read. A record lacking usable kernel accounting takes the full-run path.
 - **When it applies.** The next run compares against that state only when
   three things match: the installation of the owner, the producer edition,
   and the digest of the input value. A reinstall is another installation even
@@ -1081,15 +1107,17 @@ and is never compared.
   recomputed result with the same canonical bits as the retained one replaces
   nothing. When the declared work cannot fit the edits, the tree is built
   again from every leaf, so the run fails where a full run fails.
-- **Dispatch.** Each recomputed partition is dispatched on its own, in
-  partition identity order, under the request's execution.
+- **Dispatch.** One map contains carried and recomputed partitions in canonical
+  identity order. Carried slots replay their accepted kernel charge; other
+  slots compute. Both use the request's execution.
 - **Cost.** An outcome never depends on reuse. A carried call charges what it
   charged, at the place a full run makes that call, so a work ceiling stops
   at the partition a full run would name. A call the remaining work would not
-  pass is made instead, and fails as a full run fails. Comparing a retained
-  fact is charged to no one, because a full run would not compare it; the
-  declared work bounds the comparison instead. `charged_work()` reports
-  carried and recomputed partitions alike.
+  pass is made instead, and fails as a full run fails. The declared work bounds
+  retained-fact comparison before reuse is admitted. `charged_work()` reports
+  carried and recomputed partitions alike; the enclosing member receives their
+  full-run-equivalent work and span. Memory is physical: a carried partition
+  reserves what it holds, so a memory denial may depend on reuse and placement.
 - **Seal.** When the attempt seals its reads, every fact a carried call read
   must still be the fact the prior run read. If one changed, the attempt is
   denied.
@@ -1118,29 +1146,27 @@ and is never compared.
   (`PartitionIdentityCollision`). An incremental run that meets one starts
   over as a full run, so the collision is named as a first run names it.
 
-*Example.* A telemetry rollup computes one mean per station. Its input value
-is the reporting window. `partitions` reads the window's readings from the
-graph, `partition_key` returns each reading's station, and `gather` reads
-that station's calibration record. One station's calibration changes: that
-station alone is gathered and computed again, every other station's mean is
-carried, and one path of the tree is recombined. A new reading arrives: the
-membership fact changed, so `partitions` runs again, the new reading is
-keyed and routed, and the one station it joins is gathered again. The window
-changes: the input value differs, so every station is computed.
+*Executable example.* A record-backed aggregation changes one entry while
+keeping its input identity. In
+[`one_entry_edit_gathers_and_computes_one_partition_at_every_size`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/counts.rs),
+the next run makes no membership or key calls and gathers and computes one
+partition. The [warehouse quantity and sensor peak examples](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+show the same owner interface in two domains; their input contains the values,
+so changing that input requires a full run rather than fact-granular reuse.
 
 **Workflow frontier.** A *staged run* executes one installed domain operation
-as named stages. A *frontier* is two or more of those stages advanced by one
+as named stages. A *frontier* is a canonical set of ready stages advanced by one
 call. The engine opens one execution request for the whole frontier and
 takes every stage through three phases that its types keep apart.
 
 | Phase | Runs | Sees |
 |---|---|---|
 | Prepare | Owner, in canonical stage order | The stage's input facts, fixed before the frontier starts. No executor, no execution context, and no workspace. It returns an owned task. |
-| Compute | Any worker | Its task and a work meter: checkpoints and work accounting, no lease. It is a plain function pointer, never a closure over owner state, and it cannot start nested work. |
+| Compute | Any worker | Its task and a work meter: checkpoints and work accounting, no lease for starting nested work. It is a plain function pointer, never a closure over owner state. |
 | Apply | Owner, in canonical stage order | The owner and the computed result. Every effect happens here. |
 
-- **Canonical order** is ascending stage identity. A frontier with fewer than
-  two stages, or with one stage named twice, is denied.
+- **Canonical order** is ascending stage identity. Empty or noncanonical
+  membership is denied. A singleton uses the same metered map.
 - **What runs in parallel.** Across stages, only the compute steps run
   concurrently. They go through one owned-map dispatch under the frontier's
   request, in serial placement too. A stage's apply runs alone on the owner,
@@ -1169,13 +1195,11 @@ takes every stage through three phases that its types keep apart.
 - **Stop causes.** Cancellation, deadline, work exhaustion, a nested stop, a
   panic, result capacity, and admission each surface as their own cause.
 
-*Example.* A document review advances three stages together: `citations`,
-`layout`, and `spelling`. Each prepares from the document revision fixed when
-the frontier starts. Under leased placement with automatic posture, the three
-computes run on workers. Findings are applied in the order `citations`,
-`layout`, `spelling`, whatever order the computes finished in. If `layout`
-fails in compute, `citations` is applied, the call returns `layout`'s
-failure, and `spelling` is not applied even if it finished first.
+*Executable example.*
+[`reversed_completion_still_applies_canonical_effects_and_receipts`](../workspaces/worth-query/crates/worth-query/src/domain_installation/operation_execution/workflow_execution/progression/frontier/tests/dispatch.rs)
+forces `middle` to finish before `left`; receipts still occur as `start`,
+`left`, `middle`, `right`. This tests owner application order independently of
+worker completion order.
 
 The staged-run surface belongs to the engine beneath the consumer facades,
 which do not export it. It is not the workflow kernel of
@@ -1187,13 +1211,29 @@ count.
 
 | Layer | Runs in parallel | Stays ordered |
 |---|---|---|
-| Execution | A map's kernels and a fork-join's children. A leased run under automatic posture uses workers; every other run is serial. | A scan carries one value through ordered items. Rounds are a sequence of barriers. A map settles its results in canonical partition order. |
+| Execution | A map's kernels and independent child computations may use authority workers under automatic posture. Serial backing runs inline. | A scan carries one value through ordered items. Rounds are a sequence of barriers. A map settles its results in canonical partition order. |
 | Relational | With a lease: the packets of a query plan, index builds (one packet per index definition), and the invariant packets of commit validation. | Each merges in one ordered pass on the calling thread, and index generations publish there afterward. Without a lease, packets run in order on the calling thread. |
 | Signal | Within one epoch of a stage: read preparation for the tasks that need computing, and application of tasks, each declaring its write keys. An epoch is a resource-admitted prefix of the stage's remaining tasks, none of which reads another's node. | The request is one ordered pass over stages. A stage is an ordered sequence of epochs; each publishes through the owner before the next starts. The owner reduces after the join: commits in task order, snapshots in stage order. Read preparation runs serially when the epoch's tasks that need computing are fewer than its configured minimum; application does when the epoch's tasks are fewer than its own. |
 | Query: partitioned computation | Partition kernels (`compute_partition`). | Naming, keying, gathering, and completing run on the calling thread. Results settle in partition identity order. |
 | Query: workflow frontier | The compute steps of a frontier's stages. | Prepare and apply run on the owner in canonical stage order. |
-| Query: derived collections | Rebuilding a derived collection dispatches one partition per unique root through a map. | The map supplies canonical order, charging, and one execution authority. It does not make native reads concurrent: reads serialize at the Relational owner. Projection and link checks run on the calling thread in entity identity order. Only the canonical completed prefix reaches the owner, and retention changes only on success. |
-| Query: advancement | — | The advancement driver runs producer handlers synchronously. |
+| Query: derived collections | Rebuilding dispatches one partition per unique root. Pinned immutable read custody lets workers read without holding the mutable runtime owner. | The map settles in canonical order. Projection and link checks complete on the owner in entity identity order; retention changes only on success. |
+| Query: advancement | Managed compute tasks of independent ready producers in one wave. | Prepare, complete and publish run on the owner in canonical order; waves progress inside the caller's `advance`. |
+
+**Parallel advancement.** One caller-pumped `advance` progresses ready
+independent producers as ordered waves. Preparation fixes each member's inputs
+before dispatch. Only managed compute tasks run concurrently; the owner
+completes and publishes in canonical order before selecting the next wave.
+Producer failure keeps the canonical applied prefix, charges every member of
+each dispatched wave that computed, and charges owner work only where it ran.
+Undispatched waves cost nothing. No worker publishes and no background timer
+advances the demand.
+
+[`a_real_diamond_agrees_across_widths_and_failure_phases`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/history.rs)
+executes this through public output demand. The companion
+[`a_completion_failure_charges_a_dispatched_suffix_kernel`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/charge_prefix.rs)
+asserts that a computed suffix's work stays charged after earlier completion
+fails. Use `advance` to make one admitted progression call; use `settle` when
+the demand's bounded repeat policy is appropriate.
 
 Sessions, runs, subscriptions, continuations, leases, checkpoints, recovery
 handles, and admitted capacity are *managed resources*. Close them explicitly.
@@ -1292,18 +1332,14 @@ maintenance, touch targets materialized, and scopes compared.
 Undo depends on this layer. A `RecordedInverse` or `Compensation` undo is
 denied with `TouchedRecordsRequired` if the commit sealed no touched records.
 
-### 10.4 Example
+### 10.4 Executable example
 
-`approve_order` declares that it writes `Order.status` and links an order to
-an `Approval`.
-
-- A candidate that also writes `Order.total` fails touch admission, because
-  `Order.total` is outside the ceiling.
-- Suppose the handler decides no link is needed this time. A candidate that
-  writes only `Order.status` passes. After commit,
-  `touched_records()` lists only that order record, even though the ceiling
-  also allowed a link.
-- A typed *emit* from the operation is not a graph touch.
+[`owner_validated_application_touch_outside_installed_ceiling_is_denied`](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/terminal_failures.rs)
+adds an undeclared application touch after the owner validated the candidate.
+Commit is denied at invariant execution, and the account stays open. Validation
+cannot promote a proposed touch outside the installed ceiling into performed
+evidence. Read what actually changed from the committed receipt, never from
+the declaration or a planning estimate.
 
 ### 10.5 Marking and currentness
 
@@ -1328,7 +1364,8 @@ their marks agree, whoever the writer was.
   Marks belong to a branch lineage. Their maintenance is counted and bounded.
   If retained marking cannot cover a delivery, currentness requires full
   verification rather than treating missing marks as clean.
-- **Clean reuse.** On a continuous retained basis, an unmarked settlement can
+- **Clean reuse.** On a continuous retained basis, an unmarked settlement with
+  no recorded full-verification requirement can
   certify currentness without re-reading its consumed facts. The marks alone
   decide this. The producer's
   [input reuse contract](#98-publication-live-reads-and-output-demand)
@@ -1336,18 +1373,18 @@ their marks agree, whoever the writer was.
 - **Cutoff.** Dirty verification compares marked facts. Unchanged facts can
   establish currentness without recomputation. Equal declared input can avoid
   calling a producer. Stable republication of the retained output then clears
-  pending marks below it without calling those consumers. For a staffing
-  schedule, a fetched annotation omitted from the declared schedule input can
-  change while that input stays equal. Stable republication then lets a
-  dependent summary reuse its result without calling its producer.
+  pending marks below it without calling those consumers. The executable
+  [`equal_clean_successor_passes_the_cutoff_and_verifies_the_full_handler_prefix`](../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/output_lineage/invalidation/native_journey_tests/equality/pending_resolution.rs)
+  requires the exact equal, clean successor and verifies the handler's full
+  consumed prefix; an unrelated clean successor cannot clear the obligation.
 - **Full verification.** When marking cannot certify the selected basis,
   currentness compares all consumed facts. Checkpoint restore
   can require this path. Verification is counted and budgeted.
 - **Commit checks.** A commit re-compares its attempt's consumed read facts.
   A fact that changed ends the attempt as stale, with nothing committed.
   Demand-time marking does not replace that check.
-- **Certification.** An optional certification mode compares marking with
-  full verification and rejects disagreement.
+- **Certification.** The owner tests compare marking with full verification
+  and reject disagreement; diagnostic comparison is not a consumer mode.
 
 Query's native marking is distinct from Signal delivery after product
 publication. Native marking is part of commit publication: Relational
