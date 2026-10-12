@@ -20,21 +20,20 @@ impl Drop for Policy {
 }
 #[test]
 fn read_stop_oracle_at_the_approval_readmission_door() {
+    use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+    use WorthQueryOperationAuthorizationDenialKind as Kind;
     let (count, _) = run(None, None);
     assert!(count > 1);
-    println!("approval readmission door: {count} consults");
     for k in 1..=count {
         let (seen, stop) = run(Some(k), None);
         assert!(seen >= k);
-        assert_eq!(
-            stop,
-            Some(WorthQueryOperationAuthorizationDenialKind::Cancelled)
-        );
-        let (_, stop) = run(None, Some((k - 1) as u64));
-        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
-        use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
-        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
-        use WorthQueryOperationAuthorizationDenialKind as Kind;
+        assert_eq!(stop, Some(Kind::Cancelled));
+        let (seen, stop) = run(None, Some((k - 1) as u64));
+        assert!(seen >= k, "work stop must reach approval consult {k}");
+        // Principal, grant selection and durable dependency owners use their
+        // existing typed work vocabularies. Opening cannot counterfeit a row.
         match stop {
             Some(Kind::CanonicalWorkDenied)
             | Some(Kind::RelationalExecution(Native::WorkExhausted))
@@ -43,7 +42,7 @@ fn read_stop_oracle_at_the_approval_readmission_door() {
                 partition_identity: None,
                 policy_ancestor: None,
             })) => {}
-            other => panic!("work stop at consult {k}: {other:?}"),
+            other => panic!("typed read work stop at consult {k}: {other:?}"),
         }
     }
 }
@@ -67,9 +66,8 @@ fn run(
     let basis = durable_approval_basis(&admission);
     let _policy = Policy(
         place(Placement::Leased(std::num::NonZeroUsize::MIN)),
-        bound(work.map(|work| {
-            worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 << 20, work)
-        })),
+        // Admission is outside the observed read. Only that read inherits k - 1.
+        bound(None),
     );
     let probe = match work {
         Some(work) => ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
@@ -97,9 +95,20 @@ fn run(
             let execution = phase
                 .checked_execution_request_for(world.application.product_runtime())
                 .unwrap();
-            world
-                .application
-                .readmit_workflow_approval_authority(&execution, &basis, &admission)
+            let read = || {
+                world
+                    .application
+                    .readmit_workflow_approval_authority(&execution, &basis, &admission)
+            };
+            match work {
+                Some(work) => {
+                    execution
+                        .run(worth_execution::ExecutionWorkCeiling::new(work), |_| read())
+                        .expect("the read's own admitted scope")
+                        .0
+                }
+                None => read(),
+            }
         });
     let stop = match result {
         Ok(Ok(_)) => {
@@ -111,10 +120,7 @@ fn run(
             None
         }
         Ok(Err(denial)) => Some(denial.kind()),
-        Err(denial) => {
-            assert_eq!(denial, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted));
-            Some(WorthQueryOperationAuthorizationDenialKind::CanonicalWorkDenied)
-        }
+        Err(denial) => panic!("opening is not the approval read: {denial:?}"),
     };
     (probe.consults(), stop)
 }

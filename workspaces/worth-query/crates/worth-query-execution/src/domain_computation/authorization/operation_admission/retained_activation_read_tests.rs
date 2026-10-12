@@ -54,20 +54,21 @@ impl<Schema, Operation, Input, Scope>
                 None,
             );
             let request = ExecutionRequest::serial(&serial);
-            let _probe = ReadConsultObservationForTest::install_callback_on_this_thread_for_test(
+            let probe = ReadConsultObservationForTest::install_callback_on_this_thread_for_test(
                 Door::Equality,
                 Some(k),
                 move || cancel.cancel(),
             );
             assert_eq!(read(&request).unwrap_err().kind(), Kind::Cancelled);
-            drop(_probe);
+            assert!(probe.consults() >= k);
+            drop(probe);
             let serial = worth_execution::SerialRequest::from_memory(
                 worth_execution::SerialMemoryBudget::new(64 << 20),
                 worth_execution::CancellationToken::new(),
                 None,
             );
             let request = ExecutionRequest::serial(&serial);
-            let _probe = ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
+            let probe = ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
                 Door::Equality,
                 Some(k),
                 move |context| {
@@ -85,6 +86,10 @@ impl<Schema, Operation, Input, Scope>
                     |_| read(&request),
                 )
                 .unwrap();
+            assert!(
+                probe.consults() >= k,
+                "the retained equality read reached consult {k}"
+            );
             assert_eq!(answer.unwrap_err().kind(), Kind::ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None }));
         }
     }

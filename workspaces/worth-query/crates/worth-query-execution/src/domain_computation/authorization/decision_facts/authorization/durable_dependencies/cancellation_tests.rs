@@ -62,7 +62,7 @@ impl WorthQueryAuthorizationDecisionFact {
                 None,
             );
             let request = worth_execution::ExecutionRequest::serial(&serial);
-            let _probe = ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
+            let probe = ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
                 Door::Activation,
                 Some(k),
                 move |context| {
@@ -84,6 +84,10 @@ impl WorthQueryAuthorizationDecisionFact {
                     },
                 )
                 .unwrap();
+            assert!(
+                probe.consults() >= k,
+                "the activation read reached consult {k}"
+            );
             assert_eq!(answer, Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
         }
         let _ = source;

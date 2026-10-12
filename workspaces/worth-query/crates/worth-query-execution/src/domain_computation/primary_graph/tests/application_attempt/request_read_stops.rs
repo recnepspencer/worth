@@ -46,19 +46,25 @@ fn with_admitted_facts(
             let serial =
                 SerialRequest::from_memory(SerialMemoryBudget::new(64 << 20), source.token(), None);
             let execution = ExecutionRequest::serial(&serial);
-            world
-                .application
-                .primary_provider
-                .graph
-                .with_runtime(&execution, |runtime| {
-                    body(
-                        &admission,
-                        runtime,
-                        &execution,
-                        selected.application_basis().snapshot_handle(),
-                        &source,
-                    )
-                });
+            let outcome =
+                world
+                    .application
+                    .primary_provider
+                    .graph
+                    .with_runtime(&execution, |runtime| {
+                        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            body(
+                                &admission,
+                                runtime,
+                                &execution,
+                                selected.application_basis().snapshot_handle(),
+                                &source,
+                            )
+                        }))
+                    });
+            if let Err(payload) = outcome {
+                std::panic::resume_unwind(payload);
+            }
         })
         .unwrap();
 }
