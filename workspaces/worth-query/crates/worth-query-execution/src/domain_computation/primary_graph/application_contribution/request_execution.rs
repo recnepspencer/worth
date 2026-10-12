@@ -3,14 +3,14 @@
 //!
 //! The form is chosen here and nowhere else. A leased request owns the lease
 //! it drew from the World's authority, and each dispatch runs on a child of
-//! it, so no run consumes the request's lease. A serial request carries its
-//! cancellation, its deadline and, with a policy, the policy's memory.
+//! it, so no run consumes the request's lease. Serial placement draws a
+//! bounded one-worker lease from an inline ledger with no worker pool.
 
 use worth_execution::{
     CanonicalBits, ChargedBytes, ExecutionMap, ExecutionMemoryReservation, ExecutionResourceLease,
     ExecutionWorkCeiling, LeaseDenial, LeaseRequest, MapKernelContext, MapKernelFailure,
     MapKernelStop, MapOutcome, ReduceInputDenial, ReductionMetrics, ReductionTree,
-    SerialMemoryBudget, SerialRequest, WorkCeilingDenial,
+    WorkCeilingDenial,
 };
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -29,6 +29,7 @@ pub use test_placement::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
+mod serial_placement;
 mod test_authority;
 pub use test_authority::query_test_execution_authority_for_test;
 
@@ -63,7 +64,10 @@ enum Form<'a> {
         lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
         policy: ExecutionRequestPolicy,
     },
-    Serial(SerialRequest),
+    Serial {
+        lease: Result<ExecutionResourceLease<'a>, LeaseDenial>,
+        policy: ExecutionRequestPolicy,
+    },
 }
 
 impl<'a> QueryRequestExecution<'a> {
@@ -93,11 +97,7 @@ impl<'a> QueryRequestExecution<'a> {
         };
         let form = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => {
-                Form::Serial(SerialRequest::from_memory(
-                    SerialMemoryBudget::from_policy(&policy),
-                    cancellation.clone(),
-                    deadline,
-                ))
+                serial_placement::form(policy, cancellation.clone(), deadline)
             }
             RuntimeWorldExecutionPlacement::Leased { authority, policy } => Form::Leased {
                 lease: authority.request_lease(LeaseRequest {
@@ -142,12 +142,11 @@ impl<'a> QueryRequestExecution<'a> {
     /// Holds `bytes` on the request's memory until the reservation drops.
     pub(super) fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
         let held = match &self.form {
-            Form::Leased { lease, .. } => lease
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map_err(|denial| lease_denial(*denial))?
                 .reserve_memory(bytes)
                 .map(Some),
-            Form::Serial(request) => request.memory().reserve(bytes).map(Some),
         };
         held.map(|held| QueryMemoryReservation { held, bytes })
             .map_err(memory_denial)
@@ -157,7 +156,7 @@ impl<'a> QueryRequestExecution<'a> {
     /// serial request itself.
     pub(super) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
-            Form::Leased { lease, policy } => {
+            Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
                 let lease = lease.as_ref().map_err(|denial| lease_denial(*denial))?;
                 DispatchForm::Leased(
                     lease
@@ -169,7 +168,6 @@ impl<'a> QueryRequestExecution<'a> {
                         .map_err(lease_denial)?,
                 )
             }
-            Form::Serial(request) => DispatchForm::Serial(request),
         };
         Ok(QueryDispatch {
             form,
@@ -221,7 +219,6 @@ pub(super) fn kept_tree_bytes<R: ChargedBytes, Combine>(
 
 enum DispatchForm<'d> {
     Leased(ExecutionResourceLease<'d>),
-    Serial(&'d SerialRequest),
 }
 
 /// One run's placement. Each pattern runs inside a work ceiling on it.
@@ -258,7 +255,6 @@ impl QueryDispatch<'_> {
         };
         match &self.form {
             DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),
-            DispatchForm::Serial(request) => ceiling.run_serial(request, || run(None)),
         }
         .map(|(outcome, _)| outcome)
     }
@@ -313,7 +309,6 @@ impl QueryDispatch<'_> {
         };
         let reduced = match &self.form {
             DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),
-            DispatchForm::Serial(request) => ceiling.run_serial(request, || run(None)),
         }
         .map(|(reduced, _)| reduced);
         // The request counts the memory its retained tree keeps.

@@ -27,6 +27,7 @@ mod refusal;
 mod reservation;
 mod retained;
 mod room;
+mod serial_authority;
 mod worker_context;
 mod worker_width;
 pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};

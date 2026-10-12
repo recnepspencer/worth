@@ -83,11 +83,10 @@ impl QueryRequestExecution<'_> {
         &self,
     ) -> Result<ExecutionRequest<'_, '_>, Resource> {
         match &self.form {
-            Form::Leased { lease, .. } => lease
+            Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
                 .map(ExecutionRequest::leased)
                 .map_err(|denial| execution_denial::lease_denial(*denial)),
-            Form::Serial(request) => Ok(ExecutionRequest::serial(request)),
         }
     }
 
@@ -98,8 +97,7 @@ impl QueryRequestExecution<'_> {
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         observation::begin(match &self.form {
-            Form::Serial(_) => worth_foundational::ExecutionPosture::Serial,
-            Form::Leased { lease, policy } => lease
+            Form::Leased { lease, policy } | Form::Serial { lease, policy } => lease
                 .as_ref()
                 .map(|lease| lease.resolved_posture())
                 .unwrap_or(policy.posture()),
@@ -123,7 +121,7 @@ impl QueryRequestExecution<'_> {
                 Resource::WorkExhausted,
             ));
         }
-        if matches!(&self.form, Form::Serial(_)) && request.memory_limit() == 0 {
+        if matches!(&self.form, Form::Serial { .. }) && request.memory_limit() == 0 {
             return Err(WorthQueryAdvancementDenial::Resource(
                 Resource::PolicyMemoryLimit,
             ));
@@ -208,11 +206,7 @@ pub fn with_bootstrap_advancement<R>(
         deadline: None,
         declared_work: policy.budget().work_ceiling(),
         certified_seed: super::test_placement::certifying(),
-        form: Form::Serial(worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::from_policy(&policy),
-            cancellation,
-            None,
-        )),
+        form: super::serial_placement::form(policy, cancellation, None),
     };
     execution.run_advancement(None, None, |phase| {
         body(WorthQueryBootstrapAdvancementPhase {
@@ -237,11 +231,7 @@ pub(in crate::domain_computation::primary_graph) fn with_serial_host_advancement
         deadline,
         declared_work: policy.budget().work_ceiling(),
         certified_seed: super::test_placement::certifying(),
-        form: Form::Serial(worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::from_policy(&policy),
-            cancellation,
-            deadline,
-        )),
+        form: super::serial_placement::form(policy, cancellation, deadline),
     };
     execution.run_advancement(Some(owner), None, body)
 }

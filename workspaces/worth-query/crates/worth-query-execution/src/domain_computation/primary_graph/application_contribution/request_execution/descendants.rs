@@ -10,7 +10,7 @@ pub(in crate::domain_computation::primary_graph) struct MemberRequestExecution<'
 impl<'authority> QueryRequestExecution<'authority> {
     fn descendant(&self) -> Self {
         let form = match &self.form {
-            Form::Leased { lease, policy } => Form::Leased {
+            Form::Leased { lease, policy } | Form::Serial { lease, policy } => Form::Leased {
                 lease: lease
                     .as_ref()
                     .map(|lease| {
@@ -19,9 +19,6 @@ impl<'authority> QueryRequestExecution<'authority> {
                     .map_err(|denial| *denial),
                 policy: *policy,
             },
-            // The clone carries the same memory ledger. Its active enclosing
-            // serial scope remains the source of every nested bound and charge.
-            Form::Serial(request) => Form::Serial(request.clone()),
         };
         Self {
             cancellation: self.cancellation.clone(),

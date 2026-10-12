@@ -10,9 +10,6 @@ impl QueryDispatch<'_> {
         let ceiling = ExecutionWorkCeiling::new(ceiling);
         match &self.form {
             DispatchForm::Leased(lease) => ceiling.run_with_checkpoint(Some(lease), None, stage),
-            DispatchForm::Serial(request) => {
-                ceiling.run_with_checkpoint(None, Some(request), stage)
-            }
         }
     }
 }
