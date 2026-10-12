@@ -44,7 +44,7 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     let mut app = ExampleApplication::publish("blocked");
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
+        Some(Instant::now() + Duration::from_secs(120)),
         cancellation.token(),
     );
     let actor = principal(&app, &scope);
