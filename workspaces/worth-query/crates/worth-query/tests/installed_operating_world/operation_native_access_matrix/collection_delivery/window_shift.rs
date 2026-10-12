@@ -58,11 +58,15 @@ fn removing_a_tail_anchor_emits_an_explicit_window_shift() {
     consumer.bind_shared_target(&admitted, &workspace).unwrap();
     let patch = required_patch(request_execution, &mut consumer, &admitted, &workspace);
 
-    assert!(patch.operations().iter().any(|operation| matches!(
-        operation,
-        domain::WorthQueryCollectionPatchOperation::Remove { entity, .. }
-            if entity == &removed_anchor
-    )));
+    assert!(
+        patch.operations().iter().any(|operation| matches!(
+            operation,
+            domain::WorthQueryCollectionPatchOperation::Remove { entity, .. }
+                if entity == &removed_anchor
+        )),
+        "anchor patch operations: {:?}",
+        patch.operations()
+    );
     assert!(patch.operations().iter().any(|operation| matches!(
         operation,
         domain::WorthQueryCollectionPatchOperation::WindowShift { .. }

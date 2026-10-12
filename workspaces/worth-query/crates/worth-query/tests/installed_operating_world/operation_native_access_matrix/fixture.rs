@@ -87,7 +87,7 @@ pub(super) fn matrix_workspace_with_values(
     values: &[worth_foundational::facade::StructAspectValue],
     unrelated_domains: bool,
 ) -> runtime::WorthQueryWorkspace {
-    matrix_workspace_with_lookup(request_execution, name, values, true, unrelated_domains)
+    matrix_workspace_with_lookup(request_execution, name, values, unrelated_domains, true)
 }
 
 pub(super) fn matrix_workspace_without_collection_lookup(
