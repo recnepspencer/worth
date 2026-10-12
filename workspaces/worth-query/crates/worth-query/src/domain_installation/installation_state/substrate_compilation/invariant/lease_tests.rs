@@ -142,7 +142,8 @@ fn commit(
         )
         .unwrap();
     let cancellation = CancellationSource::new();
-    let authority = worth_query_execution::facade::primary_graph::test_execution_authority();
+    let authority =
+        worth_query_execution::facade::primary_graph::query_test_execution_authority_for_test();
     let lease = authority
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(

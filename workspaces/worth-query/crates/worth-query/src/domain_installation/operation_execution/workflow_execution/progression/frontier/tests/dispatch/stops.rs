@@ -192,7 +192,7 @@ fn work_ceiling_settles_the_same_boundary_at_all_widths() {
             ..Policy::width(workers)
         };
         let (record, work, failed) = observe(request_execution, 7, None, policy, &probe);
-        assert!(!failed);
+        assert!(!failed, "width {workers}: {record:?}");
         assert_eq!(work, COSTS[0]);
         assert_eq!(
             denial(&record),
@@ -293,11 +293,13 @@ fn already_elapsed_deadline_and_cancelled_entry_do_not_compute() {
         } else {
             Some(std::time::Instant::now() - std::time::Duration::from_secs(1))
         };
-        let scope = WorthQueryRequestScope::new(
-            deadline
-                .unwrap_or_else(|| std::time::Instant::now() + std::time::Duration::from_secs(60)),
-            source.token(),
-        );
+        let scope =
+            WorthQueryRequestScope::new(
+                Some(deadline.unwrap_or_else(|| {
+                    std::time::Instant::now() + std::time::Duration::from_secs(60)
+                })),
+                source.token(),
+            );
         let mut workspace = Policy::width(0).workspace(request_execution, &probe);
         let run = start(&mut workspace);
         let (record, work, failed) =
