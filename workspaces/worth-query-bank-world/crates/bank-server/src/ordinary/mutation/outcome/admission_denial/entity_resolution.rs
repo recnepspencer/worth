@@ -107,3 +107,6 @@ impl std::fmt::Display for BankEntityResolutionDenial {
         formatter.write_str(self.code())
     }
 }
+
+#[cfg(test)]
+mod stop_code_tests;

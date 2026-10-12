@@ -284,3 +284,6 @@ const fn exhausted() -> BankHttpDenial {
 const fn internal_denied() -> BankHttpDenial {
     BankHttpDenial::new(Kind::InternalDenied, Next::None)
 }
+
+#[cfg(test)]
+mod entity_stop_tests;
