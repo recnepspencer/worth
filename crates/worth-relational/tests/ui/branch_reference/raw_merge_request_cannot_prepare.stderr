@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/raw_merge_request_cannot_prepare.rs:11:45
+  --> tests/ui/branch_reference/raw_merge_request_cannot_prepare.rs:11:56
    |
-11 |     let _ = runtime.prepare_merge_execution(request);
-   |                     ----------------------- ^^^^^^^ expected `OwnerBoundMergeExecutionRequest`, found `MergeExecutionRequest`
+11 |     let _ = runtime.prepare_merge_execution(execution, request);
+   |                     -----------------------            ^^^^^^^ expected `OwnerBoundMergeExecutionRequest`, found `MergeExecutionRequest`
    |                     |
    |                     arguments to this method are incorrect
    |

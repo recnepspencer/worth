@@ -17,19 +17,17 @@ fn allocation_cannot_begin_mutation(
     runtime: &RelationalRuntime,
     observation: RelationalOwnerAllocationLedgerObservation,
 ) {
-    let _ = runtime.begin_branch_transaction(
-        &observation,
-        RelationalTransactionIntent::ordinary(),
-    );
+    let _ = runtime.begin_branch_transaction(&observation, RelationalTransactionIntent::ordinary());
 }
 
 fn visibility_cannot_retain(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     observation: RelationalVisibilityCommitmentObservation,
 ) {
     let _ = runtime
         .history_authority()
-        .retain_version_for_replay(observation);
+        .retain_version_for_replay(execution, observation);
 }
 
 fn main() {}

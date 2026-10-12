@@ -13,12 +13,12 @@ note: method defined here
    |            ^^^^^^^^^^^
 
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:21:9
+  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:20:46
    |
-20 |     let _ = runtime.begin_branch_transaction(
-   |                     ------------------------ arguments to this method are incorrect
-21 |         &observation,
-   |         ^^^^^^^^^^^^ expected `&AdmittedRelationalBranchBasis`, found `&...`
+20 |     let _ = runtime.begin_branch_transaction(&observation, RelationalTransactionIntent::ordinary());
+   |                     ------------------------ ^^^^^^^^^^^^ expected `&AdmittedRelationalBranchBasis`, found `&...`
+   |                     |
+   |                     arguments to this method are incorrect
    |
    = note: expected reference `&AdmittedRelationalBranchBasis`
               found reference `&RelationalOwnerAllocationLedgerObservation`
@@ -29,15 +29,15 @@ note: method defined here
    |            ^^^^^^^^^^^^^^^^^^^^^^^^
 
 error[E0308]: mismatched types
-  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:32:36
+  --> tests/ui/branch_reference/inspection_artifacts_cannot_open_authority.rs:30:47
    |
-32 |         .retain_version_for_replay(observation);
-   |          ------------------------- ^^^^^^^^^^^ expected `VersionId`, found `RelationalVisibilityCommitmentObservation`
+30 |         .retain_version_for_replay(execution, observation);
+   |          -------------------------            ^^^^^^^^^^^ expected `VersionId`, found `RelationalVisibilityCommitmentObservation`
    |          |
    |          arguments to this method are incorrect
    |
 note: method defined here
   --> src/history/authority/replay_retention.rs
    |
-   |     pub fn retain_version_for_replay(&self, version_id: crate::identity::data::VersionId) -> bool {
+   |     pub fn retain_version_for_replay(
    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
