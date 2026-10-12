@@ -186,7 +186,7 @@ pub(super) const ADVANCEMENT_COMMIT_WORK: u64 = quote(Shape {
     // excludes the untouched workflow rule's two/one/one partition entries;
     // producer rows and links occupy the same primary partition.
     candidate_entity_slots: 2 + 4 + 4,
-    candidate_relation_slots: 0 + 3 + 3,
+    candidate_relation_slots: 3 + 3,
     candidate_intents: 2 + 7 + 7,
     scope_entity_clones: 34,
     scope_kind_checks: 3,

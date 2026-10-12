@@ -171,7 +171,7 @@ fn across_the_axis(
         });
         for total in outcomes.iter().flatten() {
             assert_eq!(
-                total.report.fallback() == Some(ExecutionFallbackCause::NoLease),
+                total.report.fallback() == Some(ExecutionFallbackCause::PolicySerial),
                 placement == Placement::Serial,
                 "{placement:?} places the run"
             );

@@ -105,7 +105,7 @@ fn keyed_floating_point_sum_keeps_its_bits_and_its_charged_work_on_every_run() {
         {
             assert_eq!(
                 first.report.fallback(),
-                Some(ExecutionFallbackCause::NoLease)
+                Some(ExecutionFallbackCause::PolicySerial)
             );
             assert!(first.charged_work > first.report.charged_work());
         }
