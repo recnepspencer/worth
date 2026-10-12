@@ -66,7 +66,7 @@ impl WorthQueryEntityResolutionDenial {
         self.kind
     }
 
-    pub(in crate::domain_computation::primary_graph) fn interruption(
+    pub(in crate::domain_computation) fn interruption(
         &self,
     ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
     {

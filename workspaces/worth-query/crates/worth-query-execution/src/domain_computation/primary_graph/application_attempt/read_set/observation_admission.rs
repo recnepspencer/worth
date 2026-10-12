@@ -71,12 +71,15 @@ impl<Schema, Operation, Input, Scope, Phase>
                     )
                     .and_then(|truth| truth.validate_entity_freshness(execution, identity))
             })
-            .map_err(|_| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::StaleEntityIdentity,
-                    entity,
-                )
-            })
+            .map_err(|refusal| {
+                    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+                    let kind = match refusal.interruption() {
+                        Some(Stop::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
+                        Some(Stop::DeadlineExceeded) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
+                        None => WorthQueryApplicationAttemptDenialKind::StaleEntityIdentity,
+                    };
+                    denial(kind, entity)
+                })
     }
 
     pub(super) fn field_layout(

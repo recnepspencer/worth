@@ -113,11 +113,14 @@ where
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .and_then(|truth| truth.validate_entity_freshness(execution, scope_identity))
-                .map_err(|_| {
-                    denial(
-                        WorthQueryOperationAuthorizationDenialKind::StaleScope,
-                        scope_identity.entity_name(),
-                    )
+                .map_err(|refusal| {
+                    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+                    let kind = match refusal.interruption() {
+                        Some(Stop::Cancelled) => WorthQueryOperationAuthorizationDenialKind::Cancelled,
+                        Some(Stop::DeadlineExceeded) => WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded,
+                        None => WorthQueryOperationAuthorizationDenialKind::StaleScope,
+                    };
+                    denial(kind, scope_identity.entity_name())
                 })?;
             self.observe_authorization_requirements(
                 execution,
