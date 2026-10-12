@@ -26,8 +26,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         RelationalSnapshotProjectionAdmissionStop<Stop>,
     > {
         use RelationalSnapshotProjectionAdmissionStop as Denial;
-        crate::execution::check_request(execution)
-            .map_err(Denial::Execution)?;
+        crate::execution::check_request(execution).map_err(Denial::Execution)?;
         admit(3, 0).map_err(Denial::Admission)?;
         let runtime = self.runtime();
         if handle.runtime_instance_id() != runtime.runtime_instance_id() {

@@ -330,14 +330,13 @@ fn healthy_fixture_completes_both_leased_preparations() {
             let lease = authority()
                 .request_lease(request(32 * 1024 * 1024, 1_000_000))
                 .unwrap();
-            let outcome = runtime.index_authority().build_for_commit_with_lease(
+            let outcome = runtime.index_authority().build_for_commit(
                 &worth_execution::ExecutionRequest::leased(&lease),
                 DerivedIndexBuildRequest {
                     source_commit_id: created.commit.commit_id,
                     branch_id: BranchId("main".to_owned()),
                     index_ids: vec![index.index_id],
                 },
-                &lease,
             );
             assert!(outcome.execution_denial.is_none());
             assert!(outcome.basis_denial.is_none());

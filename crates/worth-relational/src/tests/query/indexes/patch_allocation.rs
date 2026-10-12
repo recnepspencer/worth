@@ -135,8 +135,9 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         assert_eq!(work.patch_records, 2);
         assert_eq!(work.entry_edits, 2);
         assert_eq!(work.cold_record_slots, 0);
-        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-            runtime.publication_port().compare_and_publish(candidate)
+        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+            .publication_port()
+            .compare_and_publish(&execution, candidate)
         else {
             panic!("prepared patch must publish")
         };

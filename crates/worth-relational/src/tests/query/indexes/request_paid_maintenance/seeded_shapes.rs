@@ -286,8 +286,9 @@ fn prove_commit_paths(
         .index_access()
         .latest_generation(*index, &request.branch_id)
         .is_none_or(|generation| generation.source_commit_id == created.commit.commit_id)));
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("prepared differential candidate publishes")
     };

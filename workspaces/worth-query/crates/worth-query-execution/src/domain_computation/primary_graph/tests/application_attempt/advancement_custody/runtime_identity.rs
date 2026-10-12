@@ -6,7 +6,8 @@ mod native_commit_work;
 
 #[test]
 fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
-    let _observation = crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     // Two changed rows (account and idempotency), 21 selected/reserved indexes,
     // eight before/after reads, twelve routing visits, three edits, one old-row
     // comparison, and three nonempty plus three empty retained paths.

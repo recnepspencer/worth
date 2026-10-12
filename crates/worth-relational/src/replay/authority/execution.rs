@@ -229,8 +229,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         reconstruction: ReplayReconstruction,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
-        crate::execution::check_request(execution)
-            .map_err(RelationalRecoveryStop::Request)?;
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let compared_surfaces = promised_replay_surfaces(
             self.runtime,
             &admission.envelope,
@@ -248,8 +247,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 execution,
             )?;
         }
-        crate::execution::check_request(execution)
-            .map_err(RelationalRecoveryStop::Request)?;
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let selected_lineage_authority =
             if compared_surfaces.contains(&ReplayObservableSurface::Lineage) {
                 match select_replay_lineage_authority(
@@ -303,8 +301,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &request,
             selected_lineage_authority.as_ref(),
         )?;
-        crate::execution::check_request(execution)
-            .map_err(RelationalRecoveryStop::Request)?;
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let outcome = replay_comparison_outcome(
             request,
             &admission,

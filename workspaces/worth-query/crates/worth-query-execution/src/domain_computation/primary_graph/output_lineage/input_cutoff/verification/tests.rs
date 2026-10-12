@@ -64,11 +64,7 @@ fn exhausted_currentness_while_reverifying_a_marked_fact_selects_fresh_without_s
                         .read_truth()
                         .project_snapshot(&snapshot)
                         .unwrap()
-                        .entity_field_revision(
-                            &host_custody.borrowed_request_for_test(),
-                            entity,
-                            &locator,
-                        )
+                        .entity_field_revision(&execution, entity, &locator)
                         .expect("fixture read request remains live")
                         .unwrap();
                     let facts = [WorthQueryApplicationObservedFact::SourceFieldRevision {

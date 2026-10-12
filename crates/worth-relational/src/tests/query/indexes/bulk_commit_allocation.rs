@@ -94,8 +94,9 @@ fn bulk_commit(rows_per_key: usize) {
         )
         .unwrap();
     assert_eq!(work.entry_edits, 4000);
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(&execution, candidate)
     else {
         panic!("prepared candidate must publish")
     };

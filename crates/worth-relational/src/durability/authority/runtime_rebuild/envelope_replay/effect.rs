@@ -25,10 +25,7 @@ pub(super) fn replay_envelope_effect(
     if envelope.authority_kind() == CanonicalCommitAuthorityKind::BranchReferenceMovement
         || is_metadata_only_merge_commit(envelope)
     {
-        #[cfg(test)]
-        super::observation::visit();
-        crate::execution::check_request(execution)
-            .map_err(RelationalRecoveryStop::Request)?;
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         if governed_merge_authority_was_published(envelope) {
             require_merge_execution_authority(envelope)?;
         }
@@ -78,8 +75,7 @@ pub(super) fn complete_incomplete_metadata_commit(
     restored: &mut RelationalRuntime,
     readmitted: crate::durability::migration::ReadmittedCanonicalCommit,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
-    crate::execution::check_request(execution)
-        .map_err(RelationalRecoveryStop::Request)?;
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let envelope = readmitted.envelope();
     let branch_basis = recovered_branch_basis(restored, &envelope.branch_context)?;
     let published_partition_delta = restored.storage_authority().affirm_no_partition_changes();
@@ -126,8 +122,7 @@ pub(super) fn replay_ordinary_commit(
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
 ) -> Result<(), RelationalRecoveryStop> {
-    crate::execution::check_request(execution)
-        .map_err(RelationalRecoveryStop::Request)?;
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let schema_basis = RecoveredSchemaBasis::admit(restored, envelope)?;
     let mut options = owner_options_for_branch(restored, &envelope.branch_context)?;
     options = options.with_merge_parent_bases(owner_merge_parent_bases(
@@ -225,8 +220,7 @@ pub(super) fn replay_merge_commit(
     envelope: &CanonicalCommitEnvelope,
     position: crate::publication::patch::data::PatchStreamPosition,
 ) -> Result<(), RelationalRecoveryStop> {
-    crate::execution::check_request(execution)
-        .map_err(RelationalRecoveryStop::Request)?;
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let merge_plan = require_merge_execution_authority(envelope)?;
     let schema_basis = RecoveredSchemaBasis::admit(restored, envelope)?;
     let mut options = owner_options_for_branch(restored, &envelope.branch_context)?;

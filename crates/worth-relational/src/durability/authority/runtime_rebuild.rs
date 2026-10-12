@@ -57,8 +57,7 @@ pub(super) fn rebuild_runtime_from_plan(
     ),
     RelationalRecoveryStop,
 > {
-    crate::execution::check_request(execution)
-        .map_err(RelationalRecoveryStop::Request)?;
+    crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
     let mut plan = admitted.into_plan();
     let tail_envelopes = plan.tail_envelopes_in_stream_order();
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;

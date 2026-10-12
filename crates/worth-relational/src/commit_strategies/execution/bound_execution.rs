@@ -22,8 +22,7 @@ pub(crate) fn bind_execution<'runtime>(
     snapshot: &'runtime SnapshotHandle,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BoundStrategyExecution<'runtime>, StrategyExecutionError> {
-    crate::execution::check_request(execution)
-        .map_err(StrategyExecutionError::Execution)?;
+    crate::execution::check_request(execution).map_err(StrategyExecutionError::Execution)?;
     let descriptor = runtime
         .commit_strategy_registry()
         .get_by_id(request.strategy_id())

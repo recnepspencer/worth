@@ -10,13 +10,11 @@ pub(super) fn admit<E>(
     index: DerivedIndexId,
     admission: &mut impl FnMut() -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
-    crate::execution::check_request(execution).map_err(
-        |cause| {
-            Stop::Lookup(super::prepared_entity_field_lookup::denied(
-                Denial::Execution(cause),
-                index,
-            ))
-        },
-    )?;
+    crate::execution::check_request(execution).map_err(|cause| {
+        Stop::Lookup(super::prepared_entity_field_lookup::denied(
+            Denial::Execution(cause),
+            index,
+        ))
+    })?;
     admission().map_err(Stop::Admission)
 }

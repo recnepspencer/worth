@@ -50,13 +50,12 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         ) -> Option<T>,
     ) -> Result<RelationalRetainedCommitEntityProjection<T>, RelationalRetainedCommitSnapshotDenial>
     {
-        crate::execution::check_request(execution)
-            .map_err(|cause| {
-                RelationalRetainedCommitSnapshotDenial::new(
-                    RelationalRetainedCommitSnapshotDenialKind::Execution(cause),
-                    "retained commit read request stopped",
-                )
-            })?;
+        crate::execution::check_request(execution).map_err(|cause| {
+            RelationalRetainedCommitSnapshotDenial::new(
+                RelationalRetainedCommitSnapshotDenialKind::Execution(cause),
+                "retained commit read request stopped",
+            )
+        })?;
         if expected_runtime_instance_id != self.runtime.runtime_instance_id() {
             return Err(RelationalRetainedCommitSnapshotDenial::new(
                 RelationalRetainedCommitSnapshotDenialKind::ForeignRuntime,
