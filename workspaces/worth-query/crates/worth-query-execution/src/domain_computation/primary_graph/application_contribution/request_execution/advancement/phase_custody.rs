@@ -166,6 +166,14 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
         self.request_for_owner(runtime.owner.owner_identity())
     }
 
+    /// Lends the admitted request and preserves the shared advancement refusal.
+    pub fn checked_execution_request_for(
+        &self,
+        runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    ) -> Result<ExecutionRequest<'scope, 'scope>, super::WorthQueryAdvancementDenial> {
+        self.execution_request_for(runtime).map_err(Into::into)
+    }
+
     pub(crate) fn request_for_owner(
         &self,
         owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,

@@ -31,10 +31,17 @@ where
             mut counters,
         } = prepared;
         let running = running.expect("completed graph execution owns its managed run");
+        let request = match admit_direct_request(execution, workspace) {
+            Ok(request) => request,
+            Err(mut denial) => {
+                denial = denial
+                    .with_graph_receipts(graph_receipts)
+                    .with_managed_cleanup(running.abandon().cleanup());
+                return TransitionOutcome::Denied(denial);
+            }
+        };
         let context = WorthQueryOperationExecutionContext::new(
-            execution
-                .execution_request_for(&workspace.advancement_owner())
-                .expect("executor uses its workspace phase"),
+            request,
             bound.definition(),
             bound.binding_identity(),
             bound.basis().capability_digest(),

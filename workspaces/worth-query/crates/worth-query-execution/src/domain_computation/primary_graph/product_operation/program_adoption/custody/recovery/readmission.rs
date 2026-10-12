@@ -139,10 +139,26 @@ fn recovery_execution<'scope>(
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryBranchAdoptionRecoveryDenial>
 {
     phase
-        .execution_request_for(runtime)
-        .map_err(|cause| WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause.into()))
+        .checked_execution_request_for(runtime)
+        .map_err(|cause| WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause))
 }
 
 #[cfg(test)]
 #[path = "foreign_phase_tests.rs"]
 mod foreign_phase_tests;
+
+impl crate::domain_computation::execution_observation::WorthQueryExecutionObservation {
+    /// Drives the private continuation with an already selected product and
+    /// real retained recovery custody; the listener owns this test door.
+    #[doc(hidden)]
+    pub fn recover_branch_adoption_in_advancement_for_test<Schema: ApplicationSchema>(
+        &self,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        recovery: WorthQueryBranchAdoptionRecovery,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
+    {
+        selected.recover_branch_adoption_in_advancement(phase, recovery, request)
+    }
+}

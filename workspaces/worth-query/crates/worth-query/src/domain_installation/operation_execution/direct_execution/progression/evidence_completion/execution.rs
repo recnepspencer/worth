@@ -144,7 +144,7 @@ where
             ))
         })?;
         let conditional = match admitted.evaluate_conditionals(
-            execution,
+            resource_request,
             workspace,
             &execution_snapshot,
             &resource_evidence,
@@ -224,7 +224,7 @@ where
 {
     fn evaluate_conditionals(
         &self,
-        execution: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
         workspace: &mut crate::runtime::WorthQueryWorkspace,
         execution_snapshot: &crate::memory_workspace::WorthQuerySnapshotIdentity,
         resource_evidence: &super::super::super::WorthQueryExecutionResourceAttemptEvidence,
@@ -241,9 +241,7 @@ where
         crate::domain_installation::evaluate_bound_conditionals(
             &self.bound,
             crate::domain_installation::WorthQueryConditionalEvaluationPass {
-                execution: execution
-                    .execution_request_for(&workspace.advancement_owner())
-                    .expect("conditional evaluation uses its workspace phase"),
+                execution,
                 workspace,
                 snapshot: execution_snapshot,
                 execution_identity: &execution_identity,
@@ -318,10 +316,10 @@ fn admit_direct_request<'request>(
     workspace: &crate::runtime::WorthQueryWorkspace,
 ) -> Result<worth_execution::ExecutionRequest<'request, 'request>, WorthQueryBoundExecutionDenial> {
     phase
-        .execution_request_for(&workspace.advancement_owner())
+        .checked_execution_request_for(&workspace.advancement_owner())
         .map_err(|cause| {
             WorthQueryBoundExecutionDenial::new(
-                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause.into()),
+                WorthQueryBoundExecutionDenialKind::ExecutionRequest(cause),
                 "direct advancement belongs to another installed runtime",
                 Default::default(),
             )

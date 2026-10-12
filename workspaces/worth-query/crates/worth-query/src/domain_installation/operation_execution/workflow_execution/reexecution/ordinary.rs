@@ -85,13 +85,18 @@ where
         intent: WorthQueryNormalizedWorkflowIntent,
         workspace: &mut WorthQueryWorkspace,
     ) -> WorthQueryWorkflowReexecutionOutcome<D, O, F, L> {
-        let mut run = match self.start_workflow_attempt(
-            phase
-                .execution_request_for(&workspace.advancement_owner())
-                .expect("the opener lent its owner this phase"),
-            workspace,
-            1,
-        ) {
+        let execution = match phase.checked_execution_request_for(&workspace.advancement_owner()) {
+            Ok(execution) => execution,
+            Err(cause) => {
+                return TransitionOutcome::Denied(WorthQueryWorkflowReexecutionStop::Start(
+                    WorthQueryWorkflowStartDenial::new(
+                        super::WorthQueryWorkflowStartDenialKind::ExecutionRequest(cause),
+                        Default::default(),
+                    ),
+                ))
+            }
+        };
+        let mut run = match self.start_workflow_attempt(execution, workspace, 1) {
             TransitionOutcome::Success(run) => run,
             TransitionOutcome::Denied(stop) => {
                 return TransitionOutcome::Denied(WorthQueryWorkflowReexecutionStop::Start(stop))
