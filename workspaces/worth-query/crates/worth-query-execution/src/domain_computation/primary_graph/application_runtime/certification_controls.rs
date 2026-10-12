@@ -1,6 +1,5 @@
 #[path = "certification_controls/workflow_membership.rs"]
 mod workflow_membership;
-#[cfg(feature = "test-primary-graph-faults")]
 use worth_execution::ExecutionAllocationPolicy as NativeAllocationPolicy;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -292,7 +291,6 @@ where
     }
 
     #[doc(hidden)]
-    #[cfg(any(test, feature = "test-durability-faults"))]
     pub fn fail_next_durable_append_for_test(
         &self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,

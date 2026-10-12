@@ -32,7 +32,6 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             .with_runtime_mut_unwind_isolated(execution, mutate)
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation) fn with_query_runtime_mut<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -10,6 +10,6 @@ worth-query-decl.workspace = true
 worth-query-host.workspace = true
 
 [dev-dependencies]
-worth-query-host = { workspace = true, features = ["test-query-execution-observer"] }
+worth-query-host = { workspace = true }
 worth-foundational = { path = "../../../../../../../crates/worth-foundational" }
 worth-execution = { path = "../../../../../../../crates/worth-execution" }

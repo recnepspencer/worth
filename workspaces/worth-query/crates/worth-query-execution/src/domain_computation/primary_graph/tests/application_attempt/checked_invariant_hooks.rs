@@ -54,7 +54,7 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
         contacts: contacts.clone(),
     });
     let scope = WorthQueryRequestScope::new(
-        std::time::Instant::now() + Duration::from_secs(60),
+        Some(std::time::Instant::now() + Duration::from_secs(60)),
         source.token(),
     );
     let program = program::prepare(&world, &scope);

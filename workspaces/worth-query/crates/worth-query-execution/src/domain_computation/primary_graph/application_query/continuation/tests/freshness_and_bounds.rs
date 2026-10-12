@@ -197,7 +197,8 @@ fn cancellation_and_deadline_deny_resume_before_basis_acquisition() {
         .expect("the fixture read owns its installed host call");
     let deadline_acquisitions = deadline_context.basis_acquisitions();
     let deadline_source = WorthQueryCancellationSource::new();
-    let deadline_request = WorthQueryRequestScope::new(Instant::now(), deadline_source.token());
+    let deadline_request =
+        WorthQueryRequestScope::new(Some(Instant::now()), deadline_source.token());
     let deadline = deadline_context
         .world
         .application

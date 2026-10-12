@@ -13,7 +13,7 @@ fn cancellation_after_linearization_returns_the_performed_commit() {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
     let control = RelationalOperationControl::from(source.token())
-        .with_post_linearization_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_post_linearization_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let mut transaction = runtime
         .begin_branch_transaction_with_control(
             &basis,

@@ -322,5 +322,4 @@ pub use worth_runtime_bridge::facade::{
     BridgeConditionalDenialKind, BridgeCorrespondenceDeliveryStop,
 };
 
-#[cfg(any(test, feature = "test-query-execution-observer"))]
 pub use crate::domain_computation::primary_graph::principal_target_reads_on_this_thread_for_test;

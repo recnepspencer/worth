@@ -146,7 +146,6 @@ pub(super) fn commit(
         before.as_snapshot(),
         &candidate,
     );
-    #[cfg(feature = "test-world-operation-control")]
     provider.after_application_candidate_preparation_for_test();
     let performed = product_publication::publish(
         execution,

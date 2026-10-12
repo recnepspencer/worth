@@ -52,17 +52,6 @@ impl WorthQueryCheckpointTransitionRecovery {
         }
     }
 
-    #[cfg(feature = "test-durability-faults")]
-    #[doc(hidden)]
-    pub fn fail_next_durable_append_for_test(
-        &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) {
-        self.graph.with_runtime(request_execution, |runtime| {
-            runtime.fail_next_durable_append_for_test()
-        });
-    }
-
     pub(super) fn new(
         graph: WorthQueryPrimaryGraphIntegrationHandle,
         publication: WorthQueryPrimaryGraphPublication,

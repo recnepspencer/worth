@@ -237,6 +237,5 @@ fn send_for(fixture: &fixture::OrdinaryReadFixture) -> SendMoney {
     }
 }
 
-#[cfg(feature = "test-request-lifetime-probes")]
 #[path = "ordinary_mutations/posting_lease.rs"]
 mod posting_lease;

@@ -314,5 +314,4 @@ mod advancement_bootstrap;
 
 mod advancement_discovered;
 
-#[cfg(feature = "test-query-execution-observer")]
 mod native_commit_work;

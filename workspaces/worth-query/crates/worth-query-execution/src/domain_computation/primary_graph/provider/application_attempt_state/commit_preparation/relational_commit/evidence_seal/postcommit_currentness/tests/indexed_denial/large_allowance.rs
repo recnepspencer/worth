@@ -38,10 +38,7 @@ fn source_currentness_denial_keeps_its_large_u64_allowance() {
                             selected.application_basis().snapshot_handle(),
                             &mut admission
                         ),
-                        Err(CompanionPreflightStop::WorkExhausted {
-                            required: maximum + 1,
-                            maximum
-                        }),
+                        Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum }),
                         "a guarded source denial retains the exact u64 allowance"
                     );
                 });

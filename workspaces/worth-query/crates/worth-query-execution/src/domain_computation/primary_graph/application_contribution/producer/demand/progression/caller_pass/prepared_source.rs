@@ -50,7 +50,7 @@ where
                 commit_authority.clone(),
                 request_admission,
             );
-            super::super::super::super::request_execution::record_caller_pass_for_test(&result);
+            crate::domain_computation::primary_graph::application_contribution::request_execution::record_caller_pass_for_test(&result);
             match result {
                 Ok(AdvancePassProgress::Answer(answer)) => {
                     if matches!(&answer, WorthQueryOutputDemandAdvance::Settled(_)) {

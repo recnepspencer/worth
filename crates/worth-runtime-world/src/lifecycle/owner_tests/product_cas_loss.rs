@@ -23,7 +23,6 @@ use crate::recovery::{
     ProductUnpublishedRetentionPosture,
 };
 
-#[cfg(feature = "test-durability-faults")]
 use super::publication::setup_with_retention_capacity;
 use super::publication::{
     prepare_relational, ready_from_prepared, setup, setup_with_relational_source, TestOwner,
@@ -342,6 +341,5 @@ fn a_losing_cas_attempt_does_not_consume_its_reserved_history_slot() {
     assert_eq!(race.owner.state.history.reserved_len(), 0);
 }
 
-#[cfg(feature = "test-durability-faults")]
 #[path = "product_cas_loss/retained_recovery.rs"]
 mod retained_recovery;

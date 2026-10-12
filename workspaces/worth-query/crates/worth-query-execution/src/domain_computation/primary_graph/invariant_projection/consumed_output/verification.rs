@@ -201,6 +201,7 @@ impl ConsumedOutputEvidence {
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         if !owner.invalidation_equivalence_is_armed() {
             return Self::verify_optimized_views(
+                execution,
                 roots,
                 owner,
                 runtime,
@@ -216,6 +217,7 @@ impl ConsumedOutputEvidence {
         let image = owner.capture_full_verification(runtime, snapshot, selected, admission);
         let oracle_roots = roots.clone();
         Self::verify_optimized_views(
+            execution,
             roots,
             owner,
             runtime,
@@ -224,12 +226,13 @@ impl ConsumedOutputEvidence {
             admission,
             |result, admission| {
                 owner.record_invalidation_shadow_check();
-                super::equivalence::check(oracle_roots, image, result, admission)
+                super::equivalence::check(execution, oracle_roots, image, result, admission)
             },
         )
     }
 
     fn verify_optimized_views<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
         owner: &SourceInvalidationOwner,
         runtime: &RelationalRuntime,
@@ -272,8 +275,7 @@ impl ConsumedOutputEvidence {
         } else {
             marked_result
         };
-        #[cfg(feature = "certification-invalidation-equivalence")]
-        let result = super::equivalence::check(execution, roots, image, result, admission);
+        let result = shadow(result, admission);
         if result == Ok(ConsumedOutputVerification::Current) {
             for row in recovered {
                 let facts = row

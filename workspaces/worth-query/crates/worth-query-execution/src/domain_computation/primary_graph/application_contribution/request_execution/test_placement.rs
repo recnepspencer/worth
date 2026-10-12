@@ -267,6 +267,7 @@ mod scope_tests {
 /// The host call uses exactly the computation fixture's declared budget.
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) struct FixturePlacement {
+    _observation: crate::domain_computation::execution_observation::WorthQueryExecutionObservation,
     placement: WorthQueryExecutionPlacementForTest,
     budget: Option<worth_foundational::ExecutionBudget>,
 }
@@ -281,6 +282,7 @@ impl FixturePlacement {
             place_managed_computations_on_this_thread_for_test as place,
             WorthQueryExecutionPlacementForTest as Placement,
         };
+        let observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
         let (chosen, policy) = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => (Placement::Serial, policy),
             RuntimeWorldExecutionPlacement::Leased { policy, .. } => {
@@ -292,6 +294,7 @@ impl FixturePlacement {
             place(prior);
         }
         Self {
+            _observation: observation,
             placement: prior,
             budget: bound(Some(policy.budget())),
         }

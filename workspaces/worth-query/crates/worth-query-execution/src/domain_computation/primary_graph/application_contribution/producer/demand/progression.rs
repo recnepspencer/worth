@@ -278,7 +278,6 @@ where
         {
             demand.terminal_caller_denial = Some(stop.clone());
         }
-        #[cfg(feature = "test-query-execution-observer")]
         caller_pass_observation::observe_request_work(&admission);
         Err(stop)
     }

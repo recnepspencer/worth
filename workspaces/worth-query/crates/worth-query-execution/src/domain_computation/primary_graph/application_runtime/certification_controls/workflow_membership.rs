@@ -7,7 +7,6 @@ where
 {
     /// Attempts to cycle one published definition-node membership natively.
     #[doc(hidden)]
-    #[cfg(feature = "test-primary-graph-faults")]
     pub fn attempt_workflow_definition_membership_cycle_for_test(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,

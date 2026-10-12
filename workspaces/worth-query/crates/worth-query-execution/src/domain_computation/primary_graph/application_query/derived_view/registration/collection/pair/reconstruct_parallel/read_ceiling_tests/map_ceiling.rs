@@ -115,7 +115,7 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
             let serial = SerialRequest::from_memory(
                 SerialMemoryBudget::new(16 << 20),
                 scope.cancellation().execution_token(),
-                Some(scope.deadline()),
+                scope.deadline(),
             );
             let mut plans = WorthQueryDerivedPairReadPlans::new(first, second);
             ExecutionRequest::serial(&serial)

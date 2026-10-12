@@ -5,7 +5,7 @@ use super::*;
 fn cancellation_and_deadline_terminalize_all_live_resources() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let context = LiveContext::new(request);

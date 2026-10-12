@@ -108,7 +108,6 @@ fn run_isolated_probe(probe_name: &str) {
 /// Everything the answer depends on is held fixed: the same anchor degree
 /// within the budget, the same work bound, the same refusal. Only the source
 /// breadth around it moves.
-#[cfg(feature = "allocation-probes")]
 fn measured_bounded_read(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     fanout: usize,

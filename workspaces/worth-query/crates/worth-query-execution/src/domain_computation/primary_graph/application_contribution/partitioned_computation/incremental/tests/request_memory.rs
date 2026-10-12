@@ -41,7 +41,7 @@ fn under(memory: u64) -> [Attempt; 2] {
                 RuntimeWorldExecutionPlacement::Serial(policy(memory))
             } else {
                 RuntimeWorldExecutionPlacement::Leased {
-                    authority: test_execution_authority(),
+                    authority: query_test_execution_authority_for_test(),
                     policy: policy(memory),
                 }
             }

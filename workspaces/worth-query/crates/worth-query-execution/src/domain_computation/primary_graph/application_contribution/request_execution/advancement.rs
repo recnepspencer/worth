@@ -308,8 +308,7 @@ mod standalone_test_custody;
 #[cfg(test)]
 mod tests;
 
-#[cfg(feature = "test-query-execution-observer")]
-pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass;
+pub(in crate::domain_computation::primary_graph) use observation::record_caller_pass_for_test;
 
 #[cfg(test)]
 mod test_host_policy;
