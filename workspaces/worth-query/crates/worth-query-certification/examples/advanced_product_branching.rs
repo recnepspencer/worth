@@ -124,7 +124,7 @@ fn run() {
                 .query(TemporalIntentRead {
                     identity: "intent-1".to_owned(),
                 })
-                .execute()
+                .execute_in_advancement(&host_phase)
                 .expect("the historical read must use the retained application evidence")
         })
         .expect("installed host call opens");
