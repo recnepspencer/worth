@@ -13,4 +13,3 @@ worth-query-host = { workspace = true }
 worth-query-parameter-entry.workspace = true
 worth-query-topology-entry.workspace = true
 
-worth-execution = { path = "../../../../../../../crates/worth-execution" }

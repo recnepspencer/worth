@@ -7,7 +7,6 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
     WorthQueryRequiredOutputPreparationDenial,
 };
-use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial;
 use worth_query_topology_entry::{
     PlanarEdit, PlanarMutation, PlanarOutputDemand, PlanarOutputRead, PlanarRead,
 };
@@ -114,7 +113,7 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
                 WorthQueryApplicationOutputDemandDenial::Demand(cause)
             ) if cause.kind()
                 == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::SourceScope(
-                    worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
+                    ResolutionRefusal::UnknownEntity
                 )
         ),
         "the producer's operation names a scope that does not resolve: {denial:?}"
@@ -260,7 +259,7 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
                     denial
                 )
             ) if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted)
+                AdmissionRefusal::ObservationCapacityExhausted
             )
         ),
         "readiness denial must retain its typed capacity cause: {failure:?}"

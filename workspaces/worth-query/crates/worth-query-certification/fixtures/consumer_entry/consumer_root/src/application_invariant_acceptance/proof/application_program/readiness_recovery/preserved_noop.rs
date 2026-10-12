@@ -121,9 +121,7 @@ pub(crate) fn preserved_noop_output_completes_readiness_without_a_signal_success
     assert_eq!(
         cause.kind(),
         worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-            WorthQueryProductBranchAdmissionDenial::Refused(
-                AdmissionRefusal::ObservationCapacityExhausted
-            )
+            AdmissionRefusal::ObservationCapacityExhausted
         )
     );
     let reopened = match ready

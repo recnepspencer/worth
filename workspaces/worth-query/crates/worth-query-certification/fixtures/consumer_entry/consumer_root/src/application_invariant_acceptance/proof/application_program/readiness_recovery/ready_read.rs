@@ -62,9 +62,7 @@ pub(crate) fn ready_read_capacity_preserves_completion(
     assert_eq!(
         cause.kind(),
         worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-            WorthQueryProductBranchAdmissionDenial::Refused(
-                AdmissionRefusal::ObservationCapacityExhausted
-            )
+            AdmissionRefusal::ObservationCapacityExhausted
         ),
     );
     assert_eq!(

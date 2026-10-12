@@ -99,7 +99,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         WorthQueryRequiredOutputPreparationDenial::Demand(
             worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Source(
             worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::ProductSelection(
-                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted)
+                worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted)
             )
             )
         )

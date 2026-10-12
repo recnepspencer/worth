@@ -194,8 +194,12 @@ pub(super) fn close_before_required_output_start_is_typed(
     let worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
         worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
     ) = failure.denial() else { panic!("retired occurrence must preserve the exact native preflight cause") };
-    assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-        worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::RetiredBranch)));
+    assert_eq!(
+        denial.kind(),
+        worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
+            AdmissionRefusal::RetiredBranch
+        )
+    );
     drop(failure);
     if let Some(cleanup) = pending_cleanup {
         cleanup

@@ -43,7 +43,7 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
         matches!(&interrupted,
         WorthQueryRequiredOutputPreparationDenial::Demand(WorthQueryApplicationOutputDemandDenial::Demand(cause))
         if cause.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-            worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted))),
+            AdmissionRefusal::ObservationCapacityExhausted)),
         "{interrupted:?}"
     );
     drop(output);

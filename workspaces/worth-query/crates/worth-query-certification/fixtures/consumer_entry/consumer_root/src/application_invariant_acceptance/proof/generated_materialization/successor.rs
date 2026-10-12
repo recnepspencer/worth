@@ -42,7 +42,7 @@ pub(super) fn require_stale_source_denial(
         .with_host_advancement(|host_phase| {
             application
                 .on_branch(branch)
-                .select(&phase)
+                .select(&host_phase)
                 .expect("the Query-issued output occurrence remains selectable")
         })
         .expect("installed host call opens");

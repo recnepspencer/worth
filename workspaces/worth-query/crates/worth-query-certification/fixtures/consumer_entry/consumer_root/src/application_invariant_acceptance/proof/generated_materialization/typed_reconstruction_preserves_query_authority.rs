@@ -136,10 +136,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     };
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read(request, &vertices[0].body_key), retained);
-    let recovery = match foreign
-        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            execution, recovery, scope,
-        ) {
+    let recovery = match execution.run(worth_execution::ExecutionWorkCeiling::new(crate::application_invariant_acceptance::resources::EXECUTION_POLICY.budget().work_ceiling()), |_| foreign.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(execution, recovery, scope)).expect("funded recovery request opens").0 {
         Ok(_) => panic!("a foreign Query runtime must not settle suspension custody"),
         Err(failure) => {
             assert_eq!(
@@ -149,10 +146,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             failure.into_recovery()
         }
     };
-    let suspended = application
-        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            execution, recovery, scope,
-        )
+    let suspended = execution.run(worth_execution::ExecutionWorkCeiling::new(crate::application_invariant_acceptance::resources::EXECUTION_POLICY.budget().work_ceiling()), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(execution, recovery, scope)).expect("funded recovery request opens").0
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled suspension into World: {:?}",
@@ -198,8 +192,17 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         _ => panic!("the injected owner failure must retain opaque restoration recovery"),
     };
     assert_eq!(recovery.product_branch(), branch);
-    let recovery = match foreign
-        .continue_generated_output_restoration_recovery(execution, recovery, scope)
+    let recovery = match execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(
+                crate::application_invariant_acceptance::resources::EXECUTION_POLICY
+                    .budget()
+                    .work_ceiling(),
+            ),
+            |_| foreign.continue_generated_output_restoration_recovery(execution, recovery, scope),
+        )
+        .expect("funded recovery request opens")
+        .0
     {
         Ok(_) => panic!("a foreign Query runtime must not settle restoration custody"),
         Err(failure) => {
@@ -210,8 +213,20 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             failure.into_recovery()
         }
     };
-    application
-        .continue_generated_output_restoration_recovery(execution, recovery, scope)
+    execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(
+                crate::application_invariant_acceptance::resources::EXECUTION_POLICY
+                    .budget()
+                    .work_ceiling(),
+            ),
+            |_| {
+                application
+                    .continue_generated_output_restoration_recovery(execution, recovery, scope)
+            },
+        )
+        .expect("funded recovery request opens")
+        .0
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled restoration into World: {:?}",
