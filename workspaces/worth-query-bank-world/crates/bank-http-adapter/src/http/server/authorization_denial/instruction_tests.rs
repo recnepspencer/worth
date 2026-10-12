@@ -66,3 +66,59 @@ fn an_uninstalled_policy_requires_operator_repair() {
         (Kind::Unavailable, Next::ContactOperator)
     );
 }
+
+#[test]
+fn an_authorization_read_stop_keeps_its_http_disposition() {
+    use worth_query_host::facade::primary_graph::{
+        RelationalExecutionDenialCause as Cause,
+        WorthQueryOperationAuthorizationDenialKind as Query,
+    };
+    for (cause, kind, next) in [
+        (Cause::Cancelled, Kind::Cancelled, Next::Retry),
+        (Cause::DeadlineElapsed, Kind::DeadlineExceeded, Next::Retry),
+        (
+            Cause::WorkExhausted,
+            Kind::ResourceExhausted,
+            Next::NarrowRequest,
+        ),
+        (
+            Cause::DeclaredMemoryExhausted {
+                requested: 7,
+                admitted: 3,
+            },
+            Kind::ResourceExhausted,
+            Next::NarrowRequest,
+        ),
+        (
+            Cause::NoActiveExecutionScope,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
+        (
+            Cause::WorkerFailed,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
+        (Cause::NestedStopped, Kind::Unavailable, Next::Retry),
+        (
+            Cause::UncheckedCustomKernel,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
+        (
+            Cause::EquivalenceContractUnavailable,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
+        (
+            Cause::ExpectedIdentitiesNotCanonical,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
+    ] {
+        assert_eq!(
+            authorization_denial(Query::RelationalExecution(cause).into()),
+            super::BankHttpDenial::new(kind, next)
+        );
+    }
+}

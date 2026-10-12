@@ -211,6 +211,7 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::CorrespondenceDelivery(_)
         | Settlement::ProductDelivery(_) => unavailable(),
         Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
+        Settlement::RelationalExecution(cause) => super::relational_execution_denial::denial(cause),
         Settlement::SourceQueryInstallation(_) => unavailable(),
         Settlement::SourcePrincipal(_) => stale(),
         Settlement::SourceScope(kind) => entity(kind),

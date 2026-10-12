@@ -1,7 +1,7 @@
 use worth_query_host::facade::primary_graph::{
-    WorthQueryOperationAuthorizationDenial,
+    RelationalExecutionDenialCause, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialKind as QueryKind,
-    WorthQueryProductBranchAdmissionDenial,
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProviderSessionDenialKind,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -17,6 +17,8 @@ pub enum BankAuthorizationDenialKind {
     StaleScope,
     MutationPreconditionRejected,
     CanonicalWorkDenied,
+    RelationalExecution(RelationalExecutionDenialCause),
+    ExecutionRequest(WorthQueryProviderSessionDenialKind),
     TrustedTimeUnavailable,
     InvalidOperationInput,
     CapabilityProjectionRejected,
@@ -126,6 +128,8 @@ const fn map_kind(kind: QueryKind) -> BankAuthorizationDenialKind {
         QueryKind::StaleScope => Bank::StaleScope,
         QueryKind::MutationPreconditionRejected => Bank::MutationPreconditionRejected,
         QueryKind::CanonicalWorkDenied => Bank::CanonicalWorkDenied,
+        QueryKind::RelationalExecution(cause) => Bank::RelationalExecution(cause),
+        QueryKind::ExecutionRequest(cause) => Bank::ExecutionRequest(cause),
         QueryKind::TrustedTimeUnavailable => Bank::TrustedTimeUnavailable,
         QueryKind::InvalidOperationInput => Bank::InvalidOperationInput,
         QueryKind::CapabilityProjectionRejected => Bank::CapabilityProjectionRejected,
@@ -195,6 +199,8 @@ const fn authorization_code(kind: BankAuthorizationDenialKind) -> &'static str {
         Bank::StaleScope => "stale-scope",
         Bank::MutationPreconditionRejected => "mutation-precondition-rejected",
         Bank::CanonicalWorkDenied => "canonical-work-denied",
+        Bank::RelationalExecution(_) => "relational-execution-denied",
+        Bank::ExecutionRequest(_) => "execution-request-denied",
         Bank::TrustedTimeUnavailable => "trusted-time-unavailable",
         Bank::InvalidOperationInput => "invalid-operation-input",
         Bank::CapabilityProjectionRejected => "capability-projection-rejected",
@@ -245,3 +251,7 @@ const fn authorization_code(kind: BankAuthorizationDenialKind) -> &'static str {
         Bank::PermissionDenied => "permission-denied",
     }
 }
+
+#[cfg(test)]
+#[path = "authorization/request_stop_tests.rs"]
+mod request_stop_tests;

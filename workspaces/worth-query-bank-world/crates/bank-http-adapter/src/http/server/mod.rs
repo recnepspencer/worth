@@ -23,6 +23,7 @@ mod queue;
 mod recovery_executor;
 mod recovery_registry;
 mod recovery_routes;
+mod relational_execution_denial;
 mod request_admission;
 mod routes;
 

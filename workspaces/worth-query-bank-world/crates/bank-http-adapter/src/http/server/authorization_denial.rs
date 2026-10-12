@@ -14,6 +14,12 @@ use super::super::protocol::{
 pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHttpDenial {
     use BankAuthorizationDenialKind as Authorization;
     let (denial, next) = match kind {
+        Authorization::RelationalExecution(cause) => {
+            return super::relational_execution_denial::denial(cause)
+        }
+        Authorization::ExecutionRequest(cause) => {
+            return super::mutation_application::pending_execution_denial(cause)
+        }
         // The request lapsed before authorization decided.
         Authorization::Cancelled => (Kind::Cancelled, Next::Retry),
         Authorization::DeadlineExceeded => (Kind::DeadlineExceeded, Next::Retry),

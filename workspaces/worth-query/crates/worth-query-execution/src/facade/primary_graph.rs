@@ -33,6 +33,7 @@ pub use worth_relational::facade::{
     indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
     lineage::{LineageEventKind, LineageEventRecord},
     publication::RecordStructuralChange,
+    transactions::RelationalExecutionDenialCause,
 };
 
 pub use crate::domain_computation::application_aftermath::{
