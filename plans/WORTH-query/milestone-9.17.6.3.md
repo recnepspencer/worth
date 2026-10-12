@@ -2798,7 +2798,7 @@ The next phase may trust that advancement exploits every declared independence.
   is committed before Phase 7 closes. *Completed.*
 - **8.2** Complete the public documentation for partition-granular reuse,
   parallel advancement and the workflow frontier; an independent review
-  checks every public statement against the code.
+  checks every public statement against the code. *written, awaiting independent review*
 - **8.3** Run the complete certification and the mutation probes on x86-64 and
   wasm32.
 
