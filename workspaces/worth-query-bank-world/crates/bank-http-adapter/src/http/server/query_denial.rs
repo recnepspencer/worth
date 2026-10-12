@@ -187,6 +187,9 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
 fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
     use BankEntityResolutionDenialKind as Entity;
     match kind {
+        Entity::ExecutionRequest(kind) => {
+            super::mutation_application::pending_execution_denial(kind)
+        }
         Entity::ForeignPhase => internal_denied(),
         Entity::Cancelled => cancelled(),
         Entity::DeadlineExceeded => deadline(),

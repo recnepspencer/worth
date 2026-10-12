@@ -2,6 +2,7 @@ use worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKin
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankEntityResolutionDenialKind {
+    ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     ForeignPhase,
     Cancelled,
     DeadlineExceeded,
@@ -36,6 +37,7 @@ impl BankEntityResolutionDenial {
     pub const fn code(self) -> &'static str {
         use BankEntityResolutionDenialKind as Bank;
         match self.kind {
+            Bank::ExecutionRequest(_) => "execution-request",
             Bank::ForeignPhase => "foreign-phase",
             Bank::Cancelled => "cancelled",
             Bank::DeadlineExceeded => "deadline-exceeded",
@@ -58,9 +60,19 @@ impl BankEntityResolutionDenial {
         }
     }
 
-    pub(crate) const fn from_query(kind: QueryKind) -> Self {
+    pub(crate) fn from_query(kind: QueryKind) -> Self {
         use BankEntityResolutionDenialKind as Bank;
         let kind = match kind {
+            QueryKind::ExecutionRequest(cause) => {
+                use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
+                match worth_query_host::facade::primary_graph::relational_execution_kind(
+                    cause, None,
+                ) {
+                    Ok(kind) => Bank::ExecutionRequest(kind),
+                    Err(Control::Cancelled) => Bank::Cancelled,
+                    Err(Control::TimedOut) => Bank::DeadlineExceeded,
+                }
+            }
             QueryKind::ForeignPhase => Bank::ForeignPhase,
             QueryKind::Cancelled => Bank::Cancelled,
             QueryKind::DeadlineExceeded => Bank::DeadlineExceeded,

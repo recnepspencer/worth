@@ -57,11 +57,10 @@ where
         );
         self.work_budget.consume(1 + examined);
         self.work.record_lookup(examined);
-        let resolved = resolved.map_err(|denial| {
+        let resolved = resolved.inspect_err(|denial| {
             if let WorthQueryEntityResolutionDenialKind::ExecutionRequest(cause) = denial.kind() {
                 self.native_read_stop = Some(cause);
             }
-            denial
         })?;
         self.realized_scope.record(resolved.entity_id());
         Ok(WorthQueryInvariantEntityIdentity {
