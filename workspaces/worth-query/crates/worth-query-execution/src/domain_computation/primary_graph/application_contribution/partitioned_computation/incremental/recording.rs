@@ -114,9 +114,9 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
         }
     }
 
-    /// The completed run: each kernel's work and the tree, when every charge
-    /// measured and the kernels and combines account for all of execution's
-    /// work. `tree_memory` holds the tree until it is charged.
+    /// The completed run keeps replayable kernel steps and its reduced tree.
+    /// A nested cost with no owner-step representation leaves no retention.
+    /// `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Reduced>(
         self,
         (mut steps, steps_memory): (

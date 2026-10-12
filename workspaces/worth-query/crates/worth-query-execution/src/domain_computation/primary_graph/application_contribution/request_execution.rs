@@ -152,8 +152,7 @@ impl<'a> QueryRequestExecution<'a> {
             .map_err(memory_denial)
     }
 
-    /// The placement for one run: a child of the request's lease, or the
-    /// serial request itself.
+    /// Every run, including serial placement, descends from the request's lease.
     pub(super) fn dispatch(&self) -> Result<QueryDispatch<'_>, Resource> {
         let form = match &self.form {
             Form::Leased { lease, policy } | Form::Serial { lease, policy } => {
@@ -176,8 +175,7 @@ impl<'a> QueryRequestExecution<'a> {
     }
 }
 
-/// Bytes held on the request's memory. A request with no memory bound holds
-/// nothing and refuses nothing, but still counts what it would hold.
+/// Bytes held against the request's lease lineage until the reservation drops.
 pub(super) struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
     bytes: u64,

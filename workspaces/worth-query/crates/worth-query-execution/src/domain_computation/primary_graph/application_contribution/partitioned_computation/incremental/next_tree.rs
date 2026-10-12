@@ -192,9 +192,6 @@ where
             &kernel,
             transport,
         )?;
-        if let Some(observer) = observer {
-            observer.record(settled_wave.work, settled_wave.span);
-        }
         remaining.spend(Some(settled_wave.work)).map_err(|_| {
             WorthQueryPartitionedComputationDenial::Resource(
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
@@ -319,6 +316,10 @@ where
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
             ),
         )?;
+        // Like Full, only a successfully reduced computation settles a receipt.
+        if let Some(observer) = observer {
+            observer.record(settled_wave.work, settled_wave.span);
+        }
         let reduced = tree.result().clone();
         // A call made again whose charge did not measure cannot be carried
         // again, so the run retains nothing.

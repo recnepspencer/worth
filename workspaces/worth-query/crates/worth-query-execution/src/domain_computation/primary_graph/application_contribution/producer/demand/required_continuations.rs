@@ -226,7 +226,7 @@ where
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     super::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
-                    "advancement phase",
+                    "required-checkpoint-phase",
                 )
             })?;
         let demand = self

@@ -18,7 +18,14 @@ impl KernelRecording {
     ) -> Self {
         Self {
             limit,
-            memory: Mutex::new(retain.then(|| request.reserve(0).ok()).flatten()),
+            // Preparation already admitted this request's lease. room::check
+            // tests requested > room, so a zero-byte hold cannot be refused,
+            // even with a full lineage or a cancelled request.
+            memory: Mutex::new(retain.then(|| {
+                request
+                    .reserve(0)
+                    .expect("an admitted request reserves zero bytes")
+            })),
             receipts: Mutex::new(BTreeMap::new()),
         }
     }

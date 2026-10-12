@@ -170,15 +170,7 @@ fn across_the_axis(
             outcomes
         });
         for total in outcomes.iter().flatten() {
-            let expected = if cfg!(target_family = "wasm") {
-                Some(ExecutionFallbackCause::PlatformSerial)
-            } else if placement == Placement::Serial {
-                Some(ExecutionFallbackCause::PolicySerial)
-            } else if workers_of(placement) == 1 {
-                Some(ExecutionFallbackCause::WorkerLimit)
-            } else {
-                None
-            };
+            let expected = placement.expected_fallback();
             assert_eq!(
                 total.report.fallback(),
                 expected,
@@ -301,4 +293,23 @@ fn assert_least_failure(
 
 fn one_worker() -> Vec<Placement> {
     vec![Placement::Serial, Placement::Leased(NonZeroUsize::MIN)]
+}
+
+/// The same backend capability that chooses production's serial cause.
+trait PlacementFallback: Sized {
+    fn expected_fallback(self) -> Option<ExecutionFallbackCause> {
+        Some(ExecutionFallbackCause::PlatformSerial)
+    }
+}
+impl PlacementFallback for Placement {
+    worth_execution::needs_os_threads! {
+        fn expected_fallback(self) -> Option<ExecutionFallbackCause> {
+            if self == Placement::Serial { Some(ExecutionFallbackCause::PolicySerial) }
+            else if workers_of(self) == 1 { Some(ExecutionFallbackCause::WorkerLimit) }
+            else { None }
+        }
+    }
+}
+pub(super) fn serial_fallback() -> Option<ExecutionFallbackCause> {
+    Placement::Serial.expected_fallback()
 }

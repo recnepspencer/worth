@@ -22,6 +22,7 @@ where
         |_| {},
         |phase| admit(world, request, phase),
         ceiling,
+        None,
     )
 }
 
@@ -62,6 +63,7 @@ where
         before_computation,
         |phase| admit(world, request, phase),
         None,
+        None,
     )
 }
 
@@ -97,6 +99,7 @@ where
         placement,
         before_computation,
         |_| admission,
+        None,
         None,
     )
 }
@@ -138,6 +141,7 @@ fn with_admitted_attempt_placed<Tested, Owned>(
         &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Admission,
     ceiling: Option<u64>,
+    kernel_receipts: Option<Arc<Mutex<Vec<(u64, u64)>>>>,
 ) -> Attempt
 where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
@@ -168,6 +172,14 @@ where
                             .expect("the fixture phase belongs to its installed world");
                         before_computation(execution);
                         let prepared = installed.prepare_through(reader, execution, root)?;
+                        let prepared = if let Some(receipts) = &kernel_receipts {
+                            let receipts = Arc::clone(receipts);
+                            prepared.observe_kernel_cost_for_test(move |work, span| {
+                                receipts.lock().unwrap().push((work, span));
+                            })
+                        } else {
+                            prepared
+                        };
                         let compute = || {
                             prepared.compute(WorthQueryManagedComputationExecution::new(execution))
                         };
@@ -272,4 +284,27 @@ where
         );
     }
     attempt
+}
+
+/// One billed attempt with its receiver-owned kernel completion receipt.
+pub(super) fn attempt_billed_with_receipts(
+    world: &AuthorizationWorld,
+    installed: &Installed,
+    prior: Option<ComputationPrior>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    placement: RuntimeWorldExecutionPlacement<'_>,
+    ceiling: u64,
+    receipts: Arc<Mutex<Vec<(u64, u64)>>>,
+) -> Attempt {
+    with_admitted_attempt_placed(
+        world,
+        installed,
+        prior,
+        request,
+        placement,
+        |_| {},
+        |phase| admit(world, request, phase),
+        Some(ceiling),
+        Some(receipts),
+    )
 }

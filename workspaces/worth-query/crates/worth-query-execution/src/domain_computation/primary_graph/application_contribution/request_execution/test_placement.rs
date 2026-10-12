@@ -274,13 +274,19 @@ fn certification_failure<E>(
             panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}")
         }
         ReduceCertificationFailure::Run(_) => {
-            panic!("the oracle or perturbed run of seed {seed} stopped where the run did not")
+            if lease.is_cancelled() {
+                WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
+            } else if lease.deadline_elapsed() {
+                WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)
+            } else {
+                panic!("the oracle or perturbed run of seed {seed} stopped where the run did not")
+            }
         }
     }
 }
 
 /// Bounds the test thread's requests with a host's declared budget.
-/// Placement still decides the backing; a serial request has no policy work ceiling.
+/// Placement decides the backing; every request keeps its declared policy ceiling.
 pub fn bound_advancement_requests_on_this_thread_for_test(
     budget: Option<ExecutionBudget>,
 ) -> Option<ExecutionBudget> {

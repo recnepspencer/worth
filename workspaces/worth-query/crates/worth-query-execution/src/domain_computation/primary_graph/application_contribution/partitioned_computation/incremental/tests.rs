@@ -162,7 +162,8 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
                 matches!(
                     map.run(
                         Some(
-                            checkpoint.native_lease_for_test()
+                            checkpoint
+                                .native_lease_for_test()
                                 .expect("the kernel lends its actual leased backing")
                         ),
                         |units, context| {
@@ -351,6 +352,7 @@ mod collision;
 mod digests;
 mod installation;
 mod interruption;
+mod kernel_receipt;
 mod request_memory;
 mod reroute;
 mod tree_memory;

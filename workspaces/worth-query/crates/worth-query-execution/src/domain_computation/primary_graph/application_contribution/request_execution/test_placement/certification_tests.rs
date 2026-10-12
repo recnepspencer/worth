@@ -168,3 +168,40 @@ fn a_certification_disagreement_keeps_its_own_panic_message() {
         "certification retains the assertion that convicted its disagreement"
     );
 }
+
+#[test]
+fn a_run_failure_coincident_with_cancellation_returns_the_request_stop() {
+    let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
+    let cancellation = worth_execution::CancellationSource::new();
+    let lease = query_test_execution_authority_for_test()
+        .request_lease(worth_execution::LeaseRequest {
+            policy: test_policy(NonZeroUsize::MIN, 1 << 24),
+            cancellation: cancellation.token(),
+            deadline: None,
+        })
+        .unwrap();
+    cancellation.cancel();
+    let identity = worth_foundational::PartitionIdentity::new(1);
+    let failure =
+        ReduceCertificationFailure::<()>::Run(worth_execution::ReduceInputDenial::MapStopped {
+            boundary: Some(identity),
+            reason: worth_execution::MapStop::WorkExhausted { identity },
+            report: worth_foundational::ExecutionReport::new(
+                worth_foundational::ExecutionPosture::Serial,
+                0,
+                0,
+                Default::default(),
+            ),
+        });
+    let returned = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        certification_failure(&lease, 1, failure)
+    }));
+    assert!(
+        returned.is_ok(),
+        "a non-mismatch run failure preserves coincident request cancellation"
+    );
+    assert_eq!(
+        returned.unwrap(),
+        worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+    );
+}
