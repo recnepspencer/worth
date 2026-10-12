@@ -1314,6 +1314,12 @@ executor and no second pool survives.
 
 ## Budgets, Outcomes, And Cost Contracts
 
+Cost in this section is held by differentials and growth classes. The same
+request's charged work is equal with reuse on and off and at every worker
+count, and each bound below is checked with headroom. No test pins an absolute
+work, span, byte or consult number, and a red exact number is loosened or
+deleted, not investigated. Accounting is a tool here, never a deliverable.
+
 | Contract | Bound |
 | --- | --- |
 | Commit-time marking | O(touched records + matched facts + marked downstream closure) logical routing operations, plus separately bounded physical index navigation and selected copy-on-write paths; no scan of settlements or waiting work |

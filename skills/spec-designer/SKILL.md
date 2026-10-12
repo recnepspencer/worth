@@ -59,7 +59,7 @@ Combine hostile conditions that attack the same architectural weakness:
 - destroyed derived state followed by reconstruction
 - diagnostic, replay, or migration pressure against the ordinary path
 
-Quantify the conditions whenever the claim permits it. Name the exact crash point, schedule, scale axis, resource bound, compatibility window, or amplification counter.
+Quantify the conditions whenever the claim permits it. Name the exact crash point, schedule, scale axis, resource bound, compatibility window, or amplification. State a cost condition as a growth class or as the equality of two ways of doing the same work, never as an exact count, and call for a counter only when it is proven necessary.
 
 The courtroom must specify:
 
@@ -69,7 +69,7 @@ The courtroom must specify:
 - the required typed outcomes
 - the effects that may and may not occur
 - the state that must survive
-- the cost or amplification bounds
+- the cost growth class, where a caller would feel it
 - independent observations of the result
 - the defective implementation the proof must convict
 
