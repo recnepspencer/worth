@@ -7,6 +7,14 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     request: &Request<'_>,
     scope: &WorthQueryRequestScope,
 ) {
+    // Recovery opens its Query phase inside; the external caller owns the
+    // native request under the same installed policy and interruption scope.
+    let recovery_request = worth_execution::SerialRequest::from_policy(
+        &crate::application_invariant_acceptance::resources::EXECUTION_POLICY,
+        scope.cancellation().execution_token(),
+        scope.deadline(),
+    );
+    let execution = &worth_execution::ExecutionRequest::serial(&recovery_request);
     let outcome = request
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
@@ -81,14 +89,17 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         .clone();
     let retained = read(request, &vertices[0].body_key);
     successor::require_stale_source_denial(application, scope, branch, stale_source);
-    match application.with_host_advancement(|host_phase| application
-        .on_branch(branch)
-        .select(&host_phase)
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            scope,
-            wrong_source,
-        )).expect("installed host call opens")
+    let selected = application
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the Query-issued output occurrence remains selectable")
+        })
+        .expect("installed host call opens");
+    match selected.suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(
+        scope, wrong_source,
+    )
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::Qualification(
             worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
@@ -104,11 +115,16 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             )
         })
         .expect("installed host call opens");
-    let recovery = match application.with_host_advancement(|host_phase| application
-        .on_branch(branch)
-        .select(&host_phase)
-        .expect("the Query-issued output occurrence remains selectable")
-        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)).expect("installed host call opens")
+    let selected = application
+        .with_host_advancement(|host_phase| {
+            application
+                .on_branch(branch)
+                .select(&host_phase)
+                .expect("the Query-issued output occurrence remains selectable")
+        })
+        .expect("installed host call opens");
+    let recovery = match selected
+        .suspend_current_generated_output::<PlanarFinalOutputProducer<ConsumerSchema>>(scope, source)
     {
         Err(worth_query_host::facade::primary_graph::WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(recovery)) => recovery,
         Err(failure) => panic!(
@@ -119,10 +135,10 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     };
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read(request, &vertices[0].body_key), retained);
-    let recovery = match foreign.with_host_advancement(|phase| foreign
+    let recovery = match foreign
         .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            &phase.execution_request_for(foreign.product_runtime()).expect("matching installed phase"), recovery, scope,
-        )).expect("installed host call opens") {
+            execution, recovery, scope,
+        ) {
         Ok(_) => panic!("a foreign Query runtime must not settle suspension custody"),
         Err(failure) => {
             assert_eq!(
@@ -132,10 +148,10 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             failure.into_recovery()
         }
     };
-    let suspended = application.with_host_advancement(|phase| application
+    let suspended = application
         .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            &phase.execution_request_for(application.product_runtime()).expect("matching installed phase"), recovery, scope,
-        )).expect("installed host call opens")
+            execution, recovery, scope,
+        )
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled suspension into World: {:?}",
@@ -180,16 +196,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     };
     assert_eq!(recovery.product_branch(), branch);
     let recovery = match foreign
-        .with_host_advancement(|phase| {
-            foreign.continue_generated_output_restoration_recovery(
-                &phase
-                    .execution_request_for(foreign.product_runtime())
-                    .expect("matching installed phase"),
-                recovery,
-                scope,
-            )
-        })
-        .expect("installed host call opens")
+        .continue_generated_output_restoration_recovery(execution, recovery, scope)
     {
         Ok(_) => panic!("a foreign Query runtime must not settle restoration custody"),
         Err(failure) => {
@@ -201,16 +208,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         }
     };
     application
-        .with_host_advancement(|phase| {
-            application.continue_generated_output_restoration_recovery(
-                &phase
-                    .execution_request_for(application.product_runtime())
-                    .expect("matching installed phase"),
-                recovery,
-                scope,
-            )
-        })
-        .expect("installed host call opens")
+        .continue_generated_output_restoration_recovery(execution, recovery, scope)
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled restoration into World: {:?}",

@@ -145,8 +145,8 @@ fn workflow_executor_failures_are_typed_and_must_be_declared() {
 
     let declared = failing_stage_denial(
         request_execution,
-        "fail-dependency",
         "workflow-declared-failure",
+        "fail-dependency",
     );
     assert_eq!(
         declared.kind(),
@@ -157,8 +157,8 @@ fn workflow_executor_failures_are_typed_and_must_be_declared() {
     );
     let undeclared = failing_stage_denial(
         request_execution,
-        "fail-unsupported",
         "workflow-undeclared-failure",
+        "fail-unsupported",
     );
     assert_eq!(
         undeclared.kind(),
@@ -175,8 +175,8 @@ fn workflow_read_requires_the_exact_stage_local_primary_role() {
 
     let denial = failing_stage_denial(
         request_execution,
-        "read-undeclared",
         "workflow-undeclared-read",
+        "read-undeclared",
     );
     assert_eq!(
         denial.kind(),
@@ -292,6 +292,11 @@ fn failing_stage_denial(
         &mut workspace,
     ) {
         TransitionOutcome::Failed(denial) => denial,
+        TransitionOutcome::Denied(denial)
+        | TransitionOutcome::Stale(denial)
+        | TransitionOutcome::RebindRequired(denial) => {
+            panic!("failing stage was refused before its expected executor failure: {denial:?}")
+        }
         _ => panic!("failing stage did not produce an execution failure"),
     }
 }

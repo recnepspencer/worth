@@ -40,6 +40,7 @@ struct Case {
     work: Vec<u64>,
 }
 fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(Placement::Serial), bound(None));
     let mut app = ExampleApplication::publish("blocked");
     let cancellation = WorthQueryCancellationSource::new();

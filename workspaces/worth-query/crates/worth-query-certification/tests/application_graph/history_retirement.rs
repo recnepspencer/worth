@@ -97,7 +97,7 @@ fn read_at_commit(
                 .query(DocumentRetentionRead {
                     identity: DOCUMENT_IDENTITY.to_owned(),
                 })
-                .execute()
+                .execute_in_advancement(&host_phase)
                 .expect("a selected commit executes its read")
                 .rows()[0]
                 .retention_days

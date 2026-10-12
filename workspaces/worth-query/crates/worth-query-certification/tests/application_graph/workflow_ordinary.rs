@@ -215,10 +215,10 @@ fn ordinary_publication_uses_installed_binding_and_real_commit_authority() {
                     .expect("the draft binds to installed support")
                     .publish(WorkflowDefinitionExpectedPredecessor::Absent)
                     .idempotency(&key)
-                    .execute()
-                    .expect("the ordinary publication prepares")
             })
             .expect("installed host call opens")
+            .execute()
+            .expect("the ordinary publication prepares")
     };
     let first = match publish() {
         WorkflowDefinitionPublicationOutcome::Published(performed) => performed,

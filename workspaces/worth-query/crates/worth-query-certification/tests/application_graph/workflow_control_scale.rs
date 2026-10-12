@@ -165,10 +165,10 @@ fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
                 .expect("control graph binds to installed vocabulary")
                 .publish(WorkflowDefinitionExpectedPredecessor::Absent)
                 .idempotency(&key)
-                .execute()
-                .expect("control definition publishes")
         })
-        .expect("installed host call opens");
+        .expect("installed host call opens")
+        .execute()
+        .expect("control definition publishes");
     let publication_ms = publication_at.elapsed().as_millis();
     let WorkflowDefinitionPublicationOutcome::Published(published) = publication else {
         panic!("expected control publication: {publication:?}");

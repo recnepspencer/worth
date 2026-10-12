@@ -78,6 +78,8 @@ fn caller_work_ceiling_keeps_the_same_typed_boundary_at_all_widths() {
 
 #[test]
 fn unfunded_native_effect_is_a_typed_caller_work_stop_at_all_widths() {
+    // The checked preparation worker uses identity 1, independently of storage partitions.
+    const CHECKED_PREPARATION_PARTITION: u64 = 1;
     use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
@@ -98,7 +100,7 @@ fn unfunded_native_effect_is_a_typed_caller_work_stop_at_all_widths() {
             stage_identity: "left".into(),
             cause: Ok(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource {
                 denial: Resource::WorkExhausted,
-                partition_identity: Some(u64::from(worth_relational::facade::identity::PartitionId::main().0)),
+                partition_identity: Some(CHECKED_PREPARATION_PARTITION),
                 policy_ancestor: None,
             }),
         };

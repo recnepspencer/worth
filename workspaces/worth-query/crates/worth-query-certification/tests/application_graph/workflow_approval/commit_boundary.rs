@@ -197,9 +197,10 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
             if denial.kind() == WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired
     ));
     assert_eq!(read_retention(runtime, instance.branch()), SEED_RETENTION);
+    let first_candidate = candidate(972);
     let first_program = runtime
         .with_host_advancement(|host_phase| {
-            candidate(972)
+            first_candidate
         .bind_workflow_operation_authority(
             &host_phase, &authority,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -207,9 +208,10 @@ fn one_approval_transition_cannot_commit_twice_under_different_client_keys() {
         .unwrap()
         })
         .expect("installed host call opens");
+    let second_candidate = candidate(973);
     let second_program = runtime
         .with_host_advancement(|host_phase| {
-            candidate(973)
+            second_candidate
         .bind_workflow_operation_authority(
             &host_phase, &authority,
             worth_query_execution::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

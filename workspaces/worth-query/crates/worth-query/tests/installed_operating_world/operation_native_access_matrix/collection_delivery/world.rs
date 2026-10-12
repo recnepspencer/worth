@@ -300,11 +300,15 @@ fn assert_move_patch(
     moved: &foundation::WorthQueryEntityIdentity,
     foundational: &domain::WorthQueryFoundationalInvalidationProjection,
 ) {
-    assert!(patch.operations().iter().any(|operation| matches!(
-        operation,
-        domain::WorthQueryCollectionPatchOperation::Move { row, to: 0, .. }
-            if row.entity_identity() == moved
-    )));
+    assert!(
+        patch.operations().iter().any(|operation| matches!(
+            operation,
+            domain::WorthQueryCollectionPatchOperation::Move { row, to: 0, .. }
+                if row.entity_identity() == moved
+        )),
+        "move patch operations: {:?}",
+        patch.operations()
+    );
     assert_eq!(patch.facts().len(), 1);
     assert_eq!(
         patch.facts()[0].native_value().scalar(),
