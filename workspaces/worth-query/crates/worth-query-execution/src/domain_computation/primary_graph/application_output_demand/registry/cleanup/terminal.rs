@@ -27,15 +27,7 @@ impl DemandRegistryState {
             .map_err(|_| empty_work_denial())?;
         admission
             .admit_read_scratch(u64::try_from(terminal_backing).map_err(|_| empty_work_denial())?)
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    empty_work_denial()
-                }
-                _ => empty_capacity_denial(),
-            })?;
+            .map_err(subject_scratch_denial)?;
         admission
             .charge_external_work(key_work(head)?)
             .map_err(|_| work_denial())?;
@@ -117,15 +109,7 @@ impl DemandRegistryState {
             .ok_or_else(work_denial)?;
         admission
             .admit_read_scratch(u64::try_from(member_backing).map_err(|_| work_denial())?)
-            .map_err(|stop| match stop {
-                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
-                    ..
-                }
-                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
-                    work_denial()
-                }
-                _ => empty_capacity_denial(),
-            })?;
+            .map_err(member_scratch_denial)?;
         let mut retired_members = Vec::new();
         if member_count != 0 {
             retired_members
@@ -237,3 +221,36 @@ impl DemandRegistryState {
         }))
     }
 }
+
+fn subject_scratch_denial(
+    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+) -> WorthQueryOutputDemandDenial {
+    match stop {
+                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
+                    ..
+                }
+                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
+        | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
+                    empty_work_denial()
+                }
+                _ => empty_capacity_denial(),
+            }
+}
+
+fn member_scratch_denial(
+    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+) -> WorthQueryOutputDemandDenial {
+    match stop {
+                worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
+                    ..
+                }
+                | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
+        | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
+                    work_denial()
+                }
+                _ => empty_capacity_denial(),
+            }
+}
+
+#[cfg(test)]
+mod tests;
