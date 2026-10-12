@@ -27,8 +27,7 @@ pub enum WorthServerSchedulerRuntimeFailure {
     },
     /// The snapshot reader refused custody of an already borrowed phase.
     BasisSnapshotReadDenied {
-        denial:
-            worth_query_host::facade::application_contribution::WorthQueryForeignAdvancementPhase,
+        denial: worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
         detail: String,
     },
     Opaque {
