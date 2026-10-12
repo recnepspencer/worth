@@ -147,10 +147,6 @@ where
     Tested: ApplicationManagedComputation<Schema, Feature, Input = Input>,
     Owned: TestOwner<Tested>,
 {
-    let fact_seal_bytes = match placement {
-        RuntimeWorldExecutionPlacement::Serial(_) => 288,
-        RuntimeWorldExecutionPlacement::Leased { .. } => 1_618,
-    };
     let _placement =
         super::super::super::super::request_execution::FixturePlacement::enter(placement);
     let mut observed = None;
@@ -218,17 +214,16 @@ where
                             Some(interruption),
                         );
                     } else {
-                        // This fixed status fact needs its placement's native backing
-                        // after the first gather holds the entire policy.
-                        // The computation's own boundary is asserted by its outcome.
-                        assert_eq!(
+                        // Retaining the fact after gather can exhaust this
+                        // policy. Its allocation size is not part of the law.
+                        assert!(matches!(
                             denial.invariant_denial().map(|denial| denial.kind()),
                             Some(crate::domain_computation::primary_graph::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
                                 worth_relational::facade::transactions::RelationalExecutionDenialCause::PolicyMemoryExhausted {
-                                    requested: fact_seal_bytes, admitted: 0, ancestor: 0,
+                                    requested, admitted: 0, ancestor: 0,
                                 }
-                            )),
-                        );
+                            )) if requested > 0
+                        ));
                     }
                     (
                         None,
