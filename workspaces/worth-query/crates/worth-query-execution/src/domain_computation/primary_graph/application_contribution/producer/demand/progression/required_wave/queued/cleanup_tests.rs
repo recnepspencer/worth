@@ -10,14 +10,19 @@ fn admission(work: u64) -> InvalidationEditAdmission {
 }
 fn drained_cleanup(one_short: bool) {
     with_committed_own_write(|world, receipt, _, _| {
+        let runtime = &world.application;
+        let registry = &runtime.output_demands;
+        let (anchor, ready) = registry.fixture_refusing_ready();
+        // Fixture publication opens its own host calls before this payer opens.
+        let baseline = registry.fixture_released_publication_cleanup(receipt);
+        let pending = registry.fixture_cleanup_head();
+        let before = registry.fixture_reserved_balances();
         world
             .application
             .with_host_advancement(|phase| {
                 let execution = phase
                     .execution_request_for(&world.application.product_runtime)
                     .unwrap();
-                let runtime = &world.application;
-                let (anchor, ready) = runtime.output_demands.fixture_refusing_ready();
                 let mut selection = runtime.demand_request_admission();
                 let branch = runtime.current_world();
                 let (shared, positioned) = super::super::selection::select_required_basis(
@@ -46,11 +51,7 @@ fn drained_cleanup(one_short: bool) {
                     RequiredWaveTarget::Caller,
                     head,
                 );
-                crate::domain_computation::primary_graph::with_test_advancement(|_| {
-                    let registry = &runtime.output_demands;
-                    let baseline = registry.fixture_released_publication_cleanup(receipt);
-                    let pending = registry.fixture_cleanup_head();
-                    let before = registry.fixture_reserved_balances();
+                {
                     assert_ne!(
                         before, baseline,
                         "the released publication really retains custody"
@@ -100,7 +101,7 @@ fn drained_cleanup(one_short: bool) {
                         "one paying drained-door admission restores all three totals"
                     );
                     assert_eq!(registry.fixture_cleanup_head(), None);
-                });
+                }
                 drop(wave);
                 drop(anchor);
             })
