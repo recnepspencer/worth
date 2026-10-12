@@ -1,4 +1,4 @@
-//! Real native doors refuse before their first entity materialization.
+//! Empty requests cannot materialize rows or publish a commit at their native door.
 use super::*;
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::indexes::data::{
@@ -51,13 +51,13 @@ fn empty_read_request_refuses_before_rows() {
             .execute_query_plan(plan.clone(), &ExecutionRequest::leased(&lease))
             .unwrap_err();
         let CommitExecutionDenialKind::Cause(cause) = stopped.execution_denial().unwrap().kind;
-        assert_empty_cause(memory, cause);
+        assert_empty_cause(memory, 344, cause);
         assert_eq!(rows.rows(), 0);
     }
-    let host = crate::test_execution_policy::serial_request();
+    let admitted = lease(MEMORY, u64::MAX);
     runtime
         .read_truth()
-        .execute_query_plan(plan, &ExecutionRequest::serial(&host))
+        .execute_query_plan(plan, &ExecutionRequest::leased(&admitted))
         .unwrap()
         .unwrap();
     assert_eq!(
@@ -95,14 +95,15 @@ fn empty_index_request_refuses_before_rows() {
             &lease,
         );
         let DerivedIndexExecutionDenialKind::Cause(cause) = result.execution_denial.unwrap().kind;
-        assert_empty_cause(memory, cause);
+        assert_empty_cause(memory, 409, cause);
         assert_eq!(rows.rows(), 0);
     }
-    let host = crate::test_execution_policy::serial_request();
-    let built = runtime.index_authority().build_for_basis(
-        &ExecutionRequest::serial(&host),
+    let admitted = lease(MEMORY, u64::MAX);
+    let built = runtime.index_authority().build_for_basis_with_lease(
+        &ExecutionRequest::leased(&admitted),
         build_request(),
         &basis,
+        &admitted,
     );
     assert!(built.failed_indexes.is_empty());
     assert_eq!(
@@ -112,10 +113,10 @@ fn empty_index_request_refuses_before_rows() {
     );
 }
 #[test]
-fn empty_commit_request_refuses_before_rows() {
+fn empty_commit_request_refuses_before_publication() {
     let (runtime, _) = fixture();
-    let rows = RowReadsForTest::install_on_this_thread();
-    for (memory, work) in [(MEMORY, 0), (0, u64::MAX)] {
+    let before = runtime.history().latest_commit().unwrap().commit_id;
+    let transaction = || {
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
             .push_batch(
@@ -123,48 +124,45 @@ fn empty_commit_request_refuses_before_rows() {
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             )
             .unwrap();
+        transaction
+    };
+    for (memory, work) in [(MEMORY, 0), (0, u64::MAX)] {
         let lease = lease(memory, work);
         let stopped = runtime
-            .commit_branch_transaction(&ExecutionRequest::leased(&lease), transaction)
+            .commit_branch_transaction(&ExecutionRequest::leased(&lease), transaction())
             .unwrap_err();
         let TransactionCommitError::Execution { denial, .. } = stopped else {
             panic!("native execution cause required: {stopped:?}");
         };
         let CommitExecutionDenialKind::Cause(cause) = denial.kind;
-        assert_empty_cause(memory, cause);
-        assert_eq!(rows.rows(), 0);
+        assert_empty_cause(memory, 3328, cause);
+        let after = runtime.history().latest_commit().unwrap().commit_id;
+        assert_eq!(after.0 - before.0, 0, "a refused commit publishes no head");
     }
-    let host = crate::test_execution_policy::serial_request();
-    let request = ExecutionRequest::serial(&host);
-    let entity = create_entity_in_partition(&request, &runtime, "admitted", PartitionId(7));
-    runtime
-        .read_truth()
-        .project_snapshot(&runtime.visibility_authority().snapshot(), &request)
-        .unwrap()
-        .authoritative_entity_record(&request, entity)
+    let admitted = lease(MEMORY, u64::MAX);
+    let committed = runtime
+        .commit_branch_transaction(&ExecutionRequest::leased(&admitted), transaction())
         .unwrap();
-    assert!(
-        rows.rows() > 0,
-        "the recorder observes real native reads on this thread"
+    let after = runtime.history().latest_commit().unwrap().commit_id;
+    assert_eq!(after, committed.commit.commit_id);
+    assert_eq!(
+        after.0 - before.0,
+        1,
+        "the same admitted door publishes one head"
     );
 }
 
-fn assert_empty_cause(memory: u64, cause: Cause) {
-    if memory != 0 {
-        assert_eq!(cause, Cause::WorkExhausted);
-    } else {
-        // The requested physical entry quote belongs to the seam's pattern;
-        // zero remaining room and the refusing caller policy are invariant.
-        assert!(
-            matches!(
-                cause,
-                Cause::PolicyMemoryExhausted {
-                    requested: 1..,
-                    admitted: 0,
-                    ancestor: 0,
-                }
-            ),
-            "the caller's zero-memory policy must own the refusal: {cause:?}"
-        );
-    }
+fn assert_empty_cause(memory: u64, requested: u64, cause: Cause) {
+    assert_eq!(
+        cause,
+        if memory != 0 {
+            Cause::WorkExhausted
+        } else {
+            Cause::PolicyMemoryExhausted {
+                requested,
+                admitted: 0,
+                ancestor: 0,
+            }
+        }
+    );
 }
