@@ -154,3 +154,42 @@ fn production_plan_cancellation_has_one_typed_cause_at_every_backing() {
         );
     }
 }
+
+#[test]
+fn serial_scope_admission_precedes_unavailable_snapshot() {
+    let host = crate::test_execution_policy::serial_request();
+    let setup = ExecutionRequest::serial(&host);
+    let (runtime, plan) = fixture(&setup);
+    let other = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let mut unavailable = plan.clone();
+    unavailable.snapshot = other.visibility_authority().snapshot();
+    let host = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(0),
+        CancellationToken::new(),
+        None,
+    );
+    let request = ExecutionRequest::serial(&host);
+    let admission = runtime
+        .read_truth()
+        .execute_query_plan(plan, &request)
+        .unwrap_err();
+    assert!(matches!(
+        admission,
+        crate::runtime::QueryReadExecutionStop::Request(
+            worth_execution::WorkCeilingDenial::Admission(
+                worth_execution::LeaseDenial::MemoryExhausted(worth_execution::MemoryLimitDenial {
+                    admitted: 0,
+                    level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 },
+                    ..
+                })
+            )
+        )
+    ));
+    assert_eq!(
+        runtime
+            .read_truth()
+            .execute_query_plan(unavailable, &request)
+            .err(),
+        Some(admission)
+    );
+}
