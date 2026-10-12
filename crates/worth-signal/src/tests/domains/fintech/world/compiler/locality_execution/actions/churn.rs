@@ -236,14 +236,14 @@ fn settle_current_frontier(
         }
         // Cover the complete churn wave under a finite request shared by
         // serial and parallel certification postures.
-        let mut admission = request(workers, 100_000_000);
+        let mut admission = request(workers, world.resources.maximum_work);
         admission.policy = worth_foundational::ExecutionRequestPolicy::new(
             admission.policy.posture(),
             admission.policy.determinism(),
             worth_foundational::ExecutionBudget::new(
                 admission.policy.budget().max_workers(),
-                64 * 1024 * 1024,
-                100_000_000,
+                world.resources.churn_memory_bytes,
+                world.resources.maximum_work,
             ),
         );
         let lease = authority()

@@ -199,14 +199,14 @@ impl CompiledFinancialLocalityWorld {
             }
             // Dense worlds include planning and retained evidence in the same
             // finite request; worker posture does not change that allowance.
-            let mut admission = request(workers, 100_000_000);
+            let mut admission = request(workers, self.resources.maximum_work);
             admission.policy = worth_foundational::ExecutionRequestPolicy::new(
                 admission.policy.posture(),
                 admission.policy.determinism(),
                 worth_foundational::ExecutionBudget::new(
                     admission.policy.budget().max_workers(),
-                    128 * 1024 * 1024,
-                    100_000_000,
+                    self.resources.wave_memory_bytes,
+                    self.resources.maximum_work,
                 ),
             );
             let lease = authority()

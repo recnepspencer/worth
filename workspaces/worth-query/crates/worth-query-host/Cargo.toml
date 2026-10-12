@@ -15,6 +15,7 @@ worth-query-publication = { path = "../worth-query-publication" }
 
 [dev-dependencies]
 worth-execution = { path = "../../../../crates/worth-execution" }
+worth-harness = { path = "../../../../crates/worth-harness" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-decl = { path = "../worth-query-decl" }
 worth-query-execution = { path = "../worth-query-execution" }

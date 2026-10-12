@@ -67,14 +67,9 @@ mod tests {
     use crate::diagnostics::DiagnosticCode;
     use crate::snapshots::document::{DependencyRow, FacadeRow, SCHEMA_VERSION};
     use std::fs;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn root() -> PathBuf {
-        let id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        std::env::temp_dir().join(format!("boundary-snapshot-{id}"))
+        worth_harness::tooling::fixture_path::unique_path("boundary-snapshot")
     }
 
     fn candidate() -> ConstitutionSnapshots {

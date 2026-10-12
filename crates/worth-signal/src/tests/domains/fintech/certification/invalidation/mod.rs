@@ -13,6 +13,7 @@ mod locality_receipt;
 mod locality_run;
 mod necessity_manifest;
 mod performed_work_validation;
+mod scale_admission;
 mod scenario_completion;
 mod sealed_run;
 mod strategy_decision;
@@ -31,8 +32,10 @@ pub(in crate::tests::domains::fintech) use locality_expectation::{
     ExpectedLocalityCounterRow, FinancialLocalityExpectationManifest,
 };
 pub(in crate::tests::domains::fintech) use locality_fresh_recompute::FreshFinancialLocalityRecompute;
-pub(crate) use locality_receipt::verify_locality_case_with_policy;
 pub(crate) use locality_receipt::{verify_locality_case, FinancialLocalityCaseEvidence};
+pub(crate) use locality_receipt::{
+    verify_locality_case_with_admission, verify_locality_case_with_policy,
+};
 pub(in crate::tests::domains::fintech) use necessity_manifest::{
     FinancialNecessityEvidence, FinancialNecessityManifest,
 };

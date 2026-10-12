@@ -1,9 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::atomic::{AtomicU64, Ordering};
-
-static FIXTURE_ID: AtomicU64 = AtomicU64::new(0);
 
 fn fixture_root(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -31,11 +28,7 @@ fn run_fixture(name: &str) -> String {
 }
 
 fn copied_fixture(name: &str) -> PathBuf {
-    let root = std::env::temp_dir().join(format!(
-        "boundary-rule-{name}-{}-{}",
-        std::process::id(),
-        FIXTURE_ID.fetch_add(1, Ordering::Relaxed)
-    ));
+    let root = worth_harness::tooling::fixture_path::unique_path("boundary-rule");
     let _ = fs::remove_dir_all(&root);
     copy_tree(&fixture_root(name), &root);
     let snapshots = root.join("tools/boundary-check/snapshots");

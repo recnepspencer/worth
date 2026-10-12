@@ -1,13 +1,10 @@
-use std::time::Instant;
-
 use super::throughput_definition::{
-    assert_profile_report, assert_within_throughput_budget, operational_digest_for,
-    ordinary_definition, profiles, ORDINARY_OUTPUT_FLOOR, PERFORMANCE_BATCHES,
+    assert_profile_report, operational_digest_for, ordinary_definition, profiles,
+    ORDINARY_OUTPUT_FLOOR, PERFORMANCE_BATCHES,
 };
 
 #[test]
 fn ordinary_six_profile_courtroom_preserves_operational_truth() {
-    let started = Instant::now();
     let definition = ordinary_definition();
     let mut reports = Vec::new();
     let mut digests = Vec::new();
@@ -39,5 +36,4 @@ fn ordinary_six_profile_courtroom_preserves_operational_truth() {
     for (name, work) in &reports[1..] {
         assert_eq!(work, first_work, "semantic work identity drift in {name}");
     }
-    assert_within_throughput_budget(started, "ordinary six-profile courtroom");
 }

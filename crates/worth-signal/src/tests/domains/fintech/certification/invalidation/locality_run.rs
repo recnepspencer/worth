@@ -51,9 +51,14 @@ pub(in crate::tests::domains::fintech) fn certify_ordinary_locality_run(
 
 pub(in crate::tests::domains::fintech) fn certify_scheduled_locality_run(
     seed: u64,
+    resources: crate::tests::domains::fintech::locality_resource_request::FinancialLocalityResourceRequest,
 ) -> Result<FinancialFrontierLocalityCertificationRun, SignalError> {
-    let completions =
-        certify_locality_completions(seed, LocalityLane::Scheduled, scheduled_locality_cases())?;
+    let completions = certify_locality_completions(
+        seed,
+        LocalityLane::Scheduled,
+        scheduled_locality_cases(),
+        resources,
+    )?;
     seal_run(seed, LocalityLane::Scheduled, completions)
 }
 
@@ -140,9 +145,13 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "requires scale waiter admission; ordinary policy allows 4,194,304 visits"]
+    #[ignore = "scheduled 100,000-output qualification with explicit memory and waiter admission"]
     fn scheduled_run_seals_all_declared_scale_contracts() {
-        let run = certify_scheduled_locality_run(41).unwrap();
+        let run = certify_scheduled_locality_run(
+            41,
+            super::super::scale_admission::scheduled_run_request(),
+        )
+        .unwrap();
         assert_eq!(run.lane(), LocalityLane::Scheduled);
     }
 }

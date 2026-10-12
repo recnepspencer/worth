@@ -1,6 +1,8 @@
 //! Query and its runtime owners order declared identity, never Rust build identity.
 mod address_order;
 mod debug_inventory;
+#[cfg(test)]
+mod debug_tests;
 mod expression_identity;
 mod inventory;
 #[cfg(test)]
@@ -44,8 +46,14 @@ fn enforce(governed: &GovernedCrate, graph: &ModuleGraph) -> Vec<Diagnostic> {
     }
     let files: Vec<_> = graph
         .modules
-        .values()
-        .map(|module| (module.relative_source.as_str(), module.items.as_slice()))
+        .iter()
+        .map(|(namespace, module)| {
+            (
+                namespace.as_slice(),
+                module.relative_source.as_str(),
+                module.items.as_slice(),
+            )
+        })
         .collect();
     let address_files: Vec<_> = graph
         .modules
@@ -83,7 +91,7 @@ fn in_scope(package: &str) -> bool {
 }
 
 fn collect_findings(
-    files: &[(&str, &[syn::Item])],
+    files: &[(&[String], &str, &[syn::Item])],
     address_files: &[(&str, &[syn::Item])],
 ) -> Vec<inventory::Finding> {
     let mut found = inventory::scan(files);
@@ -93,5 +101,9 @@ fn collect_findings(
 
 #[cfg(test)]
 fn findings(files: &[(&str, &[syn::Item])]) -> Vec<inventory::Finding> {
-    collect_findings(files, files)
+    let scoped: Vec<_> = files
+        .iter()
+        .map(|(source, items)| (&[][..], *source, *items))
+        .collect();
+    collect_findings(&scoped, files)
 }

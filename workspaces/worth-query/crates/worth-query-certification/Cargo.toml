@@ -13,6 +13,7 @@ worth-query-replay.workspace = true
 
 [dev-dependencies]
 worth-execution = { path = "../../../../crates/worth-execution" }
+worth-harness = { path = "../../../../crates/worth-harness" }
 serde.workspace = true
 worth-foundational.workspace = true
 worth-query.workspace = true

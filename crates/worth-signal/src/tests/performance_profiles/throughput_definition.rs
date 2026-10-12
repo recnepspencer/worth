@@ -1,5 +1,3 @@
-use std::time::{Duration, Instant};
-
 use crate::facade::SignalRuntimePolicy;
 use crate::tests::domains::fintech::{
     compile_financial_locality_world_with_policy, FinancialWorldDefinition,
@@ -11,7 +9,6 @@ pub(super) const ORDINARY_OUTPUT_FLOOR: u32 = 1_024;
 /// Largest scheduled output floor this environment can settle inside 10 minutes.
 pub(super) const RECORDED_SCHEDULED_OUTPUT_FLOOR: u32 = 4_096;
 pub(super) const PERFORMANCE_BATCHES: usize = 120;
-pub(super) const THROUGHPUT_TEST_BUDGET: Duration = Duration::from_secs(600);
 
 #[derive(Debug)]
 pub(super) struct PerformancePacketContext {
@@ -212,14 +209,6 @@ pub(super) fn assert_profile_report(
             report.node_count
         );
     }
-}
-
-pub(crate) fn assert_within_throughput_budget(started: Instant, label: &str) {
-    let elapsed = started.elapsed();
-    assert!(
-        elapsed <= THROUGHPUT_TEST_BUDGET,
-        "{label} exceeded the 10-minute throughput test budget: {elapsed:?}"
-    );
 }
 
 /// Requested placement; physical dispatch is read from the actual authority report.

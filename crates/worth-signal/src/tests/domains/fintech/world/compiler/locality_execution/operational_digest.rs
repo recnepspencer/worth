@@ -110,10 +110,11 @@ impl CompiledFinancialLocalityWorld {
                 )))
             }
         };
-        let digest_ready = match canonicalization()
-            .digest()
-            .for_sequence(ready, CanonicalDigestAlgorithmId::sha256())
-        {
+        let digest_ready = match canonicalization().digest().for_sequence_with_budget(
+            ready,
+            CanonicalDigestAlgorithmId::sha256(),
+            self.resources.digest_budget,
+        ) {
             TransitionOutcome::Success(ready) => ready,
             denied => {
                 return Err(SignalError::internal(format!(

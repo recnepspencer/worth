@@ -25,8 +25,7 @@ fn a_sibling_cannot_rename_a_sealed_packet_identity() {
         .map(|item| item.to_token_stream().to_string())
         .collect::<Vec<_>>()
         .join("\n");
-    let directory =
-        std::env::temp_dir().join(format!("worth-packet-identity-{}", std::process::id()));
+    let directory = worth_harness::tooling::fixture_path::unique_path("worth-packet-identity");
     fs::create_dir_all(&directory).unwrap();
     let owner=format!("mod owner {{ {declaration} pub(super) fn packet() -> PacketIdentity {{ PacketIdentity(1) }} }}");
     let cases=[

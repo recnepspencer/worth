@@ -99,8 +99,7 @@ fn a_file_below_a_test_file_is_a_test_and_a_crate_root_is_not() {
 
 #[test]
 fn a_cfg_test_module_declaration_exempts_its_files_and_nothing_else() {
-    let workspace =
-        std::env::temp_dir().join(format!("boundary-owner-tests-{}", std::process::id()));
+    let workspace = worth_harness::tooling::fixture_path::unique_path("boundary-owner-tests");
     let _ = std::fs::remove_dir_all(&workspace);
     for directory in [
         "owner/state/tests",
