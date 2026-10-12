@@ -84,7 +84,35 @@ where
                 );
                 self.authorization_denied_outcome(denial)
             }
-            _ => WorthQueryApplicationLiveOutcome::Unavailable,
+            WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::BasisUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::WrongProviderBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::ExpiredBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignHistoricalReceipt
+            | WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::RetentionCapacityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::RetentionIdentityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignContinuation
+            | WorthQueryApplicationQueryAdmissionDenialKind::StaleContinuation
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationParameterMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationScopeMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationProviderMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationPageWidthUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::LaneUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            | WorthQueryApplicationQueryAdmissionDenialKind::Parameter(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded
+            | WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::CanonicalWorkDenied
+            | WorthQueryApplicationQueryAdmissionDenialKind::GraphReadPlan(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::ActiveSnapshotCapacityExhausted { .. }
+            | WorthQueryApplicationQueryAdmissionDenialKind::ExecutionShapeUnsupported => WorthQueryApplicationLiveOutcome::Unavailable,
         }
     }
 
@@ -126,7 +154,18 @@ where
                     .acknowledge_cause_denial(
                         WorthQueryApplicationLiveCauseDenialKind::ResultShapeUnavailable,
                     ),
-                _ => WorthQueryApplicationLiveOutcome::Unavailable,
+                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable
+                | WorthQueryApplicationReadExecutionDenialKind::PredicateLookupOverflow
+                | WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable
+                | WorthQueryApplicationReadExecutionDenialKind::ResultLimitExceeded
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationIndexUnavailable
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationBoundaryRejected
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationGenerationChanged
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationPageWidthInvalid
+                | WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded
+                | WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded => {
+                    WorthQueryApplicationLiveOutcome::Unavailable
+                }
             },
             WorthQueryAuthorizedApplicationReadDenial::Session => {
                 WorthQueryApplicationLiveOutcome::Unavailable

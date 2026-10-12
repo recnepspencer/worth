@@ -14,7 +14,9 @@ use super::super::provider::fault_port::{
 pub(in crate::domain_computation::primary_graph) struct PrimaryGraphFaultController {
     scheduled: AtomicU16,
     staged_validation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
-    native_preparation_cancellation: Mutex<Option<WorthQueryCancellationSource>>,
+    native_preparation_cancellation:
+        Mutex<Option<(WorthQueryCancellationSource, Option<std::time::Instant>)>>,
+    native_preparation_interruptions: AtomicUsize,
     aftermath_interruption:
         Mutex<Option<(WorthQueryCancellationSource, Option<std::time::Instant>)>>,
     aftermath_interruptions: AtomicUsize,
@@ -47,7 +49,7 @@ impl PrimaryGraphFaultController {
         &self,
         source: WorthQueryCancellationSource,
     ) {
-        *self.native_preparation_cancellation.lock().unwrap() = Some(source);
+        *self.native_preparation_cancellation.lock().unwrap() = Some((source, None));
     }
 
     pub(in crate::domain_computation::primary_graph) fn schedule(
@@ -136,8 +138,21 @@ impl WorthQueryPrimaryGraphFaultPort for PrimaryGraphFaultController {
     }
 
     fn candidate_ready_for_native_preparation(&self) {
-        if let Some(source) = self.native_preparation_cancellation.lock().unwrap().take() {
-            source.cancel();
+        if let Some((source, deadline)) =
+            self.native_preparation_cancellation.lock().unwrap().take()
+        {
+            self.native_preparation_interruptions
+                .fetch_add(1, Ordering::AcqRel);
+            match deadline {
+                None => source.cancel(),
+                Some(deadline) => {
+                    while let Some(remaining) =
+                        deadline.checked_duration_since(std::time::Instant::now())
+                    {
+                        std::thread::sleep(remaining);
+                    }
+                }
+            }
         }
     }
 
@@ -200,3 +215,5 @@ const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
 }
 
 mod cleanup;
+
+mod native_preparation_interruption;

@@ -313,3 +313,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/commit_outcome/denial/execution/authority_cause.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/counted_read_stops.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/read_ceiling_terminal.rs
+
+# Receiver-owned cfg(test) native preparation interruption guard.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/terminal_failures/aftermath_sealing_interruption.rs

@@ -45,7 +45,10 @@ pub use relational_publication::{
     WorthQueryPerformedRelationalProductChangeDeliveryDenialKind,
     WorthQueryPerformedRelationalProductChangeDeliveryOutcome,
 };
-pub(crate) use request_control::WorthQueryPreparedProductPublication;
+pub(crate) use request_control::{
+    prepare_conditional_publication, publish_conditional_definition,
+    WorthQueryPreparedProductPublication,
+};
 #[cfg(test)]
 pub(in crate::domain_computation) use resources::test_product_world_resources;
 pub(crate) use resources::test_product_world_resources_with_history_limit_for_test;

@@ -170,7 +170,35 @@ where
                         self.query.name(),
                     ),
                 ))),
-            _ => self.terminate_delivery_outcome(Outcome::Unavailable),
+            WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::BasisUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::WrongProviderBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::ExpiredBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignHistoricalReceipt
+            | WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::RetentionCapacityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::RetentionIdentityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignContinuation
+            | WorthQueryApplicationQueryAdmissionDenialKind::StaleContinuation
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationParameterMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationScopeMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationProviderMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationPageWidthUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::LaneUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            | WorthQueryApplicationQueryAdmissionDenialKind::Parameter(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded
+            | WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::CanonicalWorkDenied
+            | WorthQueryApplicationQueryAdmissionDenialKind::GraphReadPlan(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::ActiveSnapshotCapacityExhausted { .. }
+            | WorthQueryApplicationQueryAdmissionDenialKind::ExecutionShapeUnsupported => self.terminate_delivery_outcome(Outcome::Unavailable),
         }
     }
 
@@ -195,7 +223,21 @@ where
                     Read::ExecutionRequest(kind) => Outcome::ExecutionRequest(kind),
                     Read::Cancelled => Outcome::Cancelled,
                     Read::DeadlineExceeded => Outcome::DeadlineExceeded,
-                    _ => Outcome::Unavailable,
+                    Read::PredicateIndexUnavailable
+                    | Read::PredicateLookupOverflow
+                    | Read::TargetIdentityIndexUnavailable
+                    | Read::TargetIdentityLookupOverflow
+                    | Read::TargetIdentityNotFound
+                    | Read::ResultLimitExceeded
+                    | Read::CardinalityMismatch
+                    | Read::TraversalUnavailable
+                    | Read::ContinuationIndexUnavailable
+                    | Read::ContinuationBoundaryRejected
+                    | Read::ContinuationGenerationChanged
+                    | Read::ContinuationPageWidthInvalid
+                    | Read::ProjectionUnavailable
+                    | Read::ResultBufferLimitExceeded
+                    | Read::WorkLimitExceeded => Outcome::Unavailable,
                 };
                 self.terminate_delivery_outcome(outcome)
             }
@@ -218,7 +260,9 @@ where
             WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
                 crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
             )) => Outcome::DeadlineExceeded,
-            _ => Outcome::AuthorizationDenied(Box::new(denial)),
+            WorthQueryOperationAuthorizationDenialKind::Refused(_) => {
+                Outcome::AuthorizationDenied(Box::new(denial))
+            }
         };
         self.terminate_delivery_outcome(outcome)
     }
@@ -235,7 +279,16 @@ where
                 self.terminate_stopped_read();
                 stop
             }
-            ordinary => {
+            ordinary @ (Outcome::Delivered(_)
+            | Outcome::Pending
+            | Outcome::Overflow(_)
+            | Outcome::AuthorizationDenied(_)
+            | Outcome::StalePrincipal
+            | Outcome::StaleScope
+            | Outcome::ProjectionDenied(_)
+            | Outcome::CauseDenied(_)
+            | Outcome::Closed
+            | Outcome::Unavailable) => {
                 if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
                     ordinary
                 } else {

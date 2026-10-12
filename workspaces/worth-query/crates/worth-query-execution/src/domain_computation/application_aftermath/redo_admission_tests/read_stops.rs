@@ -43,7 +43,7 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
             );
             let recovery = WorthQueryRedoRecovery::axis_probe(proved, handle);
             let recovery = std::cell::RefCell::new(Some(recovery));
-            counted(&|request, ceiling| {
+            let result = counted(&|request, ceiling| {
                 let recovery = recovery.borrow_mut().take().unwrap();
                 world
                     .application
@@ -66,7 +66,16 @@ fn admit_redo_keeps_the_prior_redo_read_stop_at_every_consult() {
                         answer
                     })
                     .unwrap()
-            })
+            });
+            if result.0.is_ok() {
+                assert_eq!(
+                    result.2, 5,
+                    "the shipped empty prior-redo lookup has five consults"
+                );
+            }
+            // This empty index charges zero Work, so the harness has no
+            // one-unit-short Work run for this proof.
+            result
         },
         WorthQueryRedoDenialKind::ExecutionRequest(Err(Stop::Cancelled)),
         WorthQueryRedoDenialKind::ExecutionRequest(Ok(Session::ExecutionResource {

@@ -104,3 +104,76 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
         assert_eq!(evidence, expected_evidence);
     }
 }
+
+#[test]
+fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_door() {
+    let _listener =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    for expired in [false, true] {
+        let world = installed_authorization_world(true);
+        let source = WorthQueryCancellationSource::new();
+        let deadline =
+            expired.then(|| std::time::Instant::now() + std::time::Duration::from_secs(2));
+        let request = WorthQueryRequestScope::new(deadline, source.token());
+        let setup = request.clone();
+        let program = world
+            .application
+            .with_host_advancement(|phase| {
+                let principal = authenticated_principal(&phase.test_host_request(), &world, &setup);
+                let account = resolved_account(&phase.test_host_request(), &world, "open", &setup);
+                admitted_program(
+                    &phase,
+                    &world,
+                    &principal,
+                    &account,
+                    &setup,
+                    "direct-control-cleanup",
+                )
+            })
+            .unwrap();
+        let interruption = world
+            .faults
+            .interrupt_next_native_preparation_for_test(source, deadline);
+        let _cleanup = world.faults.reject_managed_cleanup_for_test();
+        let outcome = world
+            .application
+            .with_application_advancement(&request, |phase| {
+                world
+                    .application
+                    .compare_and_commit_application_in_advancement(
+                        &phase,
+                        program,
+                        idempotency(172, 172),
+                        crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+                    )
+            })
+            .unwrap();
+        assert!(
+            interruption.reached_for_test(),
+            "stop occurs inside native preparation"
+        );
+        let WorthQueryApplicationCommitOutcome::Indeterminate(evidence) = outcome else {
+            panic!("stopped progression and failed cleanup retain evidence: {outcome:?}")
+        };
+        use crate::domain_computation::primary_graph::{
+            WorthQueryApplicationCommitRecoveryKind as Recovery,
+            WorthQueryApplicationUnresolvedCommitEvidence as Evidence,
+        };
+        let stop = if expired {
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut
+        } else {
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+        };
+        let failure =
+            crate::domain_computation::WorthQueryProviderSessionFailure::checked_read_stopped(
+                Err(stop),
+                crate::domain_computation::WorthQueryProviderSessionProtocolStage::Commit,
+                "managed mutation run failed to finish after provider progression",
+            );
+        assert_eq!(
+            evidence,
+            Evidence::from_provider_session_failure(Recovery::CommitRecoveryRequired, &failure)
+                .with_cleanup_failure()
+        );
+    }
+}

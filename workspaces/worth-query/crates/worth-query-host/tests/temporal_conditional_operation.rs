@@ -379,3 +379,6 @@ mod advancement_custody;
 
 #[path = "temporal_conditional_operation/read_ceiling_terminal.rs"]
 mod read_ceiling_terminal;
+
+#[path = "temporal_conditional_operation/publication_request_stop.rs"]
+mod publication_request_stop;

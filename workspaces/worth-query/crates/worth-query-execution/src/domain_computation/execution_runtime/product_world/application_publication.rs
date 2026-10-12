@@ -9,8 +9,7 @@ use worth_runtime_bridge::facade::{
 };
 use worth_runtime_world::facade::{
     CompositePublicationIntent, NoEffectCompositePublication,
-    PreparedCompositePublicationWithSignal, RuntimeWorldConditionalDefinitionPublicationOutcome,
-    RuntimeWorldPublicationPort,
+    PreparedCompositePublicationWithSignal, RuntimeWorldPublicationPort,
 };
 
 use super::{
@@ -58,24 +57,14 @@ impl WorthQueryPreparedCombinedProductPublication {
             prepared,
             control,
         } = self;
-        match publication.publish_bridge_conditional_definition(
+        super::request_control::publish_conditional_definition(
+            &publication,
             execution,
             prepared,
             bridge_prepared,
             bridge,
             control.cancellation(),
-        ) {
-            RuntimeWorldConditionalDefinitionPublicationOutcome::Performed {
-                publication,
-                lowering,
-            } => Ok(Outcome::Performed((publication, lowering))),
-            RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => {
-                Ok(Outcome::ProductUnpublished(effects))
-            }
-            RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => {
-                Err(Denial::publication(no_effect))
-            }
-        }
+        )
     }
 }
 
@@ -97,15 +86,13 @@ impl WorthQueryProductPublicationBinding {
         } else {
             intent
         };
-        let prepared = self
-            .publication()
-            .prepare_with_signal(
-                self.observation().clone(),
-                intent,
-                control.cancellation(),
-                control.deadline(),
-            )
-            .map_err(Denial::publication)?;
+        let prepared = super::request_control::prepare_conditional_publication(
+            self.publication(),
+            self.observation().clone(),
+            intent,
+            control.cancellation(),
+            control.deadline(),
+        )?;
         Ok(WorthQueryPreparedCombinedProductPublication {
             publication: self.publication().clone(),
             prepared,

@@ -165,3 +165,43 @@ impl WorthQueryProductPublicationBinding {
         })
     }
 }
+
+/// The same stopped/refused boundary for conditional-only and combined publication.
+pub(crate) fn prepare_conditional_publication(
+    publication: &RuntimeWorldPublicationPort<(), (), (), (), ()>,
+    observation: worth_runtime_world::facade::ProductBranchObservation,
+    intent: CompositePublicationIntent<worth_runtime_world::facade::WithSignal>,
+    cancellation: &RuntimeWorldCancellationToken,
+    deadline: Option<worth_runtime_world::facade::RuntimeWorldInstant>,
+) -> Result<
+    worth_runtime_world::facade::PreparedCompositePublicationWithSignal,
+    Denial<NoEffectCompositePublication>,
+> {
+    publication
+        .prepare_with_signal(observation, intent, cancellation, deadline)
+        .map_err(Denial::publication)
+}
+
+pub(crate) fn publish_conditional_definition(
+    publication: &RuntimeWorldPublicationPort<(), (), (), (), ()>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    prepared: worth_runtime_world::facade::PreparedCompositePublicationWithSignal,
+    bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
+    bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+    cancellation: &RuntimeWorldCancellationToken,
+) -> Result<
+    Outcome<
+        (
+            worth_runtime_world::facade::PerformedCompositePublication,
+            Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+        ),
+        worth_runtime_world::facade::RuntimeWorldUnpublishedConditionalDefinition,
+    >,
+    Denial<NoEffectCompositePublication>,
+> {
+    match publication.publish_bridge_conditional_definition(execution, prepared, bridge_prepared, bridge, cancellation) {
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering } => Ok(Outcome::Performed((publication, lowering))),
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => Ok(Outcome::ProductUnpublished(effects)),
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => Err(Denial::publication(no_effect)),
+    }
+}
