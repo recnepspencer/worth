@@ -39,7 +39,9 @@ pub(super) fn checkpoints(parts: &[Partition], failed: bool) -> (u64, u64) {
         ordered.len()
     };
     // An inner map denial accepts its canonical checkpoint prefix. The outer
-    // advancement still pays every member of its dispatched wave.
+    // advancement still pays every member of its dispatched wave. The price
+    // twin asserts this prefix in the whole advancement's exact bill even when
+    // a compute refusal prevents the completed-result meter from running.
     let cost = Operations::Parallel(
         ordered[..kept]
             .iter()

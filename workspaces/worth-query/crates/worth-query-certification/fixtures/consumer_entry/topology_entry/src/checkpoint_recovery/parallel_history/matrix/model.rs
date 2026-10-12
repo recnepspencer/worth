@@ -76,19 +76,7 @@ pub fn advancement(
                         failure == Some((member.key, Phase::Compute)),
                     )
                 } else {
-                    let work = member
-                        .partitions
-                        .iter()
-                        .map(|p| {
-                            let reduction =
-                                if p.key == 0 && failure == Some((member.key, Phase::Compute)) {
-                                    0
-                                } else {
-                                    super::super::structural_cost::reduction_work(&[1])
-                                };
-                            p.work + reduction
-                        })
-                        .sum();
+                    let work = member.partitions.iter().map(|p| p.work).sum();
                     (work, work)
                 }
             })

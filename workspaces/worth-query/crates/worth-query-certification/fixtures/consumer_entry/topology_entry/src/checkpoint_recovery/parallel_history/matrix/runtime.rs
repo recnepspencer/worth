@@ -50,7 +50,22 @@ pub fn run(cell: cases::Cell) -> Observed {
             seed: cell.dispatch,
         }
     }));
-    let world = seeded_world::world(FAMILIES[cell.family], SEED);
+    let mut world = seeded_world::world(FAMILIES[cell.family], SEED);
+    let scale = std::env::var("WORTH_REQUIRED_PRICE_SCALE")
+        .map(|s| s.parse::<u64>().unwrap())
+        .unwrap_or(1);
+    assert!([1, 2].contains(&scale), "declared price twin");
+    for part in world
+        .members
+        .iter_mut()
+        .flat_map(|member| &mut member.partitions)
+    {
+        part.work *= scale;
+        assert!(
+            part.work < 128,
+            "twins preserve the encoded amount width and owner framing"
+        );
+    }
     let control = Arc::new(control::Control::new(
         world.clone(),
         cell.reuse,

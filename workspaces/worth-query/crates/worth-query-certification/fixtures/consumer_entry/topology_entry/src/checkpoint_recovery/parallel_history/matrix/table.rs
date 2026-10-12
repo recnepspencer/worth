@@ -1,35 +1,8 @@
 //! Fresh processes preserve binding inputs; every row is accounted for.
 use super::cases::{self, Cell};
 use std::collections::BTreeMap;
-const CELL_TEST: &str =
-    "checkpoint_recovery::parallel_history::matrix::runtime::required_matrix_cell";
-fn cell(cell: Cell) -> Result<(String, (u64, u64)), String> {
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", CELL_TEST, "--nocapture"])
-        .env("WORTH_REQUIRED_MATRIX_CELL", cell.encode())
-        .output()
-        .unwrap();
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    if !output.status.success() {
-        return Err(format!(
-            "{stdout}{}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-    let encoded = stdout
-        .lines()
-        .find_map(|line| line.strip_prefix("MATRIX_OBSERVATION:"))
-        .expect("cell returns its observation");
-    let remainder = stdout
-        .lines()
-        .find_map(|line| line.strip_prefix("MODEL_REMAINDER:work="))
-        .unwrap();
-    let (work, span) = remainder.split_once(" span=").unwrap();
-    Ok((
-        encoded.to_owned(),
-        (work.parse().unwrap(), span.parse().unwrap()),
-    ))
-}
+mod price;
+use price::cell;
 fn matrix(rows: Vec<Cell>) {
     let mut counts = [[0usize; 3]; super::FAMILIES.len()];
     let mut anchors = BTreeMap::new();
