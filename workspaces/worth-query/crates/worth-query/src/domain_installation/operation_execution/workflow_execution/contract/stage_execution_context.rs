@@ -1,3 +1,5 @@
+#[path = "stage_execution_context/request_denial.rs"]
+mod request_denial;
 use super::{
     workflow_stage_lineage::lineage_traversal, WorthQueryBoundGraphExecutionReceipt,
     WorthQueryWorkflowEffectEvidence, WorthQueryWorkflowPredecessorReceipt,
@@ -231,7 +233,13 @@ impl<'a> WorthQueryWorkflowStageExecutionContext<'a> {
         let execution = workspace
             .workspace
             .execute_ordinary_authoritative_mutation(request_execution, command, false)
-            .map_err(|error| WorthQueryWorkflowStageEffectDenial::Runtime(format!("{error:?}")))?;
+            .map_err(|error| {
+                if workspace.request_denial.is_none() {
+                    workspace.request_denial =
+                        request_denial::native(&error, self.stage.identity()).map(Box::new);
+                }
+                WorthQueryWorkflowStageEffectDenial::Runtime(format!("{error:?}"))
+            })?;
         let evidence = WorthQueryWorkflowEffectEvidence::runtime_mutation(
             execution.into_receipt(),
             &self.effect_workflow_binding,

@@ -333,3 +333,6 @@ fn already_elapsed_deadline_and_cancelled_entry_do_not_compute() {
         assert_eq!(record.receipts.len(), 0);
     }
 }
+
+#[path = "stops/caller_budget.rs"]
+mod caller_budget;
