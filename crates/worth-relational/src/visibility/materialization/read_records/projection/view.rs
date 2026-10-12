@@ -41,10 +41,6 @@ impl VisibilityProjectionView {
         self.runtime_identity == runtime.runtime_instance_id()
     }
 
-    pub(crate) fn selected_branch_id(&self) -> &crate::history::data::BranchId {
-        self.basis.branch_id()
-    }
-
     pub(crate) fn selected_schema_authority(
         &self,
     ) -> Option<&crate::branch::RelationalBranchRootSchemaAuthority> {

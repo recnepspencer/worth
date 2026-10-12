@@ -11,7 +11,7 @@ use crate::indexes::data::{
     BoundedEntityFieldLookupDenialKind as Denial, BoundedEntityFieldLookupOutcome,
     BoundedIndexParityMode, DerivedIndexEntries, DerivedIndexId, MAX_BOUNDED_INDEX_CANDIDATES,
 };
-use crate::runtime::{ExactLookupInputs, VisibilityProjectionView};
+use crate::runtime::{RelationalPinnedRead, VisibilityProjectionView};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 use crate::storage::overlay::PartitionAccess;
 
@@ -47,45 +47,40 @@ impl IndexAccess<'_> {
         if limit == 0 || limit > MAX_BOUNDED_INDEX_CANDIDATES {
             return Err(denied(Denial::InvalidCandidateLimit, index));
         }
-        let schema = view
-            .selected_schema_authority()
-            .ok_or(Stop::ExactBasisRequired)?
-            .schema_version();
         self.runtime
             .performance_access()
             .count_query_index_attempt();
-        let selected = self
+        let read = self
             .runtime
-            .indexes
-            .exact_lookup_inputs_admitted(
-                index,
-                locator,
-                view.selected_branch_id(),
-                view.version_id(),
-                schema,
-                &mut prepare,
-            )
-            .map_err(|stop| match stop {
-                crate::indexes::data::SelectedIndexGenerationAdmissionStop::Admission(stop) => {
-                    Stop::Admission(stop)
-                }
-                crate::indexes::data::SelectedIndexGenerationAdmissionStop::AccountingOverflow => {
-                    Stop::AccountingOverflow
-                }
-            })?;
-        let (definition, generation) = match selected {
-            ExactLookupInputs::MissingDefinition => {
-                return Err(denied(Denial::IndexNotInstalled, index))
-            }
-            ExactLookupInputs::MissingGeneration => {
-                return Err(denied(Denial::ExactGenerationUnavailable, index))
-            }
-            ExactLookupInputs::WrongKind => return Err(denied(Denial::WrongIndexKind, index)),
-            ExactLookupInputs::Ready {
-                definition,
-                generation,
-            } => (definition, generation),
-        };
+            .read_truth()
+            .pin_selected_field_read_capability(view, index, locator, execution, &mut prepare)?;
+        read.collect_admitted_entity_field_lookup(
+            execution, index, kind, locator, value, limit, parity, prepare,
+        )
+    }
+}
+
+impl RelationalPinnedRead<()> {
+    pub(super) fn collect_admitted_entity_field_lookup<E>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        index: DerivedIndexId,
+        kind: KindId,
+        locator: &AspectFieldLocator,
+        value: &AspectValue,
+        limit: usize,
+        parity: BoundedIndexParityMode,
+        mut prepare: impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    ) -> Result<BoundedEntityFieldLookupOutcome, Stop<E>> {
+        let selected = self
+            .selected_index(index)
+            .ok_or_else(|| denied(Denial::IndexNotInstalled, index))?;
+        let generation = selected
+            .generation
+            .as_ref()
+            .ok_or_else(|| denied(Denial::ExactGenerationUnavailable, index))?;
+        let definition = selected.definition.clone();
+        let view = VisibilityProjectionView::from_pinned(self);
         let DerivedIndexEntries::EntityField(entries) = &generation.entries else {
             return Err(denied(Denial::WrongIndexKind, index));
         };
@@ -116,7 +111,7 @@ impl IndexAccess<'_> {
         prepare(SelectedIndexReadWork::OrderedNavigation(seek), 0).map_err(Stop::Admission)?;
         let rows = entries.get(&key);
         let mut read = AdmittedCollectionRead {
-            view,
+            view: &view,
             locator,
             value,
             prepare: &mut prepare,
@@ -135,7 +130,7 @@ impl IndexAccess<'_> {
         if parity == BoundedIndexParityMode::Certification {
             certify_storage(
                 execution,
-                view,
+                &view,
                 kind,
                 locator,
                 value,
@@ -144,11 +139,10 @@ impl IndexAccess<'_> {
                 &outcome,
                 &mut prepare,
             )?;
-            self.runtime
-                .performance_access()
+            self.performance_access()
                 .count_query_index_parity_verification();
         }
-        self.runtime.performance_access().count_query_index_path();
+        self.performance_access().count_query_index_path();
         Ok(outcome)
     }
 }
