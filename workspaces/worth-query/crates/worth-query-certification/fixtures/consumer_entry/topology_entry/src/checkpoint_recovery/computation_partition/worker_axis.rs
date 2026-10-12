@@ -170,9 +170,18 @@ fn across_the_axis(
             outcomes
         });
         for total in outcomes.iter().flatten() {
+            let expected = if cfg!(target_family = "wasm") {
+                Some(ExecutionFallbackCause::PlatformSerial)
+            } else if placement == Placement::Serial {
+                Some(ExecutionFallbackCause::PolicySerial)
+            } else if workers_of(placement) == 1 {
+                Some(ExecutionFallbackCause::WorkerLimit)
+            } else {
+                None
+            };
             assert_eq!(
-                total.report.fallback() == Some(ExecutionFallbackCause::NoLease),
-                placement == Placement::Serial,
+                total.report.fallback(),
+                expected,
                 "{placement:?} places the run"
             );
             if parallel {
