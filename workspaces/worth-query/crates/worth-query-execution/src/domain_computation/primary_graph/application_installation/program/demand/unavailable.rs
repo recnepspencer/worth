@@ -11,7 +11,6 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
     /// No successful output or publication is created by this operation.
     pub fn finish_unavailable_program_output<Root>(
         &self,
-
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedProgramOutput<
@@ -33,15 +32,17 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
             + ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
-            Ok(request) => request,
-            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
-        };
+        let phase_request =
+            admit_unavailable_completion(phase, &self.runtime.product_runtime, || {
+                self.contains_output_root::<Root>()
+                    && demand.target_feature
+                        == TypeId::of::<
+                            <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<
+                                Schema,
+                            >>::TargetFeature,
+                        >()
+            })?;
         let execution = &phase_request;
-
-        if !self.contains_output_root::<Root>() || demand.target_feature != TypeId::of::<<RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
-            return Err(WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand, "unavailable completion differs from the installed root"));
-        }
         self.runtime.output_demands.validate_owned_root_kind(prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
         self.runtime.finish_unavailable_output_demand(
@@ -56,3 +57,28 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
         )
     }
 }
+
+/// Phase custody precedes the installed root's demand-affinity admission.
+fn admit_unavailable_completion<'scope>(
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+    runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    owns_demand: impl FnOnce() -> bool,
+) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryOutputDemandDenial> {
+    let request = phase.execution_request_for(runtime).map_err(|cause| {
+        WorthQueryOutputDemandDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+            "program-source-phase",
+        )
+    })?;
+    if !owns_demand() {
+        return Err(WorthQueryOutputDemandDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand,
+            "unavailable completion differs from the installed root",
+        ));
+    }
+    Ok(request)
+}
+
+#[cfg(test)]
+#[path = "unavailable/custody_order.rs"]
+mod custody_order;

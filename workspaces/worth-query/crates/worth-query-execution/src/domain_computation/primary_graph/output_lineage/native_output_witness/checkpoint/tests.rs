@@ -179,6 +179,8 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(duplicate_work <= duplicate_bound);
         assert!(duplicate_work < 100_001, "the declared worst case is not prepaid");
         let mut exhausted = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 2).unwrap());
+        // A cut-short indexed probe knows the spent allowance, not the work
+        // a completed read would require: preserve the incoming refusal law.
         assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             std::slice::from_ref(&indexed), &mut exhausted),
             Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
