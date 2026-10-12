@@ -27,6 +27,8 @@ pub struct WorthQueryRelationalSourceOwner {
     pub(in crate::domain_computation) invalidation_owner:
         Arc<crate::domain_computation::primary_graph::SourceInvalidationOwner>,
     canonical_subscription: RelationalBridgeCanonicalSubscription,
+    #[cfg(test)]
+    pub(super) read_acquisitions: Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl WorthQueryRelationalSourceOwner {
@@ -65,6 +67,8 @@ impl WorthQueryRelationalSourceOwner {
             bridge_head: Arc::new(Mutex::new(None)),
             invalidation_owner,
             canonical_subscription: subscription,
+            #[cfg(test)]
+            read_acquisitions: Arc::new(std::sync::atomic::AtomicU64::new(0)),
         })
     }
 
@@ -137,6 +141,9 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
+        #[cfg(test)]
+        self.read_acquisitions
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         super::read_observation::record_read_for_test();
         read(&runtime)
     }
@@ -151,6 +158,9 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
+        #[cfg(test)]
+        self.read_acquisitions
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         super::read_observation::record_read_for_test();
         mutate(&mut runtime)
     }
@@ -165,6 +175,9 @@ impl WorthQueryRelationalSourceOwner {
             .runtime
             .lock()
             .expect("Relational source owner is available");
+        #[cfg(test)]
+        self.read_acquisitions
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         super::read_observation::record_read_for_test();
         let outcome =
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| mutate(&mut runtime)));

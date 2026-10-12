@@ -17,6 +17,8 @@ struct NativeState {
     open: bool,
     watchdog_failed: bool,
     exits: std::collections::BTreeMap<EntityId, usize>,
+    initial_acquisitions: Option<u64>,
+    exit_acquisitions: Vec<(EntityId, u64)>,
 }
 pub(in crate::domain_computation::primary_graph) struct NativeReadRendezvousGuardForTest {
     witness: Arc<DispatchWitness>,
@@ -45,11 +47,12 @@ impl DispatchWitness {
     }
     pub(in crate::domain_computation::primary_graph) fn with_native_owner_lock_for_test<T>(
         &self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
         read: impl FnOnce() -> T,
     ) -> T {
         let gate = self.native_reads.lock().unwrap().clone();
         match gate {
-            Some(gate) => gate.owner.with_owner_lock_for_test(read),
+            Some(gate) => gate.owner.with_owner_lock_for_test(request, read),
             None => read(),
         }
     }
@@ -76,6 +79,9 @@ impl NativeReadRendezvous {
         let mut state = self.state.lock().unwrap();
         if self.roots.contains(&root) {
             *state.exits.entry(root).or_default() += 1;
+            state
+                .exit_acquisitions
+                .push((root, self.owner.acquisitions_for_test()));
             if self.owner.is_locked_for_test() {
                 state.owner_locked += 1;
             }
@@ -86,6 +92,9 @@ impl NativeReadRendezvous {
         if !self.roots.contains(&root) || state.entered.contains(&root) {
             return;
         }
+        state
+            .initial_acquisitions
+            .get_or_insert_with(|| self.owner.acquisitions_for_test());
         state.entered.insert(root);
         // This fails the old lock-spanning read without leaving a peer waiting.
         if self.owner.is_locked_for_test() {
@@ -126,6 +135,15 @@ impl NativeReadRendezvousGuardForTest {
             std::collections::BTreeMap::from(self.gate.roots.map(|root| (root, 2))),
             "both sides of each rooted read must exit"
         );
+        let initial = state
+            .initial_acquisitions
+            .expect("the first read sampled its owner");
+        for &(root, acquisitions) in &state.exit_acquisitions {
+            assert_eq!(
+                acquisitions, initial,
+                "owner acquired during rooted read {root:?}"
+            );
+        }
         assert_eq!(
             state.owner_locked, 0,
             "a native read retained its owner's lock"

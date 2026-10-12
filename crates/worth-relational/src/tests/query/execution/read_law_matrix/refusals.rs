@@ -6,10 +6,27 @@ use crate::facade::indexes::{
 };
 use crate::runtime::QueryReadExecutionStop;
 use worth_execution::{
-    CancellationSource, ExecutionWorkCeiling, MapKernelFailure, MapKernelStop, MapStop,
-    SerialMemoryBudget, SerialRequest,
+    CancellationSource, CancellationToken, ExecutionWorkCeiling, LeaseRequest, MapKernelFailure,
+    MapKernelStop, MapStop, SerialMemoryBudget, SerialRequest,
 };
-use worth_foundational::{ExecutionPhysicalReport, ExecutionReport, PartitionIdentity};
+use worth_foundational::{
+    DeterminismContract, ExecutionBudget, ExecutionPhysicalReport, ExecutionReport,
+    ExecutionRequestPolicy, PartitionIdentity,
+};
+
+fn admitted_lease(token: CancellationToken) -> worth_execution::ExecutionResourceLease<'static> {
+    test_execution_authority()
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Automatic,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), MEMORY, 100_000),
+            ),
+            deadline: None,
+            cancellation: token,
+        })
+        .unwrap()
+}
 
 #[test]
 fn runtime_read_law_plan_absence_and_stopped_request() {
@@ -22,39 +39,59 @@ fn runtime_read_law_plan_absence_and_stopped_request() {
     unavailable.snapshot = other.snapshot;
     let mut absent = world.plan(&case);
     absent.packet.context_id.version_id = VersionId(6);
-    for plan in [unavailable, absent] {
-        let (answer, report) = setup
-            .run(ExecutionWorkCeiling::new(100_000), |_| {
-                world.runtime.read_truth().execute_query_plan(plan, &setup)
-            })
-            .unwrap();
-        assert!(answer.unwrap().is_none());
-        assert_eq!(report.charged_work(), 0);
-    }
-    let cancellation = CancellationSource::new();
-    let host =
-        SerialRequest::from_memory(SerialMemoryBudget::new(MEMORY), cancellation.token(), None);
-    cancellation.cancel();
-    let stopped = world
-        .runtime
-        .read_truth()
-        .execute_query_plan(world.plan(&case), &ExecutionRequest::serial(&host))
-        .unwrap_err();
-    assert_eq!(
-        stopped,
-        QueryReadExecutionStop::PreparationStopped {
-            reason: MapStop::Failure {
-                identity: PartitionIdentity::new(1),
-                cause: MapKernelFailure::Stop(MapKernelStop::Cancelled)
-            },
-            report: ExecutionReport::new(
-                ExecutionPosture::Serial,
-                0,
-                0,
-                ExecutionPhysicalReport::new(0, 0, None, 0, 0)
-            ),
+    for leased in [false, true] {
+        let lease = admitted_lease(CancellationToken::new());
+        let request = if leased {
+            ExecutionRequest::leased(&lease)
+        } else {
+            setup
+        };
+        for plan in [unavailable.clone(), absent.clone()] {
+            let (answer, report) = request
+                .run(ExecutionWorkCeiling::new(100_000), |_| {
+                    world
+                        .runtime
+                        .read_truth()
+                        .execute_query_plan(plan, &request)
+                })
+                .unwrap();
+            assert!(answer.unwrap().is_none());
+            assert_eq!(report.charged_work(), 0);
         }
-    );
+    }
+    for leased in [false, true] {
+        let cancellation = CancellationSource::new();
+        let host =
+            SerialRequest::from_memory(SerialMemoryBudget::new(MEMORY), cancellation.token(), None);
+        let lease = admitted_lease(cancellation.token());
+        let serial = ExecutionRequest::serial(&host);
+        let request = if leased {
+            ExecutionRequest::leased(&lease)
+        } else {
+            serial
+        };
+        cancellation.cancel();
+        let stopped = world
+            .runtime
+            .read_truth()
+            .execute_query_plan(world.plan(&case), &request)
+            .unwrap_err();
+        assert_eq!(
+            stopped,
+            QueryReadExecutionStop::PreparationStopped {
+                reason: MapStop::Failure {
+                    identity: PartitionIdentity::new(1),
+                    cause: MapKernelFailure::Stop(MapKernelStop::Cancelled)
+                },
+                report: ExecutionReport::new(
+                    ExecutionPosture::Serial,
+                    0,
+                    0,
+                    ExecutionPhysicalReport::new(0, 0, None, 0, 0)
+                ),
+            }
+        );
+    }
 }
 
 #[test]
@@ -74,40 +111,52 @@ fn runtime_read_law_bounded_index_refusal_values() {
             },
             branch_scoped: false,
         });
-    for (snapshot, index, expected) in [
-        (
-            world.snapshot.clone(),
-            DerivedIndexId(u64::MAX),
-            Kind::IndexNotInstalled,
-        ),
-        (world.snapshot.clone(), wrong.index_id, Kind::WrongIndexKind),
-        (other.snapshot, wrong.index_id, Kind::SnapshotUnavailable),
-    ] {
-        let request = BoundedEntityFieldLookupRequest::new(
-            snapshot,
-            index,
-            KindId(1),
-            world.name.clone(),
-            string_aspect_value("a"),
-            2,
-        )
-        .unwrap();
-        let (denial, report) = setup
-            .run(ExecutionWorkCeiling::new(100_000), |_| {
-                world
-                    .runtime
-                    .index_access()
-                    .execute_bounded_entity_field_lookup(
-                        request,
-                        BoundedIndexParityMode::Production,
-                        &setup,
-                    )
-            })
+    for leased in [false, true] {
+        let lease = admitted_lease(CancellationToken::new());
+        let execution = if leased {
+            ExecutionRequest::leased(&lease)
+        } else {
+            setup
+        };
+        for (snapshot, index, expected) in [
+            (
+                world.snapshot.clone(),
+                DerivedIndexId(u64::MAX),
+                Kind::IndexNotInstalled,
+            ),
+            (world.snapshot.clone(), wrong.index_id, Kind::WrongIndexKind),
+            (
+                other.snapshot.clone(),
+                wrong.index_id,
+                Kind::SnapshotUnavailable,
+            ),
+        ] {
+            let request = BoundedEntityFieldLookupRequest::new(
+                snapshot,
+                index,
+                KindId(1),
+                world.name.clone(),
+                string_aspect_value("a"),
+                2,
+            )
             .unwrap();
-        let denial = denial.unwrap_err();
-        assert_eq!(denial.kind(), expected);
-        assert_eq!(denial.index_id(), index);
-        assert_eq!(denial.examined_entry_count(), 0);
-        assert_eq!(report.charged_work(), 0);
+            let (denial, report) = execution
+                .run(ExecutionWorkCeiling::new(100_000), |_| {
+                    world
+                        .runtime
+                        .index_access()
+                        .execute_bounded_entity_field_lookup(
+                            request,
+                            BoundedIndexParityMode::Production,
+                            &execution,
+                        )
+                })
+                .unwrap();
+            let denial = denial.unwrap_err();
+            assert_eq!(denial.kind(), expected);
+            assert_eq!(denial.index_id(), index);
+            assert_eq!(denial.examined_entry_count(), 0);
+            assert_eq!(report.charged_work(), 0);
+        }
     }
 }
