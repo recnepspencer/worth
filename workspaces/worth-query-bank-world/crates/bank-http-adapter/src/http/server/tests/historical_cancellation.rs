@@ -20,7 +20,7 @@ async fn historical_account_activity_cancellation_preserves_http_class_and_remed
     let application = application(account);
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let principal = application.authenticate(&scope).await;
