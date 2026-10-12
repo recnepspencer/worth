@@ -1,5 +1,9 @@
 use super::*;
-use crate::facade::{config::CascadeDeletePolicy, history::BranchId, identity::KindId};
+use crate::facade::{
+    config::CascadeDeletePolicy,
+    history::BranchId,
+    identity::{KindId, PartitionId},
+};
 use crate::indexes::data::{
     BoundedEntityFieldLookupDenialKind, BoundedIndexParityMode, DerivedIndexBuildRequest,
     DerivedIndexDiscardRequest, DerivedIndexKind,
@@ -149,5 +153,69 @@ fn pinned_read_keeps_rows_and_generation_across_a_commit_and_discard() {
             .unwrap()
             .version_id,
         crate::identity::data::VersionId(2)
+    );
+}
+
+#[test]
+fn pinned_traversal_keeps_its_frontier_across_a_commit() {
+    let host = crate::test_execution_policy::serial_request();
+    let request = ExecutionRequest::serial(&host);
+    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let a = create_entity_in_partition(&request, &runtime, "a", PartitionId(7));
+    let b = create_entity_in_partition(&request, &runtime, "b", PartitionId(7));
+    let ab = create_relation_in_partition(&request, &runtime, a, b, "ab", PartitionId(7));
+    let snapshot = runtime.visibility_authority().snapshot();
+    let pinned = runtime
+        .read_truth()
+        .pin_read_capability(&snapshot, &[], &request)
+        .unwrap();
+    let plan = runtime
+        .read_truth()
+        .plan_query_packet(
+            &snapshot,
+            PlannedQueryPacket {
+                label: "held-frontier".into(),
+                context_id: pinned.query_context().clone(),
+                scope: QueryScope::ConnectivityTraversal {
+                    seeds: Arc::from([a]),
+                    relation_kind_scope: None,
+                    max_depth: None,
+                },
+                locality: QueryLocalityClass::CrossPartitionTraversal,
+                ordering: QueryOrderingContract::CanonicalTraversalOrder,
+                access_contract: QueryAccessContract::AuthoritativeStorageOnly,
+                execution_shape: QueryExecutionShape::BulkPacketized,
+                reduction: ReductionDiscipline::DeterministicMerge,
+                plan_key: DeterministicQueryPlanKey(917652),
+                target_count_hint: 1,
+            },
+        )
+        .unwrap();
+    let c = create_entity_in_partition(&request, &runtime, "c", PartitionId(7));
+    create_relation_in_partition(&request, &runtime, b, c, "bc", PartitionId(7));
+    let answer = pinned.execute_query_plan(plan, &request).unwrap().unwrap();
+    assert_eq!(
+        answer
+            .outcome
+            .result
+            .entities
+            .iter()
+            .map(|row| row.entity_id)
+            .collect::<Vec<_>>(),
+        vec![a, b]
+    );
+    assert_eq!(
+        answer
+            .outcome
+            .result
+            .relations
+            .iter()
+            .map(|row| row.relation_id)
+            .collect::<Vec<_>>(),
+        vec![ab]
+    );
+    assert_eq!(
+        answer.outcome.plan.packet.context_id.version_id,
+        crate::identity::data::VersionId(3)
     );
 }

@@ -19,16 +19,15 @@ impl RelationalPinnedRead {
         crate::execution::check_request(execution)
             .map_err(|cause| denied(Denial::Execution(cause), index))?;
         let selected = self
-            .indexes
-            .get(&index)
+            .selected_index(index)
             .ok_or_else(|| denied(Denial::IndexNotInstalled, index))?;
         PreparedEntityFieldLookup::pin(
-            self.context.runtime_instance_id,
-            self.basis.clone(),
+            self.query_context().runtime_instance_id,
+            self.pinned_basis().clone(),
             selected.definition.clone(),
             kind,
             locator,
-            self.instrumentation.clone(),
+            self.pinned_instrumentation().clone(),
             |_| selected.generation.clone(),
         )
     }

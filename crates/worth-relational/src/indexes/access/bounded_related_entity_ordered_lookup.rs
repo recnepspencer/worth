@@ -117,8 +117,7 @@ fn prepare_related_lookup<'request>(
 ) -> Result<PreparedRelatedLookup<'request>, BoundedRelatedEntityOrderedLookupDenial> {
     let contract = resolve_related_lookup_contract(read, request)?;
     let generation = read
-        .indexes
-        .get(&request.index_id())
+        .selected_index(request.index_id())
         .and_then(|index| index.generation.clone())
         .ok_or_else(|| {
             denial(
@@ -156,8 +155,7 @@ fn resolve_related_lookup_contract<'request>(
     request: &'request BoundedRelatedEntityOrderedLookupRequest,
 ) -> Result<RelatedLookupContract<'request>, BoundedRelatedEntityOrderedLookupDenial> {
     let definition = read
-        .indexes
-        .get(&request.index_id())
+        .selected_index(request.index_id())
         .map(|index| index.definition.clone())
         .ok_or_else(|| {
             denial(

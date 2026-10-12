@@ -4,15 +4,15 @@ use crate::runtime::RelationalPinnedRead;
 impl VisibilityProjectionView {
     pub(crate) fn from_pinned(read: &RelationalPinnedRead) -> Self {
         Self {
-            runtime_identity: read.context.runtime_instance_id,
-            current_version: read.current_version,
-            instrumentation: read.instrumentation.clone(),
+            runtime_identity: read.query_context().runtime_instance_id,
+            current_version: read.pinned_current_version(),
+            instrumentation: read.pinned_instrumentation().clone(),
             symbols: read.symbols().clone(),
             schema: ProjectionSchemaCustody::Published(
-                read.basis.root().retained_schema_authority(),
+                read.pinned_basis().root().retained_schema_authority(),
             ),
             basis: crate::visibility::snapshot_states::SnapshotStateBasis::Exact(
-                read.basis.clone(),
+                read.pinned_basis().clone(),
             ),
         }
     }

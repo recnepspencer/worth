@@ -47,13 +47,13 @@ mod tests;
 /// ```
 #[derive(Clone, Debug)]
 pub struct RelationalPinnedRead {
-    pub(crate) current_version: crate::identity::data::VersionId,
-    pub(crate) instrumentation: crate::runtime::RuntimeInstrumentation,
+    pub(super) current_version: crate::identity::data::VersionId,
+    pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
     pub(super) snapshot: SnapshotHandle,
-    pub(crate) basis: VisibilitySnapshotBasis,
-    pub(crate) context: QueryPlanContextId,
+    pub(super) basis: VisibilitySnapshotBasis,
+    pub(super) context: QueryPlanContextId,
     pub(super) symbols: StringInterner,
-    pub(crate) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
+    pub(super) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
 }
 
 #[derive(Clone, Debug)]
@@ -99,6 +99,21 @@ impl RelationalPinnedRead {
             .generation
             .as_ref()
             .map(|generation| generation.generation_id)
+    }
+}
+
+impl RelationalPinnedRead {
+    pub(crate) fn pinned_basis(&self) -> &VisibilitySnapshotBasis {
+        &self.basis
+    }
+    pub(crate) fn pinned_current_version(&self) -> crate::identity::data::VersionId {
+        self.current_version
+    }
+    pub(crate) fn pinned_instrumentation(&self) -> &crate::runtime::RuntimeInstrumentation {
+        &self.instrumentation
+    }
+    pub(crate) fn selected_index(&self, index: DerivedIndexId) -> Option<&PinnedIndex> {
+        self.indexes.get(&index)
     }
 }
 
