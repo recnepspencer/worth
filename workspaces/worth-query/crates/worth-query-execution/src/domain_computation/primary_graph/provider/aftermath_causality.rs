@@ -103,9 +103,9 @@ impl WorthQueryPrimaryGraphProvider {
                 pending,
                 outcome_identity,
             }
-            .resolve(execution, );
+            .resolve(execution);
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            resolution.map_err(Into::into)
+            resolution
         })
     }
 
@@ -134,7 +134,6 @@ impl WorthQueryPrimaryGraphProvider {
             outcome_identity,
         }
         .resolve(execution)
-        .map_err(Into::into)
     }
 }
 
