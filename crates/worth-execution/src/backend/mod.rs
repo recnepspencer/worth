@@ -54,3 +54,5 @@ pub(crate) use meter::{request_refusal, request_stop};
 
 mod scope_refusal;
 pub(crate) use scope_refusal::{run_admitting_scope, ScopeKernelFailure};
+
+pub(crate) use port::run_owned_batch_perturbed_for_test;

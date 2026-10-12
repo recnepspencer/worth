@@ -348,3 +348,7 @@ pub use advancement::WorthQueryBootstrapAdvancementPhase;
 pub(in crate::domain_computation::primary_graph) use advancement::record_caller_pass_for_test;
 
 pub(in crate::domain_computation::primary_graph) use advancement::observation::record_event;
+
+pub(in crate::domain_computation::primary_graph) fn certified_wave_seed_for_test() -> Option<u64> {
+    test_placement::certifying()
+}
