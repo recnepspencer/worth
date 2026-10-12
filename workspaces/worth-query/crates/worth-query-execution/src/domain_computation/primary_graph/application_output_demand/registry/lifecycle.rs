@@ -113,6 +113,8 @@ impl WorthQueryOutputDemandRegistry {
             .sum()
     }
 
+    // Completed cleanup notes contain coordinates, not a performed source or
+    // its observation. The paid drain may retain those notes after release.
     pub(in crate::domain_computation::primary_graph) fn retained_source_custody_count(
         &self,
     ) -> usize {
@@ -120,7 +122,9 @@ impl WorthQueryOutputDemandRegistry {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .source_custody
-            .len()
+            .values()
+            .filter(|custody| custody.source.is_some() || custody.discovery.is_some())
+            .count()
     }
 
     pub(in crate::domain_computation::primary_graph) fn output_checkpoint_snapshot_state(
