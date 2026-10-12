@@ -171,9 +171,13 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         bridge: &BridgeAuthorizationRuntime,
     ) -> Result<bool, super::WorthQueryOperationAuthorizationDenialKind> {
         match self {
-            Self::Capability(authorization) => authorization
-                .validate_currentness_in(execution, runtime, snapshot, bridge)
-                .map(|()| true),
+            Self::Capability(authorization) => {
+                match authorization.validate_currentness_in(execution, runtime, snapshot, bridge) {
+                    Ok(()) => Ok(true),
+                    Err(kind) if super::denial::is_request_stop(kind) => Err(kind),
+                    Err(_) => Ok(false),
+                }
+            }
             Self::Principal(_) | Self::Abilities { .. } => {
                 for fact in decisions(self) {
                     if !fact

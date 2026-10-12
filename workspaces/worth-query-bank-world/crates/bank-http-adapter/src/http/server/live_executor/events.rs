@@ -39,6 +39,10 @@ pub(super) fn live_event(
 ) -> Option<BankHttpAccountActivityEvent> {
     let request_id = request_id.to_owned();
     match outcome {
+        BankAccountActivityLiveOutcome::ReadExecution(kind) => Some(denied(
+            request_id,
+            super::super::mutation_application::pending_execution_denial(kind),
+        )),
         BankAccountActivityLiveOutcome::ExecutionRequest(cause) => Some(denied(
             request_id,
             super::super::advancement_denial::advancement(cause),

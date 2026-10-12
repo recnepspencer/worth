@@ -292,7 +292,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Ok(selected) => selected,
             Err(cause) => {
                 return Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(cause),
+                    match cause {
+                        cause @ (crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(_)
+                            | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCancelled
+                            | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationDeadlineExceeded) => WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(cause),
+                        _ => WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
+                    },
                     RecoveryState::World { recovery, retry },
                 ));
             }

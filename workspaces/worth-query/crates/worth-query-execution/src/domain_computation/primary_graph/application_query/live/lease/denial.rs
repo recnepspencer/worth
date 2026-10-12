@@ -50,6 +50,9 @@ where
         denial: WorthQueryApplicationQueryAdmissionDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         match denial.kind() {
+            WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind) => {
+                self.execution_denied_outcome(kind)
+            }
             WorthQueryApplicationQueryAdmissionDenialKind::Cancelled => self.cancelled_outcome(),
             WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded => {
                 self.deadline_exceeded_outcome()
@@ -98,6 +101,9 @@ where
                 self.authorization_denied_outcome(authorization)
             }
             WorthQueryAuthorizedApplicationReadDenial::Read(read) => match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
+                    self.execution_denied_outcome(kind)
+                }
                 WorthQueryApplicationReadExecutionDenialKind::Cancelled => self.cancelled_outcome(),
                 WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded => {
                     self.deadline_exceeded_outcome()
@@ -129,9 +135,26 @@ where
         &mut self,
         denial: WorthQueryOperationAuthorizationDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::AuthorizationDenied(
-            Box::new(denial),
-        ))
+        match denial.kind() {
+            WorthQueryOperationAuthorizationDenialKind::ExecutionRequest(kind) => {
+                self.execution_denied_outcome(kind)
+            }
+            WorthQueryOperationAuthorizationDenialKind::Cancelled => self.cancelled_outcome(),
+            WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded => {
+                self.deadline_exceeded_outcome()
+            }
+            _ => self.acknowledge_and_terminate(
+                WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(denial)),
+            ),
+        }
+    }
+
+    fn execution_denied_outcome(
+        &mut self,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        let _ = self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled);
+        WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
     }
 
     fn cancelled_outcome(&mut self) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {

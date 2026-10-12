@@ -254,9 +254,10 @@ where
         {
             Ok(basis) => basis,
             Err(cause) => {
-                return match basis_interruption::authorization(cause) {
-                    Some(denial) => {
-                        WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(denial))
+                return match basis_interruption::outcome(cause) {
+                    Some(outcome) => {
+                        let _ = self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled);
+                        outcome
                     }
                     None => WorthQueryApplicationLiveOutcome::Unavailable,
                 }

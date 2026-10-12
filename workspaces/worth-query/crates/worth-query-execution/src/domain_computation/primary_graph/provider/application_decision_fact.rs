@@ -136,20 +136,33 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
                 fact.remains_equal_in(runtime, execution, snapshot)?
             }
             Self::Principal(dependency) => {
-                dependency.remains_current_in(execution, runtime, snapshot).map_err(|kind| {
-                    use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
-                    use super::super::WorthQueryApplicationAttemptDenialKind as Attempt;
-                    SelfDenial::new(match kind {
-                        Authorization::ExecutionRequest(kind) => Attempt::ExecutionRequest(kind),
-                        Authorization::Cancelled => Attempt::Cancelled,
-                        Authorization::DeadlineExceeded => Attempt::DeadlineExceeded,
-                        _ => Attempt::CurrentAuthorityDenied,
-                    }, "principal fact comparison")
-                })?
+                use super::super::WorthQueryApplicationAttemptDenialKind as Attempt;
+                use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Authorization;
+                match dependency.remains_current_in(execution, runtime, snapshot) {
+                    Ok(current) => current,
+                    Err(kind) => {
+                        let stop = match kind {
+                            Authorization::ExecutionRequest(kind) => {
+                                Some(Attempt::ExecutionRequest(kind))
+                            }
+                            Authorization::Cancelled => Some(Attempt::Cancelled),
+                            Authorization::DeadlineExceeded => Some(Attempt::DeadlineExceeded),
+                            _ => None,
+                        };
+                        match stop {
+                            Some(stop) => {
+                                return Err(SelfDenial::new(stop, "principal fact comparison"))
+                            }
+                            None => false,
+                        }
+                    }
+                }
             }
-            Self::Authorization { decision, .. } => {
-                decision.remains_equal_in(execution, runtime, snapshot).map_err(|cause| SelfDenial::relational_read_stopped(cause, "authorization decision fact"))?
-            }
+            Self::Authorization { decision, .. } => decision
+                .remains_equal_in(execution, runtime, snapshot)
+                .map_err(|cause| {
+                    SelfDenial::relational_read_stopped(cause, "authorization decision fact")
+                })?,
         };
         execution
             .check_live()

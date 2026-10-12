@@ -316,6 +316,7 @@ fn revoked_capability_stops_governed_live_delivery_before_projection() {
             WorthQueryApplicationLiveOutcome::DeadlineExceeded => "deadline-exceeded",
             WorthQueryApplicationLiveOutcome::Closed => "closed",
             WorthQueryApplicationLiveOutcome::Unavailable => "unavailable",
+            WorthQueryApplicationLiveOutcome::ExecutionRequest(_) => "execution-request",
             WorthQueryApplicationLiveOutcome::AuthorizationDenied(_) => unreachable!(),
         };
         panic!("revoked governed live authority returned {posture}");

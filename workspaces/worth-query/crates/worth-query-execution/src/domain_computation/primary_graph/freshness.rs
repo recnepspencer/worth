@@ -61,15 +61,18 @@ impl WorthQueryDurablePrincipalCurrentness {
         let Some(binding) = layout.principal_binding(&self.binding) else {
             return Ok(false);
         };
-        let mapping = observe_mapping(
+        let Some(mapping) = comparison_observation(observe_mapping(
             execution,
             runtime,
             snapshot,
             self.mapping,
             binding,
             &self.binding,
-        )?;
-        let target = observe_exact_principal_target(
+        ))?
+        else {
+            return Ok(false);
+        };
+        let Some(target) = comparison_observation(observe_exact_principal_target(
             execution,
             runtime,
             snapshot,
@@ -77,7 +80,10 @@ impl WorthQueryDurablePrincipalCurrentness {
             self.principal,
             binding,
             &self.binding,
-        )?;
+        ))?
+        else {
+            return Ok(false);
+        };
         Ok(mapping.enabled
             && mapping.entity_id == self.mapping
             && mapping.kind_id == self.mapping_kind
@@ -201,15 +207,18 @@ impl WorthQueryPrincipalFreshnessEvidence {
         layout: &WorthQueryPrimaryPrincipalBindingLayout,
         binding: &str,
     ) -> Result<bool, WorthQueryPrincipalResolutionDenial> {
-        let mapping = observe_mapping(
+        let Some(mapping) = comparison_observation(observe_mapping(
             execution,
             runtime,
             snapshot,
             self.mapping.entity_id,
             layout,
             binding,
-        )?;
-        let target = observe_exact_principal_target(
+        ))?
+        else {
+            return Ok(false);
+        };
+        let Some(target) = comparison_observation(observe_exact_principal_target(
             execution,
             runtime,
             snapshot,
@@ -217,8 +226,32 @@ impl WorthQueryPrincipalFreshnessEvidence {
             self.target.target,
             layout,
             binding,
-        )?;
+        ))?
+        else {
+            return Ok(false);
+        };
         Ok(mapping.enabled && self.matches(&mapping, &target))
+    }
+}
+
+// Comparisons interpret ordinary resolution absence as stale. Only the
+// caller's execution stop prevents the comparison from giving an answer.
+fn comparison_observation<T>(
+    observed: Result<T, WorthQueryPrincipalResolutionDenial>,
+) -> Result<Option<T>, WorthQueryPrincipalResolutionDenial> {
+    match observed {
+        Ok(value) => Ok(Some(value)),
+        Err(denial)
+            if matches!(
+                denial.kind(),
+                WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(_)
+                    | WorthQueryPrincipalResolutionDenialKind::Cancelled
+                    | WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded
+            ) =>
+        {
+            Err(denial)
+        }
+        Err(_) => Ok(None),
     }
 }
 

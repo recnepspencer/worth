@@ -43,6 +43,7 @@ pub struct BankEstateEmergencyAccessActivityLiveUpdate {
 
 #[derive(Debug)]
 pub enum BankEstateEmergencyAccessActivityLiveOutcome {
+    ReadExecution(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     /// Admission refused before any principal or live projection read.
     ExecutionRequest(
         worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
@@ -106,6 +107,9 @@ impl BankEstateEmergencyAccessActivityLiveLease<'_> {
                         published: publish_application_result(admitted),
                     },
                 )
+            }
+            Ok(WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)) => {
+                BankEstateEmergencyAccessActivityLiveOutcome::ReadExecution(kind)
             }
             Ok(WorthQueryApplicationLiveOutcome::Pending) => {
                 BankEstateEmergencyAccessActivityLiveOutcome::Pending

@@ -86,11 +86,13 @@ where
             .execution_request_for(&self.runtime.product_runtime)
             .map_err(|_| crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignPhase)?;
         let execution = &phase_request;
-        let selected = self
-            .runtime
-            .on_branch(branch)
-            .select_with_request(execution)?;
-        Ok(self.workflow_spec_for(&selected))
+        match self.runtime.on_branch(branch).select_with_request(execution) {
+            Ok(selected) => Ok(self.workflow_spec_for(&selected)),
+            Err(cause @ (crate::basis::WorthQueryProductBranchAdmissionDenial::ReadExecution(_)
+                | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCancelled
+                | crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationDeadlineExceeded)) => Err(cause),
+            Err(_) => Ok(self.initial),
+        }
     }
 
     pub const fn authentication_owner(

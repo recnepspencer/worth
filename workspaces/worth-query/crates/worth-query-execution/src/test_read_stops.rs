@@ -63,3 +63,21 @@ pub(crate) fn every_consult<T: Eq + Debug, E: Eq + Debug>(
         );
     }
 }
+
+/// Signals external cancellation inside a named read consult, using the sealed
+/// SDK observation door this oracle owner already holds.
+pub(crate) fn cancelled_at_consult_for_test<T>(
+    at: usize,
+    source: worth_execution::CancellationSource,
+    read: impl FnOnce() -> T,
+) -> T {
+    with_request_consult_observer_for_test(
+        move |count| {
+            if count == at {
+                source.cancel();
+            }
+        },
+        read,
+    )
+    .0
+}

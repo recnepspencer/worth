@@ -30,4 +30,24 @@ impl WorthQueryRegisteredProviderAttempt<'_> {
             0
         );
     }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::running::progression) fn assert_principal_comparison(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        world: &AuthorizationWorld,
+        request: &WorthQueryRequestScope,
+        relation: worth_relational::facade::identity::RelationId,
+    ) {
+        world
+            .application
+            .primary_provider
+            .assert_principal_stale_and_stopped(
+                execution,
+                &self.staged.read_authority(),
+                self.requests,
+                request,
+                relation,
+            );
+        let _ = self.staged.abort();
+    }
 }
