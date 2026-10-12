@@ -1,7 +1,5 @@
 #[path = "support/compat_http/entry_runtime.rs"]
 mod compat_http_entry_runtime;
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
 
 use worth_proof::TransitionOutcome;
 use worth_server::{

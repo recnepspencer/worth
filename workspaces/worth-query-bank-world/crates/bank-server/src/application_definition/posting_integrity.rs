@@ -202,41 +202,6 @@ fn execution_error(error: impl std::fmt::Display) -> WorthQueryApplicationInvari
     WorthQueryApplicationInvariantExecutionError::new(error.to_string())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::BankPostingBalance;
-    use bank_domain::schema::PostingPurpose;
-
-    #[test]
-    fn bank_posting_balance_rejects_unbalanced_and_inconsistent_inputs() {
-        let mut balanced = BankPostingBalance::default();
-        assert!(balanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, -30));
-        assert!(!balanced.is_balanced(), "one posting cannot form a journal");
-        assert!(balanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, 30));
-        assert!(balanced.is_balanced());
-
-        let mut unbalanced = BankPostingBalance::default();
-        assert!(unbalanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, -30));
-        assert!(unbalanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, 29));
-        assert!(!unbalanced.is_balanced());
-
-        let mut inconsistent = BankPostingBalance::default();
-        assert!(!inconsistent.add(PostingPurpose::Transfer, PostingPurpose::Deposit, 1, 30));
-        assert!(!inconsistent.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 0, 30));
-        assert!(!inconsistent.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 2, 30));
-        assert!(!inconsistent.is_balanced());
-
-        let mut overflow = BankPostingBalance::default();
-        assert!(overflow.add(
-            PostingPurpose::Transfer,
-            PostingPurpose::Transfer,
-            1,
-            i64::MAX
-        ));
-        assert!(!overflow.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, 1));
-    }
-}
-
 impl BankPostingIntegrityRule {
     fn prepare_under(
         &self,
@@ -310,5 +275,40 @@ impl BankPostingIntegrityRule {
             }
         }
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::BankPostingBalance;
+    use bank_domain::schema::PostingPurpose;
+
+    #[test]
+    fn bank_posting_balance_rejects_unbalanced_and_inconsistent_inputs() {
+        let mut balanced = BankPostingBalance::default();
+        assert!(balanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, -30));
+        assert!(!balanced.is_balanced(), "one posting cannot form a journal");
+        assert!(balanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, 30));
+        assert!(balanced.is_balanced());
+
+        let mut unbalanced = BankPostingBalance::default();
+        assert!(unbalanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, -30));
+        assert!(unbalanced.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, 29));
+        assert!(!unbalanced.is_balanced());
+
+        let mut inconsistent = BankPostingBalance::default();
+        assert!(!inconsistent.add(PostingPurpose::Transfer, PostingPurpose::Deposit, 1, 30));
+        assert!(!inconsistent.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 0, 30));
+        assert!(!inconsistent.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 2, 30));
+        assert!(!inconsistent.is_balanced());
+
+        let mut overflow = BankPostingBalance::default();
+        assert!(overflow.add(
+            PostingPurpose::Transfer,
+            PostingPurpose::Transfer,
+            1,
+            i64::MAX
+        ));
+        assert!(!overflow.add(PostingPurpose::Transfer, PostingPurpose::Transfer, 1, 1));
     }
 }

@@ -1,5 +1,3 @@
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
 use worth_server::{
     WorthServerCompatibilityAdmittedProductMutationCommand, WorthServerProductIdempotencyKey,
     WorthServerProductOperationBaseDigest, WorthServerProductOperationSurfaceDenialCode,

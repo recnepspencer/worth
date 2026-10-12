@@ -161,7 +161,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn write(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<WorthQueryMutationReceipt, WorthQueryWorkspaceError> {
         panic!("phase four streaming runtime does not write")
@@ -169,7 +169,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn write_batch(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _commands: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<Vec<WorthQueryMutationReceipt>, WorthQueryWorkspaceError> {
         panic!("phase four streaming runtime does not write batches")
@@ -177,7 +177,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn execute_intent(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &WorthQueryIntentDeclaration,
     ) -> Result<WorthQueryIntentExecution, WorthQueryRuntimeError> {
         panic!("phase four streaming runtime does not execute generic intents")
@@ -185,7 +185,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         (0..self.row_count)
@@ -228,7 +228,7 @@ impl WorthQueryRuntimeBackend for StreamingDatasetRuntimeBackend {
 
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(

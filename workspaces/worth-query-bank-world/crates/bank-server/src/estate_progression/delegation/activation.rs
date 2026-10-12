@@ -83,10 +83,10 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_capability_installation)?;
         let selected = self
-            .select_current_product(&phase)
+            .select_current_product(phase)
             .map_err(BankEstateProgressionDenial::from_product_selection)?;
         let access = selected
-            .admit_capability_access(&phase, principal.query(), &capability, action, request)
+            .admit_capability_access(phase, principal.query(), &capability, action, request)
             .map_err(BankEstateProgressionDenial::from_authorization)?;
         let operation = application
             .installed_schema()

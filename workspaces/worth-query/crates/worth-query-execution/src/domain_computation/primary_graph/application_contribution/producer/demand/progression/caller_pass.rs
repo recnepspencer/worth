@@ -49,7 +49,6 @@ where
     /// disclose in this call. A caller that reads its retained source again
     /// retries after source replacement or upstream completion; one that handed over its
     /// only disclosure answers `Pending` and discloses on its next advance.
-
     fn advance_caller_pass<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

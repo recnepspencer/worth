@@ -157,7 +157,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn write(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _command: WorthQueryBackendAdmissibleMutation,
     ) -> Result<worth_query::facade::foundation::WorthQueryMutationReceipt, WorthQueryWorkspaceError>
     {
@@ -166,7 +166,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn write_batch(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _commands: Vec<WorthQueryBackendAdmissibleMutation>,
     ) -> Result<
         Vec<worth_query::facade::foundation::WorthQueryMutationReceipt>,
@@ -177,7 +177,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn execute_intent(
         &mut self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _declaration: &worth_query::facade::runtime::WorthQueryIntentDeclaration,
     ) -> Result<worth_query::facade::runtime::WorthQueryIntentExecution, WorthQueryRuntimeError>
     {
@@ -186,7 +186,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn live_entities_for_target(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &WorthQueryLiveArtifactTarget,
     ) -> Vec<WorthQueryEntity> {
         if self
@@ -231,7 +231,7 @@ impl WorthQueryRuntimeBackend for RemaskRuntimeBackend {
 
     fn current_snapshot_identity(
         &self,
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> WorthQuerySnapshotIdentity {
         WorthQuerySnapshotIdentity::from_bridge_snapshot_projection(
             worth_runtime_bridge::facade::TruthSnapshotIdentity::from_relational_snapshot(
