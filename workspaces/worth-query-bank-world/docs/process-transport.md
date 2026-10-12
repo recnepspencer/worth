@@ -26,8 +26,8 @@ authority.
 - `BankHttpServerBinding` and `BankUserNodeBinding` provide embedded process
   composition when the caller owns lifecycle orchestration.
 
-The `cold-certification` feature changes only TLS trust for the disposable
-Docker courtroom. It is not a production deployment mode.
+The runtime `cold_certification` setting selects TLS trust for the disposable
+Docker courtroom. Its implementation always compiles.
 
 ## Core Mental Model
 
@@ -282,7 +282,7 @@ purpose-specific recovery token.
 - Do not treat an opaque token as authentication or authorization.
 - Do not retry an SSE overflow from an inferred cursor; start a bounded page
   query and then reopen live delivery.
-- Do not enable cold-certification trust in a deployed process.
+- Do not enable the `cold_certification` runtime setting in a deployed process.
 
 ## Current Limits
 

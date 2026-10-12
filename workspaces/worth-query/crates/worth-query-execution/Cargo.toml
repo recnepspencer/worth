@@ -6,18 +6,6 @@ license.workspace = true
 description = "Installed Query execution authority over admitted plans."
 publish = false
 
-[features]
-allocation-probes = []
-test-durability-faults = ["worth-relational/test-durability-faults"]
-test-primary-graph-faults = []
-test-query-execution-observer = [
-    "worth-execution/test-request-consults",
-    "worth-signal/test-execution-observer",
-    "worth-runtime-world/test-execution-observer",
-]
-certification-invalidation-equivalence = []
-test-world-operation-control = ["worth-runtime-world/test-operation-control"]
-
 [dependencies]
 im = "=15.1.0"
 sha2 = "0.10"
@@ -36,8 +24,8 @@ worth-query-installation = { path = "../worth-query-installation" }
 
 [dev-dependencies]
 stats_alloc = "0.1"
-worth-relational = { path = "../../../../crates/worth-relational", features = ["test-durability-faults"] }
-worth-query-installation = { path = "../worth-query-installation", features = ["certification-query-lookup"] }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-query-installation = { path = "../worth-query-installation" }
 
 [lints]
 workspace = true

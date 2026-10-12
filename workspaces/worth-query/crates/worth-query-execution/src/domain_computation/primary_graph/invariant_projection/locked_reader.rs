@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
@@ -62,12 +63,9 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     pub(super) selected_product_generation: Option<u64>,
     pub(super) selected_source_partition_identity: Option<[u8; 32]>,
     pub(super) prior_output_bindings:
-        HashMap<std::any::TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
+        HashMap<TypeId, Arc<super::super::WorthQueryApplicationOutputCorrespondence>>,
     pub(super) current_output_families: HashMap<
-        (
-            std::any::TypeId,
-            worth_relational::facade::identity::EntityId,
-        ),
+        (TypeId, worth_relational::facade::identity::EntityId),
         Vec<super::operation_reader::CertifiedOutputCorrespondence>,
     >,
     pub(super) dependent_source_facts:

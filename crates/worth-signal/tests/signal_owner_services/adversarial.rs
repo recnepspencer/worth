@@ -8,7 +8,6 @@
 #[path = "adversarial/world.rs"]
 mod world;
 
-#[cfg(feature = "test-operation-control")]
 #[path = "adversarial/operation_control.rs"]
 mod operation_control;
 

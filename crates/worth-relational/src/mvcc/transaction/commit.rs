@@ -16,8 +16,12 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
         self.preparation_port()
-            .prepare_branch_transaction(execution, transaction)
+            .prepare_consulted_branch_transaction(execution, transaction)
     }
 
     /// The independently borrowable preparation service for this runtime.

@@ -175,7 +175,7 @@ fn a_commit_meter_that_cannot_record_a_restored_output_stops_the_commit() {
     );
     let mut exhausted = owner.edit_admission();
     exhausted
-        .charge_external_work(u64::try_from(exhausted.remaining_work()).unwrap())
+        .charge_external_work(exhausted.remaining_work_amount())
         .unwrap();
     assert_eq!(
         restored.establish_restored_before_commit(

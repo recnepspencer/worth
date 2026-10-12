@@ -7,7 +7,7 @@ use worth_execution::{ExecutionMap, KeylessPartition, MapKernelFailure, ReduceIn
 
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::request_execution::{
-    test_execution_authority, test_policy,
+    query_test_execution_authority_for_test, test_policy,
 };
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 
@@ -30,6 +30,8 @@ fn fill_room(execution: &QueryRequestExecution<'_>) -> crate::domain_computation
 
 #[test]
 fn scope_admission_reports_shape_work_only_when_construction_ran() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let keys: Vec<_> = (0..PARTITIONS).map(|n| Id::new(n as u64)).collect();
     let shape = shape::Shape::from_sorted(&keys);
     let visits = shape::Shape::shape_work(&shape, PARTITIONS);
@@ -37,7 +39,7 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
         let request = live_scope();
         let execution = QueryRequestExecution::open(
             RuntimeWorldExecutionPlacement::Leased {
-                authority: test_execution_authority(),
+                authority: query_test_execution_authority_for_test(),
                 policy: test_policy(NonZeroUsize::MIN, MEMORY),
             },
             &request,

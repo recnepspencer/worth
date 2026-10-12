@@ -1,6 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::{
-    provider_session_control_denied, provider_session_denied, provider_session_execution_denied,
+    control_stopped_outcome, provider_session_denied, provider_session_execution_denied,
 };
 use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
 use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
@@ -117,7 +117,7 @@ fn unreachable_child_policy_causes_and_non_relational_retained_state_stay_termin
 }
 
 #[test]
-fn pending_and_invariant_keep_head_category_stage_and_terminal_posture() {
+fn pending_and_invariant_resources_keep_category_stage_and_terminal_posture() {
     for stage in [Stage::Idempotency, Stage::InvariantExecution] {
         for (kind, expected) in execution_cases() {
             let denial =
@@ -130,15 +130,57 @@ fn pending_and_invariant_keep_head_category_stage_and_terminal_posture() {
                 matches!(classify_denial(&denial), Outcome::TerminalFailure(Terminal::ApplicationExecution { stage: observed, cause: Ok(cause) }) if observed == stage && cause == kind)
             );
         }
-        for kind in [Control::Cancelled, Control::TimedOut] {
-            let denial =
-                provider_session_control_denied(kind, stage, "invariant owner control stop");
-            assert_eq!(denial.kind(), Kind::ProviderRejected);
-            assert_eq!(denial.stage(), stage);
-            assert!(
-                matches!(classify_denial(&denial), Outcome::TerminalFailure(Terminal::ApplicationExecution { stage: observed, cause: Err(cause) }) if observed == stage && cause == kind)
-            );
-        }
+    }
+}
+
+#[test]
+fn invariant_execution_control_stops_keep_stage_cause_and_terminal_posture() {
+    use crate::domain_computation::{
+        WorthQueryInvariantExecutionDenialKind as Invariant,
+        WorthQueryInvariantExecutionFailure as Failure,
+    };
+    use worth_relational::facade::mvcc::RelationalOperationInterruption as Interruption;
+
+    for (stop, control) in [
+        (Interruption::Cancelled, Control::Cancelled),
+        (Interruption::TimedOut, Control::TimedOut),
+    ] {
+        let denial = Denial::invariant_execution_denied(
+            Stage::InvariantExecution,
+            Failure::new(
+                Invariant::RequestInterrupted(stop),
+                "invariant request stopped",
+            ),
+        );
+        assert_eq!(denial.kind(), Kind::ProviderRejected);
+        assert_eq!(denial.stage(), Stage::InvariantExecution);
+        assert_eq!(denial.execution_denial_cause(), Some(Err(control)));
+        let Outcome::TerminalFailure(Terminal::ApplicationExecution { stage, cause }) =
+            classify_denial(&denial)
+        else {
+            panic!("invariant control stop lost its terminal execution posture");
+        };
+        assert_eq!(stage, Stage::InvariantExecution);
+        assert_eq!(cause, Err(control));
+    }
+}
+
+#[test]
+fn preparation_control_stops_retry_at_provider_commit() {
+    use crate::domain_computation::primary_graph::application_attempt::WorthQueryProviderProgressionOutcome as Progression;
+    use crate::domain_computation::WorthQueryProviderSessionCommitControlStopped as Stopped;
+    for kind in [Control::Cancelled, Control::TimedOut] {
+        let Progression::Denied(denial) =
+            control_stopped_outcome(Stopped::execution_preparation(kind, "owner control stop"))
+        else {
+            panic!("preparation control lost its denial");
+        };
+        assert_eq!(denial.stage(), Stage::ProviderCommit);
+        assert_eq!(denial.kind(), Kind::ProviderRejected);
+        assert_eq!(denial.execution_denial_cause(), Some(Err(kind)));
+        assert!(
+            matches!(classify_denial(&denial), Outcome::RetryableExecutionControlStopped(observed) if observed == kind)
+        );
     }
 }
 
@@ -157,7 +199,10 @@ fn custody_faults_never_retry_through_either_projection() {
     use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial as Opening;
     for (opening, resource) in [
         (Opening::NestedOpening, Resource::NestedAdvancementOpening),
-        (Opening::ForeignPhase, Resource::ForeignAdvancementPhase),
+        (
+            Opening::Resource(Resource::ForeignAdvancementPhase),
+            Resource::ForeignAdvancementPhase,
+        ),
     ] {
         assert!(!opening.is_transient());
         assert!(!Opening::Resource(resource).is_transient());

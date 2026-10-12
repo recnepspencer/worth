@@ -192,7 +192,7 @@ pub(super) fn admit_commit_execution(
     runtime: &RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
 ) -> Result<AdmittedCommitExecution, TransactionCommitError> {
-    crate::visibility::materialization::read_records::read_request::consult(execution).map_err(
+    crate::execution::check_request(execution).map_err(
         |cause| {
             TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
                 kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),

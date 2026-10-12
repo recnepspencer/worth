@@ -2,7 +2,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{mpsc, Arc};
 use std::thread;
 
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::SignalOwnerLifecycleObservation;
 
 use super::super::progress_bound::{wait_until_progress, PROGRESS_BOUND};
@@ -21,9 +21,10 @@ fn close_batch_fault_releases_cleanup_claim_for_waiting_retry() {
     drop(captured);
     drop(basis);
     let before = owner.cost_snapshot();
-    let control = owner.operation_control();
-    let first_batch = control.arm_pause_once(SignalOwnerOperationBoundary::OwnerCloseBatch);
-    control.inject_panic_once(SignalOwnerOperationBoundary::OwnerCloseBatch);
+    let control = owner.operation_control_for_test();
+    let first_batch =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::OwnerCloseBatch);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OwnerCloseBatch);
     let (first_tx, first_rx) = mpsc::sync_channel(1);
     let first_owner = Arc::clone(&owner);
     thread::spawn(move || {

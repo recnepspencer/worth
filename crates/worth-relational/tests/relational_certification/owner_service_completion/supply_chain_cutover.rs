@@ -58,7 +58,10 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
         .preparation_port()
         .prepare_branch_transaction(execution, transaction)
         .expect("the preparation port builds the canonical reroute candidate");
-    let performed = match services.publication_port().compare_and_publish(candidate) {
+    let performed = match services
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("the real reroute did not perform through the port: {outcome:?}"),
     };

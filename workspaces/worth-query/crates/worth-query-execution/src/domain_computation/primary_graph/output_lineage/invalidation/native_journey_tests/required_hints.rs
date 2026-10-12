@@ -248,12 +248,12 @@ fn two_branch_cells_preserve_prepared_fences_and_refund_partial_denial() {
                 let fork_port = runtime.publication_port();
                 let outcomes = std::thread::scope(|scope| {
                     let main_write = scope.spawn(|| {
-                        let outcome = main_port.compare_and_publish(main_candidate);
+                        let outcome = main_port.compare_and_publish(execution, main_candidate);
                         gate.main_published.open();
                         outcome
                     });
                     let fork_write =
-                        scope.spawn(move || fork_port.compare_and_publish(fork_candidate));
+                        scope.spawn(move || fork_port.compare_and_publish(execution, fork_candidate));
                     [main_write.join().unwrap(), fork_write.join().unwrap()]
                 });
                 assert!(saw_two_prepared.load(Ordering::Relaxed));

@@ -1,3 +1,6 @@
+mod key_comparison;
+use key_comparison::key_work;
+
 use std::sync::Arc;
 
 use super::{
@@ -68,7 +71,7 @@ impl DemandRegistryState {
             .map_err(|stop| match stop {
                 worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
                     ..
-                }
+                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
                 | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
                     empty_work_denial()
                 }
@@ -194,7 +197,7 @@ impl DemandRegistryState {
             .map_err(|stop| match stop {
                 worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
                     ..
-                }
+                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
                 | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
                     work_denial()
                 }
@@ -372,13 +375,6 @@ impl DemandRecord {
             || matches!(&self.state, super::DemandState::Output(output)
                 if matches!(output.advancement, super::WorthQueryOutputAdvancement::Stopped { .. }))
     }
-}
-
-fn key_work(key: &WorthQueryOutputDemandKey) -> Result<u64, WorthQueryOutputDemandDenial> {
-    1_usize
-        .checked_add(key.producer.len())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(work_denial)
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {

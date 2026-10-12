@@ -43,7 +43,7 @@ fn projection_contract_violation_is_typed_not_panic_bucket() {
         StrategyExecutionError::ExecutorFailed {
             strategy_id: CommitStrategyId(41),
             failure,
-        } if failure.class
-            == crate::commit_strategies::data::StrategyExecutorFailureClass::ProjectionContractViolation
+        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain { class, .. } if *class
+            == crate::commit_strategies::data::StrategyExecutorFailureClass::ProjectionContractViolation)
     ));
 }

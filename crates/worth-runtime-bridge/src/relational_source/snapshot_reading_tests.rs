@@ -244,3 +244,6 @@ fn scalar_string_contract(aspect: &str) -> SnapshotReadContract {
 
 #[path = "snapshot_serial_memory_tests.rs"]
 mod serial_memory;
+
+#[path = "snapshot_request_work_tests.rs"]
+mod request_work;

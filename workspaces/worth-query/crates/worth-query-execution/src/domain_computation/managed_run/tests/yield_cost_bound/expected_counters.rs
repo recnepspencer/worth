@@ -10,7 +10,6 @@ pub(super) fn expected_direct_yield_counters(
     counters
 }
 
-#[cfg(feature = "allocation-probes")]
 pub(super) fn expected_workflow_yield_counters(
 ) -> crate::domain_computation::WorthQueryYieldTransitionCounters {
     let mut counters = expected_direct_yield_counters();

@@ -25,7 +25,6 @@ fn fintech_intraday_world_setup_builds_seeded_branchable_graph() {
 }
 
 #[test]
-#[ignore = "stress shape for hostile domain workflows"]
 fn fintech_intraday_world_setup_stress_builds_over_10k_nodes() {
     let fixture = super::scenarios::setup_seeded_world_with(
         FintechScale::stress_10k(),

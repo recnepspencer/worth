@@ -39,7 +39,6 @@ pub enum BankHttpProcessConfigurationError {
     Oidc(AuthentikOidcConfigurationError),
     World,
     Identity(AuthentikBankIdentityBuildError),
-    ColdCertificationUnavailable,
     ExternalRail(bank_server::BankExternalEffectTransportDenial),
 }
 
@@ -58,7 +57,7 @@ impl BankHttpProcessConfiguration {
             .map_err(|_| BankHttpProcessConfigurationError::World)?;
         let cancellation = WorthQueryCancellationSource::new();
         let scope = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(300),
+            Some(Instant::now() + Duration::from_secs(300)),
             cancellation.token(),
         );
         let identity = install_identity(oidc, world, self.cold_certification, &scope).await?;
@@ -101,24 +100,14 @@ async fn install_identity(
         .map_err(BankHttpProcessConfigurationError::Identity)
 }
 
-#[cfg(feature = "cold-certification")]
 async fn install_cold_identity(
     oidc: AuthentikOidcConfiguration,
     world: bank_server::BankWorldSeed,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    crate::cold_certification::install_world(oidc, world, scope)
+    crate::cold_certification_for_test::install_world_for_test(oidc, world, scope)
         .await
         .map_err(BankHttpProcessConfigurationError::Identity)
-}
-
-#[cfg(not(feature = "cold-certification"))]
-async fn install_cold_identity(
-    _oidc: AuthentikOidcConfiguration,
-    _world: bank_server::BankWorldSeed,
-    _scope: &WorthQueryRequestScope,
-) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    Err(BankHttpProcessConfigurationError::ColdCertificationUnavailable)
 }
 
 impl std::fmt::Display for BankHttpProcessConfigurationError {
@@ -127,9 +116,6 @@ impl std::fmt::Display for BankHttpProcessConfigurationError {
             Self::Oidc(error) => error.fmt(formatter),
             Self::World => formatter.write_str("invalid Bank HTTP process world"),
             Self::Identity(error) => error.fmt(formatter),
-            Self::ColdCertificationUnavailable => {
-                formatter.write_str("cold certification was not compiled into this process")
-            }
             Self::ExternalRail(error) => error.fmt(formatter),
         }
     }

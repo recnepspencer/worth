@@ -18,7 +18,7 @@ impl VisibilityProjectionView<'_> {
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
-        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
+        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -58,7 +58,7 @@ impl VisibilityProjectionView<'_> {
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
-        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
+        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -100,7 +100,7 @@ impl VisibilityProjectionView<'_> {
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
-        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
+        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -122,7 +122,7 @@ impl VisibilityProjectionView<'_> {
         mut before_candidate: impl FnMut(u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
-        super::super::read_request::consult(execution).map_err(ReadStop::Request)?;
+        crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };

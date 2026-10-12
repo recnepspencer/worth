@@ -48,7 +48,6 @@ where
             &cell,
             cancellation,
             &self.state.clock,
-            #[cfg(feature = "test-operation-control")]
             &self.state.operation_control,
         )
     }

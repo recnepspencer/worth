@@ -85,7 +85,7 @@ where
             .map_err(|stop| match stop {
                 worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted {
                     ..
-                }
+                } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
                 | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
                     empty_work()
                 }

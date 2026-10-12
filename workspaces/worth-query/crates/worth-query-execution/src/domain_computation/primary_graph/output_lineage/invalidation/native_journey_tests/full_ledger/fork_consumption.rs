@@ -167,7 +167,9 @@ fn publish_on_fork(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let outcome = runtime.publication_port().compare_and_publish(candidate);
+    let outcome = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate);
     let RelationalPublicationOutcome::Performed(performed) = outcome else {
         panic!("{value} must publish, including the consumer and both later writes: {outcome:?}");
     };

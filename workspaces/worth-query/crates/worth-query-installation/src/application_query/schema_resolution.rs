@@ -23,18 +23,21 @@ where
         WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         WorthQueryApplicationQueryInstallationDenial,
     > {
-        let key = ApplicationQueryBindingKey::from_reference(&reference);
+        let key = ApplicationQueryBindingKey::from_reference_for_test(&reference);
         let compiled = self
             .query_catalog
-            .get_query(&key)
-            .or_else(|| self.query_catalog.get_query_by_name(reference.name()))
+            .get_query_for_test(&key)
+            .or_else(|| {
+                self.query_catalog
+                    .get_query_by_name_for_test(reference.name())
+            })
             .ok_or_else(|| {
                 WorthQueryApplicationQueryInstallationDenial::new(
                     WorthQueryApplicationQueryInstallationDenialKind::QueryNotInstalled,
                     reference.name(),
                 )
             })?;
-        if !compiled.matches_reference(reference) {
+        if !compiled.matches_reference_for_test(reference) {
             return Err(WorthQueryApplicationQueryInstallationDenial::new(
                 WorthQueryApplicationQueryInstallationDenialKind::QueryMeaningChanged,
                 reference.name(),

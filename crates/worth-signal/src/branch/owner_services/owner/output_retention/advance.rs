@@ -1,7 +1,7 @@
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use super::SignalAdvanceOutputReservation;
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 use crate::branch::owner_services::SignalOwnerCancellationToken;
 use crate::branch::{
     AdmittedSignalBranchBasis, SignalBranchAdvanceCompletion, SignalBranchAdvanceOutcome,
@@ -119,7 +119,7 @@ where
         }
         match catch_unwind(AssertUnwindSafe(|| {
             self.admission
-                .reach_operation_boundary(SignalOwnerOperationBoundary::OutcomeConstruction);
+                .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
         })) {
             Ok(()) => SignalBranchAdvanceCompletion::returned(Ok(outcome)),
             Err(payload) => SignalBranchAdvanceCompletion::unwound(Some(outcome), payload),

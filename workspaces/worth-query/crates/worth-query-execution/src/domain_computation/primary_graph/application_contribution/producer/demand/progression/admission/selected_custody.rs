@@ -61,6 +61,7 @@ fn empty_capacity() -> WorthQueryOutputDemandDenial {
 fn empty_stop(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
     match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => empty_work(),
         _ => empty_capacity(),
     }

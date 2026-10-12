@@ -83,7 +83,10 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
             drop(retained.pop());
             retained.push(admit().expect("dropping one session returns one graph reservation"));
             drop(retained);
-            assert_eq!(world.application.provider_session_resource_count(), 0);
+            assert_eq!(
+                world.application.provider_session_resource_count_for_test(),
+                0
+            );
             let completed = world
                 .application
                 .execute_application_query_one_shot(
@@ -99,7 +102,10 @@ fn query_graph_capacity_denial_and_drop_return_exact_reservation() {
                     .released_reservation_count(),
                 1
             );
-            assert_eq!(world.application.provider_session_resource_count(), 0);
+            assert_eq!(
+                world.application.provider_session_resource_count_for_test(),
+                0
+            );
         })
         .expect("the fixture block owns its installed host call")
 }

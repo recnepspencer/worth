@@ -45,7 +45,6 @@ impl<Schema, Operation, Input, Scope>
         if let Some(context) = &mut self.required_output_demand {
             context.record_completed_handler_facts(boundary, computation);
         } else {
-            #[cfg(feature = "test-query-execution-observer")]
             crate::domain_computation::primary_graph::observe_discarded(&computation);
             #[cfg(test)]
             crate::domain_computation::primary_graph::SealedComputationRun::keep_in_test(

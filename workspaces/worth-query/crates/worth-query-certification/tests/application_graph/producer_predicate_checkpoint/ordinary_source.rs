@@ -156,7 +156,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
-            std::time::Instant::now() + std::time::Duration::from_secs(30),
+            Some(std::time::Instant::now() + std::time::Duration::from_secs(30)),
             cancellation.token(),
         );
     cancellation.cancel();

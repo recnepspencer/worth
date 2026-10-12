@@ -3,8 +3,8 @@
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
 use crate::domain_computation::primary_graph::application_contribution::PriorAbsence;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::{
-    any::TypeId,
     collections::BTreeMap,
     sync::{Arc, Mutex, OnceLock},
 };

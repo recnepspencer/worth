@@ -14,8 +14,15 @@ fn foreign_runtime_validation_denials_precede_raw_entity_and_relation_effects() 
     let invariant_target = require_interned_runtime();
     let invariant_target_before = TargetRuntimeState::capture(&invariant_target);
     let invariant_error = invariant_transaction
-        .commit_boundary_plan(&invariant_target)
+        .commit_boundary_plan(execution, &invariant_target)
         .expect_err("invariant planning cannot cross its runtime boundary");
+    let crate::facade::transactions::TransactionCommitError::Conflict {
+        error: invariant_error,
+        ..
+    } = invariant_error
+    else {
+        panic!("expected conflict")
+    };
     assert!(matches!(
         invariant_error.class,
         crate::facade::transactions::ConflictClass::ForeignRuntime { .. }

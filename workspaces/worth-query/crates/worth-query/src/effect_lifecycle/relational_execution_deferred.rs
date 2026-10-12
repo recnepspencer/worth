@@ -90,40 +90,51 @@ pub(super) fn transaction_staging(
     }
 }
 
+pub(super) fn execution_denial(
+    denial: worth_relational::facade::transactions::CommitExecutionDenial,
+) -> RelationalEffectExecutionFailure {
+    let translated = match denial.kind {
+        worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
+            worth_query_execution::facade::primary_graph::relational_execution_kind(
+                cause,
+                denial.partition_identity,
+            )
+        }
+    };
+    use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind as ControlStop;
+    match translated {
+        Ok(kind) => RelationalEffectExecutionFailure::Denied {
+            kind: EffectExecutionDenialKind::RelationalExecutionDenied(kind),
+            message: format!("{denial:?}"),
+        },
+        Err(kind) => RelationalEffectExecutionFailure::ControlStopped {
+            kind: match kind {
+                ControlStop::Cancelled => super::EffectExecutionControlStopKind::Cancelled,
+                ControlStop::TimedOut => super::EffectExecutionControlStopKind::TimedOut,
+            },
+            message: format!("{denial:?}"),
+        },
+    }
+}
+
 pub(super) fn transaction_commit(
     error: TransactionCommitError,
 ) -> RelationalEffectExecutionFailure {
     match error {
-        TransactionCommitError::Execution { denial, .. } => {
-            let translated = match denial.kind {
-                worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
-                    worth_query_execution::facade::primary_graph::relational_execution_kind(
-                        cause,
-                        denial.partition_identity,
-                    )
-                }
-            };
-            match translated {
-                Ok(kind) => RelationalEffectExecutionFailure::Denied {
-                    kind: EffectExecutionDenialKind::RelationalExecutionDenied(kind),
-                    message: format!("{denial:?}"),
-                },
-                Err(kind) => RelationalEffectExecutionFailure::ControlStopped {
-                    kind: match kind {
-                        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled => super::EffectExecutionControlStopKind::Cancelled,
-                        worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut => super::EffectExecutionControlStopKind::TimedOut,
-                    },
-                    message: format!("{denial:?}"),
-                },
-            }
-        }
+        TransactionCommitError::Execution { denial, .. } => execution_denial(denial),
         TransactionCommitError::Conflict { error, .. } => {
             if let Some(allocation) = error.allocation_denial() {
                 return allocation_failure(allocation);
             }
             let kind = match &error.class {
-                worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => EffectExecutionDenialKind::TransactionStagingCardinalityOverflow,
-                worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied { requested_batches: *requested_batches },
+                worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => {
+                    EffectExecutionDenialKind::TransactionStagingCardinalityOverflow
+                }
+                worth_relational::facade::transactions::ConflictClass::TransactionInputDirectoryAllocationDenied { requested_batches } => {
+                    EffectExecutionDenialKind::TransactionInputDirectoryAllocationDenied {
+                        requested_batches: *requested_batches,
+                    }
+                }
                 _ => return denied(&error),
             };
             RelationalEffectExecutionFailure::Denied {
@@ -218,16 +229,23 @@ pub(super) fn publication_failure(
 fn allocation_failure(
     denial: &worth_execution::ExecutionAllocationDenial,
 ) -> RelationalEffectExecutionFailure {
-    use worth_execution::ExecutionAllocationDenialKind as Kind;
-    let control = match denial.kind() {
-        Kind::Cancelled => Some(super::EffectExecutionControlStopKind::Cancelled),
-        Kind::DeadlineElapsed => Some(super::EffectExecutionControlStopKind::TimedOut),
-        Kind::Layout
-        | Kind::Lease(_)
-        | Kind::Allocator
-        | Kind::CapacityMismatch
-        | Kind::WriteBeyondReserved
-        | Kind::IncompleteSeal => None,
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+        WorkCeilingDenial as Request,
+    };
+    let control = match denial.classify() {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => {
+            Some(super::EffectExecutionControlStopKind::Cancelled)
+        }
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
+            Some(super::EffectExecutionControlStopKind::TimedOut)
+        }
+        Class::Request(Request::Admission(_))
+        | Class::Request(Request::Stopped(
+            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+        ))
+        | Class::Request(Request::Panicked)
+        | Class::Physical(_) => None,
     };
     if let Some(kind) = control {
         RelationalEffectExecutionFailure::ControlStopped {

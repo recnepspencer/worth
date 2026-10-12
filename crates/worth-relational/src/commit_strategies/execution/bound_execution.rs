@@ -22,7 +22,7 @@ pub(crate) fn bind_execution<'runtime>(
     snapshot: &'runtime SnapshotHandle,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BoundStrategyExecution<'runtime>, StrategyExecutionError> {
-    crate::visibility::materialization::read_records::read_request::consult(execution)
+    crate::execution::check_request(execution)
         .map_err(StrategyExecutionError::Execution)?;
     let descriptor = runtime
         .commit_strategy_registry()

@@ -9,6 +9,7 @@ fn moved_artifact_advancement_opens_before_its_reader() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "artifact move advance",
         || {
@@ -45,6 +46,7 @@ fn leased_artifact_advancement_opens_before_its_reader() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     verify(
         "artifact lease advance",
         || {

@@ -6,7 +6,7 @@
 
 use worth_query_host::facade::application_contribution::{
     WorthQueryPartitionedComputationFullCause as FullCause,
-    WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 
 use super::super::entry_edit::EntryFact;

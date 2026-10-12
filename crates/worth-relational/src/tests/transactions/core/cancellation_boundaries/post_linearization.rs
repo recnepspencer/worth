@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn cancellation_after_linearization_returns_the_performed_commit() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -13,7 +13,7 @@ fn cancellation_after_linearization_returns_the_performed_commit() {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
     let control = RelationalOperationControl::from(source.token())
-        .with_post_linearization_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_post_linearization_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let mut transaction = runtime
         .begin_branch_transaction_with_control(
             &basis,
@@ -35,7 +35,13 @@ fn cancellation_after_linearization_returns_the_performed_commit() {
         .unwrap();
     let port = runtime.publication_port();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     reached.wait();
     assert_ne!(
         runtime

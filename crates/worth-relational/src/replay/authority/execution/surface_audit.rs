@@ -30,7 +30,7 @@ pub(super) fn compare_replay_surfaces(
     replay_runtime: &RelationalRuntime,
     request: &RelationalReplayRequest,
     selected_lineage_authority: Option<&SelectedPublishedLineageAuthority>,
-) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
     runtime
         .performance_access()
         .count_merge_history_parent_comparisons(
@@ -212,10 +212,12 @@ pub(super) fn compare_replay_surfaces(
         },
     );
     if compared_surfaces.contains(&ReplayObservableSurface::Snapshot) {
-        let original_surface =
-            runtime.replay_snapshot_surface_at_version(execution, envelope.commit.version_id)?;
+        let original_surface = runtime
+            .replay_snapshot_surface_at_version(execution, envelope.commit.version_id)
+            .map_err(crate::durability::data::RelationalRecoveryStop::Request)?;
         let replayed_surface = replay_runtime
-            .replay_snapshot_surface_at_version(execution, replayed_envelope.commit.version_id)?;
+            .replay_snapshot_surface_at_version(execution, replayed_envelope.commit.version_id)
+            .map_err(crate::durability::data::RelationalRecoveryStop::Request)?;
         compare_replay_surface(
             runtime,
             verification_plan,

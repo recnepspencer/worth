@@ -4,12 +4,6 @@ version.workspace = true
 edition.workspace = true
 publish.workspace = true
 
-[features]
-test-invalidation-equivalence = ["worth-query-host/test-invalidation-equivalence"]
-test-output-delivery-faults = ["worth-query-host/test-output-delivery-faults"]
-test-query-execution-observer = ["worth-query-host/test-query-execution-observer"]
-test-world-operation-control = ["worth-query-host/test-world-operation-control"]
-
 [dependencies]
 worth-query-consumer-values.workspace = true
 worth-query-decl.workspace = true
@@ -19,6 +13,6 @@ serde.workspace = true
 
 [dev-dependencies]
 sha2 = "0.10"
-worth-query-host = { workspace = true, features = ["test-output-delivery-faults"] }
+worth-query-host = { workspace = true }
 worth-execution = { path = "../../../../../../../crates/worth-execution" }
 worth-relational = { path = "../../../../../../../crates/worth-relational" }

@@ -22,7 +22,7 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
     let fresh_scope = || {
         let cancellation = WorthQueryCancellationSource::new();
         WorthQueryRequestScope::new(
-            std::time::Instant::now() + Duration::from_secs(5),
+            Some(std::time::Instant::now() + Duration::from_secs(5)),
             cancellation.token(),
         )
     };

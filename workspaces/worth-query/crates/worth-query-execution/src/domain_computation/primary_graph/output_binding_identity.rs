@@ -1,5 +1,6 @@
 //! Declared binding names order lineage; Rust type identity only locates metadata.
-use std::{any::TypeId, collections::HashMap, sync::Arc};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::{collections::HashMap, sync::Arc};
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(super) struct OutputBindingIdentity(Arc<str>);

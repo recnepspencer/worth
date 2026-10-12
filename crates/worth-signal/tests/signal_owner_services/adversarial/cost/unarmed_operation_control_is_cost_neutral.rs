@@ -10,7 +10,7 @@ fn unarmed_operation_control_is_cost_neutral() {
         .runtime
         .as_ref()
         .expect("the controlled root remains live")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("obtaining the unarmed control handle succeeds");
     let controlled_before = controlled
         .basis

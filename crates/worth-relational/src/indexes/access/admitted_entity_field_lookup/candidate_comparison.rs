@@ -9,7 +9,7 @@ pub(super) fn borrowed_matches<E>(
     expected: &AspectValue,
     prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
 ) -> Result<Option<(EntityId, KindId, bool)>, Stop<E>> {
-    crate::visibility::materialization::read_records::read_request::consult(execution)
+    crate::execution::check_request(execution)
         .map_err(|cause| denied(Denial::Execution(cause), index))?;
     let read = view
         .exact_entity_state_read_work_bound()

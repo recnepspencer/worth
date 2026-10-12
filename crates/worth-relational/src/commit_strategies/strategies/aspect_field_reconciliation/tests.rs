@@ -216,12 +216,21 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
 
     match error {
         crate::commit_strategies::StrategyExecutionError::ExecutorFailed { failure, .. } => {
-            assert_eq!(failure.class, StrategyExecutorFailureClass::DomainRejection);
-            assert!(failure.detail.contains(
+            let crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+                class,
+                detail,
+                evidence,
+                ..
+            } = failure
+            else {
+                panic!("unexpected request stop: {failure:?}")
+            };
+            assert_eq!(class, StrategyExecutorFailureClass::DomainRejection);
+            assert!(detail.contains(
                 "aspect field locator is not a lowered foundational scalar entity aspect"
             ));
             assert_eq!(
-                failure.evidence,
+                evidence,
                 Some(StrategyExecutorFailureEvidence::AspectFieldLocator {
                     locator: field_locator(
                         crate::tests::support::aspect_key("replicas"),

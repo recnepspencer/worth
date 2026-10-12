@@ -6,8 +6,7 @@
 //! heterogeneous programs stays typed instead of collapsing into strings or
 //! untyped identifiers.
 
-use std::any::TypeId;
-use std::collections::BTreeSet;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
@@ -69,20 +68,19 @@ where
         installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
         roster: &WorthQueryProgramSupportRoster<Schema>,
     ) -> Result<WorthQuerySupportedProgramRecord, WorthQueryProgramSupportDenial> {
-        let mut output_sources = BTreeSet::new();
-        Program::Outputs::append_required_bindings(&mut output_sources);
-        output_sources.extend(self.program.actions().iter().filter_map(|action| {
-            action
-                .required_output_source()
-                .then(|| action.mutation_binding_type())
-                .flatten()
-        }));
+        let output_sources = super::output_roots::required_output_bindings::<
+            Schema,
+            Program::Outputs,
+        >(self.program.actions());
         let installed =
             install_rostered_application_program(self.program, installed_schema, roster)?;
         Ok(WorthQuerySupportedProgramRecord::installed(
             installed,
-            &output_sources.into_iter().collect::<Vec<TypeId>>(),
-            &Program::Outputs::root_graph_types(),
+            &output_sources,
+            &Program::Outputs::root_graph_types()
+                .into_iter()
+                .map(TypeId::from)
+                .collect::<Vec<_>>(),
         ))
     }
 }

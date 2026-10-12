@@ -1,4 +1,7 @@
 use super::*;
+use crate::domain_computation::authorization::{
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+};
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -31,7 +34,19 @@ where
     {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return Err((Some(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))), requested)),
+            Err(_) => {
+                return Err((
+                    Some(
+                        WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(
+                            WorthQueryOperationAuthorizationDenial::new(
+                                WorthQueryOperationAuthorizationDenialKind::ForeignPhase,
+                                "phase-custody",
+                            ),
+                        ),
+                    ),
+                    requested,
+                ));
+            }
         };
         self.replay_elevation_approval_after_fresh_denial_with_request(
             &execution,

@@ -6,12 +6,23 @@ use super::super::{
 };
 use super::*;
 use std::process::Command;
+use worth_query_host::facade::primary_graph::{
+    principal_target_reads_on_this_thread_for_test as reads,
+    signal_request_charges_on_this_thread_for_test as signal_charges,
+};
+
+#[path = "width_differential/commit_work.rs"]
+mod commit_work;
+#[path = "width_differential/principal_target_read_work.rs"]
+mod principal_target_read_work;
 
 const WIDTH: &str = "WORTH_QUERY_CUSTODY_DIFFERENTIAL_WIDTH";
 const DIGEST: &str = "CUSTODY_DIGEST ";
+const LEASED_DIGEST: &str = "LEASED_CUSTODY_DIGEST ";
+const LAST_WORK: &str = "LAST_REQUEST_WORK ";
 
 #[test]
-fn wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths() {
+fn wake_and_reconsideration_keep_bits_and_order_with_exact_width_work() {
     let host_request = crate::test_request_policy::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -26,10 +37,12 @@ fn wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths() {
         return;
     }
     let test = format!(
-        "{}::wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths",
+        "{}::wake_and_reconsideration_keep_bits_and_order_with_exact_width_work",
         module_path!().split_once("::").unwrap().1
     );
     let mut reference = None;
+    let mut leased_reference = None;
+    let mut serial_work = None;
     for width in ["0", "1", "4"] {
         let output = crate::process_deadline::output(
             Command::new(std::env::current_exe().unwrap())
@@ -56,10 +69,52 @@ fn wake_and_reconsideration_keep_bits_work_and_delivery_order_across_widths() {
         } else {
             reference = Some(actual);
         }
+        let actual_work = stdout
+            .lines()
+            .filter_map(|line| line.strip_prefix(LAST_WORK))
+            .map(|line| {
+                line.split(',')
+                    .map(|units| units.parse::<u64>().unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(actual_work.len(), 2);
+        if width == "0" {
+            serial_work = Some(actual_work);
+        } else {
+            // One committed operation uses one caller's request. Every other
+            // request must agree with Serial; only its checked native kernels
+            // are absent from the unleased engine.
+            let native_work = commit_work::quote(Placement::Leased(NonZeroUsize::MIN));
+            for (actual, serial) in actual_work.iter().zip(serial_work.as_ref().unwrap()) {
+                assert_eq!(actual.len(), serial.len());
+                let differences = actual
+                    .iter()
+                    .zip(serial)
+                    .map(|(actual, serial)| actual.checked_sub(*serial).unwrap())
+                    .collect::<Vec<_>>();
+                assert_eq!(differences.iter().sum::<u64>(), native_work);
+                assert_eq!(differences.iter().filter(|work| **work != 0).count(), 1);
+            }
+        }
+        if width != "0" {
+            let actual = stdout
+                .lines()
+                .filter(|line| line.starts_with(LEASED_DIGEST))
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            assert_eq!(actual.len(), 2, "both leased semantic cases ran");
+            if let Some(reference) = &leased_reference {
+                assert_eq!(&actual, reference, "leased width {width}");
+            } else {
+                leased_reference = Some(actual);
+            }
+        }
     }
 }
 
 fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placement: Placement) {
+    let _observer = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(placement), bound(None));
     for reconsider in [false, true] {
         let world = CourtroomWorld::publish(if reconsider { "blocked" } else { "ready" });
@@ -67,12 +122,21 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
             world.clock_control.push(1, 4);
         }
         reports();
+        signal_charges();
+        let before_reads = reads();
         let mut first = observe(&resource_request, &world);
         let first_work = reports()
             .into_iter()
             .map(|report| report.unwrap().charged_work())
             .collect::<Vec<_>>();
         assert!(!first_work.is_empty());
+        let first_reads = reads() - before_reads;
+        let first_signal: u64 = signal_charges().into_iter().sum();
+        assert_eq!(
+            first_work.iter().sum::<u64>(),
+            first_signal + first_reads * principal_target_read_work::PRINCIPAL_TARGET_READ_WORK,
+            "the first observation performs no native commit"
+        );
         assert_eq!(first.committed_operation_count(), 0);
         if reconsider {
             assert_eq!(first.retained_suppressed_wake_count(), 1);
@@ -98,12 +162,23 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
             world.clock_control.push(2, 5);
         }
         reports();
+        signal_charges();
+        let before_reads = reads();
         let mut last = observe(&resource_request, &world);
         let last_work = reports()
             .into_iter()
             .map(|report| report.unwrap().charged_work())
             .collect::<Vec<_>>();
         assert!(!last_work.is_empty());
+        let last_reads = reads() - before_reads;
+        let last_signal: u64 = signal_charges().into_iter().sum();
+        assert_eq!(
+            last_work.iter().sum::<u64>(),
+            last_signal
+                + last_reads * principal_target_read_work::PRINCIPAL_TARGET_READ_WORK
+                + commit_work::quote(placement),
+            "every leased width pays the same checked native kernels"
+        );
         assert_eq!(last.committed_operation_count(), 1);
         assert_eq!(last.retained_due_wake_count(), 0);
         if reconsider {
@@ -169,6 +244,27 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
             IntentEffectField::reference(),
             "payload".to_string(),
         );
+        if matches!(placement, Placement::Leased(_)) {
+            println!(
+                "{LEASED_DIGEST}{:?}",
+                (
+                    first_counts,
+                    last_counts,
+                    &provenance,
+                    &first_work,
+                    &last_work,
+                    &order
+                )
+            );
+        }
+        println!(
+            "{LAST_WORK}{}",
+            last_work
+                .iter()
+                .map(u64::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
+        );
         println!(
             "{DIGEST}{:?}",
             (
@@ -176,7 +272,8 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
                 last_counts,
                 provenance,
                 first_work,
-                last_work,
+                (first_signal, first_reads),
+                (last_signal, last_reads),
                 order
             )
         );

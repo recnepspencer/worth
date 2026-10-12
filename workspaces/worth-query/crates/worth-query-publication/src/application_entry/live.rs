@@ -184,7 +184,6 @@ where
                     }
                     Denial::Resource(_)
                     | Denial::NestedOpening
-                    | Denial::ForeignPhase
                     | Denial::NestedStopped
                     | Denial::Panicked => {}
                 }

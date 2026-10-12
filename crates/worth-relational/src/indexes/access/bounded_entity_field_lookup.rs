@@ -54,7 +54,7 @@ impl IndexAccess<'_> {
         parity_mode: BoundedIndexParityMode,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BoundedEntityFieldLookupOutcome, BoundedEntityFieldLookupDenial> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(|cause| {
                 BoundedEntityFieldLookupDenial::new(
                     BoundedEntityFieldLookupDenialKind::Execution(cause),

@@ -13,8 +13,10 @@ use worth_query_installation::facade::WorthQueryInvariantEnforcement;
 fn cancelled_invariant_request_stops_before_provider_state_load() {
     let requirement = requirement("closed-loop", WorthQueryInvariantEnforcement::Blocking, 1);
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(60), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(60)),
+        source.token(),
+    );
     let passed = crate::domain_computation::primary_graph::with_test_advancement(|phase| {
         let bootstrap = phase.bootstrap_for_test();
         let resource_request = bootstrap.execution_request();

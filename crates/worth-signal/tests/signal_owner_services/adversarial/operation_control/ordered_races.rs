@@ -19,12 +19,14 @@ fn assert_one_success(
     );
 }
 
-fn control(world: &AdversarialWorld) -> worth_signal::facade::branch::SignalOwnerOperationControl {
+fn control(
+    world: &AdversarialWorld,
+) -> worth_signal::facade::branch::SignalOwnerOperationControlForTest {
     world
         .runtime
         .as_ref()
         .expect("the race retains its owner root")
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("operation control is issued after sealing")
 }
 

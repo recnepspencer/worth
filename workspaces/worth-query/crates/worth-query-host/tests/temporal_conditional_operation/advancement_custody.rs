@@ -26,6 +26,7 @@ fn wake_pump_refuses_before_clock_truth_reads_or_operation_reentry() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = CourtroomWorld::publish("ready");
     let mut port = world.conditional_clock();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {

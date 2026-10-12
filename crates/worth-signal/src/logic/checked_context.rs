@@ -39,7 +39,7 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
             .execution
             .bounded_inputs
             .as_ref()
-            .ok_or_else(|| SignalError::invalid_input("checked evaluation needs bounded inputs"))?;
+            .ok_or(SignalError::MissingBoundedInputsAtEvaluation { node })?;
         work.checkpoint(declaration.copy_work_bound() as u64)
             .map_err(SignalError::execution_checkpoint_stopped)?;
         Ok(Self {

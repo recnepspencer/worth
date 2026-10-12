@@ -244,11 +244,12 @@ fn settlement_pause() -> (
 ) {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
-    let control = crate::mvcc::RelationalOperationControl::uninterrupted().with_boundary_pause(
-        crate::mvcc::RelationalInterruptionBoundary::Settlement,
-        Arc::clone(&reached),
-        Arc::clone(&release),
-    );
+    let control = crate::mvcc::RelationalOperationControl::uninterrupted()
+        .with_boundary_pause_for_test(
+            crate::mvcc::RelationalInterruptionBoundary::Settlement,
+            Arc::clone(&reached),
+            Arc::clone(&release),
+        );
     (reached, release, control)
 }
 
@@ -326,7 +327,10 @@ fn perform_prepared(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
-    match runtime.publication_port().compare_and_publish(candidate) {
+    match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("an uncontended candidate performs: {outcome:?}"),
     }

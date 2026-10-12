@@ -53,6 +53,10 @@ impl LegacyReferenceTestRepository {
     /// Assemble the canonical thin-orchestrator layout, config, and snapshot body.
     pub fn assemble_canonical_layout(&self, snapshot_body: &str) {
         self.write_file(
+            ".boundary-check-mock-root",
+            "Declared boundary-check mock root.\n",
+        );
+        self.write_file(
             ".claude/settings.json",
             r#"{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"powershell -NoProfile -File scripts/prepare-constitution-hook.ps1"}]}],"PostToolUse":[{"matcher":"Write|Edit|MultiEdit|apply_patch|Bash","hooks":[{"type":"command","command":"powershell -NoProfile -File scripts/check-constitution-post-tool-use.ps1"}]}]}}"#,
         );
@@ -155,12 +159,13 @@ worth-query = {{ path = "../worth-query" }}
 
     /// Run the compiled production binary against this repository root.
     pub fn run_boundary_check(&self) -> (bool, String) {
-        let seed = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-            .arg("--root")
-            .arg(&self.root)
-            .arg("--update-snapshots")
-            .output()
-            .expect("seed Phase 6 snapshots");
+        let seed = worth_harness::tooling::process_deadline::output(
+            Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+                .arg("--root")
+                .arg(&self.root)
+                .arg("--update-snapshots"),
+        )
+        .expect("seed Phase 6 snapshots");
         if !seed.status.success() {
             return (
                 false,
@@ -171,13 +176,14 @@ worth-query = {{ path = "../worth-query" }}
                 ),
             );
         }
-        let output = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-            .arg("--root")
-            .arg(&self.root)
-            .arg("--config")
-            .arg("tools/boundary-check/config/road1.toml")
-            .output()
-            .expect("run boundary-check");
+        let output = worth_harness::tooling::process_deadline::output(
+            Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+                .arg("--root")
+                .arg(&self.root)
+                .arg("--config")
+                .arg("tools/boundary-check/config/road1.toml"),
+        )
+        .expect("run boundary-check");
         let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
         let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
         (output.status.success(), format!("{stdout}{stderr}"))
@@ -204,13 +210,14 @@ worth-query = {{ path = "../worth-query" }}
         #[cfg(windows)]
         {
             // Directory junctions do not require Administrator rights.
-            // mklink treats `/` as switch separators — force Windows path form.
+            // mklink treats `/` as switch separators; force Windows path form.
             let link_s = link.to_string_lossy().replace('/', "\\");
             let target_s = target.to_string_lossy().replace('/', "\\");
-            let status = Command::new("cmd")
-                .args(["/C", "mklink", "/J", &link_s, &target_s])
-                .status()
-                .expect("run mklink");
+            let status = worth_harness::tooling::process_deadline::output(
+                Command::new("cmd").args(["/C", "mklink", "/J", &link_s, &target_s]),
+            )
+            .map(|output| output.status)
+            .expect("run mklink");
             assert!(status.success(), "mklink /J failed for {link_s}");
         }
         #[cfg(unix)]
@@ -224,11 +231,11 @@ worth-query = {{ path = "../worth-query" }}
     }
 
     fn git_run(&self, args: &[&str]) {
-        let status = Command::new("git")
-            .args(args)
-            .current_dir(&self.root)
-            .status()
-            .unwrap_or_else(|error| panic!("git {args:?}: {error}"));
+        let status = worth_harness::tooling::process_deadline::output(
+            Command::new("git").args(args).current_dir(&self.root),
+        )
+        .map(|output| output.status)
+        .unwrap_or_else(|error| panic!("git {args:?}: {error}"));
         assert!(status.success(), "git {args:?} failed");
     }
 }

@@ -1,13 +1,15 @@
 use std::sync::mpsc;
 use std::thread;
 
-use worth_signal::facade::branch::{SignalOwnerOperationBoundary, SignalOwnerOperationControl};
+use worth_signal::facade::branch::{
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest,
+};
 
 use super::super::world::PROGRESS_BOUND;
 
 pub(super) fn run<L, R>(
     runtime: &Option<super::super::world::Runtime>,
-    control: &SignalOwnerOperationControl,
+    control: &SignalOwnerOperationControlForTest,
     left: L,
     right: R,
     left_parked: bool,
@@ -19,7 +21,8 @@ where
     let owner_root = runtime
         .as_ref()
         .expect("the ordered contenders share a live owner root");
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     let (left_tx, left_rx) = mpsc::sync_channel(1);
     let (right_tx, right_rx) = mpsc::sync_channel(1);
     let result = thread::scope(|scope| {
@@ -58,7 +61,7 @@ where
         }
     });
     owner_root
-        .owner_operation_control()
+        .owner_operation_control_for_test()
         .expect("the owner root remains live through both ordered contenders");
     result
 }

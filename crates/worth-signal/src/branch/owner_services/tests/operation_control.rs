@@ -19,7 +19,7 @@ use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::mpsc;
 use std::thread;
 
-use super::super::operation_control::SignalOwnerOperationBoundary;
+use super::super::operation_control::SignalOwnerOperationBoundaryForTest;
 use super::progress_bound::PROGRESS_BOUND;
 use super::runtime_root::runtime_with_two_branches;
 
@@ -32,7 +32,7 @@ fn operation_control_is_unarmed_equivalent_owner_local_and_one_shot() {
     let (port_b, _, _) = runtime_b.owner_port_slots().expect("owner B seals");
     let owner_b = port_b.upgrade_owner().expect("owner B remains live");
 
-    let control = owner_a.operation_control();
+    let control = owner_a.operation_control_for_test();
     assert_eq!(owner_a.cost_snapshot(), owner_b.cost_snapshot());
     let admission_a = owner_a.admit().expect("unarmed A admits");
     let admission_b = owner_b.admit().expect("unarmed B admits");
@@ -50,7 +50,8 @@ fn operation_control_is_unarmed_equivalent_owner_local_and_one_shot() {
         "obtaining an unarmed controller changes no owner result or counter"
     );
 
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     let (done_tx, done_rx) = mpsc::sync_channel(1);
     let worker_owner = owner_a.clone();
     thread::spawn(move || {
@@ -80,7 +81,7 @@ fn operation_control_is_unarmed_equivalent_owner_local_and_one_shot() {
             .branch_id(),
         branch_a.id
     );
-    control.inject_panic_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     assert!(catch_unwind(AssertUnwindSafe(|| {
         let _ = owner_a.lookup_cell(&second, branch_a.id);
     }))
@@ -93,9 +94,10 @@ fn operation_control_pause_drop_releases_and_lifecycle_admission_is_reachable() 
     let (mut runtime, _, branch, _basis) = runtime_with_two_branches();
     let (port, _, _) = runtime.owner_port_slots().expect("owner seals");
     let owner = port.upgrade_owner().expect("owner remains live");
-    let control = owner.operation_control();
+    let control = owner.operation_control_for_test();
 
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::OwnerLifecycleAdmission);
+    let pause = control
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::OwnerLifecycleAdmission);
     let (admitted_tx, admitted_rx) = mpsc::sync_channel(1);
     let worker_owner = owner.clone();
     thread::spawn(move || {
@@ -106,7 +108,8 @@ fn operation_control_pause_drop_releases_and_lifecycle_admission_is_reachable() 
     drop(pause);
     assert_eq!(admitted_rx.recv_timeout(PROGRESS_BOUND), Ok(true));
 
-    let pause = control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    let pause =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     let (lookup_tx, lookup_rx) = mpsc::sync_channel(1);
     let worker_owner = owner.clone();
     thread::spawn(move || {

@@ -50,6 +50,8 @@ fn a_write_only_caller_leaves_room(starts_outputs: bool) {
 /// performed again, and the outputs are produced by their next demand.
 #[test]
 fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
+    let _equivalence =
+        primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     use worth_query_host::facade::application_entry::{
         WorthQueryApplicationPerformedMutationOutcome as Performed,
         WorthQueryRequiredOutputPreparationDenial as Preparation,
@@ -90,12 +92,14 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
             )
     };
     let recover = |receipt| {
-        request.recover_required_outputs::<program::ChainProgram, program::ChainRoot>(
-            &application,
-            receipt,
-            PlanarOutputDemand::new(body.clone()),
-            WorthQueryOutputDemandControls::host_policy(),
-        )
+        request
+            .recover_required_outputs::<program::ChainProgram, program::ChainRoot>(
+                &application,
+                receipt,
+                PlanarOutputDemand::new(body.clone()),
+                WorthQueryOutputDemandControls::host_policy(),
+            )
+            .map_err(Box::new)
     };
     let receipt = match write() {
         Ok(Performed::Performed(performed)) => performed.receipt().clone(),
@@ -118,7 +122,7 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
             court.write_y(&ring.key("a"), ring.a_y, at);
         }
     }
-    match recover(&receipt).err() {
+    match recover(&receipt).err().map(|denial| *denial) {
         Some(Preparation::Demand(WorthQueryApplicationOutputDemandDenial::Demand(denial)))
             if denial.kind()
                 == primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable => {}
@@ -141,6 +145,8 @@ fn a_released_write_refuses_receipt_recovery_and_is_not_performed_again() {
 /// The caller drops each write: its required outputs never start.
 #[test]
 fn writes_whose_outputs_never_start_leave_room_for_a_demand_and_another_write() {
+    let _equivalence =
+        primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     a_write_only_caller_leaves_room(false);
 }
 
@@ -149,5 +155,7 @@ fn writes_whose_outputs_never_start_leave_room_for_a_demand_and_another_write() 
 /// source its next demand discloses.
 #[test]
 fn writes_whose_started_outputs_never_advance_leave_room_for_a_demand_and_another_write() {
+    let _equivalence =
+        primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     a_write_only_caller_leaves_room(true);
 }

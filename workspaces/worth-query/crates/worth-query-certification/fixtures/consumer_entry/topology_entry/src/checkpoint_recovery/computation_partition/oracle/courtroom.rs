@@ -2,7 +2,8 @@
 use super::differential::alphabet::{Kind, Model};
 use super::*;
 use worth_query_host::facade::application_contribution::{
-    WorthQueryPartitionedComputationFullCause as Cause, WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationFullCause as Cause,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 
 pub(super) const SEEDS: [u64; 2] = [0x9176_3c0b_5eed_0001, 0x9176_3c0b_5eed_0002];
@@ -12,7 +13,7 @@ mod bits;
 mod branches;
 pub(super) mod cancellation;
 mod equal_output;
-mod interleaving;
+worth_execution::needs_os_threads! { mod interleaving; }
 mod lifecycle;
 mod request_work;
 mod tree;
@@ -69,7 +70,7 @@ fn seeded_edit_counts_are_derived_from_the_model_at_every_decision() {
                 let reported: u128 = run
                     .tree_runs
                     .iter()
-                    .map(|tree| tree.metrics().recombined_nodes)
+                    .map(|tree| tree.metrics_for_test().recombined_nodes)
                     .sum();
                 assert_eq!(
                     reported,

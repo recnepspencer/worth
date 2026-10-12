@@ -1,7 +1,7 @@
 #[cfg(test)]
 use super::PreparedComputationCustody;
 use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_runtime_world::facade::PlannedProductReferenceSuccessor;
 
@@ -110,6 +110,8 @@ mod tests {
 
     #[test]
     fn world_recovery_metadata_carries_the_original_computation_and_absence() {
+        let _observation =
+            crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
         let world = installed_authorization_world(true);
         let product = world
             .application

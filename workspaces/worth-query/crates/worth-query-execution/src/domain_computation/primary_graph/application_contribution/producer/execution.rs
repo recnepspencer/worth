@@ -1,5 +1,4 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-#[cfg(feature = "test-query-execution-observer")]
 mod contact_observation;
 use std::{any::Any, sync::Arc};
 
@@ -183,8 +182,14 @@ where
         request_admission: &mut InvalidationEditAdmission,
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
-        let execution = phase.execution_request_for(&runtime.product_runtime)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "producer advancement phase"))?;
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "producer advancement phase",
+                )
+            })?;
         let (required_output, ready_backing) = required_output.into_parts();
         if !edition.admits_binding::<Schema, Binding>() {
             return Err(denial(

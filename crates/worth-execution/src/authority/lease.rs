@@ -26,10 +26,12 @@ mod reservation;
 mod retained;
 mod room;
 mod worker_context;
+mod worker_width;
 pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
 pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
 pub use fixed_backing::{
-    ExecutionAllocationDenial, ExecutionAllocationDenialKind, ExecutionAllocationPolicy,
+    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationDenialKind,
+    ExecutionAllocationPolicy, ExecutionPhysicalAllocationDenialKind,
 };
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
@@ -161,7 +163,7 @@ impl ExecutionAuthority {
             return Err(ConstructionDenial::AlreadyConstructed);
         }
         let equivalences = EquivalenceRegistry::new(predicates)?;
-        let pool = if cfg!(target_arch = "wasm32") {
+        let pool = if !crate::backend::HAS_OS_THREADS {
             None
         } else {
             Some(

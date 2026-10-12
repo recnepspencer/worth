@@ -28,7 +28,13 @@ impl WorthQueryOutputDemandRegistry {
         expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
         successor_of: Option<OutputRefreshPredecessor<'_>>,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<WorthQueryOutputDemandInterest, WorthQueryOutputDemandDenial> {
+    ) -> Result<
+        (
+            WorthQueryOutputDemandInterest,
+            Option<super::join_observation::JoinLatch>,
+        ),
+        WorthQueryOutputDemandDenial,
+    > {
         let mut state = self
             .state
             .lock()
@@ -281,6 +287,7 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(prepared) = prepared_record {
             state.install_prepared_record(prepared);
         }
+        let mut joined_stable = false;
         let record = state.records.get_mut(&key).expect("admitted record exists");
         if let Some(successor) = successor_of {
             let reopens_exact_ready = matches!(
@@ -293,8 +300,8 @@ impl WorthQueryOutputDemandRegistry {
                     })
             );
             if existing_record && reopens_exact_ready {
-                #[cfg(feature = "test-query-execution-observer")]
                 if stable_refresh {
+                    joined_stable = true;
                     super::join_observation::joined(key.source.root_entity_for_test());
                 }
                 let DemandState::Output(reopened) =
@@ -324,8 +331,17 @@ impl WorthQueryOutputDemandRegistry {
         record.interests = record.interests.saturating_add(1);
         record.required_interests += usize::from(admission_kind.is_required());
         let interest = interest(self, key, record, admission_kind.is_required());
+        // Law 3: a control changes no charge; the latch travels beside the funded interest.
+        let pause = if joined_stable {
+            super::join_observation::take_pause(
+                &mut state,
+                interest.key.source.root_entity_for_test(),
+            )
+        } else {
+            None
+        };
         state.install_required_member(required_member);
-        Ok(interest)
+        Ok((interest, pause))
     }
 }
 

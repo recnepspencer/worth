@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::application_output_demand::{
     BoundOutputSource, PreparedOutputRootKind, WorthQueryOutputCheckpoint,
     WorthQueryPerformedOutputDemandSource,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
@@ -22,6 +23,7 @@ fn an_open_ordinary_interest_is_required_until_its_last_handle_closes() {
                 &mut record_admission(),
             )
             .unwrap()
+            .0
     };
     let first = admit();
     let second = admit();
@@ -55,7 +57,8 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
             None,
             &mut record_admission(),
         )
-        .expect("a source-backed required interest admits");
+        .expect("a source-backed required interest admits")
+        .0;
     assert!(registry.state.lock().unwrap().records[&output].is_required());
     assert!(registry
         .state
@@ -82,7 +85,8 @@ fn closing_a_required_interest_removes_it_from_the_required_set() {
             None,
             &mut record_admission(),
         )
-        .expect("closing an interest permits exact reopening");
+        .expect("closing an interest permits exact reopening")
+        .0;
     assert!(registry.state.lock().unwrap().records[&output].is_required());
     assert!(registry
         .state
@@ -121,7 +125,7 @@ fn performed_source_obligation_survives_handle_close_until_occurrence_retirement
                 output_source_identity: None,
             },
             &preparation,
-            PreparedOutputRootKind::Required(std::any::TypeId::of::<()>()),
+            PreparedOutputRootKind::Required(TypeId::of::<()>()),
             None,
         )
         .expect("the performed source enters native custody");

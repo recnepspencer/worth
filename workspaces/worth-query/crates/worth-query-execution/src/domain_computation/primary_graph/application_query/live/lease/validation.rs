@@ -150,3 +150,14 @@ pub(super) fn open_denial(
 
 #[cfg(test)]
 mod atomic_tests;
+
+pub(super) fn subscription_capacity_denial(subject: &str) -> WorthQueryApplicationLiveOpenDenial {
+    use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
+    open_denial(
+        WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::RetentionCapacityExhausted),
+        subject,
+    )
+}
+
+#[cfg(test)]
+mod capacity_tests;

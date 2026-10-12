@@ -59,6 +59,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         request: RelationalReplayRequest,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
             Err(outcome) => return Ok(outcome),
@@ -228,7 +229,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         reconstruction: ReplayReconstruction,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(RelationalRecoveryStop::Request)?;
         let compared_surfaces = promised_replay_surfaces(
             self.runtime,
@@ -247,7 +248,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
                 execution,
             )?;
         }
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(RelationalRecoveryStop::Request)?;
         let selected_lineage_authority =
             if compared_surfaces.contains(&ReplayObservableSurface::Lineage) {
@@ -301,9 +302,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &reconstruction.runtime,
             &request,
             selected_lineage_authority.as_ref(),
-        )
-        .map_err(RelationalRecoveryStop::Request)?;
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        )?;
+        crate::execution::check_request(execution)
             .map_err(RelationalRecoveryStop::Request)?;
         let outcome = replay_comparison_outcome(
             request,
@@ -364,3 +364,6 @@ impl<'runtime> ReplayAuthority<'runtime> {
         )
     }
 }
+
+#[cfg(test)]
+mod entry_stop_tests;

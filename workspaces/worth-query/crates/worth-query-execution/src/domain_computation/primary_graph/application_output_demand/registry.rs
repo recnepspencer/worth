@@ -1,3 +1,4 @@
+mod key_comparison;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, Condvar, Mutex};
 
@@ -64,7 +65,6 @@ impl SourceCustody {
                 .any(|(retired, _)| retired == identity)
     }
 
-    #[cfg(any(test, feature = "test-primary-graph-faults"))]
     fn prepared_count(&self) -> usize {
         if self.retired.is_some() || self.source.is_none() {
             return 0;
@@ -148,14 +148,11 @@ mod unavailable;
 pub(in crate::domain_computation::primary_graph) use progression::{
     PreparedSelectedCheckpointFinish, SelectedCheckpointFinishStop,
 };
-#[cfg(feature = "test-query-execution-observer")]
 mod custody_layout_observation;
 mod ready_backing;
-#[cfg(feature = "test-query-execution-observer")]
 pub use custody_layout_observation::{
     required_custody_layout_for_test, RequiredCustodyLayoutForTest,
 };
-#[cfg(feature = "test-query-execution-observer")]
 pub(in crate::domain_computation::primary_graph) mod join_observation;
 mod record_capacity;
 mod record_map;
@@ -200,7 +197,6 @@ pub(in crate::domain_computation::primary_graph) use checkpoint::{
 pub(in crate::domain_computation::primary_graph) use prerequisite_claims::PreparedPrerequisiteClaims;
 pub(in crate::domain_computation::primary_graph) use ready_backing::PreparedReadyBacking;
 pub(in crate::domain_computation::primary_graph) use ready_backing::ReadyCompletion;
-#[cfg(feature = "test-query-execution-observer")]
 pub use ready_backing::{
     required_handoff_custody_bytes_for_test, required_ready_custody_bytes_for_test,
 };
@@ -283,6 +279,10 @@ struct PerformedOutputObligation {
 }
 
 struct DemandRegistryState {
+    join_pause: Option<(
+        worth_relational::facade::identity::EntityId,
+        join_observation::JoinLatch,
+    )>,
     records: record_map::DemandRecords,
     // May remain after the last row is removed until the map itself drops.
     _empty_root_capacity: Option<record_capacity::RecordCapacity>,
@@ -306,6 +306,7 @@ struct DemandRegistryState {
 impl Default for DemandRegistryState {
     fn default() -> Self {
         Self {
+            join_pause: None,
             records: record_map::DemandRecords::new(),
             _empty_root_capacity: None,
             record_budget_bytes: crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile::standard().registry_record_retained_bytes(),

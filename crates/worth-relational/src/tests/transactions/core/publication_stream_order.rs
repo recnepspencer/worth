@@ -22,7 +22,7 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
         .expect("first publication prepares");
     let crate::mvcc::RelationalPublicationOutcome::Performed(first) = runtime
         .publication_port()
-        .compare_and_publish(first_candidate)
+        .compare_and_publish(execution, first_candidate)
     else {
         panic!("first publication performs");
     };
@@ -34,8 +34,9 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
         "head-index-a",
         "head-index-a-write",
     );
-    let crate::mvcc::RelationalPublicationOutcome::Performed(branch_a) =
-        runtime.publication_port().compare_and_publish(branch_a)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(branch_a) = runtime
+        .publication_port()
+        .compare_and_publish(execution, branch_a)
     else {
         panic!("branch A publication performs");
     };
@@ -45,8 +46,9 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
         "head-index-b",
         "head-index-b-write",
     );
-    let crate::mvcc::RelationalPublicationOutcome::Performed(branch_b) =
-        runtime.publication_port().compare_and_publish(branch_b)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(branch_b) = runtime
+        .publication_port()
+        .compare_and_publish(execution, branch_b)
     else {
         panic!("branch B publication performs");
     };
@@ -90,7 +92,7 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
         prepare_publication(execution, &mut runtime, "published-first", "write-b");
     let published_first = match runtime
         .publication_port()
-        .compare_and_publish(published_first)
+        .compare_and_publish(execution, published_first)
     {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("candidate B publishes first: {outcome:?}"),
@@ -107,7 +109,7 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
 
     let prepared_first = match runtime
         .publication_port()
-        .compare_and_publish(prepared_first)
+        .compare_and_publish(execution, prepared_first)
     {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("candidate A publishes after B: {outcome:?}"),
@@ -156,7 +158,7 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         prepare_publication(execution, &mut runtime, "published-first", "write-b");
     let published_first = match runtime
         .publication_port()
-        .compare_and_publish(published_first)
+        .compare_and_publish(execution, published_first)
     {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("candidate B publishes first: {outcome:?}"),
@@ -175,7 +177,7 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
 
     let prepared_first = match runtime
         .publication_port()
-        .compare_and_publish(prepared_first)
+        .compare_and_publish(execution, prepared_first)
     {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("candidate A publishes after the checkpoint: {outcome:?}"),

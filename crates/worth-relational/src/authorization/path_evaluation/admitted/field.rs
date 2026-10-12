@@ -16,7 +16,7 @@ pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
     kind: KindId,
     state: &mut State<'_, A>,
 ) -> ObservationResult<bool, A> {
-    crate::visibility::materialization::read_records::read_request::consult(execution)
+    crate::execution::check_request(execution)
         .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
     admission::prepare(state.admission, 1, 0)?;
     state.counters.entity_records_inspected += 1;
@@ -37,7 +37,7 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     locator: &AspectFieldLocator,
     state: &mut State<'_, A>,
 ) -> ObservationResult<Option<AspectValue>, A> {
-    crate::visibility::materialization::read_records::read_request::consult(execution)
+    crate::execution::check_request(execution)
         .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
     admission::prepare(state.admission, 1, 0)?;
     let Some(field) = locator.field_path().fields().first() else {
@@ -99,7 +99,7 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     if !scalar && !structured {
         return Ok(None);
     }
-    crate::visibility::materialization::read_records::read_request::consult(execution)
+    crate::execution::check_request(execution)
         .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
     admission::prepare(state.admission, 1, 0)?;
     let value = context

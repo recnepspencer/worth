@@ -13,13 +13,13 @@ use super::validated_proposal::{
 };
 
 impl RelationalPreparationRuntime {
-    pub fn validate_branch_transaction(
+    pub(crate) fn validate_consulted_branch_transaction(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         let runtime = if execution.is_leased() {
-            self.with_commit_work_budget()
+            self.with_commit_work_budget(None)
         } else {
             self.clone()
         };
@@ -28,7 +28,7 @@ impl RelationalPreparationRuntime {
             .map_err(crate::execution::allocation_commit_error)
     }
 
-    pub(crate) fn validate_lowered_strategy_proposal(
+    pub(crate) fn validate_consulted_lowered_strategy_proposal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
@@ -36,7 +36,12 @@ impl RelationalPreparationRuntime {
         merged_plan: crate::transactions::data::MergedCommitPlan,
         strategy: StrategyProposalDecoration,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.validate_branch_transaction_source(
+        let runtime = if execution.is_leased() {
+            self.with_commit_work_budget(None)
+        } else {
+            self.clone()
+        };
+        runtime.validate_branch_transaction_source(
             execution,
             transaction,
             Some((selected_branch_state, merged_plan)),
@@ -54,10 +59,6 @@ impl RelationalPreparationRuntime {
         )>,
         strategy: Option<StrategyProposalDecoration>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        crate::authority::commit::pipeline::consult_stage(
-            execution,
-            crate::authority::commit::pipeline::CommitStage::Validation,
-        )?;
         let lease = crate::authority::commit::pipeline::request_lease(execution);
         let allocation_policy = execution.allocation_policy();
         require_not_interrupted(
@@ -127,7 +128,7 @@ impl RelationalPreparationRuntime {
                 proposed_version,
                 &prepared.merged_plan,
                 Some(&proposal_identity),
-                lease,
+                execution,
                 &scope_control,
             )?;
         let (mutation_sensitive, publication) = validate_proposed_state(
@@ -136,7 +137,7 @@ impl RelationalPreparationRuntime {
             &proposed_working_state,
             proposed_version,
             Some(&proposal_identity),
-            lease,
+            execution,
             &scope_control,
         )?;
         let summary = CommitValidation::summarize(&[
@@ -180,6 +181,7 @@ impl RelationalPreparationRuntime {
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         Ok(ValidatedRelationalProposal {
+            commit_work_budget: self.commit_work_budget.clone(),
             mutation_authority: transaction.mutation_authority,
             transaction_id,
             validation_input,
@@ -214,11 +216,15 @@ impl RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
+        crate::authority::commit::pipeline::consult_stage(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::Validation,
+        )?;
         self.preparation_runtime_snapshot()
-            .validate_branch_transaction(execution, transaction)
+            .validate_consulted_branch_transaction(execution, transaction)
     }
 
-    pub(crate) fn validate_lowered_strategy_proposal(
+    pub(crate) fn validate_consulted_lowered_strategy_proposal(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         transaction: crate::mvcc::BranchBoundRelationalTransaction,
@@ -227,7 +233,7 @@ impl RelationalRuntime {
         strategy: StrategyProposalDecoration,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
         self.preparation_runtime_snapshot()
-            .validate_lowered_strategy_proposal(
+            .validate_consulted_lowered_strategy_proposal(
                 execution,
                 transaction,
                 selected_branch_state,

@@ -17,6 +17,8 @@ impl Drop for Restore {
 }
 #[test]
 fn redispatch_refuses_before_outbox_reads_and_transport_at_both_placements() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let (world, _, handle, admission) = real_handle(221, "redispatch-custody");

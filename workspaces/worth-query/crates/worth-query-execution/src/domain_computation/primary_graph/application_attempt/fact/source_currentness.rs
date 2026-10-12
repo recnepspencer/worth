@@ -18,9 +18,9 @@ impl WorthQueryApplicationObservedFact {
     /// The most comparing this fact can cost: its probe, and for a native
     /// probe that found nothing the liveness check that answers it
     /// (`unanswered_probe`). A relation fact records no bound of its own, so
-    /// only the meter bounds it.
-    fn most_comparison_work(&self) -> usize {
-        match self {
+    /// only the meter bounds it (`None`).
+    fn most_comparison_work(&self) -> Option<usize> {
+        Some(match self {
             Self::RetiredOutputEntity { .. }
             | Self::SourceEntity { .. }
             | Self::Entity { .. }
@@ -48,9 +48,9 @@ impl WorthQueryApplicationObservedFact {
             Self::IndexedEntitySelection {
                 candidate_limit, ..
             } => candidate_limit.saturating_add(1),
-            Self::Relation { .. } => usize::MAX,
+            Self::Relation { .. } => return None,
             Self::Field { .. } | Self::AbsentField { .. } => 0,
-        }
+        })
     }
 
     /// Whether the fact moved between the basis that read it and `snapshot`.
@@ -74,9 +74,11 @@ impl WorthQueryApplicationObservedFact {
             return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
         }
         let most = self.most_comparison_work();
-        let reserved_work = most.min(admission.remaining_work());
-        let reserved =
-            admission.reserve_external_work(u64::try_from(reserved_work).unwrap_or(u64::MAX))?;
+        let reserved_work = most.unwrap_or(usize::MAX).min(admission.remaining_work());
+        let reserved = admission.reserve_external_work(
+            u64::try_from(reserved_work)
+                .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
+        )?;
         if matches!(self, Self::IndexedEntitySelection { .. }) {
             let mut remaining = reserved_work;
             let comparison = super::indexed_entity_selection::currentness_with_remaining(
@@ -86,20 +88,15 @@ impl WorthQueryApplicationObservedFact {
                 snapshot,
                 &mut remaining,
             );
-            reserved.settle(u64::try_from(reserved_work - remaining).unwrap_or(u64::MAX))?;
+            reserved.settle(
+                u64::try_from(reserved_work - remaining)
+                    .map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
+            )?;
             check_request(execution)?;
             return match comparison {
                 Ok(equal) => Ok(Ok(FactMovement::from_equal(equal))),
-                Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
-                    if reserved_work < most =>
-                {
-                    let maximum = admission.charged_work().saturating_add(
-                        u64::try_from(admission.remaining_work()).unwrap_or(u64::MAX),
-                    );
-                    Err(CompanionPreflightStop::WorkExhausted {
-                        required: maximum.saturating_add(1),
-                        maximum,
-                    })
+                Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
+                    comparison_work_failure(most, reserved_work, admission).map(Err)
                 }
                 Err(failure) => Ok(Err(failure)),
             };
@@ -108,17 +105,13 @@ impl WorthQueryApplicationObservedFact {
         check_request(execution)?;
         match comparison {
             Ok((equal, work)) => {
-                reserved.settle(u64::try_from(work).unwrap_or(u64::MAX))?;
+                reserved.settle(
+                    u64::try_from(work).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?,
+                )?;
                 Ok(Ok(FactMovement::from_equal(equal)))
             }
-            Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) if reserved_work < most => {
-                // The reservation is the meter's remaining work, and the
-                // comparison needed more.
-                let maximum = admission.charged_work();
-                Err(CompanionPreflightStop::WorkExhausted {
-                    required: maximum.saturating_add(1),
-                    maximum,
-                })
+            Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
+                comparison_work_failure(most, reserved_work, admission).map(Err)
             }
             Err(failure) => Ok(Err(failure)),
         }
@@ -138,15 +131,34 @@ impl WorthQueryApplicationObservedFact {
     ) -> Result<(FactMovement, usize), WorthQuerySourceCurrentnessFailure> {
         let mut admission = InvalidationEditAdmission::new(
             worth_relational::facade::mvcc::CompanionPreflightBudget {
-                maximum_work_visits: u64::try_from(maximum_work).unwrap_or(u64::MAX),
+                maximum_work_visits: u64::try_from(maximum_work)
+                    .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?,
                 maximum_preparation_bytes: 0,
             },
         );
         let movement = self
             .source_currentness_in(runtime, execution, snapshot, &mut admission)
             .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)??;
-        let work = usize::try_from(admission.charged_work()).unwrap_or(usize::MAX);
+        let work = usize::try_from(admission.charged_work())
+            .map_err(|_| WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)?;
         Ok((movement, work))
+    }
+}
+
+/// No fact-specific limit means a comparison overrun belongs to the meter,
+/// even when its count bound reaches the machine word's maximum.
+fn comparison_work_failure(
+    most: Option<usize>,
+    reserved: usize,
+    admission: &InvalidationEditAdmission,
+) -> Result<WorthQuerySourceCurrentnessFailure, CompanionPreflightStop> {
+    if most.is_none_or(|most| reserved < most) {
+        let maximum = admission
+            .charged_work()
+            .saturating_add(admission.remaining_work_amount());
+        Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
+    } else {
+        Ok(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
     }
 }
 
@@ -162,4 +174,59 @@ fn check_request(
         return Err(CompanionPreflightStop::Interrupted(event));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
+
+    #[test]
+    fn relation_overrun_is_the_meter_stop_at_every_pointer_width() {
+        // Identity is irrelevant to refusal classification; no runtime read is made.
+        let fact = WorthQueryApplicationObservedFact::Relation {
+            relation_kind: KindId::new(1),
+            from: EntityId::new(PartitionId::main(), 0, 1),
+            to: EntityId::new(PartitionId::main(), 1, 1),
+            matching_relations: Vec::new(),
+        };
+        let reserved = usize::try_from(u32::MAX).unwrap();
+        for (maximum, prior) in [
+            (u64::from(u32::MAX), 0),
+            (1_u64 << 40, (1_u64 << 40) - u64::from(u32::MAX)),
+            (1_u64 << 40, 0),
+        ] {
+            let mut admission = InvalidationEditAdmission::new(
+                worth_relational::facade::mvcc::CompanionPreflightBudget {
+                    maximum_work_visits: maximum,
+                    maximum_preparation_bytes: 0,
+                },
+            );
+            admission.charge_external_work(prior).unwrap();
+            {
+                let _reservation = admission
+                    .reserve_external_work(u64::from(u32::MAX))
+                    .unwrap();
+            }
+            let paid = prior + u64::from(u32::MAX);
+            assert_eq!(admission.charged_work(), paid);
+            assert_eq!(admission.remaining_work_amount(), maximum - paid);
+            if maximum > u64::from(u32::MAX) && prior == 0 {
+                assert!(
+                    maximum - paid > u64::from(u32::MAX),
+                    "the unspent amount exceeds every 32-bit count bound"
+                );
+            }
+            assert_eq!(
+                comparison_work_failure(fact.most_comparison_work(), reserved, &admission),
+                Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum }),
+                "a relation has no fact limit: its overrun has no invented requirement at every width"
+            );
+            assert_eq!(
+                comparison_work_failure(Some(2), 2, &admission),
+                Ok(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded),
+                "a fact's own limit remains a fact refusal"
+            );
+        }
+    }
 }

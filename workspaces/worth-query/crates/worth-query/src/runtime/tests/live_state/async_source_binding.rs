@@ -15,14 +15,14 @@ fn bridge_denied_completion_classes_reach_query_without_synthetic_result_states(
         request_execution,
         "bridge-async-rejected",
         NodeId::new(404, 0),
-        worth_runtime_bridge::certification::reject_async_request,
+        worth_runtime_bridge::certification_for_test::reject_async_request_for_test,
         WorthQueryRuntimeAsyncResultStateKind::Failed,
     );
     assert_denied_kind(
         request_execution,
         "bridge-async-cancelled",
         NodeId::new(405, 0),
-        worth_runtime_bridge::certification::cancel_async_request,
+        worth_runtime_bridge::certification_for_test::cancel_async_request_for_test,
         WorthQueryRuntimeAsyncResultStateKind::Cancelled,
     );
     assert_denied_kind(
@@ -30,7 +30,10 @@ fn bridge_denied_completion_classes_reach_query_without_synthetic_result_states(
         "bridge-async-superseded",
         NodeId::new(406, 0),
         |bridge, request| {
-            worth_runtime_bridge::certification::supersede_async_request(bridge, request).0
+            worth_runtime_bridge::certification_for_test::supersede_async_request_for_test(
+                bridge, request,
+            )
+            .0
         },
         WorthQueryRuntimeAsyncResultStateKind::Superseded,
     );
@@ -38,7 +41,7 @@ fn bridge_denied_completion_classes_reach_query_without_synthetic_result_states(
         request_execution,
         "bridge-async-lifecycle-denied",
         NodeId::new(407, 0),
-        worth_runtime_bridge::certification::deny_oversized_async_completion,
+        worth_runtime_bridge::certification_for_test::deny_oversized_async_completion_for_test,
         WorthQueryRuntimeAsyncResultStateKind::Denied,
     );
 }
@@ -49,7 +52,7 @@ fn bridge_cancellation_and_retry_lineage_reach_query_in_order() {
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let bridge = test_bridge();
-    let request = worth_runtime_bridge::certification::retryable_async_request(
+    let request = worth_runtime_bridge::certification_for_test::retryable_async_request_for_test(
         &bridge,
         NodeId::new(408, 0),
         authoritative_async_basis("commit-a", "snapshot-a"),
@@ -69,7 +72,9 @@ fn bridge_cancellation_and_retry_lineage_reach_query_in_order() {
         )
         .expect("retry live view should declare");
     let (cancelled, retry) =
-        worth_runtime_bridge::certification::cancel_and_retry_async_request(&bridge, &request);
+        worth_runtime_bridge::certification_for_test::cancel_and_retry_async_request_for_test(
+            &bridge, &request,
+        );
     let cancelled = admit_authoritative_input(
         &bridge,
         &mut workspace,

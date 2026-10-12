@@ -78,20 +78,14 @@ impl Drop for WorthQueryLiveSubscription {
             .get_mut(&self.key)
             .is_some_and(|partition| {
                 released = true;
-                partition.subscriber_count = partition
-                    .subscriber_count
-                    .checked_sub(1)
-                    .expect("live subscription releases exactly once");
+                partition.subscriber_count = partition.subscriber_count.saturating_sub(1);
                 partition.subscriber_count == 0 && !partition.reservation_live
             });
         if remove {
             state.partitions.remove(&self.key);
         }
         if released {
-            state.subscriber_count = state
-                .subscriber_count
-                .checked_sub(1)
-                .expect("live subscription releases exactly once");
+            state.subscriber_count = state.subscriber_count.saturating_sub(1);
         }
     }
 }

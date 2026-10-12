@@ -4,8 +4,7 @@ use worth_execution::{ReductionDenial, ReductionMetrics, ReductionRunStop};
 
 use super::super::WorthQueryPartitionedComputationDenial;
 use super::retained::WorthQueryPartitionedComputationFullCause;
-#[cfg(any(test, feature = "test-query-execution-observer"))]
-use super::retained::WorthQueryPartitionedComputationRun;
+use super::retained::WorthQueryPartitionedComputationRunForTest;
 
 /// Why an incremental tree rebuilt its leaves instead of editing retained paths.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -78,19 +77,17 @@ pub enum WorthQueryPartitionedTreeRun {
 }
 
 impl WorthQueryPartitionedTreeRun {
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
-    pub const fn metrics(self) -> WorthQueryPartitionedTreeMetrics {
+    pub const fn metrics_for_test(self) -> WorthQueryPartitionedTreeMetrics {
         match self {
             Self::Full(_, metrics) | Self::Edited(metrics) | Self::Rebuilt(_, metrics) => metrics,
         }
     }
 
-    #[cfg(any(test, feature = "test-query-execution-observer"))]
-    pub const fn partitions(self) -> WorthQueryPartitionedComputationRun {
+    pub const fn partitions_for_test(self) -> WorthQueryPartitionedComputationRunForTest {
         match self {
-            Self::Full(cause, _) => WorthQueryPartitionedComputationRun::Full(cause),
+            Self::Full(cause, _) => WorthQueryPartitionedComputationRunForTest::Full(cause),
             Self::Edited(_) | Self::Rebuilt(_, _) => {
-                WorthQueryPartitionedComputationRun::Incremental
+                WorthQueryPartitionedComputationRunForTest::Incremental
             }
         }
     }

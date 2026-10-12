@@ -8,7 +8,7 @@ use crate::data::error::SignalError;
 use super::super::owner::fork_reservation::{SignalOwnerForkCellBuilder, SignalPreparedOwnerFork};
 use super::super::{SignalBranchCellState, SignalOwnerCancellationToken, SignalOwnerUnavailable};
 use super::{SignalBranchCellAdmissionDenial, SignalBranchCellWork, SignalBranchExecutionCell};
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 
 #[cfg(test)]
 #[derive(Debug, Clone, PartialEq)]
@@ -86,7 +86,8 @@ where
             .map_err(|denial| map_fork_cell_denial(denial, self.branch_id))?;
         self.require_live_posture()
             .map_err(|denial| map_fork_cell_denial(denial, self.branch_id))?;
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::ExactBasisPreflight);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::ExactBasisPreflight);
         let live = state.observation().map_err(owner_fork_failure)?;
         if let Err(mismatch) = live.compare(source.observation()) {
             return Err(SignalBranchForkOperationDenial::BasisMismatch {
@@ -108,7 +109,8 @@ where
             drop(builder);
             return Err(denial);
         }
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
         let _movement = match cancellation.preflight_movement() {
             Ok(movement) => movement,
             Err(_) => {
@@ -123,8 +125,9 @@ where
             movements: &self.movements,
         }
         .record_fork_source_capture(captured.work);
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::AfterCanonicalMovement);
-        admission.reach_operation_boundary(SignalOwnerOperationBoundary::ForkSourceCapture);
+        admission
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::AfterCanonicalMovement);
+        admission.reach_operation_boundary(SignalOwnerOperationBoundaryForTest::ForkSourceCapture);
         state.commit_fork_source_boundary();
         drop(state);
         Ok(builder.bind_prepared_cell(prepared_cell))

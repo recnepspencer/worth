@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use worth_relational::facade::mvcc::{CompanionPreflightBudget, CompanionPreflightStop};
@@ -87,7 +88,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition_and_denies_before_pin()
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 

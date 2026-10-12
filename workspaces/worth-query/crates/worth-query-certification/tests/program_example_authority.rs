@@ -367,3 +367,5 @@ fn amendment(input: &str, revision: u64) -> AmendTemporalIntent {
         },
     }
 }
+
+mod temporal_integrity_lease;

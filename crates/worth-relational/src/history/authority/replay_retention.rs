@@ -17,7 +17,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
     ) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)?;
+        crate::execution::check_request(execution)?;
         if self
             .runtime
             .visibility

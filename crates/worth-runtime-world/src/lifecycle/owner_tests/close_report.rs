@@ -220,7 +220,6 @@ fn close_admits_no_operation_between_its_ledger_check_and_its_state_flip() {
 /// pair and its composite half is the recovery slot it occupies plus the
 /// successor history protection it still owes. The split is read from the
 /// record, never inferred from the retained posture's shape.
-#[cfg(feature = "test-operation-control")]
 #[test]
 fn close_reports_a_pending_record_as_a_reserved_component_pair() {
     let pending = super::publication::resolve_post_effect_retention_denial();

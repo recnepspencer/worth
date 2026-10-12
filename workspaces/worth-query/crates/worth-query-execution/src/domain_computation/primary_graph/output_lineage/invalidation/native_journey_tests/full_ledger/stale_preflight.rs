@@ -66,21 +66,26 @@ fn a_stale_preflight_after_an_unindexed_fork_winner_cannot_poison_later_writes()
         };
         let w1 = prepare(runtime, "winner");
         let w2 = prepare(runtime, "stale-loser");
-        let RelationalPublicationOutcome::Performed(performed) =
-            runtime.publication_port().compare_and_publish(w1)
+        let RelationalPublicationOutcome::Performed(performed) = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, w1)
         else {
             panic!("the full ledger cannot refuse W1");
         };
         let committed = runtime.settle_performed_publication(performed).unwrap();
         release_test_commit_snapshot(runtime, &committed);
         drop(held);
-        let stale = runtime.publication_port().compare_and_publish(w2);
+        let stale = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, w2);
         assert!(
             matches!(stale, RelationalPublicationOutcome::Stale(_)),
             "W2 must be stale: {stale:?}"
         );
         let later = prepare(runtime, "later-writer");
-        let outcome = runtime.publication_port().compare_and_publish(later);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(request_execution, later);
         let RelationalPublicationOutcome::Performed(performed) = outcome else {
             panic!(
                 "a stale candidate cannot poison the lookup or defer a later writer: {outcome:?}"

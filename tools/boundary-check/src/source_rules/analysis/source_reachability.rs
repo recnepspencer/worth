@@ -85,8 +85,8 @@ fn load_exemptions(root: &Path) -> Result<BTreeSet<String>, String> {
     if !path.is_file() {
         return Ok(BTreeSet::new());
     }
-    let text =
-        fs::read_to_string(&path).map_err(|error| format!("read {}: {error}", path.display()))?;
+    let text = crate::source_documents::read_to_string(&path)
+        .map_err(|error| format!("read {}: {error}", path.display()))?;
     let mut exemptions = BTreeSet::new();
     for (index, raw) in text.lines().enumerate() {
         let entry = raw.trim();

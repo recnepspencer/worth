@@ -2,8 +2,8 @@ use super::fixtures::{
     certification_authority_source_min_one_runtime, publication_pair_min_two_runtime,
     publication_source_min_one_runtime,
 };
-use crate::facade::publication::PublicationError;
 use crate::facade::runtime::InvariantExecutionResult;
+use crate::facade::transactions::TransactionCommitError;
 use crate::tests::support::*;
 
 #[test]
@@ -14,7 +14,10 @@ fn relation_integrity_certification_boundary_rejects_zero_edge_entity_for_minimu
     let runtime = publication_source_min_one_runtime();
     let _orphan = create_entity(execution, &runtime, "orphan");
 
-    let result = runtime.validation().certification_state();
+    let result = runtime
+        .validation()
+        .certification_state(execution)
+        .expect("invariant fixture request");
     let failure = result
         .summary()
         .publication_failure()
@@ -57,7 +60,10 @@ fn relation_integrity_certification_boundary_rejects_observed_pair_below_paralle
     let target = create_entity(execution, &runtime, "target");
     create_relation(execution, &runtime, source, target, "single");
 
-    let result = runtime.validation().certification_state();
+    let result = runtime
+        .validation()
+        .certification_state(execution)
+        .expect("invariant fixture request");
     let failure = result
         .summary()
         .publication_failure()
@@ -100,9 +106,12 @@ fn relation_integrity_certification_boundary_is_authority_owned_and_blocks_publi
 
     let shared: &RelationalRuntime = &runtime;
     let error = shared
-        .certify_current_state()
+        .certify_current_state(execution)
         .expect_err("certification boundary should block incomplete topology");
 
+    let TransactionCommitError::Publication { error, .. } = error else {
+        panic!("expected publication refusal")
+    };
     assert_eq!(error.stage, PublicationStage::InvariantCheck);
     assert!(error.detail.contains("source_min_one"));
 }
@@ -113,6 +122,9 @@ fn relation_integrity_certification_boundary_is_authority_owned_and_blocks_publi
 /// it reclaims an exclusive borrow of the whole runtime.
 #[test]
 fn certification_boundary_is_addressable_through_a_shared_borrow() {
-    let _certify: fn(&RelationalRuntime) -> Result<InvariantExecutionResult, PublicationError> =
+    let _certify: fn(
+        &RelationalRuntime,
+        &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<InvariantExecutionResult, TransactionCommitError> =
         RelationalRuntime::certify_current_state;
 }

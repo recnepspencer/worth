@@ -58,6 +58,7 @@ fn bounded_send_projection_rejects_accounting_revision_drift() {
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap();
     assert_eq!(
@@ -88,6 +89,7 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap();
     let cold_work = cold.work();
@@ -112,6 +114,7 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap();
     assert_eq!(
@@ -140,6 +143,7 @@ fn bounded_send_projection_carries_the_authoritative_starting_balance() {
                     },
                     ExecutionAllocationPolicy::SystemAllocation,
                 )
+                .map_err(Box::new)
         })
         .unwrap();
     assert_eq!(
@@ -183,6 +187,7 @@ fn bounded_send_projection_rejects_ambiguous_recipient_ownership() {
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap();
     assert_eq!(

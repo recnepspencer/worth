@@ -55,7 +55,7 @@ fn an_indexed_selection_the_width_cannot_pay_for_is_not_kept() {
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            for (indexed_width, required) in [(0, 1), (1, 2)] {
+            for indexed_width in [0, 1] {
                 for producer_output in [false, true] {
                     assert_eq!(
                         rebase_within_width(
@@ -68,8 +68,7 @@ fn an_indexed_selection_the_width_cannot_pay_for_is_not_kept() {
                         ),
                         RebasedSourceFacts::VerificationRequired {
                             reason: RebaseVerificationReason::AdmissionDenied(
-                                CompanionPreflightStop::WorkExhausted {
-                                    required,
+                                CompanionPreflightStop::WorkExhaustedWithoutRequirement {
                                     maximum: u64::try_from(indexed_width).unwrap(),
                                 }
                             ),

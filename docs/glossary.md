@@ -473,8 +473,8 @@ explained). Rust names are given where a type embodies the term.
   binding's scope field (`scope_field()`, read from the intent by
   `scope_binding()`); a query carries its own scope.
   It is resolved at admission and used in authorization.
-  **Not** `WorthQueryRequestScope`, which carries only a request's deadline
-  and cancellation token.
+  **Not** `WorthQueryRequestScope`, which carries a request's optional deadline
+  and cancellation token; an absent deadline is unbounded, not elapsed.
   **See** [Build an Application §5](build-an-application.md#5-run-the-program).
 
 **Scope path**

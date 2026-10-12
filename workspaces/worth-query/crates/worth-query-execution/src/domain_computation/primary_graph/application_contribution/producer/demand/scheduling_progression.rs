@@ -306,6 +306,7 @@ fn schedule_admission_denial(
     use worth_relational::facade::mvcc::CompanionPreflightStop;
     match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => schedule_work_denial(),
         _ => denial(
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,

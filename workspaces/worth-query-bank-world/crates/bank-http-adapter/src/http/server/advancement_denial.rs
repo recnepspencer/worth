@@ -15,7 +15,6 @@ pub(super) fn advancement(
         Denial::Interrupted(Interruption::DeadlineExceeded) => {
             BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry)
         }
-        Denial::ForeignPhase => BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator),
         Denial::NestedOpening => BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator),
         Denial::NestedStopped | Denial::Panicked => {
             BankHttpDenial::new(Kind::InternalDenied, Next::None)

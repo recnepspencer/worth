@@ -74,10 +74,31 @@ pub(super) fn kind(error: &SignalError) -> Kind {
         | SignalError::UnknownBranch { .. }
         | SignalError::BranchMergeFailed { .. }
         | SignalError::ManagedQueueBranchTransferDenied { .. }
+        | SignalError::MissingBoundedInputsAtEpochAdmission { .. }
+        | SignalError::MissingBoundedInputsAtEvaluation { .. }
         | SignalError::InvalidInput { .. }
         | SignalError::Internal { .. } => {
             return Kind::SignalExecution(super::BridgeSignalDenial::Error(error.clone()))
         }
     };
     Kind::ExecutionDenied(execution)
+}
+
+#[cfg(test)]
+mod footprint_tests {
+    use super::*;
+    #[test]
+    fn a_missing_footprint_keeps_its_typed_signal_site() {
+        let mut graph = worth_signal::facade::SignalGraph::new();
+        let node = graph.node().build();
+        for error in [
+            SignalError::MissingBoundedInputsAtEpochAdmission { node },
+            SignalError::MissingBoundedInputsAtEvaluation { node },
+        ] {
+            assert_eq!(
+                kind(&error),
+                Kind::SignalExecution(super::super::BridgeSignalDenial::Error(error.clone()))
+            );
+        }
+    }
 }

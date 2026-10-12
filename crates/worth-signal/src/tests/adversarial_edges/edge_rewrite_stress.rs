@@ -2,7 +2,6 @@ use crate::facade::SignalGraph;
 use crate::tests::support::{GraphDependencyBatchExt, ASPECT_A, ASPECT_B};
 
 #[test]
-#[ignore = "stress coverage for large edge rewrites and slot reuse"]
 fn stress_edge_rewrites_across_reused_nodes() {
     let mut graph = SignalGraph::new();
     let roots: Vec<_> = (0..128).map(|_| graph.node().build()).collect();

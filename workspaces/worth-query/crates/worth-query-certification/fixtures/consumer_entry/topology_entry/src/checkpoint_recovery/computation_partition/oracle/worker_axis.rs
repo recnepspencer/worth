@@ -5,14 +5,16 @@
 //! at once. A run that recomputes one region has one kernel, so the proof is
 //! the sequence's, not each demand's.
 
-use super::super::worker_axis::{axis, placed, workers_of, Overlapping};
+use super::super::worker_axis::{placed, workers_of, Overlapping};
+worth_execution::needs_os_threads! { use super::super::worker_axis::axis; }
 use super::differential::sequence;
 use super::*;
+use worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement;
 
 /// A run's outcome and how it ran.
 type Ran = (
     Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-    Vec<WorthQueryPartitionedComputationRun>,
+    Vec<WorthQueryPartitionedComputationRunForTest>,
     Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedTreeRun>,
 );
 
@@ -29,11 +31,19 @@ fn demands() -> Vec<(usize, Vec<Ran>)> {
     demands
 }
 
+worth_execution::needs_os_threads! {
 #[test]
-fn every_demand_of_the_sequence_runs_the_same_at_every_worker_count() {
+fn every_demand_of_the_sequence_runs_the_same_at_every_worker_count() { compare_sequence(axis().into_iter().skip(1).collect()); }
+}
+
+#[test]
+fn every_demand_of_the_sequence_runs_the_same_at_one_worker() {
+    compare_sequence(vec![Placement::Leased(NonZeroUsize::MIN)]);
+}
+
+fn compare_sequence(placements: Vec<Placement>) {
     let _guard = checkpoint_recovery_test_guard();
-    let mut placements = axis().into_iter();
-    let serial = placed(placements.next().expect("the axis is not empty"), demands);
+    let serial = placed(Placement::Serial, demands);
     assert!(
         serial
             .iter()

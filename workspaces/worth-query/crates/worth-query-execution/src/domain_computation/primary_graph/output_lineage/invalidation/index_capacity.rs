@@ -118,7 +118,7 @@ pub(super) fn ordered_removal_work(entries: usize) -> Option<u64> {
     .ok()
 }
 
-#[cfg(all(test, feature = "allocation-probes"))]
+#[cfg(test)]
 mod allocation_tests;
 #[cfg(test)]
 mod navigation_tests;

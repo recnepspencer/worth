@@ -1,5 +1,5 @@
 use std::any::TypeId;
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::{
@@ -46,7 +46,7 @@ where
     conditions: Vec<InstalledWorkflowCondition>,
     approvals: Vec<InstalledWorkflowApproval>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
-    markers: BTreeSet<(u8, TypeId)>,
+    markers: HashSet<(u8, TypeId)>,
     marker: PhantomData<fn() -> Spec>,
 }
 
@@ -72,7 +72,7 @@ where
             conditions: Vec::new(),
             approvals: Vec::new(),
             resources,
-            markers: BTreeSet::new(),
+            markers: HashSet::new(),
             marker: PhantomData,
         }
     }

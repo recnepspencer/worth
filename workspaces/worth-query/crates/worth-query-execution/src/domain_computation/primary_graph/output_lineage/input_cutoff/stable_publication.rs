@@ -6,6 +6,7 @@ mod stable_record;
 pub(in crate::domain_computation::primary_graph::output_lineage) use performed_sequence::performed_fact_sequence;
 pub(in crate::domain_computation::primary_graph) use source_registration::StableEqualityConsequence;
 
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use worth_runtime_world::facade::ProductBranchObservation;
@@ -106,7 +107,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
         schema: scope.binding_identity().clone(),
         scope: scope.scope(),
         output_binding: lineage
-            .binding_identity(std::any::TypeId::of::<Binding>())
+            .binding_identity(TypeId::of::<Binding>())
             .expect("admitted binding is installed"),
     };
     if verified.candidate.settlement_identity().source() != &source {
@@ -127,7 +128,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_stable_address<
     let actual = lineage
         .prior_input_cutoff_candidate::<Binding>(scope, observation, partition, admission)
         .map_err(|stop| match stop {
-            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. }
+            worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhausted { .. } | worth_relational::facade::mvcc::CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
             | worth_relational::facade::mvcc::CompanionPreflightStop::WorkCounterOverflow => {
                 denial(Kind::WorkBudgetExceeded)
             }

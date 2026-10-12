@@ -37,7 +37,10 @@ pub(super) fn commit_through_services(
         .preparation_port()
         .prepare_branch_transaction(execution, transaction)
         .expect("preparation service produces the canonical candidate");
-    let performed = match services.publication_port().compare_and_publish(candidate) {
+    let performed = match services
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("publication service did not perform: {outcome:?}"),
     };

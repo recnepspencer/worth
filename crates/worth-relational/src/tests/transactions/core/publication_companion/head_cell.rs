@@ -139,7 +139,7 @@ fn contention(execution: &worth_execution::ExecutionRequest<'_, '_>, independent
         let publisher = threads.spawn(|| {
             if independent_port {
                 let RelationalPublicationOutcome::Performed(performed) =
-                    port.compare_and_publish(candidate)
+                    port.compare_and_publish(execution, candidate)
                 else {
                     panic!("held independent publication performs");
                 };

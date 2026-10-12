@@ -42,7 +42,7 @@ fn measured_idle_versus_introspective_records_diagnostic_pressure_benefit() {
 }
 
 #[test]
-#[ignore = "timed comparison; run alone on a quiet machine with -- --ignored --nocapture"]
+#[ignore = "asserts wall-clock time; run on a quiet machine"]
 fn measured_idle_versus_introspective_compares_wall_clock_throughput() {
     let (idle_report, pressure_report, _, _) = pressure_reports();
     let ten_percent = ten_percent_benefit(&idle_report, &pressure_report);

@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
         WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
     },
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 #[test]
 fn local_full_verification_requirement_overrides_a_clean_actor_row() {
@@ -66,7 +67,7 @@ fn local_full_verification_requirement_overrides_a_clean_actor_row() {
         .expect("the fixture read owns its installed host call");
 
     let mut lineage = WorthQueryApplicationOutputLineage::default();
-    lineage.fixture_binding(std::any::TypeId::of::<StatusOutput>(), "StatusOutput");
+    lineage.fixture_binding(TypeId::of::<StatusOutput>(), "StatusOutput");
 
     lineage.install_output_families(BTreeMap::from([(
         "local-requirement".to_owned().into(),

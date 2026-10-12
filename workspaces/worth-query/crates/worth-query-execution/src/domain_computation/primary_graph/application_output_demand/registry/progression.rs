@@ -337,7 +337,7 @@ fn empty_begin_preflight_denial(
 ) -> WorthQueryOutputDemandDenial {
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
     let kind = match stop {
-        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
+        Stop::WorkExhausted { .. } | Stop::WorkExhaustedWithoutRequirement { .. } | Stop::WorkCounterOverflow => {
             crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         }
         _ => crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,

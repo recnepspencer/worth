@@ -209,7 +209,9 @@ fn pre_effect_publication_interruptions_preserve_every_owner_surface() {
             let position_before = runtime.patch_position_reservation_counters();
             let cost_scope = RelationalMvccCostScope::capture(&runtime, vec![identity]);
 
-            let outcome = runtime.publication_port().compare_and_publish(candidate);
+            let outcome = runtime
+                .publication_port()
+                .compare_and_publish(execution, candidate);
             let event = match outcome {
                 crate::mvcc::RelationalPublicationOutcome::Interrupted(event) => event,
                 outcome => panic!("pre-effect interruption must defer: {outcome:?}"),
@@ -266,7 +268,10 @@ fn performed_and_settlement_boundaries_report_both_late_interruption_reasons() {
                 .branch_reference_state(&BranchId("main".to_owned()))
                 .unwrap();
             let cost_scope = RelationalMvccCostScope::capture(&runtime, vec![identity]);
-            let performed = match runtime.publication_port().compare_and_publish(candidate) {
+            let performed = match runtime
+                .publication_port()
+                .compare_and_publish(execution, candidate)
+            {
                 crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
                 outcome => panic!("late interruption must preserve performed work: {outcome:?}"),
             };
@@ -310,7 +315,7 @@ fn injected_control(
     interruption: RelationalOperationInterruption,
     trigger_on_visit: usize,
 ) -> RelationalOperationControl {
-    RelationalOperationControl::uninterrupted().with_injected_interruption(
+    RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         boundary,
         interruption,
         trigger_on_visit,

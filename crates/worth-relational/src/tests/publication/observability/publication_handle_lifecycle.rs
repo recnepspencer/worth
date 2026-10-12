@@ -266,9 +266,21 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
 
     parallel.performance_access().reset_counters();
     let lease = test_execution_lease();
-    let _ = create_entity_outcome_with_lease(execution, &parallel, "first", &lease);
-    let parallel_second = create_entity_outcome_with_lease(execution, &parallel, "second", &lease);
-    let parallel_third = create_entity_outcome_with_lease(execution, &parallel, "third", &lease);
+    let _ = create_entity_outcome(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        &parallel,
+        "first",
+    );
+    let parallel_second = create_entity_outcome(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        &parallel,
+        "second",
+    );
+    let parallel_third = create_entity_outcome(
+        &worth_execution::ExecutionRequest::leased(&lease),
+        &parallel,
+        "third",
+    );
 
     let serial_bundle = serial.publication().latest_bundle().unwrap().clone();
     let parallel_bundle = parallel.publication().latest_bundle().unwrap().clone();

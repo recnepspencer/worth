@@ -23,8 +23,9 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("direct parent prepares");
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("direct parent must perform");
     };
@@ -154,14 +155,15 @@ fn failed_durable_append_returns_an_idempotent_owner_repair_capability() {
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("fault candidate prepares");
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("fault candidate performs");
     };
     let commit_id = performed.canonical_commit().commit.commit_id;
     let position = performed.patch_position();
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let error = runtime
         .settle_performed_publication(performed)
         .expect_err("injected append fault defers settlement after performance");
@@ -289,14 +291,15 @@ fn deferred_carrier_repair_is_a_no_op_after_the_snapshot_was_already_released() 
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("already-released candidate prepares");
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("already-released candidate performs before its injected fault");
     };
     let commit_id = performed.canonical_commit().commit.commit_id;
 
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let error = runtime
         .settle_performed_publication(performed)
         .expect_err("injected append fault defers settlement after performance");

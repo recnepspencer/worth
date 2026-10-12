@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 #[test]
 fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "atomic-reader-anchor");
@@ -46,13 +46,18 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
     let publisher_done_signal = Arc::clone(&publisher_done);
     let (publication_finished, publication_completion) = std::sync::mpsc::sync_channel(1);
     let port = runtime.publication_port();
-    let publisher = std::thread::spawn(move || {
-        let outcome = port.compare_and_publish(candidate);
-        publisher_done_signal.store(true, Ordering::Release);
-        publication_finished
-            .send(())
-            .expect("reader-race completion receiver lives");
-        outcome
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            let outcome = port.compare_and_publish(execution, candidate);
+            publisher_done_signal.store(true, Ordering::Release);
+            publication_finished
+                .send(())
+                .expect("reader-race completion receiver lives");
+            outcome
+        }
     });
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while publication_gate.wait_count() == 0 && std::time::Instant::now() < wait_deadline {
@@ -146,7 +151,7 @@ fn concurrent_reference_readers_observe_only_complete_old_or_new_roots() {
 
 #[test]
 fn fork_and_publication_consume_complete_old_and_new_roots() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = runtime_with_test_schema();
     let old_commit = create_entity_outcome(execution, &runtime, "fork-race-anchor");
@@ -178,13 +183,18 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
     let publisher_done_signal = Arc::clone(&publisher_done);
     let (publication_finished, publication_completion) = std::sync::mpsc::sync_channel(1);
     let port = runtime.publication_port();
-    let publisher = std::thread::spawn(move || {
-        let outcome = port.compare_and_publish(candidate);
-        publisher_done_signal.store(true, Ordering::Release);
-        publication_finished
-            .send(())
-            .expect("fork-race completion receiver lives");
-        outcome
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            let outcome = port.compare_and_publish(execution, candidate);
+            publisher_done_signal.store(true, Ordering::Release);
+            publication_finished
+                .send(())
+                .expect("fork-race completion receiver lives");
+            outcome
+        }
     });
     let wait_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while publication_gate.wait_count() == 0 && std::time::Instant::now() < wait_deadline {

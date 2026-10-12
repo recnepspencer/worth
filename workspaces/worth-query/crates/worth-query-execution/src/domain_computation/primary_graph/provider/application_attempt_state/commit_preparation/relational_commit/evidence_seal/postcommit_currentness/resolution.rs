@@ -228,7 +228,11 @@ impl PreparedFactRebase {
                 let most = candidate_limit.saturating_add(1);
                 let reserved_work = most.min(indexed_width.remaining_work());
                 let reserved = indexed_width
-                    .reserve_external_work(u64::try_from(reserved_work).unwrap_or(u64::MAX))
+                    .reserve_external_work(u64::try_from(reserved_work).map_err(|_| {
+                        RebaseVerificationReason::AdmissionDenied(
+                            CompanionPreflightStop::WorkCounterOverflow,
+                        )
+                    })?)
                     .map_err(RebaseVerificationReason::AdmissionDenied)?;
                 let mut remaining = reserved_work;
                 let observed = reobserve_indexed_entity_selection(
@@ -239,20 +243,21 @@ impl PreparedFactRebase {
                     &mut remaining,
                 );
                 reserved
-                    .settle(u64::try_from(reserved_work - remaining).unwrap_or(u64::MAX))
+                    .settle(u64::try_from(reserved_work - remaining).map_err(|_| {
+                        RebaseVerificationReason::AdmissionDenied(
+                            CompanionPreflightStop::WorkCounterOverflow,
+                        )
+                    })?)
                     .map_err(RebaseVerificationReason::AdmissionDenied)?;
                 match observed {
                     Ok(observed) => Ok(Self::Replace(observed)),
                     Err(IndexedSelectionReobserveDenial::Lookup(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause)))=>Err(RebaseVerificationReason::Execution(cause)),
                     Err(IndexedSelectionReobserveDenial::WorkBudgetExceeded) => {
-                        let maximum = indexed_width.charged_work().saturating_add(
-                            u64::try_from(indexed_width.remaining_work()).unwrap_or(u64::MAX),
-                        );
+                        let maximum = indexed_width
+                            .charged_work()
+                            .saturating_add(indexed_width.remaining_work_amount());
                         Err(RebaseVerificationReason::AdmissionDenied(
-                            CompanionPreflightStop::WorkExhausted {
-                                required: maximum.saturating_add(1),
-                                maximum,
-                            },
+                            CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum },
                         ))
                     }
                     Err(denial) if producer_output => {

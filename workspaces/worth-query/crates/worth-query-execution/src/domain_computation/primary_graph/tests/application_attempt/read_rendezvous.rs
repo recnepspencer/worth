@@ -13,7 +13,7 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
     let world = installed_authorization_world(true);
     let source = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        std::time::Instant::now() + Duration::from_secs(60),
+        Some(std::time::Instant::now() + Duration::from_secs(60)),
         source.token(),
     );
     let program = world

@@ -10,7 +10,7 @@ pub(super) fn admit<E>(
     index: DerivedIndexId,
     admission: &mut impl FnMut() -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
-    crate::visibility::materialization::read_records::read_request::consult(execution).map_err(
+    crate::execution::check_request(execution).map_err(
         |cause| {
             Stop::Lookup(super::prepared_entity_field_lookup::denied(
                 Denial::Execution(cause),

@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     application_output_demand::{RetainedOutputReadmissionSource, SelectedReadyReadmission},
     output_lineage::AcceptedCurrentCandidate,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 #[path = "selected/contract.rs"]
@@ -40,7 +41,9 @@ where
             use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
             WorthQueryOutputDemandDenial::new(
                 match stop {
-                    Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
+                    Stop::WorkExhausted { .. }
+                    | Stop::WorkExhaustedWithoutRequirement { .. }
+                    | Stop::WorkCounterOverflow => {
                         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
                     }
                     _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
@@ -84,10 +87,14 @@ where
     ) -> Result<super::required_cue::RequiredCueProgress<'basis, Schema>, ProducerExecutionStop>
     {
         use super::required_cue::RequiredCueProgress;
-        let execution = phase.execution_request_for(&runtime.product_runtime)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
-                "producer advancement phase"))?;
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "producer advancement phase",
+                )
+            })?;
 
         // The registry selects this entry by the exact Ready producer, and
         // cold registration seals its sole typed executor to that entry.
@@ -229,17 +236,21 @@ where
         producer_contacts: &mut usize,
     ) -> Result<PreparedProducerExecutionOutcome, ProducerExecutionStop> {
         use super::super::demand::disclosure::FreshDisclosureAdmissionStop;
-        let execution = phase.execution_request_for(&runtime.product_runtime)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase),
-                "producer advancement phase"))?;
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "producer advancement phase",
+                )
+            })?;
 
         // Fund the typed edition/type checks and the move-only execution split
         // before any early refusal. Producer subjects are borrowed statics.
         let entry_work = u64::try_from(
             std::mem::size_of::<RequiredOutputExecution>()
                 .checked_add(std::mem::size_of::<super::super::InstalledProducerEdition>() * 2)
-                .and_then(|work| work.checked_add(std::mem::size_of::<std::any::TypeId>() * 8))
+                .and_then(|work| work.checked_add(std::mem::size_of::<TypeId>() * 8))
                 .and_then(|work| work.checked_add(8))
                 .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded, ""))?,
         )

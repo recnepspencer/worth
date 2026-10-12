@@ -23,7 +23,7 @@ pub(crate) fn metered<T>(
     mut read: impl FnMut(&mut MapKernelContext<'_, '_>) -> T,
     owned_bytes: impl Fn(&T) -> u64,
 ) -> Result<T, Cause> {
-    super::read_request::consult(execution)?;
+    crate::execution::check_request(execution)?;
     execution
         .in_scope(|lease| {
             let identity = PartitionIdentity::new(1);

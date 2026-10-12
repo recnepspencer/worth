@@ -2,7 +2,10 @@
 use std::cell::Cell;
 thread_local! { static READS: Cell<u64> = const { Cell::new(0) }; }
 
-pub(crate) fn record_read() {
+pub(crate) fn record_read_for_test() {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
     READS.with(|reads| {
         reads.set(
             reads

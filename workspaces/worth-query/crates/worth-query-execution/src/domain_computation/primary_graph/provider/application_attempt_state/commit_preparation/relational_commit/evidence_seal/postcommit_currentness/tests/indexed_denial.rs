@@ -253,7 +253,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
             &BTreeSet::new(), true, 2, &mut request_admission());
         assert_eq!(denied, RebasedSourceFacts::VerificationRequired {
             reason: RebaseVerificationReason::AdmissionDenied(
-                CompanionPreflightStop::WorkExhausted { required: 3, maximum: 2 }),
+                CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 2 }),
             own_effect: OwnEffectOnReads::NONE_ASKED,
         }, "width exhaustion keeps no partially rebased facts");
         observed
@@ -306,7 +306,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
                 maximum_preparation_bytes: 0,
             });
             assert_eq!(observed.source_currentness_in(runtime,execution,  snapshot, &mut admission),
-                Err(CompanionPreflightStop::WorkExhausted { required: width + 1, maximum: width }));
+                Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: width }));
             assert_eq!(admission.charged_work(), spent,
                 "an unaffordable probe reads nothing; a narrowed overflowing probe spends navigation and its examined row");
         }
@@ -331,9 +331,7 @@ fn sparse_indexed_rebase_spends_examined_rows_and_keeps_complete_dependencies() 
             denied,
             RebasedSourceFacts::VerificationRequired {
                 reason: RebaseVerificationReason::AdmissionDenied(
-                    CompanionPreflightStop::WorkExhausted {
-                        required: 3,
-                        maximum: 2
+                    CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 2
                     }
                 ),
                 own_effect: OwnEffectOnReads::NONE_ASKED,
@@ -350,3 +348,6 @@ fn request_admission() -> InvalidationEditAdmission {
         maximum_preparation_bytes: 1024 * 1024,
     })
 }
+
+#[path = "indexed_denial/large_allowance.rs"]
+mod large_allowance;

@@ -14,7 +14,7 @@ const OWNER_CLOSE_START_FAIL_SAFE: Duration = Duration::from_secs(6);
 
 #[test]
 fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = empty_runtime();
@@ -27,7 +27,7 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
 
     let (reached, release) = (Arc::new(Barrier::new(2)), Arc::new(Barrier::new(2)));
     let control = RelationalOperationControl::uninterrupted()
-        .with_critical_section_pause(Arc::clone(&reached), Arc::clone(&release));
+        .with_critical_section_pause_for_test(Arc::clone(&reached), Arc::clone(&release));
     let basis = services
         .basis_port()
         .admit_branch_basis(&runtime.main_branch_identity())
@@ -52,8 +52,13 @@ fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authorit
 
     let (publication_tx, publication_rx) = sync_channel(1);
     let publication_port = services.publication_port();
-    std::thread::spawn(move || {
-        let _ = publication_tx.send(publication_port.compare_and_publish(candidate));
+    std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+
+            let _ = publication_tx.send(publication_port.compare_and_publish(execution, candidate));
+        }
     });
 
     let (owner_close_start_tx, owner_close_start_rx) = sync_channel(1);

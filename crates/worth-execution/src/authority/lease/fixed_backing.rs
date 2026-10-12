@@ -4,6 +4,9 @@ mod owned;
 mod policy;
 
 pub(super) use building::BuildingFixedBacking;
-pub use denial::{ExecutionAllocationDenial, ExecutionAllocationDenialKind};
+pub use denial::{
+    ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationDenialKind,
+    ExecutionPhysicalAllocationDenialKind,
+};
 pub(super) use owned::{OwnedFixedBacking, OwnedFixedIntoIter};
 pub use policy::ExecutionAllocationPolicy;

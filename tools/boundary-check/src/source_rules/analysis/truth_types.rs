@@ -19,7 +19,6 @@ use super::production_scope::{production_graphs, production_modules};
 use crate::config::TruthTypeDenialConfig;
 use crate::diagnostics::{Diagnostic, DiagnosticCode};
 use std::collections::BTreeSet;
-use std::fs;
 use std::path::Path;
 
 /// Check the production source of every configured crate for sealed truth
@@ -84,7 +83,7 @@ pub(crate) fn enforce_truth_type_denials(
 /// method is enforced there, because only Clippy resolves its receiver.
 fn clippy_disallowed_methods(root: &Path) -> Result<BTreeSet<String>, String> {
     let path = root.join("clippy.toml");
-    let text = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let text = crate::source_documents::read_to_string(&path).map_err(|error| error.to_string())?;
     disallowed_methods_in(&text)
 }
 

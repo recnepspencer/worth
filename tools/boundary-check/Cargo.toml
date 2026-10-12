@@ -11,10 +11,18 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 proc-macro2 = { version = "1", features = ["span-locations"] }
 quote = "1"
-syn = { version = "2", features = ["full", "visit"] }
+syn = { version = "2", features = ["full", "visit", "visit-mut"] }
 toml = "0.8"
+
+[dev-dependencies]
+worth-harness = { path = "../../crates/worth-harness" }
 
 # Parsing every governed crate with syn dominates a run; optimize dependencies
 # even in the dev profile that `make boundary-check` uses.
 [profile.dev.package."*"]
 opt-level = 3
+
+# These tools run on every edit; retain debug assertions while optimizing them.
+[profile.dev]
+opt-level = 3
+debug-assertions = true

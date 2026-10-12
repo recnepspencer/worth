@@ -141,7 +141,7 @@ pub(crate) fn ensure_historical_state(
     basis: HistoricalVisibilityBasis,
     recent_candidate: bool,
 ) -> Result<SnapshotState, crate::execution::RelationalExecutionDenialCause> {
-    crate::visibility::materialization::read_records::read_request::consult(execution)?;
+    crate::execution::check_request(execution)?;
     let key = basis_key(&basis);
     if let Some(state) = runtime.visibility.cache.state(&key) {
         runtime
@@ -216,7 +216,7 @@ pub(crate) fn materialize_historical_visibility(
     version_id: crate::identity::data::VersionId,
     allow_recent_admission: bool,
 ) -> Result<Option<SnapshotState>, crate::execution::RelationalExecutionDenialCause> {
-    crate::visibility::materialization::read_records::read_request::consult(execution)?;
+    crate::execution::check_request(execution)?;
     let Ok(basis) = historical_basis_for_retained_version(runtime, version_id) else {
         return Ok(None);
     };

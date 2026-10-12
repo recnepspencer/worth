@@ -163,8 +163,9 @@ fn candidate_indexes_deny_before_effect_then_publish_exact_cold_generation_on_se
         DerivedIndexMaintenanceDenialKind::CandidateIndexesAlreadyPrepared
     );
 
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("candidate must publish");
     };
@@ -243,8 +244,9 @@ fn candidate_index_work_exhaustion_leaves_the_candidate_unpublished_and_retryabl
             execution,
         )
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("retried candidate must publish");
     };
@@ -334,8 +336,9 @@ fn candidate_patch_refresh_uses_prior_generation_without_cold_scan() {
     assert_eq!(work.cold_record_slots, 0);
     assert_eq!(work.patch_records, 1);
     assert_eq!(work.entry_edits, 2);
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("candidate must publish");
     };

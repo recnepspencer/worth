@@ -50,6 +50,8 @@ fn charged_request(
 
 #[test]
 fn nested_execution_phases_share_one_work_ceiling() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     const UNITS: u64 = 3;
     let _restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
@@ -86,6 +88,8 @@ fn nested_execution_phases_share_one_work_ceiling() {
 
 #[test]
 fn zero_work_refuses_before_the_advancement_body() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(
         place(Placement::Leased(NonZeroUsize::MIN)),
         bound(Some(ExecutionBudget::new(NonZeroUsize::MIN, 1 << 20, 0))),
@@ -104,6 +108,8 @@ fn zero_work_refuses_before_the_advancement_body() {
 
 #[test]
 fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     use crate::domain_computation::primary_graph::tests::fixture::{
         installed_authorization_world, live_scope,
     };
@@ -153,6 +159,8 @@ fn reentrant_host_open_is_typed_at_serial_and_leased_placements() {
 
 #[test]
 fn unwinding_a_host_callback_releases_opening_custody() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let policy = super::super::test_placement::test_policy(NonZeroUsize::MIN, 1 << 20);
     assert!(std::panic::catch_unwind(|| {
         let _ = with_bootstrap_advancement(policy, |_| panic!("host callback"));

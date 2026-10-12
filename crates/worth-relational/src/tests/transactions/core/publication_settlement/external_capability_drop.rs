@@ -17,13 +17,14 @@ fn runtime_recovers_settlement_after_external_capability_is_dropped() {
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("runtime recovery candidate performs before its injected append fault");
     };
     let commit_id = performed.canonical_commit().commit.commit_id;
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let error = runtime
         .settle_performed_publication(performed)
         .expect_err("durable append fault returns deferred settlement");

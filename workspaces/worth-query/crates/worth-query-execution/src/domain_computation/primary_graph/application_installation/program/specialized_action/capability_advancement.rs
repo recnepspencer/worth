@@ -19,10 +19,12 @@ where
     {
         let execution = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return self.runtime.runtime.refuse_mandatory_review(
-                program,
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase,
-            ),
+            Err(cause) => {
+                return self
+                    .runtime
+                    .runtime
+                    .refuse_mandatory_review(program, cause.into())
+            }
         };
         self.compare_and_commit_mandatory_review_in_advancement_with_request(
             &execution,
@@ -68,7 +70,12 @@ where
     {
         let execution = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase.into_commit_outcome(),
+            Err(cause) => {
+                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    cause,
+                )
+                .into_commit_outcome()
+            }
         };
         self.compare_and_commit_capability_delegation_in_advancement_with_request(
             &execution,
@@ -113,7 +120,12 @@ where
     {
         let execution = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase.into_commit_outcome(),
+            Err(cause) => {
+                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                    cause,
+                )
+                .into_commit_outcome()
+            }
         };
         self.compare_and_commit_capability_revocation_in_advancement_with_request(
             &execution,

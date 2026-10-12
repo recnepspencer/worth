@@ -18,10 +18,12 @@ where
     {
         let execution = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return self.runtime.runtime.refuse_elevation_request(
-                program,
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase,
-            ),
+            Err(cause) => {
+                return self
+                    .runtime
+                    .runtime
+                    .refuse_elevation_request(program, cause.into())
+            }
         };
         self.compare_and_commit_elevation_request_in_advancement_with_request(
             &execution,
@@ -65,10 +67,12 @@ where
     {
         let execution = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return self.runtime.runtime.refuse_elevation_approval(
-                program,
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase,
-            ),
+            Err(cause) => {
+                return self
+                    .runtime
+                    .runtime
+                    .refuse_elevation_approval(program, cause.into())
+            }
         };
         self.compare_and_commit_elevation_approval_in_advancement_with_request(
             &execution,
@@ -113,10 +117,12 @@ where
     {
         let execution = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return self.runtime.runtime.refuse_elevation_close(
-                program,
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase,
-            ),
+            Err(cause) => {
+                return self
+                    .runtime
+                    .runtime
+                    .refuse_elevation_close(program, cause.into())
+            }
         };
         self.compare_and_commit_elevation_close_in_advancement_with_request(
             &execution,

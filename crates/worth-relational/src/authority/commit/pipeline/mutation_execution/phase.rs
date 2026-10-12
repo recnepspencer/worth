@@ -42,7 +42,7 @@ impl MutationPhaseOutput {
     }
 }
 
-pub(super) struct MutationPhaseInput<'a, 'lease> {
+pub(super) struct MutationPhaseInput<'a, 'request, 'authority> {
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) phase_timing: &'a mut CommitPhaseTiming,
     pub(super) transaction_id: TransactionId,
@@ -54,12 +54,12 @@ pub(super) struct MutationPhaseInput<'a, 'lease> {
     pub(super) proposal_identity: &'a crate::mvcc::RelationalMutationProposalIdentity,
     pub(super) prevalidated_mutation_sensitive:
         Option<crate::validation::engine::InvariantExecutionResult>,
-    pub(super) lease: Option<&'a worth_execution::ExecutionResourceLease<'lease>>,
+    pub(super) execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
 }
 
 pub(super) fn run_authoritative_mutation_phase(
     runtime: &RelationalPreparationRuntime,
-    input: MutationPhaseInput<'_, '_>,
+    input: MutationPhaseInput<'_, '_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
     let MutationPhaseInput {
@@ -73,7 +73,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposed_version_id,
         proposal_identity,
         prevalidated_mutation_sensitive,
-        lease,
+        execution,
     } = input;
     commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
     let phase_started = std::time::Instant::now();
@@ -87,7 +87,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposed_version_id,
         proposal_identity,
         prevalidated_mutation_sensitive,
-        lease,
+        execution,
         control,
     )
     .map_err(|error| attach_rejection(commit_log, CommitPhase::AuthoritativeMutation, error))?;
@@ -107,9 +107,10 @@ fn run_authoritative_mutation_for_runtime(
     proposed_version_id: crate::identity::data::VersionId,
     proposal_identity: &crate::mvcc::RelationalMutationProposalIdentity,
     prevalidated_mutation_sensitive: Option<crate::validation::engine::InvariantExecutionResult>,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
+    let lease = crate::authority::commit::pipeline::request_lease(execution);
     let version_id = proposed_version_id;
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id,
@@ -158,7 +159,7 @@ fn run_authoritative_mutation_for_runtime(
                 version_id,
                 merged_plan,
                 Some(proposal_identity),
-                lease,
+                execution,
                 control,
             )?,
     };

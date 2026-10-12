@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 
+mod input;
+pub(crate) use input::output_with_payload;
+
 use serde_json::Value;
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Output, Stdio};
+use std::process::{Command, Output};
 use std::time::{Duration, SystemTime};
 
 pub const HOOK_BUDGET: Duration = Duration::from_secs(15);
@@ -42,37 +44,24 @@ pub fn hand_entrypoint_command() -> Vec<String> {
 
 pub fn invoke(command: &[String], payload: Option<&str>, governed_root: Option<&Path>) -> Output {
     let mut child = Command::new(&command[0]);
-    child
-        .args(&command[1..])
-        .current_dir(root())
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    child.args(&command[1..]).current_dir(root());
     if let Some(root) = governed_root {
         child.env("WORTH_CONSTITUTION_ROOT", root);
     }
-    let mut child = child.spawn().expect("start configured PostToolUse hook");
-    if let Some(payload) = payload {
-        child
-            .stdin
-            .as_mut()
-            .unwrap()
-            .write_all(payload.as_bytes())
-            .unwrap();
-    }
-    child.wait_with_output().unwrap()
+    output_with_payload(&mut child, payload)
 }
 
 pub fn prepare_prebuilt_tools() {
-    let output = Command::new("powershell")
-        .args([
-            "-NoProfile",
-            "-File",
-            "scripts/prepare-constitution-hook.ps1",
-        ])
-        .current_dir(root())
-        .output()
-        .unwrap();
+    let output = worth_harness::tooling::process_deadline::output(
+        Command::new("powershell")
+            .args([
+                "-NoProfile",
+                "-File",
+                "scripts/prepare-constitution-hook.ps1",
+            ])
+            .current_dir(root()),
+    )
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",

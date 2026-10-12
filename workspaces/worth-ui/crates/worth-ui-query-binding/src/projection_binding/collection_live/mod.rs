@@ -21,6 +21,9 @@ type QueryLease = observation::WorthQuerySharedLiveProjectionLease<
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UiCollectionProjectionOpenStopKind {
     AlreadyOpened,
+    AdvancementDenied(
+        worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial,
+    ),
     ResourceAdmission,
     ExecutionDeferred,
     ExecutionDenied,
@@ -118,16 +121,20 @@ pub struct UiLiveCollectionProjection {
 
 impl crate::UiCollectionProjectionBinding {
     pub fn open(
-        self,
+        mut self,
         budget: crate::UiCollectionProjectionBudget,
         workspace: &mut worth_query::facade::runtime::WorthQueryWorkspace,
     ) -> UiCollectionProjectionOpenOutcome {
-        let refusal = stopped(&self, UiCollectionProjectionOpenStopKind::ExecutionDenied);
-        workspace
-            .with_advancement_mut(|phase, workspace| {
-                open::open_collection_projection(&phase, self, budget, workspace)
-            })
-            .unwrap_or(refusal)
+        match workspace.with_advancement_mut(|phase, workspace| {
+            open::open_collection_projection(&phase, &mut self, budget, workspace)
+        }) {
+            Ok(Ok(opened)) => opened.into_outcome(self),
+            Ok(Err(kind)) => stopped(&self, kind),
+            Err(cause) => stopped(
+                &self,
+                UiCollectionProjectionOpenStopKind::AdvancementDenied(cause),
+            ),
+        }
     }
 }
 
@@ -232,8 +239,15 @@ fn stopped(
     binding: &crate::UiCollectionProjectionBinding,
     kind: UiCollectionProjectionOpenStopKind,
 ) -> UiCollectionProjectionOpenOutcome {
-    UiCollectionProjectionOpenOutcome::Stopped(UiCollectionProjectionOpenStop {
+    UiCollectionProjectionOpenOutcome::Stopped(opening_stop(binding, kind))
+}
+
+fn opening_stop(
+    binding: &crate::UiCollectionProjectionBinding,
+    kind: UiCollectionProjectionOpenStopKind,
+) -> UiCollectionProjectionOpenStop {
+    UiCollectionProjectionOpenStop {
         kind,
         attempt_identity: binding.query_world_identity().clone(),
-    })
+    }
 }

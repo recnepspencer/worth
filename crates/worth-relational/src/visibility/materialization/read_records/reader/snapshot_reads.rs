@@ -122,7 +122,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<RelationalReadView, crate::branch::RelationalBranchBasisDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        super::super::read_request::consult(execution)?;
+        crate::execution::check_request(execution)?;
         if let Err(denial) = self.require_local_observation(observation) {
             return Ok(Err(denial));
         }

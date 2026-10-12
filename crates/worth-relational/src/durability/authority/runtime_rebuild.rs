@@ -2,6 +2,7 @@ use crate::durability::data::RelationalRecoveryStop;
 mod branch_readmission;
 mod checkpoint_restore;
 mod envelope_replay;
+pub(crate) use envelope_replay::replay_commit_stop;
 mod history_parity;
 mod merge_plan;
 mod recovered_counter_capacity;
@@ -56,7 +57,7 @@ pub(super) fn rebuild_runtime_from_plan(
     ),
     RelationalRecoveryStop,
 > {
-    crate::visibility::materialization::read_records::read_request::consult(execution)
+    crate::execution::check_request(execution)
         .map_err(RelationalRecoveryStop::Request)?;
     let mut plan = admitted.into_plan();
     let tail_envelopes = plan.tail_envelopes_in_stream_order();

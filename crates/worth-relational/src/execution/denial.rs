@@ -44,24 +44,20 @@ pub(crate) fn lease_denial(denial: LeaseDenial) -> Cause {
 pub(crate) fn allocation_commit_error(
     error: crate::transactions::data::TransactionCommitError,
 ) -> crate::transactions::data::TransactionCommitError {
-    use crate::transactions::data::{
-        CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
-    };
-    use worth_execution::ExecutionAllocationDenialKind as Kind;
+    use crate::transactions::data::{CommitExecutionDenial, TransactionCommitError};
+    use worth_execution::ExecutionAllocationDenialClass as Class;
 
     match error {
         TransactionCommitError::Conflict { error, commit_log } => {
-            let cause = match error.allocation_denial().map(|denial| denial.kind()) {
-                Some(Kind::Lease(denial)) => lease_denial(denial),
-                Some(Kind::Cancelled) => Cause::Cancelled,
-                Some(Kind::DeadlineElapsed) => Cause::DeadlineElapsed,
-                _ => return TransactionCommitError::Conflict { error, commit_log },
-            };
+            let denial: CommitExecutionDenial =
+                match error.allocation_denial().map(|denial| denial.classify()) {
+                    Some(Class::Request(stop)) => stop.into(),
+                    Some(Class::Physical(_)) | None => {
+                        return TransactionCommitError::Conflict { error, commit_log }
+                    }
+                };
             TransactionCommitError::Execution {
-                denial: CommitExecutionDenial {
-                    kind: CommitExecutionDenialKind::Cause(cause),
-                    partition_identity: None,
-                },
+                denial,
                 context: error.context,
                 commit_log,
             }

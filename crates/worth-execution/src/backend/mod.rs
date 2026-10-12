@@ -12,9 +12,13 @@ mod prepared;
 mod run;
 mod scope;
 mod settlement;
+mod thread_capability;
+pub(crate) use thread_capability::HAS_OS_THREADS;
 
 #[cfg(test)]
 mod settlement_order_tests;
+#[cfg(test)]
+mod settlement_serial_order_tests;
 
 pub(crate) use admission::execution_memory_requirement;
 pub(crate) use admission::execution_memory_requirement_for_lease;

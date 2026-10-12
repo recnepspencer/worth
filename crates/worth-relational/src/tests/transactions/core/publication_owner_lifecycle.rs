@@ -2,7 +2,7 @@ use crate::tests::support::*;
 
 #[test]
 fn publication_port_denies_candidate_after_owner_drop() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -33,7 +33,7 @@ fn publication_port_denies_candidate_after_owner_drop() {
 
     drop(runtime);
 
-    match port.compare_and_publish(candidate) {
+    match port.compare_and_publish(execution, candidate) {
         crate::mvcc::RelationalPublicationOutcome::Denied(
             crate::mvcc::RelationalPublicationDenial::OwnerUnavailable {
                 runtime_instance_id: denied_runtime_instance_id,
@@ -56,7 +56,7 @@ fn publication_port_denies_candidate_after_owner_drop() {
 
 #[test]
 fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -81,7 +81,13 @@ fn runtime_drop_waits_for_admitted_publication_to_leave_linearization() {
     let port = runtime.publication_port();
     let shutdown_observer = runtime.owner_binding();
 
-    let publisher = std::thread::spawn(move || port.compare_and_publish(candidate));
+    let publisher = std::thread::spawn({
+        let publication_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
+            port.compare_and_publish(execution, candidate)
+        }
+    });
     let publication_deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
     while branch_gate.wait_count() == 0 && std::time::Instant::now() < publication_deadline {
         std::thread::yield_now();

@@ -177,11 +177,12 @@ fn interruption_after_movement_retains_its_pending_settlement() {
         create_entity(execution, &runtime, "post-movement-interruption-anchor");
         let identity = runtime.main_branch_identity();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
-        let control = RelationalOperationControl::uninterrupted().with_injected_interruption(
-            RelationalInterruptionBoundary::AfterLinearization,
-            interruption,
-            1,
-        );
+        let control = RelationalOperationControl::uninterrupted()
+            .with_injected_interruption_for_test(
+                RelationalInterruptionBoundary::AfterLinearization,
+                interruption,
+                1,
+            );
         let mut transaction = runtime
             .begin_branch_transaction_with_control(
                 &basis,
@@ -202,8 +203,9 @@ fn interruption_after_movement_retains_its_pending_settlement() {
             .branch_reference_state(&BranchId("main".to_owned()))
             .unwrap();
 
-        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-            runtime.publication_port().compare_and_publish(candidate)
+        let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
         else {
             panic!("late interruption cannot erase performed movement");
         };
@@ -250,7 +252,7 @@ fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
         .preparation_runtime_snapshot()
         .published_snapshot_count();
 
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     assert!(matches!(
         runtime
             .repair_pending_publication_settlement(commit_id)
@@ -329,7 +331,10 @@ fn perform_main_write(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .expect("candidate prepares");
-    match runtime.publication_port().compare_and_publish(candidate) {
+    match runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
+    {
         crate::mvcc::RelationalPublicationOutcome::Performed(performed) => performed,
         outcome => panic!("an uncontended candidate performs: {outcome:?}"),
     }

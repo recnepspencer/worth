@@ -15,6 +15,10 @@ use super::super::super::attribution_tests::{Artifact, Reuse, Stopped};
 use super::*;
 
 const PARTITIONS: u64 = 10_000;
+#[cfg(target_pointer_width = "64")]
+const DECLARED_WORK: usize = 1 << 32;
+#[cfg(target_pointer_width = "32")]
+const DECLARED_WORK: usize = usize::MAX;
 
 /// Every item is its own partition.
 #[derive(Serialize)]
@@ -34,7 +38,7 @@ impl ApplicationManagedComputation<Schema, Feature> for Wide {
     const EXECUTION: ApplicationComputationExecution =
         ApplicationComputationExecution::DeterministicPartitioned;
     const RESOURCES: ApplicationComputationResourceCeiling =
-        ApplicationComputationResourceCeiling::new(1 << 32, 4096);
+        ApplicationComputationResourceCeiling::new(DECLARED_WORK, 4096);
 }
 
 /// Counts every owner call. Only the gather of slot 1 reads a fact.
@@ -125,6 +129,8 @@ impl TestOwner<Wide> for WideOwner {
 
 #[test]
 fn ten_thousand_partitions_gather_and_compute_only_the_one_whose_fact_moved() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let installed = WorthQueryInstalledPartitionedComputation::<_, _, Wide, _>::new(
         WideOwner::default(),

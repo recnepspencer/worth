@@ -1,8 +1,6 @@
 //! Keep authenticated cache payloads only at their selected native family head.
-use std::{
-    any::TypeId,
-    collections::{BTreeMap, BTreeSet},
-};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::super::super::{
     application_output_demand::{

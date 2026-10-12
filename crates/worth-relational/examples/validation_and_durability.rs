@@ -15,7 +15,10 @@ fn main() {
     let _updated = support::update_entity(execution, &runtime, entity_id, "durable-updated");
     let _deleted = support::delete_entity(execution, &runtime, entity_id);
 
-    let validation = runtime.validation().certification_state();
+    let validation = runtime
+        .validation()
+        .certification_state(execution)
+        .expect("invariant fixture request");
     let recovery_plan = runtime
         .durability()
         .recovery_plan(RecoveryVerificationMode::NormalRecoveryVerification);

@@ -325,7 +325,7 @@ impl primary_graph::WorthQueryTemporalPrincipalSource<TemporalHostSchema> for Pr
         assert!(!self.panic.panic.load(Ordering::SeqCst), "principal panic");
         let cancellation = admission::authenticated_principal::WorthQueryCancellationSource::new();
         let scope = admission::authenticated_principal::WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let external = block_on(self.adapter.authenticate((), &scope)).map_err(|denial| {

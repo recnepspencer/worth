@@ -77,6 +77,7 @@ fn workflow_start_refuses_before_any_stage_or_reader() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
         let mut admitted_workspace =
@@ -124,6 +125,7 @@ fn projection_readmission_refuses_before_reading_the_pair() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
         let mut workspace =
@@ -216,6 +218,7 @@ pub(super) fn verify<T, W: ProbeWorkspace>(
     mut setup: impl FnMut() -> (W, T),
     mut execute: impl FnMut(T, &mut worth_query::facade::runtime::WorthQueryWorkspace) -> Option<Denial>,
 ) {
+    let _observation = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _placement = Restore(place(placement), bound(None));
         for budget in [None, Some(false), Some(true)] {

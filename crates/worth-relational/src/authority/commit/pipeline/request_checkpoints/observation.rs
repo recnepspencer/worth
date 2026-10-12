@@ -11,7 +11,7 @@ impl Drop for Restore {
         OBSERVER.with(|slot| *slot.borrow_mut() = self.0.take());
     }
 }
-pub(super) fn with_observer<R>(observer: Observer, body: impl FnOnce() -> R) -> R {
+pub(crate) fn with_observer<R>(observer: Observer, body: impl FnOnce() -> R) -> R {
     let previous = OBSERVER.with(|slot| slot.replace(Some(observer)));
     let _restore = Restore(previous);
     body()

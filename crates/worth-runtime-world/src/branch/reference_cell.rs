@@ -193,21 +193,18 @@ impl ProductBranchReferenceCell {
         Ok(f(argument))
     }
 
-    #[cfg(feature = "test-operation-control")]
-    pub(crate) fn while_current_controlled<A, R>(
+    pub(crate) fn while_current_controlled_for_test<A, R>(
         &self,
         expected: &ProductBranchObservation,
         argument: A,
         f: impl FnOnce(A) -> R,
-        control: Option<&crate::lifecycle::operation_control::ProductCurrentnessLatch>,
+        control: &crate::lifecycle::operation_control_for_test::ProductCurrentnessLatchForTest,
     ) -> Result<R, (ProductBranchReferenceSnapshot, A)> {
-        if let Some(control) = control {
-            if matches!(
-                self.state.current.try_read(),
-                Err(std::sync::TryLockError::WouldBlock)
-            ) {
-                control.reader_contended();
-            }
+        if matches!(
+            self.state.current.try_read(),
+            Err(std::sync::TryLockError::WouldBlock)
+        ) {
+            control.reader_contended_for_test();
         }
         self.while_current(expected, argument, f)
     }
@@ -320,7 +317,6 @@ impl ProductBranchReferenceCell {
             })
     }
 
-    #[cfg(any(test, feature = "test-operation-control"))]
     pub(crate) fn hold_for_test(&self) -> impl Drop + '_ {
         self.state.write()
     }

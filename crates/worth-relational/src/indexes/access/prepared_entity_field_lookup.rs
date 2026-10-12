@@ -62,7 +62,7 @@ impl IndexAccess<'_> {
         locator: &AspectFieldLocator,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PreparedEntityFieldLookup, BoundedEntityFieldLookupDenial> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(|cause| denied(Denial::Execution(cause), index))?;
         if !view.is_exact_basis() || !view.is_from_runtime(self.runtime) {
             return Err(denied(Denial::SnapshotUnavailable, index));

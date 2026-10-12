@@ -10,7 +10,7 @@ use crate::branch::{
     SignalBranchRetirementReason,
 };
 
-use super::super::super::operation_control::SignalOwnerOperationBoundary;
+use super::super::super::operation_control::SignalOwnerOperationBoundaryForTest;
 use super::super::super::tests::runtime_root::runtime_with_two_branches;
 use super::super::super::SignalOwnerCancellationSource;
 
@@ -94,8 +94,8 @@ fn lifecycle_retirement_reservation_fences_target_while_sibling_retains() {
     let owner = port.upgrade_owner().expect("the owner remains live");
     let admission = owner.admit().expect("the independent caller admits");
     let pause = owner
-        .operation_control()
-        .arm_pause_once(SignalOwnerOperationBoundary::BeforeCanonicalMovement);
+        .operation_control_for_test()
+        .arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BeforeCanonicalMovement);
     let (done_tx, done_rx) = mpsc::sync_channel(1);
     let worker_port = port.clone();
     let worker = thread::spawn(move || {

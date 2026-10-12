@@ -1585,7 +1585,7 @@ reason = "UI readiness, source, theme or event-loop observation runs independent
 
 [[threading_sites]]
 source = "crates/worth-runtime-world/src/lifecycle/operation_control/currentness_hold.rs"
-item = "ProductCurrentnessLatch::hold_reference"
+item = "ProductCurrentnessLatchForTest::hold_reference_for_test"
 kind = "thread-spawn"
 count = 1
 category = "certification-harness"

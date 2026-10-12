@@ -1,5 +1,4 @@
 //! Recovered output expectations survive a change outside the source field.
-
 use super::*;
 mod mixed_retirement;
 use crate::domain_computation::primary_graph::{
@@ -14,7 +13,8 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryPrincipalResolutionMode,
 };
-use std::{any::TypeId, collections::BTreeMap};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::collections::BTreeMap;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, InternedString, LocatorAuthority,
 };
@@ -25,7 +25,6 @@ use worth_relational::facade::{
         WorkerIntentBatch,
     },
 };
-
 #[test]
 fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let host_request = crate::test_request_policy::serial_request();
@@ -178,9 +177,16 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(duplicate_work <= duplicate_bound);
         assert!(duplicate_work < 100_001, "the declared worst case is not prepaid");
         let mut exhausted = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 2).unwrap());
+        // A cut-short indexed probe knows the spent allowance, not the work
+        // a completed read would require: preserve the incoming refusal law.
         assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             std::slice::from_ref(&indexed), &mut exhausted),
-            Err(CompanionPreflightStop::WorkExhausted { .. })));
+            Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
+                if maximum == u64::try_from(witness_work + 2).unwrap()));
+        // One visit cannot fund the index lookup and a candidate visit.
+        // The refused probe refunds that reservation without reading a row.
+        assert_eq!(exhausted.remaining_work(), 1);
+        assert_eq!(exhausted.charged_work(), u64::try_from(witness_work + 1).unwrap());
         // Producer selection reads both halves of the retained fact set.
         let mut selection_work =
             owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
@@ -318,7 +324,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ));
         let mut no_work = owner.edit_admission();
         no_work
-            .charge_external_work(u64::try_from(no_work.remaining_work()).unwrap())
+            .charge_external_work(no_work.remaining_work_amount())
             .unwrap();
         let exhausted = compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
             runtime,
@@ -383,8 +389,9 @@ fn change_label(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("the real native edit must publish");
     };

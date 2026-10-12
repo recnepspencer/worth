@@ -12,8 +12,17 @@ pub fn output(command: &mut Command) -> io::Result<Output> {
 }
 
 pub fn output_with_deadline(command: &mut Command, bound: Duration) -> io::Result<Output> {
+    output_with_deadline_and_stdin(command, bound, Stdio::null())
+}
+
+/// The caller owns input preparation; the same deadline governs its consumer.
+pub fn output_with_deadline_and_stdin(
+    command: &mut Command,
+    bound: Duration,
+    stdin: Stdio,
+) -> io::Result<Output> {
     let child = command
-        .stdin(Stdio::null())
+        .stdin(stdin)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;

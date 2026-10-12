@@ -1,6 +1,5 @@
 //! A stopped request enters no owner call and leaves the dirty demand retryable.
 use super::*;
-use std::time::{Duration, Instant};
 use worth_query_host::facade::{
     application_contribution::{
         WorthQueryAdvancementDenial, WorthQueryManagedComputationInterruption,
@@ -16,10 +15,7 @@ pub(in super::super) fn before_decision(application: &Application) {
         .start_dependent_in_program::<OracleProgram, RegionConnection>(application)
         .unwrap();
     let cancellation = authentication::WorthQueryCancellationSource::new();
-    let stopped_scope = authentication::WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(120),
-        cancellation.token(),
-    );
+    let stopped_scope = authentication::WorthQueryRequestScope::new(None, cancellation.token());
     let stopped_request = application.request(&principal, &stopped_scope);
     room().clear();
     published_states();

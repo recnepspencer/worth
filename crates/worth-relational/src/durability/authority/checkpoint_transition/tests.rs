@@ -61,7 +61,7 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
         let prepared = candidate(execution, &runtime, "acknowledged-successor");
         let transition = runtime
             .durability_recovery()
-            .commit_checkpoint_transition(authority, prepared)
+            .commit_checkpoint_transition(execution, authority, prepared)
             .unwrap();
         let expected_receipt = runtime
             .history()
@@ -125,7 +125,7 @@ fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
         };
         let TransitionError::Refused(refusal) = runtime
             .durability_recovery()
-            .commit_checkpoint_transition(supplied_authority, prepared)
+            .commit_checkpoint_transition(execution, supplied_authority, prepared)
             .unwrap_err()
         else {
             panic!("foreign ownership must refuse before publication")
@@ -153,7 +153,7 @@ fn foreign_recovery_and_foreign_candidate_are_refused_before_effects() {
             let retry = candidate(execution, &runtime, "retry-after-foreign-candidate");
             let acknowledged = runtime
                 .durability_recovery()
-                .commit_checkpoint_transition(refusal.into_authority(), retry)
+                .commit_checkpoint_transition(execution, refusal.into_authority(), retry)
                 .unwrap();
             assert!(acknowledged
                 .into_parts()
@@ -181,7 +181,7 @@ fn moved_source_and_stale_candidate_cannot_extend_recovery_lineage() {
         let count = runtime.history().immutable_commit_count();
         let TransitionError::Refused(refusal) = runtime
             .durability_recovery()
-            .commit_checkpoint_transition(authority, prepared)
+            .commit_checkpoint_transition(execution, authority, prepared)
             .unwrap_err()
         else {
             panic!("movement must refuse without performing another commit")
@@ -206,10 +206,10 @@ fn deferred_transition_retains_exact_repair_custody_across_foreign_refusal() {
 
     let (mut runtime, authority) = recovered_world(execution);
     let prepared = candidate(execution, &runtime, "deferred-transition");
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
-        .commit_checkpoint_transition(authority, prepared)
+        .commit_checkpoint_transition(execution, authority, prepared)
         .unwrap_err()
     else {
         panic!("the performed transition must retain its deferred native settlement")
@@ -281,10 +281,10 @@ fn repair_carries_performed_successor_even_after_owner_repair_and_later_movement
 
     let (mut runtime, authority) = recovered_world(execution);
     let prepared = candidate(execution, &runtime, "captured-successor");
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let TransitionError::DurabilityDeferred(pending) = runtime
         .durability_recovery()
-        .commit_checkpoint_transition(authority, prepared)
+        .commit_checkpoint_transition(execution, authority, prepared)
         .unwrap_err()
     else {
         panic!("append fault must retain a performed transition")

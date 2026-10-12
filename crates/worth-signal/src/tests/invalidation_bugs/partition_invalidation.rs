@@ -183,7 +183,7 @@ fn root_invalidation_does_not_walk_a_reconverging_frontier() {
 }
 
 #[test]
-#[ignore = "stress-scale invalidation depth; keep out of the default dev loop"]
+#[ignore = "takes about 98 seconds; proves deep chains avoid recursive cycle detection"]
 fn deep_invalidation_chain_completes_without_recursive_cycle_detection() {
     let mut graph = SignalGraph::new();
     let root = graph.node().build();

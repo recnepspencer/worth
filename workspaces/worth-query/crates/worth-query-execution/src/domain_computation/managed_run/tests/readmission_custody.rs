@@ -26,6 +26,7 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
     let host_request = crate::bridge_host_request::serial_request();
     let resource_request = worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     use std::num::NonZeroUsize;
     bound(None);
     let host = AdvancementHost::install();

@@ -85,7 +85,7 @@ mod tests {
             // Instant deadline comparison is `now >= deadline`, so the
             // current instant makes the next delivery sample DeadlineExceeded
             // without sleeping or racing open.
-            WorthQueryRequestScope::new(Instant::now(), live_cancellation.token())
+            WorthQueryRequestScope::new(Some(Instant::now()), live_cancellation.token())
         }
 
         fn principal(
@@ -218,7 +218,10 @@ mod tests {
             })
             .expect("the fixture read owns its installed host call");
         let bridge = observer(&lease);
-        let provider_session_baseline = context.world.application.provider_session_resource_count();
+        let provider_session_baseline = context
+            .world
+            .application
+            .provider_session_resource_count_for_test();
         assert_live(&bridge);
 
         let WorthQueryApplicationLiveCloseOutcome::Completed(completion) = lease.close() else {
@@ -227,7 +230,10 @@ mod tests {
         assert_eq!(completion.release().released_reservation_count(), 1);
         assert!(completion.basis_release().released());
         assert_eq!(
-            context.world.application.provider_session_resource_count(),
+            context
+                .world
+                .application
+                .provider_session_resource_count_for_test(),
             provider_session_baseline
         );
         assert_terminal(

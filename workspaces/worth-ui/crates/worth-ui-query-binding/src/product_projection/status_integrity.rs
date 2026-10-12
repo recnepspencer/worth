@@ -1,9 +1,9 @@
 use worth_query_host::facade::application_invariants::{
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
-    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantRule,
-    WorthQueryApplicationInvariantSchemaResolver, WorthQueryApplicationInvariantScopePlanner,
-    WorthQueryApplicationInvariantVerdict,
+    CustomInvariantLeaseBudget, WorthQueryApplicationInvariantContext,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantExecutionError,
+    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantPreparationError,
+    WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantSchemaResolver,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
 };
 
 use crate::declaration::{
@@ -33,15 +33,68 @@ pub(super) fn resolve_rule(
 impl WorthQueryApplicationInvariantRule<WorthUiApplicationSchema> for WorthUiStatusIntegrityRule {
     type Scope = Vec<WorthQueryApplicationInvariantEntity<WorthUiApplicationSchema, WorthUiRecord>>;
 
+    fn supports_checked_preparation(&self) -> bool {
+        true
+    }
+    fn prepare_scope_checked(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WorthUiApplicationSchema>,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<Result<Self::Scope, WorthQueryApplicationInvariantPreparationError>> {
+        Some(self.prepare_under(planner, Some(budget)))
+    }
+    fn evaluate_checked(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, WorthUiApplicationSchema>,
+        scope: &Self::Scope,
+        budget: &dyn CustomInvariantLeaseBudget,
+    ) -> Option<
+        Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>,
+    > {
+        Some(self.evaluate_under(context, scope, Some(budget)))
+    }
+
     fn prepare_scope(
         &self,
         planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WorthUiApplicationSchema>,
     ) -> Result<Self::Scope, WorthQueryApplicationInvariantPreparationError> {
+        self.prepare_under(planner, None)
+    }
+
+    fn evaluate(
+        &self,
+        context: &WorthQueryApplicationInvariantContext<'_, '_, WorthUiApplicationSchema>,
+        scope: &Self::Scope,
+    ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
+    {
+        self.evaluate_under(context, scope, None)
+    }
+}
+
+impl WorthUiStatusIntegrityRule {
+    fn prepare_under(
+        &self,
+        planner: &mut WorthQueryApplicationInvariantScopePlanner<'_, '_, WorthUiApplicationSchema>,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
+    ) -> Result<
+        <Self as WorthQueryApplicationInvariantRule<WorthUiApplicationSchema>>::Scope,
+        WorthQueryApplicationInvariantPreparationError,
+    > {
+        if budget.is_some_and(|budget| !budget.checkpoint(0)) {
+            return Err(WorthQueryApplicationInvariantPreparationError::new(
+                "caller stopped",
+            ));
+        }
         let proposed = planner.proposed();
         let records = proposed.touched_entities(&self.status).map_err(|error| {
             WorthQueryApplicationInvariantPreparationError::new(error.to_string())
         })?;
         for record in &records {
+            if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+                return Err(WorthQueryApplicationInvariantPreparationError::new(
+                    "caller stopped",
+                ));
+            }
             proposed.field(&self.status, record).map_err(|error| {
                 WorthQueryApplicationInvariantPreparationError::new(error.to_string())
             })?;
@@ -51,15 +104,25 @@ impl WorthQueryApplicationInvariantRule<WorthUiApplicationSchema> for WorthUiSta
         }
         Ok(records)
     }
-
-    fn evaluate(
+    fn evaluate_under(
         &self,
         context: &WorthQueryApplicationInvariantContext<'_, '_, WorthUiApplicationSchema>,
-        scope: &Self::Scope,
+        scope: &<Self as WorthQueryApplicationInvariantRule<WorthUiApplicationSchema>>::Scope,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
     ) -> Result<WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantExecutionError>
     {
+        if budget.is_some_and(|budget| !budget.checkpoint(0)) {
+            return Err(WorthQueryApplicationInvariantExecutionError::new(
+                "caller stopped",
+            ));
+        }
         let proposed = context.proposed();
         for record in scope {
+            if budget.is_some_and(|budget| !budget.checkpoint(1)) {
+                return Err(WorthQueryApplicationInvariantExecutionError::new(
+                    "caller stopped",
+                ));
+            }
             let status = proposed.field(&self.status, record).map_err(|error| {
                 WorthQueryApplicationInvariantExecutionError::new(error.to_string())
             })?;
@@ -80,3 +143,6 @@ impl WorthQueryApplicationInvariantRule<WorthUiApplicationSchema> for WorthUiSta
         Ok(WorthQueryApplicationInvariantVerdict::Pass)
     }
 }
+
+#[cfg(test)]
+mod lease_tests;

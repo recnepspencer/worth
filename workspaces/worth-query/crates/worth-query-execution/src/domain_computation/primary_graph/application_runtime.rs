@@ -1,4 +1,4 @@
-mod resource_support;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
@@ -17,11 +17,6 @@ use super::{
 pub use crate::domain_computation::application_aftermath::WorthQueryInboundCleanupReport;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
 
-#[cfg(any(
-    test,
-    feature = "test-primary-graph-faults",
-    feature = "test-durability-faults"
-))]
 mod certification_controls;
 mod certification_cost;
 mod conditional_cleanup;
@@ -58,10 +53,8 @@ pub(in crate::domain_computation) use inbound_publication::{
 };
 mod graph_participation;
 pub(in crate::domain_computation::primary_graph) mod installation;
-#[cfg(feature = "test-world-operation-control")]
 mod operation_control;
 mod publication_entry;
-#[cfg(feature = "test-world-operation-control")]
 pub(in crate::domain_computation::primary_graph) use operation_control::WorthQueryApplicationAttemptOperationControl;
 
 pub(in crate::domain_computation) use external_dispatch_attempt::{
@@ -172,9 +165,9 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) next_application_mutation_partition: AtomicU32,
     pub(super) output_demands: super::application_output_demand::WorthQueryOutputDemandRegistry,
     pub(super) recovered_outputs: super::application_output_demand::WorthQueryRecoveredOutputs,
-    pub(super) program_required_bindings: std::collections::HashSet<std::any::TypeId>,
-    pub(super) program_required_operations: std::collections::HashSet<std::any::TypeId>,
-    pub(super) workflow_guarded_operations: std::collections::HashSet<std::any::TypeId>,
+    pub(super) program_required_bindings: std::collections::HashSet<TypeId>,
+    pub(super) program_required_operations: std::collections::HashSet<TypeId>,
+    pub(super) workflow_guarded_operations: std::collections::HashSet<TypeId>,
     pub(super) program_support:
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
     pub(super) installed_conditionals:
@@ -192,7 +185,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.program_support.is_some()
             || self
                 .program_required_operations
-                .contains(&std::any::TypeId::of::<Operation>())
+                .contains(&TypeId::of::<Operation>())
     }
 
     pub(in crate::domain_computation) fn operation_requires_workflow_authority<
@@ -201,7 +194,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
     ) -> bool {
         self.workflow_guarded_operations
-            .contains(&std::any::TypeId::of::<Operation>())
+            .contains(&TypeId::of::<Operation>())
     }
 
     pub fn requires_application_program<Binding>(&self) -> bool
@@ -214,10 +207,10 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.program_support.is_some()
             || self
                 .program_required_bindings
-                .contains(&std::any::TypeId::of::<Binding>())
+                .contains(&TypeId::of::<Binding>())
             || self
                 .program_required_operations
-                .contains(&std::any::TypeId::of::<Binding::Operation>())
+                .contains(&TypeId::of::<Binding::Operation>())
     }
 
     /// The immutable program support this host admitted at installation, when
@@ -334,23 +327,22 @@ where
             .workflow_instance_progress_counters()
     }
 
-    /// Read-only physical candidate-input observation for product integration
-    /// tests; it does not expose a Relational runtime or graph read authority.
-    #[doc(hidden)]
-    pub fn custom_invariant_candidate_input_counters(
+    pub(in crate::domain_computation) fn graph_work_resource_support(
         &self,
-        phase: &super::WorthQueryAdvancementPhase<'_>,
-    ) -> Result<
-        worth_relational::facade::runtime::RelationalCandidateInputCounters,
-        super::WorthQueryForeignAdvancementPhase,
-    > {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
-        Ok(self
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                runtime.custom_invariant_candidate_input_counters()
-            }))
+    ) -> worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
+    {
+        self.primary_provider.application_resource_support()
+    }
+
+    pub(in crate::domain_computation) fn graph_work_resource_support_ref(
+        &self,
+    ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
+    {
+        self.primary_provider.application_resource_support_ref()
+    }
+
+    pub(in crate::domain_computation) fn graph_work_provider_identity(&self) -> &str {
+        self.primary_graph_authority.provider_identity()
     }
 
     /// Closes ordinary live delivery without closing the authoritative graph.
@@ -387,3 +379,5 @@ pub(in crate::domain_computation::primary_graph) use inbound_publication::{
     authenticated_completion_candidate, transport_completion_candidate,
     InstalledTransportPublicationOutcome,
 };
+
+mod candidate_input_observation;

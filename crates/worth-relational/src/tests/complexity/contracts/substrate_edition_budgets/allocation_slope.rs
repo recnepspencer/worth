@@ -11,17 +11,13 @@
 //! slope claim therefore re-executes this binary filtered to one isolated
 //! probe, which is the only test that then runs at all.
 
-#[cfg(feature = "allocation-probes")]
 use crate::tests::support::*;
 
-#[cfg(feature = "allocation-probes")]
 use stats_alloc::{Region, StatsAlloc, INSTRUMENTED_SYSTEM};
 
-#[cfg(feature = "allocation-probes")]
 #[global_allocator]
 static TEST_ALLOCATOR: &StatsAlloc<std::alloc::System> = &INSTRUMENTED_SYSTEM;
 
-#[cfg(feature = "allocation-probes")]
 mod probe_shape {
     pub(super) const RELATION_KIND: crate::facade::identity::KindId =
         crate::facade::identity::KindId(2);
@@ -32,23 +28,19 @@ mod probe_shape {
     pub(super) const PROBE_GATE: &str = "WORTH_RELATIONAL_ADJACENCY_ALLOCATION_PROBE";
 }
 
-#[cfg(feature = "allocation-probes")]
 use probe_shape::*;
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn bounded_adjacency_allocation_is_flat_in_fanout_beyond_the_budget() {
     run_isolated_probe("isolated_bounded_adjacency_fanout_allocation_slope_probe");
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn bounded_adjacency_allocation_is_flat_in_partitions_the_anchor_is_not_in() {
     run_isolated_probe("isolated_bounded_adjacency_partition_allocation_slope_probe");
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn isolated_bounded_adjacency_fanout_allocation_slope_probe() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -67,7 +59,6 @@ fn isolated_bounded_adjacency_fanout_allocation_slope_probe() {
 }
 
 #[test]
-#[cfg(feature = "allocation-probes")]
 fn isolated_bounded_adjacency_partition_allocation_slope_probe() {
     let host_request = crate::test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -88,7 +79,6 @@ fn isolated_bounded_adjacency_partition_allocation_slope_probe() {
 
 /// Re-execute this test binary filtered to one probe, so the measured region
 /// contains only that probe's own allocations.
-#[cfg(feature = "allocation-probes")]
 fn run_isolated_probe(probe_name: &str) {
     let output = crate::process_deadline::output(
         std::process::Command::new(
@@ -118,7 +108,6 @@ fn run_isolated_probe(probe_name: &str) {
 /// Everything the answer depends on is held fixed: the same anchor degree
 /// within the budget, the same work bound, the same refusal. Only the source
 /// breadth around it moves.
-#[cfg(feature = "allocation-probes")]
 fn measured_bounded_read(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     fanout: usize,

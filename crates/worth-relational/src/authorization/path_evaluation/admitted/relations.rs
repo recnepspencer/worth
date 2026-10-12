@@ -57,7 +57,7 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
                 };
                 state.counters.adjacency_edges_inspected += 1;
                 // Exact metadata borrows the selected native slot; no read record is built.
-                crate::visibility::materialization::read_records::read_request::consult(execution)
+                crate::execution::check_request(execution)
                     .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
                 let read_work = context
                     .view
@@ -131,7 +131,7 @@ pub(super) fn traverse<A: RelationalAuthorizationObservationAdmission>(
     traversal: &RelationalAuthorizationTraversal,
     state: &mut State<'_, A>,
 ) -> ObservationResult<Option<(EntityId, KindId)>, A> {
-    crate::visibility::materialization::read_records::read_request::consult(execution)
+    crate::execution::check_request(execution)
         .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
     let read_work = context
         .view

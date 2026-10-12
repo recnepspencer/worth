@@ -82,6 +82,8 @@ fn edit_cost(rings: usize) -> EditCost {
 
 #[test]
 fn a_one_field_edit_costs_the_same_at_one_and_a_hundred_copies() {
+    let _equivalence =
+        primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let _guard = checkpoint_recovery_test_guard();
     let one = edit_cost(1);
     let hundred = edit_cost(100);

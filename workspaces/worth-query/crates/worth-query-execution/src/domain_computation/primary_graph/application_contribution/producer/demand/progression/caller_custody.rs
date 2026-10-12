@@ -104,12 +104,12 @@ fn custody_walk_stop(
 ) -> WorthQueryOutputDemandDenial {
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
     match error {
-        Stop::WorkExhausted { .. } | Stop::WorkCounterOverflow => {
-            WorthQueryOutputDemandDenial::new(
-                WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-                "custody recovery exceeds request work",
-            )
-        }
+        Stop::WorkExhausted { .. }
+        | Stop::WorkExhaustedWithoutRequirement { .. }
+        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+            "custody recovery exceeds request work",
+        ),
         _ => custody,
     }
 }

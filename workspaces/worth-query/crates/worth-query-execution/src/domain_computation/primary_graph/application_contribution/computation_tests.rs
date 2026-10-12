@@ -141,7 +141,7 @@ impl WorthQueryManagedComputationOwner<Schema, Feature, Computation> for Owner {
 fn installed_owner_enforces_prepare_compute_complete_and_work_ceiling() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let installed =
@@ -202,7 +202,7 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
 
         let cancellation = WorthQueryCancellationSource::new();
         let cancelled = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         cancellation.cancel();
@@ -230,7 +230,7 @@ fn installed_owner_enforces_retention_and_real_request_interruption() {
 
         let deadline_source = WorthQueryCancellationSource::new();
         let expired = WorthQueryRequestScope::new(
-            Instant::now() - Duration::from_secs(1),
+            Some(Instant::now() - Duration::from_secs(1)),
             deadline_source.token(),
         );
         let denial =

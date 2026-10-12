@@ -49,7 +49,7 @@ impl BankIdentityRuntime {
         self.application_program()
             .runtime()
             .world_operation_control_for_test()
-            .panic_before_product_compare_once();
+            .panic_before_product_compare_once_for_test();
     }
 }
 

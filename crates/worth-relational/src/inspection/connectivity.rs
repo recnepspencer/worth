@@ -37,7 +37,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<ConnectivityInspectionSummary, crate::execution::RelationalExecutionDenialCause>
     {
-        crate::visibility::materialization::read_records::read_request::consult(execution)?;
+        crate::execution::check_request(execution)?;
         let read_view = match request.scope {
             InspectionScope::Current => None,
             _ => self.read_view_for_scope(execution, &request.scope)?,

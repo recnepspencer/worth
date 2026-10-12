@@ -24,7 +24,7 @@ pub use denial::{
 pub use proof::WorthQueryAuthenticatedExternalPrincipal;
 pub use request_scope::{
     WorthQueryCancellationSource, WorthQueryCancellationToken, WorthQueryRequestInterruption,
-    WorthQueryRequestScope,
+    WorthQueryRequestScope, WorthQueryRequestTimeRemaining,
 };
 pub use vocabulary::{
     WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,

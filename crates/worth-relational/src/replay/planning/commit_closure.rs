@@ -10,6 +10,8 @@ pub(in crate::replay) fn load_replay_envelope(
     source: &impl CommitEnvelopeSource,
     commit_id: CommitId,
 ) -> Option<CanonicalCommitEnvelope> {
+    #[cfg(test)]
+    replay_contacts::observe();
     source.canonical_envelope_owned(commit_id)
 }
 
@@ -71,4 +73,16 @@ fn visit_replay_commit_closure(
     visiting.remove(&commit_id);
     ordered.push(commit_id);
     Ok(())
+}
+
+#[cfg(test)]
+pub(in crate::replay) mod replay_contacts {
+    use std::cell::Cell;
+    thread_local! { static CONTACTS: Cell<usize> = const { Cell::new(0) }; }
+    pub(super) fn observe() {
+        CONTACTS.with(|count| count.set(count.get() + 1));
+    }
+    pub(in crate::replay) fn count() -> usize {
+        CONTACTS.with(Cell::get)
+    }
 }

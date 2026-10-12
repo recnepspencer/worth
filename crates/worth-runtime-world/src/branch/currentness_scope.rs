@@ -9,8 +9,11 @@ pub(crate) struct ProductBranchCurrentnessScope<'selected> {
     cell: ProductBranchReferenceCell,
     expected: &'selected ProductBranchObservation,
     _operation: crate::lifecycle::owner::RuntimeWorldOperationReservation,
-    #[cfg(feature = "test-operation-control")]
-    control: Option<std::sync::Arc<crate::lifecycle::operation_control::ProductCurrentnessLatch>>,
+    control: Option<
+        std::sync::Arc<
+            crate::lifecycle::operation_control_for_test::ProductCurrentnessLatchForTest,
+        >,
+    >,
 }
 
 /// Exact expected-head currentness, valid only during the owner's guarded
@@ -46,15 +49,16 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
         cell: ProductBranchReferenceCell,
         expected: &'selected ProductBranchObservation,
         operation: crate::lifecycle::owner::RuntimeWorldOperationReservation,
-        #[cfg(feature = "test-operation-control")] control: Option<
-            std::sync::Arc<crate::lifecycle::operation_control::ProductCurrentnessLatch>,
+        control: Option<
+            std::sync::Arc<
+                crate::lifecycle::operation_control_for_test::ProductCurrentnessLatchForTest,
+            >,
         >,
     ) -> Self {
         Self {
             cell,
             expected,
             _operation: operation,
-            #[cfg(feature = "test-operation-control")]
             control,
         }
     }
@@ -68,11 +72,6 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
         argument: Argument,
         install: impl for<'guard> FnOnce(Argument, CurrentProductHead<'guard>) -> Output,
     ) -> Result<Output, ProductBranchCurrentnessFailure<Argument>> {
-        #[cfg(feature = "test-operation-control")]
-        let hold = self
-            .control
-            .as_ref()
-            .map(|control| control.hold_reference(self.cell.clone()));
         let callback = |argument| {
             install(
                 argument,
@@ -81,17 +80,20 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
                 },
             )
         };
-        #[cfg(feature = "test-operation-control")]
-        let result = self.cell.while_current_controlled(
-            self.expected,
-            argument,
-            callback,
-            self.control.as_deref(),
-        );
-        #[cfg(not(feature = "test-operation-control"))]
-        let result = self.cell.while_current(self.expected, argument, callback);
-        #[cfg(feature = "test-operation-control")]
-        drop(hold);
+        let result = match self.control {
+            None => self.cell.while_current(self.expected, argument, callback),
+            Some(control) => {
+                let hold = control.hold_reference_for_test(self.cell.clone());
+                let result = self.cell.while_current_controlled_for_test(
+                    self.expected,
+                    argument,
+                    callback,
+                    &control,
+                );
+                drop(hold);
+                result
+            }
+        };
         result.map_err(|(_, argument)| {
             ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(argument)
         })

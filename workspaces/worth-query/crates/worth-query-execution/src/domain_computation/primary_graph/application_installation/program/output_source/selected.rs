@@ -7,7 +7,7 @@
 //! no longer runs is refused before any effect.
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use std::any::TypeId;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use crate::facade::runtime::ExecutionAllocationPolicy;
 
@@ -64,15 +64,18 @@ where
         Source: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
         Source::Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
-            Ok(request) => request,
-            Err(_) => return Ok((
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+        let phase_request =
+            match phase.execution_request_for(&self.runtime.product_runtime) {
+                Ok(request) => request,
+                Err(cause) => return Ok((
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                        cause,
+                    )
                     .into_commit_outcome(),
-                None,
-                None,
-            )),
-        };
+                    None,
+                    None,
+                )),
+            };
         let execution = &phase_request;
 
         let root = TypeId::of::<Root>();
@@ -119,15 +122,18 @@ where
             WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Source>,
         Source::Input: Clone + Send + Sync + 'static,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
-            Ok(request) => request,
-            Err(_) => return Ok((
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase
+        let phase_request =
+            match phase.execution_request_for(&self.runtime.product_runtime) {
+                Ok(request) => request,
+                Err(cause) => return Ok((
+                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                        cause,
+                    )
                     .into_commit_outcome(),
-                None,
-                None,
-            )),
-        };
+                    None,
+                    None,
+                )),
+            };
         let execution = &phase_request;
 
         let root = TypeId::of::<Root>();
@@ -169,7 +175,7 @@ where
         if !std::ptr::eq(owner.owned_runtime(), &self.runtime)
             || !self.root_graph_types.contains(&root)
             || !owner.owns_output_root(root)
-            || !owner.owns_output_source(source)
+            || !owner.owns_output_source(source.into_external())
         {
             return Err(WorthQueryApplicationCommitDenial::application_program_required());
         }

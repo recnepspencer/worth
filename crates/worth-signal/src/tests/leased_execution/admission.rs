@@ -30,9 +30,10 @@ fn a_missing_footprint_is_refused_before_shared_epoch_evaluation() {
         worth_execution::ExecutionRequest::leased(&lease),
     );
     let error = result.expect_err("a missing footprint must refuse checked epoch evaluation");
-    assert!(
-        matches!(&error, SignalError::InvalidInput { message, .. } if message == "missing bounded inputs"),
-        "a missing footprint must be refused by epoch resource admission: {error:?}"
+    assert_eq!(
+        error,
+        SignalError::MissingBoundedInputsAtEpochAdmission { node: open },
+        "a missing footprint must be refused by epoch resource admission"
     );
     assert_eq!(
         open_calls.load(Ordering::SeqCst),

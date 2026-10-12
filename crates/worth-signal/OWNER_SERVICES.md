@@ -27,8 +27,8 @@ partition after construction-only configuration is complete. It is the
 one-way seal transition and requires `D`, `I`, `E`, `Ctx`, and `T` to satisfy the published
 `Send + Sync + 'static` composition bounds. Every port and the bundle is
 `Send + Sync + Clone`; none retains the runtime strongly or exposes a public
-constructor. Operation control is an additional `test-operation-control`
-facade export for deterministic tests only and is absent from normal builds.
+constructor. Operation control is a compiled facade export for deterministic tests.
+It remains inert until a caller arms the handle issued by its runtime.
 
 The exact public contracts and their canonical owners are recorded below so
 service users and parallel implementation lanes cannot improvise weaker inputs
@@ -224,8 +224,8 @@ weak ports to that same owner.
 The bundle accessors are exactly `basis_port()`, `mutation_port()`, and
 `lifecycle_port()`. The bundle and every returned port are cloneable weak
 bindings; they expose no constructors, close authority, cells, registries, or
-generic service trait. With `test-operation-control`, a sealed runtime also issues
-`owner_operation_control() -> Result<SignalOwnerOperationControl, SignalOwnerUnavailable>`;
+generic service trait. A sealed runtime also issues
+`owner_operation_control_for_test() -> Result<SignalOwnerOperationControlForTest, SignalOwnerUnavailable>`;
 this handle names real progression boundaries but cannot mint authority or
 change production semantics.
 
@@ -419,11 +419,11 @@ workflow for the handoff into 9.17.2.
 
 ### Deterministic operation control
 
-Tests compiled with `test-operation-control` may obtain
-`runtime.owner_operation_control()` after owner-service issuance. The control
-handle only names real owner boundaries: `arm_pause_once(boundary)` returns a
+Tests may obtain
+`runtime.owner_operation_control_for_test()` after owner-service issuance. The control
+handle only names real owner boundaries: `arm_pause_once_for_test(boundary)` returns a
 drop-safe pause whose `wait_until_reached(Duration)` is bounded and whose
-`release()` resumes the owner; `inject_panic_once(boundary)` faults the next
+`release()` resumes the owner; `inject_panic_once_for_test(boundary)` faults the next
 operation at that boundary. It exposes no constructor, evaluator, authority,
 or alternate engine. Schedules use channels/barriers, never sleeps. Unarmed
 control must leave outcomes, observations, counters, and cleanup unchanged.

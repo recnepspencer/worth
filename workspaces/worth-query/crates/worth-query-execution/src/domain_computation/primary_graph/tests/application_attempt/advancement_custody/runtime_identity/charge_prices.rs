@@ -32,10 +32,3 @@ pub(super) fn principal_and_commit_reads() -> u64 {
     let commit_records = (4 + 8) * KEYED_RECORD_WORK;
     5 * one_principal + principal_records + commit_records
 }
-pub(super) const fn leased_native_staging() -> u64 {
-    // The leased packet lane additionally copies/prepares 104 units, runs
-    // four packet entries, 38 main-thread and 352 worker kernel units,
-    // eleven validation reductions, and six preparation merge units.
-    // The direct unleased lane does not stage these artifacts.
-    104 + 4 + 38 + 352 + 11 + (1 + 2 + 1 + 2)
-}

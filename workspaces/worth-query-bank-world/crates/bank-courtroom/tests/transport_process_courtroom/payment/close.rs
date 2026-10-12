@@ -5,6 +5,7 @@ use bank_http_adapter::BankRailCloseAssessment;
 use super::*;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "needs Docker: cargo test --manifest-path workspaces/worth-query-bank-world/Cargo.toml -p bank-courtroom --test transport_process_courtroom -- --ignored"]
 async fn close_before_payment_callback_preserves_unresolved_dispatch() {
     let PaymentCourt {
         rail,
@@ -18,7 +19,7 @@ async fn close_before_payment_callback_preserves_unresolved_dispatch() {
     } = PaymentCourt::start("payment-close-before-callback").await;
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let authority = ApprovePayment {

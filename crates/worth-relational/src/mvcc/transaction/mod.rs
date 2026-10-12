@@ -41,3 +41,5 @@ pub(crate) use savepoint::RelationalTransactionSavepoint;
 pub use staging::RelationalTransactionStagingDenial;
 
 pub(crate) use overlay::DetachedRelationalTransactionOverlay;
+#[cfg(test)]
+pub(crate) mod split_contacts;

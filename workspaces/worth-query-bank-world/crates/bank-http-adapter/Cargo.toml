@@ -6,9 +6,6 @@ license.workspace = true
 description = "Bank HTTP and Authentik OIDC adaptation."
 publish = false
 
-[features]
-cold-certification = []
-
 [dependencies]
 axum.workspace = true
 bank-domain.workspace = true
@@ -27,7 +24,7 @@ worth-query-host.workspace = true
 worth-foundational.workspace = true
 
 [dev-dependencies]
-bank-server = { workspace = true, features = ["test-controls", "test-request-lifetime-probes"] }
+bank-server = { workspace = true }
 reqwest.workspace = true
 
 [lints]

@@ -112,7 +112,6 @@ impl WorthQueryCompletedCommitEvidenceStore {
         }
     }
 
-    #[cfg(feature = "test-query-execution-observer")]
     pub(in crate::domain_computation::primary_graph) fn entry_count(&self) -> usize {
         self.by_commit.len()
     }

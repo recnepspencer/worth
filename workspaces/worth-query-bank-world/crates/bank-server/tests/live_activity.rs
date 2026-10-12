@@ -141,7 +141,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     let owner = fixture.authenticate(OWNER);
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let mut cancelled = fixture
@@ -153,7 +153,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
         .expect("live lease should open before cancellation");
     cancellation.cancel();
     let cancellation_request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let cancelled_outcome = cancelled.poll(&owner, &cancellation_request);
@@ -168,7 +168,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
 
     let deadline = Instant::now() + Duration::from_secs(1);
     let deadline_source = WorthQueryCancellationSource::new();
-    let request = WorthQueryRequestScope::new(deadline, deadline_source.token());
+    let request = WorthQueryRequestScope::new(Some(deadline), deadline_source.token());
     let mut expired = fixture
         .world
         .runtime
@@ -179,7 +179,7 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     while Instant::now() < deadline {
         std::thread::yield_now();
     }
-    let expired_request = WorthQueryRequestScope::new(deadline, deadline_source.token());
+    let expired_request = WorthQueryRequestScope::new(Some(deadline), deadline_source.token());
     let expired_outcome = expired.poll(&owner, &expired_request);
     assert!(
         matches!(

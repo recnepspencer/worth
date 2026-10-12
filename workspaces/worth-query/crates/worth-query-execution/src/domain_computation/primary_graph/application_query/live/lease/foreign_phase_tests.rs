@@ -32,7 +32,7 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
         }
         let cancellation = WorthQueryCancellationSource::new();
         let request = WorthQueryRequestScope::new(
-            Instant::now() + Duration::from_secs(60),
+            Some(Instant::now() + Duration::from_secs(60)),
             cancellation.token(),
         );
         let external = receiver.authenticate("alice", Duration::from_secs(60), &request);
@@ -68,7 +68,9 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
                 (principal, account, capability, selected)
             })
             .unwrap();
-        let before = receiver.application.provider_session_resource_count();
+        let before = receiver
+            .application
+            .provider_session_resource_count_for_test();
         cancellation.cancel();
         issuer.application.with_application_advancement(&live_scope(), |phase| {
             let controls = WorthQueryApplicationLiveControls::bounded(request.clone(), 4, 16, 2_048).unwrap();
@@ -90,7 +92,9 @@ fn foreign_phase_refuses_both_live_doors_before_cancelled_read_admission() {
             assert_eq!(denial.kind(), WorthQueryApplicationLiveOpenDenialKind::ForeignAdvancementPhase);
         }).unwrap();
         assert_eq!(
-            receiver.application.provider_session_resource_count(),
+            receiver
+                .application
+                .provider_session_resource_count_for_test(),
             before
         );
     }

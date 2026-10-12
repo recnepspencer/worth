@@ -41,7 +41,6 @@ pub(in crate::domain_computation::primary_graph) struct EvidenceView<'a> {
     pub(super) selected_native_root: &'a PositionedRelationalSnapshot,
 }
 
-#[cfg(feature = "certification-invalidation-equivalence")]
 impl<'a> EvidenceView<'a> {
     pub(in crate::domain_computation::primary_graph) fn identity(
         self,
@@ -200,12 +199,52 @@ impl ConsumedOutputEvidence {
         selected: &PositionedRelationalSnapshot,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
-        #[cfg(feature = "certification-invalidation-equivalence")]
+        if !owner.invalidation_equivalence_is_armed() {
+            return Self::verify_optimized_views(
+                execution,
+                roots,
+                owner,
+                runtime,
+                snapshot,
+                selected,
+                admission,
+                |result, _| result,
+            );
+        }
         if roots.len() == 0 {
             return Ok(ConsumedOutputVerification::Current);
         }
-        #[cfg(feature = "certification-invalidation-equivalence")]
         let image = owner.capture_full_verification(runtime, snapshot, selected, admission);
+        let oracle_roots = roots.clone();
+        Self::verify_optimized_views(
+            execution,
+            roots,
+            owner,
+            runtime,
+            snapshot,
+            selected,
+            admission,
+            |result, admission| {
+                owner.record_invalidation_shadow_check();
+                super::equivalence::check(execution, oracle_roots, image, result, admission)
+            },
+        )
+    }
+
+    fn verify_optimized_views<'a>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        roots: impl ExactSizeIterator<Item = EvidenceView<'a>> + Clone,
+        owner: &SourceInvalidationOwner,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        selected: &PositionedRelationalSnapshot,
+        admission: &mut InvalidationEditAdmission,
+        shadow: impl FnOnce(
+            Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
+            &mut InvalidationEditAdmission,
+        )
+            -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop>,
+    ) -> Result<ConsumedOutputVerification, ConsumedOutputVerificationStop> {
         let mut verified = Vec::new();
         let mut marked = Vec::new();
         let mut recovered = Vec::new();
@@ -236,8 +275,7 @@ impl ConsumedOutputEvidence {
         } else {
             marked_result
         };
-        #[cfg(feature = "certification-invalidation-equivalence")]
-        let result = super::equivalence::check(execution, roots, image, result, admission);
+        let result = shadow(result, admission);
         if result == Ok(ConsumedOutputVerification::Current) {
             for row in recovered {
                 let facts = row

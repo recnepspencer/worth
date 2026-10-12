@@ -34,13 +34,16 @@ fn shell_mutation_routes_to_the_same_json_entrypoint() {
         .unwrap()
         .replace(illegal_dependency, "");
     fs::write(&manifest, legal).unwrap();
-    let mutation = Command::new("powershell")
-        .args(["-NoProfile", "-Command"])
-        .arg("Add-Content -LiteralPath $env:WORTH_MUTATION_PATH -Value $env:WORTH_MUTATION_TEXT")
-        .env("WORTH_MUTATION_PATH", &manifest)
-        .env("WORTH_MUTATION_TEXT", illegal_dependency)
-        .output()
-        .unwrap();
+    let mutation = worth_harness::tooling::process_deadline::output(
+        Command::new("powershell")
+            .args(["-NoProfile", "-Command"])
+            .arg(
+                "Add-Content -LiteralPath $env:WORTH_MUTATION_PATH -Value $env:WORTH_MUTATION_TEXT",
+            )
+            .env("WORTH_MUTATION_PATH", &manifest)
+            .env("WORTH_MUTATION_TEXT", illegal_dependency),
+    )
+    .unwrap();
     assert!(mutation.status.success());
 
     let direct_output = invoke(&hand_entrypoint_command(), None, Some(&workspace));

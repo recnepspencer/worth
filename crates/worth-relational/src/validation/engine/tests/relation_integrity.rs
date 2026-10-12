@@ -19,7 +19,7 @@ fn engine_rejects_cross_partition_relations_under_partition_isolation_contracts(
         ))],
     };
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -80,7 +80,7 @@ fn engine_rejects_planned_cycles_under_acyclicity_contracts() {
         ],
     };
 
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,
             &runtime,
@@ -231,7 +231,7 @@ fn minimum_cardinality_current_version_scans_only_live_slots() {
         .expect("retire relation");
 
     runtime.performance_access().reset_counters();
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CertificationBoundary,
             &runtime,
@@ -284,7 +284,7 @@ fn minimum_cardinality_shared_index_preserves_both_passing_contracts() {
     create_relation_of_kind(execution, &runtime, KindId(2), second, first, "reverse");
 
     runtime.performance_access().reset_counters();
-    let results = InvariantEngine::new(&runtime).execute(
+    let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CertificationBoundary,
             &runtime,

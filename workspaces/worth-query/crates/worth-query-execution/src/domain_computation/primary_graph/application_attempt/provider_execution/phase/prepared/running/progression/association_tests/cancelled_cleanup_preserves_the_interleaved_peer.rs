@@ -19,7 +19,7 @@ fn cancelled_cleanup_preserves_the_interleaved_peer() {
                 .active_snapshot_count(&active_phase.borrowed_request_for_test());
             let cancellation = WorthQueryCancellationSource::new();
             let request = WorthQueryRequestScope::new(
-                Instant::now() + Duration::from_secs(60),
+                Some(Instant::now() + Duration::from_secs(60)),
                 cancellation.token(),
             );
             let principal = authenticated_principal(

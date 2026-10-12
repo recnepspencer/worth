@@ -33,7 +33,7 @@ fn complete_relation_scope_retains_more_than_former_touched_entity_limit() {
     }
     // Full candidate retention must still reach the real minimum-cardinality
     // rule, rather than a preparation count refusal or a silently empty scope.
-    let result = InvariantEngine::new(&runtime).execute(request);
+    let result = InvariantEngine::new(&runtime).execute_fixture(request);
     assert!(result.results().iter().any(|result| matches!(
         &result.verdict,
         crate::validation::data::InvariantVerdict::Violation(violation)
@@ -58,11 +58,8 @@ fn relation_scope_preparation_interruption_preserves_head_and_allows_retry() {
             .unwrap();
         // The original validation boundary polls only three times. Visit eight
         // requires the scope collector's actual per-item safe points.
-        let control = RelationalOperationControl::uninterrupted().with_injected_interruption(
-            Boundary::ProposalValidation,
-            interruption,
-            8,
-        );
+        let control = RelationalOperationControl::uninterrupted()
+            .with_injected_interruption_for_test(Boundary::ProposalValidation, interruption, 8);
         let mut transaction = runtime
             .begin_branch_transaction_with_control(
                 &basis,

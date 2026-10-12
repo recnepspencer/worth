@@ -60,6 +60,7 @@ fn payment_projection_rejects_multiple_decision_entities() {
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap();
     assert_eq!(
@@ -110,6 +111,7 @@ fn payment_projection_preserves_the_source_account_balance() {
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap()
     .into_output()
@@ -155,6 +157,7 @@ fn payment_work(
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap()
     .work()
@@ -190,6 +193,7 @@ fn reversal_work(
                 },
                 ExecutionAllocationPolicy::SystemAllocation,
             )
+            .map_err(Box::new)
     })
     .unwrap()
     .work()

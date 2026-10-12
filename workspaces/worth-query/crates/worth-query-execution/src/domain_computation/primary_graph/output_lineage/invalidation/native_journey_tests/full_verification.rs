@@ -9,6 +9,8 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
+    let _oracle =
+        crate::facade::primary_graph::WorthQueryInvalidationEquivalenceForTest::arm_on_this_thread_for_test();
     let world = installed_authorization_world(true);
     let selected = world
         .application
@@ -56,7 +58,7 @@ fn full_verification_uses_native_facts_and_retains_the_exact_captured_image() {
         };
         let mut exhausted = owner.edit_admission();
         exhausted
-            .charge_external_work(u64::try_from(exhausted.remaining_work()).unwrap())
+            .charge_external_work(exhausted.remaining_work_amount())
             .unwrap();
         assert_eq!(
             ConsumedOutputEvidence::verify_many_with_admission(

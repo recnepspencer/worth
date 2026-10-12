@@ -32,12 +32,14 @@ fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
         .execute()
         .unwrap();
     let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
-        application.select_output_producer::<PlanarOutputFamily>(
-            phase,
-            &source.observed_sources()[0],
-            "planar",
-            4096,
-        )
+        application
+            .select_output_producer::<PlanarOutputFamily>(
+                phase,
+                &source.observed_sources()[0],
+                "planar",
+                4096,
+            )
+            .map_err(Box::new)
     })
     .unwrap();
     assert_eq!(

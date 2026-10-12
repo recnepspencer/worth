@@ -75,11 +75,12 @@ fn phase3_paused_settlement_does_not_block_an_unrelated_branch_commit() {
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
     let park = SettlementParkRelease::new(Arc::clone(&release));
-    let control = crate::mvcc::RelationalOperationControl::uninterrupted().with_boundary_pause(
-        crate::mvcc::RelationalInterruptionBoundary::Settlement,
-        Arc::clone(&reached),
-        Arc::clone(&release),
-    );
+    let control = crate::mvcc::RelationalOperationControl::uninterrupted()
+        .with_boundary_pause_for_test(
+            crate::mvcc::RelationalInterruptionBoundary::Settlement,
+            Arc::clone(&reached),
+            Arc::clone(&release),
+        );
     let performed = perform_write_with_control(
         execution,
         &runtime,

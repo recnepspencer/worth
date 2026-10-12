@@ -36,9 +36,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     {
         let phase_request = match phase.execution_request_for(&self.application().product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(
-                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase,
-            )),
+            Err(cause) => {
+                return Err(WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(
+                    cause.into(),
+                ))
+            }
         };
         let execution = &phase_request;
 

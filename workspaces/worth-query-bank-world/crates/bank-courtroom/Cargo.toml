@@ -5,13 +5,6 @@ version.workspace = true
 license.workspace = true
 publish = false
 
-[features]
-cold-docker-courtroom = [
-    "bank-http-adapter/cold-certification",
-    "bank-server/test-controls",
-    "bank-user-node/cold-certification",
-]
-
 [dependencies]
 bank-domain.workspace = true
 bank-external-rail.workspace = true
@@ -38,27 +31,22 @@ path = "tests/payment_workflow_archive.rs"
 [[test]]
 name = "async_identity_courtroom"
 path = "tests/async_identity_courtroom.rs"
-required-features = ["cold-docker-courtroom"]
 
 [[test]]
 name = "transport_process_courtroom"
 path = "tests/transport_process_courtroom.rs"
-required-features = ["cold-docker-courtroom"]
 
 [[bin]]
 name = "cold-bank-http-server"
 path = "src/bin/cold-bank-http-server.rs"
-required-features = ["cold-docker-courtroom"]
 
 [[bin]]
 name = "cold-bank-user-node"
 path = "src/bin/cold-bank-user-node.rs"
-required-features = ["cold-docker-courtroom"]
 
 [[bin]]
 name = "cold-bank-rail"
 path = "src/bin/cold-bank-rail.rs"
-required-features = ["cold-docker-courtroom"]
 
 [[example]]
 name = "inbound_completion"

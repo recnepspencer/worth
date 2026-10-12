@@ -18,7 +18,6 @@ mod equality;
 mod equality_expiration;
 #[path = "native_journey_tests/full_ledger.rs"]
 mod full_ledger;
-#[cfg(feature = "certification-invalidation-equivalence")]
 #[path = "native_journey_tests/full_verification.rs"]
 mod full_verification;
 #[path = "native_journey_tests/local_requirement.rs"]
@@ -33,10 +32,8 @@ mod reestablishment;
 mod scope_hierarchy;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
-#[cfg(not(feature = "certification-invalidation-equivalence"))]
 #[path = "native_journey_tests/pending_own_evidence.rs"]
 mod pending_own_evidence;
-#[cfg(not(feature = "certification-invalidation-equivalence"))]
 #[path = "native_journey_tests/precommit_chain.rs"]
 mod precommit_chain;
 #[path = "native_journey_tests/replay_propagation.rs"]
@@ -61,7 +58,8 @@ mod verified_current;
 #[path = "native_journey_tests/consumed_custody.rs"]
 mod consumed_custody;
 
-use std::{any::TypeId, collections::BTreeMap, sync::Arc};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::{collections::BTreeMap, sync::Arc};
 
 use im::OrdSet;
 use worth_foundational::facade::{
@@ -146,8 +144,9 @@ fn write_batch(
     let candidate = runtime
         .prepare_branch_transaction(execution, transaction)
         .unwrap();
-    let RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("ordinary native field mutation must publish");
     };
@@ -388,6 +387,5 @@ fn ordinary_native_writer_marks_only_matched_fields_and_actual_downstream_edges(
         .expect("the fixture read owns its installed host call");
 }
 
-#[cfg(feature = "certification-invalidation-equivalence")]
 #[path = "native_journey_tests/retired_image.rs"]
 mod retired_image;

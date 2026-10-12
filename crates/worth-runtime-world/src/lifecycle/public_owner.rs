@@ -110,10 +110,6 @@ where
             self.root.clone();
         RuntimeWorldLifecyclePort::new(Arc::downgrade(&service))
     }
-    #[cfg(feature = "test-operation-control")]
-    pub fn operation_control(&self) -> super::RuntimeWorldOperationControl {
-        self.root.state.operation_control.clone()
-    }
 
     pub fn inspection_port(&self) -> super::RuntimeWorldInspectionPort {
         let service: Arc<dyn crate::inspection::RuntimeWorldInspectionService + Send + Sync> =

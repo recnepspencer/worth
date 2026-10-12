@@ -77,7 +77,9 @@ fn actual_companion_cutover_resolves_only_its_prepared_observer() {
         let candidate = runtime
             .prepare_branch_transaction(execution, transaction)
             .unwrap();
-        let outcome = runtime.publication_port().compare_and_publish(candidate);
+        let outcome = runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate);
         let observer = participant.observer.lock().unwrap().take().unwrap();
         if stop_after_prepare {
             assert!(matches!(

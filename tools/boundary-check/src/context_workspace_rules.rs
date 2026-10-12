@@ -134,8 +134,8 @@ fn validate_dependencies(
 }
 
 fn manifest_contract(path: &Path) -> Result<(String, BTreeSet<String>), String> {
-    let text =
-        fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|error| format!("read {}: {error}", path.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|error| format!("parse {}: {error}", path.display()))?;
     let package = value
@@ -179,8 +179,8 @@ fn contract_diagnostic(path: &str, message: String) -> Diagnostic {
 }
 
 fn workspace_members(path: &Path) -> Result<Vec<String>, String> {
-    let text =
-        fs::read_to_string(path).map_err(|error| format!("read {}: {error}", path.display()))?;
+    let text = crate::source_documents::read_to_string(path)
+        .map_err(|error| format!("read {}: {error}", path.display()))?;
     let value: toml::Value =
         toml::from_str(&text).map_err(|error| format!("parse {}: {error}", path.display()))?;
     value

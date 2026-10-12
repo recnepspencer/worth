@@ -13,7 +13,7 @@ use crate::branch::{
 use super::{SignalRestoreOutputReservation, SignalSnapshotOutputReservation};
 use crate::branch::owner_services::branch_execution_cell::restoration::SignalBranchRestoreCellOutcome;
 use crate::branch::owner_services::branch_execution_cell::snapshot::SignalBranchSnapshotCellOutcome;
-use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundary;
+use crate::branch::owner_services::operation_control::SignalOwnerOperationBoundaryForTest;
 #[cfg(test)]
 use crate::branch::owner_services::owner::fork_reservation::SignalInstalledOwnerFork;
 use crate::branch::owner_services::SignalOwnerCancellationToken;
@@ -87,7 +87,7 @@ where
     ) -> SignalBranchSnapshotCaptureOutcome {
         self.reservation
             .admission
-            .reach_operation_boundary(SignalOwnerOperationBoundary::OutcomeConstruction);
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
         let (branch_id, snapshot, observation) = self.outcome.into_output_parts();
         debug_assert_eq!(branch_id, self.reservation.branch_id);
         debug_assert_eq!(snapshot.meta.branch_id, branch_id);
@@ -181,7 +181,7 @@ where
     pub(in crate::branch::owner_services) fn into_basis(self) -> AdmittedSignalBranchBasis {
         self.reservation
             .admission
-            .reach_operation_boundary(SignalOwnerOperationBoundary::OutcomeConstruction);
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
         let (branch_id, observation) = self.outcome.into_output_parts();
         debug_assert_eq!(branch_id, self.reservation.branch_id);
         let mut retention = self.reservation.retention;
@@ -242,7 +242,7 @@ where
         } = self;
         reservation
             .admission
-            .reach_operation_boundary(SignalOwnerOperationBoundary::OutcomeConstruction);
+            .reach_operation_boundary(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
         let destination_cell_incarnation = installed.cell().incarnation().get();
         let (handle, observation) = installed.into_handoff_parts();
         let destination_branch_id = handle.id;

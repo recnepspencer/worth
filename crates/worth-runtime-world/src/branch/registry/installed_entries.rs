@@ -56,3 +56,37 @@ impl Drop for InstalledProductBranches {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::branch::{reference_test_fixture as fixture, ProductBranchReferenceCell};
+    use std::sync::Arc;
+
+    #[test]
+    fn installed_entries_visit_canonical_names_after_reverse_insertion() {
+        let (mut fixture, catalog, root) = fixture::installed_root();
+        let mut entries = InstalledProductBranches::default();
+        for name in ["zulu", "alpha"] {
+            let snapshot = fixture::initial_snapshot_named(&mut fixture, Arc::clone(&root), name);
+            let branch = snapshot.branch_identity().clone();
+            let lifecycle = snapshot.lifecycle_incarnation();
+            let protection = fixture::product_head_protection(&fixture, &catalog, snapshot);
+            entries.insert(
+                branch,
+                ProductBranchRegistryEntry {
+                    lifecycle,
+                    cell: ProductBranchReferenceCell::new(protection).unwrap(),
+                    retirement_boundary: Some(root.identity().clone()),
+                },
+            );
+        }
+        assert_eq!(
+            entries
+                .keys()
+                .map(|branch| branch.name().as_str())
+                .collect::<Vec<_>>(),
+            ["alpha", "zulu"]
+        );
+    }
+}

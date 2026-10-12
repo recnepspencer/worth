@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use super::{
@@ -41,12 +42,12 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
     let sibling = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 
     lineage.record_restoration(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -61,7 +62,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
         );
     lineage.record_restoration(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -76,7 +77,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
         None,
         );
     lineage.record_restoration(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -123,10 +124,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
 
     lineage.install_output_families(std::collections::BTreeMap::from([(
         "partitioned-family".to_owned().into(),
-        vec![(
-            std::any::TypeId::of::<RestoredOutputBinding>(),
-            "output".to_owned(),
-        )],
+        vec![(TypeId::of::<RestoredOutputBinding>(), "output".to_owned())],
     )]));
     let resolve = |budget| {
         lineage.resolve_current_family(
@@ -160,7 +158,7 @@ fn restoration_keeps_sibling_parameter_partitions_in_one_generation_slot() {
             scope,
             observation.lifecycle_incarnation(),
             maximum_generation,
-            &[std::any::TypeId::of::<RestoredOutputBinding>()],
+            &[TypeId::of::<RestoredOutputBinding>()],
             first_partition,
             8,
         )
@@ -214,8 +212,8 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     let checkpoint_identity = crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x31; 32]);
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-            std::any::TypeId::of::<RestoredOutputBinding>(),
-            std::any::TypeId::of::<()>(),
+            TypeId::of::<RestoredOutputBinding>(),
+            TypeId::of::<()>(),
             std::collections::BTreeSet::new(),
             Vec::new(),
             |_| None,
@@ -224,12 +222,12 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     );
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 
     lineage.record_recovered_prior_output(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -243,7 +241,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         None,
     );
     lineage.record_recovered_prior_output(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -281,7 +279,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         .is_none());
 
     lineage.record_restoration(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,
@@ -312,7 +310,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
     );
 
     lineage.record_restoration(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         runtime_authority,
         schema.clone(),
         scope,

@@ -50,7 +50,7 @@ impl<'runtime> VisibilityAuthority<'runtime> {
         ) -> Option<T>,
     ) -> Result<RelationalRetainedCommitEntityProjection<T>, RelationalRetainedCommitSnapshotDenial>
     {
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(|cause| {
                 RelationalRetainedCommitSnapshotDenial::new(
                     RelationalRetainedCommitSnapshotDenialKind::Execution(cause),

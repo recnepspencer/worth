@@ -36,6 +36,10 @@ pub enum CompanionPreflightStop {
         required: u64,
         maximum: u64,
     },
+    /// A bounded comparison refused without exposing its continuation amount.
+    WorkExhaustedWithoutRequirement {
+        maximum: u64,
+    },
     WorkCounterOverflow,
     PreparationMemoryExhausted {
         required: u64,

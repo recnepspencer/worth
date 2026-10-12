@@ -71,7 +71,7 @@ fn failed_durable_append_blocks_descendants_and_recovers_last_checkpoint() {
     let (abandoned_lineage_id, abandoned_event_id) = runtime.lineage.identity_frontiers();
     let published_node_count = runtime.lineage.node_count();
     let published_event_count = runtime.lineage.event_count();
-    runtime.durability.arm_append_failure();
+    runtime.durability.arm_append_failure_for_test();
     let mut failed = test_owner_begin_transaction_for_main(&runtime);
     failed
         .push_batch(

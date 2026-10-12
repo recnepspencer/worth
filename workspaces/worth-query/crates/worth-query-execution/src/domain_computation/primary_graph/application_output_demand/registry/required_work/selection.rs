@@ -332,6 +332,7 @@ fn native_denial(
     use worth_relational::facade::mvcc::CompanionPreflightStop;
     let kind = match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => {
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         }
@@ -351,7 +352,6 @@ pub(super) fn work_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {

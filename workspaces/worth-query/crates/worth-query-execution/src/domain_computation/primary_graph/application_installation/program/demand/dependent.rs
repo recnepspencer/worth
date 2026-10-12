@@ -1,4 +1,5 @@
 use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
@@ -29,7 +30,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
@@ -39,7 +40,7 @@ where
                 "dependent output connection is not installed for this program",
             ));
         }
-        if parent.target_feature != std::any::TypeId::of::<Connection::SourceFeature>() {
+        if parent.target_feature != TypeId::of::<Connection::SourceFeature>() {
             return Err(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement,
                 "dependent output edge does not leave this settled program feature",
@@ -113,7 +114,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                target_feature: std::any::TypeId::of::<Connection::TargetFeature>(),
+                target_feature: TypeId::of::<Connection::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
             })

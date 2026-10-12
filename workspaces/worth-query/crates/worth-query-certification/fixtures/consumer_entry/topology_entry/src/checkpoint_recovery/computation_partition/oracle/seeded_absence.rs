@@ -10,7 +10,8 @@ use boundary_observation::{compare_prime, release_observation};
 use unretained::unretained;
 use worth_query_host::facade::application_contribution::{
     discarded_computation_retention_on_this_thread_for_test as discarded_retention,
-    WorthQueryPartitionedComputationFullCause as Cause, WorthQueryPartitionedComputationRun as Run,
+    WorthQueryPartitionedComputationFullCause as Cause,
+    WorthQueryPartitionedComputationRunForTest as Run,
 };
 use worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile;
 

@@ -83,7 +83,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         .as_principal(&owner)
         .controls(BankMutationControls::new(
             WorthQueryRequestScope::new(
-                Instant::now() + Duration::from_secs(60),
+                Some(Instant::now() + Duration::from_secs(60)),
                 cancellation.token(),
             ),
             key("cancelled"),
@@ -110,7 +110,10 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
         .mutate(mutations::send_money(send.clone()))
         .as_principal(&owner)
         .controls(BankMutationControls::new(
-            WorthQueryRequestScope::new(Instant::now() - Duration::from_secs(1), deadline.token()),
+            WorthQueryRequestScope::new(
+                Some(Instant::now() - Duration::from_secs(1)),
+                deadline.token(),
+            ),
             key("expired"),
         ))
         .execute();
@@ -233,3 +236,6 @@ fn send_for(fixture: &fixture::OrdinaryReadFixture) -> SendMoney {
         amount: Money::from_minor(25).unwrap(),
     }
 }
+
+#[path = "ordinary_mutations/posting_lease.rs"]
+mod posting_lease;

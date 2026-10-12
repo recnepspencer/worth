@@ -84,7 +84,7 @@ impl WorthServerTransportRequestCancellation {
         }
         WorthServerQueryRequestScope::new(
             identity,
-            WorthQueryRequestScope::new(deadline, self.source.token()),
+            WorthQueryRequestScope::new(Some(deadline), self.source.token()),
         )
     }
 

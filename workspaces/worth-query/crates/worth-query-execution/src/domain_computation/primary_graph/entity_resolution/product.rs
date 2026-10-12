@@ -17,6 +17,7 @@ use worth_relational::facade::storage::AuthoritativeFieldComparisonKey;
 
 mod admitted_mutation;
 mod issued_scope;
+mod key_work;
 pub(in crate::domain_computation) use issued_scope::WorthQueryIssuedSelectedScope;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -143,20 +144,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 )
             })?;
         if let Some(admission) = admission.as_ref() {
-            let maximum_key_work = key_bytes.checked_mul(4).ok_or_else(|| {
-                entity_denial(
-                    WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
-                    field,
-                )
-            })?;
-            if u64::try_from(admission.remaining_work()).unwrap_or(u64::MAX)
-                < maximum_key_work.saturating_add(3)
-            {
-                return Err(entity_denial(
-                    WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
-                    field,
-                ));
-            }
+            key_work::admit(admission, key_bytes, field)?;
         }
         if let Some(admission) = admission.as_deref_mut() {
             let bounded_ids = 4_u64
@@ -233,9 +221,13 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .map(|truth| truth.resolve_with_work(execution, entity, aspect, field, encoded))
         })?;
         if let Some(admission) = admission {
-            let actual_work = key_bytes
-                .checked_mul(2 + u64::try_from(examined).unwrap_or(u64::MAX))
-                .and_then(|work| work.checked_add(u64::try_from(1 + examined).unwrap_or(u64::MAX)))
+            let actual_work = u64::try_from(examined)
+                .ok()
+                .and_then(|examined| {
+                    key_bytes
+                        .checked_mul(examined.checked_add(2)?)?
+                        .checked_add(examined.checked_add(1)?)
+                })
                 .ok_or_else(|| {
                     entity_denial(
                         WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,

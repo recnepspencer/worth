@@ -70,7 +70,7 @@ pub(in crate::http::server) async fn receive(
     let route = state.route;
     let task = tokio::task::spawn_blocking(move || {
         let _slot = slot;
-        let request = WorthQueryRequestScope::new(deadline, cancellation.token());
+        let request = WorthQueryRequestScope::new(Some(deadline), cancellation.token());
         let result = route.receive_and_sign(&envelope, &request);
         if result
             .as_ref()
@@ -106,10 +106,10 @@ fn status(denial: WorthQueryInboundAdmissionDenial) -> StatusCode {
         Denial::ExecutionDenied(cause) => {
             use worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial as Cause;
             match cause {
+                Cause::Resource(worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase) => StatusCode::INTERNAL_SERVER_ERROR,
                 Cause::Resource(_) => StatusCode::TOO_MANY_REQUESTS,
                 Cause::Interrupted(_) => StatusCode::SERVICE_UNAVAILABLE,
-                Cause::ForeignPhase
-                | Cause::NestedOpening
+                Cause::NestedOpening
                 | Cause::NestedStopped
                 | Cause::Panicked => StatusCode::INTERNAL_SERVER_ERROR,
             }

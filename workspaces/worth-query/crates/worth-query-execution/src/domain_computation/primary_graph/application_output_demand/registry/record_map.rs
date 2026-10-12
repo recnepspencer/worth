@@ -7,13 +7,16 @@ type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 pub(super) struct DemandRecords(Map, BTreeMap<
     crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceCoordinate,
     std::collections::BTreeSet<WorthQueryOutputDemandKey>>);
-#[cfg(feature = "test-query-execution-observer")]
 thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 fn observe_row() {
-    #[cfg(feature = "test-query-execution-observer")]
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
     WHOLE_ROWS.with(|count| count.set(count.get().checked_add(1).expect("row visit counter")));
 }
-#[cfg(feature = "test-query-execution-observer")]
 pub(super) fn whole_rows() -> u64 {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
@@ -154,7 +157,6 @@ impl From<Map> for DemandRecords {
         records
     }
 }
-#[cfg(feature = "test-query-execution-observer")]
 impl<Schema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
@@ -205,4 +207,11 @@ impl<'a> IntoIterator for &'a mut DemandRecords {
     fn into_iter(self) -> Self::IntoIter {
         ObservedRows(self.0.iter_mut())
     }
+}
+
+// Law 2, scope: passive thread records end with the owned observation lifetime.
+thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+fn clear_observations() {
+    CLEANUP_REGISTERED.with(|registered| registered.set(false));
+    WHOLE_ROWS.with(|count| count.set(0));
 }

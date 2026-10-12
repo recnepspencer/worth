@@ -187,7 +187,10 @@ fn complexity_budget_relation_integrity_minimum_certification_reports_snapshot_b
     create_relation(execution, &runtime, source, target, "single");
 
     runtime.performance_access().reset_counters();
-    let result = runtime.validation().certification_state();
+    let result = runtime
+        .validation()
+        .certification_state(execution)
+        .expect("invariant fixture request");
     let counters = runtime.performance_access().counters();
 
     assert!(result.summary().publication_failure().is_some());

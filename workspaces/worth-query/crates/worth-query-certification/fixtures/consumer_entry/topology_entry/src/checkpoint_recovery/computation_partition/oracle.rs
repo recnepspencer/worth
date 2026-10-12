@@ -12,7 +12,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
-    WorthQueryPartitionedComputationRun, WorthQueryPublishedComputationStateForTest,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPublishedComputationStateForTest,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationMutationOutcome, WorthQueryApplicationOutputDemandProgress,
@@ -42,6 +42,8 @@ mod republication;
 mod restoration;
 mod seeded_absence;
 mod tree_count;
+// This courtroom injects a reducer panic; it requires unwinding.
+#[cfg(panic = "unwind")]
 mod tree_stop;
 mod tree_work;
 use installation::{
@@ -74,7 +76,7 @@ use application::*;
 struct OracleRun {
     published: Vec<WorthQueryPublishedComputationStateForTest>,
     outcome: Result<(u64, u64), WorthQueryPartitionedComputationDenial<u32>>,
-    runs: Vec<WorthQueryPartitionedComputationRun>,
+    runs: Vec<WorthQueryPartitionedComputationRunForTest>,
     full_preparations: Vec<worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationFullCause>,
     calls: OwnerCalls,
     tree_runs:
@@ -118,7 +120,7 @@ fn assert_published_state(kept: &[OracleRun], fresh: &[OracleRun]) {
     );
     for (kept, fresh) in kept.published.iter().zip(&fresh.published) {
         assert!(
-            kept.same_fields::<RegionKey, Entry, f64>(
+            kept.same_fields_for_test::<RegionKey, Entry, f64>(
                 fresh,
                 |a, b| a.0 == b.0,
                 Entry::same_binding_as

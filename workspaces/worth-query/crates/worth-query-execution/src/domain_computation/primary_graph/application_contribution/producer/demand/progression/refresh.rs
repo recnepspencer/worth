@@ -1,6 +1,5 @@
 use super::*;
 
-#[cfg(any(test, feature = "test-query-execution-observer"))]
 mod recovery_refresh_observation;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

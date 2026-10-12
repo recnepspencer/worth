@@ -14,8 +14,10 @@ use worth_query_admission::facade::authenticated_principal::{
 fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry() {
     let world = installed_authorization_world(true);
     let source = WorthQueryCancellationSource::new();
-    let request =
-        WorthQueryRequestScope::new(Instant::now() + Duration::from_secs(30), source.token());
+    let request = WorthQueryRequestScope::new(
+        Some(Instant::now() + Duration::from_secs(30)),
+        source.token(),
+    );
     let principal = world
         .application
         .with_host_advancement(|phase| {

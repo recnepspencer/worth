@@ -31,12 +31,13 @@ impl DurabilityRecoveryAuthority<'_> {
     /// };
     ///
     /// fn carry_recovered_image(
+    ///     execution: &worth_execution::ExecutionRequest<'_, '_>,
     ///     runtime: &mut RelationalRuntime,
     ///     recovered: RecoveredRelationalRuntimeAuthority,
     ///     validated_candidate: PreparedRelationalCommitCandidate,
     /// ) -> Result<RecoveredRelationalBranchBasis, &'static str> {
     ///     let acknowledged = runtime.durability_recovery()
-    ///         .commit_checkpoint_transition(recovered, validated_candidate)
+    ///         .commit_checkpoint_transition(execution, recovered, validated_candidate)
     ///         .map_err(|_| "transition needs refusal or settlement handling")?;
     ///     let (_receipt, successor_authority) = acknowledged.into_parts();
     ///     let (_, basis) = runtime.observe_branch(&runtime.main_branch_identity())
@@ -46,19 +47,17 @@ impl DurabilityRecoveryAuthority<'_> {
     /// ```
     pub fn commit_checkpoint_transition(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovered: RecoveredRelationalRuntimeAuthority,
         candidate: PreparedRelationalCommitCandidate,
     ) -> Result<RecoveredCheckpointTransition, RecoveredCheckpointTransitionError> {
         if let Err(denial) = self.admit_checkpoint_transition(&recovered, &candidate) {
             return Err(refused(recovered, denial));
         }
-        self.runtime
-            .history
-            .record_publication_attempt(candidate.branch());
         let performed = match self
             .runtime
             .publication_port()
-            .compare_and_publish(candidate)
+            .compare_and_publish(execution, candidate)
         {
             RelationalPublicationOutcome::Performed(performed) => performed,
             outcome => {

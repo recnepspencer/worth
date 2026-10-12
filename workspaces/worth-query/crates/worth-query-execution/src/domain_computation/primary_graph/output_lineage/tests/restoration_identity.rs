@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 
 use super::{checkpoint_identity, RestoredOutputBinding};
@@ -30,13 +31,13 @@ fn restoration_rejects_conflicting_identity_for_the_same_partition() {
     let correspondence = Arc::new(WorthQueryApplicationOutputCorrespondence::default());
     let mut lineage = WorthQueryApplicationOutputLineage::default();
     lineage.fixture_binding(
-        std::any::TypeId::of::<RestoredOutputBinding>(),
+        TypeId::of::<RestoredOutputBinding>(),
         "RestoredOutputBinding",
     );
 
     for source_identity in [[0x31; 32], [0x32; 32]] {
         lineage.record_restoration(
-            std::any::TypeId::of::<RestoredOutputBinding>(),
+            TypeId::of::<RestoredOutputBinding>(),
             runtime_authority,
             schema.clone(),
             scope,

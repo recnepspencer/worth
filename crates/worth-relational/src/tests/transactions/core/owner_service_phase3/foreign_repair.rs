@@ -15,7 +15,7 @@ fn phase3_foreign_deferred_repair_reports_affinity_and_preserves_source_recovery
     let source_durable_before = source.durability().durable_log().len();
     let foreign_durable_before = foreign.durability().durable_log().len();
     let source_settlement = source.settlement_port();
-    source.durability.arm_append_failure();
+    source.durability.arm_append_failure_for_test();
     let deferred_error = source_settlement
         .settle_performed_publication(performed)
         .expect_err("the injected append fault leaves exact deferred repair authority");

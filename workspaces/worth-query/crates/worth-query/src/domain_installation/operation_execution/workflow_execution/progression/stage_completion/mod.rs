@@ -306,7 +306,9 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             .apply(slot, &context, workspace)
             .map_err(|failure| {
                 let class = failure.class().clone();
-                let kind = if stage.semantics().failure_classes.contains(&class) {
+                let kind = if let Some(denial) = failure.request_denial() {
+                    denial.clone()
+                } else if stage.semantics().failure_classes.contains(&class) {
                     WorthQueryWorkflowAdvanceDenialKind::StageExecutor {
                         class,
                         detail: failure.detail().into(),

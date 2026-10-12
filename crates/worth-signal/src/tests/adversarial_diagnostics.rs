@@ -271,7 +271,6 @@ fn repeated_mixed_aspect_churn_keeps_frontier_grouping_bounded() {
 }
 
 #[test]
-#[ignore = "stress coverage for repeated development-profile diagnostics waves"]
 fn stress_development_profile_repeated_waves_remains_semantically_stable() {
     let mut graph = SignalGraph::new();
     graph.reset_runtime_policy_to_tier(DiagnosticsTier::Development);

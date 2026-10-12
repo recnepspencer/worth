@@ -247,6 +247,7 @@ fn result_larger_than_the_declared_bytes_is_a_typed_denial() {
     });
 }
 
+#[cfg(panic = "unwind")]
 #[test]
 fn reducer_panic_is_a_typed_failure_and_the_next_demand_runs() {
     let poisoned = [

@@ -3,7 +3,7 @@ mod post_tool_use_fixture;
 use post_tool_use_fixture::*;
 use serde_json::Value;
 use std::fs;
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::time::{Instant, SystemTime};
 
 #[test]
@@ -38,12 +38,13 @@ fn session_start_prepares_an_isolated_target_for_the_budgeted_hook() {
         .as_nanos();
     let target = std::env::temp_dir().join(format!("worth-phase7-tools-{nonce}"));
     let prepare = configured_command("SessionStart");
-    let prepared = Command::new(&prepare[0])
-        .args(&prepare[1..])
-        .current_dir(root())
-        .env("WORTH_CONSTITUTION_TOOL_TARGET", &target)
-        .output()
-        .unwrap();
+    let prepared = worth_harness::tooling::process_deadline::output(
+        Command::new(&prepare[0])
+            .args(&prepare[1..])
+            .current_dir(root())
+            .env("WORTH_CONSTITUTION_TOOL_TARGET", &target),
+    )
+    .unwrap();
     assert!(
         prepared.status.success(),
         "{}",
@@ -53,24 +54,16 @@ fn session_start_prepares_an_isolated_target_for_the_budgeted_hook() {
     let workspace = hostile_workspace();
     let hook = configured_hook_command();
     let started = Instant::now();
-    let mut child = Command::new(&hook[0])
+    let mut child = Command::new(&hook[0]);
+    child
         .args(&hook[1..])
         .current_dir(root())
         .env("WORTH_CONSTITUTION_ROOT", &workspace)
-        .env("WORTH_CONSTITUTION_TOOL_TARGET", &target)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap();
-    use std::io::Write;
-    child
-        .stdin
-        .as_mut()
-        .unwrap()
-        .write_all(br#"{"tool_name":"Edit","tool_input":{"file_path":"Cargo.toml"}}"#)
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
+        .env("WORTH_CONSTITUTION_TOOL_TARGET", &target);
+    let output = output_with_payload(
+        &mut child,
+        Some(r#"{"tool_name":"Edit","tool_input":{"file_path":"Cargo.toml"}}"#),
+    );
     assert!(started.elapsed() <= HOOK_BUDGET);
     assert!(!output.stdout.is_empty());
     fs::remove_dir_all(workspace).unwrap();

@@ -38,7 +38,7 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(RelationalRecoveryStop::Request)?;
         let initial_schema_authority = self.runtime.initial_schema_authority_snapshot();
         let native_bytes_read = checkpoint.bytes().len();
@@ -66,11 +66,11 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         plan: RecoveryPlan,
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(RelationalRecoveryStop::Request)?;
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
         let material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
-        crate::visibility::materialization::read_records::read_request::consult(execution)
+        crate::execution::check_request(execution)
             .map_err(RelationalRecoveryStop::Request)?;
         let outcome = publish_recovered_runtime(self.runtime, material);
         Ok(outcome)
@@ -110,10 +110,11 @@ fn rebuild_admitted_recovery_or_emit(
             admission,
             checkpoint_restore_work,
         }),
-        Err(error) => {
+        Err(RelationalRecoveryStop::Durability(error)) => {
             admission.emit(runtime);
-            Err(error)
+            Err(RelationalRecoveryStop::Durability(error))
         }
+        Err(RelationalRecoveryStop::Request(cause)) => Err(RelationalRecoveryStop::Request(cause)),
     }
 }
 

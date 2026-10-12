@@ -67,7 +67,10 @@ fn genuinely_interleaved_equivalent_sessions_validate_retry_cleanup_separately()
                         .active_snapshot_count(&active_phase.borrowed_request_for_test()),
                     snapshot_baseline
                 );
-                assert_eq!(world.application.provider_session_resource_count(), 0);
+                assert_eq!(
+                    world.application.provider_session_resource_count_for_test(),
+                    0
+                );
 
                 let (executed, recovered) = match (left, right) {
                     (

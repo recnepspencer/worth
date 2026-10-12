@@ -1,3 +1,4 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -56,7 +57,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "program-source-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
         let execution = &phase_request;
 
@@ -74,7 +75,7 @@ where
         }
         self.runtime.output_demands.validate_recovery_root_kind(
             receipt,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )?;
         self.runtime
             .select_application_read_observation_with_request(execution, observation)
@@ -121,7 +122,7 @@ where
         }
         self.runtime.output_demands.retain_program_source(
             prepared,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )
     }
 
@@ -191,7 +192,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
@@ -209,7 +210,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                target_feature: std::any::TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
             })
@@ -244,7 +245,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "output-demand-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
@@ -256,7 +257,7 @@ where
         let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime.validate_recovered_output_root_kind(
             source_receipt,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(std::any::TypeId::of::<Root>()),
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )?;
         self.runtime
             .admit_recovered_output_demand::<Family<Schema, Root>>(execution,
@@ -267,7 +268,7 @@ where
             )
             .map(|admitted| WorthQueryAdmittedProgramOutput {
                 admitted,
-                target_feature: std::any::TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
+                target_feature: TypeId::of::<<<Root as ApplicationOutputGraphShape<Schema>>::RootConnection as ApplicationConnectionShape<Schema>>::TargetFeature>(),
                 artifact,
                 marker: std::marker::PhantomData,
             })

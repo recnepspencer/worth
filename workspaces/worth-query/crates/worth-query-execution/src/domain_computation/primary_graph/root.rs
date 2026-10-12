@@ -286,7 +286,6 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         mutate(&mut retention)
     }
 
-    #[cfg(feature = "test-primary-graph-faults")]
     pub(in crate::domain_computation::primary_graph) fn release_workflow_instance_progress(&self) {
         for shard in self.workflow_instance_progress_retention.iter() {
             shard

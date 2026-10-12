@@ -1,4 +1,3 @@
-#[cfg(feature = "test-query-execution-observer")]
 #[path = "application_attempt/advancement_custody.rs"]
 mod advancement_custody;
 #[path = "application_attempt/product_races.rs"]
@@ -78,7 +77,6 @@ mod structured_effect_validation;
 mod terminal_failures;
 #[path = "application_attempt/touched_graph_closure.rs"]
 mod touched_graph_closure;
-#[cfg(feature = "test-world-operation-control")]
 #[path = "application_attempt/unwind_custody.rs"]
 mod unwind_custody;
 #[path = "application_attempt/validation_interruption.rs"]
@@ -357,3 +355,6 @@ mod read_rendezvous;
 
 #[path = "application_attempt/request_read_stops.rs"]
 mod request_read_stops;
+
+#[path = "application_attempt/checked_invariant_hooks.rs"]
+mod checked_invariant_hooks;

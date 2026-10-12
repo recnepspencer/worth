@@ -45,7 +45,9 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .accept_operation_from_owner(required, operation)
-            .map_err(BankApprovedPaymentWorkflowError::OperationOwnerAcceptance)
+            .map_err(|denial| {
+                BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(Box::new(denial))
+            })
     }
 
     pub fn prepare_apply_recovery(
@@ -66,7 +68,9 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             )
             .map_err(BankApprovedPaymentWorkflowError::OperationBinding)?
             .prepare_workflow_operation_recovery_from_owner(required)
-            .map_err(BankApprovedPaymentWorkflowError::OperationRecoveryPreparation)
+            .map_err(|denial| {
+                BankApprovedPaymentWorkflowError::OperationRecoveryPreparation(Box::new(denial))
+            })
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -99,6 +103,8 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .prepare_workflow_advance(self.runtime.approved_payment_workflow_runtime(), instance)
             .map_err(BankApprovedPaymentWorkflowError::Advance)?
             .accept_recovered_operation_from_owner(required, operation, recovery)
-            .map_err(BankApprovedPaymentWorkflowError::OperationOwnerAcceptance)
+            .map_err(|denial| {
+                BankApprovedPaymentWorkflowError::OperationOwnerAcceptance(Box::new(denial))
+            })
     }
 }

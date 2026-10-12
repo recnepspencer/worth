@@ -143,6 +143,7 @@ fn owner_read<Answer>(
 ) -> Result<Answer, WorthQueryOutputDemandDenial> {
     answer.map_err(|stop| match stop {
         CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => work_denial(),
         _ => WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,

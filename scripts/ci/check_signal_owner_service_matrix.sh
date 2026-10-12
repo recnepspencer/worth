@@ -8,11 +8,11 @@ CONFIGURATION="${1:-}"
 case "$CONFIGURATION" in
   default)
     PACKAGE_FEATURE_ARGS=()
-    CONTROL_FEATURE_ARGS=(--features test-operation-control)
+    CONTROL_FEATURE_ARGS=()
     ;;
-  profile-compact|profile-compact,parallel|profile-standard|profile-standard,parallel|profile-extended|profile-extended,parallel)
+  profile-compact|profile-standard|profile-extended)
     PACKAGE_FEATURE_ARGS=(--no-default-features --features "$CONFIGURATION")
-    CONTROL_FEATURE_ARGS=(--no-default-features --features "$CONFIGURATION,test-operation-control")
+    CONTROL_FEATURE_ARGS=("${PACKAGE_FEATURE_ARGS[@]}")
     ;;
   *)
     echo "FAIL: expected default or one reviewed Signal profile configuration" >&2
@@ -35,7 +35,7 @@ bash scripts/ci/run_signal_owner_service_selection.sh \
   --selection adversarial::operation_control:: \
   "${ROSTER_ARGS[@]}"
 
-if [[ "$CONFIGURATION" == "default" || "$CONFIGURATION" == "profile-extended,parallel" ]]; then
+if [[ "$CONFIGURATION" == "default" || "$CONFIGURATION" == "profile-extended" ]]; then
   bash scripts/ci/run_signal_owner_service_selection.sh \
     --test signal_owner_services \
     "${CONTROL_FEATURE_ARGS[@]}" \

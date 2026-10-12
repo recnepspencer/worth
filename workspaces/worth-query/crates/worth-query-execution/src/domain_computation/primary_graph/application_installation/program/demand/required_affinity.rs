@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryPreparedRequiredOutputSource,
 };
+use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -34,7 +35,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "program-source-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
         let execution = &phase_request;
 
@@ -76,7 +77,7 @@ where
             })?;
         self.runtime.output_demands.validate_owned_root_kind(
             prepared,
-            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(std::any::TypeId::of::<Root>()),
+            crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
         )?;
         use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
         let kind = match request.interruption() {
@@ -109,7 +110,7 @@ where
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::ForeignPhase), "program-source-phase")),
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
         let execution = &phase_request;
 

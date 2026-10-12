@@ -113,15 +113,16 @@ fn real_audience_facades_depend_only_on_their_owned_authority() {
             .join("workspaces/worth-query/crates")
             .join(package)
             .join("Cargo.toml");
-        let output = Command::new("cargo")
-            .arg("metadata")
-            .arg("--format-version")
-            .arg("1")
-            .arg("--no-deps")
-            .arg("--manifest-path")
-            .arg(&manifest)
-            .output()
-            .expect("cargo metadata");
+        let output = worth_harness::tooling::process_deadline::output(
+            Command::new("cargo")
+                .arg("metadata")
+                .arg("--format-version")
+                .arg("1")
+                .arg("--no-deps")
+                .arg("--manifest-path")
+                .arg(&manifest),
+        )
+        .expect("cargo metadata");
         assert!(
             output.status.success(),
             "metadata failed for {package}: {}",
@@ -177,13 +178,14 @@ fn real_certification_kit_uses_only_host_and_replay_audiences() {
 #[test]
 fn production_boundary_check_accepts_real_leaf_facades() {
     let root = workspace_root();
-    let output = Command::new(env!("CARGO_BIN_EXE_boundary-check"))
-        .arg("--root")
-        .arg(&root)
-        .arg("--config")
-        .arg("tools/boundary-check/config/road1.toml")
-        .output()
-        .expect("run boundary-check");
+    let output = worth_harness::tooling::process_deadline::output(
+        Command::new(env!("CARGO_BIN_EXE_boundary-check"))
+            .arg("--root")
+            .arg(&root)
+            .arg("--config")
+            .arg("tools/boundary-check/config/road1.toml"),
+    )
+    .expect("run boundary-check");
     assert!(
         output.status.success(),
         "real tree must pass facade contract: {}",

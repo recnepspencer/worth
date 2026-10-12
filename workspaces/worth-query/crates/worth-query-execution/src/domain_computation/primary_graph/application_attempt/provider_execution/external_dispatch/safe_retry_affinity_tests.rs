@@ -227,7 +227,7 @@ fn safe_retry_denies_when_the_handle_carries_no_co_committed_outbox() {
 fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
     let cancellation = WorthQueryCancellationSource::new();
     let request = WorthQueryRequestScope::new(
-        Instant::now() + Duration::from_secs(60),
+        Some(Instant::now() + Duration::from_secs(60)),
         cancellation.token(),
     );
     let (world, _receipt, handle, admission) =
@@ -278,5 +278,4 @@ fn redispatch_names_fresh_authority_and_current_admission_failures_apart() {
     );
 }
 
-#[cfg(feature = "test-query-execution-observer")]
 mod advancement_custody;

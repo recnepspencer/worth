@@ -9,6 +9,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionDenialKind as SessionKind, WorthQueryProviderSessionFailure,
     WorthQueryProviderSessionProtocolStage,
 };
+use worth_execution::CancellationSource;
 use worth_execution::{
     ExecutionAllocationPolicy as Allocation, ExecutionRequest, SerialMemoryBudget, SerialRequest,
 };

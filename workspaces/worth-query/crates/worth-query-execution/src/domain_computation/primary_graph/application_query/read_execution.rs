@@ -4,7 +4,6 @@ mod denial;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) mod dispatch_witness;
 use cardinality::{validate_cardinality_and_limit, validate_read_cardinality};
-#[cfg(feature = "test-query-execution-observer")]
 mod entry_observation;
 mod interruption;
 use interruption::ReadInterruption;
@@ -16,7 +15,6 @@ pub(super) mod read_plan;
 mod root_selection;
 mod tree_materialization;
 mod work_observation;
-#[cfg(feature = "test-query-execution-observer")]
 pub use entry_observation::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test,
@@ -122,7 +120,6 @@ pub(super) fn read_prepared_root_rows(
     maximum_work: usize,
     interruption: ReadInterruption<'_>,
 ) -> Result<RawNonLiveKernelOutcome, WorthQueryApplicationReadExecutionDenial> {
-    #[cfg(feature = "test-query-execution-observer")]
     entry_observation::record_kernel_entry(plan.root);
     let contract = plan.contract;
     let selection = select_bounded_roots(

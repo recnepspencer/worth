@@ -66,8 +66,95 @@ impl WorthQueryPrimaryGraphProvider {
             self.fault_port.candidate_staged_for_validation();
             Ok::<_, WorthQueryInvariantExecutionFailure>(transaction.validate(execution, runtime))
         });
-        let candidate = candidate?.map_err(map_validation_failure)?;
+        let candidate = candidate?.map_err(|failure| map_failed_candidate(failure, &control))?;
         validate_owner_evidence(candidate.invariant_evidence(), branch)?;
         Ok(candidate)
+    }
+}
+
+fn map_failed_candidate(
+    failure: worth_relational::facade::mvcc::TransactionCommitError,
+    control: &super::validation_control::ValidationRequestControl,
+) -> WorthQueryInvariantExecutionFailure {
+    // The stage consult can notice the same caller interruption before
+    // native validation reaches its operation-control safe point.
+    use worth_relational::facade::transactions::{
+        CommitExecutionDenial, CommitExecutionDenialKind, RelationalExecutionDenialCause as Cause,
+    };
+    if matches!(
+        failure,
+        worth_relational::facade::mvcc::TransactionCommitError::Execution {
+            denial: CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(Cause::Cancelled | Cause::DeadlineElapsed),
+                ..
+            },
+            ..
+        }
+    ) {
+        if let Some(interruption) = control.relational().interruption() {
+            return super::super::invariant_execution_failure::request_interruption(interruption);
+        }
+    }
+    map_validation_failure(failure)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn interrupted_caller_keeps_validation_work_stop_and_stage() {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialStage,
+            WorthQueryManagedComputationResourceDenial as Resource,
+        };
+        use crate::domain_computation::{
+            WorthQueryInvariantExecutionDenialKind as Kind,
+            WorthQueryProviderSessionDenialKind as ExecutionKind,
+        };
+        use worth_relational::facade::transactions::{
+            CommitExecutionDenial, CommitExecutionDenialKind, RelationalExecutionDenialCause,
+        };
+        let source = worth_query_admission::facade::authenticated_principal::WorthQueryCancellationSource::new();
+        let request =
+            worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::new(
+                Some(std::time::Instant::now() + std::time::Duration::from_secs(60)),
+                source.token(),
+            );
+        let control = super::super::validation_control::ValidationRequestControl::new(&request);
+        source.cancel();
+        assert_eq!(
+            control.relational().interruption(),
+            Some(worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled)
+        );
+        let failure = worth_relational::facade::mvcc::TransactionCommitError::Execution {
+            denial: CommitExecutionDenial {
+                kind: CommitExecutionDenialKind::Cause(
+                    RelationalExecutionDenialCause::WorkExhausted,
+                ),
+                partition_identity: Some(23),
+            },
+            context: worth_relational::facade::errors::ErrorContext::new(
+                worth_relational::facade::errors::RelationalSubsystem::Transaction,
+                worth_relational::facade::errors::ErrorOperation::Validate,
+            ),
+            commit_log: worth_relational::facade::transactions::CommitLog::new(),
+        };
+        let denial = WorthQueryApplicationCommitDenial::invariant_execution_denied(
+            WorthQueryApplicationCommitDenialStage::InvariantExecution,
+            map_failed_candidate(failure, &control),
+        );
+        assert_eq!(
+            denial.stage(),
+            WorthQueryApplicationCommitDenialStage::InvariantExecution
+        );
+        assert_eq!(
+            denial.invariant_execution_failure().unwrap().kind(),
+            Kind::ExecutionDenied(ExecutionKind::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: Some(23),
+                policy_ancestor: None
+            })
+        );
     }
 }

@@ -7,14 +7,27 @@ struct Repository {
     root: PathBuf,
 }
 
+#[test]
+fn snapshot_fixture_lives_under_the_builds_temporary_directory() {
+    let repository = Repository::new();
+    assert!(repository
+        .root
+        .starts_with(Path::new(env!("CARGO_TARGET_TMPDIR"))));
+}
+
 impl Repository {
     fn new() -> Self {
         let id = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let root = std::env::temp_dir().join(format!("snapshot-contract-{id}"));
+        let root = Path::new(env!("CARGO_TARGET_TMPDIR")).join(format!("snapshot-contract-{id}"));
         fs::create_dir_all(&root).unwrap();
+        write(
+            &root,
+            ".boundary-check-mock-root",
+            "Declared boundary-check mock root.\n",
+        );
         write(&root, "Cargo.toml", ROOT_MANIFEST);
         write(&root, "plans/worthy/NAMING.md", "fixture authority\n");
         write(
@@ -53,7 +66,7 @@ impl Repository {
         if update {
             command.arg("--update-snapshots");
         }
-        command.output().unwrap()
+        worth_harness::tooling::process_deadline::output(&mut command).unwrap()
     }
 
     fn update(&self) {

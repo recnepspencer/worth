@@ -1,8 +1,12 @@
 //! A public phase cannot fund another installation's reads or mutation.
 use super::*;
 
+#[path = "runtime_identity/native_commit_work.rs"]
+mod native_commit_work;
+
 #[test]
 fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
+    let _observation = crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     // Two changed rows (account and idempotency), 21 selected/reserved indexes,
     // eight before/after reads, twelve routing visits, three edits, one old-row
     // comparison, and three nonempty plus three empty retained paths.
@@ -117,7 +121,7 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             let read_charges = charge_prices::principal_and_commit_reads();
             let native_staging = match placement {
                 Placement::Serial => 0,
-                Placement::Leased(_) => charge_prices::leased_native_staging(),
+                Placement::Leased(_) => native_commit_work::LEASED_COMMIT_WORK,
                 Placement::World | Placement::Certified { .. } => {
                     unreachable!("this proof names its two placements")
                 }
@@ -142,6 +146,8 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
 
 #[test]
 fn mutable_principal_reader_moves_the_installed_source_counter() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let world = installed_authorization_world(true);
     let request = live_scope();
     let external = world.authenticate("alice", std::time::Duration::from_secs(60), &request);

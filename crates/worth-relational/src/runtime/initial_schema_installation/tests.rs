@@ -76,7 +76,7 @@ fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal(
     assert_eq!(receipt.custom_invariant_generation(), 1);
     let sealed_basis = test_owner_main_basis(&runtime).unwrap();
     assert!(matches!(
-        port.compare_and_publish(candidate),
+        port.compare_and_publish(execution, candidate),
         crate::mvcc::RelationalPublicationOutcome::Denied(
             crate::mvcc::RelationalPublicationDenial::StaleInvariantGeneration {
                 expected_generation: 1,
@@ -114,7 +114,7 @@ fn retained_publication_port_rejects_candidate_from_before_empty_invariant_seal(
         .prepare_branch_transaction(execution, fresh)
         .unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        port.compare_and_publish(fresh)
+        port.compare_and_publish(execution, fresh)
     else {
         panic!("same retained publication port must accept a freshly validated generation");
     };
@@ -150,7 +150,7 @@ fn delayed_installation_rejects_published_unsettled_branch() {
     let publication = runtime.publication_port();
     let installation = runtime.prepare_initial_schema_installation().unwrap();
     let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        publication.compare_and_publish(candidate)
+        publication.compare_and_publish(execution, candidate)
     else {
         panic!("candidate must publish before the delayed seal")
     };
@@ -224,7 +224,7 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
         });
         let publish = threads.spawn(move || {
             started_tx.send(()).unwrap();
-            let result = publication.compare_and_publish(candidate);
+            let result = publication.compare_and_publish(execution, candidate);
             finished_tx.send(()).unwrap();
             result
         });
@@ -273,8 +273,9 @@ fn retained_ports_cannot_cross_initial_root_and_configuration_cutover() {
         .preparation_port()
         .prepare_branch_transaction(execution, fresh)
         .unwrap();
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("fresh owner generation must publish after cutover")
     };

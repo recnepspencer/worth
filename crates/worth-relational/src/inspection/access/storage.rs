@@ -73,7 +73,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         scope: &InspectionScope,
         entity_id: EntityId,
     ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)?;
+        crate::execution::check_request(execution)?;
         let read_view = match scope {
             InspectionScope::Current => None,
             _ => self.read_view_for_scope(execution, scope)?,
@@ -108,7 +108,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         scope: &InspectionScope,
         relation_id: RelationId,
     ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)?;
+        crate::execution::check_request(execution)?;
         let read_view = match scope {
             InspectionScope::Current => None,
             _ => self.read_view_for_scope(execution, scope)?,
@@ -143,7 +143,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         scope: &InspectionScope,
         entity_id: EntityId,
     ) -> Result<Vec<RelationId>, crate::execution::RelationalExecutionDenialCause> {
-        crate::visibility::materialization::read_records::read_request::consult(execution)?;
+        crate::execution::check_request(execution)?;
         let read_view = match scope {
             InspectionScope::Current => None,
             _ => self.read_view_for_scope(execution, scope)?,
@@ -174,7 +174,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         relation_id: RelationId,
     ) -> Result<Option<(EntityId, EntityId)>, crate::execution::RelationalExecutionDenialCause>
     {
-        crate::visibility::materialization::read_records::read_request::consult(execution)?;
+        crate::execution::check_request(execution)?;
         let record = match scope {
             InspectionScope::Current => None,
             _ => self.scoped_authoritative_relation_record(execution, scope, relation_id)?,

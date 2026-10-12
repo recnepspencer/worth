@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use worth_signal::facade::branch::{
-    SignalOwnerOperationBoundary, SignalOwnerOperationControl, SignalOwnerOperationPause,
+    SignalOwnerOperationBoundaryForTest, SignalOwnerOperationControlForTest, SignalOwnerOperationPauseForTest,
 };
 use worth_signal::facade::{SignalGraph, SignalRuntime};
 
@@ -22,14 +22,14 @@ fn compile_operation_control_matrix() {
     let _services = runtime
         .owner_component_services()
         .expect("the concrete owner seals before issuing controls");
-    let control: SignalOwnerOperationControl = runtime
-        .owner_operation_control()
+    let control: SignalOwnerOperationControlForTest = runtime
+        .owner_operation_control_for_test()
         .expect("the sealed owner issues the feature-gated control");
     assert_send_sync_clone(&control);
-    let pause: SignalOwnerOperationPause =
-        control.arm_pause_once(SignalOwnerOperationBoundary::BranchRegistryLookup);
+    let pause: SignalOwnerOperationPauseForTest =
+        control.arm_pause_once_for_test(SignalOwnerOperationBoundaryForTest::BranchRegistryLookup);
     assert_send_sync(&pause);
     let _ = pause.wait_until_reached(Duration::ZERO);
     pause.release();
-    control.inject_panic_once(SignalOwnerOperationBoundary::OutcomeConstruction);
+    control.inject_panic_once_for_test(SignalOwnerOperationBoundaryForTest::OutcomeConstruction);
 }

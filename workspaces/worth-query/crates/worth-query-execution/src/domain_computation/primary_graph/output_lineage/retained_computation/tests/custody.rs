@@ -26,6 +26,8 @@ fn held(prior: &PriorComputationRecord) -> Arc<CustodiedComputation> {
 
 #[test]
 fn a_shared_state_keeps_one_charge_until_the_last_holder_leaves() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (mut lineage, prior) = prior_record();
     let state = held(&prior);
     let bytes = state.fixture_byte_formula();
@@ -72,6 +74,8 @@ fn a_shared_state_keeps_one_charge_until_the_last_holder_leaves() {
 
 #[test]
 fn an_exclusive_displaced_state_can_transfer_its_ticket_once() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (lineage, prior) = prior_record();
     let state = held(&prior);
     let bytes = state.fixture_byte_formula();
@@ -104,6 +108,8 @@ fn an_exclusive_displaced_state_can_transfer_its_ticket_once() {
 
 #[test]
 fn a_shared_successor_reserves_in_full_and_cancellation_preserves_the_prior() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (lineage, prior) = prior_record();
     let state = held(&prior);
     let baseline = state.fixture_byte_formula();
@@ -144,6 +150,8 @@ fn a_shared_successor_reserves_in_full_and_cancellation_preserves_the_prior() {
 
 #[test]
 fn a_refused_incoming_state_does_not_evict_an_existing_holder() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (mut lineage, prior) = prior_record();
     let state = held(&prior);
     let baseline = state.fixture_byte_formula();
@@ -169,6 +177,8 @@ fn a_refused_incoming_state_does_not_evict_an_existing_holder() {
 
 #[test]
 fn refusing_exclusive_ticket_growth_preserves_the_displaced_state() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (mut lineage, prior) = prior_record();
     let state = held(&prior);
     let bytes = state.fixture_byte_formula();
@@ -201,6 +211,8 @@ fn refusing_exclusive_ticket_growth_preserves_the_displaced_state() {
 
 #[test]
 fn a_different_displaced_record_cannot_transfer_the_prior_ticket() {
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let (lineage, prior) = prior_record();
     let (_, foreign) = recorded_settlement();
     let state = held(&prior);

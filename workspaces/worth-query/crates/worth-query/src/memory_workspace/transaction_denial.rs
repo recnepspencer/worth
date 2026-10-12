@@ -167,20 +167,23 @@ pub(super) fn commit(
 fn allocation_kind(
     denial: &worth_execution::ExecutionAllocationDenial,
 ) -> WorthQueryWorkspaceErrorKind {
-    use worth_execution::ExecutionAllocationDenialKind as Kind;
-    match denial.kind() {
-        Kind::Cancelled => {
+    use worth_execution::{
+        ExecutionAllocationDenialClass as Class, MapKernelStop as Stop,
+        WorkCeilingDenial as Request,
+    };
+    match denial.classify() {
+        Class::Request(Request::Stopped(Stop::Cancelled)) => {
             control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled)
         }
-        Kind::DeadlineElapsed => {
+        Class::Request(Request::Stopped(Stop::DeadlineElapsed)) => {
             control_kind(worth_relational::facade::mvcc::RelationalOperationInterruption::TimedOut)
         }
-        Kind::Layout
-        | Kind::Lease(_)
-        | Kind::Allocator
-        | Kind::CapacityMismatch
-        | Kind::WriteBeyondReserved
-        | Kind::IncompleteSeal => WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
+        Class::Request(Request::Admission(_))
+        | Class::Request(Request::Stopped(
+            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped,
+        ))
+        | Class::Request(Request::Panicked)
+        | Class::Physical(_) => WorthQueryWorkspaceErrorKind::TransactionAllocationDenied {
             kind: denial.kind(),
             requested_payload_bytes: denial.requested_payload_bytes(),
         },

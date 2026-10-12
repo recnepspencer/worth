@@ -252,7 +252,7 @@ where
         return Ok(());
     }
     let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(request.deadline, cancellation.token());
+    let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
     let principal = match tokio::select! {
         biased;
         _ = shutdown.changed() => {
@@ -339,7 +339,7 @@ where
             }
             _ = poll.tick() => {
                 let delivery_scope = WorthQueryRequestScope::new(
-                    request.deadline,
+                    Some(request.deadline),
                     cancellation.token(),
                 );
                 if let Some(event) = live_event(

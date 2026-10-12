@@ -25,11 +25,10 @@ fn aspect_traces_and_diagnostics_are_stable_across_serial_and_leased_preparation
         .build();
 
     let serial_outcome = create_entity_outcome(execution, &serial, "trace-stable");
-    let staged_outcome = create_entity_outcome_with_lease(
-        execution,
+    let staged_outcome = create_entity_outcome(
+        &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
         &staged,
         "trace-stable",
-        &test_execution_lease(),
     );
 
     assert_eq!(

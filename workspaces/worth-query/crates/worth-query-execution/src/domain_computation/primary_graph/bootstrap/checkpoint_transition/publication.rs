@@ -135,7 +135,7 @@ fn prepare_transition<Schema: ApplicationSchema>(
                 })?;
             Ok(runtime
                 .durability_recovery()
-                .commit_checkpoint_transition(recovered, candidate))
+                .commit_checkpoint_transition(execution, recovered, candidate))
         })
         .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
     match successor {

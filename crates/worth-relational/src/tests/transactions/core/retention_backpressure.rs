@@ -190,7 +190,7 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
     assert!(matches!(
         publication_runtime
             .publication_port()
-            .compare_and_publish(candidate),
+            .compare_and_publish(execution, candidate),
         crate::mvcc::RelationalPublicationOutcome::Deferred(
             RelationalPublicationDeferred::RetentionBackpressure
         )
@@ -271,7 +271,9 @@ fn capacity_consumed_after_preparation_defers_next_basis_before_movement() {
     let external = runtime.retain_component_basis(&basis).unwrap();
 
     assert!(matches!(
-        runtime.publication_port().compare_and_publish(candidate),
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate),
         crate::mvcc::RelationalPublicationOutcome::Deferred(
             RelationalPublicationDeferred::RetentionBackpressure
         )
@@ -323,8 +325,9 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
         test_owner_main_basis(&runtime).unwrap().descriptor(),
         before.descriptor()
     );
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) =
-        runtime.publication_port().compare_and_publish(candidate)
+    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
+        .publication_port()
+        .compare_and_publish(execution, candidate)
     else {
         panic!("a prepared system-allocated root must publish");
     };
