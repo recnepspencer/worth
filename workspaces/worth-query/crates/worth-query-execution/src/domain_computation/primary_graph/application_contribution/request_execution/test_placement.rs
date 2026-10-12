@@ -172,30 +172,42 @@ where
             None
         }
     };
-    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX)
-        .run_detached_for_test(lease, |diagnostic| {
+    let (checked, _) = worth_execution::ExecutionWorkCeiling::new(u64::MAX).run_detached_for_test(
+        lease,
+        |diagnostic| {
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let (certified, certified_report, _) = match map.certify_reduce(
-                    diagnostic, seed, kernel, identity, combine, max_value_bytes, 0) {
+                    diagnostic,
+                    seed,
+                    kernel,
+                    identity,
+                    combine,
+                    max_value_bytes,
+                    0,
+                ) {
                     Ok(value) => value,
                     Err(failure) => {
-                        if let Some(stop) = request_stop(diagnostic) { return Err(stop); }
-                        match failure {
-                            ReduceCertificationFailure::Run(_) => panic!("the oracle or perturbed run of seed {seed} stopped where the run did not"),
-                            ReduceCertificationFailure::Mismatch(mismatch) => panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}"),
+                        return Err(certification_failure(diagnostic, seed, failure));
+                    }
+                };
+                let same_bits =
+                    match compare_canonical_values(diagnostic, run.result(), certified.result()) {
+                        Ok(same) => same,
+                        Err(stop) => {
+                            if let Some(stop) = request_stop(diagnostic) {
+                                return Err(stop);
+                            }
+                            panic!("the certified result could not be compared: {stop:?}");
                         }
-                    }
-                };
-                let same_bits = match compare_canonical_values(diagnostic, run.result(), certified.result()) {
-                    Ok(same) => same,
-                    Err(stop) => {
-                        if let Some(stop) = request_stop(diagnostic) { return Err(stop); }
-                        panic!("the certified result could not be compared: {stop:?}");
-                    }
-                };
-                Ok((same_bits, certified_report.charged_work(), certified_report.charged_span()))
+                    };
+                Ok((
+                    same_bits,
+                    certified_report.charged_work(),
+                    certified_report.charged_span(),
+                ))
             }))
-        })?;
+        },
+    )?;
     let (same_bits, work, span) = match checked {
         Ok(result) => result?,
         Err(payload) => std::panic::resume_unwind(payload),
@@ -215,6 +227,56 @@ where
         "the run's charged span differs from the certified one under seed {seed}"
     );
     Ok(())
+}
+
+fn certification_failure<E>(
+    lease: &ExecutionResourceLease<'_>,
+    seed: u64,
+    failure: ReduceCertificationFailure<E>,
+) -> worth_execution::WorkCeilingDenial {
+    use worth_execution::{
+        MapKernelStop, MapStop, OracleMismatch, ReduceInputDenial, ReductionRunFailure,
+        ReductionRunStop, WorkCeilingDenial,
+    };
+    match failure {
+        ReduceCertificationFailure::Run(ReduceInputDenial::MapStopped {
+            reason:
+                MapStop::Failure {
+                    cause:
+                        MapKernelFailure::Stop(
+                            stop @ (MapKernelStop::Cancelled | MapKernelStop::DeadlineElapsed),
+                        ),
+                    ..
+                },
+            ..
+        })
+        | ReduceCertificationFailure::Run(ReduceInputDenial::ReductionStopped {
+            failure:
+                ReductionRunFailure {
+                    reason:
+                        ReductionRunStop::Hook(
+                            stop @ (MapKernelStop::Cancelled | MapKernelStop::DeadlineElapsed),
+                        ),
+                    ..
+                },
+            ..
+        }) => WorkCeilingDenial::Stopped(stop),
+        ReduceCertificationFailure::Mismatch(OracleMismatch::Stop) => {
+            if lease.is_cancelled() {
+                WorkCeilingDenial::Stopped(MapKernelStop::Cancelled)
+            } else if lease.deadline_elapsed() {
+                WorkCeilingDenial::Stopped(MapKernelStop::DeadlineElapsed)
+            } else {
+                panic!("the oracle or perturbed run of seed {seed} stopped where the run did not")
+            }
+        }
+        ReduceCertificationFailure::Mismatch(mismatch) => {
+            panic!("the perturbed run of seed {seed} differs from the oracle: {mismatch:?}")
+        }
+        ReduceCertificationFailure::Run(_) => {
+            panic!("the oracle or perturbed run of seed {seed} stopped where the run did not")
+        }
+    }
 }
 
 /// Bounds the test thread's requests with a host's declared budget.

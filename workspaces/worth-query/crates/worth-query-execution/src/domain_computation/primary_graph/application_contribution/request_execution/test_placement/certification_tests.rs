@@ -3,6 +3,48 @@ use super::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[test]
+fn a_certification_mismatch_wins_over_coincident_cancellation() {
+    let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
+    let cancellation = worth_execution::CancellationSource::new();
+    let lease = query_test_execution_authority_for_test()
+        .request_lease(worth_execution::LeaseRequest {
+            policy: test_policy(NonZeroUsize::MIN, 1 << 24),
+            cancellation: cancellation.token(),
+            deadline: None,
+        })
+        .unwrap();
+    cancellation.cancel();
+    for mismatch in [
+        worth_execution::OracleMismatch::Values,
+        worth_execution::OracleMismatch::ChargedWork,
+        worth_execution::OracleMismatch::ChargedSpan,
+    ] {
+        let payload = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            certification_failure(
+                &lease,
+                1,
+                ReduceCertificationFailure::<()>::Mismatch(mismatch),
+            )
+        }))
+        .unwrap_err();
+        let message = payload.downcast_ref::<String>().unwrap();
+        assert_eq!(
+            message,
+            &format!("the perturbed run of seed 1 differs from the oracle: {mismatch:?}"),
+            "a measured mismatch is not swallowed by coincident cancellation"
+        );
+    }
+    assert_eq!(
+        certification_failure(
+            &lease,
+            1,
+            ReduceCertificationFailure::<()>::Mismatch(worth_execution::OracleMismatch::Stop)
+        ),
+        worth_execution::WorkCeilingDenial::Stopped(worth_execution::MapKernelStop::Cancelled)
+    );
+}
+
+#[test]
 fn a_request_cancelled_during_certification_reports_cancellation() {
     let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let cancellation = worth_execution::CancellationSource::new();

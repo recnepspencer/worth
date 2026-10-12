@@ -5,6 +5,7 @@ use super::*;
 pub(super) struct HistoryConfiguration {
     topology: TopologyConfiguration,
     code: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    reuse: std::sync::Arc<std::sync::atomic::AtomicBool>,
 }
 impl Default for HistoryConfiguration {
     fn default() -> Self {
@@ -17,6 +18,7 @@ impl Default for HistoryConfiguration {
                 producer_domain_denial: Default::default(),
             },
             code: Default::default(),
+            reuse: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(REUSE_ON.get())),
         }
     }
 }
@@ -59,12 +61,12 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
                 HistoryOwner { steps: false },
             )?;
         let code = configuration.code;
-        let reuse = REUSE_ON.get();
+        let reuse = configuration.reuse;
         let ceiling = CARRIED_CEILING.get();
         let handler = RegionOutputHandler::running(move |reader, set| {
             super::super::decision_plan::begin();
             if code.load(Ordering::Relaxed) {
-                let prepared = if reuse {
+                let prepared = if reuse.load(Ordering::Relaxed) {
                     changed.prepare(reader, set)
                 } else {
                     changed.prepare_without_reuse_for_test(reader, set)
@@ -73,7 +75,7 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for HistoryContribution
                     REPORTS.with(|reports| reports.borrow_mut().extend(observations));
                 });
             }
-            let prepared = if reuse {
+            let prepared = if reuse.load(Ordering::Relaxed) {
                 installed.prepare(reader, set)
             } else {
                 installed.prepare_without_reuse_for_test(reader, set)
@@ -141,15 +143,17 @@ pub(super) fn install_after_authority_issuances(
 ) -> Application {
     install_configured(seed, issuances, Default::default())
 }
-pub(super) fn install_with_code(
+pub(super) fn install_with_controls(
     seed: impl FnOnce(&mut Graph),
     code: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    reuse: std::sync::Arc<std::sync::atomic::AtomicBool>,
 ) -> Application {
     install_configured(
         seed,
         0,
         HistoryConfiguration {
             code,
+            reuse,
             ..Default::default()
         },
     )

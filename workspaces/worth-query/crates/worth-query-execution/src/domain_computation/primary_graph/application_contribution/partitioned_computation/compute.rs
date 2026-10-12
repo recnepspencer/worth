@@ -3,9 +3,6 @@
 mod decision_plan;
 mod transport;
 
-use std::collections::BTreeMap;
-use std::sync::Mutex;
-
 use worth_execution::{ExecutionMap, MapKernelContext};
 use worth_query_declaration::facade::application_program::{
     ApplicationFeature, ApplicationManagedComputation,
@@ -154,33 +151,53 @@ where
             WorthQueryManagedComputationResourceDenial::RetainedBytesExhausted,
         )
         .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-        let kernel_units = Mutex::new(BTreeMap::new());
+        let retain = match &self.run {
+            PreparedRun::Full { recording, .. } => {
+                recording.as_ref().is_ok_and(FullRecording::can_retain)
+            }
+            PreparedRun::Incremental(prepared) => prepared.can_retain(),
+        };
+        let recording_steps =
+            super::incremental::KernelRecording::new(execution.request, retain, declared_bytes);
+        let compute_kernel =
+            |partition: &Gathered<Schema, Feature, Computation, Owner>,
+             context: &mut MapKernelContext<'_, '_>,
+             steps: &mut Option<super::incremental::KernelSteps>| {
+                let (computed, refused) = {
+                    let mut charge = |work| {
+                        context.checkpoint(work)?;
+                        recording_steps.accepted(steps, work);
+                        Ok(())
+                    };
+                    let mut checkpoint = WorthQueryManagedComputationCheckpoint::for_partition(
+                        &mut charge,
+                        execution,
+                    );
+                    let computed = owner.compute_partition(
+                        WorthQueryComputationPartitionView::new(partition),
+                        &mut checkpoint,
+                    );
+                    (computed, checkpoint.refused())
+                };
+                match refused {
+                    Some(refused) => Err(kernel_failure(refused.into())),
+                    None => computed.map_err(kernel_failure),
+                }
+            };
         let kernel = |partition: &Gathered<Schema, Feature, Computation, Owner>,
                       context: &mut MapKernelContext<'_, '_>| {
-            let mut steps = super::incremental::KernelSteps::default();
-            let (computed, refused) = {
-                let mut charge = |work| {
-                    context.checkpoint(work)?;
-                    steps.accepted(work);
-                    Ok(())
-                };
-                let mut checkpoint =
-                    WorthQueryManagedComputationCheckpoint::for_partition(&mut charge, execution);
-                let computed = owner.compute_partition(
-                    WorthQueryComputationPartitionView::new(partition),
-                    &mut checkpoint,
-                );
-                (computed, checkpoint.refused())
-            };
-            kernel_units
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .insert(partition.identity, (context.charged_cost(), steps));
-            match refused {
-                Some(refused) => Err(kernel_failure(refused.into())),
-                None => computed.map_err(kernel_failure),
-            }
+            let mut steps = recording_steps.start();
+            let result = compute_kernel(partition, context, &mut steps);
+            recording_steps.finish(partition.identity, steps, context.charged_cost());
+            result
         };
+        // Certification reruns the same owner without touching request retention
+        // or its memory reservations. The original kernel alone records steps.
+        let diagnostic_kernel =
+            |partition: &Gathered<Schema, Feature, Computation, Owner>,
+             context: &mut MapKernelContext<'_, '_>| {
+                compute_kernel(partition, context, &mut None)
+            };
         let exhausted = || {
             WorthQueryPartitionedComputationDenial::Resource(
                 WorthQueryManagedComputationResourceDenial::WorkExhausted,
@@ -204,14 +221,14 @@ where
                     .request
                     .reserve(0)
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?;
-                let (tree, report, metrics) = transport.call(|| {
+                let (tree, report, _) = transport.call(|| {
                     let reduced = dispatch
                         .reduce(
                             remaining_work,
                             &map,
                             memory.into_held(),
                             &mut tree_memory,
-                            kernel,
+                            (kernel, diagnostic_kernel),
                             (reducer.identity)(),
                             reducer.combine,
                             declared_bytes,
@@ -229,16 +246,9 @@ where
                 })?;
                 let reduced = tree.result().clone();
                 let completed = match recording {
-                    Ok(recording) => recording.complete(
-                        kernel_units
-                            .into_inner()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner),
-                        tree,
-                        tree_memory,
-                        metrics.charged_work,
-                        cause,
-                        report,
-                    ),
+                    Ok(recording) => {
+                        recording.complete(recording_steps.take(), tree, tree_memory, cause, report)
+                    }
                     Err(reason) => {
                         observe_unretained(cause, report);
                         CompletedComputationRetention::Absent(PriorAbsence::Suppressed(reason))
@@ -254,7 +264,7 @@ where
                 } = prepared.compute(
                     execution.request,
                     kernel,
-                    &kernel_units,
+                    &recording_steps,
                     &reducer,
                     transport,
                 )?;

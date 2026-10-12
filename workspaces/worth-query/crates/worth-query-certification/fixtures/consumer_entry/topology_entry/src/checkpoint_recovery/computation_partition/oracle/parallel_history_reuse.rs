@@ -6,6 +6,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationFullCause as Cause,
     WorthQueryPartitionedComputationRunForTest as Run,
 };
+mod ceiling_pair;
 mod code_identity;
 mod computation;
 mod declaration;
@@ -92,7 +93,12 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
             .work = 20;
     }
     let code = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let application = execution::install_with_code(|graph| seed(&model, graph), code.clone());
+    let reuse_control = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(reuse));
+    let application = execution::install_with_controls(
+        |graph| seed(&model, graph),
+        code.clone(),
+        reuse_control.clone(),
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let before_value = model.expected_value();
@@ -124,7 +130,20 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
         Some(before_work),
         "declared full compute and tree work"
     );
+    let pair = ceiling_family.then(|| ceiling_pair::branches(&application));
+    let request = match pair {
+        Some([a, _]) => request.on_branch(a),
+        None => request,
+    };
     if let Some(edits) = change.apply(&mut model) {
+        if let Some([_, b]) = pair {
+            edit(
+                &application.request(&principal, &scope).on_branch(b),
+                &application,
+                edits.clone(),
+                2,
+            );
+        }
         edit(&request, &application, edits, 1);
     } else {
         adjust(&request, &application, ODD_Y, 1);
@@ -175,6 +194,28 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
             sum.1 + r.report.charged_span(),
         )
     });
+    if let Some([_, b]) = pair {
+        reuse_control.store(false, Ordering::Relaxed);
+        let (reference, _) = only_run(demand(
+            &application.request(&principal, &scope).on_branch(b),
+            &application,
+        ));
+        let full_total = observations().iter().fold((0, 0), |sum, r| {
+            (
+                sum.0 + r.report.charged_work(),
+                sum.1 + r.report.charged_span(),
+            )
+        });
+        assert_eq!(
+            retained_total, full_total,
+            "a ceiling inside carried work has the reuse-off advancement's exact work and span"
+        );
+        ceiling_pair::assert_stop(&retained, &reference, &model, reuse);
+        println!(
+            "REUSE_TOTAL:retained={retained_total:?}:fresh={full_total:?}:declared={declared_work}"
+        );
+        return;
+    }
     let (reference, fresh_work) = fresh(&model);
     let fresh_total = observations().iter().fold((0, 0), |sum, r| {
         (
@@ -185,34 +226,6 @@ fn case_at(change: Change, prior: usize, current: usize, reuse: bool) {
     println!(
         "REUSE_TOTAL:retained={retained_total:?}:fresh={fresh_total:?}:declared={declared_work}"
     );
-    if ceiling_family {
-        use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
-        let first = model
-            .members()
-            .min_by_key(|item| super::tree_work::identity(item.key))
-            .unwrap();
-        assert_eq!(
-            retained.outcome,
-            Err(WorthQueryPartitionedComputationDenial::Partition {
-                partition: super::tree_work::identity(first.key),
-                cause: WorthQueryComputationPartitionStop::Resource(
-                    WorthQueryManagedComputationResourceDenial::WorkExhausted
-                ),
-            }),
-            "a ceiling inside carried work reports its exact canonical partition and work stop"
-        );
-        assert_eq!(
-            retained.outcome, reference.outcome,
-            "carried checkpoint ceiling preserves the typed stop"
-        );
-
-        assert_eq!(
-            retained.calls.kernels,
-            if reuse { 1 } else { 4 },
-            "the ceiling row really carries three kernels"
-        );
-        return;
-    }
     for (label, run, charge) in [
         ("retained", &retained, retained_work),
         ("fresh", &reference, fresh_work),

@@ -31,6 +31,9 @@ pub(in super::super) struct FullRecording<Key, Item> {
 }
 
 impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
+    pub(in super::super) fn can_retain(&self) -> bool {
+        self.measured
+    }
     /// Records a full run that retains under `basis`, when a producer runs it.
     pub(in super::super) fn new(basis: RetainedBasisToken) -> Self {
         Self {
@@ -116,10 +119,12 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
     /// work. `tree_memory` holds the tree until it is charged.
     pub(in super::super) fn complete<Reduced>(
         self,
-        mut kernel_units: BTreeMap<PartitionIdentity, ((u64, u64), super::KernelSteps)>,
+        (mut steps, steps_memory): (
+            BTreeMap<PartitionIdentity, Option<super::KernelSteps>>,
+            Option<QueryMemoryReservation>,
+        ),
         tree: ReductionTree<Reduced, fn(&Reduced, &Reduced) -> Reduced>,
         tree_memory: QueryMemoryReservation,
-        reduction_work: u64,
         cause: WorthQueryPartitionedComputationFullCause,
         report: ExecutionReport,
     ) -> CompletedComputationRetention
@@ -131,37 +136,25 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             WorthQueryPartitionedComputationRunForTest::Full(cause),
             Some(report),
         );
-        let accounted =
-            kernel_units
-                .values()
-                .try_fold(reduction_work, |sum, ((units, span), steps)| {
-                    steps.accounts_for(*units, *span).then_some(())?;
-                    sum.checked_add(*units)
-                })
-                == Some(report.charged_work());
         let partitions = self
             .partitions
             .into_iter()
             .map(|(identity, (key, key_bytes, gather))| {
-                kernel_units
-                    .remove(&identity)
-                    .map(|((kernel_units, kernel_span), kernel_steps)| {
-                        let partition = RetainedPartition {
-                            key,
-                            key_bytes,
-                            gather,
-                            kernel_units,
-                            kernel_span,
-                            kernel_steps,
-                        };
-                        (identity, Arc::new(partition))
-                    })
+                steps.remove(&identity).flatten().map(|kernel_steps| {
+                    let partition = RetainedPartition {
+                        key,
+                        key_bytes,
+                        gather,
+                        kernel_steps,
+                    };
+                    (identity, Arc::new(partition))
+                })
             })
             .collect::<Option<BTreeMap<_, _>>>();
         let (routing, routing_memory) = self.routing.unzip();
         let typed = match (self.membership, routing, partitions) {
             (Some((membership, items, digests)), Some(routing), Some(partitions))
-                if self.measured && accounted =>
+                if self.measured =>
             {
                 RetainedPartitions {
                     items,
@@ -183,6 +176,7 @@ impl<Key: Send + Sync + 'static, Item> FullRecording<Key, Item> {
             carried: None,
             tree_memory,
             routing_memory,
+            steps_memory,
         })
     }
 }

@@ -65,18 +65,19 @@ fn scope_admission_reports_shape_work_only_when_construction_ran() {
         let inputs = execution.reserve(0).unwrap();
         tree_runs();
         COMBINES.store(0, Ordering::Relaxed);
+        let kernel = |value: &u64, context: &mut worth_execution::MapKernelContext<'_, '_>| {
+            context.checkpoint(KERNEL_WORK)?;
+            if entries.fetch_add(1, Ordering::Relaxed) + 1 == PARTITIONS {
+                *filled.lock().unwrap() = Some(fill_room(&execution));
+            }
+            Ok::<u64, MapKernelFailure<u32>>(*value)
+        };
         let outcome = execution.dispatch().unwrap().reduce(
             10_000,
             &map,
             inputs,
             &mut tree_memory,
-            |value, context| {
-                context.checkpoint(KERNEL_WORK)?;
-                if entries.fetch_add(1, Ordering::Relaxed) + 1 == PARTITIONS {
-                    *filled.lock().unwrap() = Some(fill_room(&execution));
-                }
-                Ok::<u64, MapKernelFailure<u32>>(*value)
-            },
+            (kernel, kernel),
             0,
             sum as fn(&u64, &u64) -> u64,
             4096,

@@ -4,10 +4,11 @@ use crate::domain_computation::primary_graph::application_contribution::request_
     place_managed_computations_on_this_thread_for_test as place,
     WorthQueryExecutionPlacementForTest as Placement,
 };
+use worth_execution::MapKernelContext;
 
 fn reducing_member(
-    calls: Arc<Mutex<Vec<std::thread::ThreadId>>>,
-    rendezvous: Option<Arc<std::sync::Barrier>>,
+    calls: Arc<Mutex<Vec<(std::thread::ThreadId, bool)>>>,
+    rendezvous: Option<Arc<(Mutex<usize>, std::sync::Condvar)>>,
 ) -> PreparedMember {
     PreparedMember {
         requests: vec![PreparedCompute::new(
@@ -15,9 +16,20 @@ fn reducing_member(
             0,
             move |member| {
                 if let Some(rendezvous) = &rendezvous {
-                    rendezvous.wait();
+                    let mut entered = rendezvous.0.lock().unwrap();
+                    *entered += 1;
+                    rendezvous.1.notify_all();
+                    let (entered, _) = rendezvous
+                        .1
+                        .wait_timeout_while(entered, Duration::from_secs(60), |n| *n < 2)
+                        .unwrap();
+                    assert_eq!(
+                        *entered, 2,
+                        "diagnostic member rendezvous hang guard expired: second slot unavailable"
+                    );
                 }
                 member.compute(|managed, _, _| {
+                let invocations = std::sync::atomic::AtomicUsize::new(0);
                 let map = ExecutionMap::<_, u64>::from_keyless_partitions(
                     [3_u64, 7].into_iter().enumerate().map(|(rank, value)| (
                         PartitionIdentity::new(rank as u64 + 1),
@@ -28,13 +40,14 @@ fn reducing_member(
                 ).unwrap();
                 let inputs = managed.request.reserve(0).unwrap();
                 let mut held = managed.request.reserve(0).unwrap();
+                let kernel = |value: &u64, context: &mut MapKernelContext<'_, '_>| {
+                    calls.lock().unwrap().push((std::thread::current().id(), invocations.fetch_add(1, std::sync::atomic::Ordering::Relaxed) >= 2));
+                    context.checkpoint(*value)?;
+                    Ok::<_, MapKernelFailure<()>>(*value)
+                };
                 let (tree, report, _) = managed.request.dispatch().unwrap().reduce(
                     u64::MAX, &map, inputs, &mut held,
-                    |value, context| {
-                        calls.lock().unwrap().push(std::thread::current().id());
-                        context.checkpoint(*value)?;
-                        Ok::<_, MapKernelFailure<()>>(*value)
-                    }, 0_u64, |left, right| left + right, 8,
+                    (kernel, kernel), 0_u64, |left, right| left + right, 8,
                     crate::domain_computation::primary_graph::application_contribution::partitioned_computation::WorthQueryPartitionedComputationFullCause::Unretained,
                 ).unwrap().unwrap();
                 Ok::<_, ()>((*tree.result(), report.charged_work(), report.charged_span()))
@@ -59,7 +72,8 @@ fn certification_never_changes_the_advancements_work_or_span() {
                 Placement::Leased(workers)
             });
             let calls = Arc::new(Mutex::new(Vec::new()));
-            let rendezvous = (width > 1).then(|| Arc::new(std::sync::Barrier::new(width)));
+            let rendezvous =
+                (width > 1).then(|| Arc::new((Mutex::new(0), std::sync::Condvar::new())));
             let (settled, report) = run(
                 Some(width),
                 (0..width)
@@ -95,7 +109,9 @@ fn certification_never_changes_the_advancements_work_or_span() {
             );
             if width == 2 && certified {
                 assert!(
-                    calls.iter().any(|thread| *thread != caller),
+                    calls
+                        .iter()
+                        .any(|(thread, diagnostic)| *diagnostic && *thread != caller),
                     "a descendant worker really certifies its owned reduction"
                 );
             }

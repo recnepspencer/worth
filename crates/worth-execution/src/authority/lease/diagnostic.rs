@@ -33,7 +33,7 @@ impl ExecutionResourceLease<'_> {
                         charged_memory_bytes: None,
                         ..self.authority.inner.config
                     },
-                    // The one process pool is shared; no threads or authority are constructed.
+                    // The diagnostic owns a fresh ledger but constructs no worker threads.
                     pool: self.authority.inner.pool.clone(),
                     equivalences: self.authority.inner.equivalences.clone(),
                     ledger: Mutex::new(Ledger {

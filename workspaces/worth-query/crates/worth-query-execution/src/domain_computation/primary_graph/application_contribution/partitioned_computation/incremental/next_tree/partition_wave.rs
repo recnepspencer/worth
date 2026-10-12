@@ -1,11 +1,9 @@
 //! Carried and recomputed kernels settle through one independent map.
 use super::*;
-use std::sync::Mutex;
 use worth_execution::ChargedBytes;
 
 struct BorrowedPartition<'a, Key, Gathered> {
     disposition: &'a Disposition<Key, Gathered>,
-    identity: PartitionIdentity,
 }
 impl<Key, Gathered> ChargedBytes for BorrowedPartition<'_, Key, Gathered> {
     fn additional_charged_bytes(&self) -> u64 {
@@ -29,7 +27,6 @@ impl<Reduced: ChargedBytes> ChargedBytes for SettledPartition<Reduced> {
 
 pub(super) struct SettledPartitions<Reduced> {
     pub values: BTreeMap<PartitionIdentity, Reduced>,
-    pub costs: BTreeMap<PartitionIdentity, (u64, u64)>,
     pub work: u64,
 }
 
@@ -62,10 +59,7 @@ where
                 (
                     *identity,
                     KeylessPartition {
-                        value: BorrowedPartition {
-                            disposition,
-                            identity: *identity,
-                        },
+                        value: BorrowedPartition { disposition },
                         kernel_scratch_bytes: 0,
                         max_result_bytes: match disposition {
                             Disposition::Carried(_) => 0,
@@ -77,7 +71,6 @@ where
             .collect(),
     )
     .map_err(WorthQueryPartitionedComputationDenial::from_map_overflow)?;
-    let costs = Mutex::new(BTreeMap::new());
     let outcome = transport.call(|| {
         execution
             .dispatch()
@@ -89,13 +82,11 @@ where
                     .reserve(0)
                     .map_err(WorthQueryPartitionedComputationDenial::Resource)?,
                 |input, context| {
-                    let result = match input.disposition {
+                    match input.disposition {
                         Disposition::Carried(partition) => {
-                            if partition.kernel_units <= context.remaining_work() {
-                                context.checkpoint_cost(
-                                    partition.kernel_units,
-                                    partition.kernel_span,
-                                )?;
+                            let units = partition.kernel_steps.units();
+                            if units <= context.remaining_work() {
+                                context.checkpoint(units)?;
                             } else {
                                 // The full kernel's accepted steps run in its original
                                 // canonical slot. Settlement owns the global prefix;
@@ -107,12 +98,7 @@ where
                         Disposition::Recomputed(marked) => {
                             kernel(&marked.value, context).map(SettledPartition::Computed)
                         }
-                    };
-                    costs
-                        .lock()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner)
-                        .insert(input.identity, context.charged_cost());
-                    result
+                    }
                 },
             )
             .map_err(|denial| {
@@ -139,9 +125,6 @@ where
                 SettledPartition::Computed(value) => Some((identity, value)),
             })
             .collect(),
-        costs: costs
-            .into_inner()
-            .unwrap_or_else(std::sync::PoisonError::into_inner),
         work: outcome.1.charged_work(),
     })
 }

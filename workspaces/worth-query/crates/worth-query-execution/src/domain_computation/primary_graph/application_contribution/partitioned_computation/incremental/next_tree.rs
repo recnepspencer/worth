@@ -98,6 +98,13 @@ where
     pub(in super::super) fn restrict_compute_ceiling(&mut self, ceiling: u64) {
         self.remaining_work.restrict(ceiling);
     }
+    pub(in super::super) fn can_retain(&self) -> bool {
+        self.next.membership.is_some()
+            && self.partitions.values().all(|p| match p {
+                Disposition::Carried(_) => true,
+                Disposition::Recomputed(p) => p.gather.is_some(),
+            })
+    }
 
     /// Settles every partition through one independent map, computing only
     /// marked partitions. Carried kernels contribute retained work and span;
@@ -111,7 +118,7 @@ where
         self,
         execution: &QueryRequestExecution<'_>,
         kernel: Kernel,
-        receipts: &std::sync::Mutex<BTreeMap<PartitionIdentity, ((u64, u64), super::KernelSteps)>>,
+        recording: &super::KernelRecording,
         reducer: &WorthQueryDeterministicReducer<Reduced>,
         transport: &mut NestedFailureTransport<'_>,
     ) -> Result<
@@ -190,13 +197,9 @@ where
             )
         })?;
         let mut values = settled_wave.values;
-        let costs = settled_wave.costs;
-        let mut receipts = receipts
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let (mut receipts, steps_memory) = recording.take();
         let mut results_held = 0_u64;
         for (identity, disposition) in dispositions {
-            let (units, span) = costs[&identity];
             let marked = match disposition {
                 Disposition::Carried(partition) => {
                     partitions.insert(identity, partition);
@@ -227,20 +230,13 @@ where
             if replaced {
                 results.insert(identity, value);
             }
-            let ((_, _), kernel_steps) = receipts
-                .remove(&identity)
-                .expect("a computed kernel records its checkpoints");
-            match marked
-                .gather
-                .filter(|_| kernel_steps.accounts_for(units, span))
-            {
-                Some(gather) => {
+            let kernel_steps = receipts.remove(&identity).flatten();
+            match marked.gather.zip(kernel_steps) {
+                Some((gather, kernel_steps)) => {
                     let partition = RetainedPartition {
                         key: marked.key,
                         key_bytes: marked.key_bytes,
                         gather,
-                        kernel_units: units,
-                        kernel_span: span,
                         kernel_steps,
                     };
                     partitions.insert(identity, Arc::new(partition));
@@ -356,6 +352,7 @@ where
                     }),
                     tree_memory: results_memory,
                     routing_memory: next.routing_memory,
+                    steps_memory,
                 }),
             },
         })

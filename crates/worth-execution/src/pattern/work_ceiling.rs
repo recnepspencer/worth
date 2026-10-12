@@ -62,8 +62,8 @@ impl ExecutionWorkCeiling {
         }
     }
 
-    /// Runs a sealed diagnostic on its own meter and memory ledger, sharing
-    /// the physical pool and cancellation/deadline lineage. Its caller drops
+    /// Runs a sealed diagnostic on its own meter, memory and worker-slot ledger,
+    /// preserving admitted width and sharing the physical pool and cancellation/deadline lineage. Its caller drops
     /// the diagnostic bill and returns any request stop with its true cause.
     pub fn run_detached_for_test<R>(
         self,

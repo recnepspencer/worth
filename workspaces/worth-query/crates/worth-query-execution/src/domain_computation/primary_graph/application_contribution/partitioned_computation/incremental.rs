@@ -22,6 +22,8 @@
 
 mod kernel_steps;
 pub(super) use kernel_steps::KernelSteps;
+mod kernel_recording;
+pub(super) use kernel_recording::KernelRecording;
 mod carriage;
 mod deposit;
 mod next_tree;

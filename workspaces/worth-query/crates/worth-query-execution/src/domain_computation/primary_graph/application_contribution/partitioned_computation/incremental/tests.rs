@@ -73,6 +73,7 @@ struct Owner {
     /// The work of each kernel, odd parity first.
     work: Mutex<[usize; 2]>,
     steps: Mutex<Option<[Vec<usize>; 2]>>,
+    nested: std::sync::atomic::AtomicBool,
     gathered: Mutex<Vec<u64>>,
     calls: Mutex<[usize; 4]>,
 }
@@ -135,6 +136,39 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<u64, WorthQueryManagedComputationDenial<u32>> {
         self.calls.lock().unwrap()[3] += 1;
+        if self.nested.load(std::sync::atomic::Ordering::Relaxed) {
+            let map = worth_execution::ExecutionMap::<_, u64>::from_keyless_partitions(
+                std::collections::BTreeMap::from([
+                    (
+                        worth_foundational::PartitionIdentity::new(1),
+                        worth_execution::KeylessPartition {
+                            value: 2_u64,
+                            kernel_scratch_bytes: 0,
+                            max_result_bytes: 0,
+                        },
+                    ),
+                    (
+                        worth_foundational::PartitionIdentity::new(2),
+                        worth_execution::KeylessPartition {
+                            value: 3_u64,
+                            kernel_scratch_bytes: 0,
+                            max_result_bytes: 0,
+                        },
+                    ),
+                ]),
+            )
+            .unwrap();
+            assert!(
+                matches!(
+                    map.run(None, |units, context| {
+                        context.checkpoint(*units)?;
+                        Ok::<_, worth_execution::MapKernelFailure<()>>(*units)
+                    }),
+                    worth_execution::MapOutcome::Complete { .. }
+                ),
+                "the nested public map computes inside its parent's meter"
+            );
+        }
         let work = self.work.lock().unwrap()[usize::from(partition.key().0 == 0)];
         if let Some(steps) = &*self.steps.lock().unwrap() {
             for step in &steps[usize::from(partition.key().0 == 0)] {
@@ -167,6 +201,7 @@ fn installed_over(modulus: u64, status: StatusRead, reducer: fn(&u64, &u64) -> u
         bump: Mutex::new(0),
         work: Mutex::new([1, 1]),
         steps: Mutex::new(None),
+        nested: Default::default(),
         gathered: Mutex::default(),
         calls: Mutex::default(),
     };

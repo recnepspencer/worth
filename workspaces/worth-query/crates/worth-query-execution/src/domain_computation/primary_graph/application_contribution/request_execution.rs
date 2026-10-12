@@ -267,13 +267,13 @@ impl QueryDispatch<'_> {
     /// to `tree` in one ledger step, so the tree is held from its build until
     /// `tree` drops. Where a test chose certification, a completed reduction
     /// is then certified outside the ceiling.
-    pub(super) fn reduce<T, K, R, E, Kernel, Combine>(
+    pub(super) fn reduce<T, K, R, E, Kernel, Diagnostic, Combine>(
         &self,
         ceiling: u64,
         map: &ExecutionMap<T, K>,
         inputs: QueryMemoryReservation,
         tree: &mut QueryMemoryReservation,
-        kernel: Kernel,
+        (kernel, diagnostic): (Kernel, Diagnostic),
         identity: R,
         combine: Combine,
         max_value_bytes: u64,
@@ -285,11 +285,13 @@ impl QueryDispatch<'_> {
         E: Send + ChargedBytes,
         Kernel:
             Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
+        Diagnostic:
+            Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
         Combine: Fn(&R, &R) -> R + Clone + Sync,
     {
         let certification = self
             .certified_seed
-            .map(|seed| (seed, kernel.clone(), identity.clone(), combine.clone()));
+            .map(|seed| (seed, diagnostic, identity.clone(), combine.clone()));
         let ceiling = ExecutionWorkCeiling::new(ceiling);
         let held = tree.held.as_mut();
         let mapped = super::partitioned_computation::FullTreeMapWork::default();
