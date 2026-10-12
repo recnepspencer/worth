@@ -34,14 +34,16 @@ impl KernelRecording {
             return;
         };
         // At most 2 * accepted work + 1 RLE entries; all vector capacities
-        // also fit the declared retained bytes and are reserved before growth.
+        // fit each partition's declared retained bytes; their aggregate is
+        // reserved against the request before any vector grows.
+        let recorded_bytes = worth_execution::ChargedBytes::additional_charged_bytes(recorded);
         if !recorded.accepted(work, |bytes| {
             let mut memory = self
                 .memory
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             memory.as_mut().is_some_and(|held| {
-                held.bytes()
+                recorded_bytes
                     .checked_add(bytes)
                     .is_some_and(|n| n <= self.limit)
                     && held.grow(bytes).is_ok()
