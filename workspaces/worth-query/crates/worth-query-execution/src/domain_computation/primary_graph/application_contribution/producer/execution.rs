@@ -263,3 +263,6 @@ where
         ))
     }
 }
+
+#[cfg(test)]
+pub(super) mod lifetime_fixture;

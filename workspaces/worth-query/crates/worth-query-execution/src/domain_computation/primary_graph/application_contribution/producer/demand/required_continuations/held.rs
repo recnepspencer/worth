@@ -320,3 +320,6 @@ where
         )
     }
 }
+
+#[cfg(test)]
+mod lifetime_fixture;

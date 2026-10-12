@@ -76,3 +76,12 @@ fn delivery_owner(state: &DemandRegistryState, key: &WorthQueryOutputDemandKey) 
         DeliveryOwner::None
     }
 }
+
+#[cfg(test)]
+impl WorthQueryOutputDemandInterest {
+    pub(in crate::domain_computation::primary_graph) fn registry_for_typed_frame_test(
+        &self,
+    ) -> WorthQueryOutputDemandRegistry {
+        self.owner.clone()
+    }
+}

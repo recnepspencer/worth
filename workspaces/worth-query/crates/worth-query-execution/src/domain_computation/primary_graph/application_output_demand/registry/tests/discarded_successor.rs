@@ -5,20 +5,6 @@ use super::super::{
 use super::published_retirement::{admit, publish};
 use super::*;
 
-// The registry-lifetime fixture owns only the interest portion of a frame;
-// computation and source certification do not participate in this release.
-struct Successor {
-    interest: WorthQueryOutputDemandInterest,
-}
-impl Drop for Successor {
-    fn drop(&mut self) {
-        self.interest.close_discarded_successor();
-    }
-}
-fn discard(successor: Successor) {
-    drop(successor);
-}
-
 fn refuse_custody(registry: &WorthQueryOutputDemandRegistry) {
     let mut state = registry.state.lock().unwrap();
     // All existing storage remains funded. This admission has no room for
@@ -28,10 +14,7 @@ fn refuse_custody(registry: &WorthQueryOutputDemandRegistry) {
             .required_custody_retained_bytes
             .load(std::sync::atomic::Ordering::Acquire);
     drop(state);
-    let stop = registry
-        .reserve_held_successor_capacity(std::mem::size_of::<Successor>())
-        .err()
-        .unwrap();
+    let stop = registry.reserve_held_successor_capacity(1).err().unwrap();
     assert_eq!(
         stop.kind(),
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
@@ -42,6 +25,7 @@ fn refuse_custody(registry: &WorthQueryOutputDemandRegistry) {
 fn a_discarded_successor_with_only_a_claim_cannot_freeze_the_head() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
+    let source = WorthQueryOutputDemandInterest::source_for_typed_frame_test();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let old = key("claim-without-delivery", 1, 1);
@@ -62,8 +46,9 @@ fn a_discarded_successor_with_only_a_claim_cannot_freeze_the_head() {
         let newest = key("claim-without-delivery", 2, 1);
         let owner = admit(&registry, &newest);
         publish(&registry, &owner, receipt);
+        let frame = owner.real_typed_frame_for_registry_test(source);
         refuse_custody(&registry);
-        discard(Successor { interest: owner });
+        frame();
         assert_eq!(registry.publication_counts_for_registry_test(), (0, 0));
         let state = registry.state.lock().unwrap();
         assert!(
@@ -127,14 +112,16 @@ fn completes_once(
 fn refused_frame_custody_leaves_a_live_entry_to_deliver_once() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
+    let source = WorthQueryOutputDemandInterest::source_for_typed_frame_test();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let row = key("live-delivery-entry", 1, 1);
         let owner = admit(&registry, &row);
         let peer = admit(&registry, &row);
         publish(&registry, &owner, receipt);
+        let frame = owner.real_typed_frame_for_registry_test(source);
         refuse_custody(&registry);
-        discard(Successor { interest: owner });
+        frame();
         assert_eq!(registry.publication_counts_for_registry_test(), (1, 1));
         completes_once(&registry, &peer);
     });
@@ -144,6 +131,7 @@ fn refused_frame_custody_leaves_a_live_entry_to_deliver_once() {
 fn refused_frame_custody_leaves_a_stale_entry_to_rejoin_and_deliver_once() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let _occurrence = occurrence();
+    let source = WorthQueryOutputDemandInterest::source_for_typed_frame_test();
     crate::domain_computation::primary_graph::with_test_advancement(|_| {
         let registry = WorthQueryOutputDemandRegistry::default();
         let stale = admit(&registry, &key("stale-delivery-entry", 1, 1));
@@ -158,8 +146,9 @@ fn refused_frame_custody_leaves_a_stale_entry_to_rejoin_and_deliver_once() {
                 retained_program_basis: None,
             }));
         publish(&registry, &owner, receipt);
+        let frame = owner.real_typed_frame_for_registry_test(source);
         refuse_custody(&registry);
-        discard(Successor { interest: owner });
+        frame();
         assert_eq!(registry.publication_counts_for_registry_test(), (1, 1));
         let (rejoined, _) = registry
             .rejoin_refreshed(&stale, &mut record_admission())
