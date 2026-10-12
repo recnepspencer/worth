@@ -1,5 +1,4 @@
 //! Recovered output expectations survive a change outside the source field.
-
 use super::*;
 mod mixed_retirement;
 use crate::domain_computation::primary_graph::{
@@ -26,7 +25,6 @@ use worth_relational::facade::{
         WorkerIntentBatch,
     },
 };
-
 #[test]
 fn recovered_witness_requires_complete_unambiguous_original_aspects() {
     let host_request = crate::test_request_policy::serial_request();
