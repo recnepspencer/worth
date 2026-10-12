@@ -76,7 +76,7 @@ pub(super) fn prepare_decision_adjacency(
         }
         _ => return Ok(None),
     };
-    let Some(view) = runtime.read_truth().project_snapshot(snapshot, &execution) else {
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
         return Ok(None);
     };
     let native_revision = match view.bounded_adjacency_structural_revision(

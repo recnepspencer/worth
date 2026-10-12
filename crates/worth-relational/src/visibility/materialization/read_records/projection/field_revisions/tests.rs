@@ -58,7 +58,7 @@ fn exact_field_revisions_keep_unrelated_sibling_and_absence_stable() {
     let read = |snapshot| {
         let view = runtime
             .read_truth()
-            .project_snapshot(snapshot, &execution)
+            .project_snapshot(snapshot, execution)
             .unwrap();
         (
             view.entity_field_revision(execution, entity, &title)

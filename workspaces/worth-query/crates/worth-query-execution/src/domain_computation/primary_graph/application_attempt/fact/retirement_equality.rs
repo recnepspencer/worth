@@ -10,7 +10,7 @@ pub(super) fn remains_equal(
 ) -> bool {
     runtime
         .read_truth()
-        .project_snapshot(snapshot, &execution)
+        .project_snapshot(snapshot, execution)
         .and_then(|view| view.entity_retirement(entity))
         .is_some_and(|record| {
             record.kind_id() == kind

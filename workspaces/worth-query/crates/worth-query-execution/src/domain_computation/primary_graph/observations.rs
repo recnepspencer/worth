@@ -157,7 +157,7 @@ pub(super) fn observe_exact_principal_target(
     })?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, &execution)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let relation = view
         .relation_record_with_projection_scope(
@@ -231,7 +231,7 @@ fn observe_principal_identity(
     })?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, &execution)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = ProjectionAspectScope::from_requirements([projection_requirement(
         &layout.principal_identity_locator,
@@ -296,7 +296,7 @@ fn principal_adjacency_revision(
     })?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, &execution)
+        .project_snapshot(snapshot, execution)
         .ok_or_else(|| stale_proof_denial(binding))?;
     view.bounded_adjacency_structural_revision(execution,
         mapping,

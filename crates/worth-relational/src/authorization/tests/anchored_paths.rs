@@ -99,5 +99,5 @@ fn observe_anchored_path(
         [],
     )
     .unwrap();
-    runtime.observe_authorization(plan, &execution).unwrap()
+    runtime.observe_authorization(plan, execution).unwrap()
 }

@@ -23,7 +23,7 @@ where
             .reader
             .runtime
             .read_truth()
-            .project_snapshot(self.reader.snapshot, &execution)
+            .project_snapshot(self.reader.snapshot, execution)
             .map(|view| {
                 view.entity_record_with_projection_scope(
                     execution,

@@ -239,7 +239,7 @@ impl WorthQueryApplicationBasisLease {
                 self.core().graph.with_runtime(execution, |runtime| {
                     runtime
                         .read_truth()
-                        .project_snapshot(snapshot, &execution)
+                        .project_snapshot(snapshot, execution)
                         .is_some()
                 })
             })

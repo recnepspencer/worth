@@ -39,7 +39,7 @@ fn complete_equality_selection_uses_the_callers_budget_above_sixty_four() {
     let snapshot = runtime.visibility_authority().snapshot();
     let view = runtime
         .read_truth()
-        .project_snapshot(&snapshot, &execution)
+        .project_snapshot(&snapshot, execution)
         .unwrap();
     let prepared = runtime
         .index_access()

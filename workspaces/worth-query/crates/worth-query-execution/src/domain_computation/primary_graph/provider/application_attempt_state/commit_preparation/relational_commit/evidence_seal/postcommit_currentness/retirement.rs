@@ -33,9 +33,7 @@ pub(super) fn committed_retirement(
     entity_id: EntityId,
     fact: &Fact,
 ) -> Option<Fact> {
-    let view = runtime
-        .read_truth()
-        .project_snapshot(snapshot, &execution)?;
+    let view = runtime.read_truth().project_snapshot(snapshot, execution)?;
     let record = view.entity_retirement(entity_id)?;
     if record.deleted_at_version() != view.version_id() {
         return None;

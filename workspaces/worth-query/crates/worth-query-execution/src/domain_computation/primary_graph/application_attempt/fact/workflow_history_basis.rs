@@ -17,7 +17,7 @@ pub(super) fn remains_equal(
         && current.version_id() == observed.version_id()
         && runtime
             .read_truth()
-            .project_snapshot(current, &execution)
+            .project_snapshot(current, execution)
             .is_some()
 }
 

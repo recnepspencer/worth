@@ -41,7 +41,7 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
     let status = locator("summary", "status");
     let before_view = runtime
         .read_truth()
-        .project_snapshot(&before, &execution)
+        .project_snapshot(&before, execution)
         .unwrap();
     let title_before = before_view
         .entity_field_revision(execution, entity, &title)

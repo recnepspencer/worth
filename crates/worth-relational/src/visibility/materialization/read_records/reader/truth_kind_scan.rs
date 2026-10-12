@@ -173,29 +173,6 @@ impl EntityKindTruthReadLimitExceeded {
     }
 }
 
-#[cfg(test)]
-mod paid_stop_tests {
-    use super::*;
-    #[test]
-    fn entity_scan_keeps_the_request_charge_failure() {
-        for stop in [
-            worth_execution::MapKernelStop::Cancelled,
-            worth_execution::MapKernelStop::DeadlineElapsed,
-            worth_execution::MapKernelStop::WorkCeiling,
-        ] {
-            let mut charge = |_| Err(stop);
-            let mut scan = EntityKindScan::funded(8, &mut charge);
-            assert_eq!(
-                scan.examine_slot(),
-                Err(NativeScanStop::Request(
-                    crate::execution::denial::kernel_stop(stop)
-                ))
-            );
-            assert_eq!(scan.finish().entity_records_reserved(), 0);
-        }
-    }
-}
-
 impl ProjectionRecordReader<'_> {
     pub(in crate::visibility::materialization::read_records) fn bounded_entities_of_kind_in_state(
         &self,
@@ -290,5 +267,28 @@ impl ProjectionRecordReader<'_> {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod paid_stop_tests {
+    use super::*;
+    #[test]
+    fn entity_scan_keeps_the_request_charge_failure() {
+        for stop in [
+            worth_execution::MapKernelStop::Cancelled,
+            worth_execution::MapKernelStop::DeadlineElapsed,
+            worth_execution::MapKernelStop::WorkCeiling,
+        ] {
+            let mut charge = |_| Err(stop);
+            let mut scan = EntityKindScan::funded(8, &mut charge);
+            assert_eq!(
+                scan.examine_slot(),
+                Err(NativeScanStop::Request(
+                    crate::execution::denial::kernel_stop(stop)
+                ))
+            );
+            assert_eq!(scan.finish().entity_records_reserved(), 0);
+        }
     }
 }

@@ -18,7 +18,7 @@ pub(super) fn native_metadata(
     entity: EntityId,
 ) -> Option<RetirementMetadata> {
     let read = runtime.read_truth();
-    let view = read.project_snapshot(snapshot, &execution)?;
+    let view = read.project_snapshot(snapshot, execution)?;
     let record = view.entity_retirement(entity)?;
     Some(RetirementMetadata {
         kind: record.kind_id(),

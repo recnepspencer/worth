@@ -163,6 +163,39 @@ impl ProjectionRecordReader<'_> {
     }
 }
 
+impl VisibilityReadContext<'_> {
+    pub(crate) fn paid_entities_in_partition(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        partition: crate::identity::data::PartitionId,
+        kind: Option<crate::identity::data::KindId>,
+        visibility: KindScanVisibility,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .paid_entities_in_partition(state, registry, partition, kind, visibility, charge)
+    }
+    pub(crate) fn paid_relations_in_partition(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        registry: &crate::schema::data::RelationalSchemaRegistry,
+        partition: crate::identity::data::PartitionId,
+        kind: Option<crate::identity::data::KindId>,
+        visibility: KindScanVisibility,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .paid_relations_in_partition(state, registry, partition, kind, visibility, charge)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::identity::data::KindId;
@@ -209,38 +242,5 @@ mod tests {
         }
         release_test_commit_snapshot(&runtime, &relation);
         release_test_commit_snapshot(&runtime, &later);
-    }
-}
-
-impl VisibilityReadContext<'_> {
-    pub(crate) fn paid_entities_in_partition(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition: crate::identity::data::PartitionId,
-        kind: Option<crate::identity::data::KindId>,
-        visibility: KindScanVisibility,
-        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
-        ProjectionRecordReader::new(
-            self.runtime.current_version_id(),
-            &self.runtime.services.instrumentation,
-        )
-        .paid_entities_in_partition(state, registry, partition, kind, visibility, charge)
-    }
-    pub(crate) fn paid_relations_in_partition(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition: crate::identity::data::PartitionId,
-        kind: Option<crate::identity::data::KindId>,
-        visibility: KindScanVisibility,
-        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
-    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
-        ProjectionRecordReader::new(
-            self.runtime.current_version_id(),
-            &self.runtime.services.instrumentation,
-        )
-        .paid_relations_in_partition(state, registry, partition, kind, visibility, charge)
     }
 }

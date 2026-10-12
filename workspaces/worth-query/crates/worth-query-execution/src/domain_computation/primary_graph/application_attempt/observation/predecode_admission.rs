@@ -25,7 +25,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
         [field.clone()],
     )]);
     let mut action = Some(action);
-    let Some(view) = runtime.read_truth().project_snapshot(snapshot, &execution) else {
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
         return Ok(None);
     };
     view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {

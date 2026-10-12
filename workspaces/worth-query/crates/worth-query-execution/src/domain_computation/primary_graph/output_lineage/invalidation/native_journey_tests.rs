@@ -167,7 +167,7 @@ fn field_fact(
     );
     let revision = runtime
         .read_truth()
-        .project_snapshot(handle, &execution)
+        .project_snapshot(handle, execution)
         .unwrap()
         .entity_field_revision(execution, entity, &locator)
         .expect("fixture read request remains live")

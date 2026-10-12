@@ -30,7 +30,7 @@ pub(crate) trait ProjectionRecordSource {
             |record| {
                 record
                     .as_ref()
-                    .map_or(0, |record| super::super::read_footprint::entity(record))
+                    .map_or(0, super::super::read_footprint::entity)
             },
         )
     }
@@ -48,7 +48,7 @@ pub(crate) trait ProjectionRecordSource {
             |record| {
                 record
                     .as_ref()
-                    .map_or(0, |record| super::super::read_footprint::relation(record))
+                    .map_or(0, super::super::read_footprint::relation)
             },
         )
     }

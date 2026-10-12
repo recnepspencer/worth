@@ -148,7 +148,7 @@ fn projected_frontier_adjacency_uses_the_selected_branch_root() {
     let snapshot = snapshot_for_owner_branch(&runtime, &child);
     let projection = runtime
         .read_truth()
-        .project_snapshot(&snapshot, &execution)
+        .project_snapshot(&snapshot, execution)
         .unwrap();
     let records = projection
         .bounded_outgoing_relations_for_frontier(

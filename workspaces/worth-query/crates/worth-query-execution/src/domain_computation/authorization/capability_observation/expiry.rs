@@ -23,7 +23,7 @@ pub(super) fn observe_grant_expiry(
     )]);
     relational
         .read_truth()
-        .project_snapshot(snapshot, &execution)
+        .project_snapshot(snapshot, execution)
         .map(|view| {
             view.entity_record_with_projection_scope(execution, grant, scope, |record| {
                 (record.kind_id() == installed.grant_kind()

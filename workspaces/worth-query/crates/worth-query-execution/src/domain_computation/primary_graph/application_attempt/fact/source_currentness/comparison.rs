@@ -35,7 +35,7 @@ impl WorthQueryApplicationObservedFact {
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, &execution)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 Ok((
                     view.entity_record_with_projection_scope(
@@ -82,7 +82,7 @@ impl WorthQueryApplicationObservedFact {
                     native_revision.ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 let Some(current) = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, &execution)
+                    .project_snapshot(snapshot, execution)
                     .map(|view| view.entity_field_revision(execution, *entity_id, locator))
                     .transpose()
                     .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
@@ -101,7 +101,7 @@ impl WorthQueryApplicationObservedFact {
             } => {
                 let view = runtime
                     .read_truth()
-                    .project_snapshot(snapshot, &execution)
+                    .project_snapshot(snapshot, execution)
                     .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?;
                 // The owner-index lookup costs one unit whatever the fact's
                 // recorded limit.

@@ -76,7 +76,7 @@ impl WorthQueryInstalledEntityResolutionContext {
         if snapshot.runtime_instance_id() != self.relational_runtime_instance_id
             || relational
                 .read_truth()
-                .project_snapshot(snapshot, &execution)
+                .project_snapshot(snapshot, execution)
                 .is_none()
         {
             return Err(entity_denial(

@@ -50,7 +50,7 @@ fn scoped_field_projection_borrows_selected_root_without_copying_unrelated_paylo
     for (snapshot, expected_name) in [(&created.snapshot, "before"), (&updated.snapshot, "after")] {
         let view = runtime
             .read_truth()
-            .project_snapshot(snapshot, &execution)
+            .project_snapshot(snapshot, execution)
             .unwrap();
         assert_borrowed_title(execution, &view, entity);
         let name = view

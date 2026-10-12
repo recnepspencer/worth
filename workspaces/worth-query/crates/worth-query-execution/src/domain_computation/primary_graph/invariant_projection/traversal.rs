@@ -217,7 +217,7 @@ where
     ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, &execution)
+            .project_snapshot(self.snapshot, execution)
             .ok_or_else(|| endpoint_unavailable(subject))
     }
 
