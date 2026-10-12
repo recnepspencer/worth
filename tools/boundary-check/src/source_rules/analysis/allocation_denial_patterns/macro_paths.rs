@@ -10,29 +10,39 @@ pub(super) enum Fragment {
 }
 
 pub(super) fn scan(tokens: &[TokenTree], mut path: impl FnMut(Fragment)) -> usize {
+    scan_fragments(tokens, &mut path, true)
+}
+
+fn scan_fragments(
+    tokens: &[TokenTree],
+    path: &mut impl FnMut(Fragment),
+    first_pass: bool,
+) -> usize {
     let mut operations = 0;
     let mut candidate = Vec::new();
     let mut angles = 0usize;
     for (index, token) in tokens.iter().enumerate() {
         operations += 1;
-        if let TokenTree::Ident(name) = token {
-            if name == RAW {
-                operations += 2;
-                if tokens.get(index + 1).is_some_and(colon)
-                    && tokens.get(index + 2).is_some_and(colon)
-                {
-                    path(Fragment::RawMember(name.span()));
+        if first_pass {
+            if let TokenTree::Ident(name) = token {
+                if name == RAW {
+                    operations += 2;
+                    if tokens.get(index + 1).is_some_and(colon)
+                        && tokens.get(index + 2).is_some_and(colon)
+                    {
+                        path(Fragment::RawMember(name.span()));
+                    }
                 }
             }
-        }
-        if let TokenTree::Group(group) = token {
-            path(Fragment::Group(group.stream()));
+            if let TokenTree::Group(group) = token {
+                path(Fragment::Group(group.stream()));
+            }
         }
         let continues = match token {
             TokenTree::Group(_) if angles > 0 => true,
             TokenTree::Ident(_) => {
                 if angles == 0 && matches!(candidate.last(), Some(TokenTree::Ident(_))) {
-                    finish(&mut candidate, &mut path, &mut operations);
+                    finish(&mut candidate, path, &mut operations, first_pass);
                 }
                 true
             }
@@ -62,22 +72,28 @@ pub(super) fn scan(tokens: &[TokenTree], mut path: impl FnMut(Fragment)) -> usiz
         if continues {
             candidate.push(token.clone());
         } else {
-            finish(&mut candidate, &mut path, &mut operations);
+            finish(&mut candidate, path, &mut operations, first_pass);
             angles = 0;
         }
     }
-    finish(&mut candidate, &mut path, &mut operations);
+    finish(&mut candidate, path, &mut operations, first_pass);
     operations
 }
 
-fn finish(candidate: &mut Vec<TokenTree>, path: &mut impl FnMut(Fragment), operations: &mut usize) {
+fn finish(
+    candidate: &mut Vec<TokenTree>,
+    path: &mut impl FnMut(Fragment),
+    operations: &mut usize,
+    first_pass: bool,
+) {
     // Each candidate is disjoint, so parsing cannot repeatedly reread prefixes.
     if candidate.iter().any(colon) {
         *operations += candidate.len();
         let tokens = std::mem::take(candidate);
         match syn::parse2::<syn::TypePath>(tokens.iter().cloned().collect()) {
             Ok(candidate) => path(Fragment::Path(candidate)),
-            Err(_) => recover_unclosed_angles(&tokens, path, operations),
+            Err(_) if first_pass => recover_unclosed_angles(&tokens, path, operations),
+            Err(_) => {}
         }
     } else {
         candidate.clear();
@@ -107,13 +123,9 @@ fn recover_unclosed_angles(
     }
     let mut start = 0;
     for end in unmatched.into_iter().chain(std::iter::once(tokens.len())) {
-        *operations += scan(&tokens[start..end], |fragment| {
-            // The first pass already owns groups and literal raw members.
-            // Visiting their descendants again could multiply nested work.
-            if matches!(fragment, Fragment::Path(_)) {
-                path(fragment);
-            }
-        });
+        // Reuse the same callback type and leave descendant groups and raw
+        // members with their first pass. Balanced pieces need no recovery.
+        *operations += scan_fragments(&tokens[start..end], path, false);
         start = end + 1;
     }
 }
