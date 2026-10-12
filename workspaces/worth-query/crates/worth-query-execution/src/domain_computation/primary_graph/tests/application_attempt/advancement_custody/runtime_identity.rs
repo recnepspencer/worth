@@ -114,9 +114,18 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             let requests = reports();
             assert_eq!(requests.len(), 1, "B never opens or charges a request");
             let charged = requests[0].as_ref().unwrap().charged_work();
-            assert!(
-                charged >= index_work,
-                "the aggregate includes A's exact native index work"
+            let read_charges = charge_prices::principal_and_commit_reads();
+            let native_staging = match placement {
+                Placement::Serial => 0,
+                Placement::Leased(_) => charge_prices::leased_native_staging(),
+                Placement::World | Placement::Certified { .. } => {
+                    unreachable!("this proof names its two placements")
+                }
+            };
+            assert_eq!(
+                charged,
+                index_work + read_charges + native_staging,
+                "each placement pays its named reads and native stages"
             );
             if foreign {
                 assert_eq!(
@@ -158,3 +167,6 @@ fn mutable_principal_reader_moves_the_installed_source_counter() {
     // This lower public read door takes no phase yet; it closes in part two.
     // The assertion pins the observer's actual read boundary, not that carriage.
 }
+
+#[path = "runtime_identity/charge_prices.rs"]
+mod charge_prices;
