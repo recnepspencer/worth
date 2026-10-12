@@ -138,7 +138,8 @@ impl RootPathSourceBuilder {
                         1,
                     )
                     .map_err(|unavailable| match unavailable {
-                        AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
+                        AdjacencyStructuralRevisionDenial::Execution(cause) => crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_cause_denial(cause, subject),
+                AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                             read_execution_denial(
                                 WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
                                 subject,

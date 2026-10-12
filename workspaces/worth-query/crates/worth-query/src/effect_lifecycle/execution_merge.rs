@@ -43,9 +43,15 @@ impl MergeUniqueValueAuthority<'_> {
 fn merge_unique_value_failure(
     denial: WorthQueryMergeUniqueValueDenial,
 ) -> RelationalEffectExecutionFailure {
-    RelationalEffectExecutionFailure::Denied {
-        kind: merge_unique_value_denial_kind(denial.kind()),
-        message: denial.field().to_string(),
+    match merge_unique_value_denial_kind(denial.kind()) {
+        Ok(kind) => RelationalEffectExecutionFailure::Denied {
+            kind,
+            message: denial.field().to_string(),
+        },
+        Err(kind) => RelationalEffectExecutionFailure::ControlStopped {
+            kind,
+            message: denial.field().to_string(),
+        },
     }
 }
 
@@ -54,8 +60,19 @@ fn merge_unique_value_failure(
 /// refusals keep their own kinds.
 pub(super) fn merge_unique_value_denial_kind(
     kind: WorthQueryMergeUniqueValueDenialKind,
-) -> EffectExecutionDenialKind {
-    match kind {
+) -> Result<EffectExecutionDenialKind, super::EffectExecutionControlStopKind> {
+    Ok(match kind {
+        WorthQueryMergeUniqueValueDenialKind::Execution(cause) => {
+            use worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Stop;
+            return worth_query_execution::facade::primary_graph::relational_execution_kind(
+                cause, None,
+            )
+            .map(EffectExecutionDenialKind::RelationalExecutionDenied)
+            .map_err(|stop| match stop {
+                Stop::Cancelled => super::EffectExecutionControlStopKind::Cancelled,
+                Stop::TimedOut => super::EffectExecutionControlStopKind::TimedOut,
+            });
+        }
         WorthQueryMergeUniqueValueDenialKind::ValueTaken => {
             EffectExecutionDenialKind::UniqueValueTaken
         }
@@ -71,7 +88,7 @@ pub(super) fn merge_unique_value_denial_kind(
         WorthQueryMergeUniqueValueDenialKind::UnreadWriteShape => {
             EffectExecutionDenialKind::MergeWriteShapeUnread
         }
-    }
+    })
 }
 
 pub(crate) fn execute_lowered_merge(

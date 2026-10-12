@@ -30,7 +30,9 @@ fn direct_executor_refuses_foreign_phase_with_accumulated_counters() {
         .unwrap();
     let counters = completed.prepared.counters;
     assert_eq!(counters.runtime_authority_checks, 1);
-    assert!(counters.graph_provider_contacts > 0);
+    // This direct declaration requires no graph provider. Preparation already
+    // performed its one runtime authority check, so default counters differ.
+    assert_eq!(counters.graph_provider_contacts, 0);
     // A phase issued by the other real owner enters the executor door.
     foreign
         .advancement_owner()

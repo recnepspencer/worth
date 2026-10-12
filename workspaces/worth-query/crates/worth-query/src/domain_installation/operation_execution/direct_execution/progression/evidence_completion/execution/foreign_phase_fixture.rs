@@ -46,7 +46,9 @@ impl domain::WorthQueryDomainOperationExecutor<DirectDomain, DirectRead, ReadFam
     fn execution_resource_support(&self) -> domain::WorthQueryExecutionResourceSupport {
         execution_resource_support()
     }
-    fn installed_read_declaration(&self) -> Option<&read::WorthQueryReadDeclaration> { Some(installed_read_declaration()) }
+    fn installed_read_declaration(&self) -> Option<&read::WorthQueryReadDeclaration> {
+        Some(installed_read_declaration())
+    }
     fn execute(
         &self,
         _: (),
@@ -100,7 +102,7 @@ pub(super) fn workspace(
 }
 pub(super) fn admitted(
     workspace: &crate::runtime::WorthQueryWorkspace,
-) -> domain::WorthQueryAdmittedDirectOperation<
+) -> crate::domain_installation::WorthQueryAdmittedDirectOperation<
     DirectDomain,
     DirectRead,
     ReadFamily,
@@ -331,4 +333,3 @@ fn installed_read_declaration() -> &'static read::WorthQueryReadDeclaration {
         .expect("installed read declaration fixture is canonical")
     })
 }
-

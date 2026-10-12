@@ -228,6 +228,10 @@ where
                             WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
                             Family::IDENTITY,
                         )),
+                        Err(ConsumedOutputVerificationStop::Execution(cause)) => Err(denial(
+                            WorthQueryOutputDemandDenialKind::RelationalExecution(cause),
+                            Family::IDENTITY,
+                        )),
                         Err(ConsumedOutputVerificationStop::CapacityExhausted) => Err(retry(
                             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
                         )),

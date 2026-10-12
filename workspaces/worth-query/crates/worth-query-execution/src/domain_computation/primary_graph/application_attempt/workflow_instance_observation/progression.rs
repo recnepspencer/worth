@@ -108,6 +108,12 @@ pub(super) fn observe_progress(
             COMPARISON_WORK_LIMIT,
         )
         .map_err(|unavailable| match unavailable {
+            AdjacencyStructuralRevisionDenial::Execution(cause) => {
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                    cause,
+                    "workflow transition membership revision",
+                )
+            }
             AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                 denial("workflow transition membership revision exceeds its comparison work")
             }

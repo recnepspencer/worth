@@ -31,11 +31,20 @@ fn read_stop_oracle_at_the_approval_readmission_door() {
             Some(WorthQueryOperationAuthorizationDenialKind::Cancelled)
         );
         let (_, stop) = run(None, Some((k - 1) as u64));
-        assert_eq!(
-            stop,
-            Some(WorthQueryOperationAuthorizationDenialKind::CanonicalWorkDenied),
-            "work ceiling {k}"
-        );
+        use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
+        use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+        use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+        use WorthQueryOperationAuthorizationDenialKind as Kind;
+        match stop {
+            Some(Kind::CanonicalWorkDenied)
+            | Some(Kind::RelationalExecution(Native::WorkExhausted))
+            | Some(Kind::ExecutionRequest(Session::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: None,
+            })) => {}
+            other => panic!("work stop at consult {k}: {other:?}"),
+        }
     }
 }
 fn run(
@@ -62,10 +71,26 @@ fn run(
             worth_foundational::ExecutionBudget::new(std::num::NonZeroUsize::MIN, 64 << 20, work)
         })),
     );
-    let probe = ReadConsultObservationForTest::install_on_this_thread_for_test(
-        Door::Approval,
-        cancel_at.map(|k| (k, source)),
-    );
+    let probe = match work {
+        Some(work) => ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
+            Door::Approval,
+            Some(work as usize + 1),
+            move |context| {
+                // Metadata consultations are free. At consult k the caller
+                // attempts k actual work units on its ceiling of k - 1.
+                assert_eq!(
+                    context
+                        .expect("the caller's admitted scope")
+                        .checkpoint(work + 1),
+                    Err(worth_execution::MapKernelStop::WorkCeiling)
+                );
+            },
+        ),
+        None => ReadConsultObservationForTest::install_on_this_thread_for_test(
+            Door::Approval,
+            cancel_at.map(|k| (k, source)),
+        ),
+    };
     let result = world
         .application
         .with_application_advancement(&request, |phase| {
@@ -78,7 +103,11 @@ fn run(
         });
     let stop = match result {
         Ok(Ok(_)) => {
-            assert!(cancel_at.is_none() && work.is_none());
+            assert!(
+                cancel_at.is_none() && work.is_none(),
+                "admitted: cancel_at={cancel_at:?}, work={work:?}, consults={}",
+                probe.consults()
+            );
             None
         }
         Ok(Err(denial)) => Some(denial.kind()),

@@ -112,6 +112,12 @@ pub(super) fn observe(
         inventory_limit.saturating_mul(2),
     )
     .map_err(|failure| match failure {
+        AdjacencyObservationDenial::Execution(cause) => {
+            WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                cause,
+                "workflow transition inventory",
+            )
+        }
         AdjacencyObservationDenial::SnapshotUnavailable => {
             denial("workflow instance transition inventory is unavailable")
         }

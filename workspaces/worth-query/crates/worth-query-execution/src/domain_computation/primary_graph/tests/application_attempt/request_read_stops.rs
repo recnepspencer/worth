@@ -16,6 +16,12 @@ fn cancelled_retained_activation_native_read_keeps_the_stop() {
         admission.assert_cancelled_retained_activation_read(runtime, execution, snapshot, source)
     });
 }
+#[test]
+fn retained_equality_dispatch_stop_oracle() {
+    with_admitted_facts(|admission, runtime, execution, snapshot, _| {
+        admission.assert_fact_dispatch_stop_oracle(runtime, execution, snapshot)
+    });
+}
 fn with_admitted_facts(
     body: impl FnOnce(
         &Admission,

@@ -77,6 +77,7 @@ pub(super) fn fails_row(stop: &WorthQueryOutputDemandDenial) -> bool {
 pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
     use WorthQueryOutputDemandDenialKind as Kind;
     match kind {
+        Kind::RelationalExecution(_) => false,
         Kind::ProductDelivery(_) => true,
         Kind::CorrespondenceDelivery(cause) => {
             WorthQueryOutputDemandDenial::new(Kind::CorrespondenceDelivery(cause), "")

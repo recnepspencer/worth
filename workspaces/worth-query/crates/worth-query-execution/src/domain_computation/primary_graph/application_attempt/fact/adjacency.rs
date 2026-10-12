@@ -111,13 +111,13 @@ pub(super) fn observe_adjacency_with_work(
     direction: WorthQueryApplicationAdjacencyDirection,
     maximum_work_units: usize,
 ) -> Result<(Vec<WorthQueryApplicationObservedRelation>, usize), AdjacencyObservationDenial> {
-    if let Some(event) =
-        worth_relational::facade::mvcc::RelationalInterruptionEvent::observe_request(
-            execution,
-            worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
-        )
-    {
-        return Err(AdjacencyObservationDenial::Interrupted(event));
+    if let Err(stop) = execution.check_live() {
+        return Err(match worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
+            stop, worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
+        ) {
+            Ok(event) => AdjacencyObservationDenial::Interrupted(event),
+            Err(stop) => AdjacencyObservationDenial::Execution(stop.into()),
+        });
     }
     execution
         .consult()

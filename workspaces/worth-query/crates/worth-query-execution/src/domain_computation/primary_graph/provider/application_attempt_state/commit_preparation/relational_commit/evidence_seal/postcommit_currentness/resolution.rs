@@ -73,6 +73,9 @@ impl PreparedFactRebase {
         if producer_output && reads_source(fact) {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
+                    Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                        return Err(CompanionPreflightStop::Execution(cause))
+                    }
                     Ok(movement) => Ok(match movement.movement() {
                         Movement::Unmoved => Self::Keep,
                         Movement::Moved => Self::KeepSuperseded,
@@ -179,6 +182,11 @@ impl PreparedFactRebase {
                     *direction,
                     (*comparison_work_limit).min(maximum_pair_rebase_work),
                 ) {
+                    Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => {
+                        Err(RebaseVerificationReason::AdmissionDenied(
+                            CompanionPreflightStop::Execution(cause),
+                        ))
+                    }
                     Ok(comparison) => Ok(Self::Adjacency(comparison.revision())),
                     // The request paid the lookup above; a refusal here is
                     // the fact's own recorded limit, or a missing anchor or
@@ -204,9 +212,10 @@ impl PreparedFactRebase {
                     maximum_pair_rebase_work,
                     prepared_endpoints,
                 ) {
-                    Some(rebased) => Ok(Self::Replace(rebased)),
-                    None if producer_output => Err(unavailable),
-                    None => Ok(Self::Keep),
+                    Err(stop) => Err(RebaseVerificationReason::AdmissionDenied(stop)),
+                    Ok(Some(rebased)) => Ok(Self::Replace(rebased)),
+                    Ok(None) if producer_output => Err(unavailable),
+                    Ok(None) => Ok(Self::Keep),
                 }
             }
             Fact::IndexedEntitySelection {

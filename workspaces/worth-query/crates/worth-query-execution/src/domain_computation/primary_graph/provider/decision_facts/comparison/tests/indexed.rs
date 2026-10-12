@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::{
         AccountStatus,
     },
 };
+use crate::facade::provider_session::WorthQueryDecisionReadSetDenialKind;
 use worth_execution::ExecutionAllocationPolicy;
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, StringApplicationValueBinding,

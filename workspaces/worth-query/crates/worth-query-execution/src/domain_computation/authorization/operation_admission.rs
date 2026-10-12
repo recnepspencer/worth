@@ -209,3 +209,7 @@ mod tests {
         assert_eq!(counter.load(std::sync::atomic::Ordering::Relaxed), u64::MAX);
     }
 }
+
+#[cfg(test)]
+#[path = "operation_admission/retained_activation_read_tests.rs"]
+mod retained_activation_read_tests;

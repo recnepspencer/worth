@@ -299,7 +299,8 @@ const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightS
     use super::super::CompanionPreflightStop as Stop;
     match stop {
         Stop::TopologyPending | Stop::SelectedSourceMismatch => true,
-        Stop::SelectedPositionUnavailable { .. }
+        Stop::Execution(_)
+        | Stop::SelectedPositionUnavailable { .. }
         | Stop::ForeignCell
         | Stop::RegistrationChanged
         | Stop::WorkExhausted { .. }

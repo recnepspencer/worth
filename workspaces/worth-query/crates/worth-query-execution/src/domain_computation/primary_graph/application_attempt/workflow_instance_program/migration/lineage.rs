@@ -65,9 +65,9 @@ mod request_stops {
             let request = worth_execution::CancellationSource::new();
             let serial = worth_execution::SerialRequest::from_memory(worth_execution::SerialMemoryBudget::new(64 << 20), request.token(), None);
             let cancelled = worth_execution::ExecutionRequest::serial(&serial);
+            let anchor = selected.resolve_entity(&phase, crate::domain_computation::primary_graph::tests::fixture::AccountStatus::reference(), "open".to_owned(), &crate::domain_computation::primary_graph::tests::fixture::live_scope(), crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id();
             graph.integration_handle().with_runtime(&execution, |runtime| {
                 let snapshot = selected.application_basis().snapshot_handle();
-                let anchor = selected.resolve_entity(&phase, crate::domain_computation::primary_graph::tests::fixture::AccountStatus::reference(), "open".to_owned(), &crate::domain_computation::primary_graph::tests::fixture::live_scope(), crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode::Ordinary).unwrap().entity_id();
                 let _probe = worth_execution::ExecutionCheckpointObservationForTest::install_on_this_thread_for_test(move || request.cancel());
                 let denial = successor_identity(&cancelled, runtime, snapshot, graph.layout.workflow(), anchor).unwrap_err();
                 assert_eq!(denial.kind(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::Cancelled);

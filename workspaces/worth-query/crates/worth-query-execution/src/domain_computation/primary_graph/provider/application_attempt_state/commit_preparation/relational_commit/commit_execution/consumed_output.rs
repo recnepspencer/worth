@@ -68,6 +68,7 @@ pub(super) fn verify(
             Ok::<(), PrecommitOutputStop>(())
         }))
         .map_err(|stop| match stop {
+            PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
             PrecommitOutputStop::Verification(
                 ConsumedOutputVerificationStop::RetryCurrentness(cause),
             ) => WorthQueryProviderSessionCommitStop::Deferred(
@@ -83,6 +84,7 @@ pub(super) fn verify(
             ),
             other => {
                 let detail = match other {
+                    PrecommitOutputStop::Verification(ConsumedOutputVerificationStop::Execution(cause)) => return crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_stop(cause, None),
                     PrecommitOutputStop::SelectedUnavailable => {
                         "selected native root is unavailable for output evidence"
                     }

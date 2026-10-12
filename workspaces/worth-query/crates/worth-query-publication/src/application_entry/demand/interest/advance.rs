@@ -129,7 +129,8 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::DuplicatePerformedSource
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::BridgeConditional(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductDelivery(_)
-                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(_) => WorthQueryApplicationOutputDemandDenial::Demand(denial),
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::CorrespondenceDelivery(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RelationalExecution(_) => WorthQueryApplicationOutputDemandDenial::Demand(denial),
         })?;
         match progress {
             WorthQueryOutputDemandAdvance::Pending => {

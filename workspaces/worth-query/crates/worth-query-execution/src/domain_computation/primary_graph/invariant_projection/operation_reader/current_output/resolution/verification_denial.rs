@@ -8,6 +8,9 @@ pub(super) fn from_stop(
 ) -> WorthQueryCurrentOutputDenial {
     WorthQueryCurrentOutputDenial::new(
         match stop {
+            ConsumedOutputVerificationStop::Execution(cause) => {
+                WorthQueryCurrentOutputDenialKind::Execution(cause)
+            }
             ConsumedOutputVerificationStop::WorkExhausted => {
                 WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
             }

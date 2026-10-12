@@ -37,6 +37,8 @@ const MERGE_UNIQUE_CANDIDATE_LIMIT: usize = 2;
 /// Why a merge's unique values refused it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryMergeUniqueValueDenialKind {
+    /// The request stopped while checking the equality index.
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// Another live entity at the target head holds a value the merge
     /// writes, or the merge writes one value twice.
     ValueTaken,
@@ -199,6 +201,12 @@ fn admit_fields(
         );
         let candidates = match selection {
             Ok(candidates) => candidates,
+            Err(WorthQueryIndexedSelectionRefusal::Execution(cause)) => {
+                return Err(field_denial(
+                    WorthQueryMergeUniqueValueDenialKind::Execution(cause),
+                    locator,
+                ))
+            }
             // More holders than the limit: the value is held.
             Err(WorthQueryIndexedSelectionRefusal::Overflowed) => {
                 return Err(field_denial(

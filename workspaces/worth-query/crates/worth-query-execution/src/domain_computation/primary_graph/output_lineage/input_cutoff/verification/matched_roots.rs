@@ -93,6 +93,11 @@ pub(super) fn rebound(
         // Unavailable evidence cannot mint an equality witness. It is Fresh,
         // not an allocation refusal.
         Err(ConsumedOutputVerificationStop::Unavailable) => return Ok(None),
+        Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+            return Err(InputCutoffVerificationStop::Admission(
+                CompanionPreflightStop::Execution(cause),
+            ))
+        }
         Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
             return Err(InputCutoffVerificationStop::CapacityExhausted)
         }

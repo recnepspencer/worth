@@ -314,6 +314,12 @@ fn require_current_facts(
             WorthQueryOutputDemandDenialKind::Superseded,
             moved.locator_identity(),
         )),
+        Err(RetainedFactStop::Execution(stop)) => {
+            crate::domain_computation::primary_graph::output_reuse::owner_read::<()>(
+                Err(stop),
+                "settled output fact comparison",
+            )
+        }
         Err(RetainedFactStop::Work) => {
             Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
         }

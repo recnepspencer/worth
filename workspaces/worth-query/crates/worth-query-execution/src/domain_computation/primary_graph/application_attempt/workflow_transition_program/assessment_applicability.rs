@@ -109,6 +109,12 @@ pub(super) fn observe(
                     1,
                 )
                 .map_err(|unavailable| match unavailable {
+                    AdjacencyStructuralRevisionDenial::Execution(cause) => {
+                        WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                            cause,
+                            "applicability revision",
+                        )
+                    }
                     AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                         denial("applicability native revision exceeds its comparison work")
                     }

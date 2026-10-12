@@ -302,7 +302,7 @@ fn read_governed_root_guard(
     worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
     worth_relational::facade::runtime::BoundedFrontierReadStop<
         worth_relational::facade::runtime::FrontierFieldEqualityTruthReadLimitExceeded,
-        worth_execution::MapKernelStop,
+        worth_execution::WorkCeilingDenial,
     >,
 > {
     runtime.bounded_entity_field_equals_for_frontier(
@@ -332,7 +332,7 @@ fn work_limit_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial 
 fn frontier_denial<L>(
     stop: worth_relational::facade::runtime::BoundedFrontierReadStop<
         L,
-        worth_execution::MapKernelStop,
+        worth_execution::WorkCeilingDenial,
     >,
     subject: &str,
 ) -> WorthQueryApplicationReadExecutionDenial {

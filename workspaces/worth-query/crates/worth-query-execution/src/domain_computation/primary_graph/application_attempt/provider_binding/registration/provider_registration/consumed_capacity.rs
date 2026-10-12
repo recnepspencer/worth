@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::RequiredOutputDemandContext;
 /// provider's plan.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ApplicationAttemptRegistrationStop {
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Rejected(&'static str),
     Interrupted(RelationalOperationInterruption),
 }
@@ -43,6 +44,9 @@ pub(super) fn request_meter(
 
 fn backing_stop(stop: ConsumedOutputVerificationStop) -> ApplicationAttemptRegistrationStop {
     match stop {
+        ConsumedOutputVerificationStop::Execution(cause) => {
+            ApplicationAttemptRegistrationStop::Execution(cause)
+        }
         ConsumedOutputVerificationStop::Interrupted(event) => {
             ApplicationAttemptRegistrationStop::Interrupted(event.interruption())
         }

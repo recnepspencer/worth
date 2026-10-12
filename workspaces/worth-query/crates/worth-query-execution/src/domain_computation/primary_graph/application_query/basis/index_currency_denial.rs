@@ -9,6 +9,15 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_index
     denial: WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     match denial {
+        WorthQueryPrimaryIndexCurrencyDenial::Execution(cause) => {
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            let kind = match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+                Ok(kind) => WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind),
+                Err(Control::Cancelled) => WorthQueryApplicationQueryAdmissionDenialKind::Cancelled,
+                Err(Control::TimedOut) => WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
+            };
+            admission_denial(kind, "primary graph index currency")
+        }
         WorthQueryPrimaryIndexCurrencyDenial::Basis(
             WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
         ) => admission_denial(

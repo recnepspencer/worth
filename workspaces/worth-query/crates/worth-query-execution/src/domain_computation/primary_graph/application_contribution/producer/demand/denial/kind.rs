@@ -5,6 +5,8 @@
 /// again can succeed.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryOutputDemandDenialKind {
+    /// A source comparison kept its complete native request stop.
+    RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The product root retained the precise delivery admission cause.
     ProductDelivery(Box<crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind>),
     /// Correspondence delivery retained its native non-success posture.

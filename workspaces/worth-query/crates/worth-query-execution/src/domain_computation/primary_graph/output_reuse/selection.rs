@@ -35,6 +35,9 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
         Err(RetainedFactStop::Work) => Err(work_denial()),
+        Err(RetainedFactStop::Execution(stop)) => {
+            owner_read::<OutputDependencySelection>(Err(stop), "retained output comparison")
+        }
         Err(RetainedFactStop::Unavailable(fact)) => Err(WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
             fact.locator_identity(),
@@ -46,6 +49,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
+    Execution(worth_relational::facade::mvcc::CompanionPreflightStop),
     /// The snapshot cannot answer this fact.
     Unavailable(&'fact WorthQueryApplicationObservedFact),
 }
@@ -66,7 +70,13 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
             Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)) => {
                 return Err(RetainedFactStop::Unavailable(fact));
             }
-            Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) | Err(_) => {
+            Ok(Err(WorthQuerySourceCurrentnessFailure::Execution(cause))) => {
+                return Err(RetainedFactStop::Execution(
+                    CompanionPreflightStop::Execution(cause),
+                ))
+            }
+            Err(stop) => return Err(RetainedFactStop::Execution(stop)),
+            Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) => {
                 return Err(RetainedFactStop::Work);
             }
         }
@@ -134,11 +144,19 @@ pub(in crate::domain_computation::primary_graph) fn retained_output_settlement_i
 
 /// One owner read on the selection's meter: what it charged stays spent
 /// whether or not it answered.
-fn owner_read<Answer>(
+pub(in crate::domain_computation::primary_graph) fn owner_read<Answer>(
     answer: Result<Answer, CompanionPreflightStop>,
     unavailable: &'static str,
 ) -> Result<Answer, WorthQueryOutputDemandDenial> {
     answer.map_err(|stop| match stop {
+        CompanionPreflightStop::Execution(cause) => WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::RelationalExecution(cause),
+            unavailable,
+        ),
+        CompanionPreflightStop::Interrupted(event) => WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
+            unavailable,
+        ),
         CompanionPreflightStop::WorkExhausted { .. }
         | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => work_denial(),

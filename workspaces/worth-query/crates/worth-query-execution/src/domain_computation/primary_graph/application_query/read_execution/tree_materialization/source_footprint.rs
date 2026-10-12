@@ -252,6 +252,7 @@ fn collect_node(
                 work.remaining_work(),
             )
             .map_err(|unavailable| match unavailable {
+                AdjacencyStructuralRevisionDenial::Execution(cause) => crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_cause_denial(cause, relation.result_path()),
                 AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                     crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial(
                         crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,

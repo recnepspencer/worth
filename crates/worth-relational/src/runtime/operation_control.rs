@@ -43,9 +43,14 @@ impl RelationalInterruptionEvent {
         let interruption = match stop {
             Stop::Cancelled => RelationalOperationInterruption::Cancelled,
             Stop::DeadlineElapsed => RelationalOperationInterruption::TimedOut,
-            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped => return Err(stop),
+            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped => {
+                return Err(stop)
+            }
         };
-        Ok(Self { interruption, boundary })
+        Ok(Self {
+            interruption,
+            boundary,
+        })
     }
 
     #[cfg(test)]

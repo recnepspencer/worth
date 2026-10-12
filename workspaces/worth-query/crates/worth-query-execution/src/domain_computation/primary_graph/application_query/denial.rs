@@ -17,6 +17,8 @@ use crate::domain_computation::primary_graph::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryApplicationQueryAdmissionDenialKind {
+    /// The request stopped while reading index currency.
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The query is not installed as requested.
     InstalledQuery(WorthQueryApplicationQueryInstallationDenialKind),
     /// The principal belongs to a different runtime.

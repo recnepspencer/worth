@@ -55,6 +55,37 @@ impl WorthQueryAuthorizationDecisionFact {
             assert_eq!(retained.matches_with_retained_activation(&execution, &observed, runtime, snapshot), Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled));
             assert!(probe.consults() >= k);
         }
+        for k in 1..=count {
+            let serial = worth_execution::SerialRequest::from_memory(
+                worth_execution::SerialMemoryBudget::new(64 << 20),
+                worth_execution::CancellationToken::new(),
+                None,
+            );
+            let request = worth_execution::ExecutionRequest::serial(&serial);
+            let _probe = ReadConsultObservationForTest::install_with_work_on_this_thread_for_test(
+                Door::Activation,
+                Some(k),
+                move |context| {
+                    assert_eq!(
+                        context
+                            .expect("the caller's active work scope")
+                            .checkpoint(k as u64),
+                        Err(worth_execution::MapKernelStop::WorkCeiling)
+                    );
+                },
+            );
+            let (answer, _) = request
+                .run(
+                    worth_execution::ExecutionWorkCeiling::new((k - 1) as u64),
+                    |_| {
+                        retained.matches_with_retained_activation(
+                            &request, &observed, runtime, snapshot,
+                        )
+                    },
+                )
+                .unwrap();
+            assert_eq!(answer, Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
+        }
         let _ = source;
     }
 }

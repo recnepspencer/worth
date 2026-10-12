@@ -345,3 +345,20 @@ impl Drop for KernelMeterGuard {
         });
     }
 }
+
+// The owned observation guard lends, but cannot replace, the active meter.
+pub(super) fn visit_active_meter_for_test(
+    mut visit: impl FnMut(Option<&mut KernelContext<'_, '_>>),
+) {
+    let meter = ACTIVE_METER.with(|stack| stack.borrow().last().cloned());
+    match meter {
+        Some(meter) => {
+            let mut context = KernelContext {
+                meter,
+                _lease: PhantomData,
+            };
+            visit(Some(&mut context));
+        }
+        None => visit(None),
+    }
+}

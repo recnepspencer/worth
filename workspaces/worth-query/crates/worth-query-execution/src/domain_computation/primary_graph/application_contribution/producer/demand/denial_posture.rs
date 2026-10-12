@@ -6,7 +6,7 @@ impl WorthQueryOutputDemandDenialKind {
     pub(super) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
         use WorthQueryOutputDemandRecoveryPosture::{Retryable, Terminal};
         match self {
-            Self::ProductDelivery(_) => Terminal,
+            Self::ProductDelivery(_) | Self::RelationalExecution(_) => Terminal,
             Self::CorrespondenceDelivery(cause) => match cause.as_ref() {
                 worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Denied(_)
                 | worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop::Failed(_) => {
