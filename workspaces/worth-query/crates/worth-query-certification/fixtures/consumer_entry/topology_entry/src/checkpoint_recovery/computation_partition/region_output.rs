@@ -25,8 +25,8 @@ use super::*;
 
 /// The largest set a region output's decision reads, and what one entry of
 /// it may cost the decision: its membership, its five facts and its entity.
-/// A set of 200 is refused at seeding: the planar turn invariant's work
-/// budget pays for every entity the bootstrap touches, of any kind.
+/// Bootstrap scope inspection has its own workload-derived allowance; this
+/// bound declares how many entries the decision itself admits.
 pub(super) const LARGEST_SET: usize = 160;
 const PROJECTION_WORK_PER_ENTRY: usize = 16;
 

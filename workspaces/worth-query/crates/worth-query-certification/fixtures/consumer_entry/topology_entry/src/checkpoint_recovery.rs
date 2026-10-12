@@ -53,7 +53,19 @@ worth_query_application! {
     }
 }
 
-impl TopologySchemaBinding for CheckpointSchema {}
+impl TopologySchemaBinding for CheckpointSchema {
+    // Keep the planar allowance, plus the bootstrap's LARGEST_SET entries,
+    // LARGEST_SET sets and at most two membership edges per entry. Unrelated
+    // entities pay one slot visit + one intent; relations pay one slot visit
+    // + one intent + two bulk endpoint visits, even when filtered out of Body.
+    fn planar_invariant_work() -> u64 {
+        let entities = u64::try_from(computation_partition::BOOTSTRAP_ENTITIES)
+            .expect("fixture entity count fits u64");
+        let relations = u64::try_from(computation_partition::BOOTSTRAP_RELATIONS)
+            .expect("fixture relation count fits u64");
+        1024 + 2 * entities + 4 * relations
+    }
+}
 
 type RootConnection = ApplicationConnectionRef<
     CheckpointSchema,
