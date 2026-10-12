@@ -14,7 +14,7 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
     for backing in [0, 1, 2, 3, 4, 5] {
         let cancellation = CancellationSource::new();
         let workers = match backing {
-            0 | 1 | 2 => 1,
+            0..=2 => 1,
             3 => 2,
             4 => 3,
             5 => 4,

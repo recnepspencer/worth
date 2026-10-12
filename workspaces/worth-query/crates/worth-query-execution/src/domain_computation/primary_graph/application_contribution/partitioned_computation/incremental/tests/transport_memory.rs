@@ -38,9 +38,7 @@ fn an_incremental_transport_fits_its_serial_tree_capacity_exactly() {
         if short == 0 {
             drop(reservation.expect("incremental serial tree capacity fits exactly"));
         } else {
-            let denial = reservation
-                .err()
-                .expect("one byte under the serial capacity refuses");
+            let denial = reservation.expect_err("one byte under the serial capacity refuses");
             assert_eq!(denial.requested, expected);
             assert_eq!(denial.admitted, expected - 1);
         }

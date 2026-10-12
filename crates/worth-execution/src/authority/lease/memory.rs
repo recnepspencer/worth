@@ -152,6 +152,12 @@ impl LeaseMemory {
     }
 }
 
+impl Drop for LeaseMemory {
+    fn drop(&mut self) {
+        let _ = self.resize(0);
+    }
+}
+
 #[cfg(test)]
 mod room_tests {
     use super::*;
@@ -189,11 +195,5 @@ mod room_tests {
         assert_eq!(child.available_memory_bytes(), 700);
         drop(parent_hold);
         assert_eq!(child.available_memory_bytes(), 800);
-    }
-}
-
-impl Drop for LeaseMemory {
-    fn drop(&mut self) {
-        let _ = self.resize(0);
     }
 }
