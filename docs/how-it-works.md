@@ -733,11 +733,27 @@ only narrow: an attempt to widen them is a typed `Limit` denial.
 
 **Mutations** declare what they were based on, which is a typestate step:
 
-Call `request.mutate(input)`, then choose `expect_source(observed_source)`,
-`expect_result_set(..)`, or `without_source()` as the binding permits. Supply
-`idempotency(&key)` before executing. Use `execute()` on a runtime without a
-program; the program execution doors are listed below. The build guide has
-the complete application declarations and calls.
+The planar geometry example uses the installed program `Program<E>` and its
+declared `RegionTotalsDemand`. The current call order is:
+
+```rust
+let outcome = request
+    .mutate(RegionTotalsDemand {
+        scope_key: "anchor-a".to_owned(),
+        entries: "example".to_owned(),
+        replacement_y: length(3),
+    })
+    .expect_source(observed.observed_sources()[0].clone())
+    .idempotency(&1_u64)
+    .execute_in_program::<Program<E>>(
+        &application,
+        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+    );
+```
+
+Choose `expect_source`, `expect_result_set`, or `without_source` as the binding
+permits, and supply `idempotency` before execution. This example executes in
+its program. On a runtime without a program, use `execute()` instead.
 
 - **Source expectation.** A `WorthQueryObservedSource<Query>` comes from a
   published query row. It records the branch, basis, query identity,
@@ -759,11 +775,49 @@ sources a later mutation can pass to `expect_source`.
 
 **Mutations** run the handler. A handler implements `OperationHandler`:
 
-`decide` receives the binding's input and a `DecisionReader`.
-`candidate_requirements` returns `ApplicationCandidateRequirements`.
-`build_candidate` writes through a `CandidateWriter` and returns a
-`HandlerResult`. The [build guide's managed computations](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
-show executable computation-dependent decision plans in two domains.
+The current contract includes the default `prepare_decision`. A handler with
+no compute step implements `decide`, `candidate_requirements`, and
+`build_candidate`; the default preparation wraps its decision in an immediate
+plan. A computing handler overrides preparation, as the
+[compiled build-guide handler](build-an-application.md#36-declare-and-install-a-partitioned-managed-computation)
+does.
+
+```rust
+pub trait OperationHandler<Schema, Binding>: Send + Sync + 'static
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+{
+    fn decide(
+        &self,
+        input: &Binding::Input,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> HandlerResult<Binding::Decision, Binding::Denial>;
+
+    /// Prepare every read on the owner and return compute plus owner completion.
+    /// A handler without computation keeps its decision implementation unchanged.
+    fn prepare_decision(
+        &self,
+        input: &Binding::Input,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> WorthQueryDecisionPlan<Binding::Decision, Binding::Denial> {
+        WorthQueryDecisionPlan::immediate(self.decide(input, reader))
+    }
+
+    fn candidate_requirements(
+        &self,
+        input: &Binding::Input,
+        decision: &Binding::Decision,
+    ) -> ApplicationCandidateRequirements;
+
+    fn build_candidate(
+        &self,
+        input: &Binding::Input,
+        decision: Binding::Decision,
+        candidate: &mut CandidateWriter<'_, Schema, Binding>,
+    ) -> HandlerResult<Binding::Result, Binding::Denial>;
+}
+```
 
 1. **Decide.** `prepare_decision` reads through `DecisionReader` and returns a
    `WorthQueryDecisionPlan`. Its default calls `decide` and returns an immediate
