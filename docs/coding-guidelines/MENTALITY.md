@@ -102,7 +102,7 @@ The hierarchy of enforcement, from strongest to weakest:
 1. **Unrepresentable** — invalid states cannot be expressed in the type system
 2. **Uncompilable** — violations are compile-time errors
 3. **Automatically tested** — violations are caught by the test suite
-4. **Mechanically observable** — violations are visible in runtime counters
+4. **Mechanically observable** — violations are visible at run time
 5. **Documented** — violations are described in a document somewhere
 
 Category 5 is not enforcement. It is hope. Do not build systems that rely on
@@ -116,9 +116,8 @@ review," the rule is not enforced. Move it up the hierarchy.
 something should not be done. Comments are category 5. Instead, make the wrong
 thing impossible. Use `pub(crate)` to prevent external access. Use typestate to
 prevent out-of-order operations. Use proof-bearing wrapper types to prevent raw
-collections from crossing phase boundaries. Use complexity counters with
-assertion-bearing tests to prevent accidental O(n²) in hot paths. The goal is a
-codebase where doing the wrong thing is harder than doing the right thing.
+collections from crossing phase boundaries. The goal is a codebase where doing
+the wrong thing is harder than doing the right thing.
 
 ---
 
@@ -207,8 +206,9 @@ Architectural tests require:
   must agree on truth regardless of when they started observing
 - **Replay equivalence** — re-executing the same inputs must produce identical
   outputs across every observable surface
-- **Budget enforcement** — complexity contracts with named hot paths, declared
-  Big-O bounds, and proof tests that assert exact counter values
+- **Scale sensitivity** — where a hot path's growth class matters to a caller,
+  a test that it holds as the input grows, with headroom and never with exact
+  counts (see section 7)
 
 A system without architectural tests will pass all its behavioral tests and
 still fail in production under conditions that no behavioral test anticipated.
@@ -224,33 +224,45 @@ and more valuable.
 
 ---
 
-## 7. Make Cost Visible and Testable
+## 7. Know the Cost; Count Only What Has Proven Necessary
 
-Performance is not a vague aspiration. It is a set of specific, measurable
-invariants that must be enforced with the same rigor as correctness invariants.
+Performance comes from structure: the right scope, the right granule, the
+right data shape. Understand a hot path well enough to state its growth class.
+That understanding is the requirement. Instrumentation is not.
 
-For every hot path in the system:
-1. **Declare** the expected time complexity in a named complexity contract
-2. **Instrument** the path with structural counters (not just elapsed time —
-   slot scans, partition touches, cache hits, packet widths)
-3. **Test** the counters with exact assertions, not threshold ranges
-4. **Mark** whether the contract is verified or debt
+A counter, meter, budget or cost assertion is machinery with a price of its
+own. It has to be threaded through the code, kept honest, explained to every
+reader, and repaired each time lawful work moves. It earns a place only when
+it is proven necessary:
 
-A performance claim without a named counter and a proof test is not a claim. It
-is a guess. Guesses degrade under maintenance pressure. Contracts with proof
-tests catch regressions before they ship.
+- a real performance problem or wrong observable behavior cannot be diagnosed
+  or held without it, or
+- a caller depends on the limit, such as a bound that protects the system
+  from an unbounded request.
 
-The counters must be embedded in the operation's result — visible to consumers,
-not just to internal observability. If a caller cannot see how much work an
-operation did, they cannot reason about whether their usage pattern is
-sustainable.
+Without that proof, do not add one: not for symmetry, not for completeness,
+not because a neighboring path has one.
 
-**AI deprogramming note:** Your default is to optimize code and assume the
-optimization holds. It will not hold. Someone will add a feature that
-accidentally introduces a full-state scan inside a loop that was supposed to be
-O(1). Without a counter that tracks scan count and a test that asserts it
-stayed at 1, this regression will ship silently. Build the counter. Write the
-test. Mark the contract. This is not optional.
+When cost must be tested, test what a caller would feel: the growth class with
+generous headroom, or the equality of two ways of doing the same work. Never
+an exact count. An exact number fails on every lawful change and convicts
+nothing.
+
+Remove a counter, budget or cost test when it becomes a tax instead of a
+benefit: when it is arbitrary or fitted to a fixture, when it guards nothing a
+caller would notice, when keeping it green costs more than the regressions it
+catches, or when it starts to shape the design it was meant to observe.
+Deleting it is the fix. Do not refine it.
+
+Investigate cost only when the difference is real: a wrong result, a refused
+lawful operation, a loop that does not end, or work that grows by an order of
+magnitude.
+
+**AI deprogramming note:** Your default is to instrument everything, pin every
+number, and then chase each unit of drift, because it feels like rigor. It is
+accounting, and it consumes days while the product waits. Before adding a
+counter, name the failure it is necessary to catch. Before defending one, name
+what it has caught. If you cannot, delete it.
 
 ---
 
@@ -397,14 +409,12 @@ If you cannot state the complexity, one of two things is true:
 
 Either way, the function needs work before it ships.
 
-The complexity statement goes in the complexity contract registry, with a named
-proof test that asserts the bound holds. This is not documentation. This is
-enforcement.
+State it where the function is declared. A test of the bound is written only
+where section 7 says a cost test has earned its place.
 
 **AI deprogramming note:** Your default is to write code that works and assume
 it performs. Challenge this assumption for every hot-path function. State the
-complexity. Write the proof test. Register the contract. Mark it `Verified` or
-`Debt`. A function without a stated complexity on a hot path is a function that
+complexity. A function without a stated complexity on a hot path is a function that
 will silently become O(n²) when someone adds a feature inside its loop.
 
 ---
