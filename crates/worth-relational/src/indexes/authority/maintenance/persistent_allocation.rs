@@ -63,13 +63,13 @@ impl MapAllocation {
 
 #[derive(Default)]
 pub(super) struct RowAllocation {
-    nodes: usize,
+    bytes: usize,
     prepaid: bool,
 }
 impl RowAllocation {
     pub(super) fn prepaid() -> Self {
         Self {
-            nodes: 0,
+            bytes: 0,
             prepaid: true,
         }
     }
@@ -83,41 +83,60 @@ impl RowAllocation {
             .len()
             .checked_add(usize::from(insert))
             .ok_or(Denial::WorkBudgetExceeded)?;
-        let inline = sized_chunks::InlineArray::<Arc<R>, im::vector::Rrb<Arc<R>>>::CAPACITY;
-        let path = if rows.is_inline() && length <= inline {
-            0
-        } else {
-            5 * path_height(length) + 8
-        };
-        // RRB merge packs 64-slot chunks; only the four fringes can remain
-        // under half full. Branches and leaves together fit twice ceil(n/32),
-        // four fringe paths and one transient split/append path. A branch's
-        // 64 four-word Entries, size table and both Arc/chunk headers fit
-        // 332 words. Inline rows allocate only an inserted Arc<R>.
-        let live = 2 * length.div_ceil(32) + 4 * path_height(length) + 4 + path;
+        let (path, whole) = row_copy_bounds::<R>(length, rows.is_inline())?;
         let next = self
-            .nodes
+            .bytes
             .checked_add(path)
             .ok_or(Denial::WorkBudgetExceeded)?
-            .min(live)
-            .max(self.nodes);
-        let bytes = (next - self.nodes)
-            .checked_mul(size_of::<usize>() * 332)
-            .and_then(|n| {
-                n.checked_add(if insert {
-                    size_of::<R>() + 2 * size_of::<usize>()
-                } else {
-                    0
-                })
+            .min(whole)
+            .max(self.bytes);
+        let bytes = (next - self.bytes)
+            .checked_add(if insert {
+                size_of::<R>() + 2 * size_of::<usize>()
+            } else {
+                0
             })
             .ok_or(Denial::WorkBudgetExceeded)?;
         work.prepare(
-            (path * 64) as u64,
+            (if path == 0 {
+                0
+            } else {
+                64 * path_height(length)
+            }) as u64,
             if self.prepaid { 0 } else { bytes as u64 },
         )?;
-        self.nodes = next;
+        self.bytes = next;
         Ok(())
     }
+}
+
+// Single vectors own one Chunk<Arc<R>>: 64 Arc slots, the Chunk's two
+// offsets, and the allocating Arc's two counts. Full RRB trees additionally
+// own 64-entry branch chunks and size tables (332 machine words per branch).
+pub(super) fn row_copy_bounds<R>(length: usize, inline: bool) -> Result<(usize, usize), Denial> {
+    let capacity = sized_chunks::InlineArray::<Arc<R>, im::vector::Rrb<Arc<R>>>::CAPACITY;
+    if inline && length <= capacity {
+        return Ok((0, 0));
+    }
+    let leaf = size_of::<sized_chunks::Chunk<Arc<R>>>() + 2 * size_of::<usize>();
+    if length <= 64 {
+        return Ok((leaf, leaf));
+    }
+    let height = path_height(length);
+    let branch = 332 * size_of::<usize>();
+    // RRB append keeps non-fringe leaves at least half full. Four fringes
+    // remain; branches cover the two middle trees and their fringe paths.
+    let leaves = 2 * length.div_ceil(32) + 4;
+    let branches = 2 * leaves.div_ceil(32) + 4 * height + 4;
+    let whole = leaves
+        .checked_mul(leaf)
+        .and_then(|n| branches.checked_mul(branch).and_then(|b| n.checked_add(b)))
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    let path = (5 * height + 4)
+        .checked_mul(branch)
+        .and_then(|n| n.checked_add(4 * leaf))
+        .ok_or(Denial::WorkBudgetExceeded)?;
+    Ok((path, whole))
 }
 
 pub(super) struct UngroupedAllocation<K> {
@@ -195,15 +214,8 @@ pub(super) fn prepare_cold_grouped<K: Ord + Clone, R: Clone>(
         .ok_or(Denial::WorkBudgetExceeded)?;
     for operations in edits.values() {
         let rows = operations.len();
-        let inline = sized_chunks::InlineArray::<Arc<R>, im::vector::Rrb<Arc<R>>>::CAPACITY;
-        let row_nodes = if rows <= inline {
-            0
-        } else {
-            let height = path_height(rows);
-            2 * rows.div_ceil(32) + 4 * height + 4 + 5 * height + 8
-        };
-        let addition = row_nodes
-            .checked_mul(size_of::<usize>() * 332)
+        let (_, row_bytes) = row_copy_bounds::<R>(rows, true)?;
+        let addition = Some(row_bytes)
             .and_then(|n| {
                 rows.checked_mul(size_of::<R>() + 2 * size_of::<usize>())
                     .and_then(|payload| n.checked_add(payload))

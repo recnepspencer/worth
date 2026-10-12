@@ -6,28 +6,43 @@ use crate::facade::transactions::{
 use worth_execution::ExecutionRequest;
 #[test]
 fn two_thousand_key_commit_fits_the_ordinary_serial_request() {
+    bulk_commit(1);
+}
+#[test]
+fn two_thousand_eight_row_keys_fit_the_ordinary_serial_request() {
+    bulk_commit(8);
+}
+fn bulk_commit(rows_per_key: usize) {
     let host = crate::test_execution_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
-    let mut batch = WorkerIntentBatch::new("bulk-index-setup");
-    for row in 0..2000 {
-        let name = format!("old-{row:04}");
-        batch = batch.push(MutationIntent::Create(CreateIntent::Entity(
-            crate::transactions::data::EntitySpec {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                client_key: crate::symbols::data::ClientKey::raw(&name),
-                fields: name_field_patch(&name),
-            },
-        )));
+    let mut entities = Vec::new();
+    let mut previous = None;
+    for start in (0..2000 * rows_per_key).step_by(4096) {
+        let mut batch = WorkerIntentBatch::new("bulk-index-setup");
+        for row in start..(start + 4096).min(2000 * rows_per_key) {
+            let name = format!("old-{:04}", row / rows_per_key);
+            batch = batch.push(MutationIntent::Create(CreateIntent::Entity(
+                crate::transactions::data::EntitySpec {
+                    partition_id: PartitionId::main(),
+                    kind_id: KindId(1),
+                    client_key: crate::symbols::data::ClientKey::raw(format!("seed-{row}")),
+                    fields: name_field_patch(&name),
+                },
+            )));
+        }
+        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+        transaction
+            .push_batch(batch, execution.allocation_policy())
+            .unwrap();
+        let committed = transaction.commit(&execution, &runtime).unwrap();
+        entities.extend(changed_entities(&committed));
+        if let Some(old) = previous.replace(committed) {
+            release_test_commit_snapshot(&runtime, &old);
+        }
     }
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(batch, execution.allocation_policy())
-        .unwrap();
-    let first = transaction.commit(&execution, &runtime).unwrap();
-    let entities = changed_entities(&first);
-    assert_eq!(entities.len(), 2000);
+    let first = previous.unwrap();
+    assert_eq!(entities.len(), 2000 * rows_per_key);
     let index = runtime
         .index_authority()
         .register(DerivedIndexDefinition {
@@ -50,7 +65,7 @@ fn two_thousand_key_commit_fits_the_ordinary_serial_request() {
     assert!(built.failed_indexes.is_empty(), "{built:?}");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     let mut batch = WorkerIntentBatch::new("bulk-index-update");
-    for (row, entity_id) in entities.into_iter().enumerate() {
+    for (row, entity_id) in entities.into_iter().step_by(rows_per_key).enumerate() {
         batch = batch.push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
             UpdateEntityFieldsIntent {
                 entity_id,
@@ -94,7 +109,7 @@ fn two_thousand_key_commit_fits_the_ordinary_serial_request() {
     else {
         panic!("field generation")
     };
-    assert_eq!(entries.len(), 2000);
+    assert_eq!(entries.len(), if rows_per_key == 1 { 2000 } else { 4000 });
 
     release_test_commit_snapshot(&runtime, &second);
     release_test_commit_snapshot(&runtime, &first);

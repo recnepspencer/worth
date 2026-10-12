@@ -130,3 +130,28 @@ fn edit_credit_is_monotone_and_bounded_by_a_fresh_map() {
         previous = charged;
     }
 }
+
+#[test]
+fn row_copy_bound_prices_inline_leaf_and_branch_representations() {
+    use super::persistent_allocation::row_copy_bounds;
+    let inline = sized_chunks::InlineArray::<Arc<u64>, im::vector::Rrb<Arc<u64>>>::CAPACITY;
+    assert_eq!(row_copy_bounds::<u64>(inline, true).unwrap(), (0, 0));
+    let leaf = (64 * size_of::<Arc<u64>>()) + 4 * size_of::<usize>();
+    assert_eq!(
+        leaf,
+        size_of::<sized_chunks::Chunk<Arc<u64>>>() + 2 * size_of::<usize>()
+    );
+    assert_eq!(row_copy_bounds::<u64>(8, false).unwrap(), (leaf, leaf));
+    assert_eq!(row_copy_bounds::<u64>(64, false).unwrap(), (leaf, leaf));
+    let h = height(2000);
+    let branch = 332 * size_of::<usize>();
+    let leaves = 2 * 2000usize.div_ceil(32) + 4;
+    let branches = 2 * leaves.div_ceil(32) + 4 * h + 4;
+    assert_eq!(
+        row_copy_bounds::<u64>(2000, false).unwrap(),
+        (
+            (5 * h + 4) * branch + 4 * leaf,
+            leaves * leaf + branches * branch
+        )
+    );
+}
