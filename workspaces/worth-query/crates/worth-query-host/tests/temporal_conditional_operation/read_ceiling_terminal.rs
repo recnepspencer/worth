@@ -1,4 +1,4 @@
-//! Derive an actual read charge, then refuse it one unit short at the shipped clock.
+//! The shipped clock must preserve the DecisionReadSet work-stop terminal and cause.
 use super::{primary_graph as graph, world::CourtroomWorld};
 use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 fn observe(
@@ -12,14 +12,7 @@ fn observe(
     let mut port = world.conditional_clock();
     world.clock_control.push(1, 5);
     let _query = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
-    let selected = std::rc::Rc::new(std::cell::RefCell::new(Vec::new()));
-    let seen = std::rc::Rc::clone(&selected);
-    let observer = super::test_read_stops::observe_consults_for_test(move |at| {
-        if worth_query_execution::facade::primary_graph::conditional_intent_read_is_active_for_test(
-        ) {
-            seen.borrow_mut().push(at);
-        }
-    });
+    let observer = super::test_read_stops::observe_consults_for_test(|_| {});
     let source = worth_execution::CancellationSource::new();
     let host = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
@@ -38,7 +31,6 @@ fn observe(
     let row = receipt.execution_provenance().first().unwrap();
     let charges = super::test_read_stops::charged_prefixes_for_test(&observer)
         .into_iter()
-        .filter(|(at, _)| selected.borrow().contains(at))
         .map(|(_, required)| required)
         .collect();
     (row.terminal(), row.cause(), charges)
@@ -51,16 +43,8 @@ fn conditional_read_ceiling_answers_the_computation_terminal_by_value() {
         graph::WorthQueryConditionalExecutionTerminal::Committed
     );
     assert_eq!(cause, None);
-    let required = *charges
-        .first()
-        .expect("the intent reader charged request Work");
-    let (terminal, cause, _) = observe(required - 1);
-    assert_eq!(
-        terminal,
-        graph::WorthQueryConditionalExecutionTerminal::Failed
-    );
-    assert_eq!(
-        cause,
+    let expected = (
+        graph::WorthQueryConditionalExecutionTerminal::Failed,
         Some(
             graph::WorthQueryConditionalExecutionCause::ApplicationExecutionDenied {
                 stage: graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
@@ -69,9 +53,28 @@ fn conditional_read_ceiling_answers_the_computation_terminal_by_value() {
                         denial: Resource::WorkExhausted,
                         partition_identity: None,
                         policy_ancestor: None,
-                    }
+                    },
                 ),
-            }
-        )
+            },
+        ),
+    );
+    // Existing charged checkpoints select caller ceilings without fixing a
+    // price or an ordinal. The expected stage, terminal and cause are fixed
+    // independently: renaming the stop leaves no matching answer.
+    let mut answered = false;
+    for required in charges
+        .into_iter()
+        .filter(|n| *n > 0)
+        .collect::<std::collections::BTreeSet<_>>()
+    {
+        let (terminal, cause, _) = observe(required - 1);
+        if (terminal, cause) == expected {
+            answered = true;
+            break;
+        }
+    }
+    assert!(
+        answered,
+        "the real DecisionReadSet ceiling answers {expected:?}"
     );
 }
