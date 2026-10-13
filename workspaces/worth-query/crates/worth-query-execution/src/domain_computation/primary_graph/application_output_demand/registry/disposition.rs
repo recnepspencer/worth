@@ -47,10 +47,13 @@ impl DemandRecord {
                         }
                     }
                     Some(WorthQueryOutputCheckpoint::Delivered { .. }) => {
-                        // Delivery has performed this work. Closing its owner
-                        // retires the checkpoint without re-admitting its root.
+                        // Delivery precedes accepted readiness. A performed
+                        // source still awaiting this output keeps the delivered
+                        // checkpoint, so a fresh owner resumes readiness.
                         if awaited_by_stale_owner {
                             IdleRowDisposition::HeldForStaleOwner
+                        } else if !self.performed_obligations.is_empty() {
+                            InFlight
                         } else if self.interests == 0 {
                             Retired(RowRetirement::Finished)
                         } else {
