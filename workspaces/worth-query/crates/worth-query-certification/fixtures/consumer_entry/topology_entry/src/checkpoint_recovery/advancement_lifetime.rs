@@ -31,6 +31,7 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
         advancement_requests_on_this_thread_for_test as reports,
         bound_advancement_requests_on_this_thread_for_test as bound,
         place_managed_computations_on_this_thread_for_test as place,
+        principal_target_reads_on_this_thread_for_test as native_reads,
         signal_request_charges_on_this_thread_for_test as signal_charges,
         WorthQueryExecutionPlacementForTest as Placement,
     };
@@ -51,6 +52,7 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
     reports();
     signal_charges();
     computation_runs();
+    let reads_before = native_reads();
     let outcome = output
         .advance(&application, &request)
         .expect("the consumer shares its advancement request");
