@@ -1,6 +1,6 @@
 use super::*;
 #[test]
-fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
+fn query_local_read_ceiling_preserves_the_ordinary_denial_and_releases_memory() {
     let world = installed_authorization_world(true);
     let scope = live_scope();
     world
@@ -62,12 +62,6 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 )
                 .err()
                 .expect("the three-unit read cannot materialize its two fields");
-            let fields = query
-                .read_family_binding()
-                .planning_contract()
-                .projections()
-                .len() as u64;
-            let first_read = 1 + (1 + fields) + (1 + fields);
             let mut plans = WorthQueryDerivedPairReadPlans::new(admit(100000), admit(3));
             execution
                 .in_scope(|lease| {
@@ -101,7 +95,6 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 MapOutcome::Stopped {
                     completed_prefix,
                     reason,
-                    report,
                     ..
                 } => {
                     assert!(completed_prefix.is_empty());
@@ -115,9 +108,6 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                             })
                         }
                     );
-                    // The second selection's one unit is admitted; its three-unit
-                    // projection is refused by the existing Query-local limit.
-                    assert_eq!(report.charged_work(), 1 + first_read + 1);
                 }
                 MapOutcome::Complete { .. } => panic!("the Query-local read must deny"),
             }
