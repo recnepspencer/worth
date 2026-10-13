@@ -5,6 +5,7 @@ pub enum WorthQueryEntityResolutionDenialKind {
     Refused(WorthQueryEntityResolutionRefusalKind),
 }
 
+/// An ordinary resolution refusal from installed identity fields and exact truth.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryEntityResolutionRefusalKind {
     /// The supplied phase belongs to another installed runtime.

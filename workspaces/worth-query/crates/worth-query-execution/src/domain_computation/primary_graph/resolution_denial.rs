@@ -15,6 +15,7 @@ pub enum WorthQueryPrincipalResolutionDenialKind {
     Refused(WorthQueryPrincipalResolutionRefusalKind),
 }
 
+/// An ordinary principal-resolution refusal from its installed binding and exact truth.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryPrincipalResolutionRefusalKind {
     /// The supplied phase belongs to another installed runtime.

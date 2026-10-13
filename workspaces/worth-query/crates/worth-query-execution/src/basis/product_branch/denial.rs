@@ -11,6 +11,7 @@ pub enum WorthQueryProductBranchAdmissionDenial {
     Refused(WorthQueryProductBranchAdmissionRefusalKind),
 }
 
+/// Why a selected product basis could not be admitted for a read.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchAdmissionRefusalKind {
     ForeignPhase,

@@ -240,6 +240,7 @@ pub struct WorthQueryApplicationUnresolvedCommitEvidence {
     cleanup_failure: Option<WorthQueryApplicationManagedCleanupFailure>,
 }
 
+/// Additional managed cleanup evidence retained alongside the unresolved commit cause.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryApplicationManagedCleanupFailure {
     RunFinishRejected,

@@ -26,6 +26,7 @@ pub enum WorthQueryOperationAuthorizationDenialKind {
     Refused(WorthQueryOperationAuthorizationRefusalKind),
 }
 
+/// An authorization refusal decided from principal, scope and installed policy facts.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryOperationAuthorizationRefusalKind {
     /// The supplied phase belongs to another installed runtime.
