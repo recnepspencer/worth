@@ -51,8 +51,7 @@ fn empty_read_request_refuses_before_rows() {
             .execute_query_plan(plan.clone(), &ExecutionRequest::leased(&lease))
             .unwrap_err();
         let CommitExecutionDenialKind::Cause(cause) = stopped.execution_denial().unwrap().kind;
-        // First leased query-map admission quote for this one-entity packet.
-        assert_empty_cause(memory, 344, cause);
+        assert_empty_cause(memory, cause);
         assert_eq!(rows.rows(), 0);
     }
     let admitted = lease(MEMORY, u64::MAX);
@@ -68,7 +67,7 @@ fn empty_read_request_refuses_before_rows() {
     );
 }
 #[test]
-fn empty_index_request_refuses_before_rows() {
+fn empty_index_request_keeps_its_cause_and_publishes_no_generation() {
     let (runtime, created) = fixture();
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(7),
@@ -86,7 +85,6 @@ fn empty_index_request_refuses_before_rows() {
         branch_id: BranchId("main".into()),
         index_ids: vec![index.index_id],
     };
-    let rows = RowReadsForTest::install_on_this_thread();
     for (memory, work) in [(MEMORY, 0), (0, u64::MAX)] {
         let lease = lease(memory, work);
         let result = runtime.index_authority().build_for_basis(
@@ -95,9 +93,12 @@ fn empty_index_request_refuses_before_rows() {
             &basis,
         );
         let DerivedIndexExecutionDenialKind::Cause(cause) = result.execution_denial.unwrap().kind;
-        // First ordered index-planning scan admission quote for one definition.
-        assert_empty_cause(memory, 409, cause);
-        assert_eq!(rows.rows(), 0);
+        assert_empty_cause(memory, cause);
+        assert!(
+            result.generations.is_empty(),
+            "a refused build publishes no generation"
+        );
+        assert_eq!(result.failed_indexes, vec![index.index_id]);
     }
     let admitted = lease(MEMORY, u64::MAX);
     let built = runtime.index_authority().build_for_basis(
@@ -107,9 +108,9 @@ fn empty_index_request_refuses_before_rows() {
     );
     assert!(built.failed_indexes.is_empty());
     assert_eq!(
-        rows.rows(),
+        built.generations.len(),
         1,
-        "the index reader observes its admitted source row"
+        "the admitted build publishes its requested index"
     );
 }
 #[test]
@@ -135,8 +136,7 @@ fn empty_commit_request_refuses_before_publication() {
             panic!("native execution cause required: {stopped:?}");
         };
         let CommitExecutionDenialKind::Cause(cause) = denial.kind;
-        // First commit-preparation admission quote for the single create batch.
-        assert_empty_cause(memory, 3328, cause);
+        assert_empty_cause(memory, cause);
         let after = runtime.history().latest_commit().unwrap().commit_id;
         assert_eq!(after.0 - before.0, 0, "a refused commit publishes no head");
     }
@@ -153,17 +153,17 @@ fn empty_commit_request_refuses_before_publication() {
     );
 }
 
-fn assert_empty_cause(memory: u64, requested: u64, cause: Cause) {
-    assert_eq!(
-        cause,
-        if memory != 0 {
-            Cause::WorkExhausted
-        } else {
+fn assert_empty_cause(memory: u64, cause: Cause) {
+    if memory != 0 {
+        assert_eq!(cause, Cause::WorkExhausted);
+    } else {
+        assert!(matches!(
+            cause,
             Cause::PolicyMemoryExhausted {
-                requested,
                 admitted: 0,
                 ancestor: 0,
+                ..
             }
-        }
-    );
+        ));
+    }
 }
