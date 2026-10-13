@@ -152,6 +152,8 @@ where
             != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::Operation::IDENTIFIER
             || required.binding()
                 != Some(<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::IDENTITY)
+            || required.workflow_execution_requirements()
+                != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::workflow_execution_requirements().as_ref()
             || !<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::REQUIRES_WORKFLOW_AUTHORITY
             || required.input_type()
                 != <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<Schema>>::InputBinding::IDENTITY.as_str()

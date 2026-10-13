@@ -27,7 +27,18 @@ pub(super) fn decode_kind(
     approval_operation: Option<String>,
     approval_capability_identity: Option<String>,
     requires_workflow_authority: bool,
+    workflow_execution_requirements: Option<String>,
 ) -> Result<CompiledWorkflowNodeKind, WorthQueryApplicationAttemptDenial> {
+    let workflow_execution_requirements = match (
+        WorkflowNodeTag::from_persisted(tag), workflow_execution_requirements,
+    ) {
+        (Some(WorkflowNodeTag::OperationWithRequirements), Some(encoded)) if requires_workflow_authority => {
+            Some(worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded)
+                .ok_or_else(invalid_node)?)
+        }
+        (Some(WorkflowNodeTag::OperationWithRequirements), _) | (_, Some(_)) => return Err(invalid_node()),
+        (_, None) => None,
+    };
     if matches!(
         WorkflowNodeTag::from_persisted(tag),
         Some(WorkflowNodeTag::AwaitInbound)
@@ -72,7 +83,7 @@ pub(super) fn decode_kind(
     }
     if (!matches!(
         WorkflowNodeTag::from_persisted(tag),
-        Some(WorkflowNodeTag::Operation)
+        Some(WorkflowNodeTag::Operation | WorkflowNodeTag::OperationWithRequirements)
     ) && operation_binding.is_some())
         || (requires_workflow_authority && operation_binding.as_deref().is_none_or(str::is_empty))
     {
@@ -105,7 +116,7 @@ pub(super) fn decode_kind(
         return Err(invalid_node());
     }
     match WorkflowNodeTag::from_persisted(tag) {
-        Some(WorkflowNodeTag::Operation)
+        Some(WorkflowNodeTag::Operation | WorkflowNodeTag::OperationWithRequirements)
             if parameter_type.is_none()
                 && result_type.is_none()
                 && assessment_binding.is_none()
@@ -121,6 +132,7 @@ pub(super) fn decode_kind(
                 input_type: input_type.ok_or_else(invalid_node)?,
                 binding: operation_binding.filter(|identity| !identity.is_empty()),
                 requires_workflow_authority,
+                workflow_execution_requirements,
             })
         }
         Some(WorkflowNodeTag::Assessment)

@@ -44,8 +44,14 @@ pub use candidate_tracking::{
     reset_ordinary_counts,
 };
 pub(super) use candidate_tracking::{record_ordinary_candidate, record_ordinary_decision};
+#[path = "retention_entry/occurrence_write.rs"]
+mod occurrence_write;
 #[path = "retention_entry/reviewed_write.rs"]
 mod reviewed_write;
+pub use occurrence_write::OccurrenceSetRetentionBinding;
+#[path = "retention_entry/required_write.rs"]
+mod required_write;
+pub use required_write::{ExplicitReviewedSetRetentionBinding, ExplicitReviewedSetRetentionIntent};
 pub use reviewed_write::{
     ReviewedSetRetentionBinding, ReviewedSetRetentionHandler, ReviewedSetRetentionIntent,
 };
@@ -372,4 +378,6 @@ pub fn declare(
         .application_query_binding::<DocumentRetentionConditionQueryBinding>()
         .application_mutation_binding::<SetRetentionBinding>()
         .application_mutation_binding::<ReviewedSetRetentionBinding>()
+        .application_mutation_binding::<OccurrenceSetRetentionBinding>()
+        .application_mutation_binding::<ExplicitReviewedSetRetentionBinding>()
 }

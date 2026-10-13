@@ -47,6 +47,8 @@ mod workflow_control_scale;
 mod workflow_draft_archive;
 #[path = "application_graph/workflow_effect_resources.rs"]
 mod workflow_effect_resources;
+#[path = "application_graph/workflow_execution.rs"]
+mod workflow_execution;
 #[path = "application_graph/workflow_history_scale.rs"]
 mod workflow_history_scale;
 #[path = "application_graph/workflow_navigation.rs"]

@@ -55,6 +55,7 @@ pub struct RequiredWorkflowOperation {
     pub(super) input_type: String,
     pub(super) binding: Option<String>,
     pub(super) input_identity: [u8; 32],
+    pub(super) workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
     pub(super) authority: Arc<WorkflowOperationAuthoritySlot>,
 }
 
@@ -87,7 +88,9 @@ pub struct WorkflowOperationAuthority {
     pub(in crate::domain_computation::primary_graph::application_attempt) workflow_layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
     pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) approval_authority:
-        crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
+        Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) workflow_execution_requirements:
+        Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
     pub(super) handle: WorthQueryPrimaryGraphIntegrationHandle,
     pub(super) layout:
         Arc<crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout>,
@@ -119,6 +122,9 @@ impl WorkflowOperationAuthoritySlot {
 }
 
 impl RequiredWorkflowOperation {
+    pub fn workflow_execution_requirements(&self) -> Option<&worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>{
+        self.workflow_execution_requirements.as_ref()
+    }
     pub(in crate::domain_computation::primary_graph) fn from_selected(
         branch: crate::basis::WorthQueryProductBranch,
         instance: worth_relational::facade::identity::EntityId,
@@ -140,6 +146,7 @@ impl RequiredWorkflowOperation {
             operation: selected.operation,
             input_type: selected.input_type,
             binding: selected.binding,
+            workflow_execution_requirements: selected.workflow_execution_requirements,
             input_identity,
             authority: Arc::new(WorkflowOperationAuthoritySlot {
                 issued: authority.is_some(),
@@ -197,7 +204,7 @@ impl RequiredWorkflowOperation {
 }
 
 impl WorkflowOperationAuthority {
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn new(
         operation: String,
         binding: String,
         transition_identity: [u8; 32],
@@ -211,8 +218,11 @@ impl WorkflowOperationAuthority {
             crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
         workflow_layout:
             crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-        approval_authority:
+        approval_authority: Option<
             crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
+        >,
+        workflow_execution_requirements:
+            Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
         handle: WorthQueryPrimaryGraphIntegrationHandle,
         layout: Arc<
             crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -231,12 +241,13 @@ impl WorkflowOperationAuthority {
             settlement_basis,
             workflow_layout,
             approval_authority,
+            workflow_execution_requirements,
             handle,
             layout,
         }
     }
 
-    pub(in crate::domain_computation::primary_graph) fn with_deadline(
+    pub(in crate::domain_computation::primary_graph::application_attempt::workflow_transition_program) fn with_deadline(
         mut self,
         deadline: Option<u64>,
     ) -> Self {
@@ -306,14 +317,16 @@ impl WorkflowOperationAuthority {
             selected.product().retained_clone(),
         )
         .map_err(|_| mismatch())?;
-        runtime
-            .readmit_workflow_approval_authority_on_product(
-                execution,
-                &self.approval_authority,
-                lease.product(),
-                self.session_identity,
-            )
-            .map_err(approval_denial::denial)?;
+        if let Some(approval_authority) = &self.approval_authority {
+            runtime
+                .readmit_workflow_approval_authority_on_product(
+                    execution,
+                    approval_authority,
+                    lease.product(),
+                    self.session_identity,
+                )
+                .map_err(approval_denial::denial)?;
+        }
         lease.handle().with_runtime(execution, |runtime| {
             let mut current = true;
             for fact in self.facts.iter() {

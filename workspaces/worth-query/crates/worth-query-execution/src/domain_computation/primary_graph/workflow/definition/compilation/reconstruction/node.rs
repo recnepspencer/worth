@@ -223,6 +223,20 @@ pub(super) fn compile_node(
         &node.requires_authority,
         facts,
     )?;
+    let workflow_execution_requirements =
+        if kind == WorkflowNodeTag::OperationWithRequirements.persisted() {
+            observed_optional_text(
+                execution,
+                runtime,
+                snapshot,
+                entity,
+                node.entity_kind,
+                &node.workflow_execution_requirements,
+                facts,
+            )?
+        } else {
+            None
+        };
     let kind = decode_kind(
         kind,
         member,
@@ -246,6 +260,7 @@ pub(super) fn compile_node(
         approval_operation,
         approval_capability_identity,
         requires_workflow_authority,
+        workflow_execution_requirements,
     )?;
     Ok(CompiledWorkflowNode {
         entity,

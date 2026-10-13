@@ -54,8 +54,8 @@ pub use definition::{
     propose_authoring_instance, propose_authoring_instance_with_retention, propose_instance,
     propose_instance_on_branch, publish_definition, repeated_proposal_definition,
     reproposing_document_definition, retire_definition, reviewed_document_definition,
-    reviewed_document_definition_with_deadline, reviewed_document_definition_with_join_policy,
-    start_instance, terminal_definition,
+    reviewed_document_definition_for_binding, reviewed_document_definition_with_deadline,
+    reviewed_document_definition_with_join_policy, start_instance, terminal_definition,
 };
 pub use grant_status::{
     WorkflowGrantStatusBinding, WorkflowGrantStatusHandler, WorkflowGrantStatusInput,

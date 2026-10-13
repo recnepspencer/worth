@@ -24,6 +24,8 @@ where
 {
     if required.operation() != Binding::Operation::IDENTIFIER
         || required.binding() != Some(Binding::IDENTITY)
+        || required.workflow_execution_requirements()
+            != Binding::workflow_execution_requirements().as_ref()
         || required.input_type() != Binding::InputBinding::IDENTITY.as_str()
     {
         return Err(mismatch(required.node_path()));

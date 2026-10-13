@@ -110,6 +110,14 @@ pub(super) fn create_node(
             text(hex(binding.installed_capability_identity)),
         );
     }
+    if let ApplicationWorkflowNodeKind::Operation { operation, .. } = node.kind() {
+        if let Some(requirements) = operation.workflow_execution_requirements() {
+            fields.insert(
+                layout.node.workflow_execution_requirements.clone(),
+                text(requirements.persistence_identity()),
+            );
+        }
+    }
     if let ApplicationWorkflowNodeKind::Condition(condition) = node.kind() {
         // Installation admits a definition only when every operand has a
         // binding, so a published condition always records all of them.

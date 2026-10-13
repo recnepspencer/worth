@@ -155,6 +155,8 @@ pub(super) fn lower_node(
     let member = planned_field_locator(NODE_ASPECT, "member")?;
     let input_type = planned_field_locator(NODE_ASPECT, "input-type")?;
     let operation_binding = planned_field_locator(NODE_ASPECT, "operation-binding")?;
+    let workflow_execution_requirements =
+        planned_field_locator(NODE_ASPECT, "workflow-execution-requirements")?;
     let inbound_origin = planned_field_locator(NODE_ASPECT, "inbound-origin")?;
     let inbound_contract = planned_field_locator(NODE_ASPECT, "inbound-contract")?;
     let inbound_wait = planned_field_locator(NODE_ASPECT, "inbound-wait")?;
@@ -182,6 +184,7 @@ pub(super) fn lower_node(
         .required("member", ScalarAspectType::String)
         .optional("input-type", ScalarAspectType::String)
         .optional("operation-binding", ScalarAspectType::String)
+        .optional("workflow-execution-requirements", ScalarAspectType::String)
         .optional("inbound-origin", ScalarAspectType::String)
         .optional("inbound-contract", ScalarAspectType::String)
         .optional("inbound-wait", ScalarAspectType::UInt64)
@@ -222,6 +225,7 @@ pub(super) fn lower_node(
             member,
             input_type,
             operation_binding,
+            workflow_execution_requirements,
             inbound_origin,
             inbound_contract,
             inbound_wait,

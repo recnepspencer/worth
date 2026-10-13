@@ -25,6 +25,8 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod authority_binding;
+mod evidence;
+use evidence::WorkflowOperationEvidence;
 mod receipt;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::operation_receipt_requires_recovery;
 pub(in crate::domain_computation::primary_graph::application_attempt) use receipt::receipt_identity_from_outcome;
@@ -117,33 +119,6 @@ where
                 )
             })?;
         facts.append(&mut input_facts);
-        let mut approval_sources = compiled.approval_authority_sources(selected.node());
-        let approval = approval_sources
-            .next()
-            .ok_or_else(|| mismatch(selected.node_path()))?;
-        if approval_sources.next().is_some()
-            || !matches!(approval.kind(), CompiledWorkflowNodeKind::Approval { .. })
-        {
-            return Err(mismatch(selected.node_path()));
-        }
-        let approval_transition = progress
-            .latest_transition(approval.entity())
-            .ok_or_else(|| mismatch(selected.node_path()))?;
-        let settlement = self.lease.handle().with_runtime(execution, |runtime| {
-            observe_retained_transition(
-                execution,
-                runtime,
-                self.lease.snapshot(),
-                layout,
-                approval_transition,
-                &mut facts,
-            )
-        })?;
-        if settlement.outcome()
-            != worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Approved
-        {
-            return Err(mismatch(selected.node_path()));
-        }
         // An external operation records its custody on the instance; the
         // reading it replaces travels with the operation's authority. This
         // advance cannot see the operation's own external posture, so the
@@ -163,35 +138,9 @@ where
             self.admission.publication_request(),
             self.admission.operation(),
         )?;
-        let observation_request = self.admission.publication_request();
-        let approval_authority = match super::approval_decision::observe_operation_approval_inputs(execution,
-            compiled,
-            layout,
-            &self.lease.layout,
-            self.admission.scope_entity_id(),
-            &instance,
-            progress,
-            approval.entity(),
-            &operation.operation,
-            self.lease.handle(),
-            self.lease.snapshot(),
-            observation_request,
-        ) {
-            Ok((mut observed, authority)) => {
-                facts.append(&mut observed);
-                Some(authority)
-            }
-            Err(denial)
-                if matches!(
-                    denial.kind(),
-                    WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
-                        | WorthQueryApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete
-                ) =>
-            {
-                None
-            }
-            Err(denial) => return Err(denial),
-        };
+        let evidence = self.resolve_operation_evidence(
+            execution, compiled, layout, &instance, &selected, progress, &operation, &mut facts,
+        )?;
         check_request_live(
             self.admission.publication_request(),
             self.admission.operation(),
@@ -225,24 +174,28 @@ where
                 retire_live_membership,
                 allowance,
             );
-        let authority = approval_authority.map(|approval_authority| {
-            WorkflowOperationAuthority::new(
-                operation.operation.clone(),
-                binding,
-                *admitted.identity_bytes(),
-                input_identity,
-                runtime_authority,
-                session_identity,
-                observation,
-                authority_facts,
-                admitted.operation_settlement_basis(),
-                layout.clone(),
-                approval_authority,
-                handle,
-                graph_layout,
-            )
-            .with_deadline(deadline)
-        });
+        let authority = match evidence {
+            WorkflowOperationEvidence::Satisfied(approval_authority) => Some(
+                WorkflowOperationAuthority::new(
+                    operation.operation.clone(),
+                    binding,
+                    *admitted.identity_bytes(),
+                    input_identity,
+                    runtime_authority,
+                    session_identity,
+                    observation,
+                    authority_facts,
+                    admitted.operation_settlement_basis(),
+                    layout.clone(),
+                    approval_authority,
+                    operation.workflow_execution_requirements.clone(),
+                    handle,
+                    graph_layout,
+                )
+                .with_deadline(deadline),
+            ),
+            WorkflowOperationEvidence::Unavailable => None,
+        };
         let required = RequiredWorkflowOperation::from_selected(
             branch,
             admitted.instance(),

@@ -180,6 +180,8 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowNodeLayout {
     pub(in crate::domain_computation::primary_graph) member: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) input_type: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) operation_binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) workflow_execution_requirements:
+        AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) inbound_origin: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) inbound_contract: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) inbound_wait: AspectFieldLocator,

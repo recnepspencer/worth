@@ -16,7 +16,10 @@ use worth_query_host::facade::declaration::application_program::{
 };
 
 use super::assessment_output::PublishRetentionAssessment;
-use super::retention_entry::{ReviewedSetRetentionBinding, SetRetentionBinding};
+use super::retention_entry::{
+    ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
+    ReviewedSetRetentionBinding, SetRetentionBinding,
+};
 use super::schema::{
     DocumentRetentionContribution, DocumentRetentionRowBinding, DocumentRetentionSchema,
     DocumentRetentionV1, DocumentRetentionV2, DocumentRetentionV3,
@@ -362,6 +365,8 @@ fn retention_feature_specs() -> Vec<ApplicationFeatureSpec> {
         ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
             .mutation::<SetRetentionBinding>()
             .mutation::<ReviewedSetRetentionBinding>()
+            .mutation::<OccurrenceSetRetentionBinding>()
+            .mutation::<ExplicitReviewedSetRetentionBinding>()
             .mutation::<ReviewRequirementBinding>()
             .mutation::<UnlinkReviewRequirementBinding>()
             .conditional_operation::<PublishRetentionAssessment>()

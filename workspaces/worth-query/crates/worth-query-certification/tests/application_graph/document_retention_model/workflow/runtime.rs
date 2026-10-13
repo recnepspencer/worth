@@ -12,6 +12,7 @@ use super::super::{
     retention_days::DocumentRetentionDaysQueryBinding,
     retention_entry::{
         DocumentRetentionConditionQueryBinding, DocumentRetentionQueryBinding,
+        ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
         ReviewedSetRetentionBinding,
     },
     schema::DocumentRetentionSchema,
@@ -71,6 +72,10 @@ where
     .expect("the workflow operation is installed")
     .operation::<ReviewedSetRetentionBinding>()
     .expect("the workflow apply operation is installed")
+    .operation::<OccurrenceSetRetentionBinding>()
+    .expect("the workflow occurrence-only operation is installed")
+    .operation::<ExplicitReviewedSetRetentionBinding>()
+    .expect("the workflow explicit review contract is installed")
     .assessment::<DocumentRetentionQueryBinding>()
     .expect("the workflow assessment is installed")
     .condition_operand::<DocumentRetentionConditionQueryBinding>()

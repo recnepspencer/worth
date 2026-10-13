@@ -47,7 +47,7 @@ where
     let mutation_proof = read_set.mutation_handler_binding;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
-        .map(|binding| binding.approval_authority.clone());
+        .and_then(|binding| binding.approval_authority.clone());
     let mut admission = read_set.admission;
     let required_output_demand = admission.take_required_output_demand();
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());

@@ -177,72 +177,76 @@ impl ApplicationProgramManifest {
             }
         }
         for action in actions {
-            records.push(framed_record(
-                "action",
-                [
-                    ("owner", action.composition_instance().to_owned()),
-                    ("feature", action.feature().to_owned()),
-                    (
-                        "input",
-                        action.operation_input_identity().as_str().to_owned(),
-                    ),
-                    ("conditional", action.conditional_only().to_string()),
-                    (
-                        "required-output",
-                        action.required_output_source().to_string(),
-                    ),
-                    ("binding", action.binding().to_owned()),
-                    (
-                        "invariant",
-                        action
-                            .evaluated_requirement()
-                            .map_or("", |attachment| attachment.identity())
-                            .to_owned(),
-                    ),
-                    (
-                        "observation",
-                        action
-                            .correspondence()
-                            .map_or("", |attachment| attachment.identity())
-                            .to_owned(),
-                    ),
-                    (
-                        "locality",
-                        action
-                            .locality()
-                            .map_or("", |locality| locality.identity())
-                            .to_owned(),
-                    ),
-                    (
-                        "granule",
-                        action
-                            .locality()
-                            .map_or("", |locality| locality.granule().canonical_token())
-                            .to_owned(),
-                    ),
-                    (
-                        "change",
-                        action
-                            .change_shape()
-                            .map_or("", |change| change.identity())
-                            .to_owned(),
-                    ),
-                    (
-                        "posture",
-                        action
-                            .change_shape()
-                            .map_or("", |change| change.posture().canonical_token())
-                            .to_owned(),
-                    ),
-                    (
-                        "effect",
-                        action
-                            .external_input()
-                            .map_or("", |attachment| attachment.identity())
-                            .to_owned(),
-                    ),
-                ],
-            ));
+            let mut fields = vec![
+                ("owner", action.composition_instance().to_owned()),
+                ("feature", action.feature().to_owned()),
+                (
+                    "input",
+                    action.operation_input_identity().as_str().to_owned(),
+                ),
+                ("conditional", action.conditional_only().to_string()),
+                (
+                    "required-output",
+                    action.required_output_source().to_string(),
+                ),
+                ("binding", action.binding().to_owned()),
+                (
+                    "invariant",
+                    action
+                        .evaluated_requirement()
+                        .map_or("", |attachment| attachment.identity())
+                        .to_owned(),
+                ),
+                (
+                    "observation",
+                    action
+                        .correspondence()
+                        .map_or("", |attachment| attachment.identity())
+                        .to_owned(),
+                ),
+                (
+                    "locality",
+                    action
+                        .locality()
+                        .map_or("", |locality| locality.identity())
+                        .to_owned(),
+                ),
+                (
+                    "granule",
+                    action
+                        .locality()
+                        .map_or("", |locality| locality.granule().canonical_token())
+                        .to_owned(),
+                ),
+                (
+                    "change",
+                    action
+                        .change_shape()
+                        .map_or("", |change| change.identity())
+                        .to_owned(),
+                ),
+                (
+                    "posture",
+                    action
+                        .change_shape()
+                        .map_or("", |change| change.posture().canonical_token())
+                        .to_owned(),
+                ),
+                (
+                    "effect",
+                    action
+                        .external_input()
+                        .map_or("", |attachment| attachment.identity())
+                        .to_owned(),
+                ),
+            ];
+            if let Some(requirements) = action.workflow_execution_requirements() {
+                fields.push((
+                    "workflow-execution-requirements",
+                    requirements.persistence_identity(),
+                ));
+            }
+            records.push(framed_record("action", fields));
         }
         records.extend(connections.iter().map(|connection| {
             framed_record(

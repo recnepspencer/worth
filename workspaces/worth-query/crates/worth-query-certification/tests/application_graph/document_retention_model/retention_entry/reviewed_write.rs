@@ -104,19 +104,21 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ReviewedSetRetention
 
 pub struct ReviewedSetRetentionHandler;
 
-impl OperationHandler<DocumentRetentionSchema, ReviewedSetRetentionBinding>
-    for ReviewedSetRetentionHandler
+impl<Binding> OperationHandler<DocumentRetentionSchema, Binding> for ReviewedSetRetentionHandler
+where
+    Binding: ApplicationMutationBinding<
+        DocumentRetentionSchema,
+        Operation = SetRetention,
+        Input = SetRetentionInput,
+        Result = DocumentRetentionWritten,
+        Decision = WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
+        Denial = SetRetentionDenial,
+    >,
 {
     fn decide(
         &self,
         input: &SetRetentionInput,
-        reader: &mut DecisionReader<
-            '_,
-            '_,
-            '_,
-            DocumentRetentionSchema,
-            ReviewedSetRetentionBinding,
-        >,
+        reader: &mut DecisionReader<'_, '_, '_, DocumentRetentionSchema, Binding>,
     ) -> HandlerResult<
         WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         SetRetentionDenial,
@@ -145,14 +147,14 @@ impl OperationHandler<DocumentRetentionSchema, ReviewedSetRetentionBinding>
         _: &SetRetentionInput,
         _: &WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
     ) -> ApplicationCandidateRequirements {
-        ReviewedSetRetentionBinding::CANDIDATES
+        Binding::CANDIDATES
     }
 
     fn build_candidate(
         &self,
         input: &SetRetentionInput,
         target: WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
-        writer: &mut CandidateWriter<'_, DocumentRetentionSchema, ReviewedSetRetentionBinding>,
+        writer: &mut CandidateWriter<'_, DocumentRetentionSchema, Binding>,
     ) -> HandlerResult<DocumentRetentionWritten, SetRetentionDenial> {
         super::candidate_tracking::record_candidate(input.retention_days);
         let document = match writer.projected_entity(&target) {

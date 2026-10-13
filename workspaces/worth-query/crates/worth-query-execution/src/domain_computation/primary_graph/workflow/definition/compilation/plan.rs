@@ -55,6 +55,7 @@ pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowNodeKind {
         input_type: String,
         binding: Option<String>,
         requires_workflow_authority: bool,
+        workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
     },
     AwaitInbound {
         origin: String,

@@ -17,13 +17,21 @@ impl CompiledWorkflowNode {
                 input_type,
                 binding,
                 requires_workflow_authority,
-            } => vec![
+                workflow_execution_requirements,
+            } => {
+                let mut fields = vec![
                 WorkflowNodeTag::Operation.identity().to_owned(),
                 operation.clone(),
                 input_type.clone(),
                 binding.clone().unwrap_or_default(),
                 requires_workflow_authority.to_string(),
-            ],
+                ];
+                if let Some(requirements) = workflow_execution_requirements {
+                    fields[0] = WorkflowNodeTag::OperationWithRequirements.identity().to_owned();
+                    fields.push(requirements.persistence_identity());
+                }
+                fields
+            },
             CompiledWorkflowNodeKind::AwaitInbound { origin, effect, protocol, source_identity, limits, wait } => vec![
                 WorkflowNodeTag::AwaitInbound.identity().to_owned(),
                 origin.clone(), effect.clone(), protocol.identity().as_str().to_owned(),

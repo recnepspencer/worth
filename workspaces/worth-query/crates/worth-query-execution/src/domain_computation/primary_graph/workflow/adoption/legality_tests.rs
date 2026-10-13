@@ -34,6 +34,7 @@ fn approval_gated() -> WorkflowDefinitionDependencies {
                     input_type: "input".to_owned(),
                     binding: Some("ship-binding".to_owned()),
                     requires_authority: true,
+                    workflow_execution_requirements: None,
                 }],
             },
             WorkflowRetainedNode {

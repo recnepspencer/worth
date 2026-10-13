@@ -12,8 +12,19 @@ impl CompiledWorkflowNodeKind {
             Self::Operation {
                 operation,
                 input_type,
+                workflow_execution_requirements,
                 ..
-            } => operation.len().saturating_add(input_type.len()),
+            } => operation
+                .len()
+                .saturating_add(input_type.len())
+                .saturating_add(
+                    workflow_execution_requirements
+                        .as_ref()
+                        .and_then(|requirements| requirements.approval())
+                        .map_or(0, |(name, identity)| {
+                            name.len().saturating_add(identity.len())
+                        }),
+                ),
             Self::AwaitInbound {
                 origin,
                 effect,

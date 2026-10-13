@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_program::{
 #[derive(Clone, Copy)]
 pub(super) enum WorkflowNodeTag {
     Operation,
+    OperationWithRequirements,
     Assessment,
     Condition,
     Approval,
@@ -15,9 +16,15 @@ pub(super) enum WorkflowNodeTag {
 }
 
 impl WorkflowNodeTag {
-    pub(super) const fn from_declared(kind: &ApplicationWorkflowNodeKind) -> Self {
+    pub(super) fn from_declared(kind: &ApplicationWorkflowNodeKind) -> Self {
         match kind {
-            ApplicationWorkflowNodeKind::Operation { .. } => Self::Operation,
+            ApplicationWorkflowNodeKind::Operation { operation, .. } => {
+                if operation.workflow_execution_requirements().is_some() {
+                    Self::OperationWithRequirements
+                } else {
+                    Self::Operation
+                }
+            }
             ApplicationWorkflowNodeKind::Assessment(_) => Self::Assessment,
             ApplicationWorkflowNodeKind::Condition(_) => Self::Condition,
             ApplicationWorkflowNodeKind::Approval(_) => Self::Approval,
@@ -36,6 +43,7 @@ impl WorkflowNodeTag {
             4 => Some(Self::Terminal),
             5 => Some(Self::Condition),
             6 => Some(Self::AwaitInbound),
+            7 => Some(Self::OperationWithRequirements),
             _ => None,
         }
     }
@@ -43,6 +51,7 @@ impl WorkflowNodeTag {
     pub(super) const fn persisted(self) -> u64 {
         match self {
             Self::Operation => 0,
+            Self::OperationWithRequirements => 7,
             Self::Assessment => 1,
             Self::Approval => 2,
             Self::EvidenceJoin => 3,
@@ -55,6 +64,7 @@ impl WorkflowNodeTag {
     pub(super) const fn identity(self) -> &'static str {
         match self {
             Self::Operation => "operation",
+            Self::OperationWithRequirements => "operation-requirements-v1",
             Self::Assessment => "assessment",
             Self::Approval => "approval",
             Self::EvidenceJoin => "evidence-join",

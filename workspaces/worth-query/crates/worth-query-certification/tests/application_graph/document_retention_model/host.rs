@@ -42,6 +42,7 @@ use super::programs::{
     RetentionProgramP0, RetentionProgramP1,
 };
 use super::retention_entry::{
+    ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
     ReviewedSetRetentionBinding, ReviewedSetRetentionHandler, SetRetentionBinding,
     SetRetentionHandler, DOCUMENT_IDENTITY, RELATED_DOCUMENT_IDENTITY,
 };
@@ -105,6 +106,12 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
             .handler::<SetRetentionBinding, _>(SetRetentionHandler)
             .and_then(|()| {
                 setup.handler::<ReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
+            })
+            .and_then(|()| {
+                setup.handler::<OccurrenceSetRetentionBinding, _>(ReviewedSetRetentionHandler)
+            })
+            .and_then(|()| {
+                setup.handler::<ExplicitReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
             })
             .and_then(|()| setup.handler::<ReviewRequirementBinding, _>(ReviewRequirementHandler))
             .and_then(|()| {

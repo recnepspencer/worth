@@ -58,6 +58,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowOperatio
     pub(in crate::domain_computation::primary_graph) operation: String,
     pub(in crate::domain_computation::primary_graph) input_type: String,
     pub(in crate::domain_computation::primary_graph) binding: Option<String>,
+    pub(in crate::domain_computation::primary_graph) workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
 }
 
 #[derive(Clone)]
@@ -144,10 +145,12 @@ pub(in crate::domain_computation::primary_graph) fn select_current_transition(
             input_type,
             binding,
             requires_workflow_authority: true,
+            workflow_execution_requirements,
         } => SelectedWorkflowTransitionKind::Operation(SelectedWorkflowOperation {
             operation: operation.clone(),
             input_type: input_type.clone(),
             binding: binding.clone(),
+            workflow_execution_requirements: workflow_execution_requirements.clone(),
         }),
         CompiledWorkflowNodeKind::Assessment {
             query,
@@ -276,6 +279,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
             binding: None,
+            workflow_execution_requirements: None,
         }),
         Some(progress_basis.clone()),
     )
@@ -325,6 +329,7 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_trans
             operation: operation.to_owned(),
             input_type: input_type.to_owned(),
             binding: None,
+            workflow_execution_requirements: None,
         }),
     })
 }

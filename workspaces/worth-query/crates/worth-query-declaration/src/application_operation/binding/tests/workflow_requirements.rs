@@ -51,6 +51,57 @@ guarded_binding!(
 );
 
 struct Workflow;
+struct EvidenceFeature;
+impl ApplicationFeature<MutationSchema> for EvidenceFeature {
+    type Inputs = ApplicationFeatureInputLeaf;
+    const IDENTITY: &'static str = "test.evidence-feature.v1";
+}
+
+struct EvidenceProgram<Binding>(std::marker::PhantomData<Binding>);
+impl<Binding: ApplicationMutationBinding<MutationSchema>>
+    ApplicationProgramDefinition<MutationSchema> for EvidenceProgram<Binding>
+{
+    type Contributions = ();
+    type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("test.evidence-program.v1");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        vec![
+            ApplicationFeatureSpec::root::<MutationSchema, EvidenceFeature>()
+                .mutation::<Binding>()
+                .finish(),
+        ]
+    }
+}
+
+#[test]
+fn evidence_floor_changes_canonical_program_revision_and_operation_comparison() {
+    fn meaning<Binding: ApplicationMutationBinding<MutationSchema>>(
+    ) -> (ApplicationProgramRevision, ApplicationSemanticDescription) {
+        let program =
+            ApplicationProgramAuthoring::<MutationSchema, EvidenceProgram<Binding>>::begin()
+                .validated_program()
+                .unwrap();
+        (
+            program.revision().clone(),
+            program.semantic_description().clone(),
+        )
+    }
+    let legacy = meaning::<LegacyGuardedBinding>();
+    let empty = meaning::<OccurrenceBinding>();
+    let reviewed = meaning::<ApprovalBinding>();
+    assert_ne!(legacy.0, empty.0);
+    assert_ne!(empty.0, reviewed.0);
+    assert_ne!(legacy.0, reviewed.0);
+    for (source, target) in [(&legacy.1, &empty.1), (&empty.1, &reviewed.1)] {
+        let diff = ApplicationSemanticDiff::compare(source, target, 1024).unwrap();
+        assert!(diff.changes().iter().any(|change| change.family()
+            == ApplicationSemanticFamily::Operations
+            && change.kind() == ApplicationSemanticChangeKind::Changed));
+    }
+}
+
 impl ApplicationWorkflowSpec for Workflow {
     type Schema = MutationSchema;
     const IDENTITY: ApplicationWorkflowSpecIdentity =

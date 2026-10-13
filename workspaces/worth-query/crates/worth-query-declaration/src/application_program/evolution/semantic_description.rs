@@ -268,62 +268,69 @@ fn append_actions(
 ) {
     for action in actions {
         let subject = action.semantic_subject();
+        let mut fields = vec![
+            (
+                "input",
+                action.operation_input_identity().as_str().to_owned(),
+            ),
+            ("conditional", action.conditional_only().to_string()),
+            (
+                "required-output",
+                action.required_output_source().to_string(),
+            ),
+            (
+                "invariant",
+                action
+                    .evaluated_requirement()
+                    .map_or("", |value| value.identity())
+                    .to_owned(),
+            ),
+            (
+                "observation",
+                action
+                    .correspondence()
+                    .map_or("", |value| value.identity())
+                    .to_owned(),
+            ),
+            (
+                "locality",
+                action
+                    .locality()
+                    .map_or("", |value| value.identity())
+                    .to_owned(),
+            ),
+            (
+                "granule",
+                action
+                    .locality()
+                    .map_or("", |value| value.granule().canonical_token())
+                    .to_owned(),
+            ),
+            (
+                "change",
+                action
+                    .change_shape()
+                    .map_or("", |value| value.identity())
+                    .to_owned(),
+            ),
+            (
+                "posture",
+                action
+                    .change_shape()
+                    .map_or("", |value| value.posture().canonical_token())
+                    .to_owned(),
+            ),
+        ];
+        if let Some(requirements) = action.workflow_execution_requirements() {
+            fields.push((
+                "workflow-execution-requirements",
+                requirements.persistence_identity(),
+            ));
+        }
         facts.push(fact(
             ApplicationSemanticFamily::Operations,
             &subject,
-            framed_fields([
-                (
-                    "input",
-                    action.operation_input_identity().as_str().to_owned(),
-                ),
-                ("conditional", action.conditional_only().to_string()),
-                (
-                    "required-output",
-                    action.required_output_source().to_string(),
-                ),
-                (
-                    "invariant",
-                    action
-                        .evaluated_requirement()
-                        .map_or("", |value| value.identity())
-                        .to_owned(),
-                ),
-                (
-                    "observation",
-                    action
-                        .correspondence()
-                        .map_or("", |value| value.identity())
-                        .to_owned(),
-                ),
-                (
-                    "locality",
-                    action
-                        .locality()
-                        .map_or("", |value| value.identity())
-                        .to_owned(),
-                ),
-                (
-                    "granule",
-                    action
-                        .locality()
-                        .map_or("", |value| value.granule().canonical_token())
-                        .to_owned(),
-                ),
-                (
-                    "change",
-                    action
-                        .change_shape()
-                        .map_or("", |value| value.identity())
-                        .to_owned(),
-                ),
-                (
-                    "posture",
-                    action
-                        .change_shape()
-                        .map_or("", |value| value.posture().canonical_token())
-                        .to_owned(),
-                ),
-            ]),
+            framed_fields(fields),
         ));
         if let Some(effect) = action.external_input() {
             facts.push(fact(

@@ -111,6 +111,7 @@ impl<Schema, Operation, Input, Scope>
             transition_identity: authority.transition_identity,
             input_identity: authority.input_identity,
             approval_authority: authority.approval_authority.clone(),
+            workflow_execution_requirements: authority.workflow_execution_requirements.clone(),
             settlement_basis: authority.settlement_basis.clone(),
             workflow_layout: authority.workflow_layout.clone(),
         });
@@ -132,6 +133,8 @@ impl<Schema, Operation, Input, Scope>
             None => !Binding::REQUIRES_WORKFLOW_AUTHORITY,
             Some(proof) => {
                 Binding::REQUIRES_WORKFLOW_AUTHORITY
+                    && proof.workflow_execution_requirements
+                        == Binding::workflow_execution_requirements()
                     && proof.binding == Binding::IDENTITY
                     && self
                         .read_set

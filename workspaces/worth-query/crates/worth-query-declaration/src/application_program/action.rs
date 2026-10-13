@@ -102,9 +102,16 @@ pub struct ApplicationActionDeclaration {
     external_input: Option<ApplicationActionExternalInputDeclaration>,
     locality: Option<ApplicationLocalityDeclaration>,
     change_shape: Option<ApplicationChangeShapeDeclaration>,
+    workflow_execution_requirements:
+        Option<crate::application_operation::ApplicationWorkflowExecutionRequirements>,
 }
 
 impl ApplicationActionDeclaration {
+    pub fn workflow_execution_requirements(
+        &self,
+    ) -> Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements> {
+        self.workflow_execution_requirements.as_ref()
+    }
     pub const fn composition_instance(&self) -> &'static str {
         self.composition_instance
     }
@@ -237,6 +244,7 @@ where
             binding: Binding::IDENTITY,
             action_type: TypeId::of::<Binding>(),
             mutation_binding_type: Some(TypeId::of::<Binding>()),
+            workflow_execution_requirements: Binding::workflow_execution_requirements(),
             operation_type: TypeId::of::<Binding::Operation>(),
             operation_input_type: TypeId::of::<Binding::Input>(),
             operation_input_identity:
@@ -271,6 +279,7 @@ where
             binding: Operation::IDENTIFIER,
             action_type: TypeId::of::<Operation>(),
             mutation_binding_type: None,
+            workflow_execution_requirements: None,
             operation_type: TypeId::of::<Operation>(),
             operation_input_type: TypeId::of::<
                 <Operation::InputBinding as ApplicationStructuredValueBinding>::Value,

@@ -38,6 +38,7 @@ fn assessment_subject_is_rejected_for_every_non_assessment_shape_that_uses_empty
             None,
             None,
             false,
+            None,
         );
 
         assert!(
@@ -92,6 +93,7 @@ fn inbound_node_requires_its_own_fields_and_rejects_mixed_operation_shape() {
             None,
             None,
             false,
+            None,
         )
     };
     assert!(decode(None, inbound()).is_ok());

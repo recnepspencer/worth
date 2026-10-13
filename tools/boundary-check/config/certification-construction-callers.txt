@@ -15,7 +15,7 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/delivery_tests.rs
 # Ruled test caller: proves live leases reject a foreign phase for ordinary and governed certification queries.
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/foreign_phase_tests.rs
-installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/lifecycle_tests.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/lifecycle_tests/tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/reservation_race_tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/sibling_delivery_tests.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/read_execution/interruption/tests.rs
