@@ -17,7 +17,7 @@ pub(super) fn installed_application(
         contacts: contacts.clone(),
         install_route: true,
     };
-    let application = application_installation::in_memory_program(
+    application_installation::in_memory_program(
         validated_program(),
         TemporalHostSchema::declaration().unwrap(),
         (configuration,),
@@ -44,6 +44,5 @@ pub(super) fn installed_application(
             Ok(())
         },
     )
-    .expect("the contribution-composed temporal application must install");
-    application
+    .expect("the contribution-composed temporal application must install")
 }
