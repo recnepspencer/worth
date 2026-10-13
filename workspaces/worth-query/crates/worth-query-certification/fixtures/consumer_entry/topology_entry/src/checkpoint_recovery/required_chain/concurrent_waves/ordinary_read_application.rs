@@ -191,6 +191,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
                 .conditional_operation::<MutatePlanar>()
                 .finish(),
         );
+        features[0] = application::source_feature();
         features.push(
             ApplicationFeatureSpec::root::<CheckpointSchema, program::ChainFeature>()
                 .provides::<program::ChainOutput>()

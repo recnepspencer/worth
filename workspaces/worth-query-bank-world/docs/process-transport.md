@@ -177,6 +177,16 @@ accepted custody, blocked work, the next replay-cleanup expiry, and whether an
 installed route could not be assessed. These owner views can overlap and must
 not be summed. An unavailable assessment must not be read as zero outstanding
 work. A shutdown failure also retains the close result through `into_close()`.
+Completion may publish before the initiating dispatch response returns. The
+route's terminal observation identifies the original and completion World
+commits; compare the original with the initiating receipt's product commit.
+That receipt is not an indefinite read pin: terminal publication and the last
+in-flight dispatch release the original mandatory basis, after which its exact
+outbox read returns `ExactCommitUnavailable`. The enabled
+[`inbound_completion` example](../crates/bank-courtroom/examples/inbound_completion.rs)
+exercises this ordering with response loss, signed callback/ACK and one separate
+rail consequence. Its blocking transport owners outlive the async executor,
+including error teardown, and the callback host closes before that executor.
 The close result can transfer the original installed route into a
 `BankRailCompletionContinuation`; a surviving host may call `continue_once()`
 after owner recovery without reinstalling a verifier or opening another HTTP

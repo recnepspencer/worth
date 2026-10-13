@@ -428,6 +428,67 @@ the same Query boundary rejects mismatched selectors for rows, result sets and
 framework producers. A source query's type alone does not bind its parameters to
 the mutation input.
 
+## Dependent Managed Pair Reads
+
+Cold pair reconstruction has two read topologies. When both scopes are known
+before reading, prepare `WorthQueryDerivedPairReadPlans::new(first, second)`
+and call `reconstruct_managed_derived_collection_pair`. For plans admitted on
+a shared native read loan, use `WorthQueryDerivedPairReadPlans::in_batch`;
+Query checks each issued item against that exact loan before dispatch.
+
+When the second scope comes from the first observed row, use
+`reconstruct_managed_derived_collection_pair_dependent_in_batch`. Its two
+callbacks receive a `WorthQueryDependentPairReadContext`. Each callback resolves
+its local scope, admits one ordinary plan using the issued advancement phase,
+and calls `read.execute(plan)` before those local borrows end. Query keeps the
+result, executes both branches on the calling thread, and holds their native
+loan claims through link/source validation and projection:
+
+```rust
+let execution_request = phase.checked_execution_request_for(runtime.product_runtime())?;
+let keys = runtime.reconstruct_managed_derived_collection_pair_dependent_in_batch(
+    execution_request,
+    &view,
+    &product,
+    &membership,
+    members,
+    &batch,
+    |member, read| {
+        let identity = resolve_member(member)?;
+        let plan = admit_first(&phase, &identity, &batch)?;
+        read.execute(plan)?;
+        Ok(())
+    },
+    |first_row, read| {
+        let identity = resolve_linked_scope(first_row)?;
+        let plan = admit_second(&phase, &identity, &batch)?;
+        read.execute(plan)?;
+        Ok(())
+    },
+    first_link,
+    second_link,
+    project,
+)?;
+```
+
+Inside host advancement, carry that admitted request or narrow its active lease
+with a genuine child. A separately created request has unrelated custody and is
+refused before reconstruction.
+
+The two plans must name the registered public queries at the selected product's
+exact native basis and use the same authenticated request scope. The first
+query's scope and source root must equal the membership root; the second may
+read a distinct linked root. Domain link projections must agree. Query validates
+both row and result-set provenance, visits roots in EntityId order, and installs
+one image only after all pairs and the final request/currentness check succeed.
+Wrong plans, scopes, links or loans, cancellation, expiry and resource exhaustion
+preserve the existing image; observing a newer product may first make it cold.
+
+Read work is charged to both the shared read allowance and the caller's execution
+request as it occurs. Owner staging and final image custody retain their existing
+Query and Execution owners. This cold serial journey does not establish parallel
+worker equivalence or replace warm reconciliation and entry refresh.
+
 ## Typed Handler And Invariant Access
 
 Installed mutation handlers use `DecisionReader` for tracked typed field and

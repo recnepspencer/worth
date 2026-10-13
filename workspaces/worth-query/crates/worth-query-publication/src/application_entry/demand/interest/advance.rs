@@ -1,7 +1,7 @@
 use super::*;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 
-impl<Schema, Demand> WorthQueryApplicationOutputDemandHandle<'_, Schema, Demand>
+impl<Schema, Demand> WorthQueryApplicationOutputDemandContinuation<Schema, Demand>
 where
     Schema: ApplicationSchema + 'static,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
@@ -19,19 +19,21 @@ where
 {
     pub fn settle(
         &mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        self.application
+        application
             .with_application_advancement(fresh_request.scope, |phase| {
                 for _ in 0..self
                     .controls
-                    .resolve(self.application.output_demand_resource_profile())
+                    .resolve(application.output_demand_resource_profile())
                     .settlement_attempts()
                 {
-                    let progress = self.advance_in_advancement(&phase, fresh_request)?;
+                    let progress =
+                        self.advance_in_advancement(&phase, application, fresh_request)?;
                     if matches!(
                         progress,
                         WorthQueryApplicationOutputDemandProgress::Settled(_)
@@ -46,14 +48,15 @@ where
 
     pub fn advance(
         &mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
         WorthQueryApplicationOutputDemandDenial,
     > {
-        self.application
+        application
             .with_application_advancement(fresh_request.scope, |phase| {
-                self.advance_in_advancement(&phase, fresh_request)
+                self.advance_in_advancement(&phase, application, fresh_request)
             })
             .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
     }
@@ -61,6 +64,7 @@ where
     pub(in crate::application_entry) fn advance_in_advancement(
         &mut self,
         phase: &AdvancementPhase<'_>,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
         WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
@@ -69,12 +73,12 @@ where
         if self.closed {
             return Err(WorthQueryApplicationOutputDemandDenial::Closed);
         }
-        if !std::ptr::eq(self.application, fresh_request.application) {
+        if !std::ptr::eq(application, fresh_request.application) {
             return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
         }
         let _controls = self.controls;
         let progress = if let Some((identity, revision)) = &self.selected_program {
-            self.application.advance_selected_program_output_demand_from_retained(
+            application.advance_selected_program_output_demand_from_retained(
                 phase,
                 &worth_query_execution::publication_boundary::program_publication_access(),
                 &mut self.admitted,
@@ -85,7 +89,7 @@ where
                 *revision,
             )
         } else {
-            self.application.advance_output_demand_from_retained(
+            application.advance_output_demand_from_retained(
                 phase,
                 &mut self.admitted,
                 fresh_request.principal,
@@ -149,19 +153,40 @@ where
             }
         }
     }
+}
 
-    pub fn close(&mut self) {
-        if !self.closed {
-            self.admitted.close();
-        }
-        self.closed = true;
+impl<Schema, Demand> WorthQueryApplicationOutputDemandHandle<'_, Schema, Demand>
+where
+    Schema: ApplicationSchema + 'static,
+    Demand: WorthQueryApplicationOutputDemand<Schema>,
+    SourceValue<Schema, Demand>: 'static,
+    SourceQuery<Schema, Demand>: 'static,
+    <SourceBinding<Schema, Demand> as ApplicationQueryBinding<Schema>>::Input:
+        ApplicationQueryIntent<Schema, Binding = SourceBinding<Schema, Demand>>,
+    <SourceBinding<Schema, Demand> as ApplicationQueryBinding<Schema>>::ScopeBinding:
+        ApplicationQueryScopeResolution<
+            Schema,
+            <SourceBinding<Schema, Demand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
+        >,
+    SourceValue<Schema, Demand>:
+        WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Demand>> + Clone,
+{
+    pub fn settle(
+        &mut self,
+        fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
+        WorthQueryApplicationOutputDemandDenial,
+    > {
+        self.continuation.settle(self.application, fresh_request)
     }
-
-    pub fn notifications(
-        &self,
-    ) -> Result<WorthQueryOutputDemandNotifications, WorthQueryApplicationOutputDemandDenial> {
-        self.admitted
-            .notifications()
-            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)
+    pub fn advance(
+        &mut self,
+        fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        WorthQueryApplicationOutputDemandProgress<SourceQuery<Schema, Demand>>,
+        WorthQueryApplicationOutputDemandDenial,
+    > {
+        self.continuation.advance(self.application, fresh_request)
     }
 }

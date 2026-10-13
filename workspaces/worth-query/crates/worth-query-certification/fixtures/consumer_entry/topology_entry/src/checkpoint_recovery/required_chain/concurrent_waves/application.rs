@@ -130,6 +130,19 @@ impl WorthQueryApplicationContribution<CheckpointSchema> for Contribution {
     }
 }
 pub(super) struct Program;
+struct SourceChange;
+impl worth_query_decl::facade::application_program::ApplicationChangeShape for SourceChange {
+    const IDENTITY: &'static str = "wave-source-reconstruction";
+    const POSTURE: worth_query_decl::facade::application_program::ApplicationChangePosture =
+        worth_query_decl::facade::application_program::ApplicationChangePosture::Reconstruct;
+}
+pub(super) fn source_feature() -> ApplicationFeatureSpec {
+    ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
+        .provides::<PlanarBodyOutput>()
+        .mutation::<PlanarEditBinding<CheckpointSchema>>()
+        .mutation_with_locality_and_change::<PlanarSourceAdjustmentBinding<CheckpointSchema>, computation::Locality, SourceChange>()
+        .finish()
+}
 impl ApplicationProgramDefinition<CheckpointSchema> for Program {
     type Contributions = (Contribution,);
     type Outputs = ApplicationProgramOutputs<program::ChainRoot>;
@@ -146,6 +159,7 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
                 .conditional_operation::<MutatePlanar>()
                 .finish(),
         );
+        features[0] = source_feature();
         features.push(
             ApplicationFeatureSpec::root::<CheckpointSchema, program::ChainFeature>()
                 .provides::<program::ChainOutput>()

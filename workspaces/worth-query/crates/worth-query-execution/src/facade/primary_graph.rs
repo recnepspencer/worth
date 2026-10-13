@@ -15,6 +15,11 @@ pub use crate::domain_computation::primary_graph::{
     partitioned_computation_tree_work_on_this_thread_for_test,
 };
 pub use crate::domain_computation::primary_graph::{
+    fact_verification_on_this_thread_for_test, native_marking_on_this_thread_for_test,
+    WorthQueryFactVerificationForTest, WorthQueryMarkedOutputForTest,
+    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+};
+pub use crate::domain_computation::primary_graph::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
@@ -308,7 +313,9 @@ pub use worth_signal::facade::SignalCheckpointDenial as SignalCheckpointDenialFo
 pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
 pub use crate::domain_computation::primary_graph::ExecutionRequest;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
-pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
+};
 
 pub use crate::domain_computation::primary_graph::carried_read_basis_custody_for_test;
 

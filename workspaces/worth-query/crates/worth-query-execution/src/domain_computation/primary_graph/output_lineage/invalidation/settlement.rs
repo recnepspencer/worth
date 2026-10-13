@@ -13,7 +13,7 @@ use super::admission::{IndexAdmission, RetainedIndexAdmission};
 use super::delivery;
 use super::fact_key::FactPostingKey;
 use super::index_capacity;
-use super::logical_marking::LogicalMarkingCounts;
+use super::logical_marking::WorthQueryNativeMarkingWork;
 use super::mark_state::{
     FactPosting, FullVerificationReason, MarkState, OutputFactCoverage, SettlementMarks,
 };
@@ -203,7 +203,7 @@ pub(super) fn insert(
             state,
             OrdSet::unit(Arc::clone(identity)),
             admission,
-            &mut LogicalMarkingCounts::default(),
+            &mut WorthQueryNativeMarkingWork::default(),
         )?;
     }
     Ok(())

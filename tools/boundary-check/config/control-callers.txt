@@ -33,6 +33,7 @@ crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/t
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_lifecycle/support.rs
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-query-binding/src/scalar_projection_drift_tests.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/lifecycle_port/tests.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/generated_materialization/recovery_publication.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/lifecycle_port/tests/operation_control.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/lifecycle_port/tests/retention_fence.rs
 crates/worth-runtime-world/ crates/worth-signal/src/branch/owner_services/mutation_port/tests.rs
@@ -99,6 +100,8 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/settlement.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/generated_materialization.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/generated_materialization/recovery_admission.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/generated_materialization/recovery_publication.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_currentness.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_custody.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/advancement_discovered.rs

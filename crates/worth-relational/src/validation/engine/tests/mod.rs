@@ -1,3 +1,4 @@
+mod acyclicity_resources;
 mod aspect_field_uniqueness;
 mod custom_checked_execution;
 mod custom_invariant_budget;

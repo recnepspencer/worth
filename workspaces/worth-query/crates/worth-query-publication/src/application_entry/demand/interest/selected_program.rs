@@ -109,7 +109,7 @@ where
             *program.installed_program().revision(),
         );
         let mut handle = self.start()?;
-        handle.selected_program = Some(selection);
+        handle.continuation.selected_program = Some(selection);
         Ok(handle)
     }
 }

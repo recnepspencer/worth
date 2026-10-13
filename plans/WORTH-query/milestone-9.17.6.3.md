@@ -2908,6 +2908,11 @@ The milestone closes when:
 
 Successors:
 
+- **Query 9.17.6.4** immediately follows this completed milestone with
+  [framework-owned operation continuations](./milestone-9.17.6.4.md). It
+  composes these native advancement and invalidation owners with publication,
+  recovery, exact delivery and independent cleanup; it introduces no second
+  execution engine and does not reopen this milestone.
 - **Query 9.20 and 9.22** consume the patterns and reuse.
 - **Application adopters** delete their settle-polling loops and partition their
   computations. Proprietary adopters

@@ -1,11 +1,13 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::LoweredAcyclicityContract;
-use crate::transactions::data::EntityReference;
 use crate::validation::data::{InvariantClass, InvariantViolation, InvariantViolationFields};
 
 use super::super::super::context::InvariantExecutionContext;
-use super::planned_successors::planned_successor_map;
-use super::relation_successors::PreparedSuccessorTraversal;
+mod graph;
+mod index_order;
+mod search;
+use graph::TraversalGraph;
+use search::ReachabilitySearch;
 
 pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
     context: &InvariantExecutionContext<'_, '_>,
@@ -21,15 +23,8 @@ pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
     }
 
     context.metrics().count_relation_contracts_evaluated(1);
-    let planned_successors = planned_successor_map(&scope.planned_edges, context);
-    if !context.checkpoint(0) {
-        return None;
-    }
-    let traversal = PreparedSuccessorTraversal {
-        scope,
-        class,
-        planned_successors: &planned_successors,
-    };
+    let graph = TraversalGraph::prepare(scope, context)?;
+    let mut search = ReachabilitySearch::prepare(&graph, context)?;
     for edge in &scope.planned_edges {
         if !context.checkpoint(1) {
             return None;
@@ -38,14 +33,14 @@ pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
         let reaches_cycle = if edge.source == edge.target {
             true
         } else {
-            relation_kind_reaches(
-                &traversal,
-                context,
-                edge.target.clone(),
-                edge.source.clone(),
-            )
+            search.reaches(&graph, &edge.target, &edge.source, context)?
         };
         if reaches_cycle {
+            if !context
+                .claim_contract_violation(&contract.contract_id, &[&edge.source, &edge.target])
+            {
+                return None;
+            }
             return Some(InvariantViolation {
                 class,
                 code: DiagnosticCode::InvariantViolation,
@@ -63,36 +58,4 @@ pub(in crate::validation::engine::evaluator) fn evaluate_acyclicity_contract(
         }
     }
     None
-}
-
-fn relation_kind_reaches(
-    traversal: &PreparedSuccessorTraversal<'_>,
-    context: &InvariantExecutionContext<'_, '_>,
-    start: EntityReference,
-    target: EntityReference,
-) -> bool {
-    let mut visited = std::collections::BTreeSet::new();
-    let mut frontier = vec![start.clone()];
-
-    visited.insert(start);
-
-    while let Some(entity_id) = frontier.pop() {
-        if !context.checkpoint(1) {
-            return false;
-        }
-        for next in traversal.successors(&entity_id, context) {
-            if !context.checkpoint(1) {
-                return false;
-            }
-            if next == target {
-                return true;
-            }
-            if !visited.insert(next.clone()) {
-                continue;
-            }
-            frontier.push(next);
-        }
-    }
-
-    false
 }

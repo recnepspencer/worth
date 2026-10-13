@@ -457,6 +457,12 @@ Runtime World unit test, or Query facade compile alone is not umbrella closure.
 
 ## Handoff
 
+The completed [9.17.6.3](./milestone-9.17.6.3.md) also has an immediate public
+API successor, planned [9.17.6.4](./milestone-9.17.6.4.md): framework-owned
+operation continuations over the existing native owners. This side chain preserves
+the completed umbrella and historical successor dependencies below; ordinary
+lifecycle adopters consume its certified revision after its own public proof.
+
 [Milestone 9.17.4](./milestone-9.17.4.md) follows the certified 9.17.3 foundation
 as application graph authoring and execution, using real CAD and Bank evidence to
 complete static composition and ordinary consumer cutover.

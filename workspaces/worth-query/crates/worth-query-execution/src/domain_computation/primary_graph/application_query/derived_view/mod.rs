@@ -1,6 +1,7 @@
 mod change_summary;
 mod dependency;
 mod publication;
+pub(in crate::domain_computation::primary_graph::application_query) mod reconstruction_denial;
 mod registration;
 mod registry;
 mod retention;

@@ -1488,6 +1488,57 @@ their marks agree, whoever the writer was.
 - **Certification.** The owner tests compare marking with full verification
   and reject disagreement; diagnostic comparison is not a consumer mode.
 
+The neutral [installed locality court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/locality.rs)
+grows independent copies through ordinary commits at 1, 10 and 100 copies in
+one runtime. It compares equivalent source edits, checks the exact contacted
+output roots and consumed-output decisions, and verifies clean unrelated
+outputs through their retained demand handles. The owned Query execution
+observation also exposes native delivery preparation reports: exact affected
+lineage identities and installed output bindings, logical marking work and
+the actual marking meter charge. These describe preparation; a later refusal
+can discard them, so they grant no publication or currentness authority.
+The marking meter pays matching, propagation and selected hint preparation;
+its charge excludes navigation, checkpoints and touch extraction. Matched
+posting visits count before stale-posting or already-dirty filtering, while
+marked ordinals and closure vertices describe distinct affected identities.
+The court independently checks published values and distinguishes the marked
+A/B/C closure from the A/B producer contacts that stop propagation at equal B.
+Growth's ordinary mutation also retains its own output on A, distinct from
+A's demanded producer. Physical lineage generations remain in the reports;
+the court judges semantic root/binding sets without pinning alias counts.
+An eviction fallback without a completed delivery report exposes unknown
+work, rather than a fabricated zero. An interruption before delivery
+preparation returns has no marking report; these funded baseline intervals
+do not certify failed-preparation cost or the remaining resource matrix.
+One commit can report provisional exact marking before a later retention
+admission selects fallback. Commit identity alone cannot identify the selected
+preparation; the native owner court checks the installed image independently
+and keeps provisional work distinct from the fallback's unknown work.
+
+Mutation and demand intervals separately drain those reports and actual fact
+examination observations. Source admission, postcommit rebase preparation,
+resolution and unanswered classification, source-currentness comparison,
+value equality, retained work-bound walks, prior computation walks, native
+fact probes and carried-fact sealing each have their own boundary counter.
+Walks count facts before skipping or filtering; adding these counters would
+double-count facts examined in several phases. Source-currentness work is the
+existing meter's debit within comparison, including stopped comparisons, not
+the whole request bill. Reports are passive thread-local diagnostics, taken
+once and cleared when the final execution observation guard drops. They add
+no admission policy or caller authority. The existing
+[partition court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/counts.rs)
+compares equivalent authored value edits as an installed population grows and
+reports the real retained-fact walks, separately from gather and kernel calls.
+
+Source-query entries, request charges and whole-registry visits remain
+separate observations. The baseline reports whole-registry visits during
+ordinary advancement, so exact producer contacts do not certify total
+locality. Its
+[lifecycle cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/locality/lifecycle.rs)
+carry ordinarily authored values through native fork divergence and checkpoint
+reopening, then demand the results of new edits. These cases do not certify
+application product-branch merge or implementation-edition changes.
+
 Query's native marking is distinct from Signal delivery after product
 publication. Native marking is part of commit publication: Relational
 prepares it before entering the branch's critical section and installs it in

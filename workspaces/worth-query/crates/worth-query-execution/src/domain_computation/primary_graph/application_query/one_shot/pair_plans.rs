@@ -42,8 +42,7 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
     }
     /// Carry the same genuine shared read loan into closed pair preparation.
     /// Issued planned items are checked against this loan before dispatch.
-    #[cfg(test)]
-    pub(crate) fn in_batch(
+    pub fn in_batch(
         first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
         second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
         batch: &WorthQueryApplicationQueryBatchAdmission,

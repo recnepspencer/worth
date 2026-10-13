@@ -140,7 +140,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn continue_world(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
         needs_settlement: bool,
@@ -155,13 +154,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled(execution, phase, recovery, retry, request)
+        self.adopt_settled(execution, recovery, retry, request)
     }
 
     fn adopt_settled(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -176,7 +174,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .map_err(|cause| {
                     Admission::Stopped(advancement_denial(cause).provider_denial_cause())
                 })
-                .and_then(|()| self.on_branch(retry.branch).select(phase))
+                .and_then(|()| self.on_branch(retry.branch).select_with_request(execution))
         };
         let selected = match source_read {
             Ok(selected) => selected,
@@ -203,15 +201,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(cause.into()),
-                    RecoveryState::World { recovery, retry },
-                ))
-            }
-        };
         let unpublished = match recovery.inspect() {
             Ok(unpublished) => unpublished,
             Err(_) => {
@@ -240,7 +229,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         drop(unpublished);
-        match prepared.execute(publication_execution) {
+        match prepared.execute(*execution) {
             Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()

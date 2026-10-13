@@ -1,6 +1,6 @@
 //! Calling-thread stages use the ordered execution pattern's meter and custody.
 
-use super::super::Denial;
+use super::super::{reconstruction_denial, Denial};
 use std::num::NonZeroUsize;
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionRounds, MapKernelContext, MapStop, RoundsOutcome,
@@ -12,7 +12,7 @@ pub(in super::super) fn run<T>(
 ) -> Result<T, Denial> {
     let result = (|| {
         let stages = ExecutionRounds::try_new(NonZeroUsize::new(1).unwrap())
-            .map_err(super::denial::rounds)?;
+            .map_err(reconstruction_denial::rounds)?;
         let mut operation = Some(operation);
         let mut value = None;
         let outcome = stages.run(
@@ -33,13 +33,13 @@ pub(in super::super) fn run<T>(
                 value.expect("the owner stage completed")
             }
             RoundsOutcome::Stopped { reason, .. } => Err(match reason {
-                MapStop::Admission(cause) => super::denial::lease(cause),
+                MapStop::Admission(cause) => reconstruction_denial::lease(cause),
                 MapStop::WorkExhausted { .. } => Denial::WorkExhausted { root: None },
-                MapStop::Failure { cause, .. } => super::denial::owner(cause),
+                MapStop::Failure { cause, .. } => reconstruction_denial::owner(cause),
             }),
         }
     })();
-    crate::domain_computation::primary_graph::application_query::one_shot::retain_reconstruction_result(lease, result, super::denial::lease)
+    crate::domain_computation::primary_graph::application_query::one_shot::retain_reconstruction_result(lease, result, reconstruction_denial::lease)
 }
 
 use crate::domain_computation::primary_graph::application_query::derived_view::{
@@ -58,8 +58,9 @@ fn retain(hold: &mut ExecutionMemoryReservation, bytes: usize) -> Result<(), Den
         .bytes()
         .checked_add(bytes)
         .ok_or(Denial::ChargedBytesOverflow)?;
-    hold.resize(total)
-        .map_err(|cause| super::denial::lease(worth_execution::LeaseDenial::MemoryExhausted(cause)))
+    hold.resize(total).map_err(|cause| {
+        reconstruction_denial::lease(worth_execution::LeaseDenial::MemoryExhausted(cause))
+    })
 }
 pub(in super::super) fn retain_dependencies(
     hold: &mut ExecutionMemoryReservation,

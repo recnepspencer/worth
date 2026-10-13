@@ -51,6 +51,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_admitted_fact(
     layout: &WorthQueryPrimaryGraphLayout,
     key: &WorthQueryApplicationFactKey,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    super::super::super::fact_verification_observation::retained_native();
     observe_fact_inner(execution, runtime, snapshot, layout, key, true)
 }
 

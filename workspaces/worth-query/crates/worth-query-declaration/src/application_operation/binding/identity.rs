@@ -83,6 +83,10 @@ const REJECTED: &str = "value serialization rejected";
 /// [`ApplicationMutationIdentities`].
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum ApplicationValueIdentityDomain {
+    /// An application's value identity, scoped to its declared meaning and
+    /// version. The digest identifies serialized content; it grants no
+    /// authorization, currentness, or publication authority.
+    DomainValue,
     /// The client key of a capability workflow request together with the
     /// principal that sent it, scoped to the workflow's operation.
     CapabilityWorkflowKey,
@@ -99,6 +103,7 @@ pub enum ApplicationValueIdentityDomain {
 impl ApplicationValueIdentityDomain {
     const fn text(self) -> &'static str {
         match self {
+            Self::DomainValue => "worth-query.domain-value.v1",
             Self::CapabilityWorkflowKey => "worth-query.capability-workflow-key.v1",
             Self::TemporalIntentRelation => "worth-query.temporal-intent-idempotency-relation.v1",
             Self::HostCommitKey => "worth-query.host-commit-key.v1",

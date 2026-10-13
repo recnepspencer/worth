@@ -67,6 +67,29 @@ impl WorthQueryApplicationObservedFact {
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
     {
+        if !crate::domain_computation::execution_observation::is_installed() {
+            return self.compare_source_currentness(runtime, execution, snapshot, admission);
+        }
+        super::super::super::fact_verification_observation::source_currentness();
+        let before = admission.charged_work();
+        let result = self.compare_source_currentness(runtime, execution, snapshot, admission);
+        super::super::super::fact_verification_observation::source_currentness_work(
+            admission
+                .charged_work()
+                .checked_sub(before)
+                .expect("comparison retains its prior charges"),
+        );
+        result
+    }
+
+    fn compare_source_currentness(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Result<FactMovement, WorthQuerySourceCurrentnessFailure>, CompanionPreflightStop>
+    {
         check_request(execution)?;
         // Decision facts are value observations, not native revisions.
         // Output lineage must first rebase them at the committed snapshot.

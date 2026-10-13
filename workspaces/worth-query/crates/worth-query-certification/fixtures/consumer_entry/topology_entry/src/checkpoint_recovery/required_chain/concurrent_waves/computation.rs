@@ -214,7 +214,10 @@ impl ApplicationDerivedArtifact<CheckpointSchema, PlanarOutputFeature> for Artif
     const REQUIRED: bool = true;
     const PRODUCER_FAMILY: &'static str =
         <PlanarOutputFamily as WorthQueryProducerOutputFamily<CheckpointSchema>>::IDENTITY;
-    const DEPENDENCIES: &'static [ApplicationArtifactDependency] = &[];
+    const DEPENDENCIES: &'static [ApplicationArtifactDependency] =
+        &[ApplicationArtifactDependency::new(
+            <PlanarSourceFeature as ApplicationFeature<CheckpointSchema>>::IDENTITY,
+        )];
     const REUSE_RULE: &'static str = "wave-exact";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
         ApplicationArtifactResourceCeiling::new(4096, 8192);

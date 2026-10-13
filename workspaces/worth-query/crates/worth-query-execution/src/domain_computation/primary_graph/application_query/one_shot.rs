@@ -6,6 +6,8 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
+mod dependent_pair;
+pub use dependent_pair::WorthQueryDependentPairReadContext;
 mod batch;
 pub use batch::{WorthQueryApplicationBatchReadDenial, WorthQueryApplicationBatchResult};
 pub(super) mod custody_work;

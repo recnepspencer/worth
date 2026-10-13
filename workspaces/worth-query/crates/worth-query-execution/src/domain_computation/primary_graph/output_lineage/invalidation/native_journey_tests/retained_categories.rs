@@ -5,6 +5,89 @@ use crate::domain_computation::primary_graph::output_binding_identity::OutputBin
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[test]
+fn late_capacity_fallback_does_not_accept_the_provisional_exact_marking() {
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let world = installed_authorization_world(true);
+    world.application.with_host_advancement(|phase| {
+        let custody = phase.test_host_request();
+        let selected = world.selected_product(&custody);
+        let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
+            "open".to_owned(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary)
+            .unwrap().entity_id();
+        let (_, product, _) = selected.into_parts();
+        let source = SemanticSource {
+            runtime_authority: world.application.runtime.authority_identity().as_u64(),
+            schema: world.application.installed_schema.binding_identity(),
+            scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(entity),
+            output_binding: OutputBindingIdentity::declared("StatusOutput"),
+        };
+        let output = RecordedSettlementIdentity::retain(&source, ProductCoordinate {
+            occurrence: product.observation().lifecycle_incarnation(),
+            generation: product.observation().reference_generation().get(),
+        }, 0);
+        let graph = world.application.runtime.primary_graph().unwrap();
+        let field = AccountStatus::reference();
+        let locator = graph.layout().field_locator(field.entity(), field.aspect(), field.field())
+            .unwrap().clone();
+        let handle = graph.integration_handle();
+        let owner = &handle.source_owner.invalidation_owner;
+        handle.with_runtime_mut(execution, |runtime| {
+            let (before_handle, before) = snapshot(runtime);
+            let old = field_fact(&custody.borrowed_request_for_test(), runtime,
+                &before_handle, entity, locator.clone());
+            register(owner, output.clone(), Arc::from([old.clone()]), &before, OrdSet::new());
+            let cell = owner.cell_for_read(&before, &mut owner.edit_admission()).unwrap().unwrap();
+            let image = cell.read_image();
+            // Competing custody leaves one whole-index quote. The partial
+            // mark can fit, but after spending that capacity the late guard
+            // cannot retain another whole index of headroom for future edits.
+            let room = super::super::retention::state_bound(&image.payload().current)
+                .unwrap();
+            let retained_before = owner.resources.retained_capacity_bytes();
+            let remaining = owner.resources.installation().maximum_retained_bytes - retained_before;
+            let competing = owner.resources.reserve_retained_capacity(remaining.checked_sub(room).unwrap()).unwrap();
+            let _observation = crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+            super::super::marking_observation::native_marking_on_this_thread_for_test();
+            write_field(execution, runtime, entity, locator.clone(), "closed");
+            let (after_handle, after) = snapshot(runtime);
+            let commit = after.commit_id().unwrap();
+            let reports = super::super::marking_observation::native_marking_on_this_thread_for_test();
+            let attempts: Vec<_> = reports.iter().filter(|report| report.commit == commit).collect();
+            let provisional = attempts.iter().position(|report| matches!(report.precision,
+                super::super::logical_marking::WorthQueryNativeMarkingPrecision::Exact(_)))
+                .expect("the actual marking completed before later capacity admission failed");
+            let fallback = attempts.iter().position(|report| matches!(report.precision,
+                super::super::logical_marking::WorthQueryNativeMarkingPrecision::RetainedCapacityExhausted(_))
+                && report.charged_work.is_none())
+                .expect("the same native commit prepared the empty-image fallback");
+            assert!(provisional < fallback, "provisional work precedes fallback selection: {reports:?}");
+            assert!(attempts[provisional].charged_work.is_some_and(|work| work > 0));
+            assert!(attempts[provisional].affected.as_ref().is_some_and(|outputs|
+                outputs.iter().any(|marked| marked.root == source.scope)));
+            assert!(attempts[fallback].affected.is_none(), "unknown affected outputs are not an exact empty set");
+            // Acceptance comes from the installed native image and source
+            // snapshot, independently of either prepared diagnostic report.
+            assert!(owner.native_marking_report(&after, &mut owner.edit_admission()).unwrap().is_none(),
+                "the accepted empty image does not accept the provisional exact report");
+            assert!(matches!(currentness(owner, &after, &output),
+                SourceSettlementCurrentness::FullVerificationRequired(super::super::mark_state::FullVerificationReason::MissingSettlement)),
+                "the accepted fallback requires genuine re-verification");
+            assert_ne!(field_fact(&custody.borrowed_request_for_test(), runtime,
+                &after_handle, entity, locator.clone()), old, "the source write really published");
+            assert_eq!(field_fact(&custody.borrowed_request_for_test(), runtime,
+                &before_handle, entity, locator), old, "the original source snapshot remains intact");
+            drop(competing);
+            assert_eq!(owner.resources.retained_capacity_bytes(), retained_before,
+                "discarded preparation and competing custody return their real reservations while the original image stays held");
+            for snapshot in [before_handle, after_handle] {
+                runtime.snapshots().release_snapshot(&snapshot).unwrap();
+            }
+        });
+    }).expect("the native court owns its installed host call");
+}
+
+#[test]
 fn actual_registration_keeps_facts_and_prior_images_but_refuses_over_capacity_before_install() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);

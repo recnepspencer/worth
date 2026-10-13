@@ -1,37 +1,13 @@
-//! Request admission and one owned generated recovery step.
+//! Admission and custody progression under one runtime-issued advancement.
 use super::super::WorthQueryRestoredGeneratedOutput;
 use super::*;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Continues retained recovery with the caller's explicit physical request.
+    /// Opens one advancement under the fresh request scope and lends its native
+    /// execution request through recovery and restored-output recording. Admission
+    /// refusal returns the original recovery before inspecting its custody.
     pub fn continue_generated_output_restoration_recovery(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        recovery: WorthQueryGeneratedOutputRestorationRecovery,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<
-        WorthQueryRestoredGeneratedOutput,
-        WorthQueryGeneratedOutputRestorationRecoveryFailure,
-    > {
-        self.continue_restoration_recovery_with(Some(execution), recovery, request)
-    }
-
-    /// Continues the exact retained recovery under the installed runtime's
-    /// request policy. Opening refusal returns the original recovery owner.
-    pub fn resume_generated_output_restoration_recovery(
-        &self,
-        recovery: WorthQueryGeneratedOutputRestorationRecovery,
-        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
-    ) -> Result<
-        WorthQueryRestoredGeneratedOutput,
-        WorthQueryGeneratedOutputRestorationRecoveryFailure,
-    > {
-        self.continue_restoration_recovery_with(None, recovery, request)
-    }
-
-    fn continue_restoration_recovery_with(
-        &self,
-        execution: Option<&worth_execution::ExecutionRequest<'_, '_>>,
         recovery: WorthQueryGeneratedOutputRestorationRecovery,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<
@@ -40,8 +16,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let mut retained = Some(recovery);
         let result = self.with_application_advancement(request, |phase| {
-            let phase = &phase;
-            let admitted_execution = match phase.execution_request_for(&self.product_runtime) {
+            let execution = match phase.execution_request_for(&self.product_runtime) {
                 Ok(execution) => execution,
                 Err(cause) => {
                     return Err(failure(
@@ -52,7 +27,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     ));
                 }
             };
-            let execution = execution.unwrap_or(&admitted_execution);
+            let execution = &execution;
             let recovery = retained.take().expect("one admitted recovery");
 
             if !restoration_retry_matches(self, recovery.state.retry()) {
@@ -67,7 +42,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let needs_settlement = product.relational_requires_settlement();
                     self.continue_restoration_world(
                         execution,
-                        phase,
                         product.into_recovery(),
                         retry,
                         needs_settlement,
@@ -86,7 +60,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     };
                     self.continue_restoration_world(
                         execution,
-                        phase,
                         recovery,
                         retry,
                         needs_settlement,

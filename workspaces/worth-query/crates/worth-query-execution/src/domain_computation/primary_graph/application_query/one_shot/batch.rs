@@ -70,6 +70,37 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        plan: WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+    ) -> Result<
+        WorthQueryApplicationBatchResult<Query, QueryResult>,
+        WorthQueryApplicationBatchReadDenial,
+    >
+    where
+        QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+    {
+        self.execute_application_query_one_shot_in_batch_metered(execution, plan, batch, None)
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn execute_application_query_one_shot_in_batch_metered<
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut plan: WorthQueryAdmittedApplicationQueryPlan<
             '_,
             Schema,
@@ -81,6 +112,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Scope,
         >,
         batch: &WorthQueryApplicationQueryBatchAdmission,
+        charge: Option<
+            &dyn Fn(
+                usize,
+                &str,
+            ) -> Result<
+                (),
+                super::super::read_execution::WorthQueryApplicationReadExecutionDenial,
+            >,
+        >,
     ) -> Result<
         WorthQueryApplicationBatchResult<Query, QueryResult>,
         WorthQueryApplicationBatchReadDenial,
@@ -121,7 +161,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .reserve_read(plan.controls.maximum_work().get())
             .map_err(Resource)?;
         let maximum = reservation.maximum();
-        let spent = OneShotReadWorkObservation::new();
+        let spent = match charge {
+            Some(charge) => OneShotReadWorkObservation::with_charge(charge),
+            None => OneShotReadWorkObservation::new(),
+        };
         let result = self.execute_application_query_one_shot_core(
             execution,
             plan,

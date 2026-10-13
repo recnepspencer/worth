@@ -33,6 +33,7 @@ pub(super) fn rebase(
         own_effect = own_effect.join(OwnEffect::Moved);
     }
     for (ordinal, fact) in facts.iter().enumerate() {
+        fact_verification_observation::rebase_resolution();
         // Past a failure the walk decides one thing: what the effect did to
         // each fact a source query read.
         if failure.is_some() && !resolution::reads_source(fact) {

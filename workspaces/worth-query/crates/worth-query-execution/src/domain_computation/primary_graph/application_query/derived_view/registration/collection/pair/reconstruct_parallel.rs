@@ -25,7 +25,8 @@ use worth_proof::CanonicalUniqueVec;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 mod canonical_results;
-use super::reconstruction::{denial, owner_stage};
+use super::reconstruction::owner_stage;
+use super::reconstruction_denial as denial;
 mod preparation;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

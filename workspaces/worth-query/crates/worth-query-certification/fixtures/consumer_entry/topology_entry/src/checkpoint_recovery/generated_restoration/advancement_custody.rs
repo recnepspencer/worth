@@ -179,7 +179,7 @@ fn ordinary_recovery_returns_cancelled_custody_then_resumes_suspension_and_resto
     let cancelled = authentication::WorthQueryRequestScope::new(None, cancellation.token());
     cancellation.cancel();
     let failed = match application
-        .resume_generated_output_suspension_recovery::<Final>(recovery, &cancelled)
+        .continue_generated_output_suspension_recovery::<Final>(recovery, &cancelled)
     {
         Err(failed) => failed,
         Ok(_) => panic!("cancelled admission cannot advance retained suspension"),
@@ -197,7 +197,7 @@ fn ordinary_recovery_returns_cancelled_custody_then_resumes_suspension_and_resto
         before.selected_commit()
     );
     let suspended = application
-        .resume_generated_output_suspension_recovery::<Final>(recovery, &scope)
+        .continue_generated_output_suspension_recovery::<Final>(recovery, &scope)
         .unwrap_or_else(|failed| panic!("same suspension resumes: {:?}", failed.stage()));
     assert_eq!(suspended.product_branch(), branch);
     let completed = reconstruct_ring(&application, suspended, &expected_ring);
@@ -214,7 +214,7 @@ fn ordinary_recovery_returns_cancelled_custody_then_resumes_suspension_and_resto
     };
     let before = request.retain_current_read().unwrap();
     let failed =
-        match application.resume_generated_output_restoration_recovery(recovery, &cancelled) {
+        match application.continue_generated_output_restoration_recovery(recovery, &cancelled) {
             Err(failed) => failed,
             Ok(_) => panic!("cancelled admission cannot advance retained restoration"),
         };
@@ -231,7 +231,7 @@ fn ordinary_recovery_returns_cancelled_custody_then_resumes_suspension_and_resto
         before.selected_commit()
     );
     let restored = application
-        .resume_generated_output_restoration_recovery(recovery, &scope)
+        .continue_generated_output_restoration_recovery(recovery, &scope)
         .unwrap_or_else(|failed| panic!("same restoration resumes: {:?}", failed.stage()));
     assert_eq!(restored.product_branch(), branch);
     assert_eq!(ring(&request), expected_ring);

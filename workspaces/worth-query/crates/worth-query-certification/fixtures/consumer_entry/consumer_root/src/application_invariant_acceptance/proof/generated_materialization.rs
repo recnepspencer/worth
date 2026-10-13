@@ -22,6 +22,8 @@ use crate::ConsumerSchema;
 
 mod expected;
 mod manifest;
+mod recovery_admission;
+mod recovery_publication;
 mod retained;
 mod successor;
 

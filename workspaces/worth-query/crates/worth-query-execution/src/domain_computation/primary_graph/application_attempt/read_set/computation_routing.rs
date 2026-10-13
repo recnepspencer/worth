@@ -243,6 +243,7 @@ impl SealedComputationFacts {
         &self,
     ) -> Option<u64> {
         self.facts.keys().try_fold(0_u64, |work, key| {
+            super::super::super::fact_verification_observation::retained_bound();
             work.checked_add(super::fact_observation::observation_work_bound(key)?)
         })
     }

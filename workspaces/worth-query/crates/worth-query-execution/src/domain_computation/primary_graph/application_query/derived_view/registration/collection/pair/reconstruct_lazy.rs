@@ -1,8 +1,8 @@
 //! Sequential reconstruction when the first genuine row selects the second scope.
 
 use super::{
-    reconstruction::{denial, owner_stage},
-    Denial, WorthQueryApplicationOneShotResult, WorthQueryApplicationProjection,
+    reconstruction::owner_stage, reconstruction_denial as denial, Denial,
+    WorthQueryApplicationOneShotResult, WorthQueryApplicationProjection,
     WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewKey,
     WorthQueryPrimaryGraphApplicationRuntime,
 };

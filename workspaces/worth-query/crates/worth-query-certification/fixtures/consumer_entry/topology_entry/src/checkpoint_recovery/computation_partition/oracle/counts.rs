@@ -8,6 +8,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryPartitionedComputationFullCause as FullCause,
     WorthQueryPartitionedComputationRunForTest as Run,
 };
+use worth_query_host::facade::primary_graph::fact_verification_on_this_thread_for_test as fact_verification;
 
 use super::super::entry_edit::EntryFact;
 use super::*;
@@ -18,6 +19,89 @@ const SIZES: [usize; 2] = [100, LARGEST_SET];
 const EDITED: usize = 7;
 /// An absent region: creating its first entry inserts an actual tree leaf.
 const JOINED: u32 = 1_000_003;
+
+#[test]
+fn retained_fact_walks_are_visible_as_one_native_population_grows() {
+    let _guard = checkpoint_recovery_test_guard();
+    let application = install(|graph| facts::seed_set(graph, "even", -0.0));
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let mut population = 0;
+    let mut command = 90_000;
+    let mut growth = Vec::new();
+    for size in [1, 10, 100] {
+        command += 1;
+        // Ordinary authored entries have independent region partitions.
+        edit(
+            &request,
+            &application,
+            EntryEdit::create(
+                &["even"],
+                population as u64,
+                population as u32,
+                1.0_f64.to_bits(),
+                1,
+            )
+            .batch(size - population),
+            command,
+        );
+        population = size;
+        demand(&request, &application);
+        let mut equivalent = Vec::new();
+        for value in [2.5_f64, 3.5] {
+            command += 1;
+            edit(
+                &request,
+                &application,
+                EntryEdit::new("even", 0, EntryFact::Value, value.to_bits()),
+                command,
+            );
+            fact_verification();
+            let (_, runs) = demand(&request, &application);
+            let examined = fact_verification();
+            let [run] = runs.as_slice() else {
+                panic!("{size}: one output decision publishes the edited sum: {runs:?}")
+            };
+            assert_eq!(run.runs, [Run::Incremental], "{size}: native reuse");
+            assert_eq!(
+                run.outcome.as_ref().map(|(bits, _)| *bits),
+                Ok((size as f64 - 1.0 + value).to_bits()),
+                "{size}: independently authored values survive reuse"
+            );
+            assert!(examined.retained_bound_visits > 0
+                && examined.retained_computation_visits > 0
+                && examined.retained_native_visits > 0
+                && examined.carried_seal_visits > 0,
+                "{size}: actual prior walks, probes and pre-filter sealing remain visible: {examined:?}");
+            equivalent.push(examined);
+        }
+        // Compare equivalent actual runs; no fixture-fitted expected work count.
+        let shape =
+            |cost: &worth_query_host::facade::primary_graph::WorthQueryFactVerificationForTest| {
+                (
+                    cost.retained_bound_visits,
+                    cost.retained_computation_visits,
+                    cost.retained_native_visits,
+                    cost.carried_seal_visits,
+                )
+            };
+        assert_eq!(
+            shape(&equivalent[0]),
+            shape(&equivalent[1]),
+            "{size}: equivalent edits examine the same retained population"
+        );
+        growth.push((size, equivalent));
+        command += 1;
+        edit(
+            &request,
+            &application,
+            EntryEdit::new("even", 0, EntryFact::Value, 1.0_f64.to_bits()),
+            command,
+        );
+        demand(&request, &application);
+    }
+    eprintln!("actual native retained-fact walks at growing 1/10/100 partitions: {growth:?}");
+}
 
 #[test]
 fn one_entry_edit_gathers_and_computes_one_partition_at_every_size() {

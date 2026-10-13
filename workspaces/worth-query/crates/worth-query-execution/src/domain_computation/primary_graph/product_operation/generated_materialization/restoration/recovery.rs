@@ -143,7 +143,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn continue_restoration_world(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: RestorationRetry,
         needs_settlement: bool,
@@ -158,13 +157,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled_restoration(execution, phase, recovery, retry, request)
+        self.adopt_settled_restoration(execution, recovery, retry, request)
     }
 
     fn adopt_settled_restoration(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: RestorationRetry,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -172,17 +170,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         super::WorthQueryRestoredGeneratedOutput,
         WorthQueryGeneratedOutputRestorationRecoveryFailure,
     > {
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return Err(failure(
-                    WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
-                        cause.into(),
-                    ),
-                    RecoveryState::World { recovery, retry },
-                ))
-            }
-        };
         let unpublished = match recovery.inspect() {
             Ok(unpublished) => unpublished,
             Err(_) => {
@@ -214,7 +201,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         };
         drop(unpublished);
         let publication = retry.publication.clone();
-        match prepared.execute(publication_execution) {
+        match prepared.execute(*execution) {
             Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()

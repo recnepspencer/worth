@@ -4,7 +4,7 @@
 //! reader registered after it is exact again.
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
-use super::super::logical_marking::NativeMarkingPrecision;
+use super::super::logical_marking::WorthQueryNativeMarkingPrecision;
 use super::super::mark_state::FullVerificationReason;
 use super::super::source_alignment::SnapshotAlignedMarkState;
 use super::marking_ceiling::{unwatched_accounts, world_installing};
@@ -91,7 +91,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
             .expect("the commit published its own delivery report");
         assert_eq!(
             report.precision,
-            NativeMarkingPrecision::DeclaredChangeUnavailable,
+            WorthQueryNativeMarkingPrecision::DeclaredChangeUnavailable,
             "selectors beyond preparation memory are delivered without keys"
         );
         assert!(matches!(

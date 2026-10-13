@@ -90,6 +90,14 @@ counter. Patch-count, candidate, snapshot, branch retention and companion
 preflight controls remain; this does not establish a 100,000-member or
 million-member lifecycle result.
 
+Native acyclicity checks borrow the prepared visible and planned edges. Their
+adjacency index, vertex index, visited bytes and frontier are admitted together
+at their actual simultaneous capacities. Repeated reachability searches reuse
+that scratch; freed successor buffers do not accumulate as retained memory.
+Every repeated search and duplicate edge still consumes request work. Sorting,
+lookup and traversal observe the original request's work and interruption stops;
+refusal grants no validated candidate or publication.
+
 Repeated equality selections can prepare an installed entity-field index with
 `index_access().prepare_entity_field_lookup(&view, index, kind, &locator)`.
 The opaque owner retains the exact admitted view's root and index generation;
