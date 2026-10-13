@@ -1268,6 +1268,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "sha2",
+ "sized-chunks",
  "smallvec",
  "worth-execution",
  "worth-foundational",
