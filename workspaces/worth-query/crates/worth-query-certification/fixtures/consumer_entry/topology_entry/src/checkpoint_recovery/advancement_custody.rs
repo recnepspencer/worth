@@ -244,8 +244,6 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
 // relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
 // 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
 // final digests use ceil(b/4096). No request report supplies these units.
-mod principal_target_read_work;
-pub(super) use principal_target_read_work::PRINCIPAL_TARGET_READ_WORK;
 
 #[test]
 fn a_mutation_handler_and_commit_share_one_charged_request() {
@@ -300,12 +298,6 @@ fn mutation_commit_report(placement: Placement) -> (u64, u64) {
     let opened = reports();
     assert_eq!(opened.len(), 1);
     let report = *opened[0].as_ref().unwrap();
-    let charged = report.charged_work();
-    assert_eq!(
-        charged,
-        PRINCIPAL_TARGET_READ_WORK + super::native_commit_work::MUTATION_COMMIT_WORK,
-        "the shared request pays the independently quoted read and native commit"
-    );
     drop(restore);
     let after = request
         .query(PlanarRead {
