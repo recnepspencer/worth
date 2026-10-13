@@ -141,7 +141,7 @@ fn aftermath_index_currency_denial(
     denial: crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryAftermathCausalityReadDenial {
     match denial {
-        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryAftermathCausalityReadDenial::ExecutionDenied(stop),
+        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryAftermathCausalityReadDenial::ExecutionDenied(crate::facade::primary_graph::relational_execution_kind(stop, None)),
 
         crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,

@@ -10,6 +10,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn map_index
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     match denial {
         WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => {
+            let stop = crate::facade::primary_graph::relational_execution_kind(stop, None);
             let kind = match stop {
                 Ok(kind) => WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind),
                 Err(

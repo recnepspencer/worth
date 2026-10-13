@@ -126,7 +126,9 @@ fn currency_stop(
 ) -> Option<Result<Kind, Control>> {
     use super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Denial;
     match denial {
-        Denial::Execution(stop) => Some(stop),
+        Denial::Execution(stop) => Some(crate::facade::primary_graph::relational_execution_kind(
+            stop, None,
+        )),
         Denial::Basis(_) | Denial::IndexUnavailable(_) => None,
     }
 }

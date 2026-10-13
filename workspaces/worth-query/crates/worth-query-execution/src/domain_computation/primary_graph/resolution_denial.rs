@@ -170,6 +170,7 @@ pub(super) fn principal_index_currency_denial(
 ) -> WorthQueryPrincipalResolutionDenial {
     let kind = match denial {
         super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => {
+            let stop = crate::facade::primary_graph::relational_execution_kind(stop, None);
             let kind = match stop {
                 Ok(kind) => WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(kind)),
                 Err(

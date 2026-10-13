@@ -80,7 +80,7 @@ fn refused_maintenance_cleanup_probe() {
                 panic!("maintenance keeps the native request stop")
             };
             assert_eq!(
-                cause,
+                crate::facade::primary_graph::relational_execution_kind(cause, None),
                 Ok(Kind::ExecutionResource {
                     denial: Resource::WorkExhausted,
                     partition_identity: None,

@@ -217,13 +217,14 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         relational,
                         self.product().relational_basis(),
                     )
-                    .map_err(|_| {
-                        entity_denial(
-                            WorthQueryEntityResolutionDenialKind::Refused(
-                                ResolutionRefusal::EqualityIndexUnavailable,
-                            ),
-                            field,
-                        )
+                    .map_err(|denial| {
+                        use super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
+                        let kind = match denial {
+                            Currency::Execution(cause) => WorthQueryEntityResolutionDenialKind::Stopped(cause),
+                            Currency::Basis(_) | Currency::IndexUnavailable(_) =>
+                                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                        };
+                        entity_denial(kind, field)
                     })?;
             }
             installed

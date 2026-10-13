@@ -15,12 +15,7 @@ pub(crate) use selected_field::{
 
 #[derive(Debug)]
 pub(crate) enum WorthQueryPrimaryIndexCurrencyDenial {
-    Execution(
-        Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-    ),
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Basis(super::exact_basis_access::WorthQueryExactBasisSnapshotDenial),
     IndexUnavailable(&'static str),
 }
@@ -61,11 +56,9 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
         runtime: &mut RelationalRuntime,
         basis: &AdmittedRelationalBranchBasis,
     ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
-        execution.consult().map_err(|stop| {
-            WorthQueryPrimaryIndexCurrencyDenial::Execution(
-                crate::facade::primary_graph::relational_execution_kind(stop.into(), None),
-            )
-        })?;
+        execution
+            .consult()
+            .map_err(|stop| WorthQueryPrimaryIndexCurrencyDenial::Execution(stop.into()))?;
         let observation = basis.observation();
         let Some(source_commit_id) = observation.commit_id() else {
             return Ok(());
@@ -96,11 +89,9 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
             super::index_maintenance_budget::cold_index_reconstruction_budget(),
             execution,
         );
-        execution.consult().map_err(|stop| {
-            WorthQueryPrimaryIndexCurrencyDenial::Execution(
-                crate::facade::primary_graph::relational_execution_kind(stop.into(), None),
-            )
-        })?;
+        execution
+            .consult()
+            .map_err(|stop| WorthQueryPrimaryIndexCurrencyDenial::Execution(stop.into()))?;
         require_complete_build(build, expected)
     }
 }
@@ -114,9 +105,7 @@ fn require_complete_build(
 ) -> Result<(), WorthQueryPrimaryIndexCurrencyDenial> {
     use worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind as Native;
     let build = build.map_err(|denial| match denial.kind {
-        Native::Execution(cause) => WorthQueryPrimaryIndexCurrencyDenial::Execution(
-            super::provider::relational_execution_denial::relational_execution_kind(cause, None),
-        ),
+        Native::Execution(cause) => WorthQueryPrimaryIndexCurrencyDenial::Execution(cause),
         worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Basis(basis) => {
             WorthQueryPrimaryIndexCurrencyDenial::Basis(index_basis_denial(basis))
         }

@@ -91,9 +91,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 )
                 .map_err(|denial| match denial {
                     super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(cause) => {
-                        discovery_execution_denial(cause)
+                        discovery_execution_denial(crate::facade::primary_graph::relational_execution_kind(cause, None))
                     }
-                    _ => WorthQueryWorkflowDefinitionDiscoveryDenial::IndexUnavailable,
+                    super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(_)
+                    | super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial::IndexUnavailable(_) => WorthQueryWorkflowDefinitionDiscoveryDenial::IndexUnavailable,
                 })?;
             let runtime = &*runtime;
             let lineage = select_lineage(runtime, execution, snapshot, layout, identity.as_str())

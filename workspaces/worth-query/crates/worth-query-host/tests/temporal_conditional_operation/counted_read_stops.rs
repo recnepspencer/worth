@@ -47,7 +47,8 @@ fn conditional_operation_keeps_index_stops_at_every_consult() {
             assert!(emitted_at >= at, "the emission follows the injection");
             assert_eq!(
                 *stop,
-                Stop::Operation(Terminal::ControlStopped, Cause::Cancelled)
+                Stop::Operation(Terminal::ControlStopped, Cause::Cancelled),
+                "injected at {at}, answered at {emitted_at}"
             );
         },
         |_, stop| assert_eq!(*stop, provider_work_stop()),

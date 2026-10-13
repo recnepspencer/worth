@@ -124,10 +124,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         observation.basis().relational_basis(),
                     )
                 })
-                .map_err(|_| {
-                    WorthQueryProductBranchAdmissionDenial::Refused(
-                        AdmissionRefusal::ObservationRejected,
-                    )
+                .map_err(|denial| {
+                    use super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
+                    match denial {
+                        Currency::Execution(cause) => WorthQueryProductBranchAdmissionDenial::Stopped(
+                            crate::facade::primary_graph::relational_execution_kind(cause, None)),
+                        Currency::Basis(_) | Currency::IndexUnavailable(_) => WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::ObservationRejected),
+                    }
                 })?;
         }
         let relational = observation.basis().relational_basis();
