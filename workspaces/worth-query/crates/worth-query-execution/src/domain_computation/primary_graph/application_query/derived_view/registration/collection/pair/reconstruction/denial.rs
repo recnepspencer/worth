@@ -7,7 +7,7 @@ use worth_execution::{
 };
 use worth_relational::facade::identity::EntityId;
 
-pub(super) fn lease(denial: LeaseDenial) -> Denial {
+pub(in super::super) fn lease(denial: LeaseDenial) -> Denial {
     match denial {
         LeaseDenial::WorkerLimitExceedsParent => Denial::WorkerLimitExceedsParent,
         LeaseDenial::MemoryLimitExceedsParent => Denial::MemoryLimitExceedsParent,
@@ -24,7 +24,7 @@ pub(super) fn lease(denial: LeaseDenial) -> Denial {
     }
 }
 
-pub(super) fn kernel(stop: MapKernelStop, root: Option<EntityId>) -> Denial {
+pub(in super::super) fn kernel(stop: MapKernelStop, root: Option<EntityId>) -> Denial {
     match stop {
         MapKernelStop::Cancelled => Denial::Cancelled,
         MapKernelStop::DeadlineElapsed => Denial::DeadlineElapsed,
@@ -34,7 +34,7 @@ pub(super) fn kernel(stop: MapKernelStop, root: Option<EntityId>) -> Denial {
     }
 }
 
-pub(super) fn scope(stop: WorkCeilingDenial) -> Denial {
+pub(in super::super) fn scope(stop: WorkCeilingDenial) -> Denial {
     match stop {
         WorkCeilingDenial::Admission(cause) => lease(cause),
         WorkCeilingDenial::Stopped(cause) => kernel(cause, None),
@@ -42,7 +42,7 @@ pub(super) fn scope(stop: WorkCeilingDenial) -> Denial {
     }
 }
 
-pub(super) fn map(stop: MapStop<Denial>, roots: &[EntityId]) -> Denial {
+pub(in super::super) fn map(stop: MapStop<Denial>, roots: &[EntityId]) -> Denial {
     let root_at =
         |identity: worth_foundational::PartitionIdentity| roots[(identity.value() - 1) as usize];
     match stop {
@@ -63,14 +63,14 @@ pub(super) fn map(stop: MapStop<Denial>, roots: &[EntityId]) -> Denial {
     }
 }
 
-pub(super) fn rounds(cause: worth_execution::RoundsDenial) -> Denial {
+pub(in super::super) fn rounds(cause: worth_execution::RoundsDenial) -> Denial {
     match cause {
         worth_execution::RoundsDenial::RoundCountOverflow => Denial::CapacityOverflow,
         worth_execution::RoundsDenial::MemoryUnavailable => Denial::AllocationUnavailable,
     }
 }
 
-pub(super) fn owner(cause: MapKernelFailure<Denial>) -> Denial {
+pub(in super::super) fn owner(cause: MapKernelFailure<Denial>) -> Denial {
     match cause {
         MapKernelFailure::Domain(cause) => cause,
         MapKernelFailure::Stop(cause) => kernel(cause, None),
@@ -142,7 +142,7 @@ impl ChargedBytes for Denial {
     }
 }
 
-pub(super) fn session(
+pub(in super::super) fn session(
     cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
     root: EntityId,
     plan: &crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan<'_>,

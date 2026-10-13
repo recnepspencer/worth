@@ -18,7 +18,9 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAppli
 
 mod read;
 mod reconcile;
+mod reconstruct_lazy;
 mod reconstruct_parallel;
+mod reconstruction;
 mod refresh_batch;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

@@ -28,6 +28,7 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/membership_reconciliation.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/native_collection.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/batch_custody.rs
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/native_collection/dependent_scope.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/optional_owner.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/optional_owner/membership.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/owner_sized.rs
