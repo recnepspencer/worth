@@ -7,7 +7,8 @@ use super::super::{
 
 /// Two admitted public reads whose rooted identity is bound by Query before
 /// dispatch. Application projection stays on the caller's thread. The second
-/// scope must be the first row's declared identity field on the same basis.
+/// scope must be an actual node's declared identity in the first projected tree,
+/// on the same basis. It may differ from the first scope.
 /// No callback can select a new basis or issue another read on a worker.
 pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C> {
     pub(in crate::domain_computation::primary_graph::application_query) first:
@@ -42,8 +43,7 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
     }
     /// Carry the same genuine shared read loan into closed pair preparation.
     /// Issued planned items are checked against this loan before dispatch.
-    #[cfg(test)]
-    pub(crate) fn in_batch(
+    pub fn in_batch(
         first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
         second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
         batch: &WorthQueryApplicationQueryBatchAdmission,

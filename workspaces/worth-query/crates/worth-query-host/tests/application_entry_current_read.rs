@@ -21,6 +21,43 @@ use schema::current_read::TemporalIntentReadRequest;
 use world::CourtroomWorld;
 
 #[test]
+fn retained_request_read_lease_preserves_its_observation_after_head_moves() {
+    let world = CourtroomWorld::publish("ready");
+    let scope = world::request_scope();
+    let authentication = world::admit_identity_adapter(world.application.installed_schema());
+    let external = block_on(authentication.authenticate((), &scope)).unwrap();
+    let request = world.application.request(&external, &scope);
+    let original = world
+        .application
+        .with_application_advancement(&scope, |phase| request.retain_read(&phase).unwrap())
+        .unwrap();
+    let selected = request.at(&original);
+    let retained = selected.retain_read();
+    assert_eq!(retained.selected_commit(), original.selected_commit());
+    drop(selected);
+    drop(original);
+    world
+        .change_input_on_branch(world.application.current_world(), "new-head")
+        .require_committed()
+        .unwrap();
+    let prior = request
+        .at(&retained)
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
+        .execute()
+        .unwrap();
+    let current = request
+        .query(TemporalIntentReadRequest {
+            identity: "intent-1".into(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(prior.rows()[0].input, "payload");
+    assert_eq!(current.rows()[0].input, "new-head");
+}
+
+#[test]
 fn reusable_request_executes_fresh_published_reads_through_installed_principal_binding() {
     let world = CourtroomWorld::publish("ready");
     let scope = world::request_scope();

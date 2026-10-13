@@ -262,6 +262,12 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
+    /// Retains this request's exact read-only observation without selecting a new
+    /// branch head, traversing history or opening another advancement.
+    pub fn retain_read(&self) -> super::WorthQueryApplicationReadObservation {
+        super::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.observation))
+    }
+
     /// Reads independently scoped intents at this same observation, publishing
     /// only a complete ordered batch. Duplicate scopes are independently billed.
     pub fn query_batch<Intent>(
