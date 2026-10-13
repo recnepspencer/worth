@@ -1,0 +1,146 @@
+use super::*;
+use crate::application_operation::ApplicationWorkflowExecutionRequirements;
+use crate::application_program::*;
+use crate::portable_identity::{WorthQueryPortableType, WorthQueryPortableTypeIdentity};
+
+struct ReviewCapability;
+impl WorthQueryPortableType for ReviewCapability {
+    const PORTABLE_TYPE_NAME: &'static str = "test.workflow-review.v1";
+    const PORTABLE_TYPE_IDENTITY: WorthQueryPortableTypeIdentity =
+        WorthQueryPortableTypeIdentity::declared("test.workflow-review.v1");
+}
+impl crate::application_capability::ApplicationCapabilityMarkerIdentity for ReviewCapability {
+    type Schema = MutationSchema;
+    const IDENTIFIER: &'static str = "test.workflow-review";
+}
+
+macro_rules! guarded_binding {
+    ($binding:ident $(, $requirements:expr)?) => {
+        crate::worth_query_mutation_binding!(@binding
+            $binding for RenameInput, schema MutationSchema,
+            identity "test.guarded-rename.v1", input RenameInputBinding, operation RenameOperation,
+            result RenameResultBinding,
+            idempotency u64, identity "test.guarded-rename-key.v1",
+            decision RenameDecision, denial RenameDenialBinding, handler identity "test.guarded-rename-handler.v1",
+            program , workflow_authority required,
+            workflow_requirements $($requirements)?,
+            outputs RenameOutputs,
+            principal PrincipalBinding, mapping ExternalMapping, principal_entity Account,
+            principal_identity u64, identity_binding crate::application_schema::U64ApplicationValueBinding,
+            scope_binding crate::application_operation::ApplicationMutationFieldScope<
+                MutationSchema, Account, AccountIdentity, AccountIdField, u64,
+                crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit
+            >,
+            scope_field_type Account, AccountIdentity, AccountIdField, u64,
+                crate::application_schema::ReadOnly, crate::application_schema::NoApplicationUnit,
+            scope_field AccountIdField::reference(),
+            candidates creates 0, deletes 0, links 0, unlinks 0, writes 1, emits 1,
+            resources retained_representation_bytes 128
+        );
+    };
+}
+
+guarded_binding!(LegacyGuardedBinding);
+guarded_binding!(
+    OccurrenceBinding,
+    ApplicationWorkflowExecutionRequirements::new()
+);
+guarded_binding!(
+    ApprovalBinding,
+    ApplicationWorkflowExecutionRequirements::requiring_approval::<ReviewCapability>()
+);
+
+struct Workflow;
+impl ApplicationWorkflowSpec for Workflow {
+    type Schema = MutationSchema;
+    const IDENTITY: ApplicationWorkflowSpecIdentity =
+        ApplicationWorkflowSpecIdentity::new("test.workflow.v1");
+}
+
+fn authored<Binding: ApplicationMutationBinding<MutationSchema>>(
+) -> AuthoredWorkflowDefinition<Workflow> {
+    let limits = ApplicationWorkflowDefinitionLimits::new(
+        8,
+        8,
+        8,
+        ApplicationWorkflowComponentLimits::new(1, 1, 1, 1, 1).unwrap(),
+        8192,
+    )
+    .unwrap();
+    let mut definition =
+        ApplicationWorkflowDefinitionBuilder::<Workflow>::new("information", limits).unwrap();
+    let propose = definition
+        .operation_binding::<RenameBinding>("propose")
+        .unwrap();
+    let perform = definition.operation_binding::<Binding>("perform").unwrap();
+    let done = definition.terminal("done").unwrap();
+    definition
+        .start(&propose)
+        .control(
+            &propose,
+            ApplicationWorkflowControlOutcome::Completed,
+            &perform,
+        )
+        .control(
+            &perform,
+            ApplicationWorkflowControlOutcome::Completed,
+            &done,
+        )
+        .operation_input(&propose, &perform);
+    definition.finish().unwrap()
+}
+
+#[test]
+fn explicit_empty_contract_allows_workflow_binding_without_approval() {
+    assert!(authored::<OccurrenceBinding>().validate().is_ok());
+    for denial in [
+        authored::<LegacyGuardedBinding>().validate().err(),
+        authored::<ApprovalBinding>().validate().err(),
+    ] {
+        assert_eq!(
+            denial.unwrap().kind(),
+            ApplicationWorkflowValidationDenialKind::MissingWorkflowAuthority
+        );
+    }
+}
+
+#[test]
+fn binding_description_distinguishes_absent_empty_and_required_evidence() {
+    let legacy = LegacyGuardedBinding::descriptor();
+    let empty = OccurrenceBinding::descriptor();
+    let reviewed = ApprovalBinding::descriptor();
+    assert!(legacy.workflow_execution_requirements().is_none());
+    assert_ne!(legacy.description(), empty.description());
+    assert_ne!(empty.description(), reviewed.description());
+}
+
+#[test]
+fn requirement_encoding_is_canonical_and_rejects_unknown_or_truncated_records() {
+    for requirements in [
+        ApplicationWorkflowExecutionRequirements::new(),
+        ApplicationWorkflowExecutionRequirements::requiring_approval::<ReviewCapability>(),
+    ] {
+        let encoded = requirements.persistence_identity();
+        assert_eq!(
+            ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded),
+            Some(requirements)
+        );
+        assert!(
+            ApplicationWorkflowExecutionRequirements::from_persistence_identity(&format!(
+                "{encoded}x"
+            ))
+            .is_none()
+        );
+    }
+    for encoded in [
+        "2:none",
+        "",
+        "1:approval:999999999999999999999999:1:x",
+        "1:approval:0:0:",
+        "1:approval:01:1:ab",
+    ] {
+        assert!(
+            ApplicationWorkflowExecutionRequirements::from_persistence_identity(encoded).is_none()
+        );
+    }
+}

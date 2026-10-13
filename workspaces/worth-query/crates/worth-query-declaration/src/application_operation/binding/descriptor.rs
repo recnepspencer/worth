@@ -95,6 +95,7 @@ pub struct ApplicationMutationBindingDescriptor {
     requires_application_program: bool,
     requires_workflow_authority: bool,
     workflow_control: bool,
+    workflow_execution_requirements: Option<super::ApplicationWorkflowExecutionRequirements>,
 }
 
 impl ApplicationMutationBindingDescriptor {
@@ -122,6 +123,7 @@ impl ApplicationMutationBindingDescriptor {
         requires_application_program: bool,
         requires_workflow_authority: bool,
         workflow_control: bool,
+        workflow_execution_requirements: Option<super::ApplicationWorkflowExecutionRequirements>,
     ) -> Self
     where
         Binding: 'static,
@@ -166,6 +168,7 @@ impl ApplicationMutationBindingDescriptor {
                         minimum: family.minimum(),
                     })
                     .collect(),
+                workflow_execution_requirements: workflow_execution_requirements.clone(),
             },
         );
         Self {
@@ -198,6 +201,7 @@ impl ApplicationMutationBindingDescriptor {
             requires_application_program,
             requires_workflow_authority,
             workflow_control,
+            workflow_execution_requirements,
         }
     }
 
@@ -301,5 +305,11 @@ impl ApplicationMutationBindingDescriptor {
     /// handler serves it.
     pub const fn workflow_control(&self) -> bool {
         self.workflow_control
+    }
+
+    pub fn workflow_execution_requirements(
+        &self,
+    ) -> Option<&super::ApplicationWorkflowExecutionRequirements> {
+        self.workflow_execution_requirements.as_ref()
     }
 }

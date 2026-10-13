@@ -6,6 +6,25 @@ use worth_query_declaration::facade::{
 };
 
 #[test]
+fn mutation_archive_preserves_explicit_empty_workflow_evidence_without_reinterpreting_legacy() {
+    let legacy = mutation_member(
+        ApplicationMutationScopeResolutionMode::InputField,
+        ApplicationMutationOutputRoleCardinality::ExactlyOne,
+    );
+    let ApplicationSchemaMember::ApplicationMutation { description } = legacy.clone() else {
+        unreachable!()
+    };
+    let mut parts = description.into_parts();
+    parts.workflow_execution_requirements = Some(ApplicationWorkflowExecutionRequirements::new());
+    let explicit = ApplicationSchemaMember::ApplicationMutation {
+        description: ApplicationMutationDescription::from_untrusted_parts(parts),
+    };
+    assert_ne!(encode_member(&legacy), encode_member(&explicit));
+    assert_eq!(decode_member(&encode_member(&legacy)), legacy);
+    assert_eq!(decode_member(&encode_member(&explicit)), explicit);
+}
+
+#[test]
 fn mutation_archive_retains_typed_failure_scope_and_output_postures_without_native_types() {
     for resolution in [
         ApplicationMutationScopeResolutionMode::InputField,
@@ -93,6 +112,7 @@ fn mutation_member(
     ApplicationSchemaMember::ApplicationMutation {
         description: ApplicationMutationDescription::from_untrusted_parts(
             ApplicationMutationDescriptionParts {
+                workflow_execution_requirements: None,
                 binding_identity: identity("worth.archive.mutation.v1"),
                 operation: "Publish".to_owned(),
                 input_identity: identity("worth.archive.input.v1"),

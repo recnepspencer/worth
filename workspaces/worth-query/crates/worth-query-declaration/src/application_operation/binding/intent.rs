@@ -81,6 +81,14 @@ where
     /// authorizes and records itself. No handler serves it: installing one is
     /// refused, and the ordinary mutation lane refuses the binding.
     const WORKFLOW_CONTROL: bool = false;
+
+    /// Additional evidence for a guarded workflow operation. Absence preserves
+    /// the historical required-approval contract; explicit empty requirements
+    /// opt a new installed binding into occurrence-bound execution alone.
+    fn workflow_execution_requirements() -> Option<super::ApplicationWorkflowExecutionRequirements>
+    {
+        None
+    }
     const CANDIDATES: ApplicationCandidateRequirements;
 
     /// Binds input-selected subjects to the exact parameters of retained source evidence.
@@ -141,6 +149,7 @@ where
             Self::REQUIRES_APPLICATION_PROGRAM,
             Self::REQUIRES_WORKFLOW_AUTHORITY,
             Self::WORKFLOW_CONTROL,
+            Self::workflow_execution_requirements(),
         )
     }
 }

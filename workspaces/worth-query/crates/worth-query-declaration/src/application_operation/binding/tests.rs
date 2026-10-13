@@ -2,6 +2,7 @@ use std::any::TypeId;
 
 mod output_cardinality;
 mod output_role;
+mod workflow_requirements;
 
 use crate::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationPrincipalScope,

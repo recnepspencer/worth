@@ -63,12 +63,17 @@ pub(super) fn write(
                     .map_err(|_| Denial::new(Kind::NumericWidthExceeded))?,
             )
         },
-    )
+    )?;
+    if let Some(requirements) = &description.parts().workflow_execution_requirements {
+        output.text(&requirements.persistence_identity())?;
+    }
+    Ok(())
 }
 
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
+    has_workflow_requirements: bool,
 ) -> Result<ApplicationSchemaMember, Denial> {
     budget.require_nesting_depth(2)?;
     let binding_identity = decode_type_identity(input)?;
@@ -119,6 +124,12 @@ pub(super) fn decode(
             minimum,
         })
     })?;
+    let workflow_execution_requirements = if has_workflow_requirements {
+        Some(worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(input.text()?)
+            .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?)
+    } else {
+        None
+    };
     Ok(ApplicationSchemaMember::ApplicationMutation {
         description: ApplicationMutationDescription::from_untrusted_parts(
             ApplicationMutationDescriptionParts {
@@ -130,6 +141,7 @@ pub(super) fn decode(
                 scope,
                 output_roles,
                 output_role_families,
+                workflow_execution_requirements,
             },
         ),
     })

@@ -9,6 +9,7 @@ mod scope;
 mod scope_contract;
 mod scope_resolution;
 mod source_expectation;
+mod workflow_requirements;
 
 pub use descriptor::{
     ApplicationMutationBindingDescriptor, ApplicationMutationHandlerMetadata,
@@ -57,6 +58,7 @@ pub use source_expectation::{
     ApplicationMutationSourceExpectation, ApplicationQueryMutationSource,
     NoApplicationMutationSource,
 };
+pub use workflow_requirements::ApplicationWorkflowExecutionRequirements;
 
 #[cfg(test)]
 mod tests;

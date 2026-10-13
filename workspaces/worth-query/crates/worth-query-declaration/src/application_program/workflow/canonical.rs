@@ -108,9 +108,8 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
         ApplicationWorkflowNodeKind::Operation {
             operation,
             requires_workflow_authority,
-        } => framed_record(
-            "operation",
-            &[
+        } => {
+            let mut fields = vec![
                 node.identity().as_str(),
                 operation.identifier(),
                 operation.input_type().as_str(),
@@ -120,8 +119,16 @@ fn node_record(node: &ApplicationWorkflowNode) -> String {
                 } else {
                     "0"
                 },
-            ],
-        ),
+            ];
+            match operation.workflow_execution_requirements() {
+                Some(requirements) => {
+                    let requirements = requirements.persistence_identity();
+                    fields.push(&requirements);
+                    framed_record("operation-requirements-v1", &fields)
+                }
+                None => framed_record("operation", &fields),
+            }
+        }
         ApplicationWorkflowNodeKind::Assessment(assessment) => framed_record(
             "assessment",
             &[

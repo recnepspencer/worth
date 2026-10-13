@@ -54,6 +54,9 @@ pub(super) fn derive(
             }
             .to_owned(),
         ];
+        if let Some(requirements) = operation.reference.workflow_execution_requirements() {
+            values.push(requirements.persistence_identity());
+        }
         if let Some(inbound) = &operation.inbound_ref {
             let protocol = inbound.protocol();
             let limits = inbound.limits();

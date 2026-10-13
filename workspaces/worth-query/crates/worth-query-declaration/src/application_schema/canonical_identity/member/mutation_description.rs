@@ -10,6 +10,13 @@ pub(super) fn append(
     description: &ApplicationMutationDescription,
 ) {
     basis.text(format!("{prefix}.kind"), "application-mutation");
+    // Omission preserves every historical mutation identity.
+    if let Some(requirements) = &description.parts().workflow_execution_requirements {
+        basis.text(
+            format!("{prefix}.workflow-execution-requirements"),
+            &requirements.persistence_identity(),
+        );
+    }
     for (field, value) in [
         ("binding-identity", description.binding_identity().as_str()),
         ("operation", description.operation()),

@@ -15,6 +15,7 @@ macro_rules! worth_query_mutation_binding {
         handler identity $handler_identity:literal,
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
+        $(workflow_requirements $workflow_requirements:expr,)?
         outputs $Output:ty,
         source $SourceExpectation:ty,
         principal binding $principal_binding:expr,
@@ -62,6 +63,9 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@program_requirement $($program_requirement)?);
             const REQUIRES_WORKFLOW_AUTHORITY: bool =
                 $crate::worth_query_mutation_binding!(@workflow_authority $($workflow_authority)?);
+            fn workflow_execution_requirements() -> Option<$crate::facade::application_operation::ApplicationWorkflowExecutionRequirements> {
+                $crate::worth_query_mutation_binding!(@workflow_requirements $($workflow_requirements)?)
+            }
             const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateRequirements =
                 $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
                     $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
@@ -116,6 +120,7 @@ macro_rules! worth_query_mutation_binding {
         handler identity $handler_identity:literal,
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
+        $(workflow_requirements $workflow_requirements:expr,)?
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -134,6 +139,7 @@ macro_rules! worth_query_mutation_binding {
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
+            workflow_requirements $($workflow_requirements)?,
             outputs $Output,
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
@@ -176,6 +182,7 @@ macro_rules! worth_query_mutation_binding {
         handler identity $handler_identity:literal,
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
+        $(workflow_requirements $workflow_requirements:expr,)?
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
             principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -193,6 +200,7 @@ macro_rules! worth_query_mutation_binding {
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
+            workflow_requirements $($workflow_requirements)?,
             outputs $Output,
             principal $PrincipalBinding, mapping $Mapping, principal_entity $Principal,
             principal_identity $PrincipalIdentity, identity_binding $PrincipalIdentityBinding,
@@ -231,6 +239,7 @@ macro_rules! worth_query_mutation_binding {
         decision $Decision:ty, denial $DenialBinding:path, handler identity $handler_identity:literal,
         program $($program_requirement:ident)?,
         workflow_authority $($workflow_authority:ident)?,
+        workflow_requirements $($workflow_requirements:expr)?,
         outputs $Output:ty,
         principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
         principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
@@ -272,6 +281,9 @@ macro_rules! worth_query_mutation_binding {
                 $crate::worth_query_mutation_binding!(@program_requirement $($program_requirement)?);
             const REQUIRES_WORKFLOW_AUTHORITY: bool =
                 $crate::worth_query_mutation_binding!(@workflow_authority $($workflow_authority)?);
+            fn workflow_execution_requirements() -> Option<$crate::facade::application_operation::ApplicationWorkflowExecutionRequirements> {
+                $crate::worth_query_mutation_binding!(@workflow_requirements $($workflow_requirements)?)
+            }
             const CANDIDATES: $crate::facade::application_operation::ApplicationCandidateRequirements =
                 $crate::facade::application_operation::ApplicationCandidateRequirements::fixed_shape(
                     $crate::facade::application_operation::ApplicationCandidateCardinalityCeiling::fixed(
@@ -302,6 +314,8 @@ macro_rules! worth_query_mutation_binding {
             }
         }
     };
+    (@workflow_requirements $requirements:expr) => { Some($requirements) };
+    (@workflow_requirements) => { None };
     (@program_requirement required) => { true };
     (@program_requirement) => { false };
     (@workflow_authority required) => { true };

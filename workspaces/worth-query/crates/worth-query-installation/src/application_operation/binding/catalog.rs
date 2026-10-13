@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
 use crate::application_schema::WorthQueryInstalledApplicationSchema;
 
 use super::WorthQueryCompiledApplicationMutationBinding;
+mod workflow_requirements;
 use crate::application_operation::{
     WorthQueryApplicationOperationInstallationDenial,
     WorthQueryApplicationOperationInstallationDenialKind as DenialKind,
@@ -62,6 +63,7 @@ where
     let mut bindings = BTreeMap::new();
     for descriptor in schema.member_provenance.mutation_bindings() {
         validate_identities(descriptor)?;
+        workflow_requirements::validate(descriptor)?;
         validate_operation(schema, descriptor)?;
         if !schema
             .installed_declaration()

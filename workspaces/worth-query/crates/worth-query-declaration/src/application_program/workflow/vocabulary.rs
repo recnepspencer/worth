@@ -28,6 +28,8 @@ pub struct ApplicationWorkflowOperationRef {
     input_type: WorthQueryPortableTypeIdentity,
     operation_type: std::any::TypeId,
     binding: Option<(&'static str, std::any::TypeId, bool)>,
+    workflow_execution_requirements:
+        Option<crate::application_operation::ApplicationWorkflowExecutionRequirements>,
 }
 
 impl ApplicationWorkflowOperationRef {
@@ -41,6 +43,7 @@ impl ApplicationWorkflowOperationRef {
             input_type: <Operation::InputBinding as crate::application_schema::ApplicationStructuredValueBinding>::IDENTITY,
             operation_type: std::any::TypeId::of::<Operation>(),
             binding: None,
+            workflow_execution_requirements: None,
         }
     }
 
@@ -58,6 +61,7 @@ impl ApplicationWorkflowOperationRef {
                 std::any::TypeId::of::<Binding>(),
                 Binding::REQUIRES_WORKFLOW_AUTHORITY,
             )),
+            workflow_execution_requirements: Binding::workflow_execution_requirements(),
         }
     }
 
@@ -76,6 +80,12 @@ impl ApplicationWorkflowOperationRef {
 
     pub const fn binding(&self) -> Option<(&'static str, std::any::TypeId, bool)> {
         self.binding
+    }
+
+    pub fn workflow_execution_requirements(
+        &self,
+    ) -> Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements> {
+        self.workflow_execution_requirements.as_ref()
     }
 }
 

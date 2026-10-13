@@ -166,6 +166,8 @@ where
                         && candidate.identifier == operation.identifier()
                         && &candidate.input_type == operation.input_type()
                         && candidate.requires_workflow_authority == *requires_workflow_authority
+                        && candidate.reference.workflow_execution_requirements()
+                            == operation.workflow_execution_requirements()
                         && match operation.binding() {
                             Some((identity, marker, posture)) => {
                                 candidate.binding_type == marker

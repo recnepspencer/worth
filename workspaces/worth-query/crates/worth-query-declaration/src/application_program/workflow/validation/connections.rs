@@ -51,11 +51,12 @@ pub(super) fn validate_requirements(
                 ));
             }
             ApplicationWorkflowNodeKind::Operation {
+                operation,
                 requires_workflow_authority,
-                ..
             } => validate_authority(
                 node.identity(),
                 *requires_workflow_authority,
+                operation.workflow_execution_requirements(),
                 incoming(ApplicationWorkflowDataFlow::ApprovalAuthority),
             )?,
             _ => {}
@@ -172,13 +173,19 @@ fn validate_flow(
                 ApplicationWorkflowNodeKind::Approval(_)
             )
         ),
-        ApplicationWorkflowDataFlow::ApprovalAuthority => matches!(
-            (source, target),
+        ApplicationWorkflowDataFlow::ApprovalAuthority => match (source, target) {
             (
-                ApplicationWorkflowNodeKind::Approval(_),
-                ApplicationWorkflowNodeKind::Operation { .. }
-            )
-        ),
+                ApplicationWorkflowNodeKind::Approval(approval),
+                ApplicationWorkflowNodeKind::Operation { operation, .. },
+            ) => operation
+                .workflow_execution_requirements()
+                .and_then(|requirements| requirements.approval())
+                .is_none_or(|(identifier, identity)| {
+                    approval.identifier() == identifier
+                        && approval.capability_type().as_str() == identity
+                }),
+            _ => false,
+        },
         ApplicationWorkflowDataFlow::OperationInput => match (source, target) {
             (
                 ApplicationWorkflowNodeKind::Operation {
@@ -212,15 +219,18 @@ fn validate_flow(
 fn validate_authority(
     identity: &ApplicationWorkflowNodeIdentity,
     required: bool,
+    requirements: Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements>,
     authorities: usize,
 ) -> Result<(), ApplicationWorkflowValidationDenial> {
-    if required && authorities != 1 {
+    let approval_required =
+        requirements.is_none_or(|requirements| requirements.approval().is_some());
+    if required && (authorities > 1 || (approval_required && authorities != 1)) {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::MissingWorkflowAuthority,
             identity.as_str(),
         ));
     }
-    if !required && authorities != 0 {
+    if !required && (authorities != 0 || requirements.is_some()) {
         return Err(denial(
             ApplicationWorkflowValidationDenialKind::UnexpectedWorkflowAuthority,
             identity.as_str(),
