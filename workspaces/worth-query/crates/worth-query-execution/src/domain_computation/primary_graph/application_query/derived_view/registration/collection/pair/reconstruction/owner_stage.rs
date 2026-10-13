@@ -6,7 +6,7 @@ use worth_execution::{
     ExecutionMemoryReservation, ExecutionRounds, MapKernelContext, MapStop, RoundsOutcome,
 };
 
-pub(super) fn run<T>(
+pub(in super::super) fn run<T>(
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     operation: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<T, Denial>,
 ) -> Result<T, Denial> {
@@ -61,7 +61,7 @@ fn retain(hold: &mut ExecutionMemoryReservation, bytes: usize) -> Result<(), Den
     hold.resize(total)
         .map_err(|cause| super::denial::lease(worth_execution::LeaseDenial::MemoryExhausted(cause)))
 }
-pub(super) fn retain_dependencies(
+pub(in super::super) fn retain_dependencies(
     hold: &mut ExecutionMemoryReservation,
     dependencies: &BTreeSet<ViewDependency>,
 ) -> Result<(), Denial> {
@@ -73,7 +73,7 @@ pub(super) fn retain_dependencies(
         .ok_or(Denial::ChargedBytesOverflow)?;
     retain(hold, bytes)
 }
-pub(super) fn retain_member<Member: WorthQueryManagedDerivedMemberToken>(
+pub(in super::super) fn retain_member<Member: WorthQueryManagedDerivedMemberToken>(
     hold: &mut ExecutionMemoryReservation,
     member: &Member,
 ) -> Result<(), Denial> {
@@ -83,13 +83,13 @@ pub(super) fn retain_member<Member: WorthQueryManagedDerivedMemberToken>(
         .ok_or(Denial::ChargedBytesOverflow)?;
     retain(hold, bytes)
 }
-pub(super) fn retain_member_token<Member: WorthQueryManagedDerivedMemberToken>(
+pub(in super::super) fn retain_member_token<Member: WorthQueryManagedDerivedMemberToken>(
     hold: &mut ExecutionMemoryReservation,
     member: &Member,
 ) -> Result<(), Denial> {
     retain(hold, RetainedMemberToken::clone_quote(member)?)
 }
-pub(super) fn retain_entry<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue>(
+pub(in super::super) fn retain_entry<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue>(
     hold: &mut ExecutionMemoryReservation,
     _key: &Key,
     value: &Value,
@@ -101,7 +101,31 @@ pub(super) fn retain_entry<Key: Clone + Ord, Value: WorthQueryManagedDerivedValu
         .ok_or(Denial::ChargedBytesOverflow)?;
     retain(hold, bytes)
 }
-pub(super) fn retain_image<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue>(
+pub(in super::super) fn reserve_entry_slots<Key, Value>(
+    hold: &mut ExecutionMemoryReservation,
+    count: usize,
+) -> Result<(), Denial> {
+    let bytes = std::mem::size_of::<(Key, Value, BTreeSet<ViewDependency>)>()
+        .checked_add(std::mem::size_of::<Key>())
+        .and_then(|slot| slot.checked_mul(count))
+        .ok_or(Denial::ChargedBytesOverflow)?;
+    retain(hold, bytes)
+}
+pub(in super::super) fn retain_entry_payload<
+    Key: Clone + Ord,
+    Value: WorthQueryManagedDerivedValue,
+>(
+    hold: &mut ExecutionMemoryReservation,
+    _key: &Key,
+    value: &Value,
+    dependencies: &BTreeSet<ViewDependency>,
+) -> Result<(), Denial> {
+    retain(
+        hold,
+        storage_quote::entry_quote::<Key, Value>(value, dependencies)?,
+    )
+}
+pub(in super::super) fn retain_image<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue>(
     hold: &mut ExecutionMemoryReservation,
     entries: &[(Key, Value, BTreeSet<ViewDependency>)],
     membership: &BTreeSet<ViewDependency>,
