@@ -21,7 +21,7 @@ mod support;
 use std::sync::Arc;
 use std::time::Duration;
 
-use bank_domain::estate::DeathNoticeStatus;
+use bank_domain::estate::{DeathNoticeStatus, EstateAction};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{BankSchema, EstateDeathNotificationEffect, NotifyDeathEstateOperation};
 use bank_external_rail::test_control::FaultScript;
@@ -33,7 +33,7 @@ use bank_http_adapter::{
     BankHttpServerConfiguration, BankRailCallbackServerBinding,
     BankRailCompletionServerInstallation,
 };
-use bank_server::BankMutationCommitOutcome;
+use bank_server::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
 use ed25519_dalek::SigningKey;
 use worth_query_decl::facade::application_schema::OperationEmits;
 
@@ -43,19 +43,13 @@ fn main() -> Result<(), String> {
     std::thread::Builder::new()
         .name("inbound-completion-example".to_owned())
         .stack_size(16 * 1024 * 1024)
-        .spawn(|| {
-            tokio::runtime::Builder::new_multi_thread()
-                .enable_all()
-                .build()
-                .map_err(|error| format!("example runtime refused: {error}"))?
-                .block_on(run())
-        })
+        .spawn(run)
         .map_err(|error| format!("example thread refused: {error}"))?
         .join()
         .map_err(|_| "example thread panicked".to_owned())?
 }
 
-async fn run() -> Result<(), String> {
+fn run() -> Result<(), String> {
     let _declared = BankSchema::declaration().expect("Bank publishes its Query schema");
     fn require_declared_effect<Operation, Effect: OperationEmits<Operation>>() {}
     require_declared_effect::<NotifyDeathEstateOperation, EstateDeathNotificationEffect>();
@@ -76,6 +70,28 @@ async fn run() -> Result<(), String> {
     runtime
         .install_external_effect_transport(transport.clone())
         .expect("the real rail transport installs");
+    // The blocking transport and Bank world outlive this executor, including
+    // early errors and task cancellation. Their last Drop runs on this owner.
+    let executor = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .map_err(|error| format!("example runtime refused: {error}"))?;
+    executor.block_on(receive_completion(
+        &mut rail,
+        &runtime,
+        &transport,
+        &specialist,
+        action,
+    ))
+}
+
+async fn receive_completion(
+    rail: &mut RailProcessHandle,
+    runtime: &Arc<BankIdentityRuntime>,
+    transport: &Arc<BankEstateRailTransport>,
+    specialist: &BankAuthenticatedPrincipal,
+    action: EstateAction,
+) -> Result<(), String> {
     let rail_signer = SigningKey::from_bytes(&[7; 32]);
     let source = BankRailCompletionServerInstallation::new(
         rail_signer.verifying_key().to_bytes(),
@@ -86,40 +102,83 @@ async fn run() -> Result<(), String> {
         60,
     )
     .expect("the process installs its trusted rail source");
-    let server =
+    let server = Arc::new(
         BankRailCallbackServerBinding::bind(BankHttpServerConfiguration::local_ephemeral())
             .await
             .expect("loopback callback listener binds")
-            .install_shared(Arc::clone(&runtime), source)
-            .expect("the declared operations accept the installed source");
+            .install_shared(Arc::clone(runtime), source)
+            .expect("the declared operations accept the installed source"),
+    );
 
-    rail.install_completion_delivery(
-        &RailCompletionDeliveryConfiguration::new(
-            format!(
-                "http://{}/v1/inbound/rail-completions",
-                server.local_address()
-            ),
-            "bank-public-example".to_owned(),
-            "rail-primary".to_owned(),
-            1,
-            [7; 32],
-            SigningKey::from_bytes(&[9; 32]).verifying_key().to_bytes(),
-            60,
-            2,
-            4,
-            Duration::from_millis(50),
-            Duration::from_secs(5),
-            None,
+    tokio::task::block_in_place(|| {
+        rail.install_completion_delivery(
+            &RailCompletionDeliveryConfiguration::new(
+                format!(
+                    "http://{}/v1/inbound/rail-completions",
+                    server.local_address()
+                ),
+                "bank-public-example".to_owned(),
+                "rail-primary".to_owned(),
+                1,
+                [7; 32],
+                SigningKey::from_bytes(&[9; 32]).verifying_key().to_bytes(),
+                60,
+                2,
+                4,
+                Duration::from_millis(50),
+                Duration::from_secs(5),
+                None,
+            )
+            .expect("the rail sender has finite retry and custody bounds"),
         )
-        .expect("the rail sender has finite retry and custody bounds"),
-    )
+    })
     .expect("the rail sender installs before dispatch");
+    // Hold the initiating response, never callback delivery. The native
+    // in-flight lease must keep original provenance through this early terminal.
+    let callback = Arc::downgrade(&server);
+    let sent = Arc::downgrade(transport);
+    transport.after_next_dispatch(move || {
+        let server = callback.upgrade().expect("the callback host remains owned");
+        let transport = sent.upgrade().expect("the transport remains owned");
+        let attempts = transport.attempts();
+        assert_eq!(attempts.len(), 1, "one Query-issued physical dispatch");
+        let token = attempts[0]
+            .token()
+            .try_into()
+            .expect("Query's digest token");
+        let deadline = std::time::Instant::now() + Duration::from_secs(20);
+        while server.observe_rail_completion(token).is_none() {
+            assert!(
+                std::time::Instant::now() < deadline,
+                "early signed completion reaches its owner"
+            );
+            std::thread::sleep(Duration::from_millis(25));
+        }
+    });
+    let result = exercise_completion(rail, runtime, transport, specialist, action, &server).await;
+    let server =
+        Arc::try_unwrap(server).unwrap_or_else(|_| panic!("response hook released its host"));
+    server
+        .shutdown()
+        .await
+        .map_err(|cause| format!("callback host close refused: {cause}"))?;
+    result
+}
+
+async fn exercise_completion(
+    rail: &RailProcessHandle,
+    runtime: &BankIdentityRuntime,
+    transport: &BankEstateRailTransport,
+    specialist: &BankAuthenticatedPrincipal,
+    action: EstateAction,
+    server: &bank_http_adapter::BankRailCallbackServer,
+) -> Result<(), String> {
     tokio::task::block_in_place(|| {
         transport.under(FaultScript::CommitThenLoseResponse, Duration::from_secs(5));
     });
     let receipt = tokio::task::block_in_place(|| {
         runtime.notify_estate_death_with_key(
-            &specialist,
+            specialist,
             action,
             &BankIdempotencyKey::new("public-inbound-example").unwrap(),
             &support::request_scope(),
@@ -131,27 +190,38 @@ async fn run() -> Result<(), String> {
             "the notification did not commit a fresh outbox: {receipt:?}"
         ));
     };
-    let outbox = runtime
-        .with_application_advancement(&support::request_scope(), |phase| {
-            runtime.observe_committed_dispatch_outbox(&phase, &receipt)
-        })
-        .map_err(|cause| format!("Bank request refused: {cause:?}"))?
-        .map_err(|cause| format!("committed dispatch refused: {cause:?}"))?
-        .ok_or_else(|| "no external effect was emitted".to_owned())?;
-    let token = *outbox.correlation();
-    let terminal = tokio::time::timeout(Duration::from_secs(20), async {
-        loop {
-            if let Some(terminal) = server.observe_rail_completion(token) {
-                break terminal;
-            }
-            tokio::time::sleep(Duration::from_millis(25)).await;
-        }
-    })
-    .await
-    .expect("signed rail completion reaches the Query owner");
+    assert!(receipt.co_committed_dispatch_outbox());
+    assert_eq!(receipt.emitted_effect_count(), 1);
+    // This is only a selector copied from the actual Query-issued request.
+    // World authority comes from the installed, authenticated callback owner.
+    let attempts = transport.attempts();
+    assert_eq!(attempts.len(), 1);
+    let token = attempts[0]
+        .token()
+        .try_into()
+        .expect("Query's digest token");
+    let terminal = server
+        .observe_rail_completion(token)
+        .expect("the signed callback completed before the initiating response");
+    assert_eq!(
+        terminal.original_world_commit(),
+        receipt.publication().product_commit().composite_commit()
+    );
     assert_ne!(
         terminal.original_world_commit(),
-        terminal.completion_world_commit(),
+        terminal.completion_world_commit()
+    );
+    // Terminal publication and the end of the physical in-flight lease retire
+    // the mandatory original basis. A receipt is not an indefinite read pin.
+    let retired = tokio::task::block_in_place(|| {
+        runtime.with_application_advancement(&support::request_scope(), |phase| {
+            runtime.observe_committed_dispatch_outbox(&phase, &receipt)
+        })
+    })
+    .map_err(|cause| format!("Bank request refused: {cause:?}"))?;
+    assert_eq!(
+        retired,
+        Err(bank_server::BankCommittedDispatchOutboxReadDenial::ExactCommitUnavailable)
     );
     let custody = tokio::time::timeout(Duration::from_secs(10), async {
         loop {
@@ -174,11 +244,6 @@ async fn run() -> Result<(), String> {
             .expect("the rail reports its independent consequence"),
         1,
     );
-    server.shutdown().await.expect("the callback host closes");
-    tokio::task::block_in_place(|| {
-        drop(runtime);
-        drop(transport);
-    });
     Ok(())
 }
 
