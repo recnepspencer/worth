@@ -5459,6 +5459,18 @@ collected and consumed. Back/navigation or a new transition occurrence does not 
 itself invalidate it; dependency-scoped edits, expiry and exact signing-intent
 authentication policy govern selective invalidation across multi-subject proposals.
 
+### Generic workflow-operation execution correction
+
+[workflow-operation-execution.md](./workflow-operation-execution.md) separates
+exact native occurrence binding from supplier-declared additional evidence while
+retaining ordinary operation authorization and the existing execution/settlement
+funnel. New installed contracts can support information-gathering operations
+without dummy signing. Legacy approval requirements remain intact, editable
+definitions cannot weaken an installed evidence floor, and changed requirements
+participate in canonical program/workflow meaning and reconstruction. This is a
+focused owner correction, not a new authorization taxonomy or a reopening of
+completed workflow milestones. Consumer business-flow adoption remains separate.
+
 ## Milestone 9.17.6.1: Shared Typed Expression Language
 
 [milestone-9.17.6.1.md](./milestone-9.17.6.1.md) owns the portable expression

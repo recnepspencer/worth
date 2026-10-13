@@ -237,7 +237,7 @@ A branch whose program has no installed vocabulary is refused before any effect.
 
 ## Node kinds
 
-`ApplicationWorkflowNodeKind` has six variants:
+The workflow node families are:
 
 | Kind | Builder method | What it does | Outgoing control outcomes |
 |---|---|---|---|
@@ -615,6 +615,55 @@ Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalSta
 
 ## Operations
 
+### Declare evidence, not authorization modes
+
+A guarded operation needs both ordinary operation permission and a binding to
+its exact current workflow occurrence. The supplier owns business-state checks
+and required evidence. Being allowed to pump an instance does not grant permission
+to execute every business operation within it.
+
+For a new information-gathering binding, declare no additional workflow evidence:
+
+```rust,ignore
+// Inside worth_query_mutation_binding!(...), alongside its other contracts:
+workflow_authority required,
+workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
+```
+
+For an operation requiring a particular native approval capability, use the
+immutable constructor instead:
+
+```rust,ignore
+workflow_authority required,
+workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approval::<ReleaseReviewCapability>(),
+```
+
+`ApplicationWorkflowExecutionRequirements` is exported through
+`worth_query_decl::facade::application_operation` and the host's declaration
+facade. Manual `ApplicationMutationBinding` implementations return `Some(...)`
+from `workflow_execution_requirements()`. The default `None` preserves the old
+guarded-binding contract: exactly one native approval is required. It is not the
+same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
+
+The installed binding establishes a minimum evidence requirement. Definition
+authoring cannot remove or substitute it. Wire a required approval with the
+existing `approval_authority` connection and the exact installed capability.
+Even when the installed minimum is empty, an approval-authority edge authored in
+the definition remains an obligation. This lane resolves at most one approval
+source; compose multiple review subjects through existing evidence/review nodes.
+
+These declarations carry no permission themselves. Ordinary capability/policy
+admission, tracked business preconditions, exact input/occurrence currentness,
+and any declared approval must all hold. A signature-shaped row, cached readiness,
+or a previously passed condition cannot replace a current execution requirement.
+The new declaration is invalid on unguarded or kernel-control bindings.
+
+Existing releases and old definition identities keep their approval behavior.
+Occurrence-only execution requires a newly installed contract/program release;
+it is not enabled by removing an approval from an old editable definition.
+
+### Execute through the same funnel
+
 When advance returns `AwaitingOperation(required)`, run the guarded effect
 through an ordinary mutation request bound to that requirement:
 
@@ -626,12 +675,13 @@ let committed = runtime
     .without_source()
     .idempotency(&key)
     .for_workflow_operation(&workflow, &required)?
-    .execute_in_program(workflow.program_runtime())?;
+    .execute_in_program(workflow.program_runtime(), allocation)?;
 ```
 
 - `for_workflow_operation` returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match the requirement or no authority was issued (`AuthorityUnavailable`).
 - `execute_in_program` resolves the program from the request's branch and returns `WorthQueryApplicationMutationOutcome` (for example `Committed { .. }`).
-- After the effect commits, advance again. The kernel records the step and follows `Completed`.
+- A local effect and its native operation settlement publish in the same candidate. Advance again to follow `Completed` to the successor; do not execute the business effect again. External effects retain owner custody and settle only through their completion/recovery protocol.
+- Retrying the same logical request preserves its key and exact intent. It can recover `AlreadyCommitted` without repeating the handler's effects. A new request against a stale/spent occurrence is denied; reconcile rather than automatically retrying a lifecycle mutation.
 - For an external effect whose owner holds custody, `accept_operation_from_owner` accepts the owner-resolved receipt and returns `WorkflowProgressOutcome`, or `WorthQueryWorkflowOperationOwnerAcceptanceDenial`. `WorthQueryWorkflowOperationOwnerPosture` reports what the owner saw.
 - Recovery of an owner operation binds only the exact performed operation. It never issues authority for a new effect. First bind the request with `for_workflow_operation_recovery(&workflow, &required)`, which returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match. Without that binding, recovery preparation is refused with `NotWorkflowBound`. `prepare_workflow_operation_recovery_from_owner` returns a `WorthQueryPreparedWorkflowOperationRecovery` or `WorthQueryWorkflowOperationRecoveryPreparationDenial`. Its `safe_retry()` returns the safe-retry admission or `WorthQueryWorkflowOperationRecoveryDenial`, which hands the prepared recovery back through `into_recovery()` when it can be tried again. `accept_recovered_operation_from_owner` then accepts the recovered receipt, with the same outcome and denial as `accept_operation_from_owner`.
 
@@ -797,13 +847,13 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `3`). Version 3 carries `await_inbound`; readers retain the supported v1/v2 drafts but reject a wait tag presented under either older version.
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). Version 4 retains the exact optional operation evidence contract. Version 3 added `await_inbound`; readers retain v1–3 drafts, with absent operation evidence, but reject a wait tag under v1/v2.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
-- `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
+- `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. Operation evidence must exactly match the installed binding: an old absent contract cannot silently acquire an explicit-empty or explicit-required floor. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
 
 The [Bank payment archive court](../../../../../worth-query-bank-world/crates/bank-courtroom/tests/payment_workflow_archive.rs)
-uses its actual installed workflow spec to reauthor and bind a version 3 wait.
+uses its actual installed workflow spec to reauthor and bind a version 4 wait.
 It also refuses a changed source, a missing operation, and a different Rust
 effect marker with the same portable name.
 

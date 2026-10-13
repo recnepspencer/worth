@@ -11,6 +11,7 @@
 #[allow(dead_code, unused_imports)]
 #[path = "../../tests/application_graph/document_retention_model.rs"]
 mod document_retention_model;
+mod information;
 mod review;
 
 use document_retention_model::{
@@ -138,6 +139,7 @@ fn reviewed_document(
 }
 
 fn run() {
+    information::run();
     let host_request = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
         worth_execution::CancellationSource::new().token(),

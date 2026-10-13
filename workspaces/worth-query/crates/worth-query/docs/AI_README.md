@@ -915,6 +915,16 @@ and [Signal Orchestration](./domain-capabilities/signal-compatibility-orchestrat
 
 ### Continuations and managed runs
 
+For native workflow business operations, ordinary capability admission and exact
+current-occurrence binding are both required. Additional approval evidence belongs
+to the installed supplier binding and the authored data connections; it is not a
+universal execution prerequisite. `ApplicationWorkflowExecutionRequirements::new()`
+explicitly declares no additional evidence on a new guarded binding. The absent
+declaration retains legacy required approval, and a definition cannot weaken the
+installed evidence floor. Use the existing `for_workflow_operation` plus
+`execute_in_program` funnel. Do not invent signed/unsigned authorization modes,
+dummy approvals, host permit flags, or a parallel state machine to bridge it.
+
 Application workflows are in How WORTH Works
 [§13](../../../../../docs/how-it-works.md#13-workflows) and the full
 [workflows guide](foundations/workflows.md). Underneath, a
