@@ -208,3 +208,16 @@ fn clear_observations() {
     ACTIVE.with(|active| *active.borrow_mut() = None);
     CALLER_PASSES.with(|records| records.borrow_mut().clear());
 }
+
+impl crate::domain_computation::execution_observation::WorthQueryExecutionObservation {
+    /// The existing observer has admitted an advancement on this thread.
+    /// No new event or counter is recorded by this owned observation.
+    pub fn advancement_is_active_for_test(&self) -> bool {
+        ACTIVE.with(|active| {
+            active
+                .borrow()
+                .as_ref()
+                .is_some_and(|active| active.workers.is_some())
+        })
+    }
+}

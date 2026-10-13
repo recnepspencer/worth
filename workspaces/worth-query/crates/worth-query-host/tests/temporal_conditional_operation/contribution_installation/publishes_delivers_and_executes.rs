@@ -4,46 +4,7 @@ use super::*;
 pub(in super::super) fn publishes_delivers_and_executes(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    let contacts = ContactCounters::default();
-    let (installation_predicate, _) = Predicate::controlled(contacts.clone());
-    let (definition_predicate, _) = Predicate::controlled(contacts.clone());
-    let (clock_source, clock_control) = ClockSource::due();
-    let configuration = TemporalContributionConfiguration {
-        installation_predicate,
-        definition_predicate: Arc::new(definition_predicate),
-        clock_source,
-        clock_control,
-        contacts: contacts.clone(),
-        install_route: true,
-    };
-    let application = application_installation::in_memory_program(
-        validated_program(),
-        TemporalHostSchema::declaration().unwrap(),
-        (configuration,),
-        WorthQueryInMemoryApplicationLimits::new(
-            product_world_resources(1_024),
-            runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-                5_120, 2_048,
-            )
-            .unwrap(),
-            runtime::WorthQueryApplicationQueryResourceProfile::bounded(
-                5_120,
-                2_048,
-                usize::MAX,
-                128,
-            )
-            .unwrap(),
-            primary_graph::SignalConditionalEvaluationBudget::development(),
-        ),
-        |_phase, graph, installed| {
-            let principal = installed
-                .principal_binding(TemporalPrincipalBinding::reference())
-                .unwrap();
-            seed_graph(graph, &principal, "blocked", 0, 1, true);
-            Ok(())
-        },
-    )
-    .expect("the contribution-composed temporal application must install");
+    let application = super::application_fixture::installed_application();
     assert!(application
         .installed_program()
         .derived_artifact::<

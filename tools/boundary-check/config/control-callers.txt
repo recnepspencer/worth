@@ -387,3 +387,7 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/equality_stop_oracle.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/workflow_approval_revalidation/read_stop_oracle.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/concurrent_waves/checkpoint_restore.rs
+
+# Caller-only program stop at the existing admitted advancement observation.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/request_cancellation.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/request_cancellation.rs

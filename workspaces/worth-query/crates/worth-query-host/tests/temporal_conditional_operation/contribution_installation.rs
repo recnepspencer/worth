@@ -297,3 +297,8 @@ pub(super) use checkpoint::{
     application_checkpoint_denies_corrupt_incompatible_and_forged_bytes,
     application_checkpoint_restores_fresh_editable_authority,
 };
+
+#[path = "contribution_installation/application_fixture.rs"]
+mod application_fixture;
+#[path = "contribution_installation/request_cancellation.rs"]
+mod request_cancellation;
