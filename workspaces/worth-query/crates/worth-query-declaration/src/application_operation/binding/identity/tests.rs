@@ -5,6 +5,7 @@ use serde::{Serialize, Serializer};
 use super::{canonical_identity, encoder};
 
 mod admitted_encoding;
+mod domain_value;
 mod partition_identity;
 
 fn identity<T: Serialize + ?Sized>(value: &T) -> [u8; 32] {

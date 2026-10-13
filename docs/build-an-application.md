@@ -1241,6 +1241,52 @@ workflow transition, as an `ApplicationEncodedInput`, and the request's
 identities reuse it. The two derivations are reported in the receipt's
 admission-phase canonical work, for a replayed retry as for a fresh commit.
 
+Application values outside mutation requests can use the same canonical
+encoder through `application_value_identity`. Choose `DomainValue` and a
+namespace that names the value's meaning and semantic version:
+
+```rust
+use worth_query_decl::facade::application_operation::{
+    application_value_identity, ApplicationValueIdentityDomain,
+};
+
+let label = application_value_identity(
+    ApplicationValueIdentityDomain::DomainValue,
+    "example.label.v1",
+    "catalog-item",
+)?;
+```
+
+For example, a catalog group can derive its identity from every field that
+determines membership, including optional fields:
+
+```rust
+#[derive(serde::Serialize)]
+struct CatalogGroup<'a> {
+    product: &'a str,
+    axis: Option<u8>,
+}
+
+let group = application_value_identity(
+    ApplicationValueIdentityDomain::DomainValue,
+    "example.catalog-group.v1",
+    &CatalogGroup { product: "catalog-item", axis: None },
+)?;
+let digest = group.identity();
+let encoding_work = group.work();
+```
+
+An absent axis differs from `Some(2)`, and changing the namespace or version
+changes the identity. Maps are ordered by their encoded keys; sequences keep
+their supplied order and floats keep their exact bits. Serialization rejection
+returns `CodecRejected` without a digest. The reported work describes this
+encoding; it does not charge a live request automatically. A digest grants no
+authorization, currentness or publication authority, and does not replace a
+mutation request's input/idempotency identities. Include every meaningful
+distinction in the serialized value: skipped fields, lossy custom serializers
+and untagged variants can erase distinctions the encoder never sees. Use an
+explicit version change when the application's identity meaning changes.
+
 The binding is part of the intent too. Only typed constructors build a
 `WorthQueryApplicationIdempotencyBinding`, and a mutation request builds its
 own with `WorthQueryApplicationIdempotencyBinding::for_mutation_identities(&identities)`
