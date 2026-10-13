@@ -93,6 +93,11 @@ pub type Root = ApplicationOutputGraph<
     ApplicationOutputLeaf,
 >;
 pub struct Locality;
+struct SourceReconstruction;
+impl ApplicationChangeShape for SourceReconstruction {
+    const IDENTITY: &'static str = "matrix-source-reconstruction";
+    const POSTURE: ApplicationChangePosture = ApplicationChangePosture::Reconstruct;
+}
 impl ApplicationLocalityScope for Locality {
     const IDENTITY: &'static str = "matrix-node";
     const GRANULE: ApplicationLocalityGranule = ApplicationLocalityGranule::Root;
@@ -106,7 +111,10 @@ impl ApplicationDerivedArtifact<Schema, Feature> for Artifact {
     const SUCCESSION: ApplicationArtifactSuccession = ApplicationArtifactSuccession::Recompute;
     const REQUIRED: bool = true;
     const PRODUCER_FAMILY: &'static str = "matrix-producer-family";
-    const DEPENDENCIES: &'static [ApplicationArtifactDependency] = &[];
+    const DEPENDENCIES: &'static [ApplicationArtifactDependency] =
+        &[ApplicationArtifactDependency::new(
+            <SourceFeature as ApplicationFeature<Schema>>::IDENTITY,
+        )];
     const REUSE_RULE: &'static str = "matrix-exact";
     const RESOURCE_CEILING: ApplicationArtifactResourceCeiling =
         ApplicationArtifactResourceCeiling::new(8192, 16384);
@@ -123,7 +131,7 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![
             ApplicationFeatureSpec::root::<Schema, SourceFeature>()
                 .provides::<SourcePort>()
-                .mutation::<edit::Binding<Schema>>()
+                .mutation_with_locality_and_change::<edit::Binding<Schema>, Locality, SourceReconstruction>()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, Feature>()
                 .derived_artifact::<Artifact>()

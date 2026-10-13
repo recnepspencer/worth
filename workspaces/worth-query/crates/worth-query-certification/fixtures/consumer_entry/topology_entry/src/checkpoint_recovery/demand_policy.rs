@@ -166,11 +166,23 @@ pub(super) fn feature_specs_with_final_output(
     output: ApplicationFeatureSpec,
     final_output: ApplicationFeatureSpec,
 ) -> Vec<ApplicationFeatureSpec> {
-    vec![
+    feature_specs_with_source(
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
             .mutation::<PlanarEditBinding<CheckpointSchema>>()
             .finish(),
+        output,
+        final_output,
+    )
+}
+
+pub(super) fn feature_specs_with_source(
+    source: ApplicationFeatureSpec,
+    output: ApplicationFeatureSpec,
+    final_output: ApplicationFeatureSpec,
+) -> Vec<ApplicationFeatureSpec> {
+    vec![
+        source,
         output,
         final_output,
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarAlternateFinalOutputFeature>()
