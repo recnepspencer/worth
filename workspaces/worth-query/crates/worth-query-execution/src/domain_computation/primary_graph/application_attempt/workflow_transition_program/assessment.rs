@@ -6,8 +6,7 @@ use super::{
     PreparedWorkflowAssessment,
 };
 use crate::domain_computation::primary_graph::workflow::{
-    visit_workflow_assessment_facts, workflow_evidence_retained_bytes,
-    WorkflowAssessmentEvidenceMeaning,
+    visit_workflow_assessment_facts, WorkflowAssessmentEvidenceMeaning,
 };
 use crate::domain_computation::primary_graph::{
     RequiredWorkflowAssessment, WorthQueryApplicationAttemptDenial,
@@ -16,6 +15,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryWorkflowAssessmentPosture,
 };
 
+#[path = "assessment/evidence_budget.rs"]
+mod evidence_budget;
 #[path = "assessment/identity.rs"]
 mod identity;
 #[path = "assessment/replay.rs"]
@@ -81,21 +82,15 @@ where
         let transition_identity = self.admitted.identity().to_owned();
         let transition_identity_bytes = *self.admitted.identity_bytes();
         let node_path = self.admitted.node_path().to_owned();
-        let mut demand = super::PlatformEffectDemand::default();
-        let mut retained_bytes = 0_u64;
-        visit_workflow_assessment_facts(&self.layout, &self.admitted, &meaning, |effect| {
-            retained_bytes = retained_bytes
-                .saturating_add(workflow_evidence_retained_bytes(&self.layout, &effect));
-            demand.observe(&effect)
-        })?;
-        // Retained evidence never shrinks, so a lineage that has spent its
-        // evidence budget can take no further assessment evidence.
-        if retained_bytes > self.evidence_allowance {
-            return Err(WorthQueryApplicationAttemptDenial::new(
-                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable,
-                self.required.node_path(),
-            ));
-        }
+        let (demand, retained_bytes) = evidence_budget::admit(
+            &self.layout,
+            self.evidence_allowance,
+            self.required.node_path(),
+            |observe| {
+                visit_workflow_assessment_facts(&self.layout, &self.admitted, &meaning, observe)
+                    .map(|_| ())
+            },
+        )?;
         meaning.retained_bytes = retained_bytes;
         let reservation = super::admit_platform_effects(self.admitted.read_set(), demand)?;
         let mut effects = Vec::new();
