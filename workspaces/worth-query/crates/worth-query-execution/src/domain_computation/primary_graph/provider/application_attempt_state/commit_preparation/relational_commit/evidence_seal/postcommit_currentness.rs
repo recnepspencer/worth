@@ -3,6 +3,7 @@ use std::{collections::BTreeSet, sync::Arc};
 use worth_relational::facade::{identity::EntityId, mvcc::CompanionPreflightStop};
 
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::fact_verification_observation;
 
 mod adjacency;
 mod resolution;
@@ -109,6 +110,7 @@ impl PreparedSourceFactRebase {
     ) -> Result<Self, PreparedRebaseDenial> {
         control.check_live()?;
         let endpoint_count = facts.iter().try_fold(0usize, |count, fact| {
+            fact_verification_observation::rebase_preparation();
             control.check_live()?;
             if matches!(fact, WorthQueryApplicationObservedFact::Relation { .. } | WorthQueryApplicationObservedFact::Adjacency { .. }) {
                 count.checked_add(1).ok_or(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability)
@@ -117,6 +119,7 @@ impl PreparedSourceFactRebase {
         let mut endpoints =
             worth_execution::ExecutionArrayBuilder::allocate(endpoint_count, control.policy())?;
         for (ordinal, fact) in facts.iter().enumerate() {
+            fact_verification_observation::rebase_preparation();
             control.check_live()?;
             if let Some(payload) = adjacency::prepare_endpoints(fact, control)? {
                 endpoints.push((ordinal, payload))?;
@@ -157,7 +160,12 @@ impl OwnEffectOnReads {
         producer_output: bool,
         effect: OwnEffect,
     ) -> Self {
-        if producer_output && unanswered.iter().any(resolution::reads_source) {
+        if producer_output
+            && unanswered
+                .iter()
+                .inspect(|_| fact_verification_observation::rebase_unanswered())
+                .any(resolution::reads_source)
+        {
             self.join(effect)
         } else {
             self

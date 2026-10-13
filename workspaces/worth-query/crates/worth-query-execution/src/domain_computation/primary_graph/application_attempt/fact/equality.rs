@@ -11,6 +11,7 @@ impl WorthQueryApplicationObservedFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
+        super::super::super::fact_verification_observation::value_comparison();
         let check_request = || {
             execution.consult().map_err(|stop| {
                 SelfDenial::query_read_denial(

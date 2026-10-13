@@ -2,7 +2,7 @@
 
 use std::cell::Cell;
 
-use super::logical_marking::{NativeMarkingPrecision, NativeMarkingReport};
+use super::logical_marking::{NativeMarkingReport, WorthQueryNativeMarkingPrecision};
 
 thread_local! {
     static INEXACT_DELIVERIES: Cell<u64> = const { Cell::new(0) };
@@ -12,7 +12,7 @@ pub(super) fn record_delivery(report: &NativeMarkingReport) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }
-    if matches!(report.precision, NativeMarkingPrecision::Exact(_)) {
+    if matches!(report.precision, WorthQueryNativeMarkingPrecision::Exact(_)) {
         return;
     }
     if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {

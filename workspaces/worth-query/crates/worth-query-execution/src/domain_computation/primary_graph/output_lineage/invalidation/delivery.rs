@@ -14,12 +14,15 @@ use crate::domain_computation::primary_graph::application_output_demand::Require
 use super::super::RecordedSettlementIdentity;
 use super::admission::{IndexAdmission, RetainedIndexAdmission};
 use super::logical_marking::{
-    AppliedNativeMarking, LogicalMarkingCounts, NativeMarkingPrecision, NativeMarkingReport,
+    AppliedNativeMarking, NativeMarkingReport, WorthQueryNativeMarkingPrecision,
+    WorthQueryNativeMarkingWork,
 };
 use super::mark_state::{DeliveryEpoch, FullVerificationReason, MarkState, SettlementMarks};
 use super::{fact_key::FactPostingKey, touch_keys};
 use super::{index_capacity, retention};
 
+mod affected;
+pub(super) use affected::propagate;
 mod meter;
 use meter::MarkingMeter;
 pub(super) use meter::PrepaidAdmission;
@@ -101,6 +104,8 @@ fn extract(
 pub(super) struct MarkedDelivery {
     pub(super) state: MarkState,
     pub(super) report: NativeMarkingReport,
+    pub(super) affected: Option<OrdSet<Arc<RecordedSettlementIdentity>>>,
+    pub(super) charged_work: u64,
     pub(super) selected: Vec<SelectedHint>,
     pub(super) hint_allowance: PrepaidAdmission,
     /// Retained for late settlement replay; absent after a discontinuity.
@@ -127,23 +132,37 @@ pub(super) fn mark(
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
     )?;
     let branch_bytes = context.branch_id().0.len();
-    let mut counts = LogicalMarkingCounts::default();
+    let mut counts = WorthQueryNativeMarkingWork::default();
     let mut meter = MarkingMeter::new(context, budget);
     let mut state = observed.clone();
-    let attempt =
-        apply(&mut state, keys.as_deref(), commit, &mut meter, &mut counts).and_then(|applied| {
+    let attempt = affected::apply(&mut state, keys.as_deref(), commit, &mut meter, &mut counts)
+        .and_then(|applied| {
             let (selected, hint_allowance) =
                 select_hints(&state, &applied.affected, branch_bytes, &mut meter)?;
-            Ok((applied.report, selected, hint_allowance))
+            let affected = (crate::domain_computation::execution_observation::is_installed()
+                && matches!(
+                    applied.report.precision,
+                    WorthQueryNativeMarkingPrecision::Exact(_)
+                ))
+            .then_some(applied.affected);
+            Ok((applied.report, affected, selected, hint_allowance))
         });
     let marking_bytes = meter.charged_bytes();
     let index_bytes = meter.charged_index_bytes();
+    let charged_work = meter.charged_work();
     let kept = match attempt.and_then(|kept| context.bytes(marking_bytes).map(|()| kept)) {
         Ok(kept) => kept,
         Err(stop) if meter::degrades_delivery(&stop) => {
             drop(state);
-            let precision = NativeMarkingPrecision::MarkingCeilingExceeded(counts);
-            return discontinuity(observed, commit, precision, resources, context);
+            let precision = WorthQueryNativeMarkingPrecision::MarkingCeilingExceeded(counts);
+            return discontinuity(
+                observed,
+                commit,
+                precision,
+                charged_work,
+                resources,
+                context,
+            );
         }
         Err(stop) => return Err(stop),
     };
@@ -151,15 +170,24 @@ pub(super) fn mark(
         Ok(()) => {}
         Err(CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
             drop((state, kept));
-            let precision = NativeMarkingPrecision::RetainedCapacityExhausted(counts);
-            return discontinuity(observed, commit, precision, resources, context);
+            let precision = WorthQueryNativeMarkingPrecision::RetainedCapacityExhausted(counts);
+            return discontinuity(
+                observed,
+                commit,
+                precision,
+                charged_work,
+                resources,
+                context,
+            );
         }
         Err(stop) => return Err(stop),
     }
-    let (report, selected, hint_allowance) = kept;
+    let (report, affected, selected, hint_allowance) = kept;
     Ok(MarkedDelivery {
         state,
         report,
+        affected,
+        charged_work,
         selected,
         hint_allowance,
         keys,
@@ -173,7 +201,8 @@ pub(super) fn mark(
 fn discontinuity(
     observed: &MarkState,
     commit: CommitId,
-    precision: NativeMarkingPrecision,
+    precision: WorthQueryNativeMarkingPrecision,
+    charged_work: u64,
     resources: &InvalidationResources,
     context: &mut PublicationCompanionPreflight<'_>,
 ) -> Result<MarkedDelivery, CompanionPreflightStop> {
@@ -184,6 +213,8 @@ fn discontinuity(
     Ok(MarkedDelivery {
         state,
         report: NativeMarkingReport { commit, precision },
+        affected: None,
+        charged_work,
         selected: Vec::new(),
         hint_allowance: PrepaidAdmission::default(),
         keys: None,
@@ -241,159 +272,4 @@ fn select_hints(
     meter.bytes(hint_bytes)?;
     meter.work(hint_work)?;
     Ok((selected, PrepaidAdmission::new(hint_work, hint_bytes)))
-}
-
-/// Touch matching visits only selected posting buckets. Each affected ordinal
-/// is marked once; downstream propagation follows only actual consumed edges.
-fn apply(
-    state: &mut MarkState,
-    keys: Option<&[FactPostingKey]>,
-    commit: CommitId,
-    meter: &mut MarkingMeter<'_, '_>,
-    counts: &mut LogicalMarkingCounts,
-) -> Result<AppliedNativeMarking, CompanionPreflightStop> {
-    let Some(keys) = keys else {
-        state.delivery_epoch = DeliveryEpoch::after_discontinuity(commit);
-        state.last_discontinuity = Some(FullVerificationReason::DeclaredChangeUnavailable);
-        // The installed image carries this epoch. Its required-only registry
-        // cursor schedules exceptional re-evidence without visiting unrelated
-        // historical actor rows during native publication.
-        return Ok(AppliedNativeMarking {
-            affected: OrdSet::new(),
-            report: NativeMarkingReport {
-                commit,
-                precision: NativeMarkingPrecision::DeclaredChangeUnavailable,
-            },
-        });
-    };
-    let mut affected = OrdSet::new();
-    for key in keys {
-        // Probing the admitted commit's own keys is linear in that commit.
-        // Marking work is spent only on matched postings and their closure.
-        meter.checkpoint()?;
-        counts.posting_key_lookups = counts
-            .posting_key_lookups
-            .checked_add(1)
-            .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-        let Some(postings) = state.postings.get(key) else {
-            continue;
-        };
-        for posting in postings {
-            meter.work(1)?;
-            counts.matched_fact_postings = counts
-                .matched_fact_postings
-                .checked_add(1)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            meter.ordered_read(state.settlements.len())?;
-            let Some(existing) = state.settlements.get(&posting.settlement) else {
-                continue;
-            };
-            meter.ordered_read(existing.dirty_ordinals.len())?;
-            if existing.dirty_ordinals.contains(&posting.ordinal) {
-                continue;
-            }
-            meter.index_bytes(
-                index_capacity::arc_bytes::<SettlementMarks>()
-                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-            )?;
-            meter.index_edit::<usize, ()>(existing.dirty_ordinals.len())?;
-            let mut row = (**existing).clone();
-            row.dirty_ordinals.insert(posting.ordinal);
-            counts.marked_fact_ordinals = counts
-                .marked_fact_ordinals
-                .checked_add(1)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            state.dirty_ordinal_count = state
-                .dirty_ordinal_count
-                .checked_add(1)
-                .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-            meter.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
-                state.settlements.len(),
-            )?;
-            state
-                .settlements
-                .insert(Arc::clone(&posting.settlement), Arc::new(row));
-            meter.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(affected.len())?;
-            affected.insert(Arc::clone(&posting.settlement));
-        }
-    }
-    let affected = propagate(state, affected, meter, counts)?;
-    counts.visited_vertices =
-        u64::try_from(affected.len()).map_err(|_| CompanionPreflightStop::WorkCounterOverflow)?;
-    Ok(AppliedNativeMarking {
-        affected,
-        report: NativeMarkingReport {
-            commit,
-            precision: NativeMarkingPrecision::Exact(*counts),
-        },
-    })
-}
-
-pub(super) fn propagate(
-    state: &mut MarkState,
-    mut waiting: OrdSet<Arc<RecordedSettlementIdentity>>,
-    admission: &mut impl RetainedIndexAdmission,
-    counts: &mut LogicalMarkingCounts,
-) -> Result<OrdSet<Arc<RecordedSettlementIdentity>>, CompanionPreflightStop> {
-    let mut visited = OrdSet::new();
-    while let Some(upstream) = waiting.get_min().cloned() {
-        admission.work(1)?;
-        admission.ordered_remove::<Arc<RecordedSettlementIdentity>, ()>(waiting.len())?;
-        waiting.remove(&upstream);
-        admission.ordered_read(visited.len())?;
-        if visited.contains(&upstream) {
-            continue;
-        }
-        admission.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(visited.len())?;
-        visited.insert(Arc::clone(&upstream));
-        // A native change to an alias can change the output consumed through
-        // any earlier exact identity in its certified equality chain.
-        admission.ordered_read(state.equal_links.len())?;
-        if let Some(prior) = state
-            .equal_links
-            .get(&upstream)
-            .and_then(|link| link.prior.as_ref())
-        {
-            admission.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(waiting.len())?;
-            waiting.insert(Arc::clone(prior));
-        }
-        admission.ordered_read(state.downstream.len())?;
-        let Some(downstream) = state.downstream.get(&upstream).cloned() else {
-            continue;
-        };
-        for target in downstream {
-            admission.work(1)?;
-            counts.downstream_edges = counts
-                .downstream_edges
-                .checked_add(1)
-                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
-            admission.ordered_read(state.settlements.len())?;
-            let Some(existing) = state.settlements.get(&target) else {
-                continue;
-            };
-            admission.ordered_read(existing.pending_upstream.len())?;
-            if !existing.pending_upstream.contains(&upstream) {
-                admission.index_bytes(
-                    index_capacity::arc_bytes::<SettlementMarks>()
-                        .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?,
-                )?;
-                admission.index_edit::<Arc<RecordedSettlementIdentity>, ()>(
-                    existing.pending_upstream.len(),
-                )?;
-                let mut row = (**existing).clone();
-                row.pending_upstream.insert(Arc::clone(&upstream));
-                state.pending_edge_count = state
-                    .pending_edge_count
-                    .checked_add(1)
-                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
-                admission.index_edit::<Arc<RecordedSettlementIdentity>, Arc<SettlementMarks>>(
-                    state.settlements.len(),
-                )?;
-                state.settlements.insert(Arc::clone(&target), Arc::new(row));
-            }
-            admission.ordered_edit::<Arc<RecordedSettlementIdentity>, ()>(waiting.len())?;
-            waiting.insert(target);
-        }
-    }
-    Ok(visited)
 }

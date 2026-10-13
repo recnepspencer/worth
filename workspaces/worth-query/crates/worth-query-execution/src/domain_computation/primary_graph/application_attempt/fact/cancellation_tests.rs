@@ -225,7 +225,7 @@ mod counted;
 #[test]
 fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
     with_indexed_fact(|runtime, execution, snapshot, fact, source, _| {
-        let _observation =
+        let observation =
             crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
         let cancel = source.clone();
         let mut consults = 0;
@@ -245,6 +245,25 @@ fn source_currentness_keeps_a_stop_raised_inside_the_indexed_read() {
                     maximum_preparation_bytes: 64 << 20,
                 },
             );
+        crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test();
         assert_eq!(fact.source_currentness_in(runtime, execution, snapshot, &mut admission), Err(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled)));
+        let observed = crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test();
+        assert!(
+            observed.source_currentness_visits > 0,
+            "the interrupted native comparison remains observed"
+        );
+        assert_eq!(
+            observed.source_currentness_work,
+            admission.charged_work(),
+            "stopped work uses the original admission's actual charges"
+        );
+        assert_eq!(crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test(), Default::default(), "taking the interval cannot recount it");
+        // Leave a genuine stopped comparison unconsumed. The final listener
+        // owns that diagnostic interval and must release it on drop.
+        assert!(fact
+            .source_currentness_in(runtime, execution, snapshot, &mut admission)
+            .is_err());
+        drop(observation);
+        assert_eq!(crate::domain_computation::primary_graph::fact_verification_observation::fact_verification_on_this_thread_for_test(), Default::default(), "dropping the observation clears untaken work");
     });
 }

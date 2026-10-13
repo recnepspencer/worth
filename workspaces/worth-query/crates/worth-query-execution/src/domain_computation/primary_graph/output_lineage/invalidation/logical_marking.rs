@@ -10,34 +10,38 @@ use super::super::RecordedSettlementIdentity;
 #[cfg(test)]
 mod read_observation;
 
+/// Native matching and closure diagnostics. Posting visits precede filtering;
+/// marked ordinals and vertices are distinct identities, not admission units.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
-pub(super) struct LogicalMarkingCounts {
-    pub(super) posting_key_lookups: u64,
+pub struct WorthQueryNativeMarkingWork {
+    pub posting_key_lookups: u64,
     // Includes repeated matches of one ordinal through different posting keys.
-    pub(super) matched_fact_postings: u64,
-    pub(super) marked_fact_ordinals: u64,
+    pub matched_fact_postings: u64,
+    pub marked_fact_ordinals: u64,
     // Includes directly marked roots and equality predecessors as well as
     // downstream vertices; the worklist visits each exact identity once.
-    pub(super) visited_vertices: u64,
-    pub(super) downstream_edges: u64,
+    pub visited_vertices: u64,
+    pub downstream_edges: u64,
 }
 
+/// Precision reached by native delivery preparation. This descriptive result
+/// alone proves neither publication acceptance nor source currentness.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(super) enum NativeMarkingPrecision {
-    Exact(LogicalMarkingCounts),
+pub enum WorthQueryNativeMarkingPrecision {
+    Exact(WorthQueryNativeMarkingWork),
     DeclaredChangeUnavailable,
-    /// Matched fan-out exceeded the installed marking ceiling. The commit
-    /// published as a discontinuity; the counts are those spent before it.
-    MarkingCeilingExceeded(LogicalMarkingCounts),
-    /// The marked version exceeded the installed retained capacity. The commit
-    /// published as a discontinuity; the counts are those of the full marking.
-    RetainedCapacityExhausted(LogicalMarkingCounts),
+    /// Matched fan-out exceeded the installed marking ceiling. Preparation
+    /// falls back to a discontinuity; counts record the work spent before it.
+    MarkingCeilingExceeded(WorthQueryNativeMarkingWork),
+    /// The marked version exceeded the installed retained capacity.
+    /// Preparation falls back to a discontinuity after the counted marking.
+    RetainedCapacityExhausted(WorthQueryNativeMarkingWork),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct NativeMarkingReport {
     pub(super) commit: CommitId,
-    pub(super) precision: NativeMarkingPrecision,
+    pub(super) precision: WorthQueryNativeMarkingPrecision,
 }
 
 pub(super) struct AppliedNativeMarking {

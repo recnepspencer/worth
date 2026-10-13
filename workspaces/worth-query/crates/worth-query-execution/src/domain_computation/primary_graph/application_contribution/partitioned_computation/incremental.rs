@@ -209,6 +209,7 @@ where
         partitions: BTreeMap::new(),
     };
     for (key, fact, readers) in retained.facts.facts() {
+        super::super::super::fact_verification_observation::retained_computation();
         #[cfg(test)]
         let _read = observed::RetainedFactComparison::enter();
         let movement = match reader.observe_retained(execution, &COMPARATOR, key) {

@@ -43,6 +43,10 @@ impl<'a, 'b> MarkingMeter<'a, 'b> {
         self.bytes
     }
 
+    pub(super) const fn charged_work(&self) -> u64 {
+        self.work
+    }
+
     pub(super) const fn charged_index_bytes(&self) -> u64 {
         self.index_bytes
     }

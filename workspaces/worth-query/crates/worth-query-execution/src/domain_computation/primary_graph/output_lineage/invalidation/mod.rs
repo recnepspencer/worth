@@ -27,6 +27,12 @@ mod index_capacity;
 pub(in crate::domain_computation::primary_graph) use index_capacity::arc_bytes;
 mod equivalence_control;
 mod logical_marking;
+mod marking_observation;
+pub use logical_marking::{WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork};
+pub use marking_observation::{
+    native_marking_on_this_thread_for_test, WorthQueryMarkedOutputForTest,
+    WorthQueryNativeMarkingForTest,
+};
 mod mark_state;
 mod output_facts;
 mod output_witness_capacity;

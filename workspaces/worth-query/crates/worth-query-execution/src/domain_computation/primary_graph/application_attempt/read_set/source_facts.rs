@@ -22,6 +22,7 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
     let facts = admission.take_source_facts();
     for fact in &facts {
+        super::super::super::fact_verification_observation::source_admission();
         if let Some(stop) = admission.publication_request().interruption() {
             return Err(
                 StoreDenial::RequestInterruption(stop).into_attempt_denial(admission.operation())

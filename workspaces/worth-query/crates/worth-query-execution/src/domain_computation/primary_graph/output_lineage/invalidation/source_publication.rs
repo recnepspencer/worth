@@ -34,10 +34,12 @@ impl RelationalPublicationCompanion for SourceInvalidationOwner {
                         .expect("minted cell has its empty image"),
                 );
                 let reserved = cell.reserve_preflight(context)?;
-                super::delivery_observation::record_delivery(&super::logical_marking::NativeMarkingReport {
+                let report = super::logical_marking::NativeMarkingReport {
                     commit: context.canonical_commit().commit.commit_id,
-                    precision: super::logical_marking::NativeMarkingPrecision::RetainedCapacityExhausted(Default::default()),
-                });
+                    precision: super::logical_marking::WorthQueryNativeMarkingPrecision::RetainedCapacityExhausted(Default::default()),
+                };
+                super::delivery_observation::record_delivery(&report);
+                super::marking_observation::record(&report, None, None);
                 context.seal_replacement(reserved, vacant)
             }
             Err(stop) => Err(stop),
@@ -59,6 +61,8 @@ impl SourceInvalidationOwner {
         let delivery::MarkedDelivery {
             state,
             report,
+            affected,
+            charged_work,
             selected,
             mut hint_allowance,
             keys,
@@ -71,6 +75,7 @@ impl SourceInvalidationOwner {
             context,
         )?;
         super::delivery_observation::record_delivery(&report);
+        super::marking_observation::record(&report, affected.as_ref(), Some(charged_work));
         let delivery_bytes = index_capacity::arc_bytes::<RetainedTouchDelivery>()
             .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
         context.bytes(delivery_bytes)?;

@@ -3,7 +3,7 @@
 //! ceiling publishes as a counted discontinuity that readers fully verify.
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 
-use super::super::logical_marking::NativeMarkingPrecision;
+use super::super::logical_marking::WorthQueryNativeMarkingPrecision;
 use super::super::mark_state::FullVerificationReason;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::{
@@ -107,7 +107,7 @@ fn unwatched_commit_with_more_touch_keys_than_the_ceiling_publishes_exactly() {
             .native_marking_report(&after, &mut owner.edit_admission())
             .unwrap()
             .expect("the unwatched commit published its own delivery report");
-        let NativeMarkingPrecision::Exact(counts) = report.precision else {
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = report.precision else {
             panic!("unwatched touch keys must not degrade delivery");
         };
         assert!(
@@ -186,13 +186,24 @@ fn matched_fan_out_above_the_ceiling_publishes_and_readers_fully_verify() {
                 for reader in &readers {
                     register(owner, reader.clone(), facts.clone(), &before, OrdSet::new());
                 }
+                let observation = crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+                super::super::marking_observation::native_marking_on_this_thread_for_test();
                 write_field(request_execution, runtime, entity, status, "closed");
                 let (after_handle, after) = snapshot(runtime);
                 let report = owner
                     .native_marking_report(&after, &mut owner.edit_admission())
                     .unwrap()
                     .expect("the fanned-out commit published its own delivery report");
-                let NativeMarkingPrecision::MarkingCeilingExceeded(counts) = report.precision
+                let prepared = super::super::marking_observation::native_marking_on_this_thread_for_test();
+                let prepared = prepared.iter().find(|prepared| prepared.commit == report.commit
+                    && prepared.precision == report.precision)
+                    .expect("the independently read native report identifies its preparation; an earlier provisional attempt cannot stand in for a fallback");
+                assert_eq!(prepared.precision, report.precision);
+                assert!(prepared.affected.is_none(), "a discontinuity never describes an empty exact set");
+                assert!(prepared.charged_work.is_some_and(|work| work > 0), "the real marking attempt spent work before degrading");
+                drop(observation);
+                let WorthQueryNativeMarkingPrecision::MarkingCeilingExceeded(counts) =
+                    report.precision
                 else {
                     panic!("fan-out above the ceiling must be reported, got {report:?}");
                 };

@@ -1,5 +1,5 @@
 //! A Native leaf touch queues its ancestor scopes and no sibling subtree.
-use super::super::logical_marking::NativeMarkingPrecision;
+use super::super::logical_marking::WorthQueryNativeMarkingPrecision;
 use super::*;
 use crate::domain_computation::primary_graph::output_binding_identity::OutputBindingIdentity;
 use crate::domain_computation::primary_graph::{
@@ -28,7 +28,7 @@ fn a_deep_native_leaf_has_identical_work_with_eight_or_sixty_four_sibling_subtre
     }
 }
 
-fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
+fn run(siblings: usize) -> super::super::logical_marking::WorthQueryNativeMarkingWork {
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
  let custody = phase.test_host_request();
@@ -115,7 +115,7 @@ fn run(siblings: usize) -> super::super::logical_marking::LogicalMarkingCounts {
         write_field(execution, runtime, entities[0], label, "after");
         let (after_handle, after) = snapshot(runtime);
         let report = owner.native_marking_report(&after, &mut owner.edit_admission()).unwrap().unwrap();
-        let NativeMarkingPrecision::Exact(counts) = report.precision else { panic!("the declared Native leaf touch is exact") };
+        let WorthQueryNativeMarkingPrecision::Exact(counts) = report.precision else { panic!("the declared Native leaf touch is exact") };
         assert_eq!(counts.marked_fact_ordinals, 1);
         assert_eq!(counts.visited_vertices, DEPTH as u64);
         assert_eq!(counts.downstream_edges, DEPTH as u64 - 1);

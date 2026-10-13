@@ -221,6 +221,9 @@ pub use super::entity_resolution_denial::{
     WorthQueryEntityResolutionRefusalKind,
 };
 pub use super::expression::WorthQueryWorkflowConditionSources;
+pub use super::fact_verification_observation::{
+    fact_verification_on_this_thread_for_test, WorthQueryFactVerificationForTest,
+};
 pub use super::granular_invalidation::{
     WorthQueryBridgeGranularDeliveryCounters, WorthQueryGranularInvalidationCoverage,
     WorthQueryGranularInvalidationDeliveryBatch, WorthQueryGranularInvalidationInstallation,
@@ -260,6 +263,10 @@ pub use super::ordinary_read::{
     WorthQueryOrdinaryReadVersion,
 };
 pub use super::output_lineage::invalidation::inexact_native_deliveries_on_this_thread_for_test;
+pub use super::output_lineage::invalidation::{
+    native_marking_on_this_thread_for_test, WorthQueryMarkedOutputForTest,
+    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+};
 pub use super::output_lineage::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub use super::principal_key::{
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationPrincipalKeyDenial,

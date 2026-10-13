@@ -33,6 +33,9 @@ impl CompletedComputationRun {
                 .prior
                 .facts
                 .facts()
+                .inspect(|_| {
+                    super::super::super::super::fact_verification_observation::carried_seal()
+                })
                 .filter(|(_, _, readers)| readers.reads().any(|read| carried.carried(read)))
                 .all(|(key, fact, _)| facts.fact(key) == Some(fact));
             if !unchanged {
