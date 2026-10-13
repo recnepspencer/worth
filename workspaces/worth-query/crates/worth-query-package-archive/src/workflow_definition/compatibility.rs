@@ -27,8 +27,8 @@ pub enum WorthQueryWorkflowDefinitionDraftDenialKind {
     /// A node names an operation, binding, query or capability the spec did
     /// not install.
     UnknownMember,
-    /// A node names an installed member whose portable types differ from
-    /// those the draft was authored against.
+    /// A node names an installed member whose portable types or execution
+    /// evidence contract differ from those the draft was authored against.
     ChangedMember,
     UnknownEvidenceJoinPolicy,
     InvalidSubject,
@@ -146,11 +146,15 @@ where
             input_type,
             binding,
             requires_workflow_authority,
+            workflow_execution_requirements,
         } => {
             let operation = installed
                 .draft_operation(identifier, binding.as_deref())
                 .ok_or_else(unknown)?;
-            if operation.input_type().as_str() != input_type {
+            if operation.input_type().as_str() != input_type
+                || operation.workflow_execution_requirements()
+                    != workflow_execution_requirements.as_ref()
+            {
                 return Err(changed());
             }
             ApplicationWorkflowNodeKind::Operation {

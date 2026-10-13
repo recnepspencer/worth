@@ -77,6 +77,7 @@ pub(crate) enum DraftMember {
         input_type: String,
         binding: Option<String>,
         requires_workflow_authority: bool,
+        workflow_execution_requirements: Option<worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements>,
     },
     Assessment {
         identifier: String,

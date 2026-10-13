@@ -60,9 +60,19 @@ pub(super) fn encode_node(
     }
     match node.kind() {
         ApplicationWorkflowNodeKind::Operation {
+            operation,
             requires_workflow_authority,
-            ..
-        } => output.raw_bytes(&[u8::from(*requires_workflow_authority)]),
+        } => {
+            output.raw_bytes(&[u8::from(*requires_workflow_authority)]);
+            text(
+                output,
+                &operation
+                    .workflow_execution_requirements()
+                    .map_or_else(String::new, |requirements| {
+                        requirements.persistence_identity()
+                    }),
+            )?;
+        }
         ApplicationWorkflowNodeKind::Assessment(assessment) => {
             text(output, &assessment.subject().persistence_identity())?;
             let relation = assessment.applicability().relation();
@@ -99,6 +109,17 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<D
                 input_type,
                 binding,
                 requires_workflow_authority: boolean(input)?,
+                workflow_execution_requirements: if version >= 4 {
+                    let encoded = owned_text(input)?;
+                    if encoded.is_empty() {
+                        None
+                    } else {
+                        Some(worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded)
+                            .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?)
+                    }
+                } else {
+                    None
+                },
             }
         }
         2 => {

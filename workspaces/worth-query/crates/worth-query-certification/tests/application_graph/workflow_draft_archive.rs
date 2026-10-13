@@ -21,9 +21,40 @@ use super::document_retention_model::{
         reviewed_document_definition, start_instance, ReviewedDocumentWorkflow,
     },
 };
+use super::document_retention_model::{
+    retention_entry::{ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding},
+    workflow::reviewed_document_definition_for_binding,
+};
 use super::workflow_component_scale::component_definition;
 
 type Definition = ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>;
+
+#[test]
+fn operation_evidence_round_trips_and_cannot_silently_rebind_to_an_installed_floor() {
+    let application = publish_workflow_on_first_program();
+    let information =
+        super::workflow_execution::definition::<OccurrenceSetRetentionBinding>().unwrap();
+    let reviewed =
+        reviewed_document_definition_for_binding::<ExplicitReviewedSetRetentionBinding>("done");
+    for definition in [&information, &reviewed] {
+        let bytes = encode(definition);
+        let rebuilt = round_trip(&application, &bytes);
+        assert_eq!(rebuilt.content_identity(), definition.content_identity());
+        assert_eq!(encode(&rebuilt), bytes);
+    }
+    // Both a legacy absence and a different explicit floor are well-formed,
+    // untrusted metadata, not permission to reinterpret the installed binding.
+    let bytes = encode(&information);
+    let different = worth_query_host::facade::declaration::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<
+        super::document_retention_model::workflow::WorkflowApprovalCapability,
+    >().persistence_identity();
+    for replacement in ["", different.as_str()] {
+        assert_eq!(
+            refusal(&application, &retext(&bytes, "1:none", replacement)),
+            DraftDenial::ChangedMember
+        );
+    }
+}
 
 #[test]
 fn every_definition_shape_round_trips_to_the_same_content_identity() {

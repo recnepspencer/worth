@@ -33,7 +33,7 @@ use worth_query_host::facade::{
     runtime::ExecutionAllocationPolicy,
 };
 
-fn definition<Binding: ApplicationMutationBinding<DocumentRetentionSchema>>() -> Result<
+pub(super) fn definition<Binding: ApplicationMutationBinding<DocumentRetentionSchema>>() -> Result<
     ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     ApplicationWorkflowValidationDenial,
 > {

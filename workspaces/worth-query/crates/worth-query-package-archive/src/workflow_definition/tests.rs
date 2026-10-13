@@ -8,6 +8,7 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 use worth_query_declaration::facade::application_program::MIGRATED_WORKFLOW_CONDITION_OPERAND;
 
 mod condition;
+mod operation_requirements;
 
 const TERMINAL: u8 = 6;
 const OPERATION: u8 = 1;
