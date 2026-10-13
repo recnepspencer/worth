@@ -158,6 +158,7 @@ macro_rules! chain_with_unrelated {
 #[macro_use]
 mod capacity_setup;
 mod current_acknowledgement;
+mod owned_continuation;
 mod selection_at_inspection;
 
 #[test]
