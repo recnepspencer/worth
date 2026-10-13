@@ -115,5 +115,22 @@ query-test` are short forms of their corresponding ordinary Cargo commands.
 `make query-cold-certification` is the sole short form for the complete cold
 portfolio above. These targets add no runner, cache, or selection protocol.
 
+`make query-gate` (`python scripts/ci/query_gate.py`) is the whole local gate
+for Query and the crates beneath it: format, lints, the lower crates, every
+Query package, the consumer fixture, the Bank world, doc examples and the
+boundary checks. It builds each workspace's tests once and then runs the test
+binaries directly, so a red test in one binary does not hide the others and a
+rerun of a few suites (`SUITES=relational,bank`) costs minutes. It runs the
+same tests as the Cargo commands above and selects nothing away. Results land
+in `target/query-gate`.
+
+Two optional tools make it faster and change no result. With `sccache` on
+PATH (`cargo install sccache --locked`) the script shares compiled
+third-party crates across workspaces and checkouts. On Windows, linking with
+the `rust-lld` linker that ships inside the Rust toolchain is quicker than
+the default; set the user environment variable
+`CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_LINKER=rust-lld.exe` so plain `cargo`
+and the script agree, because Cargo rebuilds when the linker changes.
+
 The repository root remains an orchestrator and may consume Query through path
 dependencies. It does not own Query package membership.
