@@ -27,6 +27,7 @@ pub(crate) mod computation_partition;
 mod current_family_output;
 mod current_output;
 mod demand_contact;
+mod demand_only;
 mod demand_policy;
 mod generated_restoration;
 mod input_cutoff;

@@ -53,7 +53,7 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
         Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+            + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
             crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>,
@@ -102,7 +102,7 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
         Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+            + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
         Root::Dependents:
             crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<

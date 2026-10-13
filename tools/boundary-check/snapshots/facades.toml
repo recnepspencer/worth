@@ -224,6 +224,7 @@ exports = [
     "WorthQueryApplicationQueryBatchResourceDenial",
     "WorthQueryApplicationQueryRequest",
     "WorthQueryApplicationReadObservation",
+    "WorthQueryApplicationReadObservationDenial",
     "WorthQueryApplicationRecoveryRequestDenial",
     "WorthQueryApplicationRequest",
     "WorthQueryApplicationRequestExt",

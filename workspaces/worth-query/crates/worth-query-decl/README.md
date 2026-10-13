@@ -76,6 +76,23 @@ output lineage, derived-resource posture, and continuation/effect meaning.
 Rust file names, registration order, diagnostics, and generated text do not
 define compatibility.
 
+`ApplicationOutputGraph<Connection, Dependents>` remains the required fixed-root
+posture. `ApplicationDemandOutputGraph<Connection, Dependents>` installs the same
+typed connection tree for explicit assessment without adding its source binding
+to the required-output publication roster. The latter records a declaration-owned
+`demand-only` root posture in canonical meaning; existing required graphs keep
+their canonical records. Explicit required-source action declarations still apply.
+
+Both implement the sealed `ApplicationFixedOutputRoot` used by ordinary
+`start_program_outputs` and `demand(...).start_in_program` progression. Only
+`ApplicationRequiredOutputRoot` may enter performed/prepared-source, required
+recovery, or required-unavailable completion APIs. A demand-only source saves
+through ordinary `execute_in_program`; later demand retains native output owners
+and checks the installed artifact's actual source locality, change, dependency,
+request authority and currentness. A receipt cannot substitute for those owners.
+For an optional assessment, declare its artifact `REQUIRED = false`; retained
+storage and the artifact's other lifecycle meanings are separate choices.
+
 Hosts may roster multiple validated revisions simultaneously. A decoded
 program description is bounded diagnostic/compatibility input only: it cannot
 be cast into a validated program, installed support, branch activation,

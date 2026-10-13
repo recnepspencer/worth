@@ -2,8 +2,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationDiscoveredOutputConnection, WorthQueryApplicationRequiredOutputConnection,
 };
 use worth_query_declaration::facade::application_program::{
-    ApplicationConnectionShape, ApplicationDiscoveredOutputGraph, ApplicationOutputGraph,
-    ApplicationOutputGraphShape, ApplicationProgramOutputRootsShape, ApplicationProgramOutputs,
+    ApplicationConnectionShape, ApplicationDemandOutputGraph, ApplicationDiscoveredOutputGraph,
+    ApplicationOutputGraph, ApplicationOutputGraphShape, ApplicationProgramOutputRootsShape,
+    ApplicationProgramOutputs,
 };
 
 type RootConnectionRef<Schema, Root> =
@@ -107,4 +108,16 @@ where
         append(binding);
     }
     result
+}
+
+// Demand-only roots retain installation identity without making source saves
+// participate in the required-output publication roster.
+impl<Schema, Root, Dependents> WorthQueryApplicationProgramRoots<Schema>
+    for ApplicationDemandOutputGraph<Root, Dependents>
+where
+    Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
+    Self: ApplicationOutputGraphShape<Schema>,
+    RootConnection<Schema, Self>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+{
+    fn append_required_bindings(_: &mut impl FnMut(std::any::TypeId)) {}
 }

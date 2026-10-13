@@ -13,6 +13,7 @@ use crate::application_schema::{
     ApplicationSchemaDeclarationDenial, ApplicationStructuredValueBinding,
 };
 
+mod demand_only;
 mod locality;
 mod managed_computation;
 mod manifest;

@@ -171,6 +171,7 @@ pub struct ApplicationConnectionDeclaration {
     target_port: &'static str,
     target_required: bool,
     exports_across_instances: bool,
+    demand_only_root: bool,
 }
 
 impl ApplicationConnectionDeclaration {
@@ -195,7 +196,18 @@ impl ApplicationConnectionDeclaration {
             target_port,
             target_required,
             exports_across_instances,
+            demand_only_root: false,
         }
+    }
+
+    pub(in crate::application_program) fn as_demand_only_root(mut self) -> Self {
+        self.demand_only_root = true;
+        self
+    }
+
+    /// Whether this connection is the root of an explicitly demanded output tree.
+    pub const fn is_demand_only_root(&self) -> bool {
+        self.demand_only_root
     }
 
     pub const fn identity(&self) -> &'static str {

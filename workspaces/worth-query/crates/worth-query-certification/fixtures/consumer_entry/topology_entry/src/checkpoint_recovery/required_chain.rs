@@ -35,6 +35,20 @@ pub(super) fn output_feature_spec_for<Schema: TopologySchemaBinding>() -> Applic
         .finish()
 }
 
+pub(super) fn output_feature_spec_with_artifact<Artifact>() -> ApplicationFeatureSpec
+where
+    Artifact: worth_query_decl::facade::application_program::ApplicationDerivedArtifact<
+        CheckpointSchema,
+        PlanarOutputFeature,
+    >,
+{
+    ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
+        .derived_artifact::<Artifact>()
+        .conditional_operation::<MutatePlanar>()
+        .conditional_operation::<PublishChain>()
+        .finish()
+}
+
 pub(crate) fn declare<Schema: TopologySchemaBinding>(
     schema: worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder<
         Schema,

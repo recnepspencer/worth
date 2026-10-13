@@ -1,3 +1,4 @@
+mod source;
 mod unavailable;
 pub use unavailable::WorthQueryApplicationProgramOutputUnavailable;
 use worth_query_declaration::facade::application_program::{
@@ -43,15 +44,16 @@ type Source<Schema, Demand> =
 type Query<Schema, Demand> = <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query;
 type Value<Schema, Demand> = <<Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-/// Drives a mutation's required program outputs to settlement.
+/// Drives one installed fixed output tree to settlement.
 pub struct WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>
 where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
-        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
 {
+    source_validator: Option<source::RequiredSourceValidator<Schema, Program>>,
     source_preparation: Option<
         worth_query_execution::facade::primary_graph::WorthQueryPreparedRequiredOutputSource,
     >,
@@ -79,7 +81,7 @@ where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
-        + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+        + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     RootDemand<Schema, Root>: Clone,
     Root::Dependents: ProgramOutputContinuationFactory<Schema, Program, RootDemand<Schema, Root>>,
@@ -91,8 +93,12 @@ where
         root: WorthQueryApplicationProgramDemandHandle<Schema, Program, RootDemand<Schema, Root>>,
         root_demand: RootDemand<Schema, Root>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
-    ) -> Self {
+    ) -> Self
+    where
+        Root: worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+    {
         Self {
+            source_validator: Some(source::validate::<Schema, Program, Root>),
             source_preparation: Some(preparation),
             source_receipt: Some(source_receipt),
             source_observation,
@@ -113,6 +119,7 @@ where
         controls: crate::application_entry::WorthQueryOutputDemandControls,
     ) -> Self {
         Self {
+            source_validator: None,
             source_preparation: None,
             source_receipt: None,
             source_observation,
@@ -132,7 +139,7 @@ impl<Schema, Program, Root>
 where
     Schema: ApplicationSchema + 'static,
     Program: ApplicationProgramDefinition<Schema>,
-    Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+    Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     RootDemand<Schema, Root>: Clone,
     Value<Schema, RootDemand<Schema, Root>>:
@@ -244,8 +251,10 @@ where
         }
         let access = worth_query_execution::publication_boundary::program_publication_access();
         match (&self.source_receipt, &self.source_preparation) {
-            (Some(receipt), Some(prepared)) => application.validate_required_program_source::<Root>(phase,
-                &access, prepared, receipt, &self.source_observation.retained, request.principal, request.scope, request.branch),
+            (Some(receipt), Some(prepared)) => match self.source_validator {
+                Some(validate) => validate(phase, application, prepared, receipt, &self.source_observation, request),
+                None => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
+            },
             (None, None) => application.validate_initial_program_source::<Root>(phase, &access, &self.source_observation.retained, request.branch),
             _ => return Err(crate::application_entry::WorthQueryRequiredOutputPreparationDenial::MissingPerformedDelivery),
         }.map_err(|denial| crate::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
