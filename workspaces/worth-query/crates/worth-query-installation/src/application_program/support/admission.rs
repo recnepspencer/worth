@@ -167,6 +167,12 @@ where
                 .iter()
                 .filter_map(|action| action.mutation_binding_type())
                 .collect(),
+            program
+                .actions()
+                .iter()
+                .filter(|action| action.conditional_only())
+                .filter_map(|action| action.mutation_binding_type())
+                .collect(),
             program.semantic_description().clone(),
             effectful_action_subjects(self.installed_schema, program),
             action_dependencies(self.installed_schema, program),

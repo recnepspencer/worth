@@ -132,6 +132,33 @@ impl ApplicationActionDeclaration {
         self.mutation_binding_type
     }
 
+    /// Ordinary-call membership, distinct from a conditional owner's declaration.
+    pub const fn ordinary_mutation_binding_type(&self) -> Option<TypeId> {
+        if self.conditional_only {
+            None
+        } else {
+            self.mutation_binding_type
+        }
+    }
+
+    pub(crate) fn conditional_mutation_identity(&self) -> Option<&'static str> {
+        (self.conditional_only && self.mutation_binding_type.is_some()).then_some(self.binding)
+    }
+
+    pub(in crate::application_program) fn conditional_mutation<Schema, Instance, Feature, Binding>(
+    ) -> Self
+    where
+        Schema: ApplicationSchema,
+        Instance: ApplicationCompositionInstance,
+        Feature: ApplicationFeature<Schema>,
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.conditional_only = true;
+        action
+    }
+
     pub const fn operation_type(&self) -> TypeId {
         self.operation_type
     }

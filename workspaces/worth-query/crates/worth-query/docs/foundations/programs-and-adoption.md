@@ -120,6 +120,51 @@ let revision_2 = *orders_v2.revision();   // ApplicationProgramRevision is Copy
 - Both programs describe the same installed schema. A roster is installed
   against one schema.
 
+### Declare a producer-owned mutation
+
+Use `ApplicationFeatureSpecBuilder::conditional_mutation::<Binding>()` when an
+installed conditional owner, such as an output producer, alone may issue the
+mutation. It retains the exact mutation binding for installation completeness,
+including bindings that declare `REQUIRES_APPLICATION_PROGRAM = true`:
+
+```rust,ignore
+ApplicationFeatureSpec::root::<Schema, AssessmentFeature>()
+    .conditional_mutation::<PublishAssessmentBinding>()
+    .finish()
+```
+
+This is declaration membership, not ordinary-call permission. Ordinary
+`execute_in_program` cannot invoke this action; `contains_action::<Binding>()`
+does not advertise it as an ordinary action. Installation still requires the
+matching native conditional owner and its contribution contracts. Declaring a
+second ordinary mutation for that same installed conditional operation is
+refused, rather than providing an alternate way to publish a finding.
+
+For example, a source save can remain ordinary while assessment publication is
+conditional. This output feature from the compiled public topology consumer
+combines optional-artifact meaning with an exact binding and a specialized
+conditional operation:
+
+```rust,ignore
+ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
+    .derived_artifact::<OptionalArtifact>()
+    .conditional_mutation::<PlanarMutationBinding<CheckpointSchema>>()
+    .conditional_operation::<PublishChain>()
+    .finish()
+```
+
+The native demand/settlement owner issues the producer mutation; a source save
+does not make the optional assessment current. Keep `conditional_operation`
+for specialized operation-only membership where no mutation binding is being
+declared. Neither form installs a producer by itself. Do not disable a binding's
+program requirement, add an ordinary sibling, or treat a descriptive result as
+settlement evidence to get installation to pass.
+
+The exact conditional binding participates in canonical program revision and
+semantic comparison. Existing operation-only declarations retain their original
+meaning; switching to exact binding membership produces new meaning even if the
+binding and operation happen to use the same portable name.
+
 ## Roster programs on a host
 
 `in_memory_rostered_program` validates and installs the whole roster before

@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+mod conditional_program;
 mod output_cardinality;
 mod output_role;
 mod workflow_requirements;

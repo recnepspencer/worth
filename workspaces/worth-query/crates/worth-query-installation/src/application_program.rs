@@ -159,7 +159,7 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
         let binding = std::any::TypeId::of::<Binding>();
         self.actions
             .iter()
-            .any(|action| action.action_type() == binding)
+            .any(|action| !action.conditional_only() && action.action_type() == binding)
     }
 
     pub fn repeated_optional_member<Binding, Correspondence>(

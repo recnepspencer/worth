@@ -10,6 +10,7 @@ use worth_query_host::facade::{
     },
     runtime::ExecutionAllocationPolicy,
 };
+mod conditional_binding;
 mod program;
 use program::{DemandProgram, DemandRoot, RequiredProgram, UngovernedProgram};
 

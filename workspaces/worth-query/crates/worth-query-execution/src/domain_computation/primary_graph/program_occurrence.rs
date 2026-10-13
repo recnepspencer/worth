@@ -111,15 +111,15 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         })
     }
 
-    /// Whether some rostered program acts through this mutation binding.
-    pub(in crate::domain_computation::primary_graph) fn acts_through_mutation_binding(
+    /// Installation completeness includes owner-only bindings, unlike call eligibility.
+    pub(in crate::domain_computation::primary_graph) fn declares_mutation_binding(
         &self,
         binding: TypeId,
     ) -> bool {
         self.roster
             .entries()
             .iter()
-            .any(|entry| entry.acts_through_mutation_binding(binding.into_external()))
+            .any(|entry| entry.declares_mutation_binding(binding.into_external()))
     }
 
     /// Resolves the rostered program one stored activation rendering names.

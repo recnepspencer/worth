@@ -321,6 +321,9 @@ fn append_actions(
                     .to_owned(),
             ),
         ];
+        if let Some(binding) = action.conditional_mutation_identity() {
+            fields.push(("conditional-mutation-binding", binding.to_owned()));
+        }
         if let Some(requirements) = action.workflow_execution_requirements() {
             fields.push((
                 "workflow-execution-requirements",

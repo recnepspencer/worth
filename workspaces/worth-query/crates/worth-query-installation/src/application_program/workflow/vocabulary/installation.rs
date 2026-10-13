@@ -88,7 +88,7 @@ where
             .program
             .actions()
             .iter()
-            .any(|action| action.mutation_binding_type() == Some(TypeId::of::<Binding>()))
+            .any(|action| action.ordinary_mutation_binding_type() == Some(TypeId::of::<Binding>()))
         {
             return Err(denial(
                 WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInProgram,
