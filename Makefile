@@ -86,6 +86,11 @@ query-cold-certification:
 	cargo test --manifest-path $(QUERY_MANIFEST) -p worth-query-execution --lib $(ARGS) -- --test-threads=4
 	cargo test --manifest-path $(QUERY_MANIFEST) -p worth-query-certification -p worth-query-replay $(ARGS)
 
+# Every suite, or SUITES=relational,bank for a rerun. See the script's header.
+.PHONY: query-gate
+query-gate:
+	python3 scripts/ci/query_gate.py $(SUITES)
+
 .PHONY: relational-allocation-probes
 relational-allocation-probes:
 	bash scripts/ci/check_relational_allocation_probes.sh
