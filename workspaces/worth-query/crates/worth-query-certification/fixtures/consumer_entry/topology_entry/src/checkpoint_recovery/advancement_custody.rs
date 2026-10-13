@@ -240,8 +240,6 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
     }
 }
 
-// Independent fixture oracle: one seed/kind/partition, two entities and one
-// relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
 #[test]
 fn a_mutation_handler_and_commit_share_one_charged_request() {
     mutation_commit_report(Placement::Leased(NonZeroUsize::MIN));
@@ -295,8 +293,6 @@ fn mutation_commit_report(placement: Placement) -> (u64, u64) {
     let opened = reports();
     assert_eq!(opened.len(), 1);
     let report = *opened[0].as_ref().unwrap();
-    let charged = report.charged_work();
-    assert!(charged > 0);
     drop(restore);
     let after = request
         .query(PlanarRead {

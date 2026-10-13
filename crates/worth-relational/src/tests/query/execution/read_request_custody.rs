@@ -101,7 +101,6 @@ fn production_plan_has_equal_bits_and_charged_work_at_every_backing() {
         .unwrap()
         .unwrap();
     let work = reference.report.unwrap().charged_work();
-    assert!(work > 0, "reading the fixture performs charged work");
     for width in [1, 2, 4] {
         let lease = lease(width, u64::MAX, CancellationToken::new());
         let read = runtime

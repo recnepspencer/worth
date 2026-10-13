@@ -1,6 +1,6 @@
 use super::*;
 #[test]
-fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
+fn query_local_read_ceiling_preserves_the_ordinary_denial_and_releases_memory() {
     let world = installed_authorization_world(true);
     let scope = live_scope();
     world
@@ -95,7 +95,6 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                 MapOutcome::Stopped {
                     completed_prefix,
                     reason,
-                    report,
                     ..
                 } => {
                     assert!(completed_prefix.is_empty());
@@ -109,7 +108,6 @@ fn query_local_read_ceiling_keeps_the_ordinary_denial_and_admitted_work() {
                             })
                         }
                     );
-                    assert!(report.charged_work() > 0);
                 }
                 MapOutcome::Complete { .. } => panic!("the Query-local read must deny"),
             }

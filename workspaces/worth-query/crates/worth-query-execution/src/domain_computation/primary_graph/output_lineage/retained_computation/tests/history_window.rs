@@ -106,6 +106,7 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
         .lock()
         .unwrap()
         .computation = retained;
+    let bytes = lineage.retention.retained_bytes();
     // No selected cell, state handle or observer artificially pins this row.
     let old_cell = Arc::downgrade(&lineage.by_source[&source][&occurrence][&old_generation][0]);
     let label = AccountLabel::reference();

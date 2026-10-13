@@ -81,6 +81,10 @@ fn a_leased_output_demand_shares_one_request_with_signal_and_native_reads() {
         query_units, 0,
         "this producer invokes no managed computation"
     );
+    assert!(
+        native_reads() > reads_before,
+        "the advancement reaches its native read owner"
+    );
     assert!(matches!(
         outcome,
         WorthQueryApplicationProgramOutputProgress::Settled(_)

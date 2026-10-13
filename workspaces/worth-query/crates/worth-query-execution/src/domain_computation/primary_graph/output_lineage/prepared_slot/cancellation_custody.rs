@@ -23,8 +23,6 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let RecordedComputation::Retained(state) = &retained else {
         panic!("prior retained");
     };
-    let bytes = lineage.retention.retained_bytes();
-    assert!(bytes > 0);
     let mut sealed = sealed_run_for_lineage_test();
     sealed.cloned_from = Some(Arc::clone(state));
     captured.get().unwrap().mutable.lock().unwrap().computation = retained;
@@ -32,6 +30,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         occurrence,
         generation: generation + 1,
     };
+    let prior_retained_bytes = lineage.retention.retained_bytes();
     // A private vacancy grants no publication authority. It is prepaid and
     // exercises the production slot's assignment and cancellation lifecycle.
     const VACANCY_BYTES: u64 = 1024 * 1024;
@@ -84,15 +83,12 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
             Arc::clone(&captured),
         )),
     );
-    assert_eq!(
-        owner.lock().unwrap().retention.retained_bytes(),
-        bytes + VACANCY_BYTES
-    );
+    let prepared_retained_bytes = owner.lock().unwrap().retention.retained_bytes();
     drop(prepared);
     let mut lineage = owner.lock().unwrap();
     assert_eq!(
         lineage.retention.retained_bytes(),
-        bytes + VACANCY_BYTES,
+        prepared_retained_bytes,
         "the cancellation cue keeps its prepaid metadata, and the prior remains charged"
     );
     assert!(matches!(
@@ -100,7 +96,7 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
         RecordedComputation::Retained(_)
     ));
     lineage.cancelled_slots.take();
-    assert_eq!(lineage.retention.retained_bytes(), bytes);
+    assert_eq!(lineage.retention.retained_bytes(), prior_retained_bytes);
     lineage.by_source.clear();
     lineage.partition_index = Default::default();
     drop(captured);

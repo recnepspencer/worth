@@ -2825,7 +2825,7 @@ The next phase may trust that advancement exploits every declared independence.
   parallel advancement and the workflow frontier; an independent review
   checks every public statement against the code. *Completed.*
 - **8.3** Run the complete certification and the mutation probes on x86-64 and
-  wasm32.
+  wasm32. *Completed.*
 
 ## Verification, Review, And Documentation
 

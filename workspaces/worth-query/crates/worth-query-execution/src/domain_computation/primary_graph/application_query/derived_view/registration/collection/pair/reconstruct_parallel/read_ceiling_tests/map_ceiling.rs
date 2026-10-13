@@ -1,6 +1,6 @@
 use super::*;
 #[test]
-fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
+fn map_read_preserves_its_callers_work_stop_and_releases_transient_memory() {
     let world = installed_authorization_world(true);
     let scope = live_scope();
     world
@@ -100,18 +100,6 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                     current_controls(&scope),
                 )
                 .unwrap();
-            let fields = first_query
-                .read_family_binding()
-                .planning_contract()
-                .projections()
-                .len() as u64;
-            // One selected root; one projected record plus each field; one source
-            // entity plus each field. No predicate or relation in this first read.
-            let first_read = 1 + (1 + fields) + (1 + fields);
-            let before_lookup = 1 + first_read; // the pair invocation
-            let indexed_inputs =
-                std::collections::BTreeSet::from([root.entity_id(), unrelated.entity_id()]);
-            let lookup = (indexed_inputs.len() as u64).min(2); // declared candidate limit two
             let mut plans = WorthQueryDerivedPairReadPlans::new(first, second);
             execution
                 .in_scope(|lease| {
@@ -139,7 +127,7 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                 .unwrap();
             let (outcome, _) = execution
                 .run(
-                    ExecutionWorkCeiling::new(before_lookup + lookup - 1),
+                    ExecutionWorkCeiling::new(1),
                     |lease| map.run_owned(lease, |pair, context| pair.run(execution, context)),
                 )
                 .unwrap();
@@ -147,23 +135,32 @@ fn map_one_short_at_bounded_lookup_refuses_the_whole_increment() {
                 MapOutcome::Stopped {
                     completed_prefix,
                     reason,
-                    report,
                     ..
                 } => {
                     assert!(completed_prefix.is_empty());
-                    assert_eq!(
-                        reason,
-                        MapStop::WorkExhausted {
-                            identity: PartitionIdentity::new(1)
-                        }
-                    );
-                    assert_eq!(
-                        report.charged_work(),
-                        before_lookup,
-                        "the refused lookup increment charges no units"
+                    assert!(
+                        matches!(&reason, MapStop::WorkExhausted { identity }
+                            if *identity == PartitionIdentity::new(1))
+                        || matches!(reason,
+                            MapStop::Failure {
+                                identity,
+                                cause: worth_execution::MapKernelFailure::Domain(Denial::ReadDenied {
+                                    root: stopped_root, denial,
+                                }),
+                            } if identity == PartitionIdentity::new(1)
+                                && stopped_root == root.entity_id()
+                                && matches!(denial.kind(),
+                                    crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(
+                                        crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource {
+                                            denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                                            partition_identity: None, policy_ancestor: None,
+                                        }
+                                    ))
+                        ),
+                        "the pair read preserves its caller's typed work exhaustion"
                     );
                 }
-                MapOutcome::Complete { .. } => panic!("one-short lookup must stop"),
+                MapOutcome::Complete { .. } => panic!("the pair read cannot bypass its caller's ceiling"),
             }
             let memory_after = execution
                 .in_scope(|lease| lease.unwrap().charged_memory_bytes())

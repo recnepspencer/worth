@@ -1,4 +1,4 @@
-//! Issued rows, exact dependencies and equal work across request backings.
+//! Issued rows, dependencies, revisions and the same bill at every posture.
 use super::*;
 use crate::identity::data::VersionId;
 use crate::storage::data::{RecordLifecycleState, RelationalFieldPresence};
@@ -24,7 +24,7 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
     for indexed in [false, true] {
         let world = fixture::World::new(&setup, indexed);
         for case in cases::table(&world) {
-            let mut reference_work = None;
+            let mut bill = None;
             for (posture, width) in [
                 (None, 1),
                 (Some(ExecutionPosture::Serial), 1),
@@ -132,16 +132,16 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                     assert_eq!(revision.version(), VersionId((i + 4) as u64));
                     assert_eq!(revision.presence(), RelationalFieldPresence::Present);
                 }
-                let actual_work = read.report.unwrap().charged_work();
-                assert!(actual_work > 0, "the fixture read performs charged work");
-                if let Some(reference) = reference_work {
+                let report = read.report.unwrap();
+                let actual = (report.charged_work(), report.charged_span());
+                if let Some(expected) = bill {
                     assert_eq!(
-                        actual_work, reference,
+                        actual, expected,
                         "{} {posture:?}/{width}, indexed={indexed}",
                         case.name
                     );
                 } else {
-                    reference_work = Some(actual_work);
+                    bill = Some(actual);
                 }
             }
         }
