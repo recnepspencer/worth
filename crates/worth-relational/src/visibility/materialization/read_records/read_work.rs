@@ -34,7 +34,7 @@ pub(crate) fn metered<T>(
                 (),
                 0,
                 lease.map_or(execution.memory_limit(), |lease| {
-                    lease.policy().budget().charged_memory_bytes()
+                    lease.available_memory_bytes()
                 }) / 4,
                 0,
                 0,
