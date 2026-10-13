@@ -38,7 +38,8 @@ fn aftermath_resolution_door_preserves_stops_at_every_consult() {
             );
             let selected = world.selected_product(&phase.test_host_request());
             let basis = selected.product().relational_basis();
-            crate::test_read_stops::every_consult(
+            crate::test_read_stops::every_consult_under(
+                &execution,
                 |request| {
                     provider.resolve_aftermath_causality_at_basis(
                         request,

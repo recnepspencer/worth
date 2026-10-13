@@ -3,12 +3,15 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::read_execution::dispatch_witness::NativeReadRendezvousGuardForTest;
 #[test]
 fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
-    use crate::domain_computation::primary_graph::application_contribution::query_test_execution_authority_for_test;
-    use crate::domain_computation::primary_graph::application_contribution::test_policy;
     use crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner;
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _owner = isolated_request_owner();
+    crate::facade::primary_graph::place_managed_computations_on_this_thread_for_test(
+        crate::facade::primary_graph::WorthQueryExecutionPlacementForTest::Leased(
+            NonZeroUsize::new(2).unwrap(),
+        ),
+    );
     let world = installed_authorization_world(true);
     let scope = live_scope();
     let selected = world
@@ -60,10 +63,11 @@ fn two_distinct_roots_hold_the_whole_native_read_without_the_owner_lock() {
     assert!(!owner_probe.is_locked_for_test());
     world.application.with_host_advancement(|phase| {
         let host_custody = phase.test_host_request();
-        let lease = query_test_execution_authority_for_test().request_lease(worth_execution::LeaseRequest {
-            policy: test_policy(NonZeroUsize::new(2).unwrap(), 16 << 20),
-            cancellation: scope.cancellation().execution_token(),
-            deadline: scope.deadline(),
+        let lease = host_custody.borrowed_request_for_test().in_scope(|parent| {
+            let parent = parent.expect("the host lends its active lease");
+            parent.child(worth_execution::LeaseRequest {
+                policy: *parent.policy(), cancellation: scope.cancellation().execution_token(), deadline: scope.deadline(),
+            }).unwrap()
         }).unwrap();
         let request = ExecutionRequest::leased(&lease);
         let acquisitions = owner_probe.acquisitions_for_test();

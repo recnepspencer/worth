@@ -53,6 +53,43 @@ pub(crate) fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
     assert_cancelled: impl Fn(usize, usize, &E),
     assert_work: impl Fn(u64, &E),
 ) {
+    selected_consult_answers_under(
+        None,
+        healthy_work,
+        observes,
+        with_door,
+        all_charges,
+        assert_cancelled,
+        assert_work,
+    );
+}
+
+pub(crate) fn every_consult_under<T: Eq + Debug, E: Eq + Debug>(
+    parent: &ExecutionRequest<'_, '_>,
+    door: impl Fn(&ExecutionRequest<'_, '_>) -> Result<T, E>,
+    cancelled: E,
+    exhausted: E,
+) {
+    selected_consult_answers_under(
+        Some(parent),
+        100_000,
+        || true,
+        |counted| counted(&door),
+        false,
+        |at, _, error| assert_eq!(error, &cancelled, "consult {at}"),
+        |required, error| assert_eq!(error, &exhausted, "charge {required}"),
+    );
+}
+
+fn selected_consult_answers_under<T: Eq + Debug, E: Eq + Debug>(
+    parent: Option<&ExecutionRequest<'_, '_>>,
+    healthy_work: u64,
+    observes: impl Fn() -> bool + 'static,
+    with_door: impl Fn(&CountedDoor<'_, T, E>) -> ConsultRun<T, E>,
+    all_charges: bool,
+    assert_cancelled: impl Fn(usize, usize, &E),
+    assert_work: impl Fn(u64, &E),
+) {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let observes = std::rc::Rc::new(observes);
@@ -66,7 +103,32 @@ pub(crate) fn selected_consult_answers<T: Eq + Debug, E: Eq + Debug>(
                 source.token(),
                 None,
             );
-            let request = ExecutionRequest::serial(&host);
+            let child = parent.map(|request| {
+                request
+                    .in_scope(|lease| {
+                        let lease = lease.expect("the fixture lends its active host lease");
+                        lease
+                            .child(worth_execution::LeaseRequest {
+                                policy: worth_foundational::ExecutionRequestPolicy::new(
+                                    lease.policy().posture(),
+                                    lease.policy().determinism(),
+                                    worth_foundational::ExecutionBudget::new(
+                                        lease.policy().budget().max_workers(),
+                                        lease.available_memory_bytes(),
+                                        lease.policy().budget().work_ceiling(),
+                                    ),
+                                ),
+                                cancellation: source.token(),
+                                deadline: None,
+                            })
+                            .expect("the consult proof borrows descendant custody")
+                    })
+                    .expect("the fixture lends its request")
+            });
+            let request = child
+                .as_ref()
+                .map_or_else(|| ExecutionRequest::serial(&host), ExecutionRequest::leased);
+
             let count = std::rc::Rc::new(std::cell::Cell::new(0));
             let recorded = std::rc::Rc::clone(&count);
             let observes = std::rc::Rc::clone(&observes);

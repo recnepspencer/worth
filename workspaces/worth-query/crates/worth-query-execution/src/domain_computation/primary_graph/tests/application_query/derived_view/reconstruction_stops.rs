@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::tests::fixture::{
     NestedAccountQuery, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
 };
 use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;
-use worth_execution::{ExecutionRequest, SerialMemoryBudget, SerialRequest};
+use worth_execution::ExecutionRequest;
 use WorthQueryManagedDerivedViewDenial as Denial;
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind;
@@ -131,11 +131,18 @@ fn check(case: usize) {
                 .unwrap();
             let mut plans = Some(WorthQueryDerivedPairReadPlans::new(first, second));
             let cancellation = worth_execution::CancellationSource::new();
-            let serial = SerialRequest::from_memory(
-                SerialMemoryBudget::new(16 << 20),
-                cancellation.token(),
-                None,
-            );
+            let child = execution
+                .in_scope(|parent| {
+                    let parent = parent.expect("the fixture lends host custody");
+                    parent
+                        .child(worth_execution::LeaseRequest {
+                            policy: *parent.policy(),
+                            cancellation: cancellation.token(),
+                            deadline: None,
+                        })
+                        .unwrap()
+                })
+                .unwrap();
             let foreign =
                 worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
             let unavailable = foreign
@@ -159,7 +166,7 @@ fn check(case: usize) {
             let actual = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    ExecutionRequest::serial(&serial),
+                    ExecutionRequest::leased(&child),
                     &view,
                     selected.product(),
                     &membership,

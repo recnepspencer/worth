@@ -1,8 +1,8 @@
 //! An interrupted commit refresh must evict a previously materialized sum.
 use super::{AggregateWorld, AspectFieldPatch, AspectValue, BTreeMap};
 use worth_execution::{
-    ExecutionMap, ExecutionRequest, ExecutionWorkCeiling, KeylessPartition, MapKernelFailure,
-    MapKernelStop, MapOutcome, MapStop, WorkCeilingDenial,
+    ExecutionMap, ExecutionWorkCeiling, KeylessPartition, MapKernelFailure, MapKernelStop,
+    MapOutcome, MapStop, WorkCeilingDenial,
 };
 use worth_foundational::PartitionIdentity;
 use worth_relational::facade::transactions::{
@@ -16,8 +16,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
         .with_host_advancement(|phase| {
             let custody = phase.test_host_request();
             let phase = world.fixture_phase(&custody);
-            let healthy_host = crate::test_request_policy::serial_request();
-            let healthy = ExecutionRequest::serial(&healthy_host);
+            let healthy = custody.borrowed_request_for_test();
             assert_eq!(world.observe(&custody).result, Ok((7, 1)));
             assert_eq!(world.observe(&custody).work.aggregate_cache_hits(), 1);
             let source = world.source(&phase, "source-0");
@@ -59,7 +58,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                 let committed = transaction.commit(&healthy, runtime).unwrap();
                 let retained = world.authority.graph.aggregate_projections.lock().unwrap().clone();
                 let runtime_cell = std::cell::RefCell::new(&mut *runtime);
-                crate::test_read_stops::every_consult(|request| retained.clone().refresh_after_commit(request, &mut runtime_cell.borrow_mut(), &before, &committed.snapshot, committed.patch()), worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled, worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted);
+                crate::test_read_stops::every_consult_under(&healthy, |request| retained.clone().refresh_after_commit(request, &mut runtime_cell.borrow_mut(), &before, &committed.snapshot, committed.patch()), worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled, worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted);
                 let map = ExecutionMap::<_, u64>::from_keyless_partitions(BTreeMap::from([(
                     PartitionIdentity::new(0),
                     KeylessPartition {
@@ -72,9 +71,9 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                 let refresh_runtime = std::sync::Mutex::new(&mut *runtime);
                 let refreshed = std::sync::atomic::AtomicBool::new(false);
                 let (outcome, report) = healthy
-                    .run(ExecutionWorkCeiling::new(0), |_| {
+                    .run(ExecutionWorkCeiling::new(0), |lease| {
                         map.run(
-                            None,
+                            lease,
                             |_, context| -> Result<u64, MapKernelFailure<MapKernelStop>> {
                                 assert_eq!(context.checkpoint(1), Err(MapKernelStop::WorkCeiling));
                                 assert_eq!(
