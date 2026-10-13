@@ -104,10 +104,23 @@ where
             Schema,
         >,
     {
+        if let Err(stop) = execution.consult() {
+            return Ok(WorthQueryApplicationCommitOutcome::Denied(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::provider_execution_denied(
+                    crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ProviderPlan,
+                    crate::facade::primary_graph::relational_execution_kind(stop.into(), None),
+                    "program commit request stopped",
+                ),
+            ));
+        }
         let request = self.change.program.request_scope().clone();
         let runtime = self.entry.application;
         runtime.with_application_advancement(&request, |phase| {
         let application = self.entry.application;
+        let execution = match phase.execution_request_for(application.product_runtime()) {
+            Ok(execution) => execution,
+            Err(cause) => return Ok(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause).into_commit_outcome()),
+        };
         if !std::ptr::eq(application, admitted.runtime.runtime())
             || !self.change.program.belongs_to_application(
                 application.runtime.authority_identity(),
@@ -133,7 +146,7 @@ where
             ));
         };
         Ok(
-            application.compare_and_commit_application_for_program_action(execution, &phase,
+            application.compare_and_commit_application_for_program_action(&execution, &phase,
                 &presented,
                 self.change.program,
                 self.change.idempotency,

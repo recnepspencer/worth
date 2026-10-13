@@ -158,7 +158,7 @@ impl Denial {
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn provider_execution_denied(
+    pub(in crate::domain_computation::primary_graph) fn provider_execution_denied(
         stage: Stage,
         cause: Result<
             crate::domain_computation::WorthQueryProviderSessionDenialKind,
