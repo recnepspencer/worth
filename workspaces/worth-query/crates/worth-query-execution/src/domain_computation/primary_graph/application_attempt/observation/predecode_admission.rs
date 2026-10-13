@@ -40,3 +40,47 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed
         ))
     })
 }
+
+pub(in crate::domain_computation::primary_graph) fn observe_field_value_borrowed_admitted<
+    Output,
+>(
+    runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    snapshot: &SnapshotHandle,
+    entity_id: EntityId,
+    kind: KindId,
+    locator: &AspectFieldLocator,
+    action: impl for<'raw> FnOnce(Option<&'raw AspectValue>) -> Output,
+) -> Result<Option<Output>, worth_relational::facade::transactions::RelationalExecutionDenialCause>
+{
+    let Some(field) = locator.field_path().fields().first().cloned() else {
+        return Ok(None);
+    };
+    let scope = ProjectionAspectScope::from_requirements([ProjectionAspectRequirement::fields(
+        locator.aspect().aspect_key().clone(),
+        [field.clone()],
+    )]);
+    let mut action = Some(action);
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+        return Ok(None);
+    };
+    // The operation reader already admitted this field into its carried work.
+    view.entity_record_with_projection_scope_admitted(
+        execution,
+        entity_id,
+        scope,
+        |_| Ok::<_, std::convert::Infallible>(()),
+        |record| {
+            if record.kind_id() != kind || record.lifecycle() != RecordLifecycleState::Live {
+                return None;
+            }
+            let action = action
+                .take()
+                .expect("single-entity projection invokes once");
+            Some(action(
+                record.aspect_field_value(locator.aspect().aspect_key(), &field),
+            ))
+        },
+    )
+    .map(|result| result.unwrap_or_else(|never| match never {}))
+}

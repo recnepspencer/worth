@@ -32,11 +32,12 @@ where
         self.admit_adjacency_list(relation.name())?;
         let read = self
             .branch_view(relation.name())?
-            .bounded_outgoing_relations_of_kind(
+            .bounded_outgoing_relations_of_kind_admitted(
                 execution,
                 from.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
+                |_| Ok(()),
             )
             .map_err(|cause| {
                 WorthQueryInvariantProjectionTraversalDenial::new(
@@ -85,11 +86,12 @@ where
         self.admit_adjacency_list(relation.name())?;
         let read = self
             .branch_view(relation.name())?
-            .bounded_incoming_relations_of_kind(
+            .bounded_incoming_relations_of_kind_admitted(
                 execution,
                 to.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
+                |_| Ok(()),
             )
             .map_err(|cause| {
                 WorthQueryInvariantProjectionTraversalDenial::new(
@@ -177,16 +179,18 @@ where
     > {
         let available = self
             .branch_view(entity)?
-            .entity_record_with_projection_scope(
+            .entity_record_with_projection_scope_admitted(
                 execution,
                 entity_id,
                 ProjectionAspectScope::empty(),
+                |_| Ok::<_, std::convert::Infallible>(()),
                 |record| {
                     (record.kind_id() == expected_kind
                         && record.lifecycle() == RecordLifecycleState::Live)
                         .then_some(())
                 },
             )
+            .map(|result| result.unwrap_or_else(|never| match never {}))
             .map_err(|cause| {
                 WorthQueryInvariantProjectionTraversalDenial::new(
                     WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(

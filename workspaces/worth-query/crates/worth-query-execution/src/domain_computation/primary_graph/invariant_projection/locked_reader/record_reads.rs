@@ -139,7 +139,7 @@ where
             .field_locator(field.entity(), field.aspect(), field.field())?
             .clone();
         self.work.record_field();
-        let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(
+        let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
             self.runtime,
             execution,
             self.snapshot,

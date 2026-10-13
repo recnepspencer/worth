@@ -1,8 +1,8 @@
 //! Borrow one exact snapshot scalar without the ordinary observation's clone.
 use super::WorthQueryApplicationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::{
-    application_attempt::observe_field_value_borrowed, HandlerExecutionDenial, HandlerInterruption,
-    WorthQueryInvariantEntityIdentity,
+    application_attempt::observe_field_value_borrowed_admitted, HandlerExecutionDenial,
+    HandlerInterruption, WorthQueryInvariantEntityIdentity,
 };
 use worth_foundational::facade::AspectValue as ApplicationValue;
 use worth_query_installation::facade::{
@@ -56,7 +56,7 @@ where
             return Ok(Ok(None));
         };
         self.work.record_field();
-        let observed = observe_field_value_borrowed(
+        let observed = observe_field_value_borrowed_admitted(
             self.runtime,
             self.execution,
             self.snapshot,

@@ -88,6 +88,90 @@ impl VisibilityProjectionView {
         )
     }
 
+    /// Read bounded adjacency already admitted by a caller's projection budget.
+    /// Request stops are consulted before each examined or retained record.
+    pub fn bounded_outgoing_relations_of_kind_admitted(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        kind_id: KindId,
+        maximum_work_units: usize,
+        mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<
+        Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        self.admitted_entity_relations_of_kind(
+            execution,
+            entity_id,
+            kind_id,
+            AdjacencyDirection::Outgoing,
+            maximum_work_units,
+            &mut admit_work,
+        )
+    }
+
+    /// Read bounded adjacency already admitted by a caller's projection budget.
+    /// Request stops are consulted before each examined or retained record.
+    pub fn bounded_incoming_relations_of_kind_admitted(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        kind_id: KindId,
+        maximum_work_units: usize,
+        mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<
+        Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        self.admitted_entity_relations_of_kind(
+            execution,
+            entity_id,
+            kind_id,
+            AdjacencyDirection::Incoming,
+            maximum_work_units,
+            &mut admit_work,
+        )
+    }
+
+    fn admitted_entity_relations_of_kind(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        kind_id: KindId,
+        direction: AdjacencyDirection,
+        maximum_work_units: usize,
+        admit_work: &mut dyn FnMut(
+            u64,
+        )
+            -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<
+        Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        use super::super::native_scan_stop::NativeScanStop;
+        crate::execution::check_request(execution)?;
+        let read = self.entity_relations_of_kind(
+            entity_id,
+            kind_id,
+            direction,
+            &mut |units, examined, reserved| {
+                if examined + reserved == maximum_work_units {
+                    return Err(NativeScanStop::Limit(AdjacencyTruthReadLimitExceeded::new(
+                        examined, reserved,
+                    )));
+                }
+                crate::execution::check_request(execution).map_err(NativeScanStop::Request)?;
+                admit_work(units).map_err(NativeScanStop::Request)
+            },
+        );
+        match read {
+            Ok(read) => Ok(Ok(read)),
+            Err(NativeScanStop::Limit(limit)) => Ok(Err(limit)),
+            Err(NativeScanStop::Request(cause)) => Err(cause),
+        }
+    }
+
     fn bounded_entity_relations_of_kind(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

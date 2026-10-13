@@ -22,7 +22,9 @@ std::thread_local! {
 pub(in crate::domain_computation::primary_graph) fn take_native_field_contacts() -> usize {
     NATIVE_FIELD_CONTACTS.with(|count| count.replace(0))
 }
-pub(in crate::domain_computation::primary_graph) use predecode_admission::observe_field_value_borrowed;
+pub(in crate::domain_computation::primary_graph) use predecode_admission::{
+    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFieldObservation {

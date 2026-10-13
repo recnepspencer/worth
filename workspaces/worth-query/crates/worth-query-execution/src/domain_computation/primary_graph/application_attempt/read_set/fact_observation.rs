@@ -39,6 +39,29 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
     layout: &WorthQueryPrimaryGraphLayout,
     key: &WorthQueryApplicationFactKey,
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    observe_fact_inner(execution, runtime, snapshot, layout, key, false)
+}
+
+/// Retained comparisons have already been bounded by the computation's
+/// declaration. They do not add work a fresh call would not perform.
+pub(in crate::domain_computation::primary_graph) fn observe_admitted_fact(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    layout: &WorthQueryPrimaryGraphLayout,
+    key: &WorthQueryApplicationFactKey,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    observe_fact_inner(execution, runtime, snapshot, layout, key, true)
+}
+
+fn observe_fact_inner(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    snapshot: &SnapshotHandle,
+    layout: &WorthQueryPrimaryGraphLayout,
+    key: &WorthQueryApplicationFactKey,
+    admitted: bool,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     match key {
         WorthQueryApplicationFactKey::Entity { entity, entity_id } => {
             let kind = layout.entity_kind(entity).ok_or_else(|| {
@@ -51,18 +74,31 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
                 .read_truth()
                 .project_snapshot(snapshot)
                 .map(|view| {
-                    view.entity_record_with_projection_scope(
-                        execution,
-                        *entity_id,
-                        ProjectionAspectScope::empty(),
-                        |record| {
+                    let project =
+                        |record: worth_relational::facade::runtime::EntityProjectionRecord<'_>| {
                             Some(
                                 record.kind_id() == kind
                                     && record.lifecycle() == RecordLifecycleState::Live,
                             )
-                        },
-                    )
-                    .map_err(|cause| {
+                        };
+                    let observation = if admitted {
+                        view.entity_record_with_projection_scope_admitted(
+                            execution,
+                            *entity_id,
+                            ProjectionAspectScope::empty(),
+                            |_| Ok::<_, std::convert::Infallible>(()),
+                            project,
+                        )
+                        .map(|result| result.unwrap_or_else(|never| match never {}))
+                    } else {
+                        view.entity_record_with_projection_scope(
+                            execution,
+                            *entity_id,
+                            ProjectionAspectScope::empty(),
+                            project,
+                        )
+                    };
+                    observation.map_err(|cause| {
                         WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, entity)
                     })
                 })
@@ -91,9 +127,25 @@ pub(in crate::domain_computation::primary_graph) fn observe_fact(
                     entity,
                 )
             })?;
-            let observation = super::super::observation::observe_field(
-                runtime, execution, snapshot, *entity_id, kind, locator,
-            )?
+            let observation = if admitted {
+                super::super::observation::observe_field_value_borrowed_admitted(
+                    runtime,
+                    execution,
+                    snapshot,
+                    *entity_id,
+                    kind,
+                    locator,
+                    |value| {
+                        value.cloned().map_or(
+                        super::super::observation::WorthQueryApplicationFieldObservation::Absent,
+                        super::super::observation::WorthQueryApplicationFieldObservation::Present)
+                    },
+                )
+            } else {
+                super::super::observation::observe_field(
+                    runtime, execution, snapshot, *entity_id, kind, locator,
+                )
+            }?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
