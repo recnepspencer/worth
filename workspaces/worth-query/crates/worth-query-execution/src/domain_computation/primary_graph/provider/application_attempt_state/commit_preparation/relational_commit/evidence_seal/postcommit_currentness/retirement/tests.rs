@@ -23,12 +23,12 @@ mod own_retirement_preserves_each_read_locator_and_checkpoint_curren;
 
 #[test]
 fn external_deleted_input_and_live_adjacency_anchor_keep_their_own_comparison() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world = installed_authorization_world(true);
     world
         .application
         .with_host_advancement(|phase| {
+            let borrowed = phase.borrowed_request_for_test();
+            let execution = &borrowed;
             let host_custody = phase.test_host_request();
 
             let (owned, _, own_reads) = reads(

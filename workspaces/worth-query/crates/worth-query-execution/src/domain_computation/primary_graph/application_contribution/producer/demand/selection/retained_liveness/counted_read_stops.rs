@@ -32,7 +32,8 @@ fn retained_output_liveness_door_preserves_stops_at_every_consult() {
                         .read_truth()
                         .project_snapshot(selected.application_basis().snapshot_handle())
                         .unwrap();
-                    crate::test_read_stops::every_consult(
+                    crate::test_read_stops::every_consult_under(
+                        &execution,
                         |request| read(request, &view, entity).map_err(|denied| denied.kind()),
                         denial(Cause::Cancelled).kind(),
                         denial(Cause::WorkExhausted).kind(),

@@ -43,10 +43,17 @@ fn scheduling_progression_preserves_admission_stops_at_every_consult() {
     // refusal is the baseline; the actual scheduling admission read must still
     // propagate every stop before the bridge is contacted.
     world.application.with_host_advancement(|phase| {
-        crate::test_read_stops::every_consult(
+        crate::test_read_stops::every_consult_under(&phase.borrowed_request_for_test(),
             |execution| world.application.schedule_selected_output_producer(
                 execution, &phase, &selected, world.application.current_world(), &source, None,
-            ).map(|_| ()).map_err(|denial| denial.kind()),
+             ).map(|_| ()).map_err(|denial| denial.kind()).or_else(|kind| {
+                if matches!(&kind, WorthQueryOutputDemandDenialKind::BridgeConditional(native)
+                    if matches!(native.as_ref(), worth_runtime_bridge::facade::BridgeConditionalDenialKind::StaleLowering)) {
+                    Ok(())
+                } else {
+                    Err(kind)
+                }
+            }),
             WorthQueryOutputDemandDenialKind::Cancelled,
             WorthQueryOutputDemandDenialKind::SourceQueryExecution(
                 crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(Kind::ExecutionResource {

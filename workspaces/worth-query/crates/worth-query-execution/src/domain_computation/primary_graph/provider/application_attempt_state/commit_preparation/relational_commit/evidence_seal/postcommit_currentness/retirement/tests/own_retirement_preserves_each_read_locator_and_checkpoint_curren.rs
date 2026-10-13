@@ -3,10 +3,10 @@ use super::*;
 
 #[test]
 fn own_retirement_preserves_each_read_locator_and_checkpoint_currentness() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
+            let borrowed = phase.borrowed_request_for_test();
+            let execution = &borrowed;
 let host_custody = phase.test_host_request();
 
 let (entity, kind, facts) = reads(

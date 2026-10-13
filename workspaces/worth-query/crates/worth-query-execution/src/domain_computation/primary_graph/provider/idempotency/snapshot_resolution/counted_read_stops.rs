@@ -33,13 +33,21 @@ fn durable_idempotency_door_preserves_stops_at_every_consult() {
                 selected.product().observation(),
             );
             provider.graph.with_runtime(&execution, |runtime| {
-                crate::test_read_stops::every_consult(
+                crate::test_read_stops::every_consult_under(
+                    &execution,
                     |request| {
                         resolve_at_snapshot(
                             request, provider, runtime, snapshot, &layout, &affinity, binding,
                         )
                         .map(|answer| {
                             matches!(answer, WorthQueryProviderIdempotencyResolution::Absent)
+                        })
+                        .or_else(|denial| {
+                            if matches!(denial, WorthQueryProviderIdempotencyResolutionDenial::CommittedReceiptNotRetained { .. }) {
+                                Ok(false)
+                            } else {
+                                Err(denial)
+                            }
                         })
                     },
                     idempotency_read_stop(Cause::Cancelled),

@@ -86,9 +86,6 @@ fn an_indexed_selection_the_width_cannot_pay_for_is_not_kept() {
 /// that cannot answer leaves the commit's own effect undecidable.
 #[test]
 fn only_a_comparison_that_cannot_answer_is_undecidable() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
     let (entity, locator) = world
         .application
@@ -137,7 +134,13 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
         .application
         .with_host_advancement(|phase| {
             assert_eq!(
-                rebase_result_within(&phase, execution, &world, vec![gone_read.clone()], 64),
+                rebase_result_within(
+                    &phase,
+                    &phase.borrowed_request_for_test(),
+                    &world,
+                    vec![gone_read.clone()],
+                    64
+                ),
                 RebasedSourceFacts::SupersededByOwnEffect {
                     facts: Arc::from([gone_read]),
                     ordinals: Arc::from([0]),
@@ -158,7 +161,13 @@ fn only_a_comparison_that_cannot_answer_is_undecidable() {
     let RebasedSourceFacts::VerificationRequired { own_effect, .. } = world
         .application
         .with_host_advancement(|phase| {
-            rebase_result_within(&phase, execution, &world, vec![uncomparable], 64)
+            rebase_result_within(
+                &phase,
+                &phase.borrowed_request_for_test(),
+                &world,
+                vec![uncomparable],
+                64,
+            )
         })
         .expect("the fixture read owns its installed host call")
     else {

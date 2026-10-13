@@ -3,9 +3,6 @@ use super::*;
 
 #[test]
 fn producer_decision_absence_uses_native_presence_revision() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
     let (entity, locator) = world
         .application
@@ -58,7 +55,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
         .application
         .with_host_advancement(|phase| {
             assert!(matches!(
-                output_selection(&phase, execution, &world, &facts),
+                output_selection(&phase, &phase.borrowed_request_for_test(), &world, &facts),
                 OutputDependencySelection::Reuse
             ))
         })
@@ -92,7 +89,7 @@ fn producer_decision_absence_uses_native_presence_revision() {
         .application
         .with_host_advancement(|phase| {
             assert!(matches!(
-                output_selection(&phase, execution, &world, &facts),
+                output_selection(&phase, &phase.borrowed_request_for_test(), &world, &facts),
                 OutputDependencySelection::FreshRequired
             ))
         })
