@@ -22,6 +22,7 @@ fn refused_maintenance_drops_every_owner_without_panicking() {
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
 }
 #[test]
+#[ignore = "subprocess probe; its parent supplies the required payload"]
 fn refused_maintenance_cleanup_probe() {
     // Ordinary suite runs do not enter the subprocess probe. Its exact child
     // entry requires the payload before it can construct or exercise the fixture.
@@ -106,7 +107,7 @@ fn probe_filter() -> &'static str {
 fn probe_command() -> std::process::Command {
     let mut command = std::process::Command::new(std::env::current_exe().unwrap());
     command
-        .args(["--exact", probe_filter(), "--nocapture"])
+        .args(["--exact", probe_filter(), "--ignored", "--nocapture"])
         .env_remove("WORTH_QUERY_MAINTENANCE_CLEANUP_PROBE");
     command
 }

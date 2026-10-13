@@ -95,7 +95,7 @@ impl WorthQueryRelationalSourceOwner {
         let runtime = self
             .runtime
             .lock()
-            .expect("Relational source owner is available");
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         #[cfg(test)]
         self.read_acquisitions
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
