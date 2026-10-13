@@ -5,7 +5,9 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationProgramAdoptionRecoveryFailure, WorthQueryApplicationRequestExt,
     WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionRecoveryOutcome,
 };
-use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
+use worth_query_host::facade::application_installation::{
+    WorthQueryProgramOwner, WorthQueryProgramSupportRetirementFailure,
+};
 use worth_query_host::facade::domain::{
     WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramSupportRetirementDenial,
 };
@@ -26,7 +28,10 @@ fn current_branch_prevents_program_support_retirement() {
     let denial = host
         .retire_program_support(request_execution, &source)
         .expect_err("the live root still requires P0 support");
-    let WorthQueryProgramSupportRetirementDenial::CurrentBranches(inventory) = denial else {
+    let WorthQueryProgramSupportRetirementFailure::Policy(
+        WorthQueryProgramSupportRetirementDenial::CurrentBranches(inventory),
+    ) = denial
+    else {
         panic!("the live branch must be the stated retirement blocker")
     };
     assert_eq!(inventory.revision(), &source);
@@ -62,7 +67,10 @@ fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
     let denial = host
         .retire_program_support(request_execution, &source)
         .expect_err("the retained P0 interpretation remains a live user");
-    let WorthQueryProgramSupportRetirementDenial::RetainedInterpretation(inventory) = denial else {
+    let WorthQueryProgramSupportRetirementFailure::Policy(
+        WorthQueryProgramSupportRetirementDenial::RetainedInterpretation(inventory),
+    ) = denial
+    else {
         panic!("the retained interpretation must be the stated retirement blocker")
     };
     assert_eq!(inventory.current_branches(), 0);
@@ -78,7 +86,7 @@ fn retained_interpretation_blocks_retirement_after_the_live_branch_moves_on() {
     assert!(receipt.inventory().retained_program_bytes() > 0);
     assert!(matches!(
         host.retire_program_support(request_execution, &source),
-        Err(WorthQueryProgramSupportRetirementDenial::AlreadyRetired { revision })
+        Err(WorthQueryProgramSupportRetirementFailure::Policy(WorthQueryProgramSupportRetirementDenial::AlreadyRetired { revision }))
             if revision == source
     ));
 }
@@ -110,7 +118,10 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
     let denial = host
         .retire_program_support(request_execution, &target)
         .expect_err("the prepared adoption still requires target support");
-    let WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory) = denial else {
+    let WorthQueryProgramSupportRetirementFailure::Policy(
+        WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory),
+    ) = denial
+    else {
         panic!("mandatory adoption custody must be the stated retirement blocker: {denial:?}")
     };
     assert_eq!(inventory.current_branches(), 0);
@@ -173,7 +184,10 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
         .expect_err("the unpublished adoption's custody holds the target support");
     // The branch still publishes P0, so the inventory is complete: only the
     // retained adoption custody uses P1.
-    let WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory) = denial else {
+    let WorthQueryProgramSupportRetirementFailure::Policy(
+        WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory),
+    ) = denial
+    else {
         panic!("the unpublished adoption must be named as mandatory custody: {denial:?}")
     };
     assert_eq!(inventory.revision(), &target);
@@ -211,7 +225,9 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
         .expect_err("performed recovery makes P1 the live branch program");
     assert!(matches!(
         denial,
-        WorthQueryProgramSupportRetirementDenial::CurrentBranches(_)
+        WorthQueryProgramSupportRetirementFailure::Policy(
+            WorthQueryProgramSupportRetirementDenial::CurrentBranches(_)
+        )
     ));
 }
 
@@ -259,7 +275,10 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
     let denial = host
         .retire_program_support(request_execution, &target)
         .expect_err("returned recovery must continue owning target support custody");
-    let WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory) = denial else {
+    let WorthQueryProgramSupportRetirementFailure::Policy(
+        WorthQueryProgramSupportRetirementDenial::MandatoryCustody(inventory),
+    ) = denial
+    else {
         panic!("the returned recovery must be named as mandatory custody: {denial:?}")
     };
     assert_eq!(inventory.current_branches(), 0);
@@ -289,7 +308,9 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
     ));
     assert!(matches!(
         host.retire_program_support(request_execution, &target),
-        Err(WorthQueryProgramSupportRetirementDenial::CurrentBranches(_))
+        Err(WorthQueryProgramSupportRetirementFailure::Policy(
+            WorthQueryProgramSupportRetirementDenial::CurrentBranches(_)
+        ))
     ));
 }
 

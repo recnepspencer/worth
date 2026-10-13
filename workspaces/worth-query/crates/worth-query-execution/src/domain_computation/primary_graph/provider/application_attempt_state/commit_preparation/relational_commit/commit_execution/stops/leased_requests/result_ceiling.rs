@@ -101,10 +101,9 @@ fn index_result_capacity_reaches_application_caller() {
             let lease = authority()
                 .request_lease(request(64 * 1024, 1_000_000))
                 .unwrap();
-            let build = runtime.index_authority().build_for_commit_with_lease(
-                execution,
+            let build = runtime.index_authority().build_for_commit(
+                &worth_execution::ExecutionRequest::leased(&lease),
                 build_request.clone(),
-                &lease,
             );
             assert!(build.generations.is_empty());
             let denial = build

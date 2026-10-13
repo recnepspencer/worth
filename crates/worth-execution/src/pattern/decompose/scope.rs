@@ -3,7 +3,8 @@ use std::{cell::Cell, mem::size_of};
 use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture};
 
 use super::*;
-use crate::backend::{run_scope_with_charge, BackendKind};
+use crate::backend::{run_admitting_scope, BackendKind, ScopeKernelFailure};
+use crate::ReductionEditMemoryBoundError;
 
 impl<I, C, S, B, O, F> ExecutionDecompose<I, C, S, B, O, F>
 where
@@ -86,23 +87,46 @@ where
         Back: Fn(&BackInput<I, B>, &mut MapKernelContext<'_, '_>) -> Result<O, MapKernelFailure<E>>
             + Sync,
     {
+        let checked_changed = self.check_changed(changed, editions)?;
         let tree_bound =
             match &self.snapshot {
-                None => ReductionTree::<C, F>::checked_build_memory_bound(
-                    self.identities.as_slice().len(),
-                    self.max_reduction_value_bytes,
-                ),
-                Some(snapshot) => changed.identities().iter().try_fold(
+                None => if lease.is_some() {
+                    ReductionTree::<C, F>::checked_build_memory_bound(
+                        self.identities.as_slice().len(),
+                        self.max_reduction_value_bytes,
+                    )
+                } else {
+                    ReductionTree::<C, F>::checked_serial_build_memory_bound(
+                        self.identities.as_slice().len(),
+                        self.max_reduction_value_bytes,
+                    )
+                }
+                .ok_or(ReductionEditMemoryBoundError::Overflow),
+                Some(snapshot) => checked_changed.map().identities().iter().try_fold(
                     self.max_reduction_value_bytes,
                     |sum, identity| {
                         sum.checked_add(snapshot.tree.checked_update_memory_bound(
                             *identity,
                             self.max_reduction_value_bytes,
                         )?)
+                        .ok_or(ReductionEditMemoryBoundError::Overflow)
                     },
                 ),
-            };
-        let bound = tree_bound.and_then(|tree_scratch| {
+            }
+            .map_err(|error| DecomposeRunFailure {
+                cause: DecomposeFailure::Input(match error {
+                    ReductionEditMemoryBoundError::UnknownIdentity(identity) => {
+                        DecomposeInputDenial::UnknownIdentity(identity)
+                    }
+                    ReductionEditMemoryBoundError::Overflow => {
+                        LeaseDenial::charged_bytes_overflow();
+                        DecomposeInputDenial::MemoryOverflow
+                    }
+                }),
+                total_report: empty_report(),
+            })?;
+        let bound = (|| {
+            let tree_scratch = tree_bound;
             let tree = tree_scratch.checked_add(
                 self.snapshot
                     .as_ref()
@@ -130,35 +154,33 @@ where
                 .checked_add(self.reducer_storage_bytes)?;
             let result = self.max_staged_bytes.checked_mul(2)?.checked_add(tree)?;
             Some((retained, result))
-        });
-        let Some((retained_bytes, max_result_bytes)) = bound else {
-            return Err(DecomposeRunFailure {
+        })();
+        let (retained_bytes, max_result_bytes) = bound
+            .ok_or_else(LeaseDenial::charged_bytes_overflow)
+            .map_err(|_| DecomposeRunFailure {
                 cause: DecomposeFailure::Input(DecomposeInputDenial::MemoryOverflow),
                 total_report: empty_report(),
-            });
-        };
+            })?;
         let stage = Cell::new(DecomposeStage::Interior);
         let fallback = Cell::new(None);
-        let scope = run_scope_with_charge(
+        let scope = run_admitting_scope(
             lease,
             retained_bytes,
             max_result_bytes,
             charge_parent,
             |_context| {
-                let staged = self
-                    .run_stages(
-                        lease,
-                        backend,
-                        changed,
-                        editions,
-                        &interior,
-                        &solve_interface,
-                        &back_substitute,
-                        _context,
-                        &stage,
-                        &fallback,
-                    )
-                    .map_err(MapKernelFailure::Domain)?;
+                let staged = Self::run_stages(
+                    checked_changed,
+                    lease,
+                    backend,
+                    &interior,
+                    &solve_interface,
+                    &back_substitute,
+                    _context,
+                    &stage,
+                    &fallback,
+                )
+                .map_err(|cause| ScopeKernelFailure::Kernel(MapKernelFailure::Domain(cause)))?;
                 if let Some(handoff) = retained_handoff.as_mut() {
                     let bytes = staged
                         .additional_charged_bytes()
@@ -168,13 +190,13 @@ where
                                 u64::try_from(size_of::<Staged<I, C, S, B, O, F>>()).ok()?,
                             )
                         })
-                        .ok_or({
-                            MapKernelFailure::Domain(DecomposeFailure::ScopeAdmission(
-                                LeaseDenial::ChargedBytesOverflow,
+                        .ok_or_else(|| {
+                            ScopeKernelFailure::Refused(DecomposeFailure::ScopeAdmission(
+                                LeaseDenial::charged_bytes_overflow(),
                             ))
                         })?;
                     handoff(bytes).map_err(|denial| {
-                        MapKernelFailure::Domain(DecomposeFailure::ScopeAdmission(denial))
+                        ScopeKernelFailure::Refused(DecomposeFailure::ScopeAdmission(denial))
                     })?;
                 }
                 Ok(staged)
@@ -225,3 +247,6 @@ pub(super) fn empty_report() -> ExecutionReport {
         ExecutionPhysicalReport::default(),
     )
 }
+
+#[cfg(test)]
+mod tests;

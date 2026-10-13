@@ -22,6 +22,33 @@ impl ExecutionAuthority {
 }
 
 impl ExecutionResourceLease<'_> {
+    /// Bytes currently held on this lease, including descendant charges.
+    /// This observation grants no room; reservations still check the whole lineage.
+    pub fn charged_memory_bytes(&self) -> u64 {
+        self.authority
+            .ledger
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .nodes
+            .get(&self.node.id)
+            .map_or(0, |usage| usage.charged_memory_bytes)
+    }
+
+    /// Observes the room left by every ancestor and the process. It is not a
+    /// reservation: admission checks those limits again under the ledger lock.
+    pub fn available_memory_bytes(&self) -> u64 {
+        let ledger = self
+            .authority
+            .ledger
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        room::available(
+            &ledger,
+            self.authority.config.charged_memory_bytes,
+            std::iter::successors(Some(self.node.as_ref()), |node| node.parent.as_deref()),
+        )
+    }
+
     /// Holds `bytes` on this lease, every ancestor and the process until the
     /// reservation drops or is resized.
     pub fn reserve_memory(
@@ -29,7 +56,7 @@ impl ExecutionResourceLease<'_> {
         bytes: u64,
     ) -> Result<ExecutionMemoryReservation, MemoryLimitDenial> {
         let mut memory = LeaseMemory {
-            authority: Arc::clone(&self.authority.inner),
+            authority: Arc::clone(&self.authority),
             node: Arc::clone(&self.node),
             bytes: 0,
         };
@@ -83,8 +110,8 @@ impl LeaseMemory {
         lease: &ExecutionResourceLease<'_>,
         bytes: u64,
     ) -> Result<(), LeaseDenial> {
-        if !Arc::ptr_eq(&self.authority, &lease.authority.inner) {
-            return Err(LeaseDenial::UnrelatedNestedLease);
+        if !Arc::ptr_eq(&self.authority, &lease.authority) {
+            return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
         }
         let held = self.bytes;
         let old = self.lineage().map(|node| node.id).collect::<Vec<_>>();
@@ -128,5 +155,45 @@ impl LeaseMemory {
 impl Drop for LeaseMemory {
     fn drop(&mut self) {
         let _ = self.resize(0);
+    }
+}
+
+#[cfg(test)]
+mod room_tests {
+    use super::*;
+    use std::num::NonZeroUsize;
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+
+    #[test]
+    fn available_room_includes_the_ancestors_other_holds() {
+        let request = |bytes| super::super::LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(NonZeroUsize::MIN, bytes, 100),
+            ),
+            cancellation: crate::CancellationToken::new(),
+            deadline: None,
+        };
+        let parent = ExecutionResourceLease::serial(request(1_000)).unwrap();
+        let parent_hold = parent.reserve_memory(300).unwrap();
+        let child = parent.child(request(800)).unwrap();
+        assert_eq!(child.available_memory_bytes(), 700);
+        let child_hold = child.reserve_memory(100).unwrap();
+        assert_eq!(child.available_memory_bytes(), 600);
+        let sibling_hold = parent.reserve_memory(200).unwrap();
+        assert_eq!(child.available_memory_bytes(), 400);
+        assert_eq!(
+            child.reserve_memory(401).unwrap_err(),
+            MemoryLimitDenial::refused(401, 400, crate::MemoryLimitLevel::Policy { ancestor: 1 })
+        );
+        drop(sibling_hold);
+        assert_eq!(child.available_memory_bytes(), 600);
+        drop(child_hold);
+        assert_eq!(child.available_memory_bytes(), 700);
+        drop(parent_hold);
+        assert_eq!(child.available_memory_bytes(), 800);
     }
 }

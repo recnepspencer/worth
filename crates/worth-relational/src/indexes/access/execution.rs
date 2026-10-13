@@ -22,14 +22,13 @@ pub(crate) fn execute_index_backed_query_from_generation(
     generation_id: DerivedIndexGenerationId,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<Option<QueryExecutionOutcome>, crate::runtime::QueryReadExecutionStop> {
-    execution.check_live().map_err(request_stop)?;
+    execution
+        .consult()
+        .map_err(crate::runtime::QueryReadExecutionStop::Request)?;
     let Some(generation) = runtime.indexes.generation(generation_id) else {
         return Ok(None);
     };
-    let Some(exact_projection) = runtime
-        .read_truth()
-        .project_snapshot(&plan.snapshot, execution)
-    else {
+    let Some(exact_projection) = runtime.read_truth().project_snapshot(&plan.snapshot) else {
         return Ok(None);
     };
     let source = IndexProjectionSource::exact(&exact_projection)
@@ -201,14 +200,19 @@ fn execute_entity_index_lookup(
     let mut entities = scratch.entity_buffer(candidate_ids.len());
     let mut touched_partition_ids = BTreeSet::new();
     for entity_id in candidate_ids {
-        execution.check_live().map_err(request_stop)?;
+        execution
+            .consult()
+            .map_err(crate::runtime::QueryReadExecutionStop::Request)?;
         if partition_scope
             .as_ref()
             .is_some_and(|partitions| !partitions.contains(&entity_id.partition_id))
         {
             continue;
         }
-        let Some(record) = source.with_entity(execution, entity_id, Clone::clone) else {
+        let Some(record) = source
+            .with_entity(execution, entity_id, Clone::clone)
+            .map_err(crate::runtime::QueryReadExecutionStop::ReadRequest)?
+        else {
             continue;
         };
         if include(&record) {
@@ -249,14 +253,19 @@ fn execute_relation_index_lookup(
     let mut relations = scratch.relation_buffer(candidate_ids.len());
     let mut touched_partition_ids = BTreeSet::new();
     for relation_id in candidate_ids {
-        execution.check_live().map_err(request_stop)?;
+        execution
+            .consult()
+            .map_err(crate::runtime::QueryReadExecutionStop::Request)?;
         if partition_scope
             .as_ref()
             .is_some_and(|partitions| !partitions.contains(&relation_id.partition_id))
         {
             continue;
         }
-        let Some(record) = source.with_relation(execution, relation_id, Clone::clone) else {
+        let Some(record) = source
+            .with_relation(execution, relation_id, Clone::clone)
+            .map_err(crate::runtime::QueryReadExecutionStop::ReadRequest)?
+        else {
             continue;
         };
         if include(&record) {
@@ -321,10 +330,4 @@ fn build_index_query_execution(
         },
         result,
     }
-}
-
-fn request_stop(stop: worth_execution::MapKernelStop) -> crate::runtime::QueryReadExecutionStop {
-    crate::runtime::QueryReadExecutionStop::Request(worth_execution::WorkCeilingDenial::Stopped(
-        stop,
-    ))
 }

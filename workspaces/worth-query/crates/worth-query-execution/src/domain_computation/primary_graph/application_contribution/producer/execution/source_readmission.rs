@@ -91,7 +91,14 @@ where
     let selected = runtime
         .on_branch(branch)
         .select_with_request(execution)
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
+        .map_err(|error| match error {
+            stopped @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                WorthQueryOutputDemandDenial::product_selection(stopped, Binding::IDENTITY)
+            }
+            refused @ crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                failed(Binding::IDENTITY, refused)
+            }
+        })?;
     let (installed, principal, scope) = authorize_retained_source_on_selected::<Schema, Binding>(
         execution,
         runtime,

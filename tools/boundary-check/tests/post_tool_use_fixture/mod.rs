@@ -7,7 +7,7 @@ use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
 pub const HOOK_BUDGET: Duration = Duration::from_secs(15);
 
@@ -87,11 +87,7 @@ fn copy_tree(source: &Path, destination: &Path) {
 }
 
 pub fn hostile_workspace() -> PathBuf {
-    let nonce = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let path = std::env::temp_dir().join(format!("worth-phase7-hook-{nonce}"));
+    let path = worth_harness::tooling::fixture_path::unique_path("worth-phase7-hook");
     copy_tree(
         &root().join("tools/boundary-check/tests/fixtures/schema_query_import"),
         &path,

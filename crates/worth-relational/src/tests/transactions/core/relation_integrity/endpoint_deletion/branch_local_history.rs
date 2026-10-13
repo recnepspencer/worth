@@ -51,20 +51,26 @@ fn relation_integrity_endpoint_deletion_history_stays_branch_local_under_diverge
         .branch_head(&BranchId("feature".to_string()))
         .unwrap()
         .version_id;
-    let main_inspection = runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("main".to_string()),
-        main_head_version,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
-    let feature_inspection = runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("feature".to_string()),
-        feature_head_version,
-        RecordRef::Relation(relation),
-        crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
-    );
+    let main_inspection = runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("main".to_string()),
+            main_head_version,
+            RecordRef::Relation(relation),
+            crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
+    let feature_inspection = runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("feature".to_string()),
+            feature_head_version,
+            RecordRef::Relation(relation),
+            crate::facade::inspection::HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
 
     assert_eq!(main_delete.version_id, main_head_version);
     assert_eq!(main_digest.entry_count, 2);
@@ -86,6 +92,7 @@ fn relation_integrity_endpoint_deletion_history_stays_branch_local_under_diverge
     let main_read = runtime
         .read_truth()
         .read_snapshot(&main_delete.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     assert_eq!(
         main_read.get_relation(relation).unwrap().lifecycle,

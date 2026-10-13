@@ -290,13 +290,19 @@ where
                 let snapshot = security.snapshot_handle();
                 let principal_current = capability
                     .principal()
-                    .remains_current_in(execution, runtime, snapshot);
-                let decision_current = capability.decision().remains_current_in(
-                    execution,
-                    runtime,
-                    snapshot,
-                    self.authorization.bridge(),
-                );
+                    .remains_current_in(execution, runtime, snapshot)
+                    .map_err(|kind| {
+                        WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+                    })?;
+                let decision_current = capability
+                    .decision()
+                    .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+                    .map_err(|cause| {
+                        crate::domain_computation::authorization::denial::relational_read_denial(
+                            cause,
+                            "authorization currentness",
+                        )
+                    })?;
                 let result = if !principal_current {
                     Err(stale_principal())
                 } else if !decision_current {

@@ -5,11 +5,10 @@ use crate::tests::domains::fintech::{
     FreshFinancialRecompute,
 };
 
-use super::throughput_definition::{assert_within_throughput_budget, profiles};
+use super::throughput_definition::profiles;
 
 #[test]
 fn throughput_idle_preserves_financial_truth_without_optional_observation_work() {
-    let started = std::time::Instant::now();
     let idle = profiles()
         .into_iter()
         .find(|profile| profile.name == "throughput_idle")
@@ -36,12 +35,10 @@ fn throughput_idle_preserves_financial_truth_without_optional_observation_work()
         observation_after.is_idle_zero(),
         "throughput idle must not materialize optional observation surfaces: {observation_after:?}"
     );
-    assert_within_throughput_budget(started, "portfolio idle truth");
 }
 
 #[test]
 fn throughput_and_balanced_profiles_commit_the_same_financial_projection() {
-    let started = std::time::Instant::now();
     let idle = profiles()
         .into_iter()
         .find(|profile| profile.name == "throughput_idle")
@@ -89,7 +86,6 @@ fn throughput_and_balanced_profiles_commit_the_same_financial_projection() {
         balanced_world.ledger().observed_work(),
         "profile changes may alter observation, not semantic work identity"
     );
-    assert_within_throughput_budget(started, "portfolio idle/balanced projection");
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

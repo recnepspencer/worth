@@ -4,6 +4,7 @@ use super::super::super::fixture::{
     RevokeCapabilityElevationOperation,
 };
 use super::super::capability_progression::time;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
     WorthQueryApplicationCommitOutcome, WorthQueryElevationCloseOutcome,
@@ -92,7 +93,9 @@ fn approved_elevation_closes_to_a_linear_review_obligation_and_cuts_active_use()
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }
 
@@ -184,7 +187,9 @@ fn close_command_cannot_select_a_different_elevation_subject() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationCloseRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationCloseRejected
+        )
     );
 }
 

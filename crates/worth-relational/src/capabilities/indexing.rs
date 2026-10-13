@@ -18,17 +18,12 @@ impl ReplayRead for RelationalRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: VersionId,
     ) -> Result<ReplaySnapshotSurface, crate::execution::RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
-        let projection = self
-            .read_truth()
-            .project_historical_version(execution, version_id);
-        let surface = ReplaySnapshotSurface {
+        let projection = self.read_truth().project_historical_version(version_id);
+        Ok(ReplaySnapshotSurface {
             version_id,
-            entities: projection.all_authoritative_entity_records(execution),
-            relations: projection.all_authoritative_relation_records(execution),
-        };
-        crate::execution::check_request(execution)?;
-        Ok(surface)
+            entities: projection.all_authoritative_entity_records(execution)?,
+            relations: projection.all_authoritative_relation_records(execution)?,
+        })
     }
 
     fn index_generations_at_version(&self, version_id: VersionId) -> Vec<DerivedIndexGeneration> {

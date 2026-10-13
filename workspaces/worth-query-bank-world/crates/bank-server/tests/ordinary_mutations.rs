@@ -1,3 +1,4 @@
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 #[path = "ordinary_mutations/assertions.rs"]
 mod assertions;
 #[path = "ordinary_mutations/authorization_time.rs"]
@@ -143,7 +144,7 @@ fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift(
             if matches!(
                 denial.kind(),
                 worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(
-                    worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+                    worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied)
                 )
             )
     ));

@@ -35,7 +35,7 @@ fn merge_unique_value_refusals_keep_their_kind() {
             "merge_write_shape_unread",
         ),
     ] {
-        assert_eq!(merge_unique_value_denial_kind(refusal), kind);
+        assert_eq!(merge_unique_value_denial_kind(refusal), Ok(kind));
         assert_eq!(kind.as_str(), name);
     }
 }

@@ -1,5 +1,7 @@
 //! Entity/field reads of the selected native snapshot.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
@@ -32,18 +34,19 @@ where
         let execution = self.execution;
         if !self.work_budget.can_afford(3) {
             return Err(WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
                 field.field(),
             ));
         }
         let value = Field::Binding::encode(&value).map_err(|_| {
             WorthQueryEntityResolutionDenial::new(
-                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
                 field.field(),
             )
         })?;
         let truth = self.entity_resolution.at_snapshot(
-            execution,
             self.runtime,
             self.snapshot,
             WorthQueryPrincipalResolutionMode::Ordinary,
@@ -57,7 +60,11 @@ where
         );
         self.work_budget.consume(1 + examined);
         self.work.record_lookup(examined);
-        let resolved = resolved?;
+        let resolved = resolved.inspect_err(|denial| {
+            if let WorthQueryEntityResolutionDenialKind::Stopped(cause) = denial.kind() {
+                self.native_read_stop = Some(cause);
+            }
+        })?;
         self.realized_scope.record(resolved.entity_id());
         Ok(WorthQueryInvariantEntityIdentity {
             entity_id: resolved.entity_id(),
@@ -94,7 +101,12 @@ where
         let _execution = self.execution;
         match self.resolve_entity(field, value) {
             Ok(identity) => Ok(Some(identity)),
-            Err(denial) if denial.kind() == WorthQueryEntityResolutionDenialKind::UnknownEntity => {
+            Err(denial)
+                if denial.kind()
+                    == WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::UnknownEntity,
+                    ) =>
+            {
                 Ok(None)
             }
             Err(denial) => Err(denial),
@@ -127,7 +139,7 @@ where
             .field_locator(field.entity(), field.aspect(), field.field())?
             .clone();
         self.work.record_field();
-        crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed(
+        let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
             self.runtime,
             execution,
             self.snapshot,
@@ -136,7 +148,14 @@ where
             &locator,
             |raw| raw.and_then(|value| Field::Binding::decode(value).ok()),
         )
-        .flatten()
+        ;
+        match observed {
+            Ok(value) => value.flatten(),
+            Err(cause) => {
+                self.native_read_stop.get_or_insert(cause);
+                None
+            }
+        }
     }
 
     pub(in crate::domain_computation::primary_graph::invariant_projection) fn identity_is_local<

@@ -34,7 +34,8 @@ pub use program_owner::{
     WorthQueryProgramOwner, WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
 };
 pub use program_runtime::{
-    WorthQueryProgramApplicationRuntime, WorthQueryProgramSupportRetirementReceipt,
+    WorthQueryProgramApplicationRuntime, WorthQueryProgramSupportRetirementFailure,
+    WorthQueryProgramSupportRetirementReceipt,
 };
 pub use roster_authoring::WorthQueryApplicationProgramRoster;
 pub use specialized_action::WorthQueryAdmittedProgramOperation;

@@ -1,6 +1,8 @@
 //! Fork/retirement exclusion courts for branch-carried program truth.
 
-use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
+use worth_query_host::facade::application_installation::{
+    WorthQueryProgramOwner, WorthQueryProgramSupportRetirementFailure,
+};
 use worth_query_host::facade::domain::WorthQueryProgramSupportRetirementDenial;
 use worth_query_host::facade::product::{
     WorthQueryProductBranchCreateError, WorthQueryProductBranchCreationDenial,
@@ -61,7 +63,9 @@ fn in_flight_fork_reservation_blocks_retirement_until_its_terminal() {
         .with_program_fork_reservation_for_test(&source, || {
             assert!(matches!(
                 host.retire_program_support(request_execution, &source),
-                Err(WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(_))
+                Err(WorthQueryProgramSupportRetirementFailure::Policy(
+                    WorthQueryProgramSupportRetirementDenial::InventoryUnavailable(_)
+                ))
             ));
         });
     host.runtime()
@@ -78,7 +82,10 @@ fn in_flight_fork_reservation_blocks_retirement_until_its_terminal() {
     let denial = host
         .retire_program_support(request_execution, &source)
         .expect_err("both live P0 branches remain truthful retirement users");
-    let WorthQueryProgramSupportRetirementDenial::CurrentBranches(inventory) = denial else {
+    let WorthQueryProgramSupportRetirementFailure::Policy(
+        WorthQueryProgramSupportRetirementDenial::CurrentBranches(inventory),
+    ) = denial
+    else {
         panic!("the completed fork must become ordinary branch inventory")
     };
     assert_eq!(inventory.current_branches(), 2);

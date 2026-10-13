@@ -79,11 +79,10 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
         cold.kind(),
         BoundedRelatedEntityOrderedLookupDenialKind::ExactGenerationUnavailable
     );
-    let rebuilt = restored.index_authority().build_for_basis_with_lease(
-        execution,
+    let rebuilt = restored.index_authority().build_for_basis(
+        &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
         fixture.request(&restored_basis),
         &restored_basis,
-        &test_execution_lease(),
     );
     assert!(rebuilt.failed_indexes.is_empty());
     assert!(rebuilt.execution_denial.is_none());

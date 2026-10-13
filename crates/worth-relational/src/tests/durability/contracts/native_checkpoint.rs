@@ -186,6 +186,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
             recovered.current_version_id(),
             4,
         )
+        .expect("read request remains live")
         .unwrap()
         .into_records();
 
@@ -195,7 +196,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".to_owned()));
     let projected = recovered
         .read_truth()
-        .project_snapshot(&snapshot, execution)
+        .project_snapshot(&snapshot)
         .unwrap()
         .bounded_outgoing_relations_for_frontier(
             execution,
@@ -203,6 +204,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
             KindId(2),
             4,
         )
+        .expect("read request remains live")
         .unwrap()
         .into_records();
     assert_eq!(projected.len(), 1);

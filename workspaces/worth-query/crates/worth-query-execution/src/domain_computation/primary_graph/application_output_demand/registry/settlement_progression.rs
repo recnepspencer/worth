@@ -4,7 +4,7 @@ use super::{
     DemandState, SelectedReadyReadmission, WorthQueryAcceptedOutputAuthority,
     WorthQueryOutputCheckpoint, WorthQueryOutputDemandInterest, WorthQueryOutputDemandRegistry,
 };
-use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
+use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
 };
@@ -71,12 +71,13 @@ impl WorthQueryOutputDemandRegistry {
         admission
             .charge_external_work(u64::try_from(destruction).map_err(|_| work_denial())?)
             .map_err(|_| work_denial())?;
-        let record = state
+        let mut record = state
             .records
             .get_mut(&interest.key)
             .expect("selected Ready row retained");
         let obligation_bytes = record.obligation_reserved_bytes();
         let obligations = std::mem::take(&mut record.performed_obligations);
+        record.finish();
         drop(state);
         // Keep the retained charge until the Vec and its owned sources die.
         drop(obligations);
@@ -110,7 +111,10 @@ impl WorthQueryOutputDemandRegistry {
         let DemandState::Output(output) = &record.state else {
             return Ok(None);
         };
-        if !matches!(output.advancement, super::WorthQueryOutputAdvancement::Idle) {
+        if !matches!(
+            output.advancement(),
+            super::WorthQueryOutputAdvancement::Idle
+        ) {
             return Ok(None);
         }
         let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
@@ -136,7 +140,7 @@ impl WorthQueryOutputDemandRegistry {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state.records.get_mut(&interest.key).ok_or_else(|| {
+        let mut record = state.records.get_mut(&interest.key).ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::Closed,
                 "settled output lost its demand record",
@@ -158,8 +162,9 @@ impl WorthQueryOutputDemandRegistry {
             ));
         }
         let released = record.release_obligations();
+        record.finish();
         state.obligation_reserved_bytes = state.obligation_reserved_bytes.saturating_sub(released);
-        state.remove_required_member_if_released(&interest.key);
+        super::post_commit::release_settled_member(&mut state, &interest.key, accepted);
         Ok(())
     }
 }

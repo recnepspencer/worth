@@ -64,7 +64,10 @@ fn locate_idempotency_entity(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     context: &WorthQueryIdempotencySnapshotContext<'_>,
     key: &AspectValue,
-) -> Result<Option<worth_relational::facade::identity::EntityId>, &'static str> {
+) -> Result<
+    Option<worth_relational::facade::identity::EntityId>,
+    WorthQueryProviderIdempotencyResolutionDenial,
+> {
     let request = BoundedEntityFieldLookupRequest::new(
         context.snapshot.clone(),
         context.layout.key_index_id,
@@ -73,14 +76,19 @@ fn locate_idempotency_entity(
         key.clone(),
         2,
     )
-    .map_err(|_| "provider idempotency lookup request was rejected")?;
+    .map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
     let lookup = context
         .runtime
         .index_access()
         .execute_bounded_entity_field_lookup(request, BoundedIndexParityMode::Production, execution)
-        .map_err(|_| "provider idempotency index lookup failed")?;
+        .map_err(|denied| match denied.kind() {
+            worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(
+                cause,
+            ) => idempotency_read_stop(cause),
+            _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
+        })?;
     if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
-        return Err("provider idempotency key is not unique");
+        return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);
     }
     Ok(lookup.candidate_entity_ids().first().copied())
 }
@@ -90,7 +98,7 @@ fn read_idempotency_record(
     context: &WorthQueryIdempotencySnapshotContext<'_>,
     entity_id: worth_relational::facade::identity::EntityId,
     key: &AspectValue,
-) -> Result<WorthQueryProjectedIdempotencyRecord, &'static str> {
+) -> Result<WorthQueryProjectedIdempotencyRecord, WorthQueryProviderIdempotencyResolutionDenial> {
     let fields = idempotency_projection_fields(context.layout)?;
     let scope = ProjectionAspectScope::from_requirements([ProjectionAspectRequirement::fields(
         context.layout.key_locator.aspect().aspect_key().clone(),
@@ -101,50 +109,50 @@ fn read_idempotency_record(
             fields.emitted_effect_count.clone(),
         ],
     )]);
-    context
+    let view = context
         .runtime
         .read_truth()
-        .project_snapshot(context.snapshot, execution)
-        .and_then(|view| {
-            view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
-                (record.kind_id() == context.layout.entity_kind
-                    && record.lifecycle() == RecordLifecycleState::Live
-                    && record.aspect_field_value(
-                        context.layout.key_locator.aspect().aspect_key(),
-                        &fields.key,
-                    ) == Some(key))
-                .then(|| WorthQueryProjectedIdempotencyRecord {
-                    created_at_version: record.created_at_version(),
-                    intent: record
-                        .aspect_field_value(
-                            context.layout.intent_locator.aspect().aspect_key(),
-                            &fields.intent,
-                        )
-                        .cloned(),
-                    outcome_identity: record
-                        .aspect_field_value(
-                            context
-                                .layout
-                                .outcome_identity_locator
-                                .aspect()
-                                .aspect_key(),
-                            &fields.outcome_identity,
-                        )
-                        .cloned(),
-                    emitted_effect_count: record
-                        .aspect_field_value(
-                            context
-                                .layout
-                                .emitted_effect_count_locator
-                                .aspect()
-                                .aspect_key(),
-                            &fields.emitted_effect_count,
-                        )
-                        .cloned(),
-                })
-            })
+        .project_snapshot(context.snapshot)
+        .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)?;
+    view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
+        (record.kind_id() == context.layout.entity_kind
+            && record.lifecycle() == RecordLifecycleState::Live
+            && record.aspect_field_value(
+                context.layout.key_locator.aspect().aspect_key(),
+                &fields.key,
+            ) == Some(key))
+        .then(|| WorthQueryProjectedIdempotencyRecord {
+            created_at_version: record.created_at_version(),
+            intent: record
+                .aspect_field_value(
+                    context.layout.intent_locator.aspect().aspect_key(),
+                    &fields.intent,
+                )
+                .cloned(),
+            outcome_identity: record
+                .aspect_field_value(
+                    context
+                        .layout
+                        .outcome_identity_locator
+                        .aspect()
+                        .aspect_key(),
+                    &fields.outcome_identity,
+                )
+                .cloned(),
+            emitted_effect_count: record
+                .aspect_field_value(
+                    context
+                        .layout
+                        .emitted_effect_count_locator
+                        .aspect()
+                        .aspect_key(),
+                    &fields.emitted_effect_count,
+                )
+                .cloned(),
         })
-        .ok_or("provider idempotency record is not authoritative")
+    })
+    .map_err(idempotency_read_stop)?
+    .ok_or(WorthQueryProviderIdempotencyResolutionDenial::Unavailable)
 }
 
 fn idempotency_projection_fields(
@@ -237,3 +245,14 @@ fn resolve_projected_idempotency(
         committed,
     ))
 }
+
+fn idempotency_read_stop(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> WorthQueryProviderIdempotencyResolutionDenial {
+    WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(
+        super::super::relational_execution_denial::relational_execution_kind(cause, None),
+    )
+}
+
+#[cfg(test)]
+mod counted_read_stops;

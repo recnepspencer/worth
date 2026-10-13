@@ -2,7 +2,9 @@ use super::application_operation_reentry as reentry;
 use super::signal_decision_reentry::{
     WorthQueryRetainedConditionalDecision, WorthQueryRetainedConditionalWake,
 };
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph as graph;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use classification::WorthQueryConditionalExecutionCause as Cause;
 use graph::{
     WorthQueryInvariantProjectionDenialKind as InvariantKind,
@@ -210,18 +212,24 @@ fn admission_retention_identity_exhausted(
 ) -> bool {
     use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
-        Admission::Principal(kind) => matches!(kind, PrincipalKind::RetentionIdentityExhausted),
+        Admission::Principal(kind) => matches!(
+            kind,
+            PrincipalKind::Refused(PrincipalRefusal::RetentionIdentityExhausted)
+        ),
         Admission::Entity(kind) => matches!(
             kind,
-            graph::WorthQueryEntityResolutionDenialKind::RetentionIdentityExhausted
+            graph::WorthQueryEntityResolutionRefusalKind::RetentionIdentityExhausted
         ),
         Admission::Authorization(kind) => {
-            matches!(kind, AuthorizationKind::RetentionIdentityExhausted)
+            matches!(
+                kind,
+                AuthorizationKind::Refused(AuthorizationRefusal::RetentionIdentityExhausted)
+            )
         }
         Admission::Projection(kind) => matches!(
             kind,
             graph::WorthQueryOperationProjectionDenialKind::Authorization(
-                AuthorizationKind::RetentionIdentityExhausted
+                AuthorizationKind::Refused(AuthorizationRefusal::RetentionIdentityExhausted)
             ) | graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
                 InvariantKind::RetentionIdentityExhausted
             )
@@ -235,18 +243,24 @@ fn admission_snapshot_identity_exhausted(
 ) -> bool {
     use reentry::WorthQueryTemporalAdmissionTerminalFailure as Admission;
     match failure {
-        Admission::Principal(kind) => matches!(kind, PrincipalKind::SnapshotIdentityExhausted),
+        Admission::Principal(kind) => matches!(
+            kind,
+            PrincipalKind::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
+        ),
         Admission::Entity(kind) => matches!(
             kind,
-            graph::WorthQueryEntityResolutionDenialKind::SnapshotIdentityExhausted
+            graph::WorthQueryEntityResolutionRefusalKind::SnapshotIdentityExhausted
         ),
         Admission::Authorization(kind) => {
-            matches!(kind, AuthorizationKind::SnapshotIdentityExhausted)
+            matches!(
+                kind,
+                AuthorizationKind::Refused(AuthorizationRefusal::SnapshotIdentityExhausted)
+            )
         }
         Admission::Projection(kind) => matches!(
             kind,
             graph::WorthQueryOperationProjectionDenialKind::Authorization(
-                AuthorizationKind::SnapshotIdentityExhausted
+                AuthorizationKind::Refused(AuthorizationRefusal::SnapshotIdentityExhausted)
             ) | graph::WorthQueryOperationProjectionDenialKind::InvariantAdmission(
                 InvariantKind::SnapshotIdentityExhausted
             )

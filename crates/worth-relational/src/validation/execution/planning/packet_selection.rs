@@ -66,18 +66,26 @@ pub(super) fn eligible_registrations<'state>(
             let access = registration.access_contract();
             let has_declared_applicability = !access.affected_entity_kinds.is_empty()
                 || !access.affected_relation_kinds.is_empty();
-            if preparation_budget.is_none()
-                && has_declared_applicability
+            let unrelated = has_declared_applicability
                 && touched_kinds
                     .get_or_init(|| {
-                        super::custom_applicability::CandidateTouchedKinds::from_request(request)
+                        super::custom_applicability::CandidateTouchedKinds::from_request(
+                            request,
+                            preparation_budget,
+                        )
                     })
                     .as_ref()
-                    .is_some_and(|kinds| !kinds.may_affect(access))
-            {
+                    .is_some_and(|kinds| !kinds.may_affect(access));
+            if preparation_budget.is_some_and(|budget| budget.stop().is_some()) {
+                return None;
+            }
+            if unrelated {
+                let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::empty();
+                let retained_touched = prepared_scope.retained_touched();
                 return Some(InvariantPacketRegistration::CustomNotApplicable {
                     registration: registration.clone(),
-                    prepared_scope: crate::validation::data::PreparedCustomInvariantScope::empty(),
+                    prepared_scope,
+                    retained_touched,
                     work,
                 });
             }
@@ -110,10 +118,19 @@ pub(super) fn eligible_registrations<'state>(
                 return Some(InvariantPacketRegistration::CustomNotApplicable {
                     registration: registration.clone(),
                     prepared_scope,
+                    retained_touched: planner.retained_touched(),
                     work,
                 });
             }
-            let prepared_execution = if let Some(budget) = preparation_budget {
+            let prepared_execution = if !registration.supports_checked_preparation()
+                && runtime.custom_kernel_posture == worth_foundational::ExecutionPosture::Serial
+            {
+                // The request cannot schedule this kernel on another worker.
+                // Scope capture still uses the same request-backed meter.
+                registration
+                    .executable()
+                    .prepare_for_execution(runtime, &mut planner)
+            } else if let Some(budget) = preparation_budget {
                 match registration.executable().prepare_for_execution_checked(
                     runtime,
                     &mut planner,
@@ -125,6 +142,7 @@ pub(super) fn eligible_registrations<'state>(
                         return Some(InvariantPacketRegistration::CustomNotApplicable {
                             registration: registration.clone(),
                             prepared_scope,
+                            retained_touched: planner.retained_touched(),
                             work,
                         });
                     }
@@ -148,3 +166,6 @@ pub(super) fn eligible_registrations<'state>(
 
     native.chain(custom).collect()
 }
+
+#[cfg(test)]
+mod narrowing_tests;

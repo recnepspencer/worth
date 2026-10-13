@@ -30,11 +30,13 @@ mod mandatory_review_program;
 mod mandatory_review_replay;
 mod migration;
 mod observation;
-pub(in crate::domain_computation::primary_graph) use observation::observe_field_value_borrowed;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::ReadRendezvous;
+pub(in crate::domain_computation::primary_graph) use observation::{
+    observe_field_value_borrowed, observe_field_value_borrowed_admitted,
+};
 pub(in crate::domain_computation::primary_graph) mod precondition_binding;
 mod provider_binding;
 pub(in crate::domain_computation::primary_graph) use provider_binding::WorthQueryExpectedEffectStepPreparationWork;
@@ -50,8 +52,8 @@ pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactReaders;
 pub(in crate::domain_computation::primary_graph) use read_set::{
-    observe_fact, CompletedDecisionReuseProof, ComputationFactAttribution, ComputationRead,
-    PreparedDecisionReuseContext, SealedComputationFacts,
+    observe_admitted_fact, CompletedDecisionReuseProof, ComputationFactAttribution,
+    ComputationRead, PreparedDecisionReuseContext, SealedComputationFacts,
 };
 mod retained_commit;
 pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
@@ -83,10 +85,11 @@ pub use compare_and_commit::{
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
     WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommittedChanges,
-    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
-    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
-    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
-    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryCommittedProductPublication,
+    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationNoEffectCause, WorthQueryApplicationSettlementDeferred,
+    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
+    WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryCommittedProductPublication,
 };
 pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryCommittedReceiptProjection, WorthQueryPendingApplicationCommitReceipt,
@@ -197,3 +200,6 @@ pub use workflow_transition_program::{
 };
 
 pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQueryApplicationSourceAdjacencyEndpoints;
+
+#[cfg(test)]
+pub(in crate::domain_computation) use fact::consult_observation;

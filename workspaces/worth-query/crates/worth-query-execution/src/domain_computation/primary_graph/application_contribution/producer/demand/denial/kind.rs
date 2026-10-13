@@ -19,10 +19,10 @@ pub enum WorthQueryOutputDemandDenialKind {
     ),
     /// Re-admitting the demand's original source query could not resolve its principal.
     SourcePrincipal(
-        crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind,
+        crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind,
     ),
     /// Re-admitting the demand's original source query could not resolve its scope.
-    SourceScope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind),
+    SourceScope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind),
     /// The retained source query was refused before its read.
     SourceQueryAdmission(
         crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind,
@@ -47,10 +47,10 @@ pub enum WorthQueryOutputDemandDenialKind {
     ProducerDomainDenied,
     /// The admitted request lost its operation authorization before publication.
     RequestAuthorization(
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind,
     ),
     /// The product branch could not be selected; the admission denial says why.
-    ProductSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
+    ProductSelection(crate::basis::WorthQueryProductBranchAdmissionRefusalKind),
     /// Scheduling the producer was refused and will not succeed as asked.
     SchedulingRejected,
     /// Scheduling the producer is blocked by a temporary limit. Retry later.

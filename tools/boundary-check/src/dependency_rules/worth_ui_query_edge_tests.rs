@@ -10,10 +10,7 @@ fn contract() -> crate::config::WorthUiQueryEdgeContract {
 }
 
 fn fixture_root(label: &str) -> std::path::PathBuf {
-    std::env::temp_dir().join(format!(
-        "worth-ui-query-edge-{label}-{}",
-        std::process::id()
-    ))
+    worth_harness::tooling::fixture_path::unique_path(&format!("worth-ui-query-edge-{label}"))
 }
 
 fn write_crate(root: &Path, package: &str, has_dependency: bool, source: &str) {

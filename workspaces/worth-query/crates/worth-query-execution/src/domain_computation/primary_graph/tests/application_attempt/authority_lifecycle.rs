@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::{Duration, Instant};
 
 use worth_query_admission::facade::authenticated_principal::{
@@ -122,7 +123,9 @@ fn admission_from_an_equivalent_foreign_runtime_opens_no_application_door() {
     assert_eq!(
         projected_denial.kind(),
         WorthQueryOperationProjectionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime
+            )
         )
     );
 }
@@ -234,13 +237,17 @@ fn cancelled_admission_cannot_inspect_provider_idempotency() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::Cancelled
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+            ))
         )
     );
     assert_eq!(
         denial
             .authorization()
             .map(|authorization| authorization.kind()),
-        Some(WorthQueryOperationAuthorizationDenialKind::Cancelled)
+        Some(WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+        )))
     );
 }

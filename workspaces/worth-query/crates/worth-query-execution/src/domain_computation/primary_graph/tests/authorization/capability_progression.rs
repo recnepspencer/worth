@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::{Duration, UNIX_EPOCH};
 
 use worth_foundational::facade::AspectValue;
@@ -118,7 +119,9 @@ fn admitted_access_is_runtime_affine_at_operation_progression() {
             };
             assert_eq!(
                 denial.kind(),
-                WorthQueryOperationAuthorizationDenialKind::ForeignRuntime
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ForeignRuntime
+                )
             );
         })
         .expect("the fixture block owns its installed host call")
@@ -153,12 +156,16 @@ fn missing_grant_membership_mints_no_access_authority() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing
+        )
     );
     assert!(denial.identity().is_some());
     assert_eq!(
         denial.causes(),
-        [WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing
+        )]
     );
 }
 

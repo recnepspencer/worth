@@ -1,6 +1,6 @@
 pub(in crate::domain_computation::primary_graph) mod application_attempt;
 mod application_outcome_identity;
-mod application_query;
+pub(in crate::domain_computation::primary_graph) mod application_query;
 mod authorization;
 mod checkpoint_allocation;
 mod committed_publication;
@@ -10,6 +10,7 @@ pub(in crate::domain_computation) mod fixture;
 mod handler_registry_authority;
 mod hostile_resolution;
 mod inbound_admission;
+mod index_maintenance_interruptions;
 mod index_refresh;
 mod invariant_projection;
 pub(in crate::domain_computation::primary_graph) mod live_delivery_support;

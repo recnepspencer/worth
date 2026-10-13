@@ -71,7 +71,6 @@ fn publish_retained(
     } = committed;
     if let (Some(witness), Some(slot)) = (prepared_output_witness, prepared_lineage_slot.as_mut()) {
         if let Some(sealed) = witness.finish(
-            execution,
             evidence.output_correspondence(),
             runtime,
             &committed.snapshot,

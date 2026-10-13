@@ -23,15 +23,24 @@ where
             .reader
             .runtime
             .read_truth()
-            .project_snapshot(self.reader.snapshot, execution)
-            .and_then(|view| {
+            .project_snapshot(self.reader.snapshot)
+            .map(|view| {
                 view.entity_record_with_projection_scope(
                     execution,
                     entity_id,
                     ProjectionAspectScope::empty(),
                     |record| Some((record.kind_id(), record.lifecycle())),
                 )
+                .map_err(|cause| {
+                    self.reader.native_read_stop.get_or_insert(cause);
+                    WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause),
+                        role,
+                    )
+                })
             })
+            .transpose()?
+            .flatten()
             .filter(|(_, lifecycle)| *lifecycle == RecordLifecycleState::Live)
             .ok_or_else(|| {
                 WorthQueryCurrentOutputDenial::new(

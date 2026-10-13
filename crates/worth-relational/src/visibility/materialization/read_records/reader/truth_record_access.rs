@@ -112,104 +112,74 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         )
     }
 
-    pub(crate) fn visible_entities_of_kind_in_partition_from_state(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-    ) -> Vec<EntityReadRecord> {
-        self.visible_entities_of_kind_in_partition_from_state_with_registry(
-            state,
-            &self.runtime.config.schema.registry,
-            partition_id,
-            kind_id,
-            version_id,
-        )
-    }
-
-    pub(crate) fn visible_entities_of_kind_in_partition_from_state_with_registry(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-    ) -> Vec<EntityReadRecord> {
-        ProjectionRecordReader::new(
-            self.runtime.current_version_id(),
-            &self.runtime.services.instrumentation,
-        )
-        .visible_entities_of_kind_in_partition_from_state_with_registry(
-            state,
-            registry,
-            partition_id,
-            kind_id,
-            version_id,
-        )
-    }
-
-    pub(crate) fn visible_relations_of_kind_in_partition_from_state(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-    ) -> Vec<RelationReadRecord> {
-        self.visible_relations_of_kind_in_partition_from_state_with_registry(
-            state,
-            &self.runtime.config.schema.registry,
-            partition_id,
-            kind_id,
-            version_id,
-        )
-    }
-
-    pub(crate) fn visible_relations_of_kind_in_partition_from_state_with_registry(
-        &self,
-        state: &(impl PartitionAccess + ?Sized),
-        registry: &crate::schema::data::RelationalSchemaRegistry,
-        partition_id: crate::identity::data::PartitionId,
-        kind_id: crate::identity::data::KindId,
-        version_id: crate::identity::data::VersionId,
-    ) -> Vec<RelationReadRecord> {
-        ProjectionRecordReader::new(
-            self.runtime.current_version_id(),
-            &self.runtime.services.instrumentation,
-        )
-        .visible_relations_of_kind_in_partition_from_state_with_registry(
-            state,
-            registry,
-            partition_id,
-            kind_id,
-            version_id,
-        )
-    }
-
     pub(crate) fn visible_entity_slots_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<
+        Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
+        worth_execution::MapKernelStop,
+    > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
         )
-        .visible_entity_slots_from_state(state, version_id)
+        .visible_entity_slots_from_state(state, version_id, charge)
     }
-
+    #[cfg(test)]
+    pub(crate) fn visible_entity_slots_in_partition_from_state(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        partition_id: crate::identity::data::PartitionId,
+        version_id: crate::identity::data::VersionId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .visible_entity_slots_in_partition_from_state(
+            state,
+            partition_id,
+            version_id,
+            charge,
+        )
+    }
     pub(crate) fn visible_relation_slots_from_state(
         &self,
         state: &(impl PartitionAccess + ?Sized),
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)> {
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<
+        Vec<(crate::identity::data::PartitionId, DenseSlotBitSet)>,
+        worth_execution::MapKernelStop,
+    > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
         )
-        .visible_relation_slots_from_state(state, version_id)
+        .visible_relation_slots_from_state(state, version_id, charge)
     }
-
+    #[cfg(test)]
+    pub(crate) fn visible_relation_slots_in_partition_from_state(
+        &self,
+        state: &(impl PartitionAccess + ?Sized),
+        partition_id: crate::identity::data::PartitionId,
+        version_id: crate::identity::data::VersionId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Option<DenseSlotBitSet>, worth_execution::MapKernelStop> {
+        ProjectionRecordReader::new(
+            self.runtime.current_version_id(),
+            &self.runtime.services.instrumentation,
+        )
+        .visible_relation_slots_in_partition_from_state(
+            state,
+            partition_id,
+            version_id,
+            charge,
+        )
+    }
     /// Whether a relation is visible, resolved against a pinned edition.
     ///
     /// There is deliberately no acquiring twin of this: a per-candidate

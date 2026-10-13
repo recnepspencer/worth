@@ -1,3 +1,4 @@
+mod freshness_denial;
 use super::super::{
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationQueryAccessContext,
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
@@ -95,29 +96,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         &principal_layout,
                         &expected_external_identity,
                     )
-                    .map_err(|_| {
+                    .map_err(|cause| {
                         denial(
-                            WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
+                            freshness_denial::principal(cause.kind()),
                             principal.binding(),
                         )
                     })
                     .and_then(|()| {
                         entity_resolution
                             .at_snapshot(
-                                execution,
                                 runtime,
                                 snapshot,
                                 WorthQueryPrincipalResolutionMode::Ordinary,
                             )
                             .and_then(|truth| truth.validate_entity_freshness(execution, scope))
-                            .map_err(|refusal| {
-                                use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
-                                let kind = match refusal.interruption() {
-                                    Some(Stop::Cancelled) => WorthQueryApplicationQueryAdmissionDenialKind::Cancelled,
-                                    Some(Stop::DeadlineExceeded) => WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded,
-                                    None => WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
-                                };
-                                denial(kind, query.name())
+                            .map_err(|cause| {
+                                denial(freshness_denial::entity(cause.kind()), query.name())
                             })
                     })
                     .and_then(|()| {

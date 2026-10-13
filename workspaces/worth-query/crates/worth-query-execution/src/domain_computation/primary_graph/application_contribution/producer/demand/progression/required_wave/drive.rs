@@ -1,28 +1,25 @@
-//! One wave's required chain: the caller's own Ready first, then the dirty
-//! records popped from the shared queue as frames.
-
+//! Collect dependency-ready required members, then compute and apply one wave.
 use super::super::super::required_continuations::{
     resume_held_upstream, ContinuationCustody, HeldUpstream, RequiredContinuations,
 };
-use super::super::super::RequiredFreshOutcome;
 use super::super::{
     WorthQueryAdmittedOutputDemand, WorthQueryOutputDemandAdvance, WorthQueryProducerOutputFamily,
 };
-use super::queued::RequiredQueueFrames;
-#[macro_use]
-mod held_resume;
-#[macro_use]
-mod rejoin;
-mod requested_refusal;
-use super::selection::committed_ready;
+use super::frontier::{
+    DependencySchedule, MemberInput, MemberState, RequiredFrontier, RequiredUpstream,
+};
+use super::queued::QueuedRequiredRoots;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
+pub(super) mod canonical_apply;
+mod member_refusal;
+mod member_stop;
+use member_refusal::{RefusalRow, RefusingMember};
+mod frozen_collection;
+mod readiness_collection;
+mod requested_refusal;
+mod wave_execution;
 
-/// The caller's own chain runs first; its errors end the call.
-/// Dirty required records popped from the shared queue then run as frames
-/// with the rest of the request. A queue chain never promotes or settles the
-/// caller: its item is acknowledged when the item itself is Current on this
-/// wave and is otherwise held for a later advance.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -30,324 +27,283 @@ pub(super) fn drive_required_wave<'runtime, Schema, Family>(
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-    request_scope: &WorthQueryRequestScope,
-    commit_authority: &WorthQueryProducerCommitAuthority,
+    request: &WorthQueryRequestScope,
+    authority: &WorthQueryProducerCommitAuthority,
     mut wave: RequiredWaveSelection<'runtime, Schema>,
-    queue: &mut RequiredQueueFrames,
-    frame_custody: &mut RequiredContinuations<Schema>,
-    performed: &mut performed::PerformedMembers,
+    queue: &mut QueuedRequiredRoots,
+    queue_custody: &mut RequiredContinuations<Schema>,
+    performed: &std::cell::RefCell<performed::PerformedMembers>,
     admission: &mut InvalidationEditAdmission,
 ) -> Result<Option<WorthQueryOutputDemandAdvance>, WorthQueryOutputDemandDenial>
 where
     Schema: ApplicationSchema + 'static,
     Family: WorthQueryProducerOutputFamily<Schema>,
 {
-    // Only an actual consumed-output edge can extend this closure. Initial
-    // downstream B/C rows are irrelevant while their producer A is settling.
-    let mut stack = RequiredWaveStack::new();
-    let mut current: Option<SelectedReadyReadmission> = None;
-    let mut current_contacts = 0usize;
-    let mut current_role = FrameRole::Reached;
-    // Readmit dependents once every pending edge is Current on this wave.
-    let mut resolved_on_wave = ResolvedOnWave::default();
-    // Unfinished queue chains retain their items; only budget exhaustion ends work.
-    macro_rules! hold_queue_frame {
-        ($label:lifetime, $stop:expr) => {{
-            queue.hold_frame($stop, admission)?;
-            stack.frames.clear();
-            current = None;
-            continue $label
-        }};
-    }
-    // A stop ends the row being certified or refreshed. One intrinsic to the
-    // row is recorded there, so dependents pending on that row fail with it;
-    // the row's next Current certification or refresh clears it.
-    macro_rules! stopped {
-        ($label:lifetime, $key:expr, $stop:expr) => {{
-            let stop = $stop;
-            runtime.output_demands.record_required_stop($key, &stop);
-            if queue.active() {
-                frame_custody.end_refused(&stop);
-                hold_queue_frame!($label, Some(stop))
+    runtime
+        .output_demands
+        .record_selection_state(wave.is_frozen());
+    let mut frontier = RequiredFrontier::new();
+    frontier.insert(wave.anchor_ready.retain(admission)?, true, None, admission)?;
+    let mut resolved = ResolvedOnWave::default();
+    loop {
+        // The caller's own selection closes its membership handoff before
+        // unrelated queue claims join. Actual pending consumed edges collect
+        // their issued prerequisites together during readiness collection.
+        let caller_was_current = queue.draining();
+        if wave.target == RequiredWaveTarget::Caller && caller_was_current && !wave.is_frozen() {
+            while let Some((queued, claim)) = queue.next_claim(runtime, &wave, admission)? {
+                frontier.insert_claim(claim, queued, admission)?;
             }
-            return Err(stop);
-        }};
-    }
-    // The caller's outcome is decided; queue frames take the rest.
-    macro_rules! finish_caller {
-        ($label:lifetime, $outcome:expr) => {{
-            if wave.target == RequiredWaveTarget::Requested {
-                return Ok(Some($outcome));
-            }
-            queue.finish_caller($outcome);
-            stack.frames.clear();
-            current = None;
-            current_role = FrameRole::Reached;
-            resolved_on_wave.clear();
-            continue $label
-        }};
-    }
-    'required: loop {
-        if current.is_none() && stack.frames.is_empty() && queue.draining() {
-            let Some(frame) = queue.next_frame(runtime, &wave, admission)? else {
-                return Ok(queue.take_caller());
-            };
-            current = Some(frame);
-            current_contacts = 0;
-            current_role = FrameRole::Reached;
         }
-        // One fixed scheduling step borrows the selected pin. Actual stack
-        // writes and continuation installation are charged by their owners.
-        admission
-            .charge_external_work(6)
-            .map_err(|_| work_denial())?;
-        let selected = current.as_ref().unwrap_or(&wave.anchor_ready);
-        if wave.target == RequiredWaveTarget::Caller && !queue.active() {
-            // A restored output the caller's own chain consumed takes the
-            // caller's mode when no demand of it has advanced.
-            selected.completion().advanced_in(commit_authority);
-        }
-        admission
-            .charge_external_work(3)
-            .map_err(|_| work_denial())?;
-        let producer_contacts_in_this_demand = if wave.target == RequiredWaveTarget::Caller
-            && !queue.active()
-            && (current.is_none() || current_role == FrameRole::CallerSuccessor)
-        {
-            // Every certification reports the caller handle's lifetime count.
-            // Queue and upstream executions are not this caller's producer.
-            demand.producer_contacts_in_this_demand
-        } else {
-            current_contacts
-        };
-        // The typed executor may admit and execute Fresh inside this call.
-        // Reserve its custody before dispatch, even if it returns Current.
-        let custody = if queue.active() {
-            &mut *frame_custody
-        } else {
-            &mut demand.required_continuations
-        };
-        let slot = custody.prepare_slot(&runtime.output_demands, admission)?;
-        let installation_work = slot.installation_work();
-        let mut installation = admission
-            .reserve_external_work(installation_work)
-            .map_err(admission_denial)?;
-        let resolved = resolved_on_wave.view(slot.entries());
-        let caller_execution = wave.target == RequiredWaveTarget::Caller
-            && !queue.active()
-            && stack.frames.is_empty()
-            && (current.is_none() || current_role == FrameRole::CallerSuccessor);
-        let refresh_permission = super::super::refresh::permit_refresh(
-            if caller_execution {
-                demand.admission_kind
-            } else {
-                crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required
-            },
-            Family::IDENTITY,
-        );
-        let mut result = certify_required_ready(
+        let result = wave_execution::run::<Schema, Family>(
             phase,
             runtime,
+            demand,
             principal,
-            request_scope,
+            request,
+            authority,
             &wave,
-            selected,
-            (current.is_none() && wave.target == RequiredWaveTarget::Caller)
-                .then_some(demand.installed_entry.as_ref()),
-            resolved.as_ref(),
-            producer_contacts_in_this_demand,
-            refresh_permission,
+            &mut frontier,
+            &mut resolved,
+            queue_custody,
+            queue,
             performed,
-            installation.admission(),
-        );
-        if let (true, Ok(RequiredWaveStep::Fresh(progress))) = (caller_execution, &mut result) {
-            // Account before installation, refusal, or any custody disposal.
-            progress.attribute_to_caller(&mut demand.producer_contacts_in_this_demand);
-        }
-        installation
-            .settle(if matches!(&result, Ok(RequiredWaveStep::Fresh(_))) {
-                installation_work
-            } else {
-                0
-            })
-            .map_err(admission_denial)?;
-        let result = match result {
-            Ok(result) => result,
-            Err(stop) => {
-                drop(slot);
-                stopped!('required, selected.key(), stop)
+            admission,
+        )?;
+        if let Some(delivery) = result.delivery {
+            wave = wave.after_awaited_delivery(execution, runtime, delivery, admission)?;
+            frontier.members[0].state = MemberState::Inspect;
+            if !wave.is_frozen() {
+                continue;
             }
-        };
-        match result {
-            RequiredWaveStep::Current(settlement) => {
-                drop(slot);
-                runtime.output_demands.clear_required_stop(selected.key());
-                if wave.target == RequiredWaveTarget::Requested
-                    && stack.frames.is_empty()
-                    && (current.is_none() || current_role == FrameRole::CallerSuccessor)
-                {
-                    return Ok(Some(WorthQueryOutputDemandAdvance::Settled(settlement)));
-                }
-                if wave.target == RequiredWaveTarget::Caller
-                    && stack.frames.is_empty()
-                    && !queue.active()
-                    && super::caller::finish_current_caller(
-                        runtime,
-                        demand,
-                        super::caller::CurrentCaller {
-                            anchor_ready: &wave.anchor_ready,
-                            selected,
-                            continues_caller: current_role == FrameRole::CallerSuccessor,
-                            caller_current: current.is_none(),
-                            current_contacts: producer_contacts_in_this_demand,
-                        },
-                        admission,
-                    )?
-                {
-                    finish_caller!('required, WorthQueryOutputDemandAdvance::Settled(settlement))
-                }
-                if current.is_some() {
-                    // Admit the reached frame transfer before moving its pin.
-                    admission
-                        .charge_external_work(2)
-                        .map_err(|_| work_denial())?;
-                }
-                if let Some(resolved) = current.take() {
-                    let resolved_role = std::mem::replace(&mut current_role, FrameRole::Reached);
-                    if stack.frames.is_empty() && queue.active() {
-                        // The queued record itself is Current on this wave.
-                        queue.discharge_frame(admission)?;
-                        // A refreshed successor stays the resolved predecessor for
-                        // later frames: their consumed edges still name the old
-                        // identity, and each match is proven exactly. Any other
-                        // discharged chain resolves nothing for the next one.
-                        resolved_on_wave.clear();
-                        if resolved_role != FrameRole::Reached {
-                            resolved_on_wave.push(resolved, settlement, admission)?;
+        }
+        if result.deferred {
+            wave.freeze();
+        }
+        if wave.target == RequiredWaveTarget::Requested
+            && matches!(frontier.members[0].state, MemberState::Current(_))
+        {
+            if let Some(outcome) =
+                canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission)?
+            {
+                return Ok(Some(outcome));
+            }
+            continue;
+        }
+        if wave.target == RequiredWaveTarget::Caller && !queue.draining() {
+            match canonical_apply::accept_current_caller(
+                runtime,
+                demand,
+                &wave,
+                &mut frontier,
+                admission,
+            )? {
+                canonical_apply::CallerAcceptance::Accepted(proof) => queue.finish_caller(proof),
+                canonical_apply::CallerAcceptance::Deferred => {}
+            }
+        }
+        if !caller_was_current && queue.draining() {
+            resolved.clear();
+        }
+        if result.moved {
+            queue.wave_moved();
+            wave = wave.reselect(execution, runtime, admission)?;
+            resolved.clear();
+            for member in &mut frontier.members {
+                member.dependency_schedule = DependencySchedule::OwnSelection;
+            }
+        }
+        for failure in result.queued_stops.into_iter().chain(result.stopped) {
+            let (index, stop, recording) = failure.into_parts();
+            let mut stop = member_refusal::member_stop(stop)?;
+            let member = &frontier.members[index];
+            let custody = if member.caller {
+                &mut demand.required_continuations
+            } else {
+                &mut *queue_custody
+            };
+            match requested_refusal::resolve(
+                runtime,
+                custody,
+                &mut stop,
+                requested_refusal::RequestedDependency {
+                    selected: member.ready.selected(),
+                    wave: &wave,
+                    resolved: &resolved,
+                },
+                admission,
+            )? {
+                requested_refusal::RequestedRefusal::Ready(ready) => {
+                    match frontier.require_upstream(ready, member.caller, admission)? {
+                        RequiredUpstream::Member(upstream) => {
+                            frontier.wait_for(index, upstream);
                         }
-                        continue;
+                        RequiredUpstream::HeldCaller => {
+                            frontier.members[index].state = MemberState::Pending;
+                        }
                     }
-                    resolved_on_wave.push(resolved, settlement, admission)?;
-                    if let Some(downstream) = stack.pop() {
-                        let (ready, role, contacts) = downstream.into_parts();
-                        current = Some(ready);
-                        current_contacts = contacts;
-                        current_role = role;
-                    }
-                    // An empty stack returns to the retained caller Ready.
                     continue;
                 }
-                finish_caller!('required, WorthQueryOutputDemandAdvance::Settled(settlement))
-            }
-            RequiredWaveStep::Upstream(upstream) => {
-                drop(slot);
-                if super::cycles::upstream_cycles(
-                    &upstream,
-                    selected,
-                    &wave.anchor_ready,
-                    &resolved_on_wave,
-                    admission,
-                )? {
-                    if queue.active() {
-                        hold_queue_frame!('required, None)
-                    }
-                    finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                requested_refusal::RequestedRefusal::Held(head) => {
+                    frontier.members[index].state = MemberState::Held(head);
+                    continue;
                 }
-                if !stack.suspend_current(
-                    &mut current,
-                    current_role,
-                    current_contacts,
-                    admission,
-                )? {
-                    if queue.active() {
-                        hold_queue_frame!('required, None)
-                    }
-                    finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
+                requested_refusal::RequestedRefusal::Cycle => {
+                    frontier.members[index].state = MemberState::Pending;
                 }
-                current = Some(upstream);
-                current_contacts = 0;
-                current_role = FrameRole::Reached;
-            }
-            RequiredWaveStep::Fresh(progress) => {
-                let successor_role = if stack.frames.is_empty()
-                    && !queue.active()
-                    && (current.is_none() || current_role == FrameRole::CallerSuccessor)
-                {
-                    FrameRole::CallerSuccessor
-                } else {
-                    FrameRole::Successor
-                };
-                match slot.install(progress) {
-                    RequiredFreshOutcome::Advanced => {}
-                    RequiredFreshOutcome::Refused(mut stop) => {
-                        match requested_refusal::resolve(
+                requested_refusal::RequestedRefusal::Unavailable => {
+                    let ended = RefusingMember::from_driver(
+                        &runtime.output_demands,
+                        &mut frontier.members[index],
+                        RefusalRow::Member,
+                        &mut *queue_custody,
+                    )
+                    .end(stop, recording, queue, admission)?;
+                    if let Some(outcome) = ended.finish(|| {
+                        canonical_apply::finish(
                             runtime,
-                            custody,
-                            &mut stop,
-                            requested_refusal::RequestedDependency {
-                                selected,
-                                wave: &wave,
-                                resolved: &resolved_on_wave,
-                            },
+                            demand,
+                            &wave,
+                            &mut frontier,
+                            queue,
                             admission,
-                        )? {
-                            requested_refusal::RequestedRefusal::Ready(upstream) => {
-                                if !stack.suspend_current(
-                                    &mut current,
-                                    current_role,
-                                    current_contacts,
-                                    admission,
-                                )? {
-                                    if queue.active() {
-                                        hold_queue_frame!('required, None)
-                                    }
-                                    finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
-                                }
-                                current = Some(upstream);
-                                current_contacts = 0;
-                                current_role = FrameRole::Reached;
-                                continue 'required;
-                            }
-                            requested_refusal::RequestedRefusal::Cycle => {
-                                if queue.active() {
-                                    hold_queue_frame!('required, None)
-                                }
-                                finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
-                            }
-                            requested_refusal::RequestedRefusal::Held(head) => {
-                                resume_held!('required, head;
-                                    phase, execution;
-                                    runtime, principal, request_scope;
-                                    wave, resolved_on_wave, queue, frame_custody;
-                                    demand, admission, performed;
-                                    hold_queue_frame, finish_caller, stopped)
-                            }
-                            requested_refusal::RequestedRefusal::Unavailable => {}
-                        }
-                        stopped!('required, selected.key(), stop)
+                        )
+                    }) {
+                        return outcome;
                     }
                 }
-                rejoin_successor!('required;
-                    phase, execution; runtime, principal, request_scope;
-                    wave, resolved_on_wave, queue, frame_custody;
-                    demand, admission; current, current_contacts, current_role, successor_role;
-                    hold_queue_frame, finish_caller, stopped)
             }
-            RequiredWaveStep::Held(head) => {
-                drop(slot);
-                resume_held!('required, head;
-                                    phase, execution;
-                                    runtime, principal, request_scope;
-                                    wave, resolved_on_wave, queue, frame_custody;
-                                    demand, admission, performed;
-                                    hold_queue_frame, finish_caller, stopped)
-            }
-            RequiredWaveStep::Pending => {
-                if queue.active() {
-                    hold_queue_frame!('required, None)
+        }
+        if result.moved {
+            for member in &mut frontier.members {
+                if !member.resolved_successor
+                    && matches!(
+                        member.state,
+                        MemberState::Inspect
+                            | MemberState::Waiting(_)
+                            | MemberState::WaitingDeclaration(_)
+                            | MemberState::Held(_)
+                    )
+                {
+                    if let MemberInput::Queued { ready, .. } = &mut member.ready {
+                        if let Some(index) = member.queued {
+                            queue.discard_selection(index);
+                            *ready = None;
+                        }
+                    }
                 }
-                finish_caller!('required, WorthQueryOutputDemandAdvance::Pending)
             }
+        }
+        if !wave.is_frozen()
+            && (result.prepared
+                || frontier.awaken()
+                || (!caller_was_current
+                    && wave.target == RequiredWaveTarget::Caller
+                    && queue.draining()))
+        {
+            continue;
+        }
+        // A held successor is resumed only after every prepared member has
+        // left the selected basis. It retains the actual issued demand.
+        let held = if wave.is_frozen() {
+            None
+        } else {
+            frontier
+                .members
+                .iter()
+                .enumerate()
+                .find_map(|(i, member)| match &member.state {
+                    MemberState::Held(key) => Some((i, key.clone())),
+                    _ => None,
+                })
+        };
+        let resumed = held.is_some();
+        if let Some((index, head)) = held {
+            let custody =
+                if frontier.members[index].caller && wave.target == RequiredWaveTarget::Caller {
+                    ContinuationCustody::Caller(
+                        &mut demand.required_continuations,
+                        &mut demand.producer_contacts_in_this_demand,
+                    )
+                } else if frontier.members[index].caller {
+                    // A Requested target belongs to the parent demand without
+                    // attributing the child's handler contacts to that parent.
+                    ContinuationCustody::Queue(&mut demand.required_continuations)
+                } else {
+                    ContinuationCustody::Queue(queue_custody)
+                };
+            match resume_held_upstream(
+                phase,
+                runtime,
+                principal,
+                request,
+                wave.branch,
+                custody,
+                &head,
+                admission,
+                performed,
+            ) {
+                Ok(HeldUpstream::Ready(ready)) => {
+                    runtime.output_demands.clear_required_stop(&head);
+                    if super::selection::committed_ready(&ready, admission)? {
+                        wave = wave.reselect(execution, runtime, admission)?;
+                        resolved.clear();
+                        queue.wave_moved();
+                    }
+                    frontier.members[index].state = MemberState::Inspect;
+                    continue;
+                }
+                Ok(HeldUpstream::GaveBack) => {
+                    frontier.members[index].state = MemberState::Inspect;
+                    continue;
+                }
+                Ok(HeldUpstream::Unfinished) => {
+                    frontier.members[index].state = MemberState::Pending
+                }
+                Err(stop) => {
+                    let ended = RefusingMember::from_driver(
+                        &runtime.output_demands,
+                        &mut frontier.members[index],
+                        RefusalRow::HeldHead(&head),
+                        &mut *queue_custody,
+                    )
+                    .end(
+                        stop,
+                        member_stop::StopRecording::member(),
+                        queue,
+                        admission,
+                    )?;
+                    if let Some(outcome) = ended.finish(|| {
+                        canonical_apply::finish(
+                            runtime,
+                            demand,
+                            &wave,
+                            &mut frontier,
+                            queue,
+                            admission,
+                        )
+                    }) {
+                        return outcome;
+                    }
+                }
+            }
+        }
+        if resumed {
+            continue;
+        }
+        if wave.target == RequiredWaveTarget::Caller && !queue.draining() {
+            // Pending decides the caller just as Current does. It leaves its
+            // unfinished closure held while independent queue records proceed.
+            queue.defer_caller();
+            resolved.clear();
+            if !wave.is_frozen() {
+                continue;
+            }
+        }
+        if let Some(outcome) =
+            canonical_apply::finish(runtime, demand, &wave, &mut frontier, queue, admission)?
+        {
+            return Ok(Some(outcome));
         }
     }
 }

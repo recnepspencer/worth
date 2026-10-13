@@ -98,9 +98,17 @@ fn commit_probe(probe: Probe) -> Outcome {
         .schema_registry(schema())
         .custom_invariant(CustomInvariantRegistration::new(probe).unwrap())
         .build();
-    let lease = authority()
-        .request_lease(request(32 * 1024 * 1024, 1_000_000))
-        .unwrap();
+    let mut lease_request = request(32 * 1024 * 1024, 1_000_000);
+    if matches!(probe, Probe::Unchecked) {
+        // Unchecked kernels are lawful on serial backing; this refusal needs
+        // a request that can actually dispatch more than one worker.
+        lease_request.policy = ExecutionRequestPolicy::new(
+            ExecutionPosture::Automatic,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(NonZeroUsize::new(2).unwrap(), 32 * 1024 * 1024, 1_000_000),
+        );
+    }
+    let lease = authority().request_lease(lease_request).unwrap();
     let before = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap()

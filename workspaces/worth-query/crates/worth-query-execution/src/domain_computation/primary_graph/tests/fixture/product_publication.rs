@@ -1,5 +1,5 @@
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 use worth_relational::facade::transactions::WorkerIntentBatch;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::{live_scope, AuthorizationWorld};
 
@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph) fn publish_relational_mutation_
     let (prepared, before_lease) =
         prepare_relational_mutation_with_before(request_execution, application, batch, &request);
     let outcome = prepared.execute(*request_execution);
-    let RuntimeWorldPublicationOutcome::Performed(performed) = outcome else {
+    let Ok(PublicationOutcome::Performed(performed)) = outcome else {
         panic!("fixture World publication must perform: {outcome:?}");
     };
     let published_basis = performed.commit().basis().relational_basis().clone();

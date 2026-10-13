@@ -87,6 +87,8 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
         None,
         lineage.prepay_computation_fork_scan_for_test(),
     );
+    let bytes = lineage.retention.retained_bytes();
+    assert!(bytes > 0);
     let before_forks = lineage.prepay_computation_fork_scan_for_test();
     lineage.register_fork(product.observation(), &child);
     lineage.register_fork(admitted_child.observation(), &nested);
@@ -114,22 +116,15 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
     assert!(Arc::ptr_eq(&select(&lineage, &child), &captured));
     assert!(Arc::ptr_eq(&select(&lineage, &nested), &captured));
     assert!(lineage.fork_pins_computation(captured.get().unwrap()));
-    let bytes = {
-        let row = captured.get().unwrap().mutable.lock().unwrap();
-        let RecordedComputation::Retained(state) = &row.computation else {
-            panic!("captured state retained");
-        };
-        state.fixture_byte_formula()
-    };
     assert_eq!(
         lineage.retention.retained_bytes(),
         bytes,
-        "a fork and nested fork share the single captured charge"
+        "forks share one retained charge"
     );
     let prior = PriorComputationRecord {
         cell: Arc::clone(&captured),
     };
-    let next_bytes = sealed_run_for_lineage_test().state.fixture_byte_formula();
+    let next_bytes = bytes;
     let parent_next = || {
         let mut sealed = sealed_run_for_lineage_test();
         let row = captured.get().unwrap().mutable.lock().unwrap();

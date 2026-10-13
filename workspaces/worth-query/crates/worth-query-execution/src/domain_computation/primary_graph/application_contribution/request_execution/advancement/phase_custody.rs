@@ -18,6 +18,19 @@ pub(in crate::domain_computation::primary_graph) struct ActiveAdvancement<'scope
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct WorthQueryForeignAdvancementPhase(());
 
+impl TryFrom<super::WorthQueryAdvancementDenial> for WorthQueryForeignAdvancementPhase {
+    type Error = super::WorthQueryAdvancementDenial;
+
+    fn try_from(denial: Self::Error) -> Result<Self, Self::Error> {
+        match denial {
+            super::WorthQueryAdvancementDenial::Resource(
+                super::Resource::ForeignAdvancementPhase,
+            ) => Ok(Self(())),
+            denial => Err(denial),
+        }
+    }
+}
+
 impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDenial {
     fn from(_: WorthQueryForeignAdvancementPhase) -> Self {
         Self::Resource(super::Resource::ForeignAdvancementPhase)
@@ -182,14 +195,6 @@ impl<'scope> WorthQueryAdvancementPhase<'scope> {
             return Err(WorthQueryForeignAdvancementPhase(()));
         }
         Ok(self.admitted_request())
-    }
-
-    /// Lends the existing request after accepting the concrete native owner.
-    pub fn execution_request_for_relational_runtime(
-        &self,
-        runtime: &worth_relational::facade::runtime::RelationalRuntime,
-    ) -> Result<ExecutionRequest<'scope, 'scope>, WorthQueryForeignAdvancementPhase> {
-        self.request_for_source(runtime.runtime_instance_id())
     }
 
     pub(crate) fn request_for_source(

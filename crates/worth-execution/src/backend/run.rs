@@ -3,7 +3,7 @@ use super::{
     custody::RunCustody,
     evaluation,
     input::InputMode,
-    meter::{record_nested, KernelContext, KernelFailure, RunLimits},
+    meter::{KernelContext, KernelFailure, NestedStopOwner, RunLimits},
     port::{BackendKind, BatchOutcome, BatchStop, TaskOutcome},
     settlement, PreparedBatchResources,
 };
@@ -34,20 +34,16 @@ where
 {
     let mut custody = RunCustody::new(inputs, taken, prepared);
     if lease.is_none() && RunLimits::has_leased_parent() {
-        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
-        record_nested(outcome.report, true);
-        return custody.finish(outcome, batch);
+        let outcome = denied(LeaseDenial::unrelated_nested_lease());
+        return custody.finish(outcome, batch, charge_parent);
     }
     if custody
         .prepared
         .as_ref()
         .is_some_and(|resources| !resources.matches_current_parent())
     {
-        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
-        if charge_parent {
-            record_nested(outcome.report, true);
-        }
-        return custody.finish(outcome, batch);
+        let outcome = denied(LeaseDenial::unrelated_nested_lease());
+        return custody.finish(outcome, batch, charge_parent);
     }
     let limits = if let Some(resources) = custody.prepared.as_ref() {
         resources.dispatch_limits(lease.expect("prepared map requires its lease"), backend)
@@ -91,14 +87,12 @@ where
         let outcome = BatchOutcome {
             values: Vec::new(),
             stop: None,
+            stop_owner: None,
             prefix_boundary: None,
             report: ExecutionReport::new(ExecutionPosture::Serial, 0, 0, physical)
                 .with_fallback(ExecutionFallbackCause::NoWork),
         };
-        if charge_parent {
-            record_nested(outcome.report, false);
-        }
-        return custody.finish(outcome, batch);
+        return custody.finish(outcome, batch, charge_parent);
     }
     // A lease-free run holds its framework at one worker: its own thread.
     let max_workers = lease.map_or(1, |value| value.policy().budget().max_workers().get());
@@ -111,22 +105,16 @@ where
             bytes.checked_add(limits.framework_context_bytes(batch.len(), max_workers)?)
         });
     let Some(memory_bytes) = memory_bytes else {
-        let outcome = denied(LeaseDenial::ChargedBytesOverflow);
-        if charge_parent {
-            record_nested(outcome.report, true);
-        }
-        return custody.finish(outcome, batch);
+        let outcome = denied(LeaseDenial::charged_bytes_overflow());
+        return custody.finish(outcome, batch, charge_parent);
     };
     if custody
         .prepared
         .as_ref()
         .is_some_and(|resources| !resources.matches_dispatch(memory_bytes))
     {
-        let outcome = denied(LeaseDenial::UnrelatedNestedLease);
-        if charge_parent {
-            record_nested(outcome.report, true);
-        }
-        return custody.finish(outcome, batch);
+        let outcome = denied(LeaseDenial::unrelated_nested_lease());
+        return custody.finish(outcome, batch, charge_parent);
     }
     custody.reservation = if let Some(lease) = lease {
         let admission_bytes = if custody.prepared.is_some() || custody.taken.is_some() {
@@ -138,10 +126,7 @@ where
             Ok(guard) => Some(guard),
             Err(denial) => {
                 let outcome = denied(denial);
-                if charge_parent {
-                    record_nested(outcome.report, true);
-                }
-                return custody.finish(outcome, batch);
+                return custody.finish(outcome, batch, charge_parent);
             }
         }
     } else {
@@ -153,10 +138,7 @@ where
             // before refused inputs can clean up otherwise empty ledger nodes.
             drop(custody.reservation.take());
             let outcome = denied(denial);
-            if charge_parent {
-                record_nested(outcome.report, true);
-            }
-            return custody.finish(outcome, batch);
+            return custody.finish(outcome, batch, charge_parent);
         }
     }
     custody.serial_reservation = match (lease, limits.serial_memory(), &custody.taken) {
@@ -164,10 +146,7 @@ where
             Ok(guard) => Some(guard),
             Err(denial) => {
                 let outcome = denied(LeaseDenial::MemoryExhausted(denial));
-                if charge_parent {
-                    record_nested(outcome.report, true);
-                }
-                return custody.finish(outcome, batch);
+                return custody.finish(outcome, batch, charge_parent);
             }
         },
         _ => None,
@@ -236,16 +215,14 @@ where
         },
         fallback,
     );
-    if charge_parent {
-        record_nested(outcome.report, outcome.stop.is_some());
-    }
-    custody.finish(outcome, batch)
+    custody.finish(outcome, batch, charge_parent)
 }
 
 fn denied<R, E>(denial: LeaseDenial) -> BatchOutcome<R, E> {
     BatchOutcome {
         values: Vec::new(),
         stop: Some(BatchStop::Admission(denial)),
+        stop_owner: Some(NestedStopOwner::Request),
         prefix_boundary: None,
         report: ExecutionReport::new(
             ExecutionPosture::Serial,

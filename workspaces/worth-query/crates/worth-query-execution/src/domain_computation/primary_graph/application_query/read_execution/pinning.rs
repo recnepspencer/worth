@@ -20,7 +20,7 @@ pub(super) fn pin_runtime_read(
         .map_err(|denial| {
             use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as Pin;
             match denial {
-                Pin::Request(stop) => denial::relational_cause_denial(
+                Pin::Request(stop) => denial::relational_read_denial(
                     worth_relational::facade::transactions::RelationalExecutionDenialCause::from(
                         stop,
                     ),

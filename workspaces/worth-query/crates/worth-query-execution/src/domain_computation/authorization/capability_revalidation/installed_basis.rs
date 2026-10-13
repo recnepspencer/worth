@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -15,7 +16,9 @@ where
             .capability_plan_by_identity(&request.capability_identity())
             .ok_or_else(|| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::PolicyNotInstalled,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::PolicyNotInstalled,
+                    ),
                     "retained-capability-request",
                 )
             })
@@ -32,7 +35,9 @@ where
             .sample(installed.request().timeline)
             .map_err(|_| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::TrustedTimeUnavailable,
+                    ),
                     installed.contract().name(),
                 )
             })

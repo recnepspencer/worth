@@ -152,6 +152,10 @@ pub(in crate::domain_computation::primary_graph) fn register_republished(
 impl From<RebaseVerificationReason> for FullVerificationReason {
     fn from(reason: RebaseVerificationReason) -> Self {
         match reason {
+            // Pending publication already reported this request stop by value.
+            // A later recovery records the incomplete source registration;
+            // a settlement reason never carries an old request's interruption.
+            RebaseVerificationReason::Execution(_) => Self::RegistrationIncomplete,
             RebaseVerificationReason::NativeRevisionUnavailable => Self::NativeRevisionUnavailable,
             RebaseVerificationReason::NativeFactRevisionUnavailable(ordinal) => {
                 Self::NativeFactRevisionUnavailable(ordinal)

@@ -245,6 +245,19 @@ pub(super) fn commit(
     })
 }
 
+fn publication_request_stop(
+    cause: worth_execution::WorkCeilingDenial,
+) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionCommitControlStopped, WorthQueryProviderSessionCommitStop as Stop,
+        WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
+    };
+    match crate::domain_computation::primary_graph::application_contribution::publication_execution_kind(cause) {
+        Ok(kind) => Stop::PreEffectDenied(WorthQueryProviderSessionFailure::checked_read_stopped(Ok(kind), WorthQueryProviderSessionProtocolStage::Commit, "World publication request stopped before effect")),
+        Err(control) => Stop::ControlStopped(WorthQueryProviderSessionCommitControlStopped::new(control, "World publication request stopped before effect")),
+    }
+}
+
 fn world_no_effect(
     no_effect: worth_runtime_world::facade::NoEffectCompositePublication,
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {

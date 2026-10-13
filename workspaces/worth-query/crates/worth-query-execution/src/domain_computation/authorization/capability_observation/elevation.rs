@@ -1,5 +1,6 @@
 //! Trusted-time binding for the exact selected elevation.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationFieldComparison, RelationalAuthorizationPathPlan,
     RelationalAuthorizationPredicate,
@@ -53,7 +54,9 @@ pub(super) fn prepare_temporal_path(
 
 fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         subject,
     )
 }

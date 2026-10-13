@@ -31,6 +31,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
 
     /// Inspects interruption without charging work or opening an execution scope.
     pub fn check_live(self) -> Result<(), crate::MapKernelStop> {
+        consult_observation::reached();
         let (cancelled, expired) = match self.form {
             RequestBacking::Leased(lease) => {
                 let status = lease.status();
@@ -44,9 +45,11 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             ),
         };
         if cancelled {
+            consult_observation::stopped(None);
             return Err(crate::MapKernelStop::Cancelled);
         }
         if expired {
+            consult_observation::stopped(None);
             return Err(crate::MapKernelStop::DeadlineElapsed);
         }
         Ok(())
@@ -102,6 +105,8 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
     /// Read cancellation, deadline and exhausted active work without charging
     /// work, allocating, opening a scope or containing a panic.
     pub fn consult(self) -> Result<(), WorkCeilingDenial> {
+        consult_observation::reached();
+        crate::backend::record_request_consult_for_test();
         use crate::backend::KernelStop;
         let backing = match self.form {
             RequestBacking::Leased(lease) => lease.status().stop(),
@@ -114,7 +119,10 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             } else {
                 backing.or(active)
             };
-        stop.map_or(Ok(()), |stop| Err(WorkCeilingDenial::Stopped(stop)))
+        stop.map_or(Ok(()), |stop| {
+            consult_observation::stopped(None);
+            Err(WorkCeilingDenial::Stopped(stop))
+        })
     }
 
     /// Adapt only within an active bounded scope. Leased carriage adds no scope.
@@ -123,7 +131,10 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
     ) -> Result<R, WorkCeilingDenial> {
         match self.form {
-            RequestBacking::Leased(lease) => Ok(operation(Some(lease))),
+            RequestBacking::Leased(lease) => {
+                let active = lease.current_descendant();
+                Ok(operation(Some(active.as_ref().unwrap_or(lease))))
+            }
             RequestBacking::Serial(request) => ExecutionWorkCeiling::new(self.work_ceiling())
                 .run_serial(request, || operation(None))
                 .map(|(value, _)| value),
@@ -142,3 +153,6 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         }
     }
 }
+
+#[path = "request/consult_observation.rs"]
+pub(crate) mod consult_observation;

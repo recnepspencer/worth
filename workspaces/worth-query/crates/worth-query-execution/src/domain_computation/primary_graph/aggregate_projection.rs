@@ -1,4 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+#[derive(Debug)]
+enum RefreshReadDenial {
+    Request(Cause),
+    Unavailable,
+}
+impl From<Cause> for RefreshReadDenial {
+    fn from(cause: Cause) -> Self {
+        Self::Request(cause)
+    }
+}
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
@@ -18,11 +29,12 @@ pub(super) struct WorthQueryIncomingSumKey {
     pub(super) field: AspectFieldLocator,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub(super) struct WorthQueryAggregateProjections {
     incoming_sums: BTreeMap<WorthQueryIncomingSumKey, WorthQueryIncomingSumGeneration>,
 }
 
+#[derive(Clone)]
 struct WorthQueryIncomingSumGeneration {
     version: VersionId,
     materialized: BTreeMap<EntityId, WorthQueryIncomingAggregate>,
@@ -81,32 +93,37 @@ impl WorthQueryAggregateProjections {
         before: &SnapshotHandle,
         after: &SnapshotHandle,
         patches: &[PublishedAuthoritativeRecordPatch],
-    ) {
-        for (key, generation) in &mut self.incoming_sums {
-            if generation.version != before.version_id() {
-                generation.materialized.clear();
-                generation.version = after.version_id();
-                continue;
-            }
-            // Every read is rooted at the committing branch: the runtime holds
-            // every branch, and a version alone admits a sibling's commits.
-            let Some(sources) = affected_sources(execution, runtime, key, before, after, patches)
-            else {
-                generation.materialized.clear();
-                generation.version = after.version_id();
-                continue;
-            };
-            for source in sources {
-                let old = source_contributions(execution, runtime, key, before, source);
-                let new = source_contributions(execution, runtime, key, after, source);
-                let (Ok(old), Ok(new)) = (old, new) else {
+    ) -> Result<(), Cause> {
+        let result = (|| {
+            for (key, generation) in &mut self.incoming_sums {
+                if generation.version != before.version_id() {
                     generation.materialized.clear();
-                    break;
-                };
-                update_materialized_targets(&mut generation.materialized, old, new);
+                    generation.version = after.version_id();
+                    continue;
+                }
+                let result = (|| {
+                    let sources =
+                        affected_sources(execution, runtime, key, before, after, patches)?;
+                    for source in sources {
+                        let old = source_contributions(execution, runtime, key, before, source)?;
+                        let new = source_contributions(execution, runtime, key, after, source)?;
+                        update_materialized_targets(&mut generation.materialized, old, new);
+                    }
+                    Ok::<_, RefreshReadDenial>(())
+                })();
+                generation.version = after.version_id();
+                match result {
+                    Ok(()) => {}
+                    Err(RefreshReadDenial::Unavailable) => generation.materialized.clear(),
+                    Err(RefreshReadDenial::Request(cause)) => return Err(cause),
+                }
             }
-            generation.version = after.version_id();
+            Ok(())
+        })();
+        if result.is_err() {
+            self.recover_after_commit(after.version_id());
         }
+        result
     }
 
     pub(super) fn recover_after_commit(&mut self, version: VersionId) {
@@ -118,7 +135,7 @@ impl WorthQueryAggregateProjections {
 }
 
 /// Every source a patch touched on the committing branch, before or after.
-/// `None` when either side no longer projects onto its branch root.
+/// Refused reads or unavailable branch roots invalidate the cached generation.
 fn affected_sources(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
@@ -126,21 +143,25 @@ fn affected_sources(
     before: &SnapshotHandle,
     after: &SnapshotHandle,
     patches: &[PublishedAuthoritativeRecordPatch],
-) -> Option<BTreeSet<EntityId>> {
+) -> Result<BTreeSet<EntityId>, RefreshReadDenial> {
     let truth = runtime.read_truth();
     let views = [
-        truth.project_snapshot(before, execution)?,
-        truth.project_snapshot(after, execution)?,
+        truth
+            .project_snapshot(before)
+            .ok_or(RefreshReadDenial::Unavailable)?,
+        truth
+            .project_snapshot(after)
+            .ok_or(RefreshReadDenial::Unavailable)?,
     ];
     let mut sources = BTreeSet::new();
     for patch in patches {
         match patch.target {
             RecordRef::Entity(entity) => {
-                if views
-                    .iter()
-                    .any(|view| live_entity_kind(execution, view, entity) == Some(key.source_kind))
-                {
-                    sources.insert(entity);
+                for view in &views {
+                    if live_entity_kind(execution, view, entity)? == Some(key.source_kind) {
+                        sources.insert(entity);
+                        break;
+                    }
                 }
             }
             RecordRef::Relation(relation) => {
@@ -154,14 +175,14 @@ fn affected_sources(
                                 && record.kind_id() == key.relation_kind)
                                 .then_some(record.source())
                         },
-                    ) {
+                    )? {
                         sources.insert(source);
                     }
                 }
             }
         }
     }
-    Some(sources)
+    Ok(sources)
 }
 
 fn source_contributions(
@@ -170,12 +191,12 @@ fn source_contributions(
     key: &WorthQueryIncomingSumKey,
     snapshot: &SnapshotHandle,
     source: EntityId,
-) -> Result<BTreeMap<EntityId, i64>, ()> {
+) -> Result<BTreeMap<EntityId, i64>, RefreshReadDenial> {
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
-        .ok_or(())?;
-    if live_entity_kind(execution, &view, source) != Some(key.source_kind) {
+        .project_snapshot(snapshot)
+        .ok_or(RefreshReadDenial::Unavailable)?;
+    if live_entity_kind(execution, &view, source)? != Some(key.source_kind) {
         return Ok(BTreeMap::new());
     }
     let Some(AspectValue::Int64(value)) = super::application_attempt::observe_field_value(
@@ -185,21 +206,21 @@ fn source_contributions(
         source,
         key.source_kind,
         &key.field,
-    ) else {
-        return Err(());
+    )?
+    else {
+        return Err(RefreshReadDenial::Unavailable);
     };
-    let relations = view
-        .bounded_outgoing_relations_of_kind(execution, source, key.relation_kind, usize::MAX)
-        .map_err(|_| ())?
-        .into_records();
+    let relations = view.outgoing_relations_of_kind(execution, source, key.relation_kind)?;
     if relations.len() > 1 {
-        return Err(());
+        return Err(RefreshReadDenial::Unavailable);
     }
     let mut contributions = BTreeMap::new();
     for relation in relations {
-        if live_entity_kind(execution, &view, relation.target) == Some(key.target_kind) {
+        if live_entity_kind(execution, &view, relation.target)? == Some(key.target_kind) {
             let entry = contributions.entry(relation.target).or_insert(0_i64);
-            *entry = entry.checked_add(value).ok_or(())?;
+            *entry = entry
+                .checked_add(value)
+                .ok_or(RefreshReadDenial::Unavailable)?;
         }
     }
     Ok(contributions)
@@ -210,13 +231,14 @@ fn live_entity_kind(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView,
     entity: EntityId,
-) -> Option<KindId> {
+) -> Result<Option<KindId>, RefreshReadDenial> {
     view.entity_record_with_projection_scope(
         execution,
         entity,
         ProjectionAspectScope::empty(),
         |record| (record.lifecycle() == RecordLifecycleState::Live).then_some(record.kind_id()),
     )
+    .map_err(RefreshReadDenial::Request)
 }
 
 fn update_materialized_targets(

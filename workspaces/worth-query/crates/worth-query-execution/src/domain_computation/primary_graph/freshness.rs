@@ -6,6 +6,7 @@ use super::observations::{
 use super::resolution_denial::{resolution_denial, WorthQueryPrincipalResolutionDenialKind};
 use super::schema_layout::WorthQueryPrimaryPrincipalBindingLayout;
 use super::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
@@ -57,21 +58,24 @@ impl WorthQueryDurablePrincipalCurrentness {
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
-    ) -> bool {
+    ) -> Result<bool, WorthQueryPrincipalResolutionDenial> {
+        #[cfg(test)]
+        let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Approval);
         let Some(binding) = layout.principal_binding(&self.binding) else {
-            return false;
+            return Ok(false);
         };
-        let Ok(mapping) = observe_mapping(
+        let Some(mapping) = comparison_observation(observe_mapping(
             execution,
             runtime,
             snapshot,
             self.mapping,
             binding,
             &self.binding,
-        ) else {
-            return false;
+        ))?
+        else {
+            return Ok(false);
         };
-        let Ok(target) = observe_exact_principal_target(
+        let Some(target) = comparison_observation(observe_exact_principal_target(
             execution,
             runtime,
             snapshot,
@@ -79,10 +83,11 @@ impl WorthQueryDurablePrincipalCurrentness {
             self.principal,
             binding,
             &self.binding,
-        ) else {
-            return false;
+        ))?
+        else {
+            return Ok(false);
         };
-        mapping.enabled
+        Ok(mapping.enabled
             && mapping.entity_id == self.mapping
             && mapping.kind_id == self.mapping_kind
             && mapping.identity == self.mapping_identity
@@ -95,7 +100,7 @@ impl WorthQueryDurablePrincipalCurrentness {
             && target.principal_kind == self.principal_kind
             && target.principal_identity == self.principal_identity
             && target.principal_identity_revision == self.principal_identity_revision
-            && target.adjacency_revision == self.target_adjacency_revision
+            && target.adjacency_revision == self.target_adjacency_revision)
     }
 }
 
@@ -204,18 +209,19 @@ impl WorthQueryPrincipalFreshnessEvidence {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         layout: &WorthQueryPrimaryPrincipalBindingLayout,
         binding: &str,
-    ) -> bool {
-        let Ok(mapping) = observe_mapping(
+    ) -> Result<bool, WorthQueryPrincipalResolutionDenial> {
+        let Some(mapping) = comparison_observation(observe_mapping(
             execution,
             runtime,
             snapshot,
             self.mapping.entity_id,
             layout,
             binding,
-        ) else {
-            return false;
+        ))?
+        else {
+            return Ok(false);
         };
-        let Ok(target) = observe_exact_principal_target(
+        let Some(target) = comparison_observation(observe_exact_principal_target(
             execution,
             runtime,
             snapshot,
@@ -223,10 +229,32 @@ impl WorthQueryPrincipalFreshnessEvidence {
             self.target.target,
             layout,
             binding,
-        ) else {
-            return false;
+        ))?
+        else {
+            return Ok(false);
         };
-        mapping.enabled && self.matches(&mapping, &target)
+        Ok(mapping.enabled && self.matches(&mapping, &target))
+    }
+}
+
+// Comparisons interpret ordinary resolution absence as stale. Only the
+// caller's execution stop prevents the comparison from giving an answer.
+fn comparison_observation<T>(
+    observed: Result<T, WorthQueryPrincipalResolutionDenial>,
+) -> Result<Option<T>, WorthQueryPrincipalResolutionDenial> {
+    match observed {
+        Ok(value) => Ok(Some(value)),
+        Err(denial)
+            if matches!(
+                denial.kind(),
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(_))
+                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled))
+                    | WorthQueryPrincipalResolutionDenialKind::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut))
+            ) =>
+        {
+            Err(denial)
+        }
+        Err(_) => Ok(None),
     }
 }
 
@@ -266,7 +294,7 @@ pub(in crate::domain_computation) fn validate_freshness_at_snapshot<
         || !principal.freshness().matches(&mapping, &target)
     {
         return Err(resolution_denial(
-            WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof),
             principal.binding(),
         ));
     }

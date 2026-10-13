@@ -161,6 +161,7 @@ pub(super) fn replace_elevation_resource(
         let relation = runtime
             .read_truth()
             .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())
+            .expect("fixture read request remains live")
             .into_iter()
             .find(|record| record.source == elevation.entity_id())
             .expect("the elevation has one current direct resource")

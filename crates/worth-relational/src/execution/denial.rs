@@ -110,6 +110,7 @@ pub(crate) fn map_stop<E, R>(
 fn packet_budget_denial(denial: &PacketBudgetDenial) -> Cause {
     match denial {
         PacketBudgetDenial::ScratchCapacityExceeded => Cause::ScratchCapacityExceeded,
+        PacketBudgetDenial::ReadRequest(cause) => *cause,
         PacketBudgetDenial::UncheckedCustomKernel => Cause::UncheckedCustomKernel,
     }
 }
@@ -131,6 +132,7 @@ fn packet_admission(denial: PacketAdmissionDenial) -> Cause {
 fn packet_denial(stop: PacketExecutionStop) -> (Cause, Option<u64>) {
     match stop {
         PacketExecutionStop::Admission(denial) => (packet_admission(denial), None),
+        PacketExecutionStop::ReadRequest(stop) => (stop.cause, Some(stop.identity.value())),
         PacketExecutionStop::Execution { boundary, reason } => {
             let cause = map_stop(&reason, std::convert::identity, packet_budget_denial);
             (cause, boundary.map(PartitionIdentity::value))
@@ -164,3 +166,13 @@ mod keyless_admission;
 mod leased_causes;
 #[cfg(test)]
 mod tests;
+
+impl From<worth_execution::WorkCeilingDenial> for Cause {
+    fn from(stop: worth_execution::WorkCeilingDenial) -> Self {
+        match stop {
+            worth_execution::WorkCeilingDenial::Admission(denial) => lease_denial(denial),
+            worth_execution::WorkCeilingDenial::Stopped(stop) => kernel_stop(stop),
+            worth_execution::WorkCeilingDenial::Panicked => Cause::WorkerFailed,
+        }
+    }
+}

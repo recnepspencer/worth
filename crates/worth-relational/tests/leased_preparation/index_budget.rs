@@ -15,10 +15,9 @@ pub(super) fn assert_prep_and_map_share_work(
         .expect("one-step missing-index lease is admitted");
     let mut missing_request = request.clone();
     missing_request.index_ids = vec![DerivedIndexId(u64::MAX)];
-    let missing = runtime.index_authority().build_for_commit_with_lease(
+    let missing = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&missing_lease),
         missing_request,
-        &missing_lease,
     );
     assert!(missing.execution_denial.is_none());
     assert_eq!(missing.failed_indexes, vec![DerivedIndexId(u64::MAX)]);
@@ -30,10 +29,9 @@ pub(super) fn assert_prep_and_map_share_work(
             1,
         ))
         .expect("one-step work lease is admitted");
-    let stopped = runtime.index_authority().build_for_commit_with_lease(
+    let stopped = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&one_step_lease),
         request.clone(),
-        &one_step_lease,
     );
     assert_eq!(
         stopped.execution_denial.map(|denial| denial.kind),

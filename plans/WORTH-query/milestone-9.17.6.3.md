@@ -1,7 +1,7 @@
 # Milestone 9.17.6.3: Exact Invalidation And Parallel Computation
 
-> **Status:** In progress. Phases 1 to 4 are implemented and reviewed. Phase 5
-> is implemented. Phases 6 to 8 remain. Successor to
+> **Status:** Completed. Phases 1 to 8 are implemented and reviewed, and the
+> gate is green on the joined line. Successor to
 > [9.17.6](./milestone-9.17.6.md). This is the
 > one plan for exact invalidation and parallel execution in WORTH. It replaces the
 > canceled Signal Milestones 14 to 17 and the 9.17.6 rules that kept touched
@@ -836,6 +836,8 @@ unchanged.
   local to it, capped at the computation's remaining ceiling. After the join,
   exhaustion is decided by canonical prefix sums of partition work, and work
   past the first exceeding partition is discarded as physical, uncharged work.
+  An owner-completion failure ends the applied prefix without refunding compute
+  already settled in the canonical compute prefix.
 - A kernel panic becomes a typed failure. It never poisons the pool or leaks a
   lease.
 
@@ -1191,6 +1193,8 @@ rebuild the partitioner or introduce a full-run cause.
 An outcome never depends on reuse: a handler sees the same result, charged work
 and denial either way, and the execution report of a run is the observer's.
 
+Memory is physical: a carried partition reserves what it holds, so a memory denial may depend on reuse and on posture.
+
 ### Query: parallel advancement
 
 The one-call advancement above runs its waves in parallel.
@@ -1206,7 +1210,9 @@ The one-call advancement above runs its waves in parallel.
   apply in canonical order.
 
 The authenticated request stays the principal, and no work outlives the call.
-Charged work is identical at every worker count.
+Charged work is identical at every worker count. An owner-completion failure
+keeps compute already settled in that wave charged, identically at every worker
+count, even when its result lies beyond the applied prefix.
 
 The workflow parallel frontier runs admitted stage preparation as worker-local
 computation on the lease and applies stage effects in canonical order.
@@ -1311,6 +1317,12 @@ executor and no second pool survives.
   per-partition reuse, and adds occurrence identity on top.
 
 ## Budgets, Outcomes, And Cost Contracts
+
+Cost in this section is held by differentials and growth classes. The same
+request's charged work is equal with reuse on and off and at every worker
+count, and each bound below is checked with headroom. No test pins an absolute
+work, span, byte or consult number, and a red exact number is loosened or
+deleted, not investigated. Accounting is a tool here, never a deliverable.
 
 | Contract | Bound |
 | --- | --- |
@@ -2312,7 +2324,8 @@ Work admission and capacity follow these rules. *Completed.*
 - Conditional continuation installation reserves its maximum on the original
   request meter before Fresh effects and settles only the installation it
   reached. The other branches refund that reservation without refunding
-  nested work.
+  nested work. An owner-completion failure likewise does not refund compute
+  already settled in the canonical compute prefix.
 - Prepared and retained memory stay separate capacity claims, each with its
   actual lifetime.
 - Static diagnostic subjects are borrowed and need no speculative String
@@ -2332,10 +2345,11 @@ The next phase may trust that the touched graph alone decides what recomputes.
   topology entry proves them through the public facade. No stored digest
   existed to re-baseline.
 - **6.2** Make `DeterministicPartitioned` execute through the partitioned owner binding.
-  *Partly completed:* a partitioned owner installs and runs: key derivation,
+  *Completed:* a partitioned owner installs and runs: key derivation,
   routing and gathering in `prepare`, every partition's kernel through the
-  execution map, the reducer over the canonical tree, and `complete`. Every run
-  recomputes every partition, inside the computation's declared work.
+  execution map, the reducer over the canonical tree, and `complete`. A first
+  run computes every partition, inside the computation's declared work; 6.3
+  carries the unchanged ones afterwards.
   Installation refuses a mismatched owner binding and every `ContractEquivalent`
   declaration. The topology entry proves through the public facade the same
   bits and charged work on every run and in every input order, the least
@@ -2346,7 +2360,10 @@ The next phase may trust that the touched graph alone decides what recomputes.
   total.
 - **6.3** Route marks to computation partitions through the settlement row's routing
   table, with item routing so `prepare` re-gathers only marked partitions.
-  *Partly completed:* a producer's run retains its state on its record and the
+  *Completed, by content comparison:* the fact-to-partition table lives on the
+  producer's retained state, not on the settlement row, and a partition is
+  marked when a retained fact's content differs, as the design text above
+  prescribes. A producer's run retains its state on its record and the
   next run with an unchanged membership and keys gathers and computes only the
   partitions whose facts changed, compared by content rather than by row marks.
   Unit tests through a real admitted operation prove the carried outcome and
@@ -2375,12 +2392,13 @@ The next phase may trust that the touched graph alone decides what recomputes.
   (`effect_lowering.rs:169`, `observed_fact_index.rs:70-80`), so a blind write
   is admitted only when another read of the attempt, here the gather's,
   observed the fact.
-  *Limitations:* the topology entry does not reach 10,000 partitions; only the
-  unit test does. A set of 200 is refused at
-  seeding, because the topology's planar turn invariant pays one unit of its
-  1,024 for every entity the bootstrap touches, of any kind
-  (`planar_invariant.rs:77`, `worth-relational` `structural_views.rs:118`,
-  `planar_topology.rs:123`). An unobservable retained fact is proven by the
+  *Limitations:* an incremental run observes every retained fact before it
+  decides, so a run whose observation bound exceeds its remaining declared
+  work runs full, with the same result and charged work. An entity-seeded set
+  in the topology entry stays at 160 entries, the bound its decision declares
+  (`computation_partition/region_output.rs`); the 10,000-partition courtroom
+  of 6.12 reaches that width through the public facade from one seeded entry.
+  An unobservable retained fact is proven by the
   unit test and by the differential's deletes. Only a producer
   whose operation runs a retained partitioned computation selects a prior
   state, and the selection charges the request's invalidation-edit admission
@@ -2768,19 +2786,26 @@ The next phase may trust that partition-granular reuse is exact.
     in place of the owner's port, so their reads run concurrently.
   - Bridge's, Signal's and World's seams take it. *Completed.*
 - **7.7** Run the `compute` steps of each dependency-ready wave concurrently
-  under the request lease, with nested partition work.
+  under the request lease, with nested partition work. *Completed.*
   - A wave is admitted by the required-set owner against a basis: every
-    declared upstream of every member is committed in it.
+    declared upstream of every member is committed in it. *Completed.*
   - One lease covers every wave of one advancement; a member's nested work
-    descends from the member.
+    descends from the member. *Completed.*
   - Commits and publications apply in canonical key order, and apply accepts
     only canonical order, by type. The least canonical failure is reported;
-    nothing after it is kept or charged.
+    nothing after it is kept. Compute already settled in the wave stays charged
+    after an owner-completion failure, identically at every worker count. The
+    applied prefix and the canonical compute prefix are distinct boundaries. *Completed.*
     - Canonical order is one declared identity with a total key at every
       deciding sort in Query, World, Bridge and Execution. *Completed.*
   - One execution report per advancement, a failed one included, lists its
-    commits and publications in order.
-  - A handler that does not compute needs no change.
+    commits and publications in order. *Completed.*
+  - A handler that does not compute needs no change. *Completed.*
+  - Drop's closed-claim release is bounded by a fixed two-row quota; Drop charges
+    no work and starts no computation. It walks the rows of its own interest's
+    occurrence and releases the prerequisites of a terminal row. It performs no
+    registry pass and may hand on at most one existing closed-leaf claim;
+    further claim transfers wait for a funded admission. *Completed.*
 - **7.8** A neutral application and the Bank reference prove identical results,
   charged work and commit order at one worker and many, and span strictly
   less than work wherever independence exists.
@@ -2789,6 +2814,11 @@ The next phase may trust that partition-granular reuse is exact.
     judges every history against them. *Completed.*
   - The same harness then varies the worker count and wave order over the
     full matrix and compares span with work.
+    Certified placement uses one fixed seed beside a plain leased slice.
+    Seed variation belongs to `certified_placement_perturbs_the_actual_owned_wave`;
+    `certification_never_changes_the_advancements_work_or_span` pins its bill.
+    Both tests live beside Query's wave dispatch; the matrix drops only seed
+    variation, never the Certified placement. *Completed.*
 
 The next phase may trust that advancement exploits every declared independence.
 
@@ -2798,9 +2828,9 @@ The next phase may trust that advancement exploits every declared independence.
   is committed before Phase 7 closes. *Completed.*
 - **8.2** Complete the public documentation for partition-granular reuse,
   parallel advancement and the workflow frontier; an independent review
-  checks every public statement against the code.
+  checks every public statement against the code. *Completed.*
 - **8.3** Run the complete certification and the mutation probes on x86-64 and
-  wasm32.
+  wasm32. *Completed.*
 
 ## Verification, Review, And Documentation
 

@@ -21,7 +21,7 @@ pub use identity::{
     ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
     ApplicationEncodedInput, ApplicationMutationIdentities,
     ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
-    ApplicationValueIdentityDomain, CanonicalEncodingCharge,
+    ApplicationOwnedMutationIdentities, ApplicationValueIdentityDomain, CanonicalEncodingCharge,
 };
 pub use intent::{
     ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,

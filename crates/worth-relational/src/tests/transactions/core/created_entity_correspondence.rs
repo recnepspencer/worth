@@ -52,8 +52,9 @@ fn committed_create_references_resolve_their_own_distinct_persisted_meanings() {
 
     let records = runtime
         .read_truth()
-        .project_historical_version(execution, committed.version_id)
-        .all_authoritative_entity_records(execution);
+        .project_historical_version(committed.version_id)
+        .all_authoritative_entity_records(execution)
+        .expect("read request remains live");
     let first_record = records
         .iter()
         .find(|record| record.entity_id == first_id)

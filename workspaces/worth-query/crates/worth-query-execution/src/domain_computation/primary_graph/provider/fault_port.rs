@@ -20,6 +20,8 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryPrimaryGraphFaul
     PanickedPendingApplicationPublication,
     #[cfg(test)]
     TightIndexMaintenanceBudget,
+    #[cfg(test)]
+    RejectedManagedCleanup,
 }
 
 pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFaultPort:
@@ -32,6 +34,9 @@ pub(in crate::domain_computation::primary_graph) trait WorthQueryPrimaryGraphFau
 
     #[cfg(test)]
     fn candidate_ready_for_native_preparation(&self) {}
+
+    #[cfg(test)]
+    fn aftermath_ready_for_sealing(&self) {}
 
     fn schedule_for_test(&self, _fault: WorthQueryPrimaryGraphFault) -> bool {
         false
@@ -95,6 +100,8 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
         #[cfg(test)]
         WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
+        #[cfg(test)]
+        WorthQueryPrimaryGraphFault::RejectedManagedCleanup => 1 << 14,
     }
 }
 
@@ -146,7 +153,10 @@ impl super::WorthQueryPrimaryGraphProvider {
         self.take_fault(WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget)
     }
 
-    pub(super) fn take_fault(&self, fault: WorthQueryPrimaryGraphFault) -> bool {
+    pub(in crate::domain_computation::primary_graph) fn take_fault(
+        &self,
+        fault: WorthQueryPrimaryGraphFault,
+    ) -> bool {
         self.fault_port.take(fault)
     }
 }

@@ -1,5 +1,6 @@
 //! An idempotency refusal keeps its exact Bank cause, authorization included.
 
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationIdempotencyResolutionDenialKind as Query,
     WorthQueryOperationAuthorizationDenialKind as QueryAuthorization,
@@ -11,17 +12,17 @@ use crate::BankAuthorizationDenialKind as Authorization;
 #[test]
 fn an_authorization_refusal_keeps_its_exact_kind() {
     for (query, bank) in [
-        (QueryAuthorization::Cancelled, Authorization::Cancelled),
+        (QueryAuthorization::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)), Authorization::Cancelled),
         (
-            QueryAuthorization::DeadlineExceeded,
+            QueryAuthorization::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)),
             Authorization::DeadlineExceeded,
         ),
         (
-            QueryAuthorization::ExpiredAuthentication,
+            QueryAuthorization::Refused(AuthorizationRefusal::ExpiredAuthentication),
             Authorization::ExpiredAuthentication,
         ),
         (
-            QueryAuthorization::PermissionDenied,
+            QueryAuthorization::Refused(AuthorizationRefusal::PermissionDenied),
             Authorization::PermissionDenied,
         ),
     ] {
@@ -74,7 +75,7 @@ fn pending_execution_refusal_preserves_exact_kind() {
         partition_identity: Some(3),
     };
     assert_eq!(
-        from_kind(Query::ExecutionDenied(kind), 0),
-        Bank::ExecutionDenied(kind)
+        from_kind(Query::ExecutionDenied(Ok(kind)), 0),
+        Bank::ExecutionDenied(Ok(kind))
     );
 }

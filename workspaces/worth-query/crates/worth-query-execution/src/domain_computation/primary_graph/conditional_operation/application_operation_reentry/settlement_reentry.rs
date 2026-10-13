@@ -7,7 +7,10 @@ pub(super) enum WorthQuerySettlementReentry {
     AlreadyCommitted,
     ExecutionDenied(
         WorthQueryApplicationSettlementDeferred,
-        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
     ),
     Indeterminate(super::super::WorthQueryConditionalReentryFailure),
     Deferred(WorthQueryApplicationSettlementDeferred),

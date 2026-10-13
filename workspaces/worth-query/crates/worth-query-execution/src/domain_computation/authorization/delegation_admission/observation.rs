@@ -1,5 +1,6 @@
 //! Delegation-lineage and policy observation for one bound capability context.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationRule;
@@ -53,8 +54,8 @@ pub(super) fn observe_lineage(
         let status_revision = observation
             .relational
             .read_truth()
-            .project_snapshot(observation.snapshot, execution)
-            .and_then(|view| {
+            .project_snapshot(observation.snapshot)
+            .map(|view| {
                 view.entity_field_revision(
                     execution,
                     current_grant,
@@ -71,9 +72,19 @@ pub(super) fn observe_lineage(
                     ),
                 )
             })
+            .transpose()
+            .map_err(|cause| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    installed.contract().name(),
+                )
+            })?
+            .flatten()
             .ok_or_else(|| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     installed.contract().name(),
                 )
             })?;
@@ -95,7 +106,9 @@ pub(super) fn observe_lineage(
                 )
                 .map_err(|()| {
                     denial(
-                        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                        WorthQueryOperationAuthorizationDenialKind::Refused(
+                            AuthorizationRefusal::InconsistentDecision,
+                        ),
                         installed.contract().name(),
                     )
                 })?,
@@ -114,7 +127,9 @@ pub(super) fn observe_lineage(
                     )
                     .map_err(|()| {
                         denial(
-                            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                            WorthQueryOperationAuthorizationDenialKind::Refused(
+                                AuthorizationRefusal::InconsistentDecision,
+                            ),
                             installed.contract().name(),
                         )
                     })?,
@@ -124,7 +139,9 @@ pub(super) fn observe_lineage(
         };
         if !visited.insert(parent_grant) {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::DelegationCycle,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::DelegationCycle,
+                ),
                 installed.contract().name(),
             ));
         }
@@ -153,7 +170,9 @@ pub(super) fn observe_lineage(
         )?;
         let parent_policy = parent.into_decision_for_grant(parent_grant).map_err(|()| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::DelegationRejected,
+                ),
                 installed.contract().name(),
             )
         })?;
@@ -207,7 +226,9 @@ pub(super) fn observe_policy(
                 observation.sample,
                 exact_grant.ok_or_else(|| {
                     denial(
-                        WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected,
+                        WorthQueryOperationAuthorizationDenialKind::Refused(
+                            AuthorizationRefusal::ElevationRequestRejected,
+                        ),
                         installed.contract().name(),
                     )
                 })?,
@@ -224,7 +245,9 @@ fn enforce_depth(
     let maximum = match rule {
         ApplicationCapabilityDelegationRule::Forbidden => {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::DelegationRejected,
+                ),
                 subject,
             ));
         }
@@ -234,7 +257,9 @@ fn enforce_depth(
     };
     if depth > maximum {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::DelegationDepthExceeded,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationDepthExceeded,
+            ),
             subject,
         ));
     }

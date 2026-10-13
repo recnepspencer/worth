@@ -1,5 +1,6 @@
 //! approval command cannot select a different elevation subject.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn approval_command_cannot_select_a_different_elevation_subject() {
@@ -39,6 +40,8 @@ fn approval_command_cannot_select_a_different_elevation_subject() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationApprovalRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationApprovalRejected
+        )
     );
 }

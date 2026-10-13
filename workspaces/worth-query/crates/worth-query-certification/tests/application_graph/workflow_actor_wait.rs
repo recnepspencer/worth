@@ -11,6 +11,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryOrdinaryWorkflowRunStop,
     WorthQueryWorkflowAdvancePreparationDenial,
 };
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use super::document_retention_model::{
     host::publish_workflow_on_first_program,
@@ -61,8 +62,11 @@ fn revoked_advance_grant_yields_a_redacted_actor_wait() {
     assert_eq!(required.instance(), instance.entity_id());
     assert!(required.denial().causes().iter().all(|cause| matches!(
         cause,
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
-            | WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        ) | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing
+        )
     )));
     change_grant(
         &application,
@@ -92,8 +96,8 @@ fn revoked_advance_grant_yields_a_redacted_actor_wait() {
                 WorthQueryApplicationRequestMutationDenial::Authorization(ref denial)
             )) if denial.causes().iter().any(|cause| matches!(
                 cause,
-                WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
-                    | WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+                WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+                    | WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityGrantMissing)
             ))
         ),
         "a denied non-advance capability cannot become an actor wait"

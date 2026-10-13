@@ -26,7 +26,7 @@ pub fn assert_financial_host_curve_delivery(
 
     let mut world = host::FinancialCourtroomWorld::publish_curve();
     let baseline = world
-        .conditional_clock(request_execution, &world.curve_clock)
+        .conditional_clock(&world.curve_clock)
         .unwrap()
         .observe(request_execution);
     assert!(matches!(
@@ -37,7 +37,7 @@ pub fn assert_financial_host_curve_delivery(
     world.curve_gate.release();
     world.curve_clock_control.push(2, 11);
     let observed = world
-        .conditional_clock(request_execution, &world.curve_clock)
+        .conditional_clock(&world.curve_clock)
         .unwrap()
         .observe(request_execution);
     let mut receipt = match observed {
@@ -116,7 +116,7 @@ pub fn assert_sibling_curve_record_does_no_query_work(
     let mut host = host::FinancialCourtroomWorld::publish_curve();
     let mut sibling = query::build_sibling_curve_record(request_execution, &host);
     assert!(matches!(
-        host.conditional_clock(request_execution, &host.curve_clock)
+        host.conditional_clock(&host.curve_clock)
             .unwrap()
             .observe(request_execution),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -125,7 +125,7 @@ pub fn assert_sibling_curve_record_does_no_query_work(
     host.curve_gate.release();
     host.curve_clock_control.push(2, 11);
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .conditional_clock(request_execution, &host.curve_clock)
+        .conditional_clock(&host.curve_clock)
         .unwrap()
         .observe(request_execution)
     else {
@@ -163,7 +163,7 @@ pub fn assert_financial_curve_query_patch(
     let mut host = host::FinancialCourtroomWorld::publish_curve();
     let mut query = query::build_curve(request_execution, &host);
     let baseline = host
-        .conditional_clock(request_execution, &host.curve_clock)
+        .conditional_clock(&host.curve_clock)
         .unwrap()
         .observe(request_execution);
     assert!(matches!(
@@ -174,7 +174,7 @@ pub fn assert_financial_curve_query_patch(
     host.curve_gate.release();
     host.curve_clock_control.push(2, 11);
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .conditional_clock(request_execution, &host.curve_clock)
+        .conditional_clock(&host.curve_clock)
         .unwrap()
         .observe(request_execution)
     else {
@@ -222,7 +222,7 @@ pub fn assert_suppressed_quote_has_no_query_patch(
     let mut query = query::build_quote(request_execution, &host);
     host.quote_gate.release();
     let WorthQueryConditionalClockObservationOutcome::Accepted(_) = host
-        .conditional_clock(request_execution, &host.quote_clock)
+        .conditional_clock(&host.quote_clock)
         .unwrap()
         .observe(request_execution)
     else {
@@ -236,7 +236,7 @@ pub fn assert_suppressed_quote_has_no_query_patch(
     host.amend_quote(2, 102, 5_120);
     host.quote_clock_control.push(2, 11);
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut small) = host
-        .conditional_clock(request_execution, &host.quote_clock)
+        .conditional_clock(&host.quote_clock)
         .unwrap()
         .observe(request_execution)
     else {
@@ -260,7 +260,7 @@ pub fn assert_suppressed_quote_has_no_query_patch(
     host.amend_quote(3, 110, 5_120);
     host.quote_clock_control.push(3, 12);
     let large_observation = host
-        .conditional_clock(request_execution, &host.quote_clock)
+        .conditional_clock(&host.quote_clock)
         .unwrap()
         .observe(request_execution);
     let mut large = match large_observation {

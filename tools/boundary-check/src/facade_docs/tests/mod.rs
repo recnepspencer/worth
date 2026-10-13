@@ -10,10 +10,6 @@ use crate::manifest_types::Road1Package;
 use crate::snapshots::document::{FacadeDocument, FacadeRow, SCHEMA_VERSION};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
-
-static FIXTURE_ID: AtomicUsize = AtomicUsize::new(0);
 
 /// A throwaway repository holding a Cargo workspace of fixture crates.
 struct Fixture {
@@ -23,14 +19,7 @@ struct Fixture {
 
 impl Fixture {
     fn new() -> Self {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let root = std::env::temp_dir().join(format!(
-            "boundary-facade-docs-{nanos}-{}",
-            FIXTURE_ID.fetch_add(1, Ordering::Relaxed)
-        ));
+        let root = worth_harness::tooling::fixture_path::unique_path("boundary-facade-docs");
         fs::create_dir_all(&root).unwrap();
         fs::write(
             root.join("Cargo.toml"),

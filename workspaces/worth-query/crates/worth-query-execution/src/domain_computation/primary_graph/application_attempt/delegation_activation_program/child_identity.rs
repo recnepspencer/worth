@@ -137,6 +137,12 @@ fn observe_created_values(
                     WorthQueryApplicationAttemptDenialKind::UniqueValueTaken,
                     format!("{locator:?}"),
                 ),
+                WorthQueryIndexedSelectionRefusal::Execution(cause) => {
+                    WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                        cause,
+                        "unique child identity",
+                    )
+                }
                 WorthQueryIndexedSelectionRefusal::Unavailable => unavailable(locator),
             })?);
         }

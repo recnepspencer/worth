@@ -1,7 +1,6 @@
 mod publication;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::RelationalRematerializationCompletion;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 mod failure;
 mod invariant_admission;
@@ -278,13 +277,7 @@ where
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
-        WorthQueryProductPublicationBinding::new(
-            observation,
-            self.product_runtime.owner.publication_port(),
-            self.product_runtime.owner.recovery_port(),
-            self.product_runtime.clock.clone(),
-            self.product_runtime.root_identity(),
-        )
+        self.product_runtime.publication_binding(observation)
     }
 
     pub(super) fn unpublished_materialization(

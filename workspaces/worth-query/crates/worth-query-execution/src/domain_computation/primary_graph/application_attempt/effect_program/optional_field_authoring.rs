@@ -195,7 +195,7 @@ fn promote_ordinary_writes(
                 },
             ))
         })
-        .collect::<Result<BTreeMap<_, _>, _>>()?;
+        .collect::<Result<BTreeMap<_, _>, WorthQueryApplicationAttemptDenial>>()?;
     *effect = WorthQueryApplicationRealizedEffect::PatchOptionalEntityFields {
         entity: entity.to_owned(),
         entity_id,

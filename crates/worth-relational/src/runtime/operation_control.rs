@@ -33,21 +33,35 @@ impl RelationalInterruptionEvent {
     /// Observes the caller's cancellation or deadline at a named boundary.
     /// This consults borrowed request control only; it creates no request and
     /// performs no storage work. Readers still charge their own native work.
-    pub fn observe_request(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    /// Retains the interruption and boundary of an already-produced request stop.
+    /// Work and nested stops remain the caller's typed stop rather than an event.
+    pub fn from_request_stop(
+        stop: worth_execution::MapKernelStop,
         boundary: RelationalInterruptionBoundary,
-    ) -> Option<Self> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
-        let cause = crate::execution::denial::kernel_stop(execution.check_live().err()?);
-        let interruption = match cause {
-            Cause::Cancelled => RelationalOperationInterruption::Cancelled,
-            Cause::DeadlineElapsed => RelationalOperationInterruption::TimedOut,
-            _ => return None,
+    ) -> Result<Self, worth_execution::MapKernelStop> {
+        use worth_execution::MapKernelStop as Stop;
+        let interruption = match stop {
+            Stop::Cancelled => RelationalOperationInterruption::Cancelled,
+            Stop::DeadlineElapsed => RelationalOperationInterruption::TimedOut,
+            Stop::WorkCounterOverflow | Stop::WorkCeiling | Stop::NestedStopped => {
+                return Err(stop)
+            }
         };
-        Some(Self {
+        Ok(Self {
             interruption,
             boundary,
         })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn observe_request(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        boundary: RelationalInterruptionBoundary,
+    ) -> Option<Self> {
+        match execution.check_live() {
+            Ok(()) => None,
+            Err(stop) => Self::from_request_stop(stop, boundary).ok(),
+        }
     }
 
     pub const fn interruption(self) -> RelationalOperationInterruption {

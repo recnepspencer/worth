@@ -80,6 +80,8 @@ fn another_owner_with_the_same_types_runs_in_full() {
             reducer: sum,
             bump: Mutex::new(0),
             work: Mutex::new([1, 1]),
+            steps: Mutex::new(None),
+            nested: Default::default(),
             gathered: Mutex::default(),
             calls: Mutex::default(),
         }),

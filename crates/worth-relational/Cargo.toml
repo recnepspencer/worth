@@ -21,6 +21,7 @@ dashmap = "6"
 crossbeam-queue = "0.3"
 arc-swap = "1"
 im = { version = "15.1", features = ["serde"] }
+sized-chunks = "0.6.5"
 
 [dev-dependencies]
 worth-harness.workspace = true

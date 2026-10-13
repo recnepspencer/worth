@@ -68,11 +68,11 @@ fn failed_kill_is_retained_in_the_expiry_report() {
         .unwrap();
     let mut running = RunningChild {
         child: Some(child),
-        bound: DEFAULT_CHILD_PROCESS_DEADLINE,
+        bound: DEFAULT_CHILD_PROCESS_HANG_GUARD,
     };
     let child = running.child.as_mut().unwrap();
     assert!(
-        wait_for_exit(child, Instant::now() + DEFAULT_CHILD_PROCESS_DEADLINE)
+        wait_for_exit(child, Instant::now() + DEFAULT_CHILD_PROCESS_HANG_GUARD)
             .unwrap()
             .is_some()
     );
@@ -88,8 +88,8 @@ fn failed_kill_is_retained_in_the_expiry_report() {
         "kill denied",
     ));
     let text = expiry_report(
-        Duration::from_secs(300),
-        Duration::from_secs(301),
+        Duration::from_secs(7),
+        Duration::from_secs(8),
         &killed,
         &Ok(None),
         b"before kill stdout",
@@ -98,7 +98,7 @@ fn failed_kill_is_retained_in_the_expiry_report() {
     for expected in [
         "kill=Err",
         "kill denied",
-        "elapsed=301s",
+        "elapsed=8s",
         "reap=Ok(None)",
         "before kill stdout",
         "before kill stderr",

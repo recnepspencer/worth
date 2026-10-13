@@ -70,6 +70,7 @@ pub(super) fn revoke_account_ownership(
             let relation = runtime
                 .read_truth()
                 .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())
+                .expect("fixture read request remains live")
                 .into_iter()
                 .find(|record| record.target == account)
                 .expect("the admitted account has one ownership edge")

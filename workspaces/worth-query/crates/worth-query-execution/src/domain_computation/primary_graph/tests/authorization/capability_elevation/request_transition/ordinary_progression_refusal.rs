@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn ordinary_operation_progression_cannot_authorize_a_lifecycle_request() {
@@ -38,6 +39,8 @@ fn ordinary_operation_progression_cannot_authorize_a_lifecycle_request() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationTransitionRequired
+        )
     );
 }

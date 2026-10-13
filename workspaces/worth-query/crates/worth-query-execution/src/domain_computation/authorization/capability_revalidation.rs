@@ -1,4 +1,7 @@
 //! Current capability re-admission at privileged transitions.
+mod denial;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use denial::{denial, inconsistent_refresh};
 mod installed_basis;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -38,7 +41,9 @@ where
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         let product = graph_work.product().ok_or_else(|| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 "retained capability authorization",
             )
         })?;
@@ -64,7 +69,9 @@ where
             .authorization()
             .ok_or_else(|| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     admission.operation(),
                 )
             })?
@@ -81,19 +88,25 @@ where
             .map(crate::basis::WorthQueryProductBranchLease::retained_clone)
             .ok_or_else(|| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     &operation,
                 )
             })?;
         let authorization = admission.authorization_mut().ok_or_else(|| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 &operation,
             )
         })?;
         if !authorization.belongs_to_session(session_identity) {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 "retained capability authorization",
             ));
         }
@@ -101,7 +114,9 @@ where
             .capability_authorization_mut()
             .ok_or_else(|| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     "retained capability authorization",
                 )
             })?;
@@ -145,7 +160,9 @@ where
         let installed = self.installed_capability_plan(request)?;
         if authority_identity != installed.capability_authority_identity().as_ref() {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::PolicyNotInstalled,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::PolicyNotInstalled,
+                ),
                 installed.contract().name(),
             ));
         }
@@ -179,7 +196,9 @@ where
     > {
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ForeignRuntime,
+                ),
                 refresh.installed.contract().name(),
             )
         })?;
@@ -238,20 +257,31 @@ where
         if !authorization
             .principal()
             .remains_current_in(execution, runtime, snapshot)
+            .map_err(|kind| {
+                WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+            })?
         {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StalePrincipal,
+                ),
                 refresh.installed.contract().name(),
             ));
         }
-        if !authorization.decision().remains_current_in(
-            execution,
-            runtime,
-            snapshot,
-            self.authorization.bridge(),
-        ) {
+        if !authorization
+            .decision()
+            .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+            .map_err(|cause| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    "authorization currentness",
+                )
+            })?
+        {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleAuthorization,
+                ),
                 refresh.installed.contract().name(),
             ));
         }
@@ -267,7 +297,9 @@ where
         let grant = authorization.grant();
         let (fact, expiry) = observed.into_refresh_for_grant(grant).map_err(|()| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 refresh.installed.contract().name(),
             )
         })?;
@@ -282,7 +314,9 @@ where
             )
             .map_err(|()| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     refresh.installed.contract().name(),
                 )
             })
@@ -326,7 +360,9 @@ where
     > {
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ForeignRuntime,
+                ),
                 refresh.installed.contract().name(),
             )
         })?;
@@ -360,20 +396,4 @@ where
                 result
             })
     }
-}
-
-fn inconsistent_refresh(
-    refresh: &WorthQueryCapabilityRefresh<'_>,
-) -> WorthQueryOperationAuthorizationDenial {
-    denial(
-        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
-        refresh.installed.contract().name(),
-    )
-}
-
-fn denial(
-    kind: WorthQueryOperationAuthorizationDenialKind,
-    subject: impl Into<String>,
-) -> WorthQueryOperationAuthorizationDenial {
-    WorthQueryOperationAuthorizationDenial::new(kind, subject)
 }

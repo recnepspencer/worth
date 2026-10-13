@@ -12,16 +12,20 @@ fn graph_summary_is_scope_explicit_and_canonical() {
 
     let summary = runtime
         .inspect_what_happened()
-        .graph_summary(execution, &current_graph_request(None, None, true));
-    let kind_summary = runtime.inspect_what_happened().kind_summary(
-        execution,
-        &KindInspectionRequest {
-            scope: InspectionScope::Current,
-            partition_scope: None,
-            kind_id: crate::facade::identity::KindId(1),
-            record_class: crate::facade::inspection::InspectionRecordClass::Entity,
-        },
-    );
+        .graph_summary(execution, &current_graph_request(None, None, true))
+        .expect("read request remains live");
+    let kind_summary = runtime
+        .inspect_what_happened()
+        .kind_summary(
+            execution,
+            &KindInspectionRequest {
+                scope: InspectionScope::Current,
+                partition_scope: None,
+                kind_id: crate::facade::identity::KindId(1),
+                record_class: crate::facade::inspection::InspectionRecordClass::Entity,
+            },
+        )
+        .expect("read request remains live");
 
     assert_eq!(summary.entity_count, 2);
     assert_eq!(summary.relation_count, 1);
@@ -64,68 +68,85 @@ fn current_graph_surfaces_match_version_and_snapshot_scopes_for_same_truth() {
     let snapshot = runtime.visibility_authority().snapshot();
     let version_id = runtime.current_version_id();
 
-    let current_graph = runtime.inspect_what_happened().graph_summary(
-        execution,
-        &current_graph_request(
-            Some(vec![crate::facade::identity::PartitionId(7)]),
-            Some(vec![crate::facade::identity::KindId(2)]),
-            true,
-        ),
-    );
-    let version_graph = runtime.inspect_what_happened().graph_summary(
-        execution,
-        &version_graph_request(
-            version_id,
-            Some(vec![crate::facade::identity::PartitionId(7)]),
-            Some(vec![crate::facade::identity::KindId(2)]),
-            true,
-        ),
-    );
-    let snapshot_graph = runtime.inspect_what_happened().graph_summary(
-        execution,
-        &snapshot_graph_request(
-            InspectionScope::Snapshot(snapshot.clone()),
-            Some(vec![crate::facade::identity::PartitionId(7)]),
-            Some(vec![crate::facade::identity::KindId(2)]),
-            true,
-        ),
-    );
-    let current_connectivity = runtime.inspect_what_happened().connectivity_summary(
-        execution,
-        &connectivity_request(
-            InspectionScope::Current,
-            Some(vec![crate::facade::identity::PartitionId(7)]),
-            Some(vec![crate::facade::identity::KindId(2)]),
-            true,
-        ),
-    );
-    let version_connectivity = runtime.inspect_what_happened().connectivity_summary(
-        execution,
-        &connectivity_request(
-            InspectionScope::Version(version_id),
-            Some(vec![crate::facade::identity::PartitionId(7)]),
-            Some(vec![crate::facade::identity::KindId(2)]),
-            true,
-        ),
-    );
-    let snapshot_connectivity = runtime.inspect_what_happened().connectivity_summary(
-        execution,
-        &connectivity_request(
-            InspectionScope::Snapshot(snapshot),
-            Some(vec![crate::facade::identity::PartitionId(7)]),
-            Some(vec![crate::facade::identity::KindId(2)]),
-            true,
-        ),
-    );
-    let neighbors_current =
-        runtime
-            .inspect_what_happened()
-            .neighbors(execution, InspectionScope::Current, left_a);
-    let neighbors_version = runtime.inspect_what_happened().neighbors(
-        execution,
-        InspectionScope::Version(version_id),
-        left_a,
-    );
+    let current_graph = runtime
+        .inspect_what_happened()
+        .graph_summary(
+            execution,
+            &current_graph_request(
+                Some(vec![crate::facade::identity::PartitionId(7)]),
+                Some(vec![crate::facade::identity::KindId(2)]),
+                true,
+            ),
+        )
+        .expect("read request remains live");
+    let version_graph = runtime
+        .inspect_what_happened()
+        .graph_summary(
+            execution,
+            &version_graph_request(
+                version_id,
+                Some(vec![crate::facade::identity::PartitionId(7)]),
+                Some(vec![crate::facade::identity::KindId(2)]),
+                true,
+            ),
+        )
+        .expect("read request remains live");
+    let snapshot_graph = runtime
+        .inspect_what_happened()
+        .graph_summary(
+            execution,
+            &snapshot_graph_request(
+                InspectionScope::Snapshot(snapshot.clone()),
+                Some(vec![crate::facade::identity::PartitionId(7)]),
+                Some(vec![crate::facade::identity::KindId(2)]),
+                true,
+            ),
+        )
+        .expect("read request remains live");
+    let current_connectivity = runtime
+        .inspect_what_happened()
+        .connectivity_summary(
+            execution,
+            &connectivity_request(
+                InspectionScope::Current,
+                Some(vec![crate::facade::identity::PartitionId(7)]),
+                Some(vec![crate::facade::identity::KindId(2)]),
+                true,
+            ),
+        )
+        .expect("read request remains live");
+    let version_connectivity = runtime
+        .inspect_what_happened()
+        .connectivity_summary(
+            execution,
+            &connectivity_request(
+                InspectionScope::Version(version_id),
+                Some(vec![crate::facade::identity::PartitionId(7)]),
+                Some(vec![crate::facade::identity::KindId(2)]),
+                true,
+            ),
+        )
+        .expect("read request remains live");
+    let snapshot_connectivity = runtime
+        .inspect_what_happened()
+        .connectivity_summary(
+            execution,
+            &connectivity_request(
+                InspectionScope::Snapshot(snapshot),
+                Some(vec![crate::facade::identity::PartitionId(7)]),
+                Some(vec![crate::facade::identity::KindId(2)]),
+                true,
+            ),
+        )
+        .expect("read request remains live");
+    let neighbors_current = runtime
+        .inspect_what_happened()
+        .neighbors(execution, InspectionScope::Current, left_a)
+        .expect("read request remains live");
+    let neighbors_version = runtime
+        .inspect_what_happened()
+        .neighbors(execution, InspectionScope::Version(version_id), left_a)
+        .expect("read request remains live");
 
     assert_eq!(current_graph.entity_count, version_graph.entity_count);
     assert_eq!(current_graph.entity_count, snapshot_graph.entity_count);
@@ -178,15 +199,18 @@ fn snapshot_graph_summary_fails_closed_when_snapshot_handle_is_unavailable() {
         .release_snapshot(&created.snapshot)
         .is_ok());
 
-    let summary = runtime.inspect_what_happened().graph_summary(
-        execution,
-        &snapshot_graph_request(
-            InspectionScope::Snapshot(created.snapshot.clone()),
-            None,
-            None,
-            true,
-        ),
-    );
+    let summary = runtime
+        .inspect_what_happened()
+        .graph_summary(
+            execution,
+            &snapshot_graph_request(
+                InspectionScope::Snapshot(created.snapshot.clone()),
+                None,
+                None,
+                true,
+            ),
+        )
+        .expect("read request remains live");
 
     assert_eq!(
         summary.scope,
@@ -211,22 +235,25 @@ fn connectivity_summary_refuses_oversized_budget_with_explicit_degradation() {
     let right = create_entity(execution, &runtime, "right");
     let _relation = create_relation(execution, &runtime, left, right, "rel");
 
-    let summary = runtime.inspect_what_happened().connectivity_summary(
-        execution,
-        &crate::facade::inspection::ConnectivityInspectionRequest {
-            scope: InspectionScope::Current,
-            partition_scope: None,
-            relation_kind_scope: None,
-            include_members: false,
-            budget: crate::facade::inspection::ConnectivityInspectionBudget {
-                max_entities: 1,
-                max_relations: 1,
-                max_frontier: 1,
-                max_components: 1,
-                max_work_units: 1,
+    let summary = runtime
+        .inspect_what_happened()
+        .connectivity_summary(
+            execution,
+            &crate::facade::inspection::ConnectivityInspectionRequest {
+                scope: InspectionScope::Current,
+                partition_scope: None,
+                relation_kind_scope: None,
+                include_members: false,
+                budget: crate::facade::inspection::ConnectivityInspectionBudget {
+                    max_entities: 1,
+                    max_relations: 1,
+                    max_frontier: 1,
+                    max_components: 1,
+                    max_work_units: 1,
+                },
             },
-        },
-    );
+        )
+        .expect("read request remains live");
 
     assert_eq!(
         summary.availability,

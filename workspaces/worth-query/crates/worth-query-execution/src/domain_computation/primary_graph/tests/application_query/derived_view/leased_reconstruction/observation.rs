@@ -4,7 +4,8 @@ use super::{Case, Observation, ScopeInterruption};
 mod denial_custody;
 mod verification;
 use crate::domain_computation::primary_graph::application_contribution::{
-    query_test_execution_authority_for_test, test_policy,
+    place_managed_computations_on_this_thread_for_test as place,
+    WorthQueryExecutionPlacementForTest as Placement,
 };
 use crate::domain_computation::primary_graph::tests::fixture::{
     NestedAccountQuery, PublicAccountMembershipQuery, PublicScopedAccountSummaryQuery,
@@ -24,6 +25,11 @@ pub(super) fn observe_case(
     case: Case,
 ) -> Observation {
     let _run = crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner();
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    place(workers.map_or(Placement::Serial, |width| {
+        Placement::Leased(NonZeroUsize::new(width).unwrap())
+    }));
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
     let host_request = phase.test_host_request();
@@ -141,24 +147,15 @@ pub(super) fn observe_case(
         .interrupt
         .filter(|(_, deadline)| *deadline)
         .map(|_| std::time::Instant::now() + Duration::from_secs(5));
-    let serial = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(16 << 20),
-        caller_cancel.token(),
-        deadline,
-    );
-    let lease = workers.map(|workers| {
-        query_test_execution_authority_for_test()
-            .request_lease(LeaseRequest {
-                policy: test_policy(NonZeroUsize::new(workers).unwrap(), serial.memory().limit()),
-                cancellation: caller_cancel.token(),
-                deadline,
-            })
-            .unwrap()
-    });
-    let request = lease.as_ref().map_or_else(
-        || ExecutionRequest::serial(&serial),
-        ExecutionRequest::leased,
-    );
+    let lease = execution.in_scope(|parent| {
+        { let parent = parent.expect("the active phase is leased"); parent.child(LeaseRequest {
+            policy: worth_foundational::ExecutionRequestPolicy::new(parent.policy().posture(), parent.policy().determinism(), worth_foundational::ExecutionBudget::new(NonZeroUsize::new(workers.unwrap_or(1)).unwrap(), 16 << 20, parent.policy().budget().work_ceiling())),
+            cancellation: caller_cancel.token(),
+            deadline,
+        }).unwrap() }
+    }).unwrap();
+    let request = ExecutionRequest::leased(&lease);
+    let execution = &request;
     let owner = std::thread::current().id();
     let mut canonical_roots = roots
         .iter()
@@ -351,12 +348,8 @@ pub(super) fn observe_case(
         } else {
             0
         };
-    let available = serial.memory().limit().checked_sub(denial_bytes).unwrap();
-    if let Some(lease) = &lease {
-        drop(lease.reserve_memory(available).unwrap());
-    } else {
-        drop(serial.memory().reserve(available).unwrap());
-    }
+    let available = (16_u64 << 20).checked_sub(denial_bytes).unwrap();
+    drop(lease.reserve_memory(available).unwrap());
     let retained_values = prior
         .iter()
         .map(|key| snapshot.get(key).unwrap().unwrap().0.clone())

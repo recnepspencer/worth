@@ -19,9 +19,10 @@ impl Drop for Restore {
 // Both producers retain their declared work; a successful run measures delivery.
 const RUNS: usize = 1;
 const ENTRY_WORK: usize = 1_000_000;
-const EVEN_WEIGHT_WORK: u64 = 1;
 const PRODUCER_WORK: usize = ENTRY_WORK + WORK_BESIDE_ENTRIES;
-const REQUIRED_PRODUCER_PASSES: u64 = 2;
+// A caller allows one declared entry checkpoint with generous headroom,
+// but cannot fund two. Resetting its request on retry would admit both.
+const CALLER_WORK: u64 = ENTRY_WORK as u64 + ENTRY_WORK as u64 / 2;
 
 #[test]
 fn caller_refresh_retry_spends_what_the_first_attempt_left() {
@@ -33,27 +34,19 @@ fn caller_refresh_retry_spends_what_the_first_attempt_left() {
     }
 }
 
-#[path = "advancement_custody/budget_measurement.rs"]
-mod budget_measurement;
+#[path = "advancement_custody/application_fixture.rs"]
+mod application_fixture;
 #[path = "advancement_custody/post_producer_delivery.rs"]
 mod post_producer_delivery;
 
 fn run() {
     use worth_query_host::facade::{
-        application_contribution::{
-            WorthQueryAdvancementDenial as Denial,
-            WorthQueryManagedComputationResourceDenial as Resource,
-        },
+        application_contribution::WorthQueryAdvancementDenial as Denial,
         application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
-        primary_graph::{
-            signal_request_charges_on_this_thread_for_test as signal_charges,
-            signal_request_refusals_on_this_thread_for_test as signal_refusals,
-            SignalCheckpointDenialForTest as SignalCheckpointDenial,
-        },
     };
-    let ceiling = budget_measurement::ceiling();
+    let ceiling = CALLER_WORK;
     bound(None);
-    let application = budget_measurement::application();
+    let application = application_fixture::application();
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut interest = request
@@ -67,7 +60,7 @@ fn run() {
         bits: 2.5_f64.to_bits(),
         read: OwnWriteRead::Blind,
     }));
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
@@ -75,10 +68,7 @@ fn run() {
     )));
     reports();
     passes();
-    signal_charges();
-    signal_refusals();
     room().clear();
-    kernel_charges();
     let outcome = interest.settle(&request);
     let requests = reports();
     let attempts = passes();
@@ -104,35 +94,20 @@ fn run() {
         panic!("the caller must carry its execution stop");
     };
     assert_eq!(
-        signal_refusals(),
-        vec![SignalCheckpointDenial::WorkCeiling],
-        "delivery refuses at its Signal-owned checkpoint"
-    );
-    assert_eq!(
         denial.kind(),
-        WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::Resource(
-            Resource::WorkExhausted
-        )),
+        WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::NestedStopped),
         "charged={charged}; attempts={attempts:?}; diagnostics={diagnostics}"
     );
     assert_eq!(attempts.len(), 3, "charged first pass, refresh, then retry");
+    assert!(
+        room().first().unwrap().outcome.is_ok(),
+        "the first producer completed"
+    );
     assert_eq!(
         room().len(),
-        REQUIRED_PRODUCER_PASSES as usize,
-        "both producers completed before Signal delivery refused"
+        1,
+        "the spent request cannot admit another producer"
     );
-    assert!(
-        room().iter().all(|run| run.outcome.is_ok()),
-        "the refusal is outside every producer's completed computation"
-    );
-    let kernel_work = kernel_charges();
-    assert_eq!(
-        kernel_work[0],
-        ENTRY_WORK as u64 + EVEN_WEIGHT_WORK,
-        "the first producer performs its declared entry and weight checkpoints"
-    );
-    // One declared producer attempt fits alone; the refusal requires carried spend.
-    assert!(kernel_work[0] <= ceiling);
     assert_eq!(
         attempts[1].1, attempts[0].1,
         "Ready refresh adds no Signal work"
@@ -159,8 +134,6 @@ fn run() {
     assert_eq!(requests.len(), 1, "the fresh settlement opens exactly once");
     assert_eq!(passes().len(), 1, "Initial returns the retained stop");
     assert_eq!(room().len(), producer_attempts, "no producer runs again");
-    assert!(kernel_charges().is_empty(), "no new kernel work is charged");
-    assert_eq!(requests[0].as_ref().unwrap().charged_work(), 0);
 }
 
 #[test]
@@ -198,7 +171,7 @@ fn producer_caller_pass_refuses_before_its_source_or_handler_reads() {
         .unwrap();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         for zero_memory in [false, true] {
-            let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+            let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
             let _restore = Restore(
                 place(placement),
                 bound(Some(worth_foundational::ExecutionBudget::new(
@@ -228,10 +201,7 @@ fn producer_caller_pass_refuses_before_its_source_or_handler_reads() {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
             } else {
                 match placement {
-                    Placement::Serial => {
-                        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit))
-                    }
-                    Placement::Leased(_) => {
+                    Placement::Serial | Placement::Leased(_) => {
                         let Denial::Resource(Resource::MemoryLimit {
                             level,
                             requested,

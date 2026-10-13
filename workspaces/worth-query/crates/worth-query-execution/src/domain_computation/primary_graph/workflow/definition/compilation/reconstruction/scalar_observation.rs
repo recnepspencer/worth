@@ -9,7 +9,7 @@ pub(super) fn observed_u64(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow definition field is unavailable"))?;
     let AspectValue::UInt64(value) = value else {
         return Err(denial("workflow definition field has invalid type"));
@@ -32,7 +32,7 @@ pub(super) fn observed_optional_u64(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
-    let Some(value) = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let Some(value) = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
     else {
         facts.push(WorthQueryApplicationObservedFact::AbsentField {
             entity_id: entity,
@@ -62,7 +62,7 @@ pub(super) fn observed_bool(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow definition field is unavailable"))?;
     let AspectValue::Bool(value) = value else {
         return Err(denial("workflow definition field has invalid type"));
@@ -85,7 +85,7 @@ pub(super) fn observed_optional_text(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
-    let Some(value) = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let Some(value) = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
     else {
         facts.push(WorthQueryApplicationObservedFact::AbsentField {
             entity_id: entity,
@@ -116,7 +116,7 @@ pub(super) fn observed_text(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow definition field is unavailable"))?;
     let AspectValue::String(InternedString::Raw(text)) = &value else {
         return Err(denial("workflow definition field has invalid type"));

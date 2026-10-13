@@ -64,6 +64,12 @@ impl BankCommittedDispatchOutboxObservation {
 /// exact version is gone ask the caller for different next steps.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommittedDispatchOutboxReadDenial {
+    ReadExecution(
+        Result<
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ForeignPhase,
     ForeignRuntime,
     Missing,
@@ -109,6 +115,7 @@ impl BankIdentityRuntime {
 impl From<QueryDenial> for BankCommittedDispatchOutboxReadDenial {
     fn from(denial: QueryDenial) -> Self {
         match denial {
+            QueryDenial::ReadExecution(cause) => Self::ReadExecution(cause),
             QueryDenial::ForeignPhase => Self::ForeignPhase,
             QueryDenial::ForeignRuntime => Self::ForeignRuntime,
             QueryDenial::Missing => Self::Missing,

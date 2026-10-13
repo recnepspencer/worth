@@ -42,6 +42,6 @@ fn product_selection_from_another_runtime_fails_before_binding() {
         .err()
         .expect("the runtime cannot adopt a foreign World selection");
     assert_eq!(denied.kind(), installed::WorthQueryOperatingWorldEntryDenialKind::Product(installed::WorthQueryOperatingWorldProductDenial::Admission(
-        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::ForeignOwner,
+        worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind::ForeignOwner),
     )));
 }

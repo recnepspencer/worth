@@ -358,6 +358,11 @@ pub enum WorkflowProgressOutcome {
     /// performed variant.
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
+    /// A landed receipt is retained when its required projection read stops.
+    ProjectionReadStopped {
+        receipt: super::super::WorthQueryApplicationCommitReceipt,
+        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    },
     PreparationDenied(super::super::WorthQueryApplicationAttemptDenial),
     AuthenticationDenied(
         worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,

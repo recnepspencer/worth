@@ -3,6 +3,7 @@ use bank_server::{
     BankEstateProgressionDenial, BankExternalDispatchAttemptDenial, BankRecoveryDenialKind,
 };
 use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind;
+use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 use super::super::protocol::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
 use super::authorization_denial::authorization_denial;
@@ -69,7 +70,7 @@ fn idempotency_denial(denial: BankEstateIdempotencyResolutionDenial) -> BankHttp
     use BankHttpNextAction as Next;
     let (denial, next) = match denial {
         Idempotency::ExecutionDenied(kind) => {
-            return super::mutation_application::pending_execution_denial(kind)
+            return super::mutation_application::pending_execution_stop(kind)
         }
         Idempotency::Authorization(denial) => return authorization_denial(denial.kind()),
         // The key's earlier commit took effect; reading current state shows it.
@@ -165,6 +166,10 @@ fn dispatch_owner_read_denial(read: BankCommittedDispatchOutboxReadDenial) -> Ba
     use BankHttpDenialKind as Denial;
     use BankHttpNextAction as Next;
     let (denial, next) = match read {
+        Read::ReadExecution(Ok(cause)) => return super::mutation_application::pending_execution_denial(cause),
+        Read::ReadExecution(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)) => (Denial::Cancelled, Next::Retry),
+        Read::ReadExecution(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)) => (Denial::DeadlineExceeded, Next::Retry),
+
         // Publication, indexing or concurrent snapshot occupancy can settle
         // before the same owner read is retried.
         Read::PendingPublication
@@ -219,44 +224,44 @@ fn dispatch_attempt_denial(attempt: BankExternalDispatchAttemptDenial) -> BankHt
 fn principal_resolution_denial(kind: WorthQueryPrincipalResolutionDenialKind) -> BankHttpDenial {
     use WorthQueryPrincipalResolutionDenialKind as Query;
     match kind {
-        Query::ExpiredAuthentication => BankHttpDenial::new(
+        Query::Refused(PrincipalRefusal::ExpiredAuthentication) => BankHttpDenial::new(
             BankHttpDenialKind::Unauthenticated,
             BankHttpNextAction::Authenticate,
         ),
-        Query::StaleInstalledSchema
-        | Query::StalePrincipalProof
-        | Query::BranchMaterializationSuspended => {
+        Query::Refused(PrincipalRefusal::StaleInstalledSchema)
+        | Query::Refused(PrincipalRefusal::StalePrincipalProof)
+        | Query::Refused(PrincipalRefusal::BranchMaterializationSuspended) => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh)
         }
-        Query::Cancelled => {
+        Query::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)) => {
             BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
         }
-        Query::DeadlineExceeded => BankHttpDenial::new(
+        Query::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)) => BankHttpDenial::new(
             BankHttpDenialKind::DeadlineExceeded,
             BankHttpNextAction::Retry,
         ),
-        Query::PrimaryGraphNotInstalled
-        | Query::BindingNotInstalled
-        | Query::IdentityIndexUnavailable
-        | Query::CorruptIdentityIndex
-        | Query::ActiveSnapshotCapacityExhausted { .. }
-        | Query::SnapshotIdentityExhausted
-        | Query::RetentionCapacityExhausted
-        | Query::RetentionIdentityExhausted => BankHttpDenial::new(
+        Query::Refused(PrincipalRefusal::PrimaryGraphNotInstalled)
+        | Query::Refused(PrincipalRefusal::BindingNotInstalled)
+        | Query::Refused(PrincipalRefusal::IdentityIndexUnavailable)
+        | Query::Refused(PrincipalRefusal::CorruptIdentityIndex)
+        | Query::Refused(PrincipalRefusal::ActiveSnapshotCapacityExhausted{ .. })
+        | Query::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
+        | Query::Refused(PrincipalRefusal::RetentionCapacityExhausted)
+        | Query::Refused(PrincipalRefusal::RetentionIdentityExhausted) => BankHttpDenial::new(
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::ContactOperator,
         ),
-        Query::ForeignRuntime
-        | Query::UnknownPrincipal
-        | Query::DisabledPrincipal
-        | Query::AmbiguousPrincipal
-        | Query::MissingPrincipalTarget
-        | Query::AmbiguousPrincipalTarget
-        | Query::WrongPrincipalTargetKind => BankHttpDenial::new(
+        Query::Refused(PrincipalRefusal::ForeignRuntime)
+        | Query::Refused(PrincipalRefusal::UnknownPrincipal)
+        | Query::Refused(PrincipalRefusal::DisabledPrincipal)
+        | Query::Refused(PrincipalRefusal::AmbiguousPrincipal)
+        | Query::Refused(PrincipalRefusal::MissingPrincipalTarget)
+        | Query::Refused(PrincipalRefusal::AmbiguousPrincipalTarget)
+        | Query::Refused(PrincipalRefusal::WrongPrincipalTargetKind) => BankHttpDenial::new(
             BankHttpDenialKind::PermissionDenied,
             BankHttpNextAction::None,
         ),
-        _ => BankHttpDenial::new(
+        Query::Stopped(Ok(_)) | Query::Refused(PrincipalRefusal::ForeignPhase) => BankHttpDenial::new(
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),

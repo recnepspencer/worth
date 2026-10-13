@@ -12,6 +12,8 @@ mod diagnostics;
 mod discard;
 mod maintenance;
 pub(crate) use maintenance::candidate::PreparedCandidateIndexPublication;
+#[cfg(test)]
+pub(crate) use maintenance::charge_rendezvous::at_next_charges;
 mod packet_planning;
 
 use crate::history::data::CommitId;
@@ -84,7 +86,13 @@ impl<'runtime> IndexAuthority<'runtime> {
     pub(crate) fn rebuild_unique_entity_aspect_field_indexes(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::branch::RelationalBranchBasisDenial> {
+    ) -> Result<(), crate::indexes::data::DerivedIndexMaintenanceDenialKind> {
         rebuild_unique_entity_aspect_field_indexes(execution, self.runtime)
     }
 }
+
+#[cfg(test)]
+pub(crate) use maintenance::last_allocation_bytes;
+
+#[cfg(test)]
+pub(crate) use maintenance::two_row_patch_bytes;

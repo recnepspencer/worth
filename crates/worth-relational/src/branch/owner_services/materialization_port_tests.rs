@@ -101,6 +101,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
     let read = recovered_restored
         .read_truth()
         .read_snapshot(&current, execution)
+        .expect("read request remains live")
         .expect("recovery restores an ordinarily readable rematerialized root");
     assert_eq!(
         read.entities()

@@ -598,7 +598,7 @@ runtime artifacts.
   topology before any condition or evaluation may consume them
 - replay reconstructs cause authority from canonical mutation and output-commit
   records, never from diagnostic presentation
-- Milestone 11 observation derives `Touched`, `Recomputed`, and
+- Signal observation derives `Visited`, `Recomputed`, and
   `MeaningfulChange` from the committed transaction result; pending or rolled-
   back cause mutation is not observable delivery truth
 

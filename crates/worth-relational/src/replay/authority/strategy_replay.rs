@@ -221,6 +221,9 @@ fn execute_strategy_replay(
         Err(error) => {
             crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
             let mismatch_class = match error {
+                crate::commit_strategies::StrategyExecutionError::Execution(cause) => {
+                    return Err(RelationalRecoveryStop::Request(cause))
+                }
                 crate::commit_strategies::StrategyExecutionError::UnknownStrategyId { .. }
                 | crate::commit_strategies::StrategyExecutionError::UnboundStrategyExecutor {
                     ..

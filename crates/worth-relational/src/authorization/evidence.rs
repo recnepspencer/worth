@@ -23,6 +23,7 @@ impl RelationalAuthorizationObservationIdentity {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalAuthorizationObservationFreshness {
+    ExecutionStopped(crate::execution::RelationalExecutionDenialCause),
     Fresh,
     Stale,
 }

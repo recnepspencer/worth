@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_declaration::facade::branch::{
     WorthQueryProductBranchComponentPosture, WorthQueryProductBranchComponents,
@@ -31,7 +32,7 @@ pub(crate) trait WorthQuerySourceProgramResolver {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &crate::basis::WorthQueryProductBranchLease,
-    ) -> Option<ApplicationProgramRevision>;
+    ) -> Result<Option<ApplicationProgramRevision>, super::WorthQueryProductBranchAdmissionDenial>;
 }
 
 #[derive(Debug)]
@@ -88,7 +89,9 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
     ) -> Result<WorthQueryProductBranch, WorthQueryProductBranchCreateError> {
         let phase_request = phase.execution_request_for(self.runtime).map_err(|_| {
             WorthQueryProductBranchCreateError::SourceAdmission(
-                super::WorthQueryProductBranchAdmissionDenial::ForeignPhase,
+                super::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignPhase,
+                ),
             )
         })?;
         let execution = &phase_request;
@@ -148,7 +151,13 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             .admit_product_occurrence(source.occurrence())
             .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
         let source_program = source_program_resolver
-            .and_then(|resolver| resolver.source_program(execution, &source));
+             .map(|resolver| {
+                let _read = runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::SourceProgramResolution);
+                resolver.source_program(execution, &source)
+            })
+            .transpose()
+            .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?
+            .flatten();
         let cancellation = RuntimeWorldCancellationSource::new();
         match runtime
             .create_product_branch(

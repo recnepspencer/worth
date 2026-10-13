@@ -5,7 +5,6 @@ use worth_query_host::facade::primary_graph::{
     advancement_requests_on_this_thread_for_test as reports,
     bound_advancement_requests_on_this_thread_for_test as bound,
     place_managed_computations_on_this_thread_for_test as place,
-    WorthQueryApplicationUncommitted as Uncommitted,
     WorthQueryExecutionPlacementForTest as Placement,
 };
 struct Restore(Placement, Option<worth_foundational::ExecutionBudget>);
@@ -96,34 +95,22 @@ fn committed(case: &Case) -> u64 {
     work.relational_invariant_execution_count() as u64
 }
 #[test]
-fn posting_lease_exact_budget_keeps_the_serial_verdict() {
+fn posting_lease_keeps_the_serial_verdict_and_work() {
     let serial = run(false, None, false);
     let paid = run(true, None, false);
     assert_eq!(committed(&paid), committed(&serial));
-    let exact_budget = *paid
-        .work
-        .iter()
-        .max()
-        .expect("the transfer opens bounded requests");
-    let exact = run(true, Some(exact_budget), false);
-    assert_eq!(committed(&exact), committed(&serial));
-    assert_eq!(exact.work, paid.work);
+    assert_eq!(paid.work, serial.work);
 }
 #[test]
-fn posting_lease_one_unit_short_is_the_work_stop() {
-    let paid = run(true, None, false);
-    committed(&paid);
-    let short = run(
-        true,
-        Some(paid.work.iter().max().unwrap().checked_sub(1).unwrap()),
-        false,
-    );
-    let Ok(WorthQueryApplicationMutationOutcome::Commit(Uncommitted::Denied(denial))) =
-        short.outcome
-    else {
-        panic!("{:?}", short.outcome)
+fn posting_lease_without_work_room_keeps_the_request_stop() {
+    let stopped = run(true, Some(0), false);
+    let Err(denial) = stopped.outcome else {
+        panic!("{:?}", stopped.outcome)
     };
-    assert!(matches!(denial.kind(),worth_query_host::facade::primary_graph::WorthQueryApplicationCommitDenialKind::ExecutionResource{denial:Resource::WorkExhausted,..}));
+    assert_eq!(denial.kind(),
+        worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::ExecutionRequest(
+            WorthQueryAdvancementDenial::Resource(Resource::WorkExhausted)));
+    assert_eq!(stopped.balance_after, stopped.balance_before);
 }
 #[test]
 fn posting_lease_cancelled_transfer_keeps_the_cancellation() {

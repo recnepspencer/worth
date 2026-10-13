@@ -13,6 +13,7 @@ impl QueryReadExecutionStop {
         // it does not consume this stop. Query's denial handoffs own the original
         // stop separately, so classification cannot erase its native cause.
         let (cause, partition_identity) = match self {
+            Self::ReadRequest(cause) => (Some(*cause), None),
             Self::Request(denial) => (
                 Some(match denial {
                     WorkCeilingDenial::Admission(denial) => {
@@ -38,6 +39,7 @@ impl QueryReadExecutionStop {
             } => (
                 map_stop(reason, Some, |denial| match denial {
                     QueryReadPacketDenial::FragmentUnavailable => None,
+                    QueryReadPacketDenial::ReadRequest(cause) => Some(*cause),
                 }),
                 boundary.map(worth_foundational::PartitionIdentity::value),
             ),

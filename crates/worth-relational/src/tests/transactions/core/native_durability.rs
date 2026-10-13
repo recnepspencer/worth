@@ -88,6 +88,7 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
         let read = runtime
             .read_truth()
             .read_snapshot(&cleared.snapshot, execution)
+            .expect("read request remains live")
             .unwrap();
         (
             read.get_entity(source)
@@ -106,7 +107,8 @@ fn native_struct_reference_and_clear_state_survive_checkpoint_readmission() {
     });
     let read = recovered
         .read_truth()
-        .read_version(execution, cleared.version_id);
+        .read_version(execution, cleared.version_id)
+        .expect("read request remains live");
 
     assert_eq!(
         read.get_entity(source).unwrap().authoritative_aspect_state,

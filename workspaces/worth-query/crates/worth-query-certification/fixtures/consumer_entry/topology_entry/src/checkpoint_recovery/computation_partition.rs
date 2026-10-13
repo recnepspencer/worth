@@ -5,6 +5,9 @@
 
 use std::marker::PhantomData;
 
+pub(super) const BOOTSTRAP_ENTITIES: usize = 2 * region_output::LARGEST_SET;
+pub(super) const BOOTSTRAP_RELATIONS: usize = 2 * region_output::LARGEST_SET;
+
 use serde::Serialize;
 use worth_query_decl::facade::application_program::{
     ApplicationComputationExecution, ApplicationComputationInput, ApplicationComputationPartition,

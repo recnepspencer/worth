@@ -1,6 +1,7 @@
 //! Retry meaning of typed output-demand stops.
 
 use super::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 impl WorthQueryOutputDemandDenialKind {
     pub(super) fn default_recovery_posture(&self) -> WorthQueryOutputDemandRecoveryPosture {
@@ -79,11 +80,13 @@ impl WorthQueryOutputDemandDenialKind {
         kind: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
     ) -> Self {
         use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
         match kind {
-            Kind::Cancelled => Self::Cancelled,
-            Kind::DeadlineExceeded => Self::TimedOut,
-            Kind::ProductSecurityBasis(admission) => Self::ProductSelection(admission),
-            other => Self::RequestAuthorization(other),
+            Kind::Stopped(Err(Control::Cancelled)) => Self::Cancelled,
+            Kind::Stopped(Err(Control::TimedOut)) => Self::TimedOut,
+            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
+            Kind::Refused(AuthorizationRefusal::ProductSecurityBasis(refusal)) => Self::ProductSelection(refusal),
+            Kind::Refused(refusal) => Self::RequestAuthorization(refusal),
         }
     }
 
@@ -93,26 +96,23 @@ impl WorthQueryOutputDemandDenialKind {
         kind: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind,
     ) -> Self {
         use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind as Kind;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
         match kind {
-            Kind::Cancelled => Self::Cancelled,
-            Kind::DeadlineExceeded => Self::TimedOut,
-            Kind::ProjectionWorkBudgetExceeded => Self::WorkBudgetExceeded,
-            Kind::ProjectionPreparationMemoryExhausted => Self::RetentionBudgetExceeded,
-            other => Self::SourcePrincipal(other),
+            Kind::Stopped(Err(Control::Cancelled)) => Self::Cancelled,
+            Kind::Stopped(Err(Control::TimedOut)) => Self::TimedOut,
+            Kind::Stopped(Ok(kind)) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(kind)),
+            Kind::Refused(refusal) => Self::SourcePrincipal(refusal),
         }
     }
 
     /// The request's scope did not resolve, as [`Self::of_principal_resolution`].
-    pub(in crate::domain_computation::primary_graph) const fn of_scope_resolution(
+    pub(in crate::domain_computation::primary_graph) fn of_scope_resolution(
         kind: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind,
     ) -> Self {
         use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind as Kind;
         match kind {
-            Kind::Cancelled => Self::Cancelled,
-            Kind::DeadlineExceeded => Self::TimedOut,
-            Kind::ProjectionWorkBudgetExceeded => Self::WorkBudgetExceeded,
-            Kind::ProjectionPreparationMemoryExhausted => Self::RetentionBudgetExceeded,
-            other => Self::SourceScope(other),
+            Kind::Stopped(cause) => Self::SourceQueryExecution(crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(match crate::facade::primary_graph::relational_execution_kind(cause, None) { Ok(kind) => kind, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => return Self::Cancelled, Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => return Self::TimedOut })),
+            Kind::Refused(refusal) => Self::SourceScope(refusal),
         }
     }
 

@@ -265,7 +265,7 @@ fn exact_u64(
     expected: u64,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow definition field is unavailable"))?;
     if value != AspectValue::UInt64(expected) {
         return Err(denial("workflow definition protocol is unsupported"));

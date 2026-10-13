@@ -76,8 +76,6 @@ fn bounded_provider_fixture_opener_refuses_before_direct_and_workflow_readmissio
             assert_eq!(direct_stop, workflow_stop);
             if !memory {
                 assert_eq!(direct_stop, Denial::Resource(Resource::WorkExhausted));
-            } else if placement == Placement::Serial {
-                assert_eq!(direct_stop, Denial::Resource(Resource::PolicyMemoryLimit));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,

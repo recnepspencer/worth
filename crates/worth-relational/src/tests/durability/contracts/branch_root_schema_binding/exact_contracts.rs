@@ -97,6 +97,7 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
     let legacy_read = recovered
         .read_truth()
         .read_observation(execution, &legacy_basis.observation())
+        .expect("read request remains live")
         .expect("legacy root reads through its v1 carrier");
     let old_record = legacy_read
         .get_entity(old_entity)
@@ -121,6 +122,7 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
     let current_read = recovered
         .read_truth()
         .read_observation(execution, &main_basis.observation())
+        .expect("read request remains live")
         .expect("current root reads through its v2 carrier");
     let new_record = current_read
         .get_entity(new_entity)
@@ -132,50 +134,45 @@ fn recovered_exact_roots_interpret_records_with_their_own_schema_contracts() {
 
     let legacy_projection = recovered
         .read_truth()
-        .project_snapshot(&legacy_snapshot, execution)
+        .project_snapshot(&legacy_snapshot)
         .expect("legacy exact projection remains bound");
     let current_projection = recovered
         .read_truth()
-        .project_snapshot(&main_snapshot, execution)
+        .project_snapshot(&main_snapshot)
         .expect("current exact projection remains bound");
     let name_scope =
         crate::facade::runtime::ProjectionAspectScope::whole_aspects([aspect_key("name")]);
     let display_scope =
         crate::facade::runtime::ProjectionAspectScope::whole_aspects([aspect_key("display")]);
     assert_eq!(
-        legacy_projection.entity_record_with_projection_scope(
-            execution,
-            old_entity,
-            name_scope.clone(),
-            |_| Some(()),
-        ),
+        legacy_projection
+            .entity_record_with_projection_scope(execution, old_entity, name_scope.clone(), |_| {
+                Some(())
+            },)
+            .expect("read request remains live"),
         Some(())
     );
     assert_eq!(
-        current_projection.entity_record_with_projection_scope(
-            execution,
-            new_entity,
-            display_scope.clone(),
-            |_| Some(()),
-        ),
+        current_projection
+            .entity_record_with_projection_scope(
+                execution,
+                new_entity,
+                display_scope.clone(),
+                |_| Some(()),
+            )
+            .expect("read request remains live"),
         Some(())
     );
     assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        legacy_projection.entity_record_with_projection_scope(
-            execution,
-            old_entity,
-            display_scope,
-            |_| Some(()),
-        )
+        legacy_projection
+            .entity_record_with_projection_scope(execution, old_entity, display_scope, |_| Some(()))
+            .expect("read request remains live")
     }))
     .is_err());
     assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        current_projection.entity_record_with_projection_scope(
-            execution,
-            new_entity,
-            name_scope,
-            |_| Some(()),
-        )
+        current_projection
+            .entity_record_with_projection_scope(execution, new_entity, name_scope, |_| Some(()))
+            .expect("read request remains live")
     }))
     .is_err());
 

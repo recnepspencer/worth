@@ -25,22 +25,24 @@ impl<'runtime> MergeAccess<'runtime> {
         request: NormalizedRelationalMergeRequest,
     ) -> Result<IdentityScopedMergePlan, MergePlanningError> {
         let history_plan = self.plan_history_scope(request)?;
-        Ok(self.discover_identity_scope(execution, history_plan))
+        self.discover_identity_scope(execution, history_plan)
     }
 
     fn discover_identity_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         history_plan: HistoryScopedMergePlan,
-    ) -> IdentityScopedMergePlan {
+    ) -> Result<IdentityScopedMergePlan, MergePlanningError> {
         let target_view = self
             .runtime
             .read_truth()
-            .read_version(execution, history_plan.basis.target_head.version_id);
+            .read_version(execution, history_plan.basis.target_head.version_id)
+            .map_err(crate::merge::data::MergePlanningError::Execution)?;
         let source_view = self
             .runtime
             .read_truth()
-            .read_version(execution, history_plan.basis.source_head.version_id);
+            .read_version(execution, history_plan.basis.source_head.version_id)
+            .map_err(crate::merge::data::MergePlanningError::Execution)?;
 
         let ancestry = MergeAncestrySummary {
             merge_base_rule: history_plan.basis.merge_base.rule,
@@ -97,7 +99,7 @@ impl<'runtime> MergeAccess<'runtime> {
             Arc::from(validated_schema_correspondences.clone()),
         );
 
-        IdentityScopedMergePlan {
+        Ok(IdentityScopedMergePlan {
             request: history_plan.request,
             basis: history_plan.basis,
             ancestry,
@@ -108,7 +110,7 @@ impl<'runtime> MergeAccess<'runtime> {
             candidates: Arc::from(candidates),
             validated_schema_correspondences: Arc::from(validated_schema_correspondences),
             identity_summary,
-        }
+        })
     }
 }
 

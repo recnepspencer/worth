@@ -53,7 +53,7 @@ pub(super) fn stage_leased_relation_rows(
     )?;
     let streams = crate::execution::execute_read_only_packets_with_budget(
         inputs,
-        Some(lease),
+        lease,
         workspace.commit_work_budget(),
         |(packet_index_floor, endpoints), context| {
             let mut stream = Vec::new();

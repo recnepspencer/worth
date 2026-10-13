@@ -30,7 +30,8 @@ pub use super::application_attempt::{
     WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial,
-    WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationNoEffect,
+    WorthQueryApplicationIdempotencyResolutionDenialKind,
+    WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationOutputEntity,
     WorthQueryApplicationOutputFamilyEntry, WorthQueryApplicationOutputPosture,
     WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadAttempt,
@@ -92,23 +93,23 @@ pub use super::application_contribution::{
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
     WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
     WorthQueryManagedComputationOwner, WorthQueryManagedComputationPrepared,
-    WorthQueryManagedComputationResourceDenial, WorthQueryMemoryLimitLevel,
-    WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-    WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadinessContractBuilder,
-    WorthQueryOutputReadinessContractDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner, WorthQueryPreparedManagedComputation,
-    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
-    WorthQueryProducerDemandResources, WorthQueryProducerInputReuseContract,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily, WorthQueryReductionInputDenial,
-    WorthQuerySelectedApplicationProducer, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryManagedComputationResourceDenial, WorthQueryMemberExecution,
+    WorthQueryMemoryLimitLevel, WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial,
+    WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
+    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
+    WorthQueryPreparedManagedComputation, WorthQueryPreparedPartitionedComputation,
+    WorthQueryProducerApplicability, WorthQueryProducerDemandResources,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
+    WorthQueryReductionInputDenial, WorthQuerySelectedApplicationProducer,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use super::application_entry::mutation::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerInterruption, HandlerResult,
     MutationHandlerExecutionDenial, OperationHandler, WorthQueryCompletedMutationCandidate,
-    WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerProjectionWork,
-    WorthQueryMutationHandlerWork,
+    WorthQueryDecisionPlan, WorthQueryMutationHandlerExecutionReport,
+    WorthQueryMutationHandlerProjectionWork, WorthQueryMutationHandlerWork,
 };
 pub use super::application_output_demand::{
     required_custody_layout_for_test, required_handoff_custody_bytes_for_test,
@@ -217,6 +218,7 @@ pub use super::entity_key::{WorthQueryApplicationEntityKey, WorthQueryApplicatio
 pub use super::entity_resolution::WorthQueryApplicationEntityIdentity;
 pub use super::entity_resolution_denial::{
     WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
+    WorthQueryEntityResolutionRefusalKind,
 };
 pub use super::expression::WorthQueryWorkflowConditionSources;
 pub use super::granular_invalidation::{
@@ -318,6 +320,7 @@ pub use super::provider::{
 pub use super::resolution::WorthQueryPrincipalResolutionMode;
 pub use super::resolution_denial::{
     WorthQueryPrincipalResolutionDenial, WorthQueryPrincipalResolutionDenialKind,
+    WorthQueryPrincipalResolutionRefusalKind,
 };
 pub use super::root::{WorthQueryPrimaryGraph, WorthQueryPrimaryGraphIntegrationHandle};
 pub use super::settlement_repair::WorthQueryApplicationSettlementRecoveryError;
@@ -340,8 +343,9 @@ pub use super::workflow::{
     WorthQueryWorkflowInstanceProgressCounters,
 };
 pub use crate::basis::{
-    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
-    WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
+    WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity,
+    WorthQueryProductObservationLease,
 };
 pub use crate::domain_computation::authorization::{
     WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
@@ -349,7 +353,8 @@ pub use crate::domain_computation::authorization::{
     WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationCloseAuthorizationDenial,
     WorthQueryMandatoryReviewAuthorizationDenial, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
-    WorthQueryOperationScopeBinding, WorthQueryOperationScopeEntityBinding,
+    WorthQueryOperationAuthorizationRefusalKind, WorthQueryOperationScopeBinding,
+    WorthQueryOperationScopeEntityBinding,
 };
 pub use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
@@ -364,7 +369,10 @@ pub use crate::domain_computation::{
 pub use super::provider::relational_execution_denial::relational_execution_kind;
 
 pub use super::application_contribution::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
 pub use worth_execution::ExecutionRequest;

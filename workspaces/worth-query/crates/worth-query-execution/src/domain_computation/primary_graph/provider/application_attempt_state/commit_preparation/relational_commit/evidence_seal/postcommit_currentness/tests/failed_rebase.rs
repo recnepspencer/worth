@@ -4,12 +4,12 @@ use super::*;
 /// effect moved a fact its source query read, on either side of the failure.
 #[test]
 fn a_failed_rebase_carries_out_what_its_effect_did_to_its_source_reads() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world = installed_authorization_world(true);
     world
         .application
         .with_host_advancement(|phase| {
+            let borrowed = phase.borrowed_request_for_test();
+            let execution = &borrowed;
             let host_custody = phase.test_host_request();
 
             let (entity, locator) = account_note(

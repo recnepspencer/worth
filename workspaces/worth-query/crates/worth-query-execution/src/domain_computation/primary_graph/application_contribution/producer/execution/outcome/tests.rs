@@ -117,14 +117,17 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
 
 #[test]
 fn pending_execution_evidence_keeps_heads_producer_category() {
-    use crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_kind_denied;
+    use crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
     use crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage as Stage;
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     let kind = Session::ExecutionWorkerPanicked {
         partition_identity: Some(7),
     };
-    let commit =
-        provider_session_kind_denied(kind, Stage::Idempotency, "pending publication refused");
+    let commit = provider_session_execution_denied(
+        Ok(kind),
+        Stage::Idempotency,
+        "pending publication refused",
+    );
     let observed = commit_receipt(
         "producer",
         WorthQueryApplicationCommitOutcome::Denied(commit),

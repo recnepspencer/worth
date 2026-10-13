@@ -2,7 +2,6 @@
 use super::*;
 use worth_query_decl::facade::application_capability::*;
 use worth_query_decl::facade::{worth_query_aspect, worth_query_entity, worth_query_field};
-use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap;
 worth_query_entity!(pub(in super::super) CorrectionGrant for Schema: TopologySchemaBinding);
 worth_query_aspect!(pub(in super::super) CorrectionGrantFacts for Schema: TopologySchemaBinding, CorrectionGrant; identity = AspectIdentity(0x9174_10a1), revision = AspectContractRevision(1),);
 macro_rules! grant_fields { ($($name:ident),+) => {$(worth_query_field!(pub(in super::super) $name for Schema: TopologySchemaBinding, CorrectionGrant, CorrectionGrantFacts: u64 => U64ApplicationValueBinding, read_only, equality);)+}; }
@@ -143,51 +142,3 @@ impl<Schema: TopologySchemaBinding>
 }
 mod contract;
 pub(in super::super) use contract::declare;
-pub(in super::super) fn seed(
-    graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>,
-    scope: &str,
-) {
-    use worth_query_host::facade::primary_graph::{
-        WorthQueryApplicationEntityKey as Key, WorthQueryApplicationEntitySeed as Seed,
-        WorthQueryApplicationRelationSeed as Relation,
-    };
-    fn key<Entity>(s: &str) -> Key<CheckpointSchema, Entity> {
-        Key::new(s).unwrap()
-    }
-    graph
-        .bind_entity(
-            Seed::new(CorrectionGrant::reference(), key("entry-correction-grant"))
-                .field(CorrectionAction::reference(), 1)
-                .field(CorrectionPurpose::reference(), 1)
-                .field(CorrectionStatus::reference(), 1)
-                .field(CorrectionScopeKey::reference(), scope.to_owned())
-                .field(CorrectionNotBefore::reference(), 0)
-                .field(CorrectionNotAfter::reference(), u64::MAX)
-                .field(CorrectionDepth::reference(), 0),
-        )
-        .unwrap();
-    graph
-        .bind_relation(Relation::new(
-            CorrectionResource::reference(),
-            "correction-resource",
-            key("entry-correction-grant"),
-            key(scope),
-        ))
-        .unwrap();
-    graph
-        .bind_relation(Relation::new(
-            CorrectionGrantee::reference(),
-            "correction-grantee",
-            key("model-owner"),
-            key("entry-correction-grant"),
-        ))
-        .unwrap();
-    graph
-        .bind_relation(Relation::new(
-            CorrectionGrantor::reference(),
-            "correction-grantor",
-            key("model-owner"),
-            key("entry-correction-grant"),
-        ))
-        .unwrap();
-}

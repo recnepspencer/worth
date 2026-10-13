@@ -1,5 +1,6 @@
 //! Named currentness denials shared by the observation steps.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
@@ -8,7 +9,7 @@ pub(super) fn stale_principal(
     subject: impl Into<String>,
 ) -> WorthQueryOperationAuthorizationDenial {
     authorization_denial(
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal),
         subject,
     )
 }
@@ -17,7 +18,9 @@ pub(super) fn projection_rejected(
     subject: impl Into<String>,
 ) -> WorthQueryOperationAuthorizationDenial {
     authorization_denial(
-        WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityProjectionRejected,
+        ),
         subject,
     )
 }

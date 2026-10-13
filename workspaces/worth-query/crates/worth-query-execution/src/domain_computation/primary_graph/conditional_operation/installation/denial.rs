@@ -2,6 +2,12 @@
 /// refused.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// Bridge retained the native conditional or Signal refusal.
     BridgeConditional(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
     ManagedTemporal(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),

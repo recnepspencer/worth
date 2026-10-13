@@ -22,11 +22,14 @@ where
     let newly_active_worker = lease.is_some_and(|value| !value.is_current_worker_in_lineage());
     let _worker_context = lease.map(ExecutionResourceLease::enter_worker_context);
     let mut context = KernelContext::new(limits.clone());
-    let result = match limits.safe_point() {
+    let result = match context.safe_point() {
         Err(stop) => {
+            // Entry safe points already latch these request facts, even if
+            // skipped input destruction replaces the public cause with Panic.
             if std::mem::needs_drop::<I>() {
                 // Only owned destruction adds a panic boundary at a skipped item.
-                // A destructor panic replaces the safe-point stop with Panic.
+                // A destructor panic replaces the public stop with Panic;
+                // it cannot release the interruption's request ownership.
                 contain(AssertUnwindSafe(|| drop(input)))
                     .map(|()| Err(KernelFailure::Stop(stop)))
                     .unwrap_or(Err(KernelFailure::Panic))
@@ -59,5 +62,10 @@ where
         other => other,
     };
     let (work, span) = context.cost();
-    TaskOutcome { result, work, span }
+    let stop_owner = context.settle_result(&result, |failure| context.failure_owner(failure));
+    TaskOutcome {
+        result: super::task_result::TaskResult::new(result, stop_owner),
+        work,
+        span,
+    }
 }

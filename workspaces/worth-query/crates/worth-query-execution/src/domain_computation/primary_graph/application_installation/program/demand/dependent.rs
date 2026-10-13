@@ -79,11 +79,35 @@ where
         let retained_basis = self
             .runtime
             .select_application_read_observation_with_request(execution, basis);
+        if let Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_)) =
+            retained_basis
+        {
+            return Err(WorthQueryOutputDemandDenial::product_selection(
+                cause,
+                "dependent basis",
+            ));
+        }
+        let minimum_basis = if retained_basis.is_ok() {
+            Some(
+                self.runtime
+                    .select_application_read_observation_with_request(
+                        execution,
+                        minimum_observation,
+                    ),
+            )
+        } else {
+            None
+        };
+        if let Some(Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_))) =
+            &minimum_basis
+        {
+            return Err(WorthQueryOutputDemandDenial::product_selection(
+                *cause,
+                "dependent minimum observation",
+            ));
+        }
         if retained_basis.is_err()
-            || self
-                .runtime
-                .select_application_read_observation_with_request(execution, minimum_observation)
-                .is_err()
+            || minimum_basis.as_ref().is_some_and(|basis| basis.is_err())
             || basis.branch_identity() != parent_branch
             || minimum_observation.branch_identity() != parent_branch
             || basis.selected_commit().ordinal() < parent_commit.ordinal()

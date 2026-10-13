@@ -64,19 +64,18 @@ impl<Schema, Operation, Input, Scope, Phase>
             .with_runtime(execution, |runtime| {
                 self.entity_resolution
                     .at_snapshot(
-                        execution,
                         runtime,
                         self.lease.snapshot(),
                         super::super::super::WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .and_then(|truth| truth.validate_entity_freshness(execution, identity))
             })
-            .map_err(|_| {
-                denial(
-                    WorthQueryApplicationAttemptDenialKind::StaleEntityIdentity,
-                    entity,
-                )
-            })
+            .map_err(|refusal| {
+                match refusal.kind() {
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, entity),
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => denial(WorthQueryApplicationAttemptDenialKind::StaleEntityIdentity, entity),
+                }
+                })
     }
 
     pub(super) fn field_layout(

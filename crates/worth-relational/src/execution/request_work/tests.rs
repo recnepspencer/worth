@@ -73,7 +73,7 @@ fn remaining_work_child_observes_parent_cancellation_during_work() {
         // The kernel owns the sender, so an early stop disconnects the rendezvous.
         let result = execute_read_only_packets_with_budget(
             packet(),
-            Some(&lease),
+            &lease,
             Some(&budget),
             move |rows, context| {
                 context.checkpoint(1)?;
@@ -119,7 +119,7 @@ fn remaining_work_child_refuses_the_next_charge_after_parent_deadline() {
     let read = AtomicUsize::new(0);
     let result = execute_read_only_packets_with_budget(
         packet(),
-        Some(&lease),
+        &lease,
         Some(&budget),
         |rows, context| {
             context.checkpoint(1)?;

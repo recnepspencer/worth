@@ -301,8 +301,7 @@ fn a_same_named_module_of_the_guarded_owner_is_legal() {
 
 #[test]
 fn configured_isolation_collects_owned_types_from_the_owner_root() {
-    let workspace =
-        std::env::temp_dir().join(format!("boundary-owner-isolation-{}", std::process::id()));
+    let workspace = worth_harness::tooling::fixture_path::unique_path("boundary-owner-isolation");
     let _ = std::fs::remove_dir_all(&workspace);
     std::fs::create_dir_all(workspace.join("owner/instance")).unwrap();
     std::fs::create_dir_all(workspace.join("guarded")).unwrap();

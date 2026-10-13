@@ -59,7 +59,7 @@ fn stage_of(record: &DemandRecord) -> OutputRowStage {
         DemandState::Admitted | DemandState::Scheduled => OutputRowStage::BeforeReady,
         DemandState::Scheduling | DemandState::Running => OutputRowStage::Driven,
         DemandState::Failed(denial) => OutputRowStage::Stopped(denial.clone()),
-        DemandState::Output(output) => match &output.advancement {
+        DemandState::Output(output) => match output.advancement() {
             WorthQueryOutputAdvancement::Claimed(_) => OutputRowStage::Driven,
             WorthQueryOutputAdvancement::Stopped { denial, .. } => {
                 OutputRowStage::Stopped(denial.clone())

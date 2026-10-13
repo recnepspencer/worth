@@ -13,6 +13,7 @@ mod bounded_overlap;
 mod custody;
 mod dispatch_cancellation;
 mod memory_model;
+mod owner_marker;
 mod panic_payload;
 
 const COUNT: usize = 4;

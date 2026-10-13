@@ -56,7 +56,34 @@ impl Denial {
                 Invariant::ExecutionDenied(kind) => Some(Ok(kind)),
                 Invariant::ExecutionControlStopped(kind) => Some(Err(kind)),
                 Invariant::RequestInterrupted(stop) => Some(Err(control_kind(stop))),
-                _ => allocation_control(failure.allocation_denial()),
+                Invariant::AllocationDenied
+                | Invariant::InvariantNotInstalled
+                | Invariant::ExecutorRoleMismatch
+                | Invariant::UndeclaredStateLoadFamily
+                | Invariant::StateLoadBudgetExceeded
+                | Invariant::ExecutionBudgetExceeded
+                | Invariant::ProviderUnsupported
+                | Invariant::ProviderRejected
+                | Invariant::RelationalDeferred(..)
+                | Invariant::CustomInvariantDenied
+                | Invariant::ProductBasisStale
+                | Invariant::RetentionCapacityExhausted
+                | Invariant::RetentionIdentityExhausted
+                | Invariant::SnapshotIdentityExhausted
+                | Invariant::SavepointCapacityExhausted { .. }
+                | Invariant::SavepointIdentityExhausted
+                | Invariant::CandidateCapacityExhausted { .. }
+                | Invariant::PublishedSnapshotCapacityExhausted { .. }
+                | Invariant::CandidateIdentityExhausted
+                | Invariant::PatchPositionReservationContended
+                | Invariant::ProposalIdentityExhausted
+                | Invariant::ProviderPanicked
+                | Invariant::EvidenceSubstitution
+                | Invariant::EmptyStateLoad
+                | Invariant::StateLoadClosureMismatch
+                | Invariant::VerdictPostureMismatch => {
+                    allocation_control(failure.allocation_denial())
+                }
             },
             Some(Cause::ProviderSession(failure)) => {
                 use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
@@ -70,7 +97,29 @@ impl Denial {
                     | Session::ExecutionWorkerPanicked { .. }
                     | Session::ExecutionUncheckedCustomKernel { .. }
                     | Session::ExecutionIdentitiesNotCanonical { .. }) => Some(Ok(kind)),
-                    _ => allocation_control(failure.allocation_denial()),
+                    Session::ForeignOperationAttempt
+                    | Session::ForeignExecutionBasis
+                    | Session::ForeignGraphAuthority
+                    | Session::UndeclaredOperationScope
+                    | Session::ResourceEnvelopeMismatch
+                    | Session::ActiveSnapshotCapacityExhausted { .. }
+                    | Session::RetentionCapacityExhausted
+                    | Session::RetentionIdentityExhausted
+                    | Session::SnapshotIdentityExhausted
+                    | Session::CandidateIdentityExhausted
+                    | Session::IndexMaintenanceBudgetExceeded
+                    | Session::IndexGenerationIdentityExhausted
+                    | Session::ProviderIdentityMismatch
+                    | Session::ProviderGenerationMismatch
+                    | Session::SessionProtocolUnsupported
+                    | Session::AllocationDenied
+                    | Session::ProviderRejected
+                    | Session::ProviderPanicked
+                    | Session::TokenNotMintedForPlan
+                    | Session::EmptyPhysicalSessionIdentity
+                    | Session::SessionIdentityExhausted => {
+                        allocation_control(failure.allocation_denial())
+                    }
                 }
             }
             Some(Cause::DecisionReadSet(failure)) => {
@@ -85,14 +134,31 @@ impl Denial {
                     ReadSet::RequestInterrupted(Interruption::DeadlineExceeded) => {
                         Some(Err(Control::TimedOut))
                     }
-                    _ => allocation_control(failure.allocation_denial()),
+                    ReadSet::InvalidRequest
+                    | ReadSet::UndeclaredFamily
+                    | ReadSet::FamilyKindMismatch
+                    | ReadSet::DecisionFactsUnsupported
+                    | ReadSet::InvalidProviderEvidence
+                    | ReadSet::EvidenceSubstitution
+                    | ReadSet::IncompleteRequiredFamilies
+                    | ReadSet::IncompleteRequiredFacts
+                    | ReadSet::DecisionFactBudgetExceeded
+                    | ReadSet::FactCountOverflow
+                    | ReadSet::AllocationDenied
+                    | ReadSet::ActiveSnapshotCapacityExhausted { .. }
+                    | ReadSet::RetentionCapacityExhausted
+                    | ReadSet::RetentionIdentityExhausted
+                    | ReadSet::SnapshotIdentityExhausted
+                    | ReadSet::ProviderRejected
+                    | ReadSet::ProviderPanicked => allocation_control(failure.allocation_denial()),
                 }
             }
-            Some(Cause::SourceRebase(_)) | Some(Cause::RequestAuthority(_)) | None => None,
+            Some(Cause::RequestAuthority(kind)) => authority_execution(*kind),
+            Some(Cause::SourceRebase(_)) | None => None,
         }
     }
 
-    pub(in crate::domain_computation::primary_graph::application_attempt) fn provider_execution_denied(
+    pub(in crate::domain_computation::primary_graph) fn provider_execution_denied(
         stage: Stage,
         cause: Result<
             crate::domain_computation::WorthQueryProviderSessionDenialKind,
@@ -139,7 +205,31 @@ pub(super) fn execution_kind(
         Ok(Session::ExecutionIdentitiesNotCanonical { partition_identity }) => {
             Kind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
-        _ => Kind::ProviderRejected,
+        Ok(Session::ForeignOperationAttempt)
+        | Ok(Session::ForeignExecutionBasis)
+        | Ok(Session::ForeignGraphAuthority)
+        | Ok(Session::UndeclaredOperationScope)
+        | Ok(Session::ResourceEnvelopeMismatch)
+        | Ok(Session::ActiveSnapshotCapacityExhausted { .. })
+        | Ok(Session::RetentionCapacityExhausted)
+        | Ok(Session::RetentionIdentityExhausted)
+        | Ok(Session::SnapshotIdentityExhausted)
+        | Ok(Session::CandidateIdentityExhausted)
+        | Ok(Session::IndexMaintenanceBudgetExceeded)
+        | Ok(Session::IndexGenerationIdentityExhausted)
+        | Ok(Session::ProviderIdentityMismatch)
+        | Ok(Session::ProviderGenerationMismatch)
+        | Ok(Session::SessionProtocolUnsupported)
+        | Ok(Session::AllocationDenied)
+        | Ok(Session::ProviderRejected)
+        | Ok(Session::ProviderPanicked)
+        | Ok(Session::TokenNotMintedForPlan)
+        | Ok(Session::EmptyPhysicalSessionIdentity)
+        | Ok(Session::SessionIdentityExhausted)
+        | Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+            | crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        ) => Kind::ProviderRejected,
     }
 }
 
@@ -180,3 +270,6 @@ fn allocation_control(
         | Class::Physical(_) => None,
     }
 }
+
+mod authority_cause;
+use authority_cause::authority_execution;

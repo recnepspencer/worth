@@ -24,6 +24,8 @@ use crate::runtime::RelationalRuntime;
 pub struct RelationalRuntimeHandle {
     ownership: RuntimeOwnership,
     runtime_instance_id: u64,
+    // Never-armed shared acquisitions pay one atomic OnceLock load. An initialized
+    // slot additionally locks its mutex; a live guard invokes its callback.
     lock_observation: Arc<lock_observation::LockObservationSlot>,
 }
 

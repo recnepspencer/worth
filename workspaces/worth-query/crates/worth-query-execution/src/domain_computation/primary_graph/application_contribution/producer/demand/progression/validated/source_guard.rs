@@ -23,7 +23,7 @@ where
         source: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
         commit_authority: &WorthQueryProducerCommitAuthority,
         entry: &InstalledProducerProvider<Schema>,
-        progression: &ScheduleProgression<'_, '_, Schema>,
+        progression: &ScheduleProgression<'_, '_, '_, Schema>,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<SourceGuard, WorthQueryOutputDemandDenial>
     where
@@ -88,12 +88,12 @@ where
             .interest
             .as_ref()
             .expect("progression entry checked live Interest");
-        let end_row = || {
+        let mut end_row = || {
             self.output_demands
-                .finish_superseded(interest, Family::IDENTITY)
+                .finish_superseded(interest, Family::IDENTITY, request_admission)
         };
         if selected {
-            return Err(end_row());
+            return Err(end_row()?);
         }
         let ready = match self.output_demands.row_stage(interest) {
             OutputRowStage::Driven => {
@@ -126,7 +126,7 @@ where
                     WorthQueryOutputDemandDenialKind::Superseded,
                     Family::IDENTITY,
                 ),
-                None => end_row(),
+                None => end_row()?,
             });
         }
         request_admission

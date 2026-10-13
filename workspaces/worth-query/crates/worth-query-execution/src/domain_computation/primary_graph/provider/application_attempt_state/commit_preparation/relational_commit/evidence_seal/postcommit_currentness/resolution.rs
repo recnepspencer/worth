@@ -64,15 +64,18 @@ impl PreparedFactRebase {
         if let Some(entity_id) = retirement::retired_anchor(fact, retired) {
             admission.charge_external_work(1)?;
             // No other fact may stand in for a retirement the snapshot lacks.
-            return Ok(retirement::committed_retirement(
-                execution, runtime, snapshot, entity_id, fact,
-            )
-            .map(Self::Replace)
-            .ok_or(unavailable));
+            return Ok(
+                retirement::committed_retirement(runtime, snapshot, entity_id, fact)
+                    .map(Self::Replace)
+                    .ok_or(unavailable),
+            );
         }
         if producer_output && reads_source(fact) {
             return Ok(
                 match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
+                    Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+                        Err(RebaseVerificationReason::Execution(cause))
+                    }
                     Ok(movement) => Ok(match movement.movement() {
                         Movement::Unmoved => Self::Keep,
                         Movement::Moved => Self::KeepSuperseded,
@@ -135,11 +138,13 @@ impl PreparedFactRebase {
                     locator.aspect().aspect_key().clone(),
                     locator.field_path().clone(),
                 );
-                match runtime
-                    .read_truth()
-                    .project_snapshot(snapshot, execution)
-                    .and_then(|view| view.entity_field_revision(execution, *entity_id, &locator))
-                {
+                let revision = match runtime.read_truth().project_snapshot(snapshot) {
+                    Some(view) => view
+                        .entity_field_revision(execution, *entity_id, &locator)
+                        .map_err(RebaseVerificationReason::Execution)?,
+                    None => None,
+                };
+                match revision {
                     Some(revision) => Ok(Self::Field { locator, revision }),
                     None if producer_output => Err(unavailable),
                     None => Ok(Self::Keep),
@@ -150,8 +155,8 @@ impl PreparedFactRebase {
             } => {
                 match runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
-                    .and_then(|view| view.entity_aspect_version(execution, *entity_id, aspect))
+                    .project_snapshot(snapshot)
+                    .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
                 {
                     Some(revision) => Ok(Self::Aspect(revision)),
                     None if producer_output => Err(unavailable),
@@ -165,7 +170,7 @@ impl PreparedFactRebase {
                 comparison_work_limit,
                 ..
             } => {
-                let Some(view) = runtime.read_truth().project_snapshot(snapshot, execution) else {
+                let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
                     return if producer_output {
                         Err(unavailable)
                     } else {
@@ -179,6 +184,9 @@ impl PreparedFactRebase {
                     *direction,
                     (*comparison_work_limit).min(maximum_pair_rebase_work),
                 ) {
+                    Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => {
+                        Err(RebaseVerificationReason::Execution(cause))
+                    }
                     Ok(comparison) => Ok(Self::Adjacency(comparison.revision())),
                     // The request paid the lookup above; a refusal here is
                     // the fact's own recorded limit, or a missing anchor or
@@ -203,7 +211,9 @@ impl PreparedFactRebase {
                     fact,
                     maximum_pair_rebase_work,
                     prepared_endpoints,
-                ) {
+                )
+                .map_err(RebaseVerificationReason::Execution)?
+                {
                     Some(rebased) => Ok(Self::Replace(rebased)),
                     None if producer_output => Err(unavailable),
                     None => Ok(Self::Keep),
@@ -241,6 +251,7 @@ impl PreparedFactRebase {
                     .map_err(RebaseVerificationReason::AdmissionDenied)?;
                 match observed {
                     Ok(observed) => Ok(Self::Replace(observed)),
+                    Err(IndexedSelectionReobserveDenial::Lookup(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause)))=>Err(RebaseVerificationReason::Execution(cause)),
                     Err(IndexedSelectionReobserveDenial::WorkBudgetExceeded) => {
                         let maximum = indexed_width
                             .charged_work()

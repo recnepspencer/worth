@@ -151,6 +151,7 @@ pub(super) fn certify_prefer_richer_merge_execution(
     let current = runtime
         .read_truth()
         .read_snapshot(&merge.commit.snapshot, execution)
+        .expect("read request remains live")
         .expect("current merge snapshot");
     let current_record = current
         .get_entity(main_entity)

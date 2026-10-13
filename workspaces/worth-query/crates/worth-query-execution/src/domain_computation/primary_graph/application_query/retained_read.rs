@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use std::sync::Arc;
 
 use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaBindingIdentity};
@@ -105,7 +106,11 @@ where
     > {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return Err(WorthQueryProductBranchAdmissionDenial::ForeignPhase),
+            Err(_) => {
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignPhase,
+                ))
+            }
         };
         self.select_application_read_observation_with_request(&execution, observation)
     }
@@ -121,7 +126,9 @@ where
         if observation.runtime_authority != self.runtime.authority_identity().as_u64()
             || observation.schema_binding != self.installed_schema.binding_identity()
         {
-            return Err(WorthQueryProductBranchAdmissionDenial::ForeignOwner);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
         }
         let product = self
             .product_runtime

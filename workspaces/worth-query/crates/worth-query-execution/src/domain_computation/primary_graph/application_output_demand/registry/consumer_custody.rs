@@ -64,7 +64,7 @@ impl WorthQueryOutputDemandRegistry {
         let capacity = state.reserve_required_custody_capacity(bytes)?;
         let member = state.prepare_required_member(key.as_ref())?;
         let interest_key = key.as_ref().clone();
-        let record = state
+        let mut record = state
             .records
             .get_mut(key.as_ref())
             .expect("posted consumer remains retained");
@@ -81,6 +81,7 @@ impl WorthQueryOutputDemandRegistry {
             },
             owner: self.clone(),
         };
+        record.finish();
         state.install_required_member(member);
         drop(state);
         Ok(ConsumerCustody::Handoff(ConsumerHandoff {

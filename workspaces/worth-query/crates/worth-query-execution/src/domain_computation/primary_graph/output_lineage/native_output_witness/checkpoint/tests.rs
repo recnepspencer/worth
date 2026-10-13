@@ -101,9 +101,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         }
         assert!(facts.len() > 1, "the real installed output has aspects");
         let original_source = truth
-            .project_snapshot(&before, &host_custody.borrowed_request_for_test())
+            .project_snapshot(&before)
             .unwrap()
-            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status)
+            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status).expect("fixture read request remains live")
             .unwrap();
         let producer_facts = [Fact::SourceFieldRevision {
             entity_id: entity,
@@ -132,7 +132,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(restored
             .get()
             .unwrap()
-            .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &before, &mut owner.edit_admission())
+            .unchanged_in( runtime, &before, &mut owner.edit_admission())
             .unwrap());
         assert!(restored
             .get()
@@ -153,7 +153,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ).expect("the actual installed sparse selection supplies the checkpoint fact");
         let witness = restored.get().unwrap();
         let mut witness_only = owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
-        assert!(witness.unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &before, &mut witness_only).unwrap());
+        assert!(witness.unchanged_in( runtime, &before, &mut witness_only).unwrap());
         let witness_work = usize::try_from(witness_only.charged_work()).unwrap();
         let mut sparse = owner.edit_admission_within(std::num::NonZeroUsize::new(witness_work + 6).unwrap());
         assert!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
@@ -181,7 +181,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         // a completed read would require: preserve the incoming refusal law.
         assert!(matches!(witness.checkpoint_facts_current_in(&host_custody.borrowed_request_for_test(), runtime, &before,
             std::slice::from_ref(&indexed), &mut exhausted),
-            Err(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum })
+            Err(crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementVerificationStop::Admission(CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum }))
                 if maximum == u64::try_from(witness_work + 2).unwrap()));
         // One visit cannot fund the index lookup and a candidate visit.
         // The refused probe refunds that reservation without reading a row.
@@ -191,7 +191,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let mut selection_work =
             owner.edit_admission_within(std::num::NonZeroUsize::new(4_096).unwrap());
         assert!(matches!(
-            compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
+            compare_retained_output_witness(
                 runtime,
                 &before,
                 restored.get(),
@@ -240,9 +240,9 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         let after = snapshot(runtime);
         let after_source = runtime
             .read_truth()
-            .project_snapshot(&after, &host_custody.borrowed_request_for_test())
+            .project_snapshot(&after)
             .unwrap()
-            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status)
+            .entity_field_revision(&host_custody.borrowed_request_for_test(), entity, &status).expect("fixture read request remains live")
             .unwrap();
         assert_eq!(
             original_source, after_source,
@@ -274,7 +274,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         assert!(!after_restore
             .get()
             .unwrap()
-            .unchanged_in(&host_custody.borrowed_request_for_test(), runtime, &after, &mut owner.edit_admission())
+            .unchanged_in( runtime, &after, &mut owner.edit_admission())
             .unwrap());
         assert!(
             producer_facts[0]
@@ -309,7 +309,7 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
             Ok(OutputDependencySelection::Reuse)
         ));
         assert!(matches!(
-            compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
+            compare_retained_output_witness(
                 runtime,
                 &after,
                 after_restore.get(),
@@ -319,14 +319,14 @@ fn recovered_witness_requires_complete_unambiguous_original_aspects() {
         ));
         // A row no sealed witness covers is decided by its source facts.
         assert!(matches!(
-            compare_retained_output_witness(&host_custody.borrowed_request_for_test(), runtime, &after, None, &mut selection_work),
+            compare_retained_output_witness( runtime, &after, None, &mut selection_work),
             Ok(OutputDependencySelection::Reuse)
         ));
         let mut no_work = owner.edit_admission();
         no_work
             .charge_external_work(no_work.remaining_work_amount())
             .unwrap();
-        let exhausted = compare_retained_output_witness(&host_custody.borrowed_request_for_test(),
+        let exhausted = compare_retained_output_witness(
             runtime,
             &before,
             restored.get(),

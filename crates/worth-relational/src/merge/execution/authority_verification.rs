@@ -216,7 +216,8 @@ fn verify_schema_snapshot(
         execution_ready.basis.target_head.version_id,
         execution_ready.source_records.as_ref(),
         execution_ready.target_touched_records.as_ref(),
-    );
+    )
+    .map_err(MergeExecutionError::Planning)?;
     runtime
         .performance_access()
         .count_merge_execution_schema_snapshot_kinds(current_schema_snapshot.touched_kinds.len());

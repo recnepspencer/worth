@@ -15,7 +15,12 @@ pub enum BankEstateIdempotencyResolutionDenial {
     SnapshotIdentityExhausted,
     ProviderUnavailable,
     /// Pending publication was refused by the execution owner.
-    ExecutionDenied(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
+    ExecutionDenied(
+        Result<
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// The key is recorded with the same intent and that commit took effect,
     /// but the runtime no longer holds its receipt, as after a restore.
     CommittedReceiptNotRetained,

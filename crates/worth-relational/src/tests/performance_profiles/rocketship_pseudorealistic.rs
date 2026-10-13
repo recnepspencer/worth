@@ -314,6 +314,7 @@ pub(super) fn rebuild_pseudorealistic_entity_order(
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .expect("pseudorealistic entity snapshot");
     let mut ordered = vec![None; node_count];
 

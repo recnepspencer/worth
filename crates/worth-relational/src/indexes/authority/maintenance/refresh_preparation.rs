@@ -93,7 +93,7 @@ impl IndexAuthority<'_> {
                         .ok_or(DerivedIndexMaintenanceDenialKind::WorkBudgetExceeded)?;
                     work.prepare(initialized as u64 + 1, backing as u64)?;
                     reused.push(generation.as_ref().clone());
-                    work.counts.reused_generations += 1;
+                    work.note_reused_generations(1);
                     continue;
                 }
             }
@@ -112,7 +112,7 @@ impl IndexAuthority<'_> {
                 work.grow_vec(&mut prepared)?;
                 work.prepare(1, 0)?;
                 prepared.push((index_id, seed.entries.clone()));
-                work.counts.seeded_generations += 1;
+                work.note_seeded_generations(1);
                 continue;
             }
             let prior = before
@@ -148,14 +148,18 @@ impl IndexAuthority<'_> {
                     cold_changes = Some(changes::ChangedRecords::cold(after, work)?);
                 }
                 match &definition.kind {
-                    DerivedIndexKind::EntityField { .. } => entry_edits::prepare_map::<
-                        crate::storage::data::AuthoritativeFieldComparisonKey,
-                        crate::identity::data::EntityId,
-                    >(0, 1, work)?,
-                    DerivedIndexKind::RelationField { .. } => entry_edits::prepare_map::<
-                        crate::storage::data::AuthoritativeFieldComparisonKey,
-                        crate::identity::data::RelationId,
-                    >(0, 1, work)?,
+                    DerivedIndexKind::EntityField { .. } => {
+                        super::persistent_allocation::prepare_empty_map::<
+                            crate::storage::data::AuthoritativeFieldComparisonKey,
+                            crate::identity::data::EntityId,
+                        >(work)?
+                    }
+                    DerivedIndexKind::RelationField { .. } => {
+                        super::persistent_allocation::prepare_empty_map::<
+                            crate::storage::data::AuthoritativeFieldComparisonKey,
+                            crate::identity::data::RelationId,
+                        >(work)?
+                    }
                     _ => {}
                 }
                 (

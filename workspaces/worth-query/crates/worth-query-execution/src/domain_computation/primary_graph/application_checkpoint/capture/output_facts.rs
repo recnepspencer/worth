@@ -15,6 +15,7 @@ pub(super) fn encode(
     // encoding lane. This admission funds the new native projection and merge.
     // Unsupported producer facts retain the established nonreusable posture.
     let mut encoded = facts::encode(producer)?;
+    // This Query-local best-effort meter cannot reach a request stop.
     let projection = witness.prepare_fact_projection(admission).ok()??;
     let count = producer.len().checked_add(projection.count())?;
     let fact_bytes = projection

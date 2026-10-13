@@ -79,7 +79,12 @@ fn shared_host_root_reads_while_real_bridge_conditional_work_is_parked() {
                         .on_branch(application.current_world())
                         .select(&phase)
                         .unwrap()
-                        .conditional_clock(request_execution, clock)
+                        .conditional_clock(
+                            &phase
+                                .checked_execution_request_for(application.product_runtime())
+                                .expect("phase belongs to application"),
+                            clock,
+                        )
                         .unwrap()
                 })
                 .expect("installed host call opens")

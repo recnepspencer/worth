@@ -79,6 +79,30 @@ impl<T: ChargedBytes> ExecutionScan<T> {
         })
     }
 
+    /// Quotes the ordered backing's actual input, carry, output and context custody.
+    /// This is the same declaration used by `run` before its first step.
+    pub fn declared_memory_requirement_for_lease<S, O, E>(
+        &self,
+        lease: &ExecutionResourceLease<'_>,
+        max_state_bytes: u64,
+        max_prefix_bytes: u64,
+        max_error_bytes: u64,
+        scratch_bytes: u64,
+    ) -> Option<u64> {
+        if self.identities.as_slice().is_empty() {
+            return Some(0);
+        }
+        crate::backend::ordered_memory_requirement::<S, O, E>(
+            &crate::backend::RunLimits::for_run(Some(lease), false),
+            self.identities.as_slice().len(),
+            max_state_bytes,
+            max_prefix_bytes,
+            max_error_bytes,
+            scratch_bytes,
+            self.input_bytes,
+        )
+    }
+
     pub fn run<S, O, E, F>(
         self,
         lease: Option<&ExecutionResourceLease<'_>>,

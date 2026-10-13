@@ -167,6 +167,7 @@ fn fintech_snapshot_release_preserves_historical_visibility_and_invalidates_hand
             .runtime
             .read_truth()
             .read_snapshot(&baseline_snapshot, execution)
+            .expect("read request remains live")
             .is_none());
         read_version_probe(
             execution,
@@ -239,6 +240,7 @@ fn fintech_analysis_workflow_preserves_branching_snapshots_and_trade_correction(
         .runtime
         .read_truth()
         .read_snapshot(&baseline_snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let analysis_read = world.read_latest(execution);
     assert_ne!(main_read.entities().len(), 0);

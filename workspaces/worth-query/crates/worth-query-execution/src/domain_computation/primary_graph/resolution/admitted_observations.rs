@@ -1,5 +1,6 @@
 //! Fresh principal observations at one issued native root and one request meter.
 
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState, ContractValidatedAspectValue,
     ContractValidatedAspectValueView, FieldKey, LocatorAuthority,
@@ -29,9 +30,9 @@ pub(super) enum AdmittedPrincipalObservationStop {
 type ObservationResult<T> = Result<T, AdmittedPrincipalObservationStop>;
 
 fn stale() -> AdmittedPrincipalObservationStop {
-    AdmittedPrincipalObservationStop::Semantic(
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
-    )
+    AdmittedPrincipalObservationStop::Semantic(WorthQueryPrincipalResolutionDenialKind::Refused(
+        PrincipalRefusal::StalePrincipalProof,
+    ))
 }
 
 fn prepare(
@@ -122,12 +123,18 @@ fn revision(
     view.entity_field_revision_admitted(execution, entity, &locator, |work| {
         admission.charge_external_work(work)
     })
+    .map_err(|cause| {
+        AdmittedPrincipalObservationStop::Semantic(
+            super::super::resolution_denial::relational_read_denial(cause, "principal revision")
+                .kind(),
+        )
+    })?
     .map_err(AdmittedPrincipalObservationStop::Admission)?
     .ok_or_else(stale)
 }
 
 fn selected_value(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    _execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &VisibilityProjectionView,
     entity: EntityId,
     expected_kind: KindId,
@@ -140,7 +147,7 @@ fn selected_value(
     };
     prepare(admission, read_work, 0)?;
     let result = view
-        .with_exact_entity_state(execution, entity, |metadata, authoritative| {
+        .with_exact_entity_state(entity, |metadata, authoritative| {
             if metadata.kind_id != expected_kind {
                 return Err(AdmittedPrincipalObservationStop::Semantic(wrong_kind));
             }
@@ -238,7 +245,7 @@ pub(super) fn observe_mapping(
         mapping,
         layout.mapping_kind,
         &layout.status_locator,
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof),
         admission,
     )?;
     let AspectValue::Bool(enabled) = status else {
@@ -293,9 +300,7 @@ pub(super) fn observe_target(
                         .exact_relation_metadata_read_work_bound()
                         .ok_or_else(stale)?;
                     prepare(admission, work, 0)?;
-                    let Some(relation) = view
-                        .exact_relation_metadata(execution, id)
-                        .map_err(|_| stale())?
+                    let Some(relation) = view.exact_relation_metadata(id).map_err(|_| stale())?
                     else {
                         return Ok(());
                     };
@@ -305,16 +310,24 @@ pub(super) fn observe_target(
                         && selected.replace(relation).is_some()
                     {
                         return Err(AdmittedPrincipalObservationStop::Semantic(
-                            WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget,
+                            WorthQueryPrincipalResolutionDenialKind::Refused(
+                                PrincipalRefusal::AmbiguousPrincipalTarget,
+                            ),
                         ));
                     }
                 }
             }
             Ok(())
         },
-    )?;
+    )
+    .map_err(|cause| {
+        AdmittedPrincipalObservationStop::Semantic(
+            super::super::resolution_denial::relational_read_denial(cause, "principal adjacency")
+                .kind(),
+        )
+    })??;
     let relation = selected.ok_or(AdmittedPrincipalObservationStop::Semantic(
-        WorthQueryPrincipalResolutionDenialKind::MissingPrincipalTarget,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::MissingPrincipalTarget),
     ))?;
     let (principal, principal_identity) = selected_value(
         execution,
@@ -322,7 +335,9 @@ pub(super) fn observe_target(
         relation.target,
         layout.principal_kind,
         &layout.principal_identity_locator,
-        WorthQueryPrincipalResolutionDenialKind::WrongPrincipalTargetKind,
+        WorthQueryPrincipalResolutionDenialKind::Refused(
+            PrincipalRefusal::WrongPrincipalTargetKind,
+        ),
         admission,
     )?;
     let principal_identity_revision = revision(
@@ -334,7 +349,6 @@ pub(super) fn observe_target(
     )?;
     let adjacency_revision = view
         .exact_adjacency_structural_revision_admitted(
-            execution,
             mapping,
             layout.relation_kind,
             RelationalAdjacencyDirection::Outgoing,

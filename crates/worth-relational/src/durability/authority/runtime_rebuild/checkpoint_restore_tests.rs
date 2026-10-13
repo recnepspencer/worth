@@ -106,6 +106,7 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
         source
             .read_truth()
             .read_snapshot(&pinned, execution)
+            .expect("read request remains live")
             .unwrap()
             .entities()
             .len(),
@@ -137,6 +138,7 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
         recovered
             .read_truth()
             .read_snapshot(&pinned, execution)
+            .expect("read request remains live")
             .unwrap()
             .entities()
             .len(),
@@ -147,6 +149,7 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
         recovered
             .read_truth()
             .read_snapshot(&latest, execution)
+            .expect("read request remains live")
             .unwrap()
             .entities()
             .len(),
@@ -197,6 +200,7 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
             recovered
                 .read_truth()
                 .read_snapshot(&snapshot, execution)
+                .expect("read request remains live")
                 .unwrap()
                 .entities()
                 .len(),

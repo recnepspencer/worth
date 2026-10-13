@@ -51,11 +51,7 @@ fn writer_allowance_is_exact_in_path_and_operation() {
 
 #[test]
 fn newly_added_nested_source_is_automatically_governed() {
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("worth-c9-route-{}-{nonce}", std::process::id()));
+    let root = worth_harness::tooling::fixture_path::unique_path("worth-c9-route");
     let crate_root = root.join("workspaces/worth-store/crates/worth-store");
     let source = root.join(NEW_CONSUMER);
     std::fs::create_dir_all(source.parent().unwrap()).unwrap();

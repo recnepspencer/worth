@@ -2,7 +2,10 @@ use std::{cell::Cell, mem::size_of};
 
 use crate::{
     authority::{ExecutionResourceLease, LeaseDenial, ResourceReservation},
-    backend::{run_scope, KernelContext, KernelFailure, MemoryActivityGuard, ScopeStop},
+    backend::{
+        run_admitting_scope, KernelContext, KernelFailure, MemoryActivityGuard, ScopeKernelFailure,
+        ScopeStop,
+    },
     report::ChargedBytes,
 };
 
@@ -68,9 +71,9 @@ impl OwnedRetainedCharge {
                     .and_then(|lineage| base.checked_add(lineage))
             })
             .and_then(|overhead| overhead.checked_add(bytes))
-            .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ChargedBytesOverflow,
-            ))?;
+            .ok_or_else(|| {
+                PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+            })?;
         if let Some(reservation) = &mut self.reservation {
             lease
                 .rebind_retained_memory(reservation, bytes)
@@ -96,13 +99,17 @@ pub(super) fn checked_edit(
     edit: impl FnOnce(&mut KernelContext<'_, '_>) -> Result<PartitionWork, PartitionUpdateDenial>,
 ) -> Result<PartitionWork, PartitionUpdateDenial> {
     if !parent.is_active() {
-        return Err(PartitionUpdateDenial::Admission(
+        let refused = Err(parent.refuse_request(PartitionUpdateDenial::Admission(
             LeaseDenial::UnrelatedNestedLease,
-        ));
+        )));
+        // This checked edit has ended in admission failure on the context
+        // it was asked through, before a child scope could be entered.
+        parent.settle_result(&refused, |_| crate::backend::NestedStopOwner::Request);
+        return refused;
     }
-    let scope = run_scope(Some(lease), 0, 0, |child| {
+    let scope = run_admitting_scope(Some(lease), 0, 0, true, |child| {
         let _structural_edit = StructuralEditGuard::enter();
-        edit(child).map_err(KernelFailure::Domain)
+        edit(child).map_err(ScopeKernelFailure::from)
     });
     match scope.result {
         Ok(work) => Ok(work),
@@ -129,3 +136,22 @@ impl ChargedBytes for PartitionUpdateDenial {
         0
     }
 }
+
+impl From<PartitionUpdateDenial> for ScopeKernelFailure<PartitionUpdateDenial> {
+    fn from(denial: PartitionUpdateDenial) -> Self {
+        match denial {
+            PartitionUpdateDenial::Admission(_) => Self::Refused(denial),
+            PartitionUpdateDenial::Stop(stop) => Self::Kernel(KernelFailure::Stop(stop)),
+            PartitionUpdateDenial::KernelPanic => Self::Kernel(KernelFailure::Panic),
+            PartitionUpdateDenial::ResultCapacityExceeded => {
+                Self::Kernel(KernelFailure::ResultCapacityExceeded)
+            }
+            PartitionUpdateDenial::Components(_) | PartitionUpdateDenial::Bisection(_) => {
+                Self::Kernel(KernelFailure::Domain(denial))
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests;

@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
@@ -85,7 +86,9 @@ fn final_commit_rejects_a_replacement_policy_path_for_the_same_grant() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }
 
@@ -129,6 +132,7 @@ fn replace_grantor_with_custodian(
         runtime
             .read_truth()
             .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
+            .expect("fixture read request remains live")
             .into_iter()
             .find(|record| record.source == principal && record.target == grant.entity_id())
             .expect("the admitted capability has one current grantor path")

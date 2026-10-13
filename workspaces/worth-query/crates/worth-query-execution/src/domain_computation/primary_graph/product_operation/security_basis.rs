@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
 use crate::domain_computation::primary_graph::{
     application_query::{
@@ -102,14 +103,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         if let SecurityIndexCurrency::PreparedSelectedGraphRead(prepared) = index_currency {
             if !prepared.matches_basis(observation.basis().relational_basis()) {
-                return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::IncarnationChanged,
+                ));
             }
         }
         if matches!(index_currency, SecurityIndexCurrency::GraphRead) {
             let graph = self
                 .runtime
                 .primary_graph()
-                .ok_or(WorthQueryProductBranchAdmissionDenial::ObservationRejected)?
+                .ok_or(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationRejected,
+                ))?
                 .integration_handle();
             graph
                 .with_runtime_mut(execution, |runtime| {
@@ -119,7 +124,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         observation.basis().relational_basis(),
                     )
                 })
-                .map_err(|_| WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+                .map_err(|denial| {
+                    use super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
+                    match denial {
+                        Currency::Execution(cause) => WorthQueryProductBranchAdmissionDenial::Stopped(
+                            crate::facade::primary_graph::relational_execution_kind(cause, None)),
+                        Currency::Basis(_) | Currency::IndexUnavailable(_) => WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::ObservationRejected),
+                    }
+                })?;
         }
         let relational = observation.basis().relational_basis();
         if let Some(query_basis) =
@@ -210,7 +223,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     selected.branch_identity(),
                     |observation| {
                         if observation.lifecycle_incarnation() != selected.lifecycle_incarnation() {
-                            return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
+                            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                                AdmissionRefusal::IncarnationChanged,
+                            ));
                         }
                         let (application_basis, selected_program) = self.retain_security_basis(
                             execution,
@@ -242,7 +257,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             .relational_basis()
                             .materialization_is_complete()
                     {
-                        return Err(WorthQueryProductBranchAdmissionDenial::IncarnationChanged);
+                        return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                            AdmissionRefusal::IncarnationChanged,
+                        ));
                     }
                     let (application_basis, selected_program) = self.retain_security_basis(
                         execution,

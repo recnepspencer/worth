@@ -23,6 +23,7 @@ pub(in crate::domain_computation::primary_graph) enum IndexedSelectionReobserveD
 /// Why an indexed lookup yields no selection fact.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryIndexedSelectionRefusal {
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// More entities hold the value than the lookup's candidate limit.
     Overflowed,
     /// The index could not answer at the snapshot.
@@ -81,7 +82,20 @@ pub(in crate::domain_computation::primary_graph) fn observe_indexed_candidates(
 fn selection_refusal(denial: IndexedSelectionReobserveDenial) -> WorthQueryIndexedSelectionRefusal {
     match denial {
         IndexedSelectionReobserveDenial::Overflow => WorthQueryIndexedSelectionRefusal::Overflowed,
-        _ => WorthQueryIndexedSelectionRefusal::Unavailable,
+        IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::Execution(
+            cause,
+        )) => WorthQueryIndexedSelectionRefusal::Execution(cause),
+        IndexedSelectionReobserveDenial::UnexpectedFact
+        | IndexedSelectionReobserveDenial::WorkBudgetExceeded
+        | IndexedSelectionReobserveDenial::Lookup(
+            BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+            | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+            | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+            | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+            | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+            | BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+            | BoundedEntityFieldLookupDenialKind::StorageParityMismatch,
+        ) => WorthQueryIndexedSelectionRefusal::Unavailable,
     }
 }
 
@@ -149,7 +163,20 @@ pub(super) fn remains_equal(
                 "indexed selection comparison",
             ),
         ),
-        Err(_) => Ok(false),
+        Err(
+            IndexedSelectionReobserveDenial::UnexpectedFact
+            | IndexedSelectionReobserveDenial::Overflow
+            | IndexedSelectionReobserveDenial::WorkBudgetExceeded
+            | IndexedSelectionReobserveDenial::Lookup(
+                BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+                | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+                | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+                | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+                | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+                | BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+                | BoundedEntityFieldLookupDenialKind::StorageParityMismatch,
+            ),
+        ) => Ok(false),
     }
 }
 
@@ -321,7 +348,20 @@ pub(in crate::domain_computation::primary_graph) fn currentness_with_remaining(
     )
     .map_err(|denial| match denial {
         IndexedSelectionReobserveDenial::WorkBudgetExceeded => Failure::WorkBudgetExceeded,
-        _ => Failure::Unavailable,
+        IndexedSelectionReobserveDenial::Lookup(BoundedEntityFieldLookupDenialKind::Execution(
+            cause,
+        )) => Failure::Execution(cause),
+        IndexedSelectionReobserveDenial::UnexpectedFact
+        | IndexedSelectionReobserveDenial::Overflow
+        | IndexedSelectionReobserveDenial::Lookup(
+            BoundedEntityFieldLookupDenialKind::InvalidCandidateLimit
+            | BoundedEntityFieldLookupDenialKind::SnapshotUnavailable
+            | BoundedEntityFieldLookupDenialKind::IndexNotInstalled
+            | BoundedEntityFieldLookupDenialKind::WrongIndexKind
+            | BoundedEntityFieldLookupDenialKind::ExactGenerationUnavailable
+            | BoundedEntityFieldLookupDenialKind::CorruptIndexEntries
+            | BoundedEntityFieldLookupDenialKind::StorageParityMismatch,
+        ) => Failure::Unavailable,
     })?;
     Ok(!outcome.overflowed()
         && outcome.retain_definition().as_ref() == definition.as_ref()

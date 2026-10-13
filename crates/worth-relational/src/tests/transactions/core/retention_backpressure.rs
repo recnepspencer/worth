@@ -343,8 +343,9 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
     assert_eq!(entities.len(), 1);
     let records = runtime
         .read_truth()
-        .project_historical_version(execution, committed.commit.version_id)
-        .all_authoritative_entity_records(execution);
+        .project_historical_version(committed.commit.version_id)
+        .all_authoritative_entity_records(execution)
+        .expect("read request remains live");
     let record = records
         .iter()
         .find(|record| record.entity_id == entities[0])

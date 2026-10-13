@@ -67,6 +67,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                             primary_kind,
                             selected.application_basis().snapshot_handle().version_id(),
                         )
+                        .expect("fixture read request remains live")
                         .into_iter()
                         .find(|relation| relation.source == account.entity_id())
                         .unwrap()
@@ -86,6 +87,7 @@ fn empty_path_union_stales_when_a_matching_edge_is_inserted() {
                                 kind,
                                 selected.application_basis().snapshot_handle().version_id(),
                             )
+                            .expect("fixture read request remains live")
                             .into_iter()
                             .filter(|relation| relation.source == account.entity_id())
                             .collect::<Vec<_>>()

@@ -31,13 +31,22 @@ where
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .branch_view(execution, relation.name())?
-            .bounded_outgoing_relations_of_kind(
+            .branch_view(relation.name())?
+            .bounded_outgoing_relations_of_kind_admitted(
                 execution,
                 from.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
-            );
+                |_| Ok(()),
+            )
+            .map_err(|cause| {
+                WorthQueryInvariantProjectionTraversalDenial::new(
+                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    relation.name(),
+                )
+            })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
         self.work_budget.consume(read.work_units());
         self.work.record_adjacency(
@@ -76,13 +85,22 @@ where
         }
         self.admit_adjacency_list(relation.name())?;
         let read = self
-            .branch_view(execution, relation.name())?
-            .bounded_incoming_relations_of_kind(
+            .branch_view(relation.name())?
+            .bounded_incoming_relations_of_kind_admitted(
                 execution,
                 to.entity_id,
                 layout.kind,
                 self.work_budget.remaining(),
-            );
+                |_| Ok(()),
+            )
+            .map_err(|cause| {
+                WorthQueryInvariantProjectionTraversalDenial::new(
+                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    relation.name(),
+                )
+            })?;
         let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
         self.work_budget.consume(read.work_units());
         self.work.record_adjacency(
@@ -160,17 +178,27 @@ where
         WorthQueryInvariantProjectionTraversalDenial,
     > {
         let available = self
-            .branch_view(execution, entity)?
-            .entity_record_with_projection_scope(
+            .branch_view(entity)?
+            .entity_record_with_projection_scope_admitted(
                 execution,
                 entity_id,
                 ProjectionAspectScope::empty(),
+                |_| Ok::<_, std::convert::Infallible>(()),
                 |record| {
                     (record.kind_id() == expected_kind
                         && record.lifecycle() == RecordLifecycleState::Live)
                         .then_some(())
                 },
             )
+            .map(|result| result.unwrap_or_else(|never| match never {}))
+            .map_err(|cause| {
+                WorthQueryInvariantProjectionTraversalDenial::new(
+                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    entity,
+                )
+            })?
             .is_some();
         if !available {
             return Err(endpoint_unavailable(entity));
@@ -188,12 +216,11 @@ where
     /// a sibling branch's commits made at older versions.
     fn branch_view(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         subject: &str,
     ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, execution)
+            .project_snapshot(self.snapshot)
             .ok_or_else(|| endpoint_unavailable(subject))
     }
 

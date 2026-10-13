@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
@@ -54,7 +55,9 @@ fn replacement_policy_path_for_the_same_grant_cuts_off_approved_use() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
     world
         .application

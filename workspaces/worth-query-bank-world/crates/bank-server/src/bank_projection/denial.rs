@@ -14,6 +14,12 @@ use crate::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankInvariantAggregateDenialKind {
+    ReadExecution(
+        Result<
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind,
+            worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     RelationNotInstalled,
     FieldNotInstalled,
     ForeignIdentity,
@@ -27,6 +33,7 @@ pub enum BankInvariantAggregateDenialKind {
 impl BankInvariantAggregateDenialKind {
     const fn from_query(kind: QueryAggregate) -> Self {
         match kind {
+            QueryAggregate::ReadExecution(cause) => Self::ReadExecution(cause),
             QueryAggregate::RelationNotInstalled => Self::RelationNotInstalled,
             QueryAggregate::FieldNotInstalled => Self::FieldNotInstalled,
             QueryAggregate::ForeignIdentity => Self::ForeignIdentity,

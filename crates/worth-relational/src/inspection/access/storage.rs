@@ -72,21 +72,34 @@ impl<'runtime> InspectionAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         entity_id: EntityId,
-    ) -> Option<EntityReadRecord> {
-        match scope {
-            InspectionScope::Current => self
-                .runtime
-                .read_truth()
-                .authoritative_entity_record_for_id_at_version(
-                    &self.runtime.storage_access().current_edition(),
-                    entity_id,
-                    self.runtime.current_version_id(),
-                ),
-            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .read_view_for_scope(execution, scope)?
-                .get_entity(entity_id)
-                .cloned(),
-        }
+    ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
+        let read_view = match scope {
+            InspectionScope::Current => None,
+            _ => self.read_view_for_scope(execution, scope)?,
+        };
+        Ok(match scope {
+            InspectionScope::Current => {
+                crate::visibility::materialization::read_records::read_work::point(
+                    execution,
+                    || {
+                        self.runtime
+                            .read_truth()
+                            .authoritative_entity_record_for_id_at_version(
+                                &self.runtime.storage_access().current_edition(),
+                                entity_id,
+                                self.runtime.current_version_id(),
+                            )
+                    },
+                    |record| {
+                        record.as_ref().map_or(0, crate::visibility::materialization::read_records::read_footprint::entity)
+                    },
+                )?
+            }
+            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => read_view
+                .as_ref()
+                .and_then(|view| view.get_entity(entity_id).cloned()),
+        })
     }
 
     pub(crate) fn scoped_authoritative_relation_record(
@@ -94,21 +107,34 @@ impl<'runtime> InspectionAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         relation_id: RelationId,
-    ) -> Option<RelationReadRecord> {
-        match scope {
-            InspectionScope::Current => self
-                .runtime
-                .read_truth()
-                .authoritative_relation_record_for_id_at_version(
-                    &self.runtime.storage_access().current_edition(),
-                    relation_id,
-                    self.runtime.current_version_id(),
-                ),
-            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .read_view_for_scope(execution, scope)?
-                .get_relation(relation_id)
-                .cloned(),
-        }
+    ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
+        let read_view = match scope {
+            InspectionScope::Current => None,
+            _ => self.read_view_for_scope(execution, scope)?,
+        };
+        Ok(match scope {
+            InspectionScope::Current => {
+                crate::visibility::materialization::read_records::read_work::point(
+                    execution,
+                    || {
+                        self.runtime
+                            .read_truth()
+                            .authoritative_relation_record_for_id_at_version(
+                                &self.runtime.storage_access().current_edition(),
+                                relation_id,
+                                self.runtime.current_version_id(),
+                            )
+                    },
+                    |record| {
+                        record.as_ref().map_or(0, crate::visibility::materialization::read_records::read_footprint::relation)
+                    },
+                )?
+            }
+            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => read_view
+                .as_ref()
+                .and_then(|view| view.get_relation(relation_id).cloned()),
+        })
     }
 
     pub(crate) fn scoped_relation_ids_for_entity(
@@ -116,14 +142,19 @@ impl<'runtime> InspectionAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         entity_id: EntityId,
-    ) -> Vec<RelationId> {
-        match scope {
+    ) -> Result<Vec<RelationId>, crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
+        let read_view = match scope {
+            InspectionScope::Current => None,
+            _ => self.read_view_for_scope(execution, scope)?,
+        };
+        Ok(match scope {
             InspectionScope::Current => self
                 .runtime
                 .storage_access()
                 .all_relations_for_entity(entity_id, self.runtime.current_version_id()),
-            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .read_view_for_scope(execution, scope)
+            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => read_view
+                .as_ref()
                 .map(|read_view| {
                     read_view
                         .relations()
@@ -133,7 +164,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                         .collect()
                 })
                 .unwrap_or_default(),
-        }
+        })
     }
 
     pub(crate) fn scoped_relation_endpoints(
@@ -141,8 +172,14 @@ impl<'runtime> InspectionAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         relation_id: RelationId,
-    ) -> Option<(EntityId, EntityId)> {
-        match scope {
+    ) -> Result<Option<(EntityId, EntityId)>, crate::execution::RelationalExecutionDenialCause>
+    {
+        crate::execution::check_request(execution)?;
+        let record = match scope {
+            InspectionScope::Current => None,
+            _ => self.scoped_authoritative_relation_record(execution, scope, relation_id)?,
+        };
+        Ok(match scope {
             InspectionScope::Current => self
                 .runtime
                 .partitions
@@ -154,10 +191,10 @@ impl<'runtime> InspectionAccess<'runtime> {
                         .and_then(|slot_view| slot_view.extra().endpoints.clone())
                 })
                 .map(|endpoints| (endpoints.source, endpoints.target)),
-            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => self
-                .scoped_authoritative_relation_record(execution, scope, relation_id)
-                .map(|record| (record.source, record.target)),
-        }
+            InspectionScope::Version(_) | InspectionScope::Snapshot(_) => {
+                record.map(|record| (record.source, record.target))
+            }
+        })
     }
 
     pub(crate) fn entity_structural_sidecars(

@@ -317,7 +317,7 @@ fn manifest_lints_may_not_allow_what_silences_disallowed_methods() {
 
 #[test]
 fn inherited_lints_are_read_from_the_workspace_manifest() {
-    let root = std::env::temp_dir().join(format!("bc-lint-levels-{}", std::process::id()));
+    let root = worth_harness::tooling::fixture_path::unique_path("bc-lint-levels");
     let member = root.join("workspace/crates/member");
     std::fs::create_dir_all(&member).unwrap();
     std::fs::write(

@@ -195,9 +195,9 @@ impl WorthQueryMemoryWorkspace {
             let projection_scope = self.workspace_projection_scope();
             let view = runtime
                 .read_truth()
-                .project_observation(execution, &basis.observation())
+                .project_observation(&basis.observation())
                 .map_err(|_| workspace_basis_unavailable("workspace entity collection"))?;
-            Ok(view.entity_records_with_projection_scope(
+            view.entity_records_with_projection_scope(
                 execution,
                 self.kind_id,
                 projection_scope,
@@ -211,7 +211,8 @@ impl WorthQueryMemoryWorkspace {
                         native_field_values,
                     ))
                 },
-            ))
+            )
+            .map_err(super::read_denial::execution)
         })
     }
 
@@ -226,9 +227,9 @@ impl WorthQueryMemoryWorkspace {
         self.runtime.with_runtime(execution, |runtime| {
             let basis = Self::current_main_basis(runtime)?;
             let projection_scope = self.workspace_projection_scope();
-            Ok(runtime
+            runtime
                 .read_truth()
-                .project_observation(execution, &basis.observation())
+                .project_observation(&basis.observation())
                 .map_err(|_| workspace_basis_unavailable("workspace entity lookup"))?
                 .entity_record_with_projection_scope(
                     execution,
@@ -244,7 +245,8 @@ impl WorthQueryMemoryWorkspace {
                             native_field_values,
                         ))
                     },
-                ))
+                )
+                .map_err(super::read_denial::execution)
         })
     }
 
@@ -268,7 +270,7 @@ impl WorthQueryMemoryWorkspace {
             let basis = Self::current_main_basis(runtime)?;
             runtime
                 .read_truth()
-                .project_observation(execution, &basis.observation())
+                .project_observation(&basis.observation())
                 .map_err(|_| WorthQueryWorkspaceError::new("entity basis is unavailable"))?
                 .entity_record_with_projection_scope(
                     execution,
@@ -276,6 +278,7 @@ impl WorthQueryMemoryWorkspace {
                     ProjectionAspectScope::empty(),
                     |_| Some(()),
                 )
+                .map_err(super::read_denial::execution)?
                 .ok_or_else(|| WorthQueryWorkspaceError::new("entity not found"))?;
             Ok(())
         })

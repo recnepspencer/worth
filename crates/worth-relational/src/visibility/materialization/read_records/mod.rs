@@ -1,5 +1,10 @@
 pub(crate) mod materialization;
+mod native_scan_stop;
 mod projection;
+pub(crate) mod read_footprint;
+pub(crate) mod read_prices;
+pub(crate) mod read_request;
+pub(crate) mod read_work;
 mod reader;
 mod visibility;
 
@@ -36,6 +41,7 @@ impl RelationalRuntime {
     }
 }
 
+pub(crate) mod read_stop;
 pub(crate) use projection::ProjectionRecordSource;
 
 pub use reader::BoundedFrontierReadStop;

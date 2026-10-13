@@ -1,5 +1,6 @@
 //! Real prepared native records, pre-effect refusal and shared physical custody.
 use super::*;
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 use crate::domain_computation::primary_graph::tests::fixture::{
     installed_authorization_world, live_scope, Account, AccountIdentity, AccountLabel,
     AccountStatus,
@@ -253,9 +254,7 @@ fn native_prepared_records_are_admitted_before_effects_and_shared_until_last_dro
                 )
             })
             .unwrap();
-        let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) =
-            outcome
-        else {
+        let Ok(PublicationOutcome::Performed(performed)) = outcome else {
             panic!(
                 "the prepared native candidate must publish through its product owner: {outcome:?}"
             );

@@ -6,6 +6,7 @@ use super::{
 use crate::data::error::SignalError;
 use crate::data::telemetry::{InvalidationPerformedCounter, SignalInvalidationRealizedCounters};
 use crate::facade::{DiagnosticsTier, SignalRuntimePolicy};
+use crate::tests::domains::fintech::locality_resource_request::FinancialLocalityResourceRequest;
 use crate::tests::domains::fintech::world::FinancialPerformedCanonicalWork;
 use crate::tests::domains::fintech::world::{
     compile_financial_locality_world, compile_financial_locality_world_with_policy,
@@ -135,10 +136,25 @@ pub(crate) fn verify_locality_case_with_policy(
     policy: SignalRuntimePolicy,
     workers: usize,
 ) -> Result<FinancialLocalityCaseEvidence, SignalError> {
+    verify_locality_case_with_admission(
+        definition,
+        trace_index,
+        FinancialLocalityResourceRequest::ordinary(policy),
+        workers,
+    )
+}
+
+pub(crate) fn verify_locality_case_with_admission(
+    definition: FinancialWorldDefinition,
+    trace_index: usize,
+    resources: FinancialLocalityResourceRequest,
+    workers: usize,
+) -> Result<FinancialLocalityCaseEvidence, SignalError> {
+    let policy = resources.policy;
     let started = std::time::Instant::now();
     report_scheduled_step(&definition, trace_index, "compile", started.elapsed());
     let diagnostics_tier = policy.tier;
-    let mut compiled = compile_financial_locality_world_with_policy(definition, policy)?;
+    let mut compiled = compile_financial_locality_world_with_policy(definition, resources)?;
     let seed = compiled.locality_definition().seed();
     report_scheduled_step(
         compiled.definition(),

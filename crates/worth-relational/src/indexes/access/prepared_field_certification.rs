@@ -18,7 +18,7 @@ pub(super) fn certify<E>(
     value: &AspectValue,
     limit: usize,
     outcome: &BoundedEntityFieldLookupOutcome,
-    check_live: &mut impl FnMut() -> Result<(), E>,
+    admission: &mut impl FnMut() -> Result<(), E>,
 ) -> Result<(), Stop<E>> {
     let view = prepared;
     let expected = AuthoritativeFieldComparisonKey::from_aspect_value(value);
@@ -26,7 +26,7 @@ pub(super) fn certify<E>(
     view.try_for_each_entity_record(
         execution,
         Some(prepared.entity_kind()),
-        |_| check_live().map_err(Stop::Admission),
+        |_| super::prepared_lookup_admission::admit(execution, prepared.index_id(), admission),
         |record| {
             if entity_query_locus_comparison_key(record, prepared.field_locator()).as_ref()
                 == Some(&expected)
@@ -35,9 +35,20 @@ pub(super) fn certify<E>(
             }
             Ok(())
         },
-    )?;
+    )
+    .map_err(|stop| match stop {
+        crate::visibility::materialization::read_records::read_stop::ReadStop::Admission(stop) => {
+            stop
+        }
+        crate::visibility::materialization::read_records::read_stop::ReadStop::Request(cause) => {
+            Stop::Lookup(super::prepared_entity_field_lookup::denied(
+                BoundedEntityFieldLookupDenialKind::Execution(cause),
+                prepared.index_id(),
+            ))
+        }
+    })?;
     storage_ids.sort();
-    check_live().map_err(Stop::Admission)?;
+    super::prepared_lookup_admission::admit(execution, prepared.index_id(), admission)?;
     let overflowed = storage_ids.len() > limit;
     storage_ids.truncate(limit);
     if storage_ids == outcome.candidate_entity_ids() && overflowed == outcome.overflowed() {

@@ -111,8 +111,9 @@ fn retained_scale_fixture(
             .version_id;
         current = runtime
             .read_truth()
-            .project_historical_version(execution, version)
+            .project_historical_version(version)
             .all_authoritative_entity_records(execution)
+            .expect("read request remains live")
             .into_iter()
             .find(|record| record.lineage_id.is_some())
             .expect("visible replacement successor")

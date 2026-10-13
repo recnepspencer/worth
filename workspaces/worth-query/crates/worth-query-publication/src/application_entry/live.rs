@@ -2,6 +2,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryScopeBinding,
 };
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_execution::facade::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationLiveCloseOutcome, WorthQueryApplicationLiveLease,
     WorthQueryApplicationLiveOutcome, WorthQueryApplicationProjection,
@@ -220,38 +221,29 @@ where
         ) {
             Ok(principal) => principal,
             Err(denial) => match denial.kind() {
-                WorthQueryPrincipalResolutionDenialKind::Cancelled
-                | WorthQueryPrincipalResolutionDenialKind::DeadlineExceeded => {
-                    return Ok(self
-                        .lease
-                        .observe_interruption(fresh_request.scope)
-                        .unwrap_or(WorthQueryApplicationLiveOutcome::Unavailable));
-                }
-                WorthQueryPrincipalResolutionDenialKind::ForeignRuntime
-                | WorthQueryPrincipalResolutionDenialKind::StaleInstalledSchema
-                | WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication
-                | WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal
-                | WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal
-                | WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipal
-                | WorthQueryPrincipalResolutionDenialKind::MissingPrincipalTarget
-                | WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget
-                | WorthQueryPrincipalResolutionDenialKind::WrongPrincipalTargetKind
-                | WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof => {
+                WorthQueryPrincipalResolutionDenialKind::Stopped(stop) => return Ok(self.lease.end_with_read_stop(stop)),
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignRuntime)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StaleInstalledSchema)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ExpiredAuthentication)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::AmbiguousPrincipal)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::MissingPrincipalTarget)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::AmbiguousPrincipalTarget)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::WrongPrincipalTargetKind)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof) => {
                     return Ok(self.lease.terminate_stale_principal());
                 }
-                WorthQueryPrincipalResolutionDenialKind::PrimaryGraphNotInstalled
-                | WorthQueryPrincipalResolutionDenialKind::BindingNotInstalled
-                | WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended
-                | WorthQueryPrincipalResolutionDenialKind::IdentityIndexUnavailable
-                | WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded
-                | WorthQueryPrincipalResolutionDenialKind::ProjectionPreparationMemoryExhausted
-                | WorthQueryPrincipalResolutionDenialKind::CorruptIdentityIndex
-                | WorthQueryPrincipalResolutionDenialKind::ActiveSnapshotCapacityExhausted { .. }
-                | WorthQueryPrincipalResolutionDenialKind::SnapshotIdentityExhausted
-                | WorthQueryPrincipalResolutionDenialKind::RetentionCapacityExhausted
-                | WorthQueryPrincipalResolutionDenialKind::RetentionIdentityExhausted => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
-                // The provider enum is non-exhaustive outside its defining crate.
-                _ => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::PrimaryGraphNotInstalled)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::BindingNotInstalled)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::BranchMaterializationSuspended)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::IdentityIndexUnavailable)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::CorruptIdentityIndex)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ActiveSnapshotCapacityExhausted{ .. })
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::RetentionCapacityExhausted)
+                | WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::RetentionIdentityExhausted) => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
+                WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::ForeignPhase) => return Err(WorthQueryApplicationLiveNextDenial::PrincipalResolution(denial)),
             },
         };
         Ok(self.lease.next(phase, &principal, fresh_request.scope))

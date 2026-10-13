@@ -1,4 +1,6 @@
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph) fn resolve_retained_query_scope<
@@ -43,13 +45,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         admit_request(request, field.field())?;
         let graph = self.application().runtime.primary_graph().ok_or_else(|| {
             entity_denial(
-                WorthQueryEntityResolutionDenialKind::PrimaryGraphNotInstalled,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::PrimaryGraphNotInstalled,
+                ),
                 field.entity(),
             )
         })?;
         let exhausted = || {
             entity_denial(
-                WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
                 field.field(),
             )
         };
@@ -66,14 +70,16 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .equality_field(field.entity(), field.aspect(), field.field())
             .ok_or_else(|| {
                 entity_denial(
-                    WorthQueryEntityResolutionDenialKind::FieldNotInstalled,
+                    WorthQueryEntityResolutionDenialKind::Refused(
+                        ResolutionRefusal::FieldNotInstalled,
+                    ),
                     field.field(),
                 )
             })?;
         let installed_locator = &installed_field.locator;
         let index = installed_field.equality_index_id.ok_or_else(|| {
             entity_denial(
-                WorthQueryEntityResolutionDenialKind::FieldNotInstalled,
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::FieldNotInstalled),
                 field.field(),
             )
         })?;
@@ -115,13 +121,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .map_err(|stop| selected_index_admission_denial(stop, field.field()))?;
         if installed_locator != selector.locator() {
             return Err(entity_denial(
-                WorthQueryEntityResolutionDenialKind::FieldNotInstalled,
+                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::FieldNotInstalled),
                 field.field(),
             ));
         }
         if selector.value().value_family() != Field::Binding::SCALAR_FAMILY {
             return Err(entity_denial(
-                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
                 field.field(),
             ));
         }

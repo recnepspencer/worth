@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 #[path = "certification_controls/workflow_membership.rs"]
 mod workflow_membership;
 use worth_execution::ExecutionAllocationPolicy as NativeAllocationPolicy;
@@ -97,13 +98,20 @@ where
         let mut held = Vec::new();
         let mut exhausted = false;
         for _ in 0..1_024 {
-            match self.product_runtime.integration_admit_product_branch(branch) {
+            match self
+                .product_runtime
+                .integration_admit_product_branch(branch)
+            {
                 Ok(observation) => held.push(observation),
-                Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted) => {
+                Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationCapacityExhausted,
+                )) => {
                     exhausted = true;
                     break;
                 }
-                Err(error) => panic!("World snapshot pressure failed for another reason: {error:?}"),
+                Err(error) => {
+                    panic!("World snapshot pressure failed for another reason: {error:?}")
+                }
             }
         }
         assert!(
@@ -187,6 +195,7 @@ where
                     layout.workflow().definition_node_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
+                .expect("certification fixture read request remains live")
                 .into_iter()
                 .find(|relation| relation.source == definition.entity_id())
                 .expect("the published definition retains a node membership");
@@ -248,6 +257,7 @@ where
                     workflow.definition_node_relation,
                     application_basis.snapshot_handle().version_id(),
                 )
+                .expect("certification fixture read request remains live")
                 .into_iter()
                 .find(|relation| relation.source == definition.entity_id())
                 .expect("the published definition retains a node membership");
@@ -315,3 +325,5 @@ where
         self.primary_provider.application_attempt_work_for_test()
     }
 }
+
+mod primary_index_generations;

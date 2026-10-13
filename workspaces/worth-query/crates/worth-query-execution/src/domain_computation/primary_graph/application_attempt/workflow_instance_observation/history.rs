@@ -112,6 +112,12 @@ pub(super) fn observe(
         inventory_limit.saturating_mul(2),
     )
     .map_err(|failure| match failure {
+        AdjacencyObservationDenial::Execution(cause) => {
+            WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                cause,
+                "workflow transition inventory",
+            )
+        }
         AdjacencyObservationDenial::SnapshotUnavailable => {
             denial("workflow instance transition inventory is unavailable")
         }
@@ -180,7 +186,7 @@ pub(super) fn observe(
             transition.to,
             layout.transition.entity_kind,
             &layout.transition.identity,
-        ) {
+        )? {
             Some(AspectValue::String(InternedString::Raw(identity))) => identity,
             _ => return Err(denial("workflow transition identity is unavailable")),
         };
@@ -200,7 +206,7 @@ pub(super) fn observe(
                         settlement.node(),
                         layout.node.entity_kind,
                         &layout.node.path,
-                    )
+                    )?
                 else {
                     return Err(denial("history node path is unavailable"));
                 };

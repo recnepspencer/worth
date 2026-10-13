@@ -33,6 +33,9 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
         }
         self.scopes.retain(|_, scope| scope.should_execute());
         self.check_live()?;
-        Ok((!self.scopes.is_empty()).then(|| PreparedRelationIntegrityScopes::new(self.scopes)))
+        Ok((!self.scopes.is_empty()).then(|| {
+            PreparedRelationIntegrityScopes::new(self.scopes)
+                .with_created_key_count(self.created_key_count)
+        }))
     }
 }

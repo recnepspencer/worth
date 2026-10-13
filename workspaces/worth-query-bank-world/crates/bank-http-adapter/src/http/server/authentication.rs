@@ -1,5 +1,6 @@
 use std::future::Future;
 use std::pin::Pin;
+use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 use bank_server::{BankAuthenticatedPrincipal, BankPrincipalAdmissionError};
 use worth_query_host::facade::admission::authenticated_principal::{
@@ -92,34 +93,34 @@ fn authentication_kind(kind: WorthQueryAuthenticationDenialKind) -> BankHttpDeni
 fn resolution_kind(kind: WorthQueryPrincipalResolutionDenialKind) -> BankHttpDenial {
     use WorthQueryPrincipalResolutionDenialKind as Resolution;
     match kind {
-        Resolution::Cancelled => cancelled(),
-        Resolution::DeadlineExceeded => deadline(),
-        Resolution::UnknownPrincipal | Resolution::MissingPrincipalTarget => malformed_credential(),
-        Resolution::DisabledPrincipal => BankHttpDenial::new(
+        Resolution::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)) => cancelled(),
+        Resolution::Stopped(Err(worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)) => deadline(),
+        Resolution::Refused(PrincipalRefusal::UnknownPrincipal) | Resolution::Refused(PrincipalRefusal::MissingPrincipalTarget) => malformed_credential(),
+        Resolution::Refused(PrincipalRefusal::DisabledPrincipal) => BankHttpDenial::new(
             BankHttpDenialKind::PermissionDenied,
             BankHttpNextAction::None,
         ),
-        Resolution::PrimaryGraphNotInstalled
-        | Resolution::BindingNotInstalled
-        | Resolution::BranchMaterializationSuspended
-        | Resolution::IdentityIndexUnavailable => unavailable(),
-        Resolution::ActiveSnapshotCapacityExhausted { .. }
-        | Resolution::SnapshotIdentityExhausted
-        | Resolution::RetentionCapacityExhausted
-        | Resolution::RetentionIdentityExhausted => unavailable(),
-        Resolution::ForeignRuntime
-        | Resolution::StaleInstalledSchema
-        | Resolution::ExpiredAuthentication
-        | Resolution::StalePrincipalProof => {
+        Resolution::Refused(PrincipalRefusal::PrimaryGraphNotInstalled)
+        | Resolution::Refused(PrincipalRefusal::BindingNotInstalled)
+        | Resolution::Refused(PrincipalRefusal::BranchMaterializationSuspended)
+        | Resolution::Refused(PrincipalRefusal::IdentityIndexUnavailable) => unavailable(),
+        Resolution::Refused(PrincipalRefusal::ActiveSnapshotCapacityExhausted{ .. })
+        | Resolution::Refused(PrincipalRefusal::SnapshotIdentityExhausted)
+        | Resolution::Refused(PrincipalRefusal::RetentionCapacityExhausted)
+        | Resolution::Refused(PrincipalRefusal::RetentionIdentityExhausted) => unavailable(),
+        Resolution::Refused(PrincipalRefusal::ForeignRuntime)
+        | Resolution::Refused(PrincipalRefusal::StaleInstalledSchema)
+        | Resolution::Refused(PrincipalRefusal::ExpiredAuthentication)
+        | Resolution::Refused(PrincipalRefusal::StalePrincipalProof) => {
             BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Authenticate)
         }
-        Resolution::CorruptIdentityIndex
-        | Resolution::AmbiguousPrincipal
-        | Resolution::AmbiguousPrincipalTarget
-        | Resolution::WrongPrincipalTargetKind => {
+        Resolution::Refused(PrincipalRefusal::CorruptIdentityIndex)
+        | Resolution::Refused(PrincipalRefusal::AmbiguousPrincipal)
+        | Resolution::Refused(PrincipalRefusal::AmbiguousPrincipalTarget)
+        | Resolution::Refused(PrincipalRefusal::WrongPrincipalTargetKind) => {
             BankHttpDenial::new(BankHttpDenialKind::InternalDenied, BankHttpNextAction::None)
         }
-        _ => unavailable(),
+        Resolution::Stopped(Ok(_)) | Resolution::Refused(PrincipalRefusal::ForeignPhase) => unavailable(),
     }
 }
 

@@ -24,6 +24,7 @@ impl VisibleTruthSummary {
         let read = runtime
             .read_truth()
             .read_snapshot(&snapshot, execution)
+            .expect("read request remains live")
             .unwrap();
 
         let mut entity_names = read

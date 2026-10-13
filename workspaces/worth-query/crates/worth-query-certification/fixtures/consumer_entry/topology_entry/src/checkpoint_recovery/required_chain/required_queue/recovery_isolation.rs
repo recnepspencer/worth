@@ -6,6 +6,7 @@ use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationProgramOutputProgress,
     WorthQueryOutputDemandControls, WorthQueryRequiredOutputPreparationDenial,
 };
+use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
 #[test]
 fn recovery_selected_refusal_leaves_an_ordinary_dependent_live() {
@@ -128,7 +129,7 @@ fn scenario(direct: bool) {
     assert!(
         matches!(&stop, WorthQueryRequiredOutputPreparationDenial::Demand(
         WorthQueryApplicationOutputDemandDenial::Demand(cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::ProductSelection(
-            primary_graph::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted)),
+            AdmissionRefusal::ObservationCapacityExhausted)),
         "{stop:?}"
     );
     drop(output);

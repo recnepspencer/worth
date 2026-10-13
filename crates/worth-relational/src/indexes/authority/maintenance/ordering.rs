@@ -1,5 +1,6 @@
 use super::{
-    change_routing::ChangeRouting, entry_edits::edit, reads, record_metadata, work::MaintenanceWork,
+    change_routing::ChangeRouting, entry_edits::edit, persistent_allocation::UngroupedAllocation,
+    reads, record_metadata, work::MaintenanceWork,
 };
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::indexes::data::{
@@ -33,6 +34,7 @@ pub(super) fn refresh(
     after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
+    let mut allocation = UngroupedAllocation::new();
     let contract = OrderingContract {
         relation_kind: contract.0,
         parent_endpoint: contract.1,
@@ -78,10 +80,10 @@ pub(super) fn refresh(
             compare_related_entries(left, right, contract.ordering)
         };
         if let Some((parent, row)) = old {
-            edit(entries, parent, row, false, compare, work)?;
+            edit(entries, parent, row, false, compare, &mut allocation, work)?;
         }
         if let Some((parent, row)) = new {
-            edit(entries, parent, row, true, compare, work)?;
+            edit(entries, parent, row, true, compare, &mut allocation, work)?;
         }
     }
     Ok(())
@@ -105,6 +107,12 @@ fn child_values(
         return Ok(None);
     };
     work.charge(contract.ordering.len())?;
+    work.array::<worth_foundational::facade::AspectValue>(contract.ordering.len())?;
+    for field in contract.ordering {
+        if let Some(value) = entity_query_locus_value(&record, field.locator()) {
+            work.prepare(0, value.owned_allocation_capacity_bytes() as u64)?;
+        }
+    }
     Ok(contract
         .ordering
         .iter()

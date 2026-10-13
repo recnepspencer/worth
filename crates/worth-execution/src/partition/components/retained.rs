@@ -24,9 +24,9 @@ impl ComponentPartitioner {
                 .routes
                 .len()
                 .checked_add(usize::from(!self.routes.contains_key(&item)))
-                .ok_or(PartitionUpdateDenial::Admission(
-                    LeaseDenial::ChargedBytesOverflow,
-                ))?;
+                .ok_or_else(|| {
+                    PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+                })?;
             let bound = self.retained_bytes(count, self.edge_count)?;
             self.retained_charge.admit(lease, bound)?;
             self.upsert_item_structural_checked(lease, child, item)
@@ -48,12 +48,9 @@ impl ComponentPartitioner {
                     .get(&a)
                     .is_some_and(|neighbors| !neighbors.contains(&b)),
             );
-            let edges =
-                self.edge_count
-                    .checked_add(add)
-                    .ok_or(PartitionUpdateDenial::Admission(
-                        LeaseDenial::ChargedBytesOverflow,
-                    ))?;
+            let edges = self.edge_count.checked_add(add).ok_or_else(|| {
+                PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow())
+            })?;
             let bound = self.retained_bytes(self.routes.len(), edges)?;
             self.retained_charge.admit(lease, bound)?;
             self.add_edge_structural_checked(lease, child, a, b)
@@ -102,8 +99,6 @@ impl ComponentPartitioner {
             .checked_mul(MEMBER_SCRATCH_BYTES)
             .and_then(|bytes| bytes.checked_add(edges.checked_mul(2 * DEGREE_SCRATCH_BYTES)?))
             .and_then(|bytes| u64::try_from(bytes).ok())
-            .ok_or(PartitionUpdateDenial::Admission(
-                LeaseDenial::ChargedBytesOverflow,
-            ))
+            .ok_or_else(|| PartitionUpdateDenial::Admission(LeaseDenial::charged_bytes_overflow()))
     }
 }

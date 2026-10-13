@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use std::{collections::BTreeMap, num::NonZeroUsize};
 
 use worth_query_installation::facade::{
@@ -14,7 +15,7 @@ use super::installation::{
 use super::reconstruction_authority::{
     WorthQueryTemporalPrincipalSource, WorthQueryTemporalReconstructionAccess,
 };
-mod denial;
+pub(super) mod denial;
 mod reconciliation;
 mod source_record_binding;
 pub(super) use denial::{
@@ -244,13 +245,20 @@ pub(super) fn product_denial(
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     use crate::basis::WorthQueryProductBranchAdmissionDenial as Kind;
     match denial {
-        Kind::ActiveSnapshotCapacityExhausted {
+        Kind::Refused(AdmissionRefusal::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        } => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
-        Kind::RetentionCapacityExhausted => retention_capacity_reconstruction_denial(),
-        Kind::RetentionIdentityExhausted => retention_identity_reconstruction_denial(),
-        Kind::SnapshotIdentityExhausted => snapshot_identity_reconstruction_denial(),
-        denial => reconstruction_denial(
+        }) => snapshot_capacity_reconstruction_denial(maximum_active_snapshots),
+        Kind::Refused(AdmissionRefusal::RetentionCapacityExhausted) => {
+            retention_capacity_reconstruction_denial()
+        }
+        Kind::Refused(AdmissionRefusal::RetentionIdentityExhausted) => {
+            retention_identity_reconstruction_denial()
+        }
+        Kind::Refused(AdmissionRefusal::SnapshotIdentityExhausted) => {
+            snapshot_identity_reconstruction_denial()
+        }
+        Kind::Stopped(stop) => denial::read_stopped(stop),
+        denial @ Kind::Refused(_) => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
             format!("selected product admission failed: {denial:?}"),
         ),

@@ -216,6 +216,7 @@ pub(super) fn assert_entity_summary(
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .expect("main snapshot remains readable");
     let record = read.get_entity(entity_id).expect("entity remains visible");
     let summary = record

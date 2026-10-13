@@ -48,10 +48,18 @@ where
             })?;
         let selected_branch = match self.on_branch(branch).select_with_request(execution) {
             Ok(selected) => selected,
-            Err(error) if error.is_transient() => {
+            Err(error @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_)) => {
+                return Err(WorthQueryOutputDemandDenial::product_selection(
+                    error,
+                    format!("{}: scheduling product selection", selected.identity),
+                ))
+            }
+            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(kind))
+                if kind.is_transient() =>
+            {
                 return Ok(WorthQueryOutputSchedulingResult::Deferred)
             }
-            Err(error) => {
+            Err(error @ crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_)) => {
                 return Err(WorthQueryOutputDemandDenial::product_selection(
                     error,
                     format!("{}: scheduling product selection", selected.identity),
@@ -303,16 +311,10 @@ fn schedule_work_denial() -> WorthQueryOutputDemandDenial {
 fn schedule_admission_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
 ) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop;
-    match stop {
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-        | CompanionPreflightStop::WorkCounterOverflow => schedule_work_denial(),
-        _ => denial(
-            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
-            "selected required scheduling projection exceeds preparation memory",
-        ),
-    }
+    crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+        crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+        "selected demand projection unavailable",
+    )
 }
 
 fn scheduling_refusal(

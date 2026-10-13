@@ -67,10 +67,7 @@ fn wake_pump_refuses_before_clock_truth_reads_or_operation_reentry() {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
             } else {
                 match placement {
-                    Placement::Serial => {
-                        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit))
-                    }
-                    Placement::Leased(_) => {
+                    Placement::Serial | Placement::Leased(_) => {
                         let Denial::Resource(Resource::MemoryLimit {
                             level,
                             requested,

@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph::application_query) enum SelectedAuthorizationCurrentnessStop
 {
     Admission(CompanionPreflightStop),
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     StaleIssuedAccess,
     StaleDecision,
     UnsupportedGovernance,
@@ -84,7 +85,14 @@ where
             application.authorization.bridge(),
             admission,
         )
-        .map_err(SelectedAuthorizationCurrentnessStop::Admission)?;
+        .map_err(|stop| match stop {
+            crate::domain_computation::authorization::AuthorizationCurrentnessStop::Admission(
+                stop,
+            ) => SelectedAuthorizationCurrentnessStop::Admission(stop),
+            crate::domain_computation::authorization::AuthorizationCurrentnessStop::Execution(
+                cause,
+            ) => SelectedAuthorizationCurrentnessStop::Execution(cause),
+        })?;
     if !current {
         return Err(SelectedAuthorizationCurrentnessStop::StaleDecision);
     }

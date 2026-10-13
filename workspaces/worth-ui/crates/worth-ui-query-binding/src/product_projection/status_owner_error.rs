@@ -28,6 +28,7 @@ pub enum WorthUiStatusLiveDeliveryStop {
     StaleScope,
     ProjectionDenied(WorthQueryApplicationProjectionDenialKind),
     CauseDenied(WorthQueryApplicationLiveCauseDenialKind),
+    ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     Cancelled,
     DeadlineExceeded,
     Closed,
@@ -106,10 +107,35 @@ pub(super) fn classify_live_delivery(
             WorthUiStatusLiveDeliveryStop::ProjectionDenied(denial)
         }
         Outcome::CauseDenied(denial) => WorthUiStatusLiveDeliveryStop::CauseDenied(denial),
+        Outcome::ExecutionRequest(cause) => WorthUiStatusLiveDeliveryStop::ExecutionRequest(cause),
         Outcome::Cancelled => WorthUiStatusLiveDeliveryStop::Cancelled,
         Outcome::DeadlineExceeded => WorthUiStatusLiveDeliveryStop::DeadlineExceeded,
         Outcome::Closed => WorthUiStatusLiveDeliveryStop::Closed,
         Outcome::Unavailable => WorthUiStatusLiveDeliveryStop::Unavailable,
     };
     Err(WorthUiStatusOwnerError::LiveDelivery(stop))
+}
+
+#[cfg(test)]
+mod execution_delivery_tests {
+    use super::*;
+    #[test]
+    fn ui_live_delivery_carries_the_query_execution_cause_by_value() {
+        use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+        use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
+        let cause = Kind::ExecutionResource {
+            denial: Resource::WorkExhausted,
+            partition_identity: Some(3),
+            policy_ancestor: Some(2),
+        };
+        let answer =
+            classify_live_delivery(WorthQueryApplicationLiveOutcome::ExecutionRequest(cause));
+        let Err(WorthUiStatusOwnerError::LiveDelivery(
+            WorthUiStatusLiveDeliveryStop::ExecutionRequest(actual),
+        )) = answer
+        else {
+            panic!("the UI adapter keeps the typed query stop")
+        };
+        assert_eq!(actual, cause);
+    }
 }

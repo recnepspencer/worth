@@ -1,6 +1,7 @@
 //! Static authority shared with ordinary mutation admission after the exact
 //! installation owner has sealed a cold-compiled producer mutation binding.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryCurrentRetainedMutationBinding,
@@ -65,7 +66,9 @@ where
         runtime.installed_schema(),
     ) {
         return Err(Stop::Authorization(denial(
-            WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleInstalledOperation,
+            ),
             operation.operation(),
         )));
     }

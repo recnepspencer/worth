@@ -40,7 +40,7 @@ impl IndexAuthority<'_> {
                 generations: prepared
                     .publish_admitted(self.runtime, &mut work)
                     .map_err(|kind| work.deny(kind))?,
-                work: work.counts,
+                work: work.counts(),
             })
         })();
         match refused {

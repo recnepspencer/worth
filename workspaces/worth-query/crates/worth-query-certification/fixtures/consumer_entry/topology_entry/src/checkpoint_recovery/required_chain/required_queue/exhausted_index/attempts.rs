@@ -19,7 +19,7 @@ fn a_refused_consumer_registration_performs_each_chain_member_once() {
                 CheckpointSchema,
                 ChainProducer<CheckpointSchema>,
             >>::operation_input(
-                &ChainProvider,
+                &ChainProvider::new(false),
                 &PlanarOutputReadResult {
                     body_key: (*member).to_owned(),
                     successor_body_key: String::new(),

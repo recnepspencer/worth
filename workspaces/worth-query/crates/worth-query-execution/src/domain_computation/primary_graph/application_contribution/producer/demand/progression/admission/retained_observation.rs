@@ -58,11 +58,17 @@ where
 
         let at = self
             .select_application_read_observation_with_request(execution, observation)
-            .map_err(|error| {
-                denial(
+            .map_err(|error| match error {
+                stopped @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        stopped,
+                        "retained output basis",
+                    )
+                }
+                error @ crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => denial(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                     format!("retained output basis unavailable: {error:?}"),
-                )
+                ),
             })?;
         let read =
             WorthQueryProductBranchReadIdentity::from_observation(at.product().observation());
@@ -187,7 +193,7 @@ where
                         || stop(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
                     let truth = relational.read_truth();
                     let live = truth
-                        .project_snapshot(snapshot, execution)
+                        .project_snapshot(snapshot)
                         .ok_or_else(unavailable)?
                         .entity_record_with_projection_scope(
                             execution,
@@ -195,6 +201,9 @@ where
                             ProjectionAspectScope::empty(),
                             |record| Some(record.lifecycle()),
                         )
+                        .map_err(|cause| {
+                            super::super::super::selection::retained_liveness::denial(cause)
+                        })?
                         == Some(RecordLifecycleState::Live);
                     let selected = truth
                         .positioned_snapshot(snapshot)
@@ -224,8 +233,16 @@ where
                         Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
                             Err(retry(WorthQueryOutputDemandDenialKind::PublicationStale))
                         }
+
                         Err(ConsumedOutputVerificationStop::Interrupted(event)) => Err(denial(
                             WorthQueryOutputDemandDenialKind::of_interruption(event.interruption()),
+                            Family::IDENTITY,
+                        )),
+                        Err(ConsumedOutputVerificationStop::Execution(cause)) => Err(denial(
+                            crate::domain_computation::primary_graph::output_reuse::read_denial(
+                                cause,
+                            )
+                            .kind(),
                             Family::IDENTITY,
                         )),
                         Err(ConsumedOutputVerificationStop::CapacityExhausted) => Err(retry(

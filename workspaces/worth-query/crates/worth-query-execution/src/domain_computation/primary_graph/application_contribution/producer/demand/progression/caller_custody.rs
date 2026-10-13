@@ -71,7 +71,13 @@ where
             {
                 Ok(false) => {}
                 Ok(true) => return stop,
-                Err(error) => return custody_walk_stop(error, stop),
+                Err(error) => {
+                    return if error.kind() == WorthQueryOutputDemandDenialKind::WorkBudgetExceeded {
+                        error
+                    } else {
+                        stop
+                    }
+                }
             }
         }
         stop.with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Terminal)

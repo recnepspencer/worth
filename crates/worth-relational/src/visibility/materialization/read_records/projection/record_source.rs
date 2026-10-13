@@ -15,14 +15,20 @@ impl super::ProjectionRecordSource for VisibilityProjectionView {
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         id: EntityId,
-    ) -> Option<crate::storage::data::EntityReadRecord> {
+    ) -> Result<
+        Option<crate::storage::data::EntityReadRecord>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         self.authoritative_entity_record(request, id)
     }
     fn authoritative_relation_record(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         id: RelationId,
-    ) -> Option<crate::storage::data::RelationReadRecord> {
+    ) -> Result<
+        Option<crate::storage::data::RelationReadRecord>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         self.authoritative_relation_record(request, id)
     }
 }

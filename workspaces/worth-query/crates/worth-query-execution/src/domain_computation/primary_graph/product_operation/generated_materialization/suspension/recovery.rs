@@ -1,3 +1,9 @@
+use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -15,28 +21,9 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 mod settlement;
 use settlement::PublishedSuspensionSettlement;
 
-/// The step at which continuing a suspension recovery stopped. The recovery is
-/// handed back to continue again.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryGeneratedOutputSuspensionRecoveryStage {
-    /// The host request was refused before inspecting recovery facts.
-    ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
-    /// The unpublished product state could not be inspected.
-    Inspection,
-    /// Owner settlement of the unpublished effects did not finish.
-    OwnerSettlement,
-    /// Adopting the settled effects could not be prepared.
-    AdoptionPreparation,
-    /// The adoption is not published yet; continue again.
-    AdoptionPublication,
-    /// Releasing an earlier recovery authority did not finish.
-    RecoveryHandoff,
-    /// Owner cleanup did not finish.
-    OwnerCleanup,
-    /// The recovery belongs to another runtime, schema binding, or producer, or
-    /// the product branch moved since the suspension.
-    StaleOccurrence,
-}
+#[path = "recovery/stage.rs"]
+mod stage;
+pub use stage::WorthQueryGeneratedOutputSuspensionRecoveryStage;
 
 /// Custody of a suspension whose publication moved some owners but not the
 /// product head.
@@ -287,11 +274,27 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQuerySuspendedGeneratedOutput,
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
-        let selected = match self.on_branch(retry.branch).select_with_request(execution) {
+        let source_read = {
+            let _read = self.product_runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
+            execution
+                .consult()
+                .map_err(|cause| {
+                    Admission::Stopped(advancement_denial(cause).provider_denial_cause())
+                })
+                .and_then(|()| self.on_branch(retry.branch).select(phase))
+        };
+        let selected = match source_read {
             Ok(selected) => selected,
-            Err(_) => {
+            Err(cause) => {
                 return Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence,
+                    match cause {
+                        cause @ Admission::Stopped(_) => {
+                            WorthQueryGeneratedOutputSuspensionRecoveryStage::SourceSelection(cause)
+                        }
+                        Admission::Refused(_) => {
+                            WorthQueryGeneratedOutputSuspensionRecoveryStage::StaleOccurrence
+                        }
+                    },
                     RecoveryState::World { recovery, retry },
                 ));
             }
@@ -326,16 +329,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let binding = selected.product().publication_binding();
         let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
             Ok(prepared) => prepared,
-            Err(_) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                        advancement_denial(stop),
+                    ),
+                    RecoveryState::World { recovery, retry },
+                ))
+            }
+            Err(PublicationDenial::Refused(_)) => {
                 return Err(failure(
                     WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPreparation,
                     RecoveryState::World { recovery, retry },
-                ));
+                ))
             }
         };
         drop(unpublished);
         match prepared.execute(publication_execution) {
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()
                     .relational_commit_result()
@@ -354,15 +365,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     },
                 )
             }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(_) => {
-                Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
-                    RecoveryState::World { recovery, retry },
-                ))
-            }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(
-                effects,
-            ) => {
+            Err(PublicationDenial::Stopped(stop)) => Err(failure(
+                WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                    advancement_denial(stop),
+                ),
+                RecoveryState::World { recovery, retry },
+            )),
+            Err(PublicationDenial::Refused(_)) => Err(failure(
+                WorthQueryGeneratedOutputSuspensionRecoveryStage::AdoptionPublication,
+                RecoveryState::World { recovery, retry },
+            )),
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let next = self
                     .unpublished_materialization_from_binding(effects, &binding)
                     .into_recovery();

@@ -25,30 +25,30 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
                 denial,
                 partition_identity,
                 policy_ancestor,
-            } => cleanup_execution_indeterminate(Session::ExecutionResource {
+            } => cleanup_execution_indeterminate(Ok(Session::ExecutionResource {
                 denial,
                 partition_identity,
                 policy_ancestor,
-            }),
+            })),
             Kind::ExecutionNestedPatternStopped { partition_identity } => {
-                cleanup_execution_indeterminate(Session::ExecutionNestedPatternStopped {
+                cleanup_execution_indeterminate(Ok(Session::ExecutionNestedPatternStopped {
                     partition_identity,
-                })
+                }))
             }
             Kind::ExecutionWorkerPanicked { partition_identity } => {
-                cleanup_execution_indeterminate(Session::ExecutionWorkerPanicked {
+                cleanup_execution_indeterminate(Ok(Session::ExecutionWorkerPanicked {
                     partition_identity,
-                })
+                }))
             }
             Kind::ExecutionUncheckedCustomKernel { partition_identity } => {
-                cleanup_execution_indeterminate(Session::ExecutionUncheckedCustomKernel {
+                cleanup_execution_indeterminate(Ok(Session::ExecutionUncheckedCustomKernel {
                     partition_identity,
-                })
+                }))
             }
             Kind::ExecutionIdentitiesNotCanonical { partition_identity } => {
-                cleanup_execution_indeterminate(Session::ExecutionIdentitiesNotCanonical {
+                cleanup_execution_indeterminate(Ok(Session::ExecutionIdentitiesNotCanonical {
                     partition_identity,
-                })
+                }))
             }
             Kind::ProviderRejected
             | Kind::CustomInvariantDenied
@@ -82,41 +82,51 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::ProgramActivationUnresolved
             | Kind::RecoveryHandoffMismatch { .. } => cleanup_indeterminate(),
         },
+        Progression::Indeterminate(evidence) => {
+            Outcome::Indeterminate(evidence.with_cleanup_failure())
+        }
+        Progression::Cancelled => cleanup_execution_indeterminate(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )),
+        Progression::TimedOut => cleanup_execution_indeterminate(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )),
         Progression::Committed(_)
         | Progression::AlreadyCommitted(_)
         | Progression::Stale(_)
-        | Progression::Cancelled
-        | Progression::TimedOut
         | Progression::Aborted
         | Progression::Deferred(_)
-        | Progression::SettlementDeferred(_)
-        | Progression::Indeterminate(_) => cleanup_indeterminate(),
+        | Progression::SettlementDeferred(_) => cleanup_indeterminate(),
     }
 }
 
 // The existing unresolved evidence already holds a provider-session kind.
 // A cleanup failure still requires recovery; its cause cannot make it retryable.
-fn cleanup_execution_indeterminate(kind: Session) -> Outcome {
+fn cleanup_execution_indeterminate(
+    kind: Result<Session, crate::domain_computation::WorthQueryProviderSessionControlStopKind>,
+) -> Outcome {
     use crate::domain_computation::primary_graph::{
         WorthQueryApplicationCommitRecoveryKind as Recovery,
         WorthQueryApplicationUnresolvedCommitEvidence as Evidence,
     };
-    let failure = WorthQueryProviderSessionFailure::new(
+    let failure = WorthQueryProviderSessionFailure::checked_read_stopped(
         kind,
         WorthQueryProviderSessionProtocolStage::Commit,
         "managed mutation run failed to finish after provider progression",
-        Default::default(),
     );
-    Outcome::Indeterminate(Evidence::from_provider_session_failure(
-        Recovery::CommitRecoveryRequired,
-        &failure,
-    ))
+    Outcome::Indeterminate(
+        Evidence::from_provider_session_failure(Recovery::CommitRecoveryRequired, &failure)
+            .with_cleanup_failure(),
+    )
 }
 
 fn cleanup_indeterminate() -> Outcome {
-    Outcome::Indeterminate(unknown_commit_recovery_evidence(
-        "managed mutation run failed to finish after provider progression",
-    ))
+    Outcome::Indeterminate(
+        unknown_commit_recovery_evidence(
+            "managed mutation run failed to finish after provider progression",
+        )
+        .with_cleanup_failure(),
+    )
 }
 
 #[cfg(test)]

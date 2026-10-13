@@ -44,14 +44,14 @@ fn elevation_entries_refuse_before_reading_at_both_placements() {
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for entry in [Entry::Request, Entry::Approval, Entry::Close] {
-            run(entry, placement, None);
+            run(entry, None);
             for memory in [false, true] {
-                run(entry, placement, Some(memory));
+                run(entry, Some(memory));
             }
         }
     }
 }
-fn run(entry: Entry, placement: Placement, refusal: Option<bool>) {
+fn run(entry: Entry, refusal: Option<bool>) {
     bound(None);
     let fixture = emergency_request_world(
         "elevation-custody-probe",
@@ -147,8 +147,6 @@ fn run(entry: Entry, placement: Placement, refusal: Option<bool>) {
         };
         if !memory {
             assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-        } else if placement == Placement::Serial {
-            assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
         } else {
             let Denial::Resource(Resource::MemoryLimit {
                 level,

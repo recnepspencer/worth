@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
     application_schema::TypedMutationPreconditions,
@@ -31,7 +32,9 @@ where
 {
     let graph = runtime.runtime.primary_graph().ok_or_else(|| {
         denial(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
             access.operation.as_ref(),
         )
     })?;
@@ -44,7 +47,9 @@ where
     )
     .map_err(|()| {
         denial(
-            WorthQueryOperationAuthorizationDenialKind::MutationPreconditionRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::MutationPreconditionRejected,
+            ),
             operation.operation(),
         )
     })

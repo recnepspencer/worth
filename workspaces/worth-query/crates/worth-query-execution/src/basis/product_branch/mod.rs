@@ -20,7 +20,9 @@ pub use creation_recovery::{
     WorthQueryProductBranchCreationRecoveryReleaseFailure, WorthQueryProductBranchOwnerCleanupWork,
     WorthQueryProductBranchRecoveryDenial,
 };
-pub use denial::WorthQueryProductBranchAdmissionDenial;
+pub use denial::{
+    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind,
+};
 pub use lifecycle::WorthQueryProductBranches;
 pub use observation::{WorthQueryProductBranchLease, WorthQueryProductObservationLease};
 pub use read_identity::WorthQueryProductBranchReadIdentity;

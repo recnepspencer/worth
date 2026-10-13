@@ -340,9 +340,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "899def5c37c4fd7b2664648c28120ecec138e4d395b459e5ca34f9cce2dd77fd"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi",
  "wasip2",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -352,10 +354,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "139ef39800118c7683f2fd3c98c1b23c09ae076556b435f8e9064ae108aaeeec"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi",
  "wasip2",
  "wasip3",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1508,6 +1512,7 @@ dependencies = [
  "stats_alloc",
  "worth-execution",
  "worth-foundational",
+ "worth-harness",
  "worth-proof",
  "worth-query-admission",
  "worth-query-declaration",
@@ -1524,6 +1529,7 @@ version = "0.1.0"
 dependencies = [
  "worth-execution",
  "worth-foundational",
+ "worth-harness",
  "worth-query-admission",
  "worth-query-decl",
  "worth-query-declaration",
@@ -1531,6 +1537,7 @@ dependencies = [
  "worth-query-installation",
  "worth-query-publication",
  "worth-relational",
+ "worth-runtime-bridge",
 ]
 
 [[package]]
@@ -1560,6 +1567,7 @@ dependencies = [
  "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
+ "worth-relational",
  "worth-runtime-world",
 ]
 
@@ -1576,6 +1584,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "sized-chunks",
  "smallvec",
  "stats_alloc",
  "trybuild",

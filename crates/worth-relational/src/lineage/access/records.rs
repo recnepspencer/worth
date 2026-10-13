@@ -51,7 +51,8 @@ impl<'runtime> LineageAccess<'runtime> {
         let read_view = self
             .runtime
             .read_truth()
-            .read_version(execution, head.version_id);
+            .read_version(execution, head.version_id)
+            .expect("read request remains live");
         self.runtime
             .performance_access()
             .count_lineage_graph_snapshot_visibility_cache(cache_hit);

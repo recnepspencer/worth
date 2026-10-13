@@ -4,7 +4,7 @@ pub enum WorthQueryWorkspaceErrorKind {
     ForeignPhase(
         worth_query_execution::facade::application_contribution::WorthQueryForeignAdvancementPhase,
     ),
-    /// The execution owner refused a commit before any effect.
+    /// The execution owner refused an operation before any effect.
     ExecutionDenied(
         worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind,
     ),

@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityDelegationRule, ApplicationCapabilityRelationDimension,
@@ -153,7 +154,7 @@ impl WorthQueryCapabilityDelegationBindings {
                     );
                     if revoked_status.0 != active_status.0 || revoked_status.1 == active_status.1 {
                         return Err(WorthQueryOperationAuthorizationDenial::new(
-                            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                            crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::InconsistentDecision),
                             contract.name(),
                         ));
                     }

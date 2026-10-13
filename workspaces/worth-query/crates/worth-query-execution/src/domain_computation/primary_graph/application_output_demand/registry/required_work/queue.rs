@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph::application_output_demand::regi
 {
     Empty,
     Stale,
-    Selected(SelectedRequiredWork),
+    Claimed(RequiredWorkClaim),
 }
 
 impl RequiredWorkQueue {
@@ -50,7 +50,7 @@ impl RequiredWorkQueue {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !member.active || !member.marked || member.queued {
+        if !member.active || !member.marked || member.queued || member.claimed {
             return;
         }
         member.queued = true;
@@ -96,33 +96,14 @@ impl RequiredWorkQueue {
             drop(head);
             return RequiredWorkPop::Stale;
         }
-        let kind = if let Some(hint) = member.native_hints.as_ref() {
-            SelectedRequiredWorkKind::Native {
-                observer: hint.observer.clone(),
-                branch: Arc::clone(&hint.branch),
-            }
-        } else if let Some(settlement) = member.local_settlement.as_ref() {
-            SelectedRequiredWorkKind::Local {
-                settlement: Arc::clone(settlement),
-            }
-        } else if member.discontinuity_pending {
-            SelectedRequiredWorkKind::Discontinuity
-        } else {
-            assert!(
-                member.unresolved_initial,
-                "queued required work has one cause"
-            );
-            SelectedRequiredWorkKind::UnresolvedInitial
-        };
-        let selected = SelectedRequiredWork {
+        member.claimed = true;
+        let claim = RequiredWorkClaim {
             membership: Arc::clone(&head),
-            version: member.version,
-            kind,
             armed: true,
         };
         drop(member);
         drop(queue);
-        RequiredWorkPop::Selected(selected)
+        RequiredWorkPop::Claimed(claim)
     }
 }
 
@@ -144,5 +125,141 @@ impl Drop for RequiredWorkQueue {
                 .next
                 .take();
         }
+    }
+}
+
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    /// Leave one checked attempt for the real producer scheduling, so its
+    /// subsequent readiness evaluation refuses the exhausted runtime counter.
+    #[doc(hidden)]
+    pub fn leave_one_readiness_attempt_for_test(&self) {
+        self.next_output_producer_attempt
+            .store(u64::MAX - 1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Read the exact issued rows and their recorded intrinsic stop values.
+    #[doc(hidden)]
+    pub fn required_row_stops_for_root_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> Vec<(
+        String,
+        Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
+    )> {
+        let state = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .records
+            .iter()
+            .filter(|(key, _)| key.source_epoch().root_entity_for_test() == root)
+            .map(|(key, record)| (format!("{key:?}"), record.required_stop.clone()))
+            .collect()
+    }
+
+    #[doc(hidden)]
+    pub fn queued_required_work_for_test(&self) -> usize {
+        let queue = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .required_work_queue
+            .clone();
+        queue.map_or(0, |queue| queue.queued_count())
+    }
+
+    /// Scan oracle for the Published rows and their actual remaining owners.
+    #[doc(hidden)]
+    pub fn published_required_rows_for_test(&self) -> Vec<(String, usize, bool, String)> {
+        let state = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        state
+            .records
+            .iter()
+            .filter_map(|(key, record)| {
+                let super::super::DemandState::Output(output) = &record.state else {
+                    return None;
+                };
+                matches!(
+                    output.checkpoint,
+                    Some(super::super::WorthQueryOutputCheckpoint::Published { .. })
+                )
+                .then(|| {
+                    (
+                        format!("{key:?}"),
+                        record.interests,
+                        record.held_successor.is_some(),
+                        format!(
+                            "framework={}, prepared={}, cleanup={}, obligations={}, source={}",
+                            record.framework_required_count,
+                            record.prepared_prerequisite_claims,
+                            record.pending_cleanup_queued,
+                            record.performed_obligations.len(),
+                            record.performed_source.is_some(),
+                        ),
+                    )
+                })
+            })
+            .collect()
+    }
+
+    /// Exact issued row keys queued for this root, retained before an advance.
+    #[doc(hidden)]
+    pub fn queued_required_rows_for_root_for_test(
+        &self,
+        root: worth_relational::facade::identity::EntityId,
+    ) -> Vec<String> {
+        let queue = self
+            .output_demands
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .required_work_queue
+            .clone();
+        let Some(queue) = queue else {
+            return Vec::new();
+        };
+        let queue = queue
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut cursor = queue.head.as_ref().map(Arc::clone);
+        let mut keys = Vec::new();
+        while let Some(member) = cursor {
+            if member.key().source_epoch().root_entity_for_test() == root {
+                keys.push(format!("{:?}", member.key()));
+            }
+            cursor = member
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .next
+                .as_ref()
+                .map(Arc::clone);
+        }
+        keys.sort();
+        keys
+    }
+    #[doc(hidden)]
+    pub fn entered_required_selection_is_frozen_for_test(&self) -> Option<bool> {
+        self.output_demands
+            .state
+            .lock()
+            .unwrap()
+            .last_selection_frozen
+    }
+    #[doc(hidden)]
+    pub fn undelivered_publication_counts_for_test(&self) -> (usize, usize) {
+        let state = self.output_demands.state.lock().unwrap();
+        (state.records.publication_count_for_test(), state.records.values().filter(|record|
+            matches!(&record.state, super::super::DemandState::Output(output) if !matches!(output.advancement(), super::super::WorthQueryOutputAdvancement::Stopped { .. }) && matches!(output.checkpoint, Some(super::super::WorthQueryOutputCheckpoint::Published { .. })))).count())
     }
 }

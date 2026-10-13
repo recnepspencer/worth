@@ -1,5 +1,6 @@
 //! Ordinary installed-operation authorization evidence.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::cell::Cell;
 use std::time::{Duration, Instant, SystemTime};
 
@@ -228,7 +229,9 @@ fn caller_marker_cannot_widen_the_installed_precondition_contract() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::MutationPreconditionRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::MutationPreconditionRejected
+        )
     );
 }
 
@@ -303,7 +306,7 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         missing_membership.kind(),
-        WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied)
     );
 
     let foreign = installed_authorization_world(true);
@@ -347,7 +350,7 @@ fn missing_membership_and_crossed_runtime_scope_open_no_operation_authority() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         crossed_scope.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ForeignRuntime
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime)
     );
 }
 

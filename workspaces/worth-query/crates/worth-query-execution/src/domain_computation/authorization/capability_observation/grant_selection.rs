@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationFieldComparison,
     RelationalAuthorizationObservationCounters, RelationalAuthorizationObservationPlan,
@@ -84,14 +85,18 @@ fn lookup_candidate_grants(
         })?;
     if lookup.overflowed() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::GrantSelectionLimitExceeded,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::GrantSelectionLimitExceeded,
+            ),
             installed.contract().name(),
         ));
     }
     let candidates = lookup.candidate_entity_ids();
     if candidates.is_empty() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityGrantMissing,
+            ),
             installed.contract().name(),
         ));
     }
@@ -139,13 +144,16 @@ fn observe_candidate_paths(
         [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
+    #[cfg(test)]
+    late_cancellation::cancel_at_observation();
     relational
         .observe_authorization(plan, execution)
-        .map_err(|_| {
-            denial(
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
-                installed.contract().name(),
-            )
+        .map_err(|refusal| {
+            use worth_relational::facade::authorization::RelationalAuthorizationObservationDenial as Refusal;
+            match refusal {
+                Refusal::Execution(cause) => super::super::denial::relational_read_denial(cause, installed.contract().name()),
+                Refusal::ForeignRuntime { .. } | Refusal::SnapshotUnavailable | Refusal::PrincipalUnavailableOrWrongKind | Refusal::ScopeUnavailableOrWrongKind | Refusal::ObservationIdentityExhausted | Refusal::PreparationAccountingOverflow => denial(WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::RelationalObservationRejected), installed.contract().name()),
+            }
         })
 }
 
@@ -160,7 +168,9 @@ fn selected_grant(
         .and_then(|witness| witness.entity_at(installed.grant_witness().entity_ordinal()))
         .ok_or_else(|| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::CapabilityAuthorizationMissing,
+                ),
                 installed.contract().name(),
             )
         })
@@ -261,7 +271,9 @@ fn append_grant_predicates(
 
 fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         subject,
     )
 }
@@ -281,39 +293,20 @@ fn grant_lookup_denial_kind(
     refusal: worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind,
 ) -> WorthQueryOperationAuthorizationDenialKind {
     use worth_relational::facade::indexes::BoundedRelationJoinLookupDenialKind as Kind;
-    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
     use WorthQueryOperationAuthorizationDenialKind as Denial;
     match refusal {
-        Kind::Execution(cause) => match cause {
-            Cause::Cancelled => Denial::Cancelled,
-            Cause::DeadlineElapsed => Denial::DeadlineExceeded,
-            Cause::WorkerLimitExceedsParent
-            | Cause::MemoryLimitExceedsParent
-            | Cause::WorkLimitExceedsParent
-            | Cause::PolicyMemoryExhausted { .. }
-            | Cause::ProcessMemoryExhausted { .. }
-            | Cause::DeclaredMemoryExhausted { .. }
-            | Cause::ChargedBytesOverflow
-            | Cause::UnrelatedNestedLease
-            | Cause::NoActiveExecutionScope
-            | Cause::EquivalenceContractUnavailable
-            | Cause::WorkCounterOverflow
-            | Cause::WorkExhausted
-            | Cause::NestedStopped
-            | Cause::ResultCapacityExceeded
-            | Cause::WorkerFailed
-            | Cause::ScratchCapacityExceeded
-            | Cause::UncheckedCustomKernel
-            | Cause::ExpectedIdentitiesNotCanonical
-            | Cause::MemoryOverflow => Denial::CanonicalWorkDenied,
-        },
+        Kind::Execution(cause) => Denial::Stopped(
+            crate::facade::primary_graph::relational_execution_kind(cause, None),
+        ),
         Kind::InvalidCandidateLimit
         | Kind::SnapshotUnavailable
         | Kind::IndexNotInstalled
         | Kind::WrongIndexKind
         | Kind::ExactGenerationUnavailable
         | Kind::CorruptIndexEntries
-        | Kind::StorageParityMismatch => Denial::RelationalObservationRejected,
+        | Kind::StorageParityMismatch => {
+            Denial::Refused(AuthorizationRefusal::RelationalObservationRejected)
+        }
     }
 }
 #[cfg(test)]

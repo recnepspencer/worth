@@ -241,6 +241,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     let current = runtime
         .read_truth()
         .read_snapshot(&current_snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     assert_eq!(
         current.get_entity(entity).and_then(read_entity_name),

@@ -127,6 +127,7 @@ fn live_retry(source: &RelationalRuntime, bytes: &[u8], target: &mut RelationalR
             .read_truth()
             .read_snapshot(&snapshot, &ExecutionRequest::serial(&host))
             .unwrap()
+            .unwrap()
             .entities()
             .len(),
         3

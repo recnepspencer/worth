@@ -7,21 +7,24 @@ struct Alias {
     parameters: Vec<(usize, String)>,
     ty: Type,
 }
+type AliasKey = (Vec<String>, String);
 
 #[derive(Default)]
 pub(super) struct Inventories {
     collections: BTreeSet<String>,
     renames: Vec<(String, String)>,
-    aliases: BTreeMap<String, Alias>,
+    aliases: BTreeMap<AliasKey, Alias>,
+    namespace: Vec<String>,
 }
 
 impl Inventories {
-    pub fn from_files(files: &[(&str, &[Item])]) -> Self {
+    pub fn from_files(files: &[(&[String], &str, &[Item])]) -> Self {
         let mut inventory = Self::default();
         inventory
             .collections
             .extend(["HashSet".into(), "HashMap".into()]);
-        for (_, items) in files {
+        for (namespace, _, items) in files {
+            inventory.namespace = namespace.to_vec();
             for item in *items {
                 inventory.visit_item(item);
             }
@@ -40,9 +43,54 @@ impl Inventories {
         inventory
     }
 
+    fn aliases(&self, path: &syn::Path, namespace: &[String]) -> Vec<(&AliasKey, &Alias)> {
+        let mut names: Vec<_> = path.segments.iter().map(|s| s.ident.to_string()).collect();
+        let Some(name) = names.pop() else {
+            return Vec::new();
+        };
+        let unqualified = names.is_empty();
+        let mut base = namespace.to_vec();
+        let anchored = names
+            .first()
+            .is_some_and(|n| matches!(n.as_str(), "crate" | "self" | "super"));
+        if names.first().is_some_and(|n| n == "crate") {
+            base.clear();
+            names.remove(0);
+        } else if names.first().is_some_and(|n| n == "self") {
+            names.remove(0);
+        }
+        while names.first().is_some_and(|n| n == "super") {
+            base.pop();
+            names.remove(0);
+        }
+        loop {
+            let mut candidate = base.clone();
+            candidate.extend(names.iter().cloned());
+            if let Some(alias) = self.aliases.get_key_value(&(candidate, name.clone())) {
+                return vec![alias];
+            }
+            if anchored || base.is_empty() {
+                break;
+            }
+            base.pop();
+        }
+        // A `use` can bring a sibling's alias here. Preserve scoped shadowing,
+        // then conservatively examine every declaration with this bare name.
+        if unqualified {
+            self.aliases
+                .iter()
+                .filter(|(key, _)| key.1 == name)
+                .collect()
+        } else {
+            Vec::new()
+        }
+    }
+
     pub fn derives_members<'a>(
         &self,
         attributes: &[syn::Attribute],
+        namespace: &[String],
+        generics: &syn::Generics,
         fields: impl IntoIterator<Item = &'a Type>,
         type_ids: &BTreeSet<String>,
     ) -> bool {
@@ -65,7 +113,11 @@ impl Inventories {
         let mut visitor = Members {
             inventory: self,
             type_ids,
-            parameters: BTreeSet::new(),
+            parameters: generics
+                .type_params()
+                .map(|p| p.ident.to_string())
+                .collect(),
+            namespace: namespace.to_vec(),
             expanding: BTreeSet::new(),
             found: false,
         };
@@ -77,6 +129,7 @@ impl Inventories {
 }
 
 impl<'ast> Visit<'ast> for Inventories {
+    fn visit_item_mod(&mut self, _: &'ast syn::ItemMod) {}
     fn visit_use_tree(&mut self, tree: &'ast syn::UseTree) {
         if let syn::UseTree::Rename(rename) = tree {
             self.renames
@@ -99,7 +152,7 @@ impl<'ast> Visit<'ast> for Inventories {
             })
             .collect();
         self.aliases.insert(
-            item.ident.to_string(),
+            (self.namespace.clone(), item.ident.to_string()),
             Alias {
                 parameters,
                 ty: (*item.ty).clone(),
@@ -112,7 +165,8 @@ struct Members<'a> {
     inventory: &'a Inventories,
     type_ids: &'a BTreeSet<String>,
     parameters: BTreeSet<String>,
-    expanding: BTreeSet<String>,
+    expanding: BTreeSet<AliasKey>,
+    namespace: Vec<String>,
     found: bool,
 }
 
@@ -121,7 +175,12 @@ impl<'ast> Visit<'ast> for Members<'_> {
         if self.found {
             return;
         }
+        let mut prefix = syn::Path {
+            leading_colon: path.path.leading_colon,
+            segments: Default::default(),
+        };
         for segment in &path.path.segments {
+            prefix.segments.push(segment.clone());
             let name = segment.ident.to_string();
             let arguments = match &segment.arguments {
                 PathArguments::AngleBracketed(args) => Some(&args.args),
@@ -132,8 +191,9 @@ impl<'ast> Visit<'ast> for Members<'_> {
                     self.found |= contains_identity(key, self.type_ids, &self.parameters);
                 }
             }
-            if let Some(alias) = self.inventory.aliases.get(&name) {
-                if self.expanding.insert(name.clone()) {
+            for (key, alias) in self.inventory.aliases(&prefix, &self.namespace) {
+                if self.expanding.insert(key.clone()) {
+                    let saved_namespace = std::mem::replace(&mut self.namespace, key.0.clone());
                     let saved = self.parameters.clone();
                     for (index, name) in &alias.parameters {
                         let identity = arguments
@@ -149,7 +209,8 @@ impl<'ast> Visit<'ast> for Members<'_> {
                     }
                     self.visit_type(&alias.ty);
                     self.parameters = saved;
-                    self.expanding.remove(&name);
+                    self.namespace = saved_namespace;
+                    self.expanding.remove(key);
                 }
             }
         }

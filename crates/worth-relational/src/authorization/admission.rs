@@ -11,6 +11,7 @@ pub trait RelationalAuthorizationObservationAdmission {
 
 #[derive(Debug, Eq, PartialEq)]
 pub enum RelationalAuthorizationBudgetedObservationStop<Stop> {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     Native(RelationalAuthorizationObservationDenial),
     Admission(Stop),
     AccountingOverflow,
@@ -102,6 +103,9 @@ pub(super) fn legacy_stop(
     stop: RelationalAuthorizationBudgetedObservationStop<Infallible>,
 ) -> RelationalAuthorizationObservationDenial {
     match stop {
+        RelationalAuthorizationBudgetedObservationStop::Execution(cause) => {
+            RelationalAuthorizationObservationDenial::Execution(cause)
+        }
         RelationalAuthorizationBudgetedObservationStop::Native(denial) => denial,
         RelationalAuthorizationBudgetedObservationStop::Admission(impossible) => {
             match impossible {}
@@ -112,5 +116,15 @@ pub(super) fn legacy_stop(
         RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired => {
             RelationalAuthorizationObservationDenial::SnapshotUnavailable
         }
+    }
+}
+
+pub(super) struct RequestObservation<'request, 'execution, 'authority>(
+    pub(super) &'request worth_execution::ExecutionRequest<'execution, 'authority>,
+);
+impl RelationalAuthorizationObservationAdmission for RequestObservation<'_, '_, '_> {
+    type Stop = crate::execution::RelationalExecutionDenialCause;
+    fn prepare(&mut self, _: u64, _: u64) -> Result<(), Self::Stop> {
+        self.0.consult().map_err(Into::into)
     }
 }

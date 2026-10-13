@@ -1,10 +1,12 @@
 mod composition;
-mod computation;
+pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
 mod contracts;
 mod execution_denial;
 mod partitioned_computation;
 mod producer;
+pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
+pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
 mod request_execution;
 mod setup;
 
@@ -18,7 +20,7 @@ pub use computation::{
     WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
     WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
     WorthQueryManagedComputationPrepared, WorthQueryManagedComputationResourceDenial,
-    WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
+    WorthQueryMemberExecution, WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
 };
 pub use conditional::{
     WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
@@ -73,8 +75,6 @@ pub use producer::{
     WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
 pub use request_execution::query_test_execution_authority_for_test;
-#[cfg(test)]
-pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;
 pub(in crate::domain_computation::primary_graph) use request_execution::QueryRequestExecution;
 pub use request_execution::{
     bound_advancement_requests_on_this_thread_for_test,
@@ -93,16 +93,27 @@ pub(in crate::domain_computation) use partitioned_computation::observe_discarded
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
 pub(in crate::domain_computation::primary_graph) use request_execution::{
-    with_serial_host_advancement, with_world_advancement,
+    advancement_denial, with_serial_host_advancement, with_world_advancement,
 };
 
 pub use request_execution::{
-    advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest,
 };
 
 #[cfg(test)]
-pub(crate) use request_execution::{with_test_advancement, TestHostRequest};
+pub(crate) use request_execution::{
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
+};
 
 pub use request_execution::with_bootstrap_advancement;
 
 pub use request_execution::WorthQueryBootstrapAdvancementPhase;
+
+pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
+pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;
+
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use request_execution::test_policy;

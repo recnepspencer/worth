@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
 pub(crate) fn ready_read_capacity_preserves_completion(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
@@ -61,7 +62,7 @@ pub(crate) fn ready_read_capacity_preserves_completion(
     assert_eq!(
         cause.kind(),
         worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(
-            WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted
+            AdmissionRefusal::ObservationCapacityExhausted
         ),
     );
     assert_eq!(

@@ -1,5 +1,6 @@
 //! scope revocation after product admission denies before projection.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn scope_revocation_after_product_admission_denies_before_projection() {
@@ -96,7 +97,7 @@ fn scope_revocation_after_product_admission_denies_before_projection() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationOneShotDenialKind::Authorization(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
         )
     );
     assert!(!basis_is_live(&world, &basis));

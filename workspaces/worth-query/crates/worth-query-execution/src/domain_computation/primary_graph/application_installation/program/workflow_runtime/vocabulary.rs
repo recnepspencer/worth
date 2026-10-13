@@ -7,6 +7,7 @@
 //! host, the installed specs and the signing owner together, so a request can
 //! never pair one host's vocabulary with another host's runtime.
 
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec, application_schema::ApplicationSchema,
@@ -84,18 +85,25 @@ where
     > {
         let phase_request = phase
             .execution_request_for(&self.runtime.product_runtime)
-            .map_err(|_| crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignPhase)?;
+            .map_err(|_| {
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignPhase,
+                )
+            })?;
         let execution = &phase_request;
-        Ok(
-            match self
-                .runtime
-                .on_branch(branch)
-                .select_with_request(execution)
-            {
-                Ok(selected) => self.workflow_spec_for(&selected),
-                Err(_) => self.initial,
-            },
-        )
+        match self
+            .runtime
+            .on_branch(branch)
+            .select_with_request(execution)
+        {
+            Ok(selected) => Ok(self.workflow_spec_for(&selected)),
+            Err(cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_)) => {
+                Err(cause)
+            }
+            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_)) => {
+                Ok(self.initial)
+            }
+        }
     }
 
     pub const fn authentication_owner(

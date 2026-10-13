@@ -199,7 +199,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    crate::domain_computation::primary_graph::with_test_advancement(|_active_phase| {
+    {
         use crate::domain_computation::primary_graph::bootstrap_publication::{
             commit_refusals::work_refusal, execution_refusals::isolated,
         };
@@ -222,7 +222,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                 let kind = crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, denial.partition_identity).unwrap();
                 for stage in [Stage::Idempotency, Stage::InvariantExecution] {
                     let application =
-                        provider_session_kind_denied(kind, stage, "the refusing owner");
+                        provider_session_execution_denied(Ok(kind), stage, "the refusing owner");
                     assert_eq!(
                         application.kind(),
                         Application::ExecutionResource {
@@ -243,7 +243,7 @@ fn real_pending_refusal_keeps_idempotency_category_stage_and_evidence() {
                 }
             },
         );
-    });
+    }
 }
 
 #[test]
@@ -313,7 +313,7 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
         policy_ancestor: None,
     };
     assert_eq!(denial.execution_denial_cause(), Some(Ok(cause)));
-    let earlier = provider_session_kind_denied(cause, Stage::Idempotency, error.detail())
+    let earlier = provider_session_execution_denied(Ok(cause), Stage::Idempotency, error.detail())
         .with_provider_session_failure(failure);
     assert_eq!(earlier.kind(), denial.kind());
     assert_eq!(
@@ -342,4 +342,20 @@ fn native_cause_context_and_commit_log_survive_application_kind_mapping() {
     assert_eq!(denial.stage(), Stage::ProviderCommit);
     assert_eq!(denial.detail(), Some(error.detail().as_str()));
     assert_eq!(denial.native_preparation_error(), Some(&error));
+}
+
+#[test]
+fn read_fold_checked_session_read_stop_is_the_commit_denial_cause() {
+    use crate::domain_computation::{
+        WorthQueryProviderSessionControlStopKind as Control,
+        WorthQueryProviderSessionFailure as Failure,
+        WorthQueryProviderSessionProtocolStage as Protocol,
+    };
+    for stop in [Control::Cancelled, Control::TimedOut] {
+        let failure =
+            Failure::checked_read_stopped(Err(stop), Protocol::Commit, "native read stopped");
+        let denial = super::provider_session_denied(failure);
+        assert_eq!(denial.execution_denial_cause(), Some(Err(stop)));
+        assert_eq!(denial.stage(), super::Stage::ProviderCommit);
+    }
 }

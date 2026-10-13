@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::num::NonZeroUsize;
 use std::time::Duration;
 
@@ -21,6 +22,7 @@ mod graph_work_capacity;
 mod identity_convergence;
 mod lifecycle;
 mod lifecycle_mutations;
+mod observed_source_fixture;
 mod optional_result_presence;
 mod ordering_support;
 mod planning_budget;
@@ -30,6 +32,7 @@ mod root_selection;
 mod runtime_support;
 mod scope_liveness;
 mod shared_basis;
+pub(in crate::domain_computation::primary_graph) use observed_source_fixture::observed_account_source;
 
 fn installed_query(
     world: &super::fixture::AuthorizationWorld,
@@ -324,7 +327,7 @@ fn mapped_stranger_cannot_admit_a_valid_foreign_account_scope() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
-            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+            crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied),
         )
     );
 }

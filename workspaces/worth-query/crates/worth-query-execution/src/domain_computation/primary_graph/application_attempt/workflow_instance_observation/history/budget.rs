@@ -67,7 +67,7 @@ impl HistoryReconstructionCharge {
         let aspect = locator.aspect().aspect_key();
         runtime
             .read_truth()
-            .project_snapshot(snapshot, execution)
+            .project_snapshot(snapshot)
             .ok_or_else(|| denial("history reconstruction snapshot is unavailable"))?
             .entity_record_with_projection_scope(
                 execution,
@@ -87,6 +87,12 @@ impl HistoryReconstructionCharge {
                     }))
                 },
             )
+            .map_err(|cause| {
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                    cause,
+                    "authoritative observation",
+                )
+            })?
             .ok_or_else(|| denial("history reconstruction record is unavailable"))?
     }
 

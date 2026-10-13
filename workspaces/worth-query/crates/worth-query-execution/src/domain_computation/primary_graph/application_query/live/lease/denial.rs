@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::{
     application_query::ApplicationQueryLiveCauseBinding, application_schema::ApplicationSchema,
 };
@@ -50,6 +51,9 @@ where
         denial: WorthQueryApplicationQueryAdmissionDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         match denial.kind() {
+            WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind) => {
+                self.execution_denied_outcome(kind)
+            }
             WorthQueryApplicationQueryAdmissionDenialKind::Cancelled => self.cancelled_outcome(),
             WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded => {
                 self.deadline_exceeded_outcome()
@@ -73,12 +77,42 @@ where
             | WorthQueryApplicationQueryAdmissionDenialKind::DisclosureAuthorizationMismatch
             | WorthQueryApplicationQueryAdmissionDenialKind::InternalComputationDenied => {
                 let denial = WorthQueryOperationAuthorizationDenial::new(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     self.query.name(),
                 );
                 self.authorization_denied_outcome(denial)
             }
-            _ => WorthQueryApplicationLiveOutcome::Unavailable,
+            WorthQueryApplicationQueryAdmissionDenialKind::InstalledQuery(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::BasisUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::WrongProviderBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::ExpiredBasis
+            | WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::BranchMaterializationSuspended
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignHistoricalReceipt
+            | WorthQueryApplicationQueryAdmissionDenialKind::RuntimeSupportUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::RetentionCapacityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::RetentionIdentityExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::ForeignContinuation
+            | WorthQueryApplicationQueryAdmissionDenialKind::StaleContinuation
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationParameterMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationScopeMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationProviderMismatch
+            | WorthQueryApplicationQueryAdmissionDenialKind::ContinuationPageWidthUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::LaneUnsupported
+            | WorthQueryApplicationQueryAdmissionDenialKind::DisclosureContractInvalid
+            | WorthQueryApplicationQueryAdmissionDenialKind::Parameter(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded
+            | WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted
+            | WorthQueryApplicationQueryAdmissionDenialKind::CanonicalWorkDenied
+            | WorthQueryApplicationQueryAdmissionDenialKind::GraphReadPlan(_)
+            | WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable
+            | WorthQueryApplicationQueryAdmissionDenialKind::ActiveSnapshotCapacityExhausted { .. }
+            | WorthQueryApplicationQueryAdmissionDenialKind::ExecutionShapeUnsupported => WorthQueryApplicationLiveOutcome::Unavailable,
         }
     }
 
@@ -98,6 +132,9 @@ where
                 self.authorization_denied_outcome(authorization)
             }
             WorthQueryAuthorizedApplicationReadDenial::Read(read) => match read.kind() {
+                WorthQueryApplicationReadExecutionDenialKind::ExecutionRequest(kind) => {
+                    self.execution_denied_outcome(kind)
+                }
                 WorthQueryApplicationReadExecutionDenialKind::Cancelled => self.cancelled_outcome(),
                 WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded => {
                     self.deadline_exceeded_outcome()
@@ -117,7 +154,18 @@ where
                     .acknowledge_cause_denial(
                         WorthQueryApplicationLiveCauseDenialKind::ResultShapeUnavailable,
                     ),
-                _ => WorthQueryApplicationLiveOutcome::Unavailable,
+                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable
+                | WorthQueryApplicationReadExecutionDenialKind::PredicateLookupOverflow
+                | WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable
+                | WorthQueryApplicationReadExecutionDenialKind::ResultLimitExceeded
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationIndexUnavailable
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationBoundaryRejected
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationGenerationChanged
+                | WorthQueryApplicationReadExecutionDenialKind::ContinuationPageWidthInvalid
+                | WorthQueryApplicationReadExecutionDenialKind::ResultBufferLimitExceeded
+                | WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded => {
+                    WorthQueryApplicationLiveOutcome::Unavailable
+                }
             },
             WorthQueryAuthorizedApplicationReadDenial::Session => {
                 WorthQueryApplicationLiveOutcome::Unavailable
@@ -129,26 +177,72 @@ where
         &mut self,
         denial: WorthQueryOperationAuthorizationDenial,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::AuthorizationDenied(
-            Box::new(denial),
-        ))
-    }
-
-    fn cancelled_outcome(&mut self) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-            WorthQueryApplicationLiveOutcome::Cancelled
-        } else {
-            WorthQueryApplicationLiveOutcome::Unavailable
+        match denial.kind() {
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Ok(kind)) => {
+                self.execution_denied_outcome(kind)
+            }
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )) => self.cancelled_outcome(),
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )) => self.deadline_exceeded_outcome(),
+            WorthQueryOperationAuthorizationDenialKind::Refused(_) => self
+                .acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::AuthorizationDenied(
+                    Box::new(denial),
+                )),
         }
     }
 
-    fn deadline_exceeded_outcome(
+    /// Ends this lease with the read's own request cause, retaining any failed termination.
+    pub fn end_with_read_stop(
+        &mut self,
+        cause: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        match cause {
+            Ok(kind) => self.execution_denied_outcome(kind),
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => {
+                self.cancelled_outcome()
+            }
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => {
+                self.deadline_exceeded_outcome()
+            }
+        }
+    }
+
+    pub(super) fn execution_denied_outcome(
+        &mut self,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        self.terminate_stopped_read();
+        WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
+    }
+
+    pub(super) fn cancelled_outcome(
         &mut self,
     ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
-        if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
-            WorthQueryApplicationLiveOutcome::DeadlineExceeded
-        } else {
-            WorthQueryApplicationLiveOutcome::Unavailable
+        self.terminate_stopped_read();
+        WorthQueryApplicationLiveOutcome::Cancelled
+    }
+
+    pub(super) fn deadline_exceeded_outcome(
+        &mut self,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        self.terminate_stopped_read();
+        WorthQueryApplicationLiveOutcome::DeadlineExceeded
+    }
+
+    pub(super) fn terminate_stopped_read(&mut self) {
+        if !self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
+            self.termination_failed = true;
         }
+    }
+
+    /// Whether ending this lease after a stopped read also failed.
+    pub fn termination_failed(&self) -> bool {
+        self.termination_failed
     }
 }

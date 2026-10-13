@@ -236,7 +236,7 @@ impl<Schema: TopologySchemaBinding> PositiveTurnRule<Schema> {
     }
 }
 
-const PLANAR_CANDIDATE_WORK: u64 = 1;
+pub(crate) const PLANAR_CANDIDATE_WORK: u64 = 1;
 
 fn insert_distinct<T: PartialEq>(
     values: &mut Vec<T>,

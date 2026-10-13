@@ -1,5 +1,10 @@
 //! Exact prior-output checks before a producer may omit its handler.
 
+mod owned;
+mod refusal;
+pub(in crate::domain_computation::primary_graph) use owned::OwnedInputCutoffDecision;
+pub(in crate::domain_computation::primary_graph) use refusal::InputCutoffVerificationStop;
+
 use worth_relational::facade::{
     mvcc::CompanionPreflightStop,
     runtime::{PositionedRelationalSnapshot, RelationalRuntime},
@@ -55,24 +60,6 @@ pub(in crate::domain_computation::primary_graph) enum InputCutoffDecision<'selec
         context: PreparedDecisionReuseContext,
     },
     Reuse(VerifiedInputCutoff<'selected>),
-}
-
-#[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum InputCutoffVerificationStop {
-    Admission(CompanionPreflightStop),
-    WorkExhausted,
-    CapacityExhausted,
-    PendingUpstream,
-    PendingOutput(std::sync::Arc<super::super::RecordedSettlementIdentity>),
-    CurrentnessRaced,
-    SelectedSourceUnavailable,
-    SelectedSourceMismatch,
-}
-
-impl From<CompanionPreflightStop> for InputCutoffVerificationStop {
-    fn from(stop: CompanionPreflightStop) -> Self {
-        Self::Admission(stop)
-    }
 }
 
 struct VerifiedDependencies {
@@ -222,6 +209,9 @@ impl RetainedInputCutoffCandidate {
                     Err(ConsumedOutputVerificationStop::CapacityExhausted) => {
                         return Err(InputCutoffVerificationStop::CapacityExhausted);
                     }
+                    Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+                        return Err(InputCutoffVerificationStop::Execution(cause))
+                    }
                     Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
                         return Err(InputCutoffVerificationStop::Admission(
                             CompanionPreflightStop::Interrupted(event),
@@ -319,13 +309,16 @@ impl RetainedInputCutoffCandidate {
             Err(ConsumedOutputVerificationStop::WorkExhausted) => {
                 return Err(InputCutoffVerificationStop::WorkExhausted);
             }
+            Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+                return Err(InputCutoffVerificationStop::Execution(cause))
+            }
             Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
                 return Err(InputCutoffVerificationStop::Admission(
                     CompanionPreflightStop::Interrupted(event),
                 ));
             }
         }
-        if !witness.unchanged_in(execution, runtime, snapshot, admission)? {
+        if !witness.unchanged_in(runtime, snapshot, admission)? {
             return Ok(None);
         }
         Ok(Some(VerifiedDependencies {
@@ -335,65 +328,10 @@ impl RetainedInputCutoffCandidate {
     }
 }
 
-/// Whether the marked facts, or the full-verification prefix, still permit
-/// reuse. An exhausted currentness allowance proves nothing about the prior
-/// output, so it answers `false` and the demand executes fresh instead of
-/// stopping; every other stop stays a stop.
-fn marked_facts_permit_reuse<'fact>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    currentness: &mut InvalidationEditAdmission,
-) -> Result<bool, InputCutoffVerificationStop> {
-    match facts_are_current(execution, facts, runtime, snapshot, currentness) {
-        Ok(current) => Ok(current),
-        Err(
-            InputCutoffVerificationStop::WorkExhausted
-            | InputCutoffVerificationStop::Admission(
-                CompanionPreflightStop::WorkExhausted { .. }
-                | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. },
-            ),
-        ) => Ok(false),
-        Err(stop) => Err(stop),
-    }
-}
-
-/// Re-verifies marked facts, or the full-verification prefix, on the
-/// host-bounded source-currentness allowance.
-fn facts_are_current<'fact>(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    currentness: &mut InvalidationEditAdmission,
-) -> Result<bool, InputCutoffVerificationStop> {
-    for fact in facts {
-        currentness.charge_external_work(1)?;
-        if !fact_is_current(execution, fact, runtime, snapshot, currentness)? {
-            return Ok(false);
-        }
-    }
-    Ok(true)
-}
-
-fn fact_is_current(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    fact: &WorthQueryApplicationObservedFact,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    admission: &mut InvalidationEditAdmission,
-) -> Result<bool, InputCutoffVerificationStop> {
-    match fact.source_currentness_in(runtime, execution, snapshot, admission)? {
-        Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
-        Err(WorthQuerySourceCurrentnessFailure::Unavailable) => Ok(false),
-        Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
-            Err(InputCutoffVerificationStop::WorkExhausted)
-        }
-    }
-}
-
 mod matched_roots;
 mod pending_upstream;
 #[cfg(test)]
 mod tests;
+
+mod source_facts;
+use source_facts::{facts_are_current, marked_facts_permit_reuse};

@@ -23,6 +23,7 @@ use worth_relational::facade::snapshots::SnapshotHandle;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum ObservationError {
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     SnapshotUnavailable,
     BranchBasis(worth_relational::facade::branch::RelationalBranchBasisDenial),
     UnknownBranch(worth_relational::facade::history::BranchId),
@@ -84,6 +85,7 @@ pub(crate) fn observe_observation(
     let view = runtime
         .read_truth()
         .read_observation(execution, observation)
+        .map_err(ObservationError::Execution)?
         .map_err(ObservationError::BranchBasis)?;
     let schema = runtime
         .read_truth()
@@ -115,7 +117,11 @@ pub(crate) fn observe_snapshot(
     {
         return Err(ObservationError::SnapshotUnavailable);
     }
-    let Some(view) = runtime.read_truth().read_snapshot(snapshot, execution) else {
+    let Some(view) = runtime
+        .read_truth()
+        .read_snapshot(snapshot, execution)
+        .map_err(ObservationError::Execution)?
+    else {
         return Err(ObservationError::SnapshotUnavailable);
     };
     let schema = observe_schema_version(runtime, snapshot)?;

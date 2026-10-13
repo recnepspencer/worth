@@ -72,7 +72,12 @@ pub enum WorthQueryConditionalExecutionCause {
         >,
     },
     /// Settlement remains owed after this typed publication refusal.
-    SettlementExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    SettlementExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// The product branch head changed.
     ProductHeadChanged,
     /// The operation produced no effect for this reason.

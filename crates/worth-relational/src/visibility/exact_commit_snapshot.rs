@@ -4,6 +4,7 @@ use crate::snapshots::data::{SnapshotHandle, SnapshotReadPolicy};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalRetainedCommitSnapshotDenialKind {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     ForeignRuntime,
     VersionUnavailable,
     BranchMismatch,

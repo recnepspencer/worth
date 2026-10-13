@@ -48,4 +48,5 @@ pub(crate) use query_locus_projection::{
 };
 pub use view::VisibilityProjectionView;
 
+mod record_projections;
 pub(crate) use streamed_basis_reads::ProjectionRecordSource;

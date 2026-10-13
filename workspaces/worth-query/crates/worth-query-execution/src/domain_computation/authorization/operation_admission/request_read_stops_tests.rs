@@ -29,6 +29,11 @@ impl<Schema, Operation, Input, Scope>
         for fact in [&principal, &authorization] {
             assert!(fact.remains_equal_in(execution, runtime, snapshot).unwrap());
         }
+        crate::test_read_stops::every_consult(
+            |request| decisions[0].remains_equal_in(request, runtime, snapshot),
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
+        );
         source.cancel();
         for fact in [&principal, &authorization] {
             assert_eq!(
@@ -39,7 +44,7 @@ impl<Schema, Operation, Input, Scope>
             );
         }
     }
-    pub(in crate::domain_computation) fn assert_cancelled_retained_activation_read(
+    pub(in crate::domain_computation) fn assert_retained_activation_read_at_every_consult(
         &self,
         runtime: &RelationalRuntime,
         execution: &ExecutionRequest<'_, '_>,

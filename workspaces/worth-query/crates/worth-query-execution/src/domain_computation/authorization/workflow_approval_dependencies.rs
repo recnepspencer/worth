@@ -89,8 +89,10 @@ impl WorthQueryWorkflowApprovalDependencies {
         current: &super::WorthQueryAuthorizationDecisionFact,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
-    ) -> Result<bool, worth_execution::MapKernelStop> {
-        execution.check_live()?;
+    ) -> Result<bool, super::WorthQueryOperationAuthorizationDenialKind> {
+        execution
+            .check_live()
+            .map_err(super::denial::kernel_stop_kind)?;
         let Some(expected) = &self.support else {
             return Ok(false);
         };

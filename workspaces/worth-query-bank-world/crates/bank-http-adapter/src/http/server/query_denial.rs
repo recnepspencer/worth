@@ -25,6 +25,9 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         | BankApplicationQueryDenial::PreviewSession(_)
         | BankApplicationQueryDenial::ContinuationExecution(_)
         | BankApplicationQueryDenial::LiveOpen(_) => unavailable(),
+        BankApplicationQueryDenial::PrincipalResolution(
+            worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(kind)),
+        ) => super::mutation_application::pending_execution_denial(kind),
         BankApplicationQueryDenial::PrincipalResolution(_) => stale(),
         BankApplicationQueryDenial::Limit(_) => exhausted(),
         BankApplicationQueryDenial::ProductSelection(kind) => product_selection(kind),
@@ -42,6 +45,7 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
 fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
     use BankProductSelectionDenialKind as Selection;
     match kind {
+        Selection::ReadExecution(stop) => super::mutation_application::pending_execution_stop(stop),
         Selection::ForeignPhase => internal_denied(),
         Selection::ForeignOwner
         | Selection::RetiredBranch
@@ -74,6 +78,9 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
 fn admission(kind: BankApplicationQueryAdmissionDenialKind) -> BankHttpDenial {
     use BankApplicationQueryAdmissionDenialKind as Admission;
     match kind {
+        Admission::ExecutionRequest(kind) => {
+            super::mutation_application::pending_execution_denial(kind)
+        }
         Admission::Authorization(kind) => authorization_denial(kind),
         Admission::Cancelled => cancelled(),
         Admission::DeadlineExceeded => deadline(),
@@ -180,6 +187,10 @@ fn projection(kind: BankApplicationProjectionDenialKind) -> BankHttpDenial {
 fn entity(kind: BankEntityResolutionDenialKind) -> BankHttpDenial {
     use BankEntityResolutionDenialKind as Entity;
     match kind {
+        Entity::ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, .. }) => exhausted(),
+        Entity::ExecutionRequest(kind) => {
+            super::mutation_application::pending_execution_denial(kind)
+        }
         Entity::ForeignPhase => internal_denied(),
         Entity::Cancelled => cancelled(),
         Entity::DeadlineExceeded => deadline(),
@@ -211,6 +222,7 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::CorrespondenceDelivery(_)
         | Settlement::ProductDelivery(_) => unavailable(),
         Settlement::ExecutionRequest(cause) => super::advancement_denial::advancement(cause),
+        Settlement::RelationalExecution(cause) => super::relational_execution_denial::denial(cause),
         Settlement::SourceQueryInstallation(_) => unavailable(),
         Settlement::SourcePrincipal(_) => stale(),
         Settlement::SourceScope(kind) => entity(kind),
@@ -274,3 +286,9 @@ const fn exhausted() -> BankHttpDenial {
 const fn internal_denied() -> BankHttpDenial {
     BankHttpDenial::new(Kind::InternalDenied, Next::None)
 }
+
+#[cfg(test)]
+mod entity_stop_tests;
+#[cfg(test)]
+#[path = "query_denial/request_stop_tests.rs"]
+mod request_stop_tests;

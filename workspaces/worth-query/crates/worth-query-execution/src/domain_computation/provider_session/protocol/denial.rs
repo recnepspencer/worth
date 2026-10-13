@@ -79,6 +79,14 @@ pub struct WorthQueryProviderSessionFailure {
     counters: WorthQueryProviderSessionProtocolCounters,
     allocation: Option<worth_execution::ExecutionAllocationDenial>,
     native_preparation: Option<std::sync::Arc<native_preparation::NativePreparationFailure>>,
+    checked_read: Option<
+        Box<
+            Result<
+                WorthQueryProviderSessionDenialKind,
+                super::WorthQueryProviderSessionControlStopKind,
+            >,
+        >,
+    >,
 }
 
 impl WorthQueryProviderSessionFailure {
@@ -96,7 +104,38 @@ impl WorthQueryProviderSessionFailure {
             counters,
             allocation: None,
             native_preparation: None,
+            checked_read: None,
         }
+    }
+
+    pub(in crate::domain_computation) fn checked_read_stopped(
+        stop: Result<
+            WorthQueryProviderSessionDenialKind,
+            super::WorthQueryProviderSessionControlStopKind,
+        >,
+        stage: WorthQueryProviderSessionProtocolStage,
+        detail: impl Into<String>,
+    ) -> Self {
+        let mut failure = Self::new(
+            stop.unwrap_or(WorthQueryProviderSessionDenialKind::ProviderRejected),
+            stage,
+            detail,
+            Default::default(),
+        );
+        failure.checked_read = Some(Box::new(stop));
+        failure
+    }
+
+    /// Exact request stop retained while the protocol holds publication custody.
+    pub fn checked_read_stop(
+        &self,
+    ) -> Option<
+        Result<
+            WorthQueryProviderSessionDenialKind,
+            super::WorthQueryProviderSessionControlStopKind,
+        >,
+    > {
+        self.checked_read.as_deref().copied()
     }
 
     pub(in crate::domain_computation) fn allocation_denied(

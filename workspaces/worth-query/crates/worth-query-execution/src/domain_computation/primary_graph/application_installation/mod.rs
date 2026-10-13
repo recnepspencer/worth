@@ -24,12 +24,13 @@ pub use program::{
     WorthQueryApplicationPreviewRequest, WorthQueryApplicationPreviewSession,
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOutputAdvance, WorthQueryProgramOwner,
-    WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementReceipt,
-    WorthQueryReadmittedApplicationPreview, WorthQueryRecoveredProgramOutputSource,
-    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
-    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
-    WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
-    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
+    WorthQueryProgramRootDemand, WorthQueryProgramSupportRetirementFailure,
+    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
+    WorthQueryRecoveredProgramOutputSource, WorthQuerySelectedProgramOwner,
+    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
+    WorthQuerySupportedProgramHandle, WorthQueryUnpublishedProgramOutputSource,
+    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
+    WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 

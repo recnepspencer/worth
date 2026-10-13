@@ -45,7 +45,7 @@ impl QueryPreparationBudget<'_, '_, '_> {
 
 /// Interruption before preparation starts retains its canonical boundary and
 /// reports no executed work, active workers or allocated packet memory.
-pub(super) fn check_query_preparation_request(
+pub(super) fn consult_query_preparation_request(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), QueryReadExecutionStop> {
     execution

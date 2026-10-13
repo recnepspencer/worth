@@ -63,7 +63,7 @@ pub(super) fn relational_lookup_denial(
 ) -> WorthQueryApplicationReadExecutionDenial {
     use worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind as Kind;
     let kind = match denial.kind() {
-        Kind::Execution(cause) => return relational_cause_denial(cause, subject),
+        Kind::Execution(cause) => return relational_read_denial(cause, subject),
         Kind::InvalidCandidateLimit
         | Kind::SnapshotUnavailable
         | Kind::IndexNotInstalled
@@ -75,7 +75,7 @@ pub(super) fn relational_lookup_denial(
     read_execution_denial(kind, subject)
 }
 
-pub(super) fn relational_cause_denial(
+pub(in crate::domain_computation::primary_graph::application_query) fn relational_read_denial(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
     subject: impl Into<String>,
 ) -> WorthQueryApplicationReadExecutionDenial {

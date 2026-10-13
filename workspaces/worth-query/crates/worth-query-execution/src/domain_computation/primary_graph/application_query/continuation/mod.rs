@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::marker::PhantomData;
 
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
@@ -85,7 +86,7 @@ where
     {
         let request = match phase.execution_request_for(&self.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(WorthQueryApplicationContinuationDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+            Err(_) => return Err(WorthQueryApplicationContinuationDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         let execution = &request;
 

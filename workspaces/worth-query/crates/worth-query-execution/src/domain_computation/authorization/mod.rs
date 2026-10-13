@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 mod admission;
 mod application_commit_authorization;
 pub(in crate::domain_computation) mod application_disclosure;
@@ -13,6 +14,7 @@ mod capability_registry;
 mod capability_revalidation;
 mod capability_revocation_progression;
 mod decision_facts;
+pub(in crate::domain_computation) use decision_facts::AuthorizationCurrentnessStop;
 mod delegation_admission;
 mod delegation_progression;
 mod denial;
@@ -70,6 +72,7 @@ pub(in crate::domain_computation) use denial::WorthQueryAdmissionLapse;
 pub use denial::{
     WorthQueryApplicationAuthorizationExplanationCause, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialIdentity, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryOperationAuthorizationRefusalKind,
 };
 pub(in crate::domain_computation) use elevation_progression::{
     WorthQueryCurrentElevationSupport, WorthQueryElevationApprovalBinding,
@@ -104,7 +107,9 @@ fn authorization_denial(
     _detail: &'static str,
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         subject,
     )
 }

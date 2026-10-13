@@ -1,3 +1,4 @@
+mod verification_denial;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -99,7 +100,14 @@ where
         let selected = self
             .on_branch(source_read.product_branch())
             .select_with_request(execution)
-            .map_err(|_| denial(WorthQueryOutputDemandDenialKind::Superseded, ""))?;
+            .map_err(|cause| match cause {
+                cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                    WorthQueryOutputDemandDenial::product_selection(cause, "")
+                }
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                    denial(WorthQueryOutputDemandDenialKind::Superseded, "")
+                }
+            })?;
         admission
             .charge_external_work(4)
             .map_err(restoration_resource_denial)?;
@@ -198,7 +206,7 @@ where
                 relational.read_truth().positioned_snapshot(snapshot).ok(),
             )
         });
-        if !current.map_err(restoration_resource_denial)? {
+        if !current.map_err(verification_denial::from_stop)? {
             return Ok(None);
         }
         // Qualification runs only after original completeness/currentness has
@@ -361,14 +369,8 @@ pub(super) struct ReadmittedOutput {
 fn restoration_resource_denial(
     stop: worth_relational::facade::mvcc::CompanionPreflightStop,
 ) -> WorthQueryOutputDemandDenial {
-    use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
-    denial(
-        match stop {
-            Stop::PreparationMemoryExhausted { .. } | Stop::PreparationMemoryCounterOverflow => {
-                WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
-            }
-            _ => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        },
-        "",
+    crate::domain_computation::primary_graph::output_reuse::retained_fact_denial(
+        crate::domain_computation::primary_graph::output_reuse::preflight_stop(stop),
+        "selected demand projection unavailable",
     )
 }

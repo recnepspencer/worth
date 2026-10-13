@@ -21,34 +21,52 @@ pub struct FrontierFieldEqualityTruthReadLimitExceeded {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn bounded_entity_field_equals_for_frontier_at_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_ids: &BTreeSet<crate::identity::data::EntityId>,
         kind_id: crate::identity::data::KindId,
         field_locator: &AspectFieldLocator,
         expected: &AspectValue,
         version_id: crate::identity::data::VersionId,
         maximum_work_units: usize,
-    ) -> Result<BoundedFrontierFieldEqualityTruthRead, FrontierFieldEqualityTruthReadLimitExceeded>
-    {
-        let state = self.runtime.storage_access().current_edition();
-        ProjectionRecordReader::new(
-            self.runtime.current_version_id(),
-            &self.runtime.services.instrumentation,
-        )
-        .bounded_entity_field_equals_for_frontier_in_state(
-            &state,
-            &self.runtime.config.schema.registry,
-            || Ok::<_, std::convert::Infallible>(()),
-            entity_ids,
-            kind_id,
-            field_locator,
-            expected,
-            version_id,
-            maximum_work_units,
-        )
-        .map_err(|stop| match stop {
-            BoundedFrontierReadStop::Limit(limit) => limit,
-            BoundedFrontierReadStop::Admission(never) => match never {},
+    ) -> Result<
+        Result<BoundedFrontierFieldEqualityTruthRead, FrontierFieldEqualityTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+            let expected = AuthoritativeFieldComparisonKey::from_aspect_value(expected);
+            let state = self.runtime.storage_access().current_edition();
+            let mut matching_entity_ids = BTreeSet::new();
+            let mut entity_records_examined = 0_usize;
+            for entity_id in entity_ids {
+                charge_frontier_field_work(
+                    maximum_work_units,
+                    entity_records_examined,
+                    matching_entity_ids.len(),
+                )?;
+                entity_records_examined += 1;
+                let Some(record) = self
+                    .authoritative_entity_record_for_id_at_version(&state, *entity_id, version_id)
+                else {
+                    continue;
+                };
+                if record.kind.kind_id != kind_id
+                    || record.lifecycle != crate::storage::data::RecordLifecycleState::Live
+                    || entity_query_locus_comparison_key(&record, field_locator).as_ref()
+                        != Some(&expected)
+                {
+                    continue;
+                }
+                charge_frontier_field_work(
+                    maximum_work_units,
+                    entity_records_examined,
+                    matching_entity_ids.len(),
+                )?;
+                matching_entity_ids.insert(record.entity_id);
+            }
+            Ok(BoundedFrontierFieldEqualityTruthRead {
+                matching_entity_ids,
+                entity_records_examined,
+            })
         })
     }
 }

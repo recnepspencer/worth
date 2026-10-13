@@ -24,6 +24,7 @@ pub(super) fn visible_truth_for_branch(
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("read request remains live")
         .expect("owner-admitted branch snapshot remains readable");
     let record = read
         .get_entity(entity)

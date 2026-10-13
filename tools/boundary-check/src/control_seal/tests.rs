@@ -3,7 +3,7 @@ use std::fs;
 
 #[test]
 fn a_test_door_in_an_unlisted_file_is_sealed() {
-    let root = std::env::temp_dir().join(format!("unlisted-control-door-{}", std::process::id()));
+    let root = worth_harness::tooling::fixture_path::unique_path("unlisted-control-door");
     let owner = "workspaces/worth-query/crates/worth-query-execution/";
     let file = root.join(owner).join("src/unlisted.rs");
     fs::create_dir_all(file.parent().unwrap()).unwrap();
@@ -37,8 +37,7 @@ fn literal_macro_doors_and_crate_visible_doors_are_discovered() {
 
 #[test]
 fn parameterized_macro_doors_cannot_bypass_discovery() {
-    let root =
-        std::env::temp_dir().join(format!("parameterized-control-door-{}", std::process::id()));
+    let root = worth_harness::tooling::fixture_path::unique_path("parameterized-control-door");
     let file = root.join("crates/worth-execution/src/lib.rs");
     fs::create_dir_all(file.parent().unwrap()).unwrap();
     fs::write(
@@ -231,7 +230,8 @@ fn real_repository_has_no_unsealed_test_callers() {
     let (mut diagnostics, doors) = load(&root);
     println!("automatically discovered test doors: {}", doors.len());
     fs::write(
-        std::env::temp_dir().join("one-build-discovered-test-doors.json"),
+        worth_harness::tooling::fixture_path::unique_path("one-build-discovered-test-doors")
+            .with_extension("json"),
         serde_json::to_vec_pretty(&doors).unwrap(),
     )
     .unwrap();
@@ -250,7 +250,8 @@ fn real_repository_has_no_unsealed_test_callers() {
         );
     }
     fs::write(
-        std::env::temp_dir().join("one-build-shipping-sources.json"),
+        worth_harness::tooling::fixture_path::unique_path("one-build-shipping-sources")
+            .with_extension("json"),
         serde_json::to_vec_pretty(&shipping).unwrap(),
     )
     .unwrap();
@@ -320,3 +321,5 @@ fn raw_declarations_and_ordinary_references_share_a_seal() {
         2
     );
 }
+
+mod lane_71_callers;

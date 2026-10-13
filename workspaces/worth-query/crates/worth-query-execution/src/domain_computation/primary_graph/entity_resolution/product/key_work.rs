@@ -2,6 +2,7 @@ use super::{
     entity_denial, InvalidationEditAdmission, WorthQueryEntityResolutionDenial,
     WorthQueryEntityResolutionDenialKind,
 };
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 /// Fund the installed lookup's key comparisons and three candidate visits.
 pub(super) fn admit(
@@ -11,7 +12,7 @@ pub(super) fn admit(
 ) -> Result<(), WorthQueryEntityResolutionDenial> {
     let exhausted = || {
         entity_denial(
-            WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+            WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
             field,
         )
     };

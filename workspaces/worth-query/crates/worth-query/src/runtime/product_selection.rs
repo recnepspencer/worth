@@ -48,7 +48,7 @@ impl WorthQueryWorkspace {
             .with_advancement(|phase| {
                 let execution = phase
                     .checked_execution_request_for(&self.runtime.installed_product.world)
-                    .map_err(super::WorthQueryRuntimeError::Advancement)?;
+                    .map_err(super::WorthQueryRuntimeError::from)?;
                 Ok(body(&execution))
             })
             .map_err(super::WorthQueryRuntimeError::Advancement)?
@@ -67,7 +67,7 @@ impl WorthQueryWorkspace {
             .with_advancement(|phase| {
                 let execution = phase
                     .checked_execution_request_for(&world)
-                    .map_err(super::WorthQueryRuntimeError::Advancement)?;
+                    .map_err(super::WorthQueryRuntimeError::from)?;
                 Ok(body(&execution, self))
             })
             .map_err(super::WorthQueryRuntimeError::Advancement)?

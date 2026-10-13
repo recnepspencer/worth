@@ -333,6 +333,7 @@ where
         )
         .map_err(|_| subscription_capacity_denial(request.query.name()))?;
         Ok(WorthQueryApplicationLiveLease {
+            termination_failed: false,
             runtime: self,
             query: request.query,
             scope: request.scope,

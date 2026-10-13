@@ -1,23 +1,13 @@
-warning: unreachable statement
- --> tests/ui/branch_reference/fork_basis_cannot_retain.rs:6:5
-  |
-5 |     let runtime: &RelationalRuntime = todo!();
-  |                                       ------- any code following this expression is unreachable
-6 |     let basis: AdmittedRelationalForkSourceBasis = todo!();
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ unreachable statement
-  |
-  = note: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
-
 error[E0308]: mismatched types
- --> tests/ui/branch_reference/fork_basis_cannot_retain.rs:7:67
-  |
-7 |     let _ = runtime.history_authority().retain_version_for_replay(basis);
-  |                                         ------------------------- ^^^^^ expected `VersionId`, found `AdmittedRelationalForkSourceBasis`
-  |                                         |
-  |                                         arguments to this method are incorrect
-  |
+  --> tests/ui/branch_reference/fork_basis_cannot_retain.rs:11:47
+   |
+11 |         .retain_version_for_replay(execution, basis);
+   |          -------------------------            ^^^^^ expected `VersionId`, found `AdmittedRelationalForkSourceBasis`
+   |          |
+   |          arguments to this method are incorrect
+   |
 note: method defined here
- --> src/history/authority/replay_retention.rs
-  |
-  |     pub fn retain_version_for_replay(&self, version_id: crate::identity::data::VersionId) -> bool {
-  |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  --> src/history/authority/replay_retention.rs
+   |
+   |     pub fn retain_version_for_replay(
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Duration;
 
 use super::super::super::application_attempt::idempotency;
@@ -66,12 +67,16 @@ fn requester_and_conflicted_approver_cannot_enter_approval_progression() {
         (
             CapabilityElevationScenario::Active,
             "alice",
-            WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityAuthorizationMissing,
+            ),
         ),
         (
             CapabilityElevationScenario::ConflictedApprover,
             "bob",
-            WorthQueryOperationAuthorizationDenialKind::ConflictRuleMatched,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ConflictRuleMatched,
+            ),
         ),
     ] {
         let (world, request, _requested) = requested_world(scenario);

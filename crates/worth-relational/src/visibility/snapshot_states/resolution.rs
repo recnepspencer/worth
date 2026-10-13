@@ -3,9 +3,7 @@ use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary};
 use crate::visibility::cache_state::materialize_exact_state_for_basis;
 
-use super::{
-    build_visibility_state, read_view_from_snapshot_state, SnapshotState, VisibilitySnapshotBasis,
-};
+use super::{build_visibility_state, SnapshotState, VisibilitySnapshotBasis};
 
 pub(crate) struct ResolvedVisibilitySnapshot {
     pub(crate) handle: SnapshotHandle,
@@ -136,13 +134,12 @@ pub(crate) fn resolve_snapshot_inspection(
             pinned_relation_count: resolved.state.pinned_relation_count,
         });
     }
-    let read_view = read_view_from_snapshot_state(runtime, &resolved.state, &resolved.handle);
     Some(SnapshotInspectionSummary {
         branch_id: resolved.handle.branch_id,
         version_id: resolved.handle.version_id,
         root_id: resolved.state.basis.root_id(),
-        entity_count: read_view.entities.len(),
-        relation_count: read_view.relations.len(),
+        entity_count: resolved.state.pinned_entity_count,
+        relation_count: resolved.state.pinned_relation_count,
         pinned_entity_count: 0,
         pinned_relation_count: 0,
     })

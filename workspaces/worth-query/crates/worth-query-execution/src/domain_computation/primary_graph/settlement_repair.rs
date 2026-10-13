@@ -4,7 +4,12 @@
 #[derive(Debug)]
 pub enum WorthQueryApplicationSettlementRecoveryError {
     /// The execution owner refused settlement publication before effects.
-    ExecutionDenied(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    ExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// Relational could not make the settlement durable.
     Durability(worth_relational::facade::publication::DeferredPublicationSettlementError),
     /// The settlement does not match its performed publication, or publication

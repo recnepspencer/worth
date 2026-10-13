@@ -6,6 +6,9 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) fn map_ad
     stop: CompanionPreflightStop,
 ) -> ConsumedOutputVerificationStop {
     match stop {
+        CompanionPreflightStop::Execution(cause) => {
+            ConsumedOutputVerificationStop::Execution(cause)
+        }
         CompanionPreflightStop::WorkExhausted { .. }
         | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow => {
@@ -40,6 +43,9 @@ pub(super) fn map_verification_stop(
     stop: SettlementVerificationStop,
 ) -> ConsumedOutputVerificationStop {
     match stop {
+        SettlementVerificationStop::SourceRead(WorthQuerySourceCurrentnessFailure::Execution(
+            cause,
+        )) => ConsumedOutputVerificationStop::Execution(cause),
         SettlementVerificationStop::Admission(stop) => map_admission_stop(stop),
         SettlementVerificationStop::SourceRead(
             WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded,
@@ -101,6 +107,9 @@ pub(super) fn fact_is_current(
         .source_currentness_in(runtime, execution, snapshot, admission)
         .map_err(map_admission_stop)?
     {
+        Err(WorthQuerySourceCurrentnessFailure::Execution(cause)) => {
+            Err(ConsumedOutputVerificationStop::Execution(cause))
+        }
         Ok(movement) => Ok(movement.movement() == Movement::Unmoved),
         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded) => {
             Err(ConsumedOutputVerificationStop::WorkExhausted)

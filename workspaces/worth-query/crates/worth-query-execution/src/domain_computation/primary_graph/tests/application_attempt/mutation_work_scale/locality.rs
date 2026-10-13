@@ -65,18 +65,41 @@ fn run_locality(count: usize) -> LocalityRun {
     let world = installed_authorization_world(true);
     let installation = installation_start.elapsed();
     let population_start = Instant::now();
-    world
-        .application
-        .with_host_advancement(|phase| {
-            grow_unrelated_accounts(
-                &phase
-                    .execution_request_for(&world.application.product_runtime)
-                    .unwrap(),
-                &world,
-                count,
-            );
-        })
-        .expect("the fixture population owns its host call");
+    {
+        use crate::facade::primary_graph::{
+            bound_advancement_requests_on_this_thread_for_test as bound,
+            place_managed_computations_on_this_thread_for_test as place,
+            WorthQueryExecutionObservation, WorthQueryExecutionPlacementForTest as Placement,
+        };
+        let _controls = WorthQueryExecutionObservation::install_on_this_thread();
+        struct Restore(Placement, Option<worth_foundational::ExecutionBudget>);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                place(self.0);
+                bound(self.1);
+            }
+        }
+        let _restore = Restore(
+            place(Placement::Serial),
+            bound(Some(worth_foundational::ExecutionBudget::new(
+                NonZeroUsize::MIN,
+                64 * 1024 * 1024,
+                u64::MAX,
+            ))),
+        );
+        world
+            .application
+            .with_host_advancement(|phase| {
+                grow_unrelated_accounts(
+                    &phase
+                        .execution_request_for(&world.application.product_runtime)
+                        .unwrap(),
+                    &world,
+                    count,
+                );
+            })
+            .expect("the fixture population owns its host call");
+    }
     let population = population_start.elapsed();
 
     let request = live_scope();

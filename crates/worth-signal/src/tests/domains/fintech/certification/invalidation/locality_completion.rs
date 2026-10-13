@@ -1,12 +1,12 @@
 use crate::data::error::SignalError;
-use crate::facade::DiagnosticsTier;
+use crate::tests::domains::fintech::locality_resource_request::FinancialLocalityResourceRequest;
 use crate::tests::domains::fintech::world::{
-    compile_financial_locality_world_at_tier, FinancialLocalityScenario,
+    compile_financial_locality_world_with_policy, FinancialLocalityScenario,
     FinancialRestoreLifecycleEvidence, FinancialWorldDefinition, LocalityCaseContract,
     LocalityLane, LocalityScaleTuple,
 };
 
-use super::{verify_locality_case, FinancialLocalityCaseEvidence};
+use super::{verify_locality_case_with_admission, FinancialLocalityCaseEvidence};
 
 macro_rules! scenario_completion {
     ($name:ident) => {
@@ -56,6 +56,7 @@ pub(super) fn certify_locality_completions(
     seed: u64,
     lane: LocalityLane,
     cases: impl IntoIterator<Item = LocalityCaseContract>,
+    resources: FinancialLocalityResourceRequest,
 ) -> Result<FinancialLocalityCompletions, SignalError> {
     let cases = cases.into_iter().collect::<Vec<_>>();
     let sparse = SparseBookFanoutCompletion {
@@ -64,6 +65,7 @@ pub(super) fn certify_locality_completions(
             lane,
             &cases,
             FinancialLocalityScenario::SparseBookFanout,
+            resources,
         )?,
     };
     let partitioned = PartitionedCurveUniverseCompletion {
@@ -72,6 +74,7 @@ pub(super) fn certify_locality_completions(
             lane,
             &cases,
             FinancialLocalityScenario::PartitionedCurveUniverse,
+            resources,
         )?,
     };
     let convergent = ConvergentFactorBatchCompletion {
@@ -80,6 +83,7 @@ pub(super) fn certify_locality_completions(
             lane,
             &cases,
             FinancialLocalityScenario::ConvergentFactorBatch,
+            resources,
         )?,
     };
     let dense = DenseMarketCloseCompletion {
@@ -88,6 +92,7 @@ pub(super) fn certify_locality_completions(
             lane,
             &cases,
             FinancialLocalityScenario::DenseMarketClose,
+            resources,
         )?,
     };
     let churn = PortfolioDependencyChurnCompletion {
@@ -96,9 +101,10 @@ pub(super) fn certify_locality_completions(
             lane,
             &cases,
             FinancialLocalityScenario::PortfolioDependencyChurn,
+            resources,
         )?,
     };
-    let restore = certify_restore_family(seed, lane, &cases)?;
+    let restore = certify_restore_family(seed, lane, &cases, resources)?;
     Ok(FinancialLocalityCompletions {
         sparse,
         partitioned,
@@ -113,6 +119,7 @@ pub(super) fn certify_restore_family(
     seed: u64,
     lane: LocalityLane,
     cases: &[LocalityCaseContract],
+    resources: FinancialLocalityResourceRequest,
 ) -> Result<BranchRestoreLocalityReplayCompletion, SignalError> {
     let restore_cases = family_contracts(
         lane,
@@ -127,10 +134,10 @@ pub(super) fn certify_restore_family(
             let trace_count = definition.locality().unwrap().action_traces().len();
             for trace_index in 0..trace_count {
                 report_scheduled_case(lane, case, case_seed, trace_index);
-                restore_evidence.push(verify_locality_case(
+                restore_evidence.push(verify_locality_case_with_admission(
                     FinancialWorldDefinition::locality_case(case_seed, case),
                     trace_index,
-                    DiagnosticsTier::Operational,
+                    resources,
                     1,
                 )
                 .inspect_err(|error| {
@@ -140,9 +147,9 @@ pub(super) fn certify_restore_family(
                     );
                 })?);
             }
-            let mut compiled = compile_financial_locality_world_at_tier(
+            let mut compiled = compile_financial_locality_world_with_policy(
                 definition,
-                DiagnosticsTier::Operational,
+                resources,
             )
             .inspect_err(|error| {
                 eprintln!(
@@ -171,10 +178,11 @@ pub(super) fn certify_family(
     lane: LocalityLane,
     cases: &[LocalityCaseContract],
     scenario: FinancialLocalityScenario,
+    resources: FinancialLocalityResourceRequest,
 ) -> Result<Vec<FinancialLocalityCaseEvidence>, SignalError> {
     let mut evidence = Vec::new();
     for case in family_contracts(lane, cases, scenario)? {
-        evidence.extend(certify_contract(seed, case)?);
+        evidence.extend(certify_contract(seed, case, resources)?);
     }
     Ok(evidence)
 }
@@ -182,6 +190,7 @@ pub(super) fn certify_family(
 pub(super) fn certify_contract(
     seed: u64,
     case: LocalityCaseContract,
+    resources: FinancialLocalityResourceRequest,
 ) -> Result<Vec<FinancialLocalityCaseEvidence>, SignalError> {
     let lane = case.lane;
     let scenario = case.scenario();
@@ -191,10 +200,10 @@ pub(super) fn certify_contract(
         let trace_count = definition.locality().unwrap().action_traces().len();
         for trace_index in 0..trace_count {
             report_scheduled_case(lane, case, case_seed, trace_index);
-            evidence.push(verify_locality_case(
+            evidence.push(verify_locality_case_with_admission(
                     FinancialWorldDefinition::locality_case(case_seed, case),
                     trace_index,
-                    DiagnosticsTier::Operational,
+                    resources,
                     1,
                 )
                 .inspect_err(|error| {

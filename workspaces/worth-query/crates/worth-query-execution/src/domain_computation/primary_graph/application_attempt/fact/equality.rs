@@ -11,15 +11,19 @@ impl WorthQueryApplicationObservedFact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, super::super::WorthQueryApplicationAttemptDenial> {
-        execution
-            .check_live()
-            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
+        let check_request = || {
+            execution.consult().map_err(|stop| {
+                SelfDenial::query_read_denial(
+                    worth_relational::facade::runtime::QueryReadExecutionStop::Request(stop),
+                    "decision fact comparison",
+                )
+            })
+        };
+        check_request()?;
         let equal = match self {
-            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, execution, snapshot, *entity_id, *kind, *created_at, *deleted_at),
-            Self::SourceEntity { entity_id } => runtime
-                .read_truth()
-                .project_snapshot(snapshot, execution)
-                .is_some_and(|view| {
+            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, snapshot, *entity_id, *kind, *created_at, *deleted_at),
+            Self::SourceEntity { entity_id } => match runtime.read_truth().project_snapshot(snapshot) {
+                Some(view) => {
                     view.entity_record_with_projection_scope(execution,
                         *entity_id,
                         worth_relational::facade::runtime::ProjectionAspectScope::empty(),
@@ -29,8 +33,10 @@ impl WorthQueryApplicationObservedFact {
                                     == worth_relational::facade::storage::RecordLifecycleState::Live,
                             )
                         },
-                    ) == Some(true)
-                }),
+                    ).map_err(|cause| SelfDenial::relational_read_stopped(cause, "source entity comparison"))? == Some(true)
+                },
+                None => false,
+            },
             Self::SourceAspectRevision {
                 entity_id,
                 aspect,
@@ -40,10 +46,13 @@ impl WorthQueryApplicationObservedFact {
                 .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
                 == Some(*native_revision),
             Self::SourceFieldRevision { entity_id, locator, native_revision } =>
-                native_revision.is_some_and(|expected| {
-                    runtime.read_truth().project_snapshot(snapshot, execution)
-                        .and_then(|view| view.entity_field_revision(execution, *entity_id, locator)) == Some(expected)
-                }),
+                if let Some(expected) = native_revision {
+                    match runtime.read_truth().project_snapshot(snapshot) {
+                        Some(view) => view.entity_field_revision(execution, *entity_id, locator)
+                            .map_err(|cause| SelfDenial::relational_read_stopped(cause, "source field comparison"))? == Some(*expected),
+                        None => false,
+                    }
+                } else { false },
             Self::SourceAdjacencyRevision {
                 relation_kind,
                 anchor,
@@ -51,10 +60,8 @@ impl WorthQueryApplicationObservedFact {
                 native_revision,
                 comparison_work_limit,
                 ..
-            } => runtime
-                .read_truth()
-                .project_snapshot(snapshot, execution)
-                .is_some_and(|view| {
+            } => match runtime.read_truth().project_snapshot(snapshot) {
+                Some(view) => {
                     match view.bounded_adjacency_structural_revision(execution,
                         *anchor,
                         *relation_kind,
@@ -62,15 +69,19 @@ impl WorthQueryApplicationObservedFact {
                         *comparison_work_limit,
                     ) {
                         Ok(current) => current.revision() == *native_revision,
-                        // Equality needs an answer; an unpaid or unreadable
-                        // revision is not equal.
+                        Err(worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause)) =>
+                            return Err(SelfDenial::relational_read_stopped(cause, "source adjacency comparison")),
+                        // A missing basis or insufficient declared comparison
+                        // bound cannot prove equality. Request failures stay typed.
                         Err(
                             worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
                             | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::AnchorUnavailable
                             | worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::BasisUnavailable,
                         ) => false,
                     }
-                }),
+                },
+                None => false,
+            },
             Self::Entity {
                 entity_id, kind, ..
             } => runtime
@@ -85,14 +96,14 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => super::super::observation::observe_field_value(
                 runtime, execution, snapshot, *entity_id, *kind, locator,
-            )
+            )?
             .is_some_and(|current| current == *value),
             Self::AbsentField {
                 entity_id,
                 kind,
                 locator,
             } => matches!(
-                super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator),
+                super::super::observation::observe_field(runtime, execution, snapshot, *entity_id, *kind, locator)?,
                 Some(super::super::observation::WorthQueryApplicationFieldObservation::Absent)
             ),
             Self::Relation {
@@ -196,16 +207,13 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => workflow_history_basis::remains_equal(
                 runtime,
-                execution,
                 snapshot,
                 observed,
                 *maximum_transitions,
                 *transition_count,
             ),
         };
-        execution
-            .check_live()
-            .map_err(|stop| SelfDenial::request_read_stopped(stop, "decision fact comparison"))?;
+        check_request()?;
         Ok(equal)
     }
 }

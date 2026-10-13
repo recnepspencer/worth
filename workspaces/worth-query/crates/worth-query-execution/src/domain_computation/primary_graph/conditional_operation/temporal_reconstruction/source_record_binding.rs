@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use std::collections::BTreeMap;
 
 use worth_query_installation::facade::{
@@ -98,21 +99,22 @@ where
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .map_err(|denial| match denial.kind() {
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::ActiveSnapshotCapacityExhausted {
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,
-                    } => super::snapshot_capacity_reconstruction_denial(
+                    }) => super::snapshot_capacity_reconstruction_denial(
                         maximum_active_snapshots,
                     ),
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::RetentionCapacityExhausted => {
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::RetentionCapacityExhausted) => {
                         super::retention_capacity_reconstruction_denial()
                     }
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::RetentionIdentityExhausted => {
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::RetentionIdentityExhausted) => {
                         super::retention_identity_reconstruction_denial()
                     }
-                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::SnapshotIdentityExhausted => {
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::SnapshotIdentityExhausted) => {
                         super::snapshot_identity_reconstruction_denial()
                     }
-                    _ => reconstruction_denial(
+                    crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => super::denial::read_stopped(crate::facade::primary_graph::relational_execution_kind(cause, None)),
+        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => reconstruction_denial(
                         WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionIntent,
                         format!("{:?}: {}", denial.kind(), denial.subject()),
                     ),

@@ -130,15 +130,22 @@ where
         if !capability
             .principal()
             .remains_current_in(execution, runtime, snapshot)
+            .map_err(|kind| {
+                WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+            })?
         {
             return Err(stale_principal());
         }
-        if !capability.decision().remains_current_in(
-            execution,
-            runtime,
-            snapshot,
-            self.authorization.bridge(),
-        ) {
+        if !capability
+            .decision()
+            .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+            .map_err(|cause| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    "authorization currentness",
+                )
+            })?
+        {
             return Err(stale_authorization());
         }
         WorthQueryAuthorizationRevalidationObservation::from_axes(RevalidationObservationAxes {

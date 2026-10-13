@@ -26,7 +26,9 @@ mod authentication_clock;
 mod bootstrap;
 mod bootstrap_publication;
 mod conditional_operation;
+pub(crate) mod publication_request_denial;
 pub(crate) use conditional_operation::classify_bridge_signal;
+pub use conditional_operation::conditional_intent_read_is_active_for_test;
 mod denial;
 mod entity_key;
 mod entity_resolution;
@@ -152,7 +154,9 @@ pub(in crate::domain_computation) use application_contribution::SealedComputatio
 pub(in crate::domain_computation) use application_contribution::observe_discarded;
 
 #[cfg(test)]
-pub(crate) use application_contribution::{with_test_advancement, TestHostRequest};
+pub(crate) use application_contribution::{
+    drain_test_advancement_observations, with_test_advancement, TestHostRequest,
+};
 
 pub use application_contribution::with_bootstrap_advancement;
 

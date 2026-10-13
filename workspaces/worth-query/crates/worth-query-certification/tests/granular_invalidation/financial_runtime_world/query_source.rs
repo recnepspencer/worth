@@ -222,6 +222,7 @@ fn project_financial_observation_record(
     let read_view = runtime
         .read_truth()
         .read_observation(request_execution, observation)
+        .expect("fixture read request remains live")
         .ok()?;
     let entity = worth_relational::facade::identity::EntityId::new(
         worth_relational::facade::identity::PartitionId::new(record.partition_id()),

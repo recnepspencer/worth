@@ -56,8 +56,12 @@ impl WorthQueryPrincipalCurrentnessDependency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> bool {
+    ) -> Result<
+        bool,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    > {
         self.freshness
             .remains_current_in(execution, runtime, snapshot, &self.layout, &self.binding)
+            .map_err(super::super::denial::principal_currentness)
     }
 }

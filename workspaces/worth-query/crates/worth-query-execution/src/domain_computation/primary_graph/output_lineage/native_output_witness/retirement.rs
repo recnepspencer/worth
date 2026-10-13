@@ -12,14 +12,13 @@ pub(super) struct RetirementMetadata {
 }
 
 pub(super) fn native_metadata(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
 ) -> Option<RetirementMetadata> {
     let read = runtime.read_truth();
-    let view = read.project_snapshot(snapshot, execution)?;
-    let record = view.entity_retirement(execution, entity)?;
+    let view = read.project_snapshot(snapshot)?;
+    let record = view.entity_retirement(entity)?;
     Some(RetirementMetadata {
         kind: record.kind_id(),
         created_at: record.created_at_version(),

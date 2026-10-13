@@ -1,5 +1,6 @@
 //! Atomic elevation upper-bound and current-support observation.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityElevationRequestProjection;
@@ -118,12 +119,20 @@ where
         self.validate_plan(supporting.request().capability_identity(), installed)?;
         let sample = self.runtime.sample_capability_time(installed)?;
         let expected = supporting.decision();
-        if !expected.remains_current_in(
-            execution,
-            self.relational,
-            self.snapshot,
-            self.runtime.authorization.bridge(),
-        ) {
+        if !expected
+            .remains_current_in(
+                execution,
+                self.relational,
+                self.snapshot,
+                self.runtime.authorization.bridge(),
+            )
+            .map_err(|cause| {
+                crate::domain_computation::authorization::denial::relational_read_denial(
+                    cause,
+                    "authorization currentness",
+                )
+            })?
+        {
             return Err(stale(installed.contract().name()));
         }
         let observation =
@@ -156,14 +165,18 @@ fn rejected(
     installed: &WorthQueryInstalledCapabilityPlan,
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationProjectionRejected,
+        ),
         installed.contract().name(),
     )
 }
 
 fn stale(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization,
+        ),
         subject,
     )
 }

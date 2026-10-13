@@ -27,7 +27,7 @@ pub(super) fn select_root_path_union(
     interruption: super::super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     let projection = runtime
-        .project_snapshot(plan.snapshot, execution)
+        .project_snapshot(plan.snapshot)
         .ok_or_else(|| traversal_denial(plan.name))?;
     let mut roots = BTreeMap::new();
     let mut work = RootSelectionWork::new(maximum_work, interruption, spent);
@@ -302,7 +302,7 @@ fn read_governed_root_guard(
     worth_relational::facade::runtime::BoundedFrontierFieldEqualityTruthRead,
     worth_relational::facade::runtime::BoundedFrontierReadStop<
         worth_relational::facade::runtime::FrontierFieldEqualityTruthReadLimitExceeded,
-        worth_execution::MapKernelStop,
+        worth_execution::WorkCeilingDenial,
     >,
 > {
     runtime.bounded_entity_field_equals_for_frontier(
@@ -332,7 +332,7 @@ fn work_limit_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial 
 fn frontier_denial<L>(
     stop: worth_relational::facade::runtime::BoundedFrontierReadStop<
         L,
-        worth_execution::MapKernelStop,
+        worth_execution::WorkCeilingDenial,
     >,
     subject: &str,
 ) -> WorthQueryApplicationReadExecutionDenial {
@@ -341,7 +341,7 @@ fn frontier_denial<L>(
             work_limit_denial(subject)
         }
         worth_relational::facade::runtime::BoundedFrontierReadStop::Admission(stop) => {
-            super::super::denial::relational_cause_denial(
+            super::super::denial::relational_read_denial(
                 worth_relational::facade::transactions::RelationalExecutionDenialCause::from(stop),
                 subject,
             )

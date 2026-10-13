@@ -43,39 +43,7 @@ impl From<WorthQueryApplicationRequestMutationDenial>
     for WorthQueryApplicationRecoveryRequestDenial
 {
     fn from(denial: WorthQueryApplicationRequestMutationDenial) -> Self {
-        use worth_query_execution::facade::application_contribution::{
-            WorthQueryAdvancementDenial as Denial,
-            WorthQueryManagedComputationInterruption as Interruption,
-        };
-        use worth_query_execution::facade::primary_graph::{
-            WorthQueryEntityResolutionDenialKind as Scope,
-            WorthQueryPrincipalResolutionDenialKind as Principal,
-        };
-        let interruption = match &denial {
-            WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause) => Some(*cause),
-            WorthQueryApplicationRequestMutationDenial::Authorization(cause) => {
-                authorization_interruption(cause.kind())
-            }
-            WorthQueryApplicationRequestMutationDenial::PrincipalResolution(cause) => {
-                match cause.kind() {
-                    Principal::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
-                    Principal::DeadlineExceeded => {
-                        Some(Denial::Interrupted(Interruption::DeadlineExceeded))
-                    }
-                    _ => None,
-                }
-            }
-            WorthQueryApplicationRequestMutationDenial::ScopeResolution(cause) => {
-                match cause.kind() {
-                    Scope::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
-                    Scope::DeadlineExceeded => {
-                        Some(Denial::Interrupted(Interruption::DeadlineExceeded))
-                    }
-                    _ => None,
-                }
-            }
-            _ => None,
-        };
+        let interruption = interruption::request_stop(&denial);
         if let Some(interruption) = interruption {
             return Self::advancement(interruption);
         }
@@ -265,24 +233,9 @@ where
     }
 }
 
-fn authorization_interruption(
-    cause: worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind,
-) -> Option<worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial> {
-    use worth_query_execution::facade::{
-        application_contribution::{
-            WorthQueryAdvancementDenial as Denial,
-            WorthQueryManagedComputationInterruption as Interruption,
-        },
-        primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization,
-    };
-    match cause {
-        Authorization::Cancelled => Some(Denial::Interrupted(Interruption::Cancelled)),
-        Authorization::DeadlineExceeded => {
-            Some(Denial::Interrupted(Interruption::DeadlineExceeded))
-        }
-        _ => None,
-    }
-}
+mod interruption;
+#[cfg(test)]
+use interruption::authorization_interruption;
 
 #[cfg(test)]
 mod cancellation_spelling {
@@ -295,15 +248,18 @@ mod cancellation_spelling {
         primary_graph::WorthQueryOperationAuthorizationDenialKind as Authorization,
     };
 
+    use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+
     #[test]
     fn authorization_interruption_uses_the_opening_cause() {
         for (reader, opening) in [
-            (Authorization::Cancelled, Interruption::Cancelled),
+            (Authorization::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::Cancelled)), Interruption::Cancelled),
             (
-                Authorization::DeadlineExceeded,
+                Authorization::Stopped(Err(worth_query_execution::facade::primary_graph::WorthQueryProviderSessionControlStopKind::TimedOut)),
                 Interruption::DeadlineExceeded,
             ),
         ] {
+            assert_eq!(authorization_interruption(reader), Some(Denial::Interrupted(opening)));
             let mapped = WorthQueryApplicationRecoveryRequestDenial::advancement(
                 authorization_interruption(reader).unwrap(),
             );
@@ -312,6 +268,9 @@ mod cancellation_spelling {
                     WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(
                         Denial::Interrupted(cause))) if cause == opening));
         }
-        assert!(authorization_interruption(Authorization::ExplicitDenyRuleMatched).is_none());
+        assert!(authorization_interruption(Authorization::Refused(
+            AuthorizationRefusal::ExplicitDenyRuleMatched
+        ))
+        .is_none());
     }
 }

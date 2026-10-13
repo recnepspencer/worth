@@ -91,6 +91,7 @@ pub enum RelationalAuthorizationPlanDenial {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum RelationalAuthorizationObservationDenial {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     ForeignRuntime {
         expected_runtime_instance_id: u64,
         actual_runtime_instance_id: u64,

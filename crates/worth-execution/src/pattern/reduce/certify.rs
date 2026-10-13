@@ -1,7 +1,7 @@
 use worth_foundational::{ExecutionPhysicalReport, ExecutionReport};
 
 use crate::{
-    authority::ExecutionResourceLease,
+    authority::{ExecutionResourceLease, LeaseDenial},
     backend::{
         enter_certification_activity, enter_retained_memory, run_scope, BackendKind, KernelContext,
         KernelFailure,
@@ -46,7 +46,8 @@ impl<T: Sync + ChargedBytes, K> ExecutionMap<T, K> {
         let activity = enter_certification_activity();
         let clone_bytes = max_value_bytes
             .checked_add(reducer_storage_bytes)
-            .ok_or(ReduceCertificationFailure::Mismatch(OracleMismatch::Stop))?;
+            .ok_or_else(LeaseDenial::charged_bytes_overflow)
+            .map_err(|_| ReduceCertificationFailure::Mismatch(OracleMismatch::Stop))?;
         let _clone_reservation = lease
             .reserve_retained_memory(clone_bytes)
             .map_err(|_| ReduceCertificationFailure::Mismatch(OracleMismatch::Stop))?;

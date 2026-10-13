@@ -10,7 +10,7 @@ use crate::visibility::materialization::read_records::entity_query_locus_value;
 
 use super::checked_entry_map::{checked_push, IndexKernelStop};
 use super::field_projection_scope::source_entity_index_projection_scope_for_kind;
-use super::{entity_aspect_field_ordering_value, IndexProjectionSource};
+use super::IndexProjectionSource;
 
 pub(in crate::indexes) struct RelatedEntityOrderingProjection<'definition> {
     relation_kind: KindId,
@@ -46,91 +46,98 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
 > {
     let mut entries = BTreeMap::new();
     let budget = std::cell::RefCell::new(context);
-    projection.try_for_each_relation(
-        request_execution,
-        contract.relation_kind,
-        |bytes| {
-            budget.borrow_mut().checkpoint(1)?;
-            budget.borrow().check_scratch_peak(bytes)
-        },
-        |relation| {
-            let (parent, child) = match contract.parent_endpoint {
-                RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
-                RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
-            };
-            budget.borrow_mut().checkpoint(1)?;
-            budget
-                .borrow()
-                .check_scratch_peak(projection.candidate_entity_bytes(child))?;
-            let values = projection
-                .with_entity(
-                    request_execution,
-                    child,
-                    |record| -> Result<
-                        Option<(Vec<worth_foundational::facade::AspectValue>, u64)>,
-                        IndexKernelStop,
-                    > {
-                        if record.kind.kind_id != contract.child_kind {
-                            return Ok(None);
-                        }
-                        let mut values = Vec::new();
-                        let mut owned = 0_u64;
-                        for field in contract.ordering {
-                            budget.borrow_mut().checkpoint(1)?;
-                            if source_entity_index_projection_scope_for_kind(
-                                projection,
-                                record.kind.kind_id,
-                                field.locator(),
-                            )
-                            .is_none()
-                            {
+    projection
+        .try_for_each_relation(
+            request_execution,
+            contract.relation_kind,
+            |bytes| {
+                budget.borrow_mut().checkpoint(1)?;
+                budget.borrow().check_scratch_peak(bytes)
+            },
+            |relation| {
+                let (parent, child) = match contract.parent_endpoint {
+                    RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
+                    RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
+                };
+                // This unit pays the index's parent/child endpoint visit. The
+                // keyed authoritative child read below pays its own materialization.
+                budget.borrow_mut().checkpoint(1)?;
+                budget
+                    .borrow()
+                    .check_scratch_peak(projection.candidate_entity_bytes(child))?;
+                let values = projection
+                    .with_entity(
+                        request_execution,
+                        child,
+                        |record| -> Result<
+                            Option<(Vec<worth_foundational::facade::AspectValue>, u64)>,
+                            IndexKernelStop,
+                        > {
+                            if record.kind.kind_id != contract.child_kind {
                                 return Ok(None);
                             }
-                            let Some(value) = entity_query_locus_value(record, field.locator())
-                            else {
-                                return Ok(None);
-                            };
-                            owned = owned
-                                .saturating_add(value.owned_allocation_capacity_bytes() as u64);
-                            budget.borrow().check_scratch_peak(owned.saturating_add(
-                                ((values.len() + 1)
-                                    * std::mem::size_of::<worth_foundational::facade::AspectValue>(
-                                    )) as u64,
-                            ))?;
-                            budget.borrow().check_result_peak(owned.saturating_add(
-                                ((values.len() + 1)
-                                    * std::mem::size_of::<
-                                        crate::indexes::data::RelatedEntityOrderingValue,
-                                    >()) as u64,
-                            ))?;
-                            values.try_reserve_exact(1).map_err(|_| {
-                                worth_execution::MapKernelFailure::ResultCapacityExceeded
-                            })?;
-                            values.push(value.clone());
-                        }
-                        Ok(Some((values, owned)))
-                    },
-                )
-                .transpose()?
-                .flatten();
-            if let Some((values, owned)) = values {
-                let row = RelatedEntityOrderingEntry::new(values, child, relation.relation_id);
-                checked_push(
-                    &mut entries,
-                    parent,
-                    row,
-                    0,
-                    owned.saturating_add(
-                        (contract.ordering.len()
-                            * std::mem::size_of::<crate::indexes::data::RelatedEntityOrderingValue>(
-                            )) as u64,
-                    ),
-                    &mut budget.borrow_mut(),
-                )?;
-            }
-            Ok(())
-        },
-    )?;
+                            let mut values = Vec::new();
+                            let mut owned = 0_u64;
+                            for field in contract.ordering {
+                                budget.borrow_mut().checkpoint(1)?;
+                                if source_entity_index_projection_scope_for_kind(
+                                    projection,
+                                    record.kind.kind_id,
+                                    field.locator(),
+                                )
+                                .is_none()
+                                {
+                                    return Ok(None);
+                                }
+                                let Some(value) = entity_query_locus_value(record, field.locator())
+                                else {
+                                    return Ok(None);
+                                };
+                                owned = owned
+                                    .saturating_add(value.owned_allocation_capacity_bytes() as u64);
+                                budget.borrow().check_scratch_peak(owned.saturating_add(
+                                    ((values.len() + 1)
+                                        * std::mem::size_of::<
+                                            worth_foundational::facade::AspectValue,
+                                        >()) as u64,
+                                ))?;
+                                budget.borrow().check_result_peak(owned.saturating_add(
+                                    ((values.len() + 1)
+                                        * std::mem::size_of::<
+                                            crate::indexes::data::RelatedEntityOrderingValue,
+                                        >()) as u64,
+                                ))?;
+                                values.try_reserve_exact(1).map_err(|_| {
+                                    worth_execution::MapKernelFailure::ResultCapacityExceeded
+                                })?;
+                                values.push(value.clone());
+                            }
+                            Ok(Some((values, owned)))
+                        },
+                    )
+                    .map_err(super::checked_entry_map::read_request)?
+                    .transpose()?
+                    .flatten();
+                if let Some((values, owned)) = values {
+                    let row = RelatedEntityOrderingEntry::new(values, child, relation.relation_id);
+                    checked_push(
+                        &mut entries,
+                        parent,
+                        row,
+                        0,
+                        owned.saturating_add(
+                            (contract.ordering.len()
+                                * std::mem::size_of::<
+                                    crate::indexes::data::RelatedEntityOrderingValue,
+                                >()) as u64,
+                        ),
+                        &mut budget.borrow_mut(),
+                    )?;
+                }
+                Ok(())
+            },
+        )
+        .map_err(super::checked_entry_map::read_stop)?;
     for rows in entries.values_mut() {
         budget.borrow_mut().checkpoint(rows.len() as u64)?;
         rows.sort_by(|left, right| compare_related_entries(left, right, contract.ordering));
@@ -142,7 +149,10 @@ pub(in crate::indexes) fn build_related_entity_ordering_index(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     contract: &RelatedEntityOrderingProjection<'_>,
-) -> BTreeMap<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>> {
+) -> Result<
+    BTreeMap<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>>,
+    crate::execution::RelationalExecutionDenialCause,
+> {
     let mut entries =
         BTreeMap::<crate::identity::data::EntityId, Vec<RelatedEntityOrderingEntry>>::new();
     projection.for_each_relation(execution, contract.relation_kind, |relation| {
@@ -159,15 +169,15 @@ pub(in crate::indexes) fn build_related_entity_ordering_index(
                     .ordering
                     .iter()
                     .map(|field| {
-                        entity_aspect_field_ordering_value(
-                            execution,
+                        source_entity_index_projection_scope_for_kind(
                             projection,
-                            child,
+                            record.kind.kind_id,
                             field.locator(),
-                        )
+                        )?;
+                        entity_query_locus_value(record, field.locator()).cloned()
                     })
                     .collect::<Option<Vec<_>>>()
-            })
+            })?
             .flatten();
         if let Some(values) = values {
             entries
@@ -179,11 +189,12 @@ pub(in crate::indexes) fn build_related_entity_ordering_index(
                     relation.relation_id,
                 ));
         }
-    });
+        Ok(())
+    })?;
     for rows in entries.values_mut() {
         rows.sort_by(|left, right| compare_related_entries(left, right, contract.ordering));
     }
-    entries
+    Ok(entries)
 }
 
 pub(in crate::indexes) fn compare_related_entries(

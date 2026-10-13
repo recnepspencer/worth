@@ -55,11 +55,13 @@ fn run_workers(
         .map_while(|_| lease.try_reserve(1, 0).ok())
         .collect::<Vec<_>>();
     let admitted_workers = additional.len() + 1;
+    let owner = super::owner_context::CapturedOwnerContext::capture();
     // The caller's entry executes on its own thread.
     lease.pool().in_place_scope(|scope| {
         for reservation in additional {
             scope.spawn(move |_| {
                 let _reservation = reservation;
+                let _owner = owner.enter();
                 work();
             });
         }

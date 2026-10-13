@@ -1,5 +1,6 @@
 //! support expiry denies approval while the request lifecycle is current.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn support_expiry_denies_approval_while_the_request_lifecycle_is_current() {
@@ -49,12 +50,16 @@ fn support_expiry_denies_approval_while_the_request_lifecycle_is_current() {
 
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing
+        )
     );
     assert!(denial.denial().identity().is_some());
     assert_eq!(
         denial.denial().causes(),
-        [WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing
+        )]
     );
     let requested = denial.into_requested();
     assert_eq!(

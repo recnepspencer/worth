@@ -61,7 +61,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         proposal,
         kind,
         &layout.proposal.identity,
-    )
+    )?
     .ok_or_else(|| denial("workflow proposal identity is unavailable"))?;
     let AspectValue::String(InternedString::Raw(identity)) = &value else {
         return Err(denial("workflow proposal identity has the wrong type"));

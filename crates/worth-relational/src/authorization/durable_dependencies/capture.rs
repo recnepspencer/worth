@@ -27,7 +27,7 @@ pub(super) fn capture(
     }
     let view = runtime
         .read_truth()
-        .project_snapshot(evidence.snapshot(), execution)
+        .project_snapshot(evidence.snapshot())
         .ok_or(Denial::SnapshotUnavailable)?;
     if !view.is_exact_basis() {
         return Err(Denial::InexactSnapshot);
@@ -121,6 +121,7 @@ pub(super) fn capture(
                 );
                 let revision = view
                     .entity_field_revision(execution, *entity, &authoritative_locator)
+                    .map_err(Denial::Execution)?
                     .ok_or(Denial::DependencyUnavailable)?;
                 Ok(FieldDependency {
                     entity: *entity,
@@ -169,6 +170,7 @@ pub(super) fn capture_entity(
             })
         },
     )
+    .map_err(Denial::Execution)?
     .ok_or(Denial::DependencyUnavailable)
 }
 
@@ -214,11 +216,13 @@ pub(super) fn capture_relation(
             })
         },
     )
+    .map_err(Denial::Execution)?
     .ok_or(Denial::DependencyUnavailable)
 }
 
 pub(super) const fn adjacency_denial(denial: AdjacencyStructuralRevisionDenial) -> Denial {
     match denial {
+        AdjacencyStructuralRevisionDenial::Execution(cause) => Denial::Execution(cause),
         AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => Denial::DependencyBudgetExceeded,
         AdjacencyStructuralRevisionDenial::AnchorUnavailable => Denial::DependencyUnavailable,
         AdjacencyStructuralRevisionDenial::BasisUnavailable => Denial::SnapshotUnavailable,

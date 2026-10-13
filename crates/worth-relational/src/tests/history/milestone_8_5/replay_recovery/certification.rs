@@ -97,7 +97,8 @@ pub(crate) fn certify_replay_recovery(
         .contains(&ReplayObservableSurface::Strategy));
     let current = runtime
         .read_truth()
-        .read_version(execution, runtime.current_version_id());
+        .read_version(execution, runtime.current_version_id())
+        .expect("read request remains live");
     let live_branch_heads = StrategyBranchHeadEvidence {
         main: runtime.history().branch_head(&BranchId("main".to_string())),
         feature: runtime.history().branch_head(&feature_branch),
@@ -283,7 +284,8 @@ pub(crate) fn certify_replay_recovery(
         .expect("recovered feature envelope");
     let recovered_current = recovered
         .read_truth()
-        .read_version(execution, recovered.current_version_id());
+        .read_version(execution, recovered.current_version_id())
+        .expect("read request remains live");
     let recovered_controller_noop_envelope = recovered
         .replay()
         .canonical_commit_envelope(controller_feature_idempotent_commit.commit.commit_id)

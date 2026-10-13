@@ -6,6 +6,7 @@ dependencies = [
     "serde",
     "worth-execution",
     "worth-foundational",
+    "worth-harness",
     "worth-proof",
     "worth-query",
     "worth-query-admission",
@@ -29,6 +30,7 @@ package = "worth-query-host"
 dependencies = [
     "worth-execution",
     "worth-foundational",
+    "worth-harness",
     "worth-query-admission",
     "worth-query-decl",
     "worth-query-declaration",
@@ -36,6 +38,7 @@ dependencies = [
     "worth-query-installation",
     "worth-query-publication",
     "worth-relational",
+    "worth-runtime-bridge",
 ]
 
 [[packages]]

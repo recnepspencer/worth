@@ -60,11 +60,36 @@ pub(super) enum Change {
     Leave,
     DigestSwap,
     Replacement,
+    CarriedCeiling,
+    EmptyBefore,
+    EmptyAfter,
+    EmptyStable,
+    CodeIdentity,
 }
 impl Change {
     pub(super) fn apply(self, model: &mut ReuseFacts) -> Option<EntryEdit> {
         let item = &mut model.items[0];
         match self {
+            Self::CarriedCeiling => {
+                let first = model
+                    .members()
+                    .min_by_key(|item| super::super::tree_work::identity(item.key))
+                    .unwrap()
+                    .key;
+                let item = model
+                    .items
+                    .iter_mut()
+                    .find(|item| item.member && item.key != first)
+                    .unwrap();
+                item.value += 7;
+                Some(EntryEdit::new(
+                    "even",
+                    item.number,
+                    EntryFact::Value,
+                    (item.value as f64).to_bits(),
+                ))
+            }
+            Self::CodeIdentity => None,
             Self::Gather => {
                 item.value += 7;
                 Some(EntryEdit::new(
@@ -87,7 +112,7 @@ impl Change {
                 item.key = 3;
                 Some(EntryEdit::new("even", item.number, EntryFact::Region, 3))
             }
-            Self::Input => {
+            Self::Input | Self::EmptyStable => {
                 model.odd = true;
                 None
             }
@@ -95,7 +120,7 @@ impl Change {
                 item.fault = true;
                 Some(EntryEdit::new("even", item.number, EntryFact::Fault, 1))
             }
-            Self::Join => {
+            Self::Join | Self::EmptyBefore => {
                 let item = ReuseItem {
                     number: 4,
                     key: 0,
@@ -115,7 +140,7 @@ impl Change {
                 model.items.push(item);
                 Some(edit)
             }
-            Self::Leave => {
+            Self::Leave | Self::EmptyAfter => {
                 item.member = false;
                 item.exists = false;
                 Some(EntryEdit::delete(item.number))

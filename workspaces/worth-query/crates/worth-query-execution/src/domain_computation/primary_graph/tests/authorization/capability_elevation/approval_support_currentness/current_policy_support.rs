@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn exact_support_revocation_denies_approval_despite_an_equivalent_current_grant() {
@@ -56,12 +57,16 @@ fn exact_support_revocation_denies_approval_despite_an_equivalent_current_grant(
 
     assert_eq!(
         denial.denial().kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
     assert!(denial.denial().identity().is_some());
     assert_eq!(
         denial.denial().causes(),
-        [WorthQueryOperationAuthorizationDenialKind::StaleAuthorization]
+        [WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )]
     );
     world
         .application

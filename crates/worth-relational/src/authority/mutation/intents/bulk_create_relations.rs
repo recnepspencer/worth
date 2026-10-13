@@ -264,12 +264,11 @@ fn stage_import_packets(
         1,
         strategy,
     );
-    if lease.is_none() {
+    let Some(lease) = lease else {
         return Ok(packets.into_iter().flat_map(|packet| packet.rows).collect());
-    }
-    let packet_ceiling = lease.map_or(0, |lease| {
-        lease.policy().budget().charged_memory_bytes() / (packets.len() as u64).saturating_mul(8)
-    });
+    };
+    let packet_ceiling =
+        lease.policy().budget().charged_memory_bytes() / (packets.len() as u64).saturating_mul(8);
     let inputs = packets
         .into_iter()
         .map(|packet| crate::execution::ReadOnlyPacket {

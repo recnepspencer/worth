@@ -33,6 +33,7 @@ pub enum EffectExecutionDeferredKind {
 /// a cell owned by another runtime or binding recur.
 pub(crate) const fn companion_stop_is_transient(stop: &CompanionPreflightStop) -> bool {
     match stop {
+        CompanionPreflightStop::Execution(_) => false,
         CompanionPreflightStop::TopologyPending
         | CompanionPreflightStop::SelectedSourceMismatch
         | CompanionPreflightStop::SelectedPositionUnavailable { .. }

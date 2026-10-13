@@ -11,7 +11,6 @@ use std::time::{Duration, Instant};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_relational::facade::mvcc::RelationalOperationInterruption;
 
 #[test]
 fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
@@ -71,7 +70,7 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     assert_eq!(
         denial.invariant_execution_failure().unwrap().kind(),
         WorthQueryInvariantExecutionDenialKind::RequestInterrupted(
-            RelationalOperationInterruption::Cancelled
+            worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled
         )
     );
     assert_eq!(

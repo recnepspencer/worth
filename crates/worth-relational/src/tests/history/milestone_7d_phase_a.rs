@@ -214,7 +214,8 @@ fn merge_planning_conflict_classification_carries_target_lookup_evidence_for_sou
         .version_id;
     let main_view = runtime
         .read_truth()
-        .read_version(execution, main_head_version);
+        .read_version(execution, main_head_version)
+        .expect("read request remains live");
     let target_record = main_view
         .get_entity(entity)
         .expect("main branch should still see entity at its head");

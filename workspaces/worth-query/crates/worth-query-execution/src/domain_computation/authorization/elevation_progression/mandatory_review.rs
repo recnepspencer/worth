@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, TypedMutationPreconditions,
@@ -96,7 +97,7 @@ where
     {
         let execution = match phase.execution_request_for(&self.product_runtime) {
             Ok(execution) => execution,
-            Err(_) => return Err(review_denial(mandatory, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "phase-custody"))),
+            Err(_) => return Err(review_denial(mandatory, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
         };
         self.authorize_mandatory_review_with_request(
             &execution,
@@ -198,7 +199,9 @@ where
         .sample(lifecycle.temporal.timeline)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::TrustedTimeUnavailable,
+                ),
                 installed.contract().name(),
             )
         })?;
@@ -238,7 +241,9 @@ fn review_denial(
 
 fn review_rejected(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::MandatoryReviewRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::MandatoryReviewRejected,
+        ),
         subject,
     )
 }

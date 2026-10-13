@@ -57,13 +57,21 @@ impl AggregateScanReader<'_, '_> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<AggregateScanAccumulator, WorthQueryInvariantAggregateDenial> {
         let read = self
-            .branch_view(execution)?
+            .branch_view()?
             .bounded_incoming_relations_of_kind(
                 execution,
                 self.plan.target(),
                 self.plan.key().relation_kind,
                 self.accounting.remaining(),
-            );
+            )
+            .map_err(|cause| {
+                denial(
+                    WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    self.plan.relation_member(),
+                )
+            })?;
         let read = read.map_err(|limit| {
             self.accounting
                 .reject_initial_adjacency(limit, self.plan.relation_member())
@@ -89,13 +97,21 @@ impl AggregateScanReader<'_, '_> {
         record: &worth_relational::facade::runtime::RelationReadRecord,
     ) -> Result<Option<AspectValue>, WorthQueryInvariantAggregateDenial> {
         let relations = self
-            .branch_view(execution)?
+            .branch_view()?
             .bounded_outgoing_relations_of_kind(
                 execution,
                 record.source,
                 self.plan.key().relation_kind,
                 self.accounting.remaining(),
-            );
+            )
+            .map_err(|cause| {
+                denial(
+                    WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    self.plan.relation_member(),
+                )
+            })?;
         let relations = relations.map_err(|limit| {
             self.accounting
                 .reject_bounded_adjacency(limit, self.plan.relation_member())
@@ -121,7 +137,15 @@ impl AggregateScanReader<'_, '_> {
                 record.source,
                 self.plan.source_kind(),
                 &self.plan.key().field,
-            );
+            )
+            .map_err(|cause| {
+                denial(
+                    WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    self.plan.field_member(),
+                )
+            })?;
         Ok(value)
     }
 
@@ -130,14 +154,13 @@ impl AggregateScanReader<'_, '_> {
     /// has no readable source field, as `observe_field_value` also reports.
     fn branch_view(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         worth_relational::facade::runtime::VisibilityProjectionView,
         WorthQueryInvariantAggregateDenial,
     > {
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, execution)
+            .project_snapshot(self.snapshot)
             .ok_or_else(|| {
                 denial(
                     WorthQueryInvariantAggregateDenialKind::InvalidScalar,

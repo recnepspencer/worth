@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -47,7 +48,9 @@ pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
     let observed_grant = extract_exact_grant(installed, &evidence)?;
     if observed_grant != exact_grant {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
             installed.contract().name(),
         ));
     }
@@ -64,7 +67,9 @@ pub(in crate::domain_computation::authorization) fn observe_upper_bound_policy(
         )
         .map_err(|()| {
             WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 installed.contract().name(),
             )
         })?
@@ -89,7 +94,9 @@ fn evaluate(
 > {
     let bridge_evidence = bridge.evaluate(observation).map_err(|_| {
         WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::BridgeEvaluationRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::BridgeEvaluationRejected,
+            ),
             installed.contract().name(),
         )
     })?;
@@ -97,7 +104,9 @@ fn evaluate(
         || !bridge.retains(&bridge_evidence)
     {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
             installed.contract().name(),
         ));
     }

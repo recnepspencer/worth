@@ -18,7 +18,10 @@ where
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
     ) -> Result<
-        (Option<AspectValue>, Option<AspectValue>),
+        Result<
+            (Option<AspectValue>, Option<AspectValue>),
+            worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        >,
         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
     > {
         let execution = phase.execution_request_for(&self.product_runtime)?;
@@ -48,10 +51,9 @@ where
                         locator,
                     )
                 };
-                let revisions = (
-                    read(&definition_layout.program_revision),
-                    read(&definition_layout.carried_revision),
-                );
+                let revisions = read(&definition_layout.program_revision).and_then(|program| {
+                    read(&definition_layout.carried_revision).map(|carried| (program, carried))
+                });
                 crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
                 revisions
             }))

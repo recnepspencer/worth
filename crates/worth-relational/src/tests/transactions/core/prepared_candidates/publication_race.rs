@@ -21,6 +21,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
                 .expect("counting basis")
                 .observation(),
         )
+        .expect("read request remains live")
         .expect("counting observation reads")
         .entities()
         .len();
@@ -158,6 +159,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
     let visible = runtime
         .read_truth()
         .read_observation(execution, &observation)
+        .expect("read request remains live")
         .expect("the performed basis reads its selected root");
     assert!(visible.get_entity(created_entity).is_some());
     assert_eq!(

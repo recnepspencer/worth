@@ -1,12 +1,15 @@
 /// Why an entity could not be resolved from its identity field.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryEntityResolutionDenialKind {
+    Stopped(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    Refused(WorthQueryEntityResolutionRefusalKind),
+}
+
+/// An ordinary resolution refusal from installed identity fields and exact truth.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryEntityResolutionRefusalKind {
     /// The supplied phase belongs to another installed runtime.
     ForeignPhase,
-    /// Resolution was cancelled.
-    Cancelled,
-    /// Resolution reached its deadline.
-    DeadlineExceeded,
     /// The primary graph is not installed.
     PrimaryGraphNotInstalled,
     /// The identity field is not installed.
@@ -21,10 +24,6 @@ pub enum WorthQueryEntityResolutionDenialKind {
     AmbiguousEntity,
     /// The identity index disagrees with stored records.
     CorruptIdentityIndex,
-    /// Resolution exceeded its work budget.
-    ProjectionWorkBudgetExceeded,
-    /// The exact selected lookup could not reserve its preparation backing.
-    ProjectionPreparationMemoryExhausted,
     /// A complete selection needs a nonzero finite candidate limit.
     InvalidCandidateLimit,
     /// The complete equality result exceeds the caller's candidate limit.
@@ -64,35 +63,6 @@ impl WorthQueryEntityResolutionDenial {
 
     pub const fn kind(&self) -> WorthQueryEntityResolutionDenialKind {
         self.kind
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn interruption(
-        &self,
-    ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
-    {
-        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
-        use WorthQueryEntityResolutionDenialKind as Kind;
-        match self.kind {
-            Kind::Cancelled => Some(Stop::Cancelled),
-            Kind::DeadlineExceeded => Some(Stop::DeadlineExceeded),
-            Kind::ForeignPhase
-            | Kind::PrimaryGraphNotInstalled
-            | Kind::FieldNotInstalled
-            | Kind::ValueEncodingRejected
-            | Kind::EqualityIndexUnavailable
-            | Kind::UnknownEntity
-            | Kind::AmbiguousEntity
-            | Kind::CorruptIdentityIndex
-            | Kind::ProjectionWorkBudgetExceeded
-            | Kind::ProjectionPreparationMemoryExhausted
-            | Kind::InvalidCandidateLimit
-            | Kind::CandidateLimitExceeded { .. }
-            | Kind::ActiveSnapshotCapacityExhausted { .. }
-            | Kind::SnapshotIdentityExhausted
-            | Kind::RetentionCapacityExhausted
-            | Kind::RetentionIdentityExhausted
-            | Kind::ForeignResolutionTruth => None,
-        }
     }
 
     pub fn subject(&self) -> &str {

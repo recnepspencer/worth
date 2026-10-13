@@ -30,6 +30,13 @@ pub enum WorthQueryRedoDenialKind {
     DivergenceInvalidation,
     /// Ordinary compare-and-commit conflicted.
     Conflicted,
+    /// Index currency stopped before the redo was admitted.
+    ExecutionRequest(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
 }
 
 /// Refusal to admit or progress a redo of a proved undo.

@@ -1,5 +1,6 @@
 //! Exact request-projection validation for capability observation.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeSet;
 
 use worth_query_declaration::facade::application_capability::{
@@ -50,7 +51,9 @@ fn validate_purpose(
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
     if projection.purpose() != &installed.request().purpose {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::PurposeMismatch,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::PurposeMismatch,
+            ),
             installed.contract().name(),
         ));
     }
@@ -84,7 +87,9 @@ fn validate_operation_shape(
         || projection.elevation().is_some() != elevation_required
     {
         return Err(WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityProjectionRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityProjectionRejected,
+            ),
             installed.contract().name(),
         ));
     }
@@ -128,7 +133,7 @@ fn scope_mismatch(
     installed: &WorthQueryInstalledCapabilityPlan,
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::ScopeMismatch,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ScopeMismatch),
         installed.contract().name(),
     )
 }

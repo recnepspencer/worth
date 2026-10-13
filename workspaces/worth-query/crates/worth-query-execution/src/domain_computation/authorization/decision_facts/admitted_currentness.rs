@@ -6,6 +6,16 @@ use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 use super::WorthQueryRetainedAuthorizationDecisionFacts;
 use crate::domain_computation::primary_graph::InvalidationEditAdmission;
 
+pub(in crate::domain_computation) enum AuthorizationCurrentnessStop {
+    Admission(CompanionPreflightStop),
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+}
+impl From<CompanionPreflightStop> for AuthorizationCurrentnessStop {
+    fn from(stop: CompanionPreflightStop) -> Self {
+        Self::Admission(stop)
+    }
+}
+
 impl WorthQueryRetainedAuthorizationDecisionFacts {
     /// The selected-access proof separately authenticates the principal on
     /// this issued root. This owner rechecks every mutable conventional
@@ -18,7 +28,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
         bridge: &BridgeAuthorizationRuntime,
         admission: &mut InvalidationEditAdmission,
-    ) -> Result<bool, CompanionPreflightStop> {
+    ) -> Result<bool, AuthorizationCurrentnessStop> {
         admission.charge_external_work(1)?;
         match self {
             Self::Principal(_) => Ok(true),

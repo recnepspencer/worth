@@ -37,6 +37,7 @@ impl StatefulBridgeMergeProbe {
                 let read = runtime
                     .read_truth()
                     .read_snapshot(&snapshot, request_execution)
+                    .expect("fixture read request remains live")
                     .expect("merge probe reads the exact target branch snapshot");
                 read.entities().len()
             })

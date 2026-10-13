@@ -5,6 +5,7 @@
 //! the earlier of its source's deadline and its own.
 
 use std::time::Duration;
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
 use worth_query_host::facade::application_entry::{
@@ -335,7 +336,7 @@ fn an_unreadable_trusted_clock_admits_no_step() {
         propose_instance(&application, instance.clone(), 93_502),
         Err(WorthQueryWorkflowProposalPreparationDenial::RequestAdmission(
             WorthQueryApplicationRequestMutationDenial::Authorization(ref denial)
-        )) if denial.kind() == WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable
+        )) if denial.kind() == WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::TrustedTimeUnavailable)
     ));
     time.set_unavailable(false);
     match propose_instance(&application, instance, 93_503) {

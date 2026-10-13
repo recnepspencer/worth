@@ -56,7 +56,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let record = state
+        let mut record = state
             .records
             .get_mut(&self.interest.key)
             .expect("selected scheduling Interest retains its owner record");
@@ -96,6 +96,7 @@ impl<'a> PreparedSelectedSchedulingFinish<'a> {
             (0, Vec::new())
         };
         record.wake.notify();
+        record.finish();
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_sub(released_bytes);

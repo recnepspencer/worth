@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Duration;
 
 use worth_query_declaration::facade::application_schema::TypedMutationPreconditions;
@@ -83,6 +84,6 @@ fn matching_prohibited_path_denies_only_through_bridge_decision_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::PermissionDenied
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied)
     );
 }

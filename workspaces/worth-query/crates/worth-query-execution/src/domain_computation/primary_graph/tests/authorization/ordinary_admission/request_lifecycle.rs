@@ -1,4 +1,5 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn cancelled_request_cannot_reuse_otherwise_current_authority() {
@@ -78,7 +79,9 @@ fn cancelled_request_cannot_reuse_otherwise_current_authority() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::Cancelled
+        WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+        ))
     );
 }
 
@@ -158,7 +161,9 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     std::thread::sleep(until_expiry + Duration::from_millis(10));
     assert_eq!(
         expiring.validate_current_authority().unwrap_err().kind(),
-        WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ExpiredAuthentication
+        )
     );
     let expired_projection_ran = Cell::new(false);
     let expired_projection = world
@@ -179,7 +184,9 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     assert_eq!(
         expired_projection.kind(),
         WorthQueryOperationProjectionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication
+            )
         )
     );
     assert!(!expired_projection_ran.get());
@@ -230,7 +237,9 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     cancellation.cancel();
     assert_eq!(
         cancellable.validate_current_authority().unwrap_err().kind(),
-        WorthQueryOperationAuthorizationDenialKind::Cancelled
+        WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+        ))
     );
     let cancelled_projection_ran = Cell::new(false);
     let cancelled_projection = world
@@ -251,7 +260,9 @@ fn admitted_operation_retains_expiry_and_cancellation_authority() {
     assert_eq!(
         cancelled_projection.kind(),
         WorthQueryOperationProjectionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::Cancelled
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
+            ))
         )
     );
     assert!(!cancelled_projection_ran.get());

@@ -1,4 +1,5 @@
-//! Why a partitioned computation has no result.
+mod storage;
+// Why a partitioned computation has no result.
 
 use worth_execution::PartitionItemId;
 use worth_foundational::facade::PartitionIdentity;

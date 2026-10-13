@@ -20,17 +20,16 @@ impl ExecutionResourceLease<'_> {
         reservation: &mut ResourceReservation,
         memory_bytes: u64,
     ) -> Result<(), LeaseDenial> {
-        if !Arc::ptr_eq(&self.authority.inner, &reservation.authority)
+        if !Arc::ptr_eq(&self.authority, &reservation.authority)
             || reservation.process_workers != 0
             || reservation.worker_count_per_node != 0
             || !reservation.worker_lineage.is_empty()
         {
-            return Err(LeaseDenial::UnrelatedNestedLease);
+            return Err(LeaseDenial::refused(LeaseDenial::UnrelatedNestedLease));
         }
         let lineage = self.lineage();
         let mut ledger = self
             .authority
-            .inner
             .ledger
             .lock()
             .unwrap_or_else(|e| e.into_inner());
@@ -38,7 +37,7 @@ impl ExecutionResourceLease<'_> {
         let held = reservation.memory_bytes;
         room::check(
             &ledger,
-            self.authority.inner.config.charged_memory_bytes,
+            self.authority.config.charged_memory_bytes,
             held,
             lineage.iter().map(|node| {
                 let old = if reservation.memory_lineage.contains(&node.id) {

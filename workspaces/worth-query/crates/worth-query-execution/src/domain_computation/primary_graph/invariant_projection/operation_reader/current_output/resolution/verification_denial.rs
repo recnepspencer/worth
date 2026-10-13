@@ -20,6 +20,9 @@ pub(super) fn from_stop(
             ConsumedOutputVerificationStop::RetryCurrentness(stop) => {
                 WorthQueryCurrentOutputDenialKind::CurrentnessRaced(stop)
             }
+            ConsumedOutputVerificationStop::Execution(cause) => {
+                WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause)
+            }
             ConsumedOutputVerificationStop::Unavailable => {
                 WorthQueryCurrentOutputDenialKind::OutputUnavailable
             }

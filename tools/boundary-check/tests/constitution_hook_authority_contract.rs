@@ -4,7 +4,7 @@ use post_tool_use_fixture::*;
 use serde_json::Value;
 use std::fs;
 use std::process::Command;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 
 #[test]
 fn removed_or_retargeted_hook_authority_is_rejected() {
@@ -32,11 +32,7 @@ fn removed_or_retargeted_hook_authority_is_rejected() {
 
 #[test]
 fn session_start_prepares_an_isolated_target_for_the_budgeted_hook() {
-    let nonce = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let target = std::env::temp_dir().join(format!("worth-phase7-tools-{nonce}"));
+    let target = worth_harness::tooling::fixture_path::unique_path("worth-phase7-tools");
     let prepare = configured_command("SessionStart");
     let prepared = worth_harness::tooling::process_deadline::output(
         Command::new(&prepare[0])

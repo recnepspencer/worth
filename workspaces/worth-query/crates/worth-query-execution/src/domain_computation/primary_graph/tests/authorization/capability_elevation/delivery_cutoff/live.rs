@@ -8,6 +8,7 @@ use super::super::super::super::{
 };
 use super::super::super::capability_progression::time;
 use super::context::{assert_resources_released, context};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationLiveControls, WorthQueryApplicationLiveOutcome,
     WorthQueryApprovedElevation, WorthQueryElevationClosureKind,
@@ -73,7 +74,9 @@ fn revocation_after_a_queued_live_cause_terminates_delivery() {
                     &context.principal,
                     &context.request,
                 ),
-                WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleAuthorization,
+                ),
             )
         })
         .expect("the fixture read owns its installed host call");
@@ -156,7 +159,9 @@ fn query_time_expiry_after_a_queued_live_cause_terminates_delivery() {
                     &context.principal,
                     &context.request,
                 ),
-                WorthQueryOperationAuthorizationDenialKind::ElevationExpired,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ElevationExpired,
+                ),
             )
         })
         .expect("the fixture read owns its installed host call");

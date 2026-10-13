@@ -333,6 +333,7 @@ fn vessel_call_signs(
     let view = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("fixture read request remains live")
         .expect("branch snapshot is readable");
     let aspect = AspectKey::new("call_sign").expect("call-sign aspect");
     view.entities()

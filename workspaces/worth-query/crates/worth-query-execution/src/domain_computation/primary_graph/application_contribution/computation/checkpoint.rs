@@ -32,7 +32,10 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
 pub(super) enum CheckpointWork<'request> {
     /// The single partition of a `Deterministic` computation spends the
     /// declared ceiling directly.
-    Declared { remaining: usize },
+    Declared {
+        remaining: usize,
+        charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    },
     /// One partition of a `DeterministicPartitioned` computation charges the
     /// execution kernel it runs in, which owns the remaining ceiling. A
     /// refused charge is final: it is kept, and the partition reports it
@@ -46,9 +49,26 @@ pub(super) enum CheckpointWork<'request> {
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
     pub(super) work: CheckpointWork<'request>,
     pub(super) execution: &'request WorthQueryManagedComputationExecution<'request>,
+    #[cfg(test)]
+    pub(super) native: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
 }
 
 impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
+    #[cfg(test)]
+    pub(in super::super) fn with_native_lease_for_test(
+        mut self,
+        lease: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
+    ) -> Self {
+        self.native = lease;
+        self
+    }
+    #[cfg(test)]
+    pub(in crate::domain_computation::primary_graph) fn native_lease_for_test(
+        &self,
+    ) -> Option<&'request worth_execution::ExecutionResourceLease<'request>> {
+        crate::domain_computation::execution_observation::owned_control_scope::current_id();
+        self.native
+    }
     pub(in super::super) fn for_partition(
         charge: &'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         execution: &'request WorthQueryManagedComputationExecution<'request>,
@@ -59,6 +79,8 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
                 refused: None,
             },
             execution,
+            #[cfg(test)]
+            native: None,
         }
     }
 
@@ -81,7 +103,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
             .interruption()
             .map(WorthQueryManagedComputationCheckpointDenial::Interrupted);
         match &mut self.work {
-            CheckpointWork::Declared { remaining } => {
+            CheckpointWork::Declared { remaining, charge } => {
                 if let Some(interruption) = interruption {
                     return Err(interruption);
                 }
@@ -90,6 +112,9 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
                         WorthQueryManagedComputationResourceDenial::WorkExhausted,
                     ),
                 )?;
+                if let Some(charge) = charge {
+                    charge(u64::try_from(work).unwrap_or(u64::MAX)).map_err(checkpoint_denial)?;
+                }
                 Ok(())
             }
             CheckpointWork::Partition { charge, refused } => {

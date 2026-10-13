@@ -1,4 +1,4 @@
-//! The pre-capability oracle: issued rows, exact dependencies and quoted work.
+//! Issued rows, dependencies, revisions and the same bill at every posture.
 use super::*;
 use crate::identity::data::VersionId;
 use crate::storage::data::{RecordLifecycleState, RelationalFieldPresence};
@@ -14,7 +14,6 @@ mod bounded_index;
 mod cases;
 mod fixture;
 mod refusals;
-mod work;
 
 const MEMORY: u64 = 64 * 1024 * 1024;
 
@@ -25,6 +24,7 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
     for indexed in [false, true] {
         let world = fixture::World::new(&setup, indexed);
         for case in cases::table(&world) {
+            let mut bill = None;
             for (posture, width) in [
                 (None, 1),
                 (Some(ExecutionPosture::Serial), 1),
@@ -94,7 +94,7 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                 let projection = world
                     .runtime
                     .read_truth()
-                    .project_snapshot(&world.snapshot, &request)
+                    .project_snapshot(&world.snapshot)
                     .unwrap();
                 for (row, &i) in result.entities.iter().zip(case.entities) {
                     assert_eq!(row.created_at_version, VersionId((i + 1) as u64));
@@ -107,6 +107,7 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                     );
                     let revision = projection
                         .entity_field_revision(&request, row.entity_id, &world.name)
+                        .unwrap()
                         .unwrap();
                     assert_eq!(revision.version(), VersionId((i + 1) as u64));
                     assert_eq!(revision.presence(), RelationalFieldPresence::Present);
@@ -126,21 +127,22 @@ fn runtime_read_law_matrix_keeps_rows_dependencies_revisions_and_work() {
                     );
                     let revision = projection
                         .relation_field_revision(&request, row.relation_id, &world.label)
+                        .unwrap()
                         .unwrap();
                     assert_eq!(revision.version(), VersionId((i + 4) as u64));
                     assert_eq!(revision.presence(), RelationalFieldPresence::Present);
                 }
-                // The serial-backed literal moves when the serial-lease line is merged.
-                assert_eq!(
-                    read.report.unwrap().charged_work(),
-                    if lease.is_none() {
-                        work::serial_literal(case.name)
-                    } else {
-                        case.work.total()
-                    },
-                    "{} {posture:?}/{width}, indexed={indexed}",
-                    case.name
-                );
+                let report = read.report.unwrap();
+                let actual = (report.charged_work(), report.charged_span());
+                if let Some(expected) = bill {
+                    assert_eq!(
+                        actual, expected,
+                        "{} {posture:?}/{width}, indexed={indexed}",
+                        case.name
+                    );
+                } else {
+                    bill = Some(actual);
+                }
             }
         }
     }

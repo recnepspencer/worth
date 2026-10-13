@@ -2,6 +2,7 @@ use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDeni
 use crate::domain_computation::primary_graph::resolution_denial::{
     query_read_resolution_denial, WorthQueryPrincipalResolutionDenialKind,
 };
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use std::error::Error;
 use worth_execution::{MapDenial, MapKernelFailure, MapStop, ScanDenial};
 use worth_foundational::{
@@ -34,7 +35,7 @@ fn native_query_cause_survives_both_query_denials() {
         let principal = query_read_resolution_denial(principal_stop, "principal");
         assert_eq!(
             principal.kind(),
-            WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof
+            WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof)
         );
         assert_eq!(principal.native_query_read_stop(), Some(&expected));
         let copied = principal.clone();
@@ -121,7 +122,7 @@ fn noncanonical_expected_identities_are_one_execution_cause_on_both_query_paths(
         let principal = query_read_resolution_denial(source(), "principal");
         assert_eq!(
             principal.kind(),
-            WorthQueryPrincipalResolutionDenialKind::ExecutionRequest(expected)
+            WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(expected))
         );
         assert_eq!(principal.native_query_read_stop(), Some(&stop));
     }

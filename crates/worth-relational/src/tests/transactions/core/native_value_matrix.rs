@@ -69,6 +69,7 @@ fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
         let read = runtime
             .read_truth()
             .read_snapshot(&committed.snapshot, execution)
+            .expect("read request remains live")
             .unwrap();
         assert_scalar_state(
             read.get_entity(entity)
@@ -87,7 +88,8 @@ fn ordinary_native_mutation_roundtrips_every_foundational_scalar_family() {
     });
     let read = recovered
         .read_truth()
-        .read_version(execution, committed.version_id);
+        .read_version(execution, committed.version_id)
+        .expect("read request remains live");
     assert_scalar_state(
         read.get_entity(entity)
             .unwrap()

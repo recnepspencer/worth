@@ -16,6 +16,11 @@ impl RelationalRuntime {
         admission: &mut A,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalAuthorizationObservationEvidence, Stop<A::Stop>> {
+        execution.check_live().map_err(|stop| {
+            Stop::Native(RelationalAuthorizationObservationDenial::Execution(
+                stop.into(),
+            ))
+        })?;
         let evaluation = self.evaluate_authorization_admitted(&plan, admission, execution)?;
         admission::prepare(admission, 1, 0)?;
         let identity = mint_observation_identity(&plan).ok_or(Stop::Native(
@@ -58,13 +63,13 @@ impl RelationalRuntime {
         }
         let view = self
             .read_truth()
-            .project_snapshot(plan.snapshot(), execution)
+            .project_snapshot(plan.snapshot())
             .ok_or(Stop::Native(
                 RelationalAuthorizationObservationDenial::SnapshotUnavailable,
             ))?;
         admission::prepare(admission, 1, 0)?;
         let principal = view
-            .with_exact_entity_state(execution, plan.principal(), |metadata, _| {
+            .with_exact_entity_state(plan.principal(), |metadata, _| {
                 metadata.kind_id == plan.principal_kind()
             })
             .map_err(|_| Stop::ExactBasisRequired)?
@@ -81,7 +86,7 @@ impl RelationalRuntime {
         if plan.scope() != plan.principal() {
             admission::prepare(admission, 1, 0)?;
             let scope = view
-                .with_exact_entity_state(execution, plan.scope(), |metadata, _| {
+                .with_exact_entity_state(plan.scope(), |metadata, _| {
                     metadata.kind_id == plan.scope_kind()
                 })
                 .map_err(|_| Stop::ExactBasisRequired)?

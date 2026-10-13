@@ -79,7 +79,7 @@ fn stale_ready_successor_admission_forces_a_new_execution_cycle() {
         .expect("the real performed application retains its read basis");
     {
         let mut state = registry.state.lock().unwrap();
-        let record = state.records.get_mut(&demand_key).unwrap();
+        let mut record = state.records.get_mut(&demand_key).unwrap();
         record.state = DemandState::Running;
         record.performed_source = Some(WorthQueryPerformedOutputDemandSource {
             receipt: performed,
@@ -147,7 +147,7 @@ fn stopped_ready_record_rejects_successor_without_reviving_custody() {
     assert!(matches!(
         &record.state,
         DemandState::Output(output)
-            if matches!(output.advancement, WorthQueryOutputAdvancement::Stopped { .. })
+            if matches!(output.advancement(), WorthQueryOutputAdvancement::Stopped { .. })
                 && matches!(output.checkpoint, Some(WorthQueryOutputCheckpoint::Ready(_)))
     ));
 }

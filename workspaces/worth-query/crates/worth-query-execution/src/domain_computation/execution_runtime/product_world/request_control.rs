@@ -10,6 +10,9 @@ use worth_runtime_world::facade::{
     RuntimeWorldCancellationToken, RuntimeWorldPublicationOutcome, RuntimeWorldPublicationPort,
 };
 
+use super::publication_denial::{
+    WorthQueryProductPublicationDenial as Denial, WorthQueryProductPublicationOutcome as Outcome,
+};
 use super::WorthQueryProductPublicationBinding;
 
 #[must_use = "a prepared product publication owns a reserved World attempt"]
@@ -35,13 +38,23 @@ impl WorthQueryPreparedProductPublication {
     pub(crate) fn execute(
         self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
-    ) -> RuntimeWorldPublicationOutcome {
+    ) -> Result<Outcome, Denial<NoEffectCompositePublication>> {
         let Self {
             publication,
             prepared,
             control,
         } = self;
-        publication.execute_without_signal(execution, prepared, control.cancellation())
+        match publication.execute_without_signal(execution, prepared, control.cancellation()) {
+            RuntimeWorldPublicationOutcome::Performed(performed) => {
+                Ok(Outcome::Performed(performed))
+            }
+            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+                Ok(Outcome::ProductUnpublished(effects))
+            }
+            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+                Err(Denial::publication(no_effect))
+            }
+        }
     }
 }
 
@@ -81,11 +94,13 @@ impl WorthQueryProductPublicationBinding {
         request: &WorthQueryRequestScope,
     ) -> Result<
         WorthQueryPreparedProductPublication,
-        worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial,
+        Denial<worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial>,
     > {
         let control = self.request_control(request);
+        self.adoption_preparation.reached();
         let prepared = unpublished
-            .prepare_settled_relational_adoption(control.cancellation(), control.deadline())?;
+            .prepare_settled_relational_adoption(control.cancellation(), control.deadline())
+            .map_err(Denial::adoption)?;
         Ok(WorthQueryPreparedProductPublication {
             publication: self.publication().clone(),
             prepared,
@@ -123,7 +138,7 @@ impl WorthQueryProductPublicationBinding {
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
         request: &WorthQueryRequestScope,
         successor_observation_requested: bool,
-    ) -> Result<WorthQueryPreparedProductPublication, NoEffectCompositePublication> {
+    ) -> Result<WorthQueryPreparedProductPublication, Denial<NoEffectCompositePublication>> {
         let control = self.request_control(request);
         let intent = CompositePublicationIntent::without_signal(
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
@@ -134,16 +149,59 @@ impl WorthQueryProductPublicationBinding {
         } else {
             intent
         };
-        let prepared = self.publication().prepare_without_signal(
-            self.observation().clone(),
-            intent,
-            control.cancellation(),
-            control.deadline(),
-        )?;
+        let prepared = self
+            .publication()
+            .prepare_without_signal(
+                self.observation().clone(),
+                intent,
+                control.cancellation(),
+                control.deadline(),
+            )
+            .map_err(Denial::publication)?;
         Ok(WorthQueryPreparedProductPublication {
             publication: self.publication().clone(),
             prepared,
             control,
         })
+    }
+}
+
+/// The same stopped/refused boundary for conditional-only and combined publication.
+pub(crate) fn prepare_conditional_publication(
+    publication: &RuntimeWorldPublicationPort<(), (), (), (), ()>,
+    observation: worth_runtime_world::facade::ProductBranchObservation,
+    intent: CompositePublicationIntent<worth_runtime_world::facade::WithSignal>,
+    cancellation: &RuntimeWorldCancellationToken,
+    deadline: Option<worth_runtime_world::facade::RuntimeWorldInstant>,
+) -> Result<
+    worth_runtime_world::facade::PreparedCompositePublicationWithSignal,
+    Denial<NoEffectCompositePublication>,
+> {
+    publication
+        .prepare_with_signal(observation, intent, cancellation, deadline)
+        .map_err(Denial::publication)
+}
+
+pub(crate) fn publish_conditional_definition(
+    publication: &RuntimeWorldPublicationPort<(), (), (), (), ()>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+    prepared: worth_runtime_world::facade::PreparedCompositePublicationWithSignal,
+    bridge_prepared: worth_runtime_bridge::facade::BridgePreparedConditionalInstallationExtension,
+    bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+    cancellation: &RuntimeWorldCancellationToken,
+) -> Result<
+    Outcome<
+        (
+            worth_runtime_world::facade::PerformedCompositePublication,
+            Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+        ),
+        worth_runtime_world::facade::RuntimeWorldUnpublishedConditionalDefinition,
+    >,
+    Denial<NoEffectCompositePublication>,
+> {
+    match publication.publish_bridge_conditional_definition(execution, prepared, bridge_prepared, bridge, cancellation) {
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering } => Ok(Outcome::Performed((publication, lowering))),
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => Ok(Outcome::ProductUnpublished(effects)),
+        worth_runtime_world::facade::RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => Err(Denial::publication(no_effect)),
     }
 }

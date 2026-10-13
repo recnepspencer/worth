@@ -9,6 +9,8 @@ use worth_query_installation::facade::{
     WorthQueryOperationGraphReadContract, WritePosture,
 };
 
+mod prepared_inputs;
+pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
 mod computation_calls;
 mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;

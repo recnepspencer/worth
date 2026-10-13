@@ -35,6 +35,7 @@ where
                     relation_kind,
                     application_basis.snapshot_handle().version_id(),
                 )
+                .expect("certification fixture read request remains live")
                 .into_iter()
                 .find(|relation| relation.source == definition.entity_id())
                 .expect("the published definition retains a node membership");

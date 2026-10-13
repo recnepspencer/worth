@@ -25,7 +25,7 @@ impl Drop for Restore {
     }
 }
 fn limit(memory: bool) {
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         if memory {
@@ -36,11 +36,9 @@ fn limit(memory: bool) {
         if memory { policy.work_ceiling() } else { 0 },
     )));
 }
-fn assert_cause(cause: Denial, memory: bool, placement: Placement) {
+fn assert_cause(cause: Denial, memory: bool) {
     if !memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-    } else if placement == Placement::Serial {
-        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
     } else {
         let Denial::Resource(Resource::MemoryLimit {
             level,
@@ -91,7 +89,7 @@ fn suspension_and_restoration_refuse_before_their_real_reader_at_both_placements
             else {
                 panic!("suspension refuses at open")
             };
-            assert_cause(cause, memory, placement);
+            assert_cause(cause, memory);
             assert_eq!(reads(), before);
             bound(None);
             let selected = crate::checkpoint_recovery::support::host_call(&application, |phase| {
@@ -121,7 +119,7 @@ fn suspension_and_restoration_refuse_before_their_real_reader_at_both_placements
             else {
                 panic!("restoration carries its opening refusal")
             };
-            assert_cause(Denial::Resource(resource), memory, placement);
+            assert_cause(Denial::Resource(resource), memory);
             assert_eq!(reads(), before);
             bound(None);
             let completed = reconstruct_ring(&application, suspended, &ring);

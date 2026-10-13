@@ -60,8 +60,9 @@ fn entity_kind_scans_can_be_partition_scoped_without_cross_partition_leakage() {
 
     let scoped = runtime
         .read_truth()
-        .project_historical_version(execution, version_id)
-        .entities_in::<NamedEntityProjection>(execution, PartitionId(7));
+        .project_historical_version(version_id)
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(7))
+        .expect("read request remains live");
 
     assert_eq!(scoped.len(), 1);
     assert_eq!(scoped[0].entity_id, left);
@@ -85,12 +86,14 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
 
     let ordered_records = ordered
         .read_truth()
-        .project_historical_version(execution, ordered.current_version_id())
-        .entities_in::<NamedEntityProjection>(execution, PartitionId(3));
+        .project_historical_version(ordered.current_version_id())
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
+        .expect("read request remains live");
     let reversed_records = reversed
         .read_truth()
-        .project_historical_version(execution, reversed.current_version_id())
-        .entities_in::<NamedEntityProjection>(execution, PartitionId(3));
+        .project_historical_version(reversed.current_version_id())
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
+        .expect("read request remains live");
 
     assert_eq!(
         ordered_records
@@ -109,8 +112,9 @@ fn entity_kind_scans_are_deterministic_across_equivalent_insert_order() {
     assert_eq!(
         ordered
             .read_truth()
-            .project_historical_version(execution, ordered.current_version_id())
+            .project_historical_version(ordered.current_version_id())
             .entities_in::<NamedEntityProjection>(execution, PartitionId(3))
+            .expect("read request remains live")
             .iter()
             .map(|record| record.entity_id)
             .collect::<Vec<_>>(),
@@ -141,8 +145,9 @@ fn entity_kind_scans_preserve_historical_partition_visibility() {
 
     let historical = runtime
         .read_truth()
-        .project_historical_version(execution, historical_version)
-        .entities_in::<NamedEntityProjection>(execution, PartitionId(17));
+        .project_historical_version(historical_version)
+        .entities_in::<NamedEntityProjection>(execution, PartitionId(17))
+        .expect("read request remains live");
 
     assert_eq!(historical.len(), 1);
     assert_eq!(historical[0].entity_id, left);

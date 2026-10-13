@@ -3,9 +3,6 @@ use super::*;
 
 #[test]
 fn producer_decision_field_uses_native_revision_after_value_aba() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = installed_authorization_world(true);
     let (entity, locator) = world
         .application
@@ -67,7 +64,7 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
         .application
         .with_host_advancement(|phase| {
             assert!(matches!(
-                output_selection(&phase, execution, &world, &durable),
+                output_selection(&phase, &phase.borrowed_request_for_test(), &world, &durable),
                 OutputDependencySelection::Reuse
             ))
         })
@@ -76,7 +73,7 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
         .application
         .with_host_advancement(|phase| {
             assert_eq!(
-                currentness(&phase, execution, &world, &field),
+                currentness(&phase, &phase.borrowed_request_for_test(), &world, &field),
                 Err(WorthQuerySourceCurrentnessFailure::Unavailable),
                 "a value-only fact cannot authorize output reuse"
             )
@@ -125,7 +122,7 @@ fn producer_decision_field_uses_native_revision_after_value_aba() {
         .application
         .with_host_advancement(|phase| {
             assert!(matches!(
-                output_selection(&phase, execution, &world, &durable),
+                output_selection(&phase, &phase.borrowed_request_for_test(), &world, &durable),
                 OutputDependencySelection::FreshRequired
             ))
         })

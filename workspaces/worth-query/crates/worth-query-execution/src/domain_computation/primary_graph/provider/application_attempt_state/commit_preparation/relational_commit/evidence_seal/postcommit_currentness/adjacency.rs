@@ -28,6 +28,7 @@ pub(super) fn rebase_decision_adjacency(
         admitted_work,
         endpoints,
     )
+    .expect("fixture request remains live")
     .unwrap_or(fact)
 }
 
@@ -40,9 +41,9 @@ pub(super) fn prepare_decision_adjacency(
     prepared_endpoints: Option<
         crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints,
     >,
-) -> Option<Fact> {
+) -> Result<Option<Fact>, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
     if admitted_work == 0 {
-        return None;
+        return Ok(None);
     }
     let (relation_kind, anchor, direction, limit) = match fact {
         Fact::Relation {
@@ -73,9 +74,11 @@ pub(super) fn prepare_decision_adjacency(
                 (*maximum_work_units).min(admitted_work),
             )
         }
-        _ => return None,
+        _ => return Ok(None),
     };
-    let view = runtime.read_truth().project_snapshot(snapshot, execution)?;
+    let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
+        return Ok(None);
+    };
     let native_revision = match view.bounded_adjacency_structural_revision(
         execution,
         anchor,
@@ -84,23 +87,26 @@ pub(super) fn prepare_decision_adjacency(
         limit,
     ) {
         Ok(revision) => revision.revision(),
+        Err(AdjacencyStructuralRevisionDenial::Execution(cause)) => return Err(cause),
         // A zero recorded limit, or a missing anchor or basis, leaves the
         // decision fact without a native revision.
         Err(
             AdjacencyStructuralRevisionDenial::WorkBudgetExceeded
             | AdjacencyStructuralRevisionDenial::AnchorUnavailable
             | AdjacencyStructuralRevisionDenial::BasisUnavailable,
-        ) => return None,
+        ) => return Ok(None),
     };
-    let endpoints = prepared_endpoints?;
-    Some(Fact::SourceAdjacencyRevision {
+    let Some(endpoints) = prepared_endpoints else {
+        return Ok(None);
+    };
+    Ok(Some(Fact::SourceAdjacencyRevision {
         relation_kind,
         anchor,
         direction,
         native_revision,
         comparison_work_limit: limit,
         endpoints,
-    })
+    }))
 }
 
 /// BEFORE effects: every endpoint is already known from the complete decision

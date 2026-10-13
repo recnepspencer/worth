@@ -1,5 +1,5 @@
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
 use serde_json::json;
 use worth_proof::TransitionOutcome;
 use worth_server::{

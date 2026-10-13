@@ -1,7 +1,14 @@
 use super::{PreparedPrerequisiteClaims, WorthQueryOutputDemandRegistry};
 
-impl Drop for PreparedPrerequisiteClaims {
-    fn drop(&mut self) {
+use super::super::refreshed_rejoin::{infallible, OccurrenceSearchCharge};
+use core::convert::Infallible;
+impl PreparedPrerequisiteClaims {
+    pub(in super::super) fn cancel_unpublished_prerequisites<
+        C: OccurrenceSearchCharge<Refusal = Infallible>,
+    >(
+        &mut self,
+        charge: &mut C,
+    ) {
         if self.published {
             return;
         }
@@ -19,9 +26,14 @@ impl Drop for PreparedPrerequisiteClaims {
         }
         self.reserved_posting.take();
         for upstream in &self.predecessors {
-            if let Some(record) = state.records.get_mut(upstream.as_ref()) {
-                record.framework_required_count -= 1;
-                state.remove_required_member_if_released(upstream);
+            let Some(mut record) = state.records.get_mut(upstream.as_ref()) else {
+                continue;
+            };
+            record.framework_required_count -= 1;
+            let pending = record.pending_cleanup_queued;
+            record.finish();
+            if !pending && !state.defer_terminal_cleanup(upstream, 0) {
+                infallible(state.remove_required_member_if_released(upstream, charge));
             }
         }
         for upstream in &self.predecessors {

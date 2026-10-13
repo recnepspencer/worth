@@ -46,15 +46,16 @@ pub(super) fn evaluate_registered_rule<'state>(
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::CustomNotApplicable {
             registration,
             prepared_scope,
+            retained_touched,
             work,
         } => {
-            let context = CustomInvariantExecutionContext::new(
+            let provenance = CustomInvariantExecutionContext::not_applicable_provenance(
                 runtime,
                 packet.observation,
                 packet.version_id,
                 packet.current_version_id,
                 prepared_scope,
-                None,
+                std::sync::Arc::clone(retained_touched),
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
@@ -62,7 +63,7 @@ pub(super) fn evaluate_registered_rule<'state>(
                 reported_rule: InvariantReportedRule::Custom(registration.descriptor().identity.clone()),
                 groups: registration.groups(),
                 cost: registration.cost_class(),
-                custom_provenance: Some(context.provenance()),
+                custom_provenance: Some(provenance),
                 verdicts: vec![InvariantVerdict::NotApplicable],
             }
         }
@@ -86,6 +87,11 @@ fn evaluate_native_registration<'state>(
     );
     if let Some(budget) = budget {
         context = context.with_budget(budget);
+    }
+    if let crate::validation::data::InvariantRule::EndpointKindContract(contract) =
+        &registration.rule
+    {
+        context = context.with_created_endpoint_scope(contract.relation_kind_id);
     }
     let violations = evaluate_rule(
         &context,
@@ -124,7 +130,15 @@ fn evaluate_custom_registration<'state>(
     let work = prepared_execution.work_meter();
     let work = structural_budget
         .as_ref()
-        .map_or(work.clone(), |structural| work.for_evaluation(structural));
+        .map_or(work.clone(), |structural| {
+            if !registration.supports_checked_preparation()
+                && runtime.custom_kernel_posture == worth_foundational::ExecutionPosture::Serial
+            {
+                work.clone().with_lease(structural)
+            } else {
+                work.for_evaluation(structural)
+            }
+        });
     let ready = budget.is_none_or(|budget| budget.checkpoint(1));
     let context = CustomInvariantExecutionContext::new(
         runtime,
@@ -147,6 +161,11 @@ fn evaluate_custom_registration<'state>(
     } else if let Some(budget) = budget {
         match prepared_execution.evaluate_checked(&context, budget.custom_meter()) {
             Some(outcome) => outcome,
+            None if runtime.custom_kernel_posture
+                == worth_foundational::ExecutionPosture::Serial =>
+            {
+                prepared_execution.evaluate(&context)
+            }
             None => {
                 budget.deny_unchecked_custom();
                 crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(

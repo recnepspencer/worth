@@ -1,5 +1,6 @@
 //! non governed capability rejects an elevation selector.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn non_governed_capability_rejects_an_elevation_selector() {
@@ -44,6 +45,8 @@ fn non_governed_capability_rejects_an_elevation_selector() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationNotApplicable
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationNotApplicable
+        )
     );
 }

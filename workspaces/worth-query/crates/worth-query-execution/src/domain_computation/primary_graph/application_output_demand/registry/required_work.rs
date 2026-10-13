@@ -1,6 +1,13 @@
 //! Exact required-work hints shared by the demand record and native marks.
 
+mod wave_admission;
+pub(in crate::domain_computation::primary_graph) use wave_admission::{
+    AdmittedRequiredWave, PreparedRequiredInputs,
+};
 mod branch_selection;
+mod claim;
+pub(in crate::domain_computation::primary_graph) use claim::RequiredWorkClaim;
+mod current_record;
 mod discontinuity;
 mod interest_readmission;
 mod native_hints;
@@ -59,6 +66,7 @@ impl std::fmt::Debug for RequiredWorkMembership {
 struct MembershipState {
     active: bool,
     queued: bool,
+    claimed: bool,
     version: u64,
     version_exhausted: bool,
     marked: bool,
@@ -67,11 +75,15 @@ struct MembershipState {
     native_hints: Option<Box<NativeHint>>,
     local_settlement: Option<Arc<RecordedSettlementIdentity>>,
     next: Option<Arc<RequiredWorkMembership>>,
+    current_basis:
+        Option<crate::domain_computation::primary_graph::application_contribution::CurrentBasis>,
 }
 
 pub(in crate::domain_computation::primary_graph) struct SelectedRequiredWork {
     pub(in crate::domain_computation::primary_graph) membership: Arc<RequiredWorkMembership>,
     pub(in crate::domain_computation::primary_graph) version: u64,
+    // The registry pins the row that answers this occurrence after succession.
+    certification_membership: Arc<RequiredWorkMembership>,
     kind: SelectedRequiredWorkKind,
     armed: bool,
 }
@@ -261,23 +273,28 @@ impl SelectedRequiredWork {
         &self.kind
     }
 
-    pub(in crate::domain_computation::primary_graph) fn acknowledge(
-        mut self,
-    ) -> Option<ReplacedRequiredWorkHint> {
+    fn consume_selected_cause(mut self) -> Option<ReplacedRequiredWorkHint> {
         let cleared = self.membership.acknowledge(self.version, &self.kind);
         self.armed = cleared.as_ref().is_none_or(|(_, more)| *more);
         cleared.map(|(removed, _)| removed)
     }
 
-    /// Fund the exact selected-token transition before it can detach its
-    /// native/local cause. The bound includes the member state rewrite,
-    /// returned carrier, and its possible queue reattachment on Drop.
-    pub(in crate::domain_computation::primary_graph) fn acknowledge_admitted(
+    /// An aborted native publication never moved the image. This door only
+    /// discards that void cause; it cannot acknowledge Current from a bool.
+    pub(in crate::domain_computation::primary_graph) fn discard_aborted_native(
         self,
         admission: &mut InvalidationEditAdmission,
     ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
+        if !matches!(&self.kind, SelectedRequiredWorkKind::Native { observer, .. }
+            if observer.state() == worth_relational::facade::mvcc::CompanionPublicationCompletion::Aborted)
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "only an aborted native publication is void",
+            ));
+        }
         charge_acknowledgement(admission)?;
-        Ok(self.acknowledge())
+        Ok(self.consume_selected_cause())
     }
 }
 
@@ -345,3 +362,6 @@ impl super::DemandRegistryState {
             .map(|_| ())
     }
 }
+
+#[cfg(test)]
+mod proof_fixture;

@@ -6,5 +6,5 @@ mod compat_http_phase_ten_runtime;
 mod query_handoff_runtime;
 #[path = "support/response_fixture.rs"]
 mod response_fixture;
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;

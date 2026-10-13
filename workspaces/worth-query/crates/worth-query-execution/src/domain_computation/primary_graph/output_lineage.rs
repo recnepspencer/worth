@@ -65,8 +65,8 @@ pub(in crate::domain_computation::primary_graph) use super::application_attempt:
 };
 pub use denial::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub(in crate::domain_computation::primary_graph) use input_cutoff::{
-    cutoff_declines, prepare_stable_address, InputCutoffDecision, InputCutoffVerificationStop,
-    PreparedInputCutoffBasis, PublishedStableLineage, StablePublicationStop,
+    cutoff_declines, prepare_stable_address, InputCutoffVerificationStop, OwnedInputCutoffDecision,
+    PreparedInputCutoffBasis, PublishedStableLineage, StablePublicationStop, VerifiedInputCutoff,
 };
 pub(in crate::domain_computation::primary_graph) use input_reuse_key::PreparedInputReuseKey;
 pub(in crate::domain_computation::primary_graph) use native_output_witness::{

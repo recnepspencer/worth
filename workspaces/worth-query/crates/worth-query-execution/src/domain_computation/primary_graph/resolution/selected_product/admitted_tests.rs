@@ -77,7 +77,7 @@ fn admitted_selected_principal_matches_ordinary_and_certification_and_stops_one_
                 };
                 assert_eq!(
                     denial.kind(),
-                    WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                    WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
                 );
             }
         })

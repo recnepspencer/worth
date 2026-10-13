@@ -275,7 +275,8 @@ fn bounded_lookup_rebuilds_exact_historical_generation_after_truth_advances() {
     assert_ne!(historical_version_id, runtime.current_version_id());
     let historical_read = runtime
         .read_truth()
-        .read_version(execution, historical_version_id);
+        .read_version(execution, historical_version_id)
+        .expect("read request remains live");
     let historical_record = historical_read.get_entity(entity_id).unwrap();
     assert_eq!(
         crate::visibility::materialization::read_records::entity_query_locus_comparison_key(

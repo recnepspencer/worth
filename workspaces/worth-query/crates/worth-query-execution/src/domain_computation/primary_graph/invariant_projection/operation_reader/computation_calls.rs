@@ -17,7 +17,7 @@ use worth_relational::facade::identity::EntityId;
 use super::decision_reads::DecisionReadOutcome;
 use super::WorthQueryApplicationOperationInvariantProjectionReader;
 use crate::domain_computation::primary_graph::application_attempt::{
-    observe_fact, ComputationRead, ObservedRetained, WorthQueryApplicationAttemptDenial,
+    observe_admitted_fact, ComputationRead, ObservedRetained, WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationFactKey,
 };
 use crate::domain_computation::primary_graph::application_contribution::Comparator;
@@ -139,7 +139,7 @@ impl<Schema, Operation>
         comparator: &Comparator,
         key: &WorthQueryApplicationFactKey,
     ) -> Result<ObservedRetained, WorthQueryApplicationAttemptDenial> {
-        observe_fact(
+        observe_admitted_fact(
             execution,
             &*self.reader.runtime,
             self.reader.snapshot,

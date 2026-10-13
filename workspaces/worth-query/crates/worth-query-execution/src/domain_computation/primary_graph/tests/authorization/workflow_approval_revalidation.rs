@@ -11,6 +11,7 @@ use super::capability_delegation_mutation::{
 };
 use super::capability_delegation_progression::revoke_parent;
 use super::capability_progression::{admitted_capability_operation, time, Admission};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     decode_workflow_approval_support, WorthQueryDurableCapabilityLineage,
     WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedCapabilityRequest,
@@ -149,7 +150,9 @@ fn durable_approval_readmission_rejects_changed_lineage_shape() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }
 
@@ -210,7 +213,9 @@ fn durable_approval_readmission_denies_revoked_grant() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityGrantMissing
+        )
     );
 }
 
@@ -280,7 +285,9 @@ fn durable_approval_readmission_denies_expired_grant() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityExpired
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityExpired
+        )
     );
 }
 
@@ -344,9 +351,14 @@ fn durable_approval_readmission_denies_revoked_delegation_parent() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::DelegationRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationRejected
+        )
     );
 }
 
 #[path = "workflow_approval_revalidation/parent_reactivation_does_not_revive_delegated_approval.rs"]
 mod parent_reactivation_does_not_revive_delegated_approval;
+
+#[path = "workflow_approval_revalidation/read_stop_oracle.rs"]
+mod read_stop_oracle;

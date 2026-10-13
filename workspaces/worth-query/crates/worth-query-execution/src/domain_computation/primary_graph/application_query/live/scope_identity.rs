@@ -58,7 +58,7 @@ pub(super) fn read_scope_identity<
         .ok_or_else(|| projection_denial(identity.result_path()))?;
     let view = runtime
         .read_truth()
-        .project_snapshot(plan.basis.snapshot_handle(), execution)
+        .project_snapshot(plan.basis.snapshot_handle())
         .ok_or_else(|| projection_denial(identity.result_path()))?;
     let projection_fields = computation.projection_fields();
     let scope = ProjectionAspectScope::fields(identity.aspect_key().clone(), projection_fields);
@@ -71,7 +71,7 @@ pub(super) fn read_scope_identity<
                         .cloned()
                 })
                 .flatten()
-        })
+        }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::relational_read_denial(cause, identity.result_path()))?
         .ok_or_else(|| projection_denial(identity.result_path()))?;
     Ok((
         value,

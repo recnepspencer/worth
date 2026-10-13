@@ -3,8 +3,9 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
 
-// Fixed-size ID, BTree node, and planning wrapper retention per visited
-// candidate. Variable-size keys and aspect values are claimed separately.
+// Fixed-size ID, BTree node, and wrapper retention for materializing
+// structural visits. Borrowed reads and authored checkpoints charge work only;
+// variable-size keys and aspect values are claimed separately.
 const STRUCTURAL_UNIT_BYTES: u64 = 128;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,9 +19,9 @@ pub(crate) enum CustomPreparationStop {
 
 struct LeasedCustomMeter {
     status: ExecutionLeaseStatus,
-    work_ceiling: u64,
+    work_ceiling: Option<u64>,
     consumed_work: AtomicU64,
-    memory_ceiling: u64,
+    memory_ceiling: Option<u64>,
     claimed_memory: AtomicU64,
     stop: std::sync::Mutex<Option<CustomPreparationStop>>,
 }
@@ -31,8 +32,8 @@ pub(crate) struct CustomPreparationBudget(Arc<LeasedCustomMeter>);
 impl CustomPreparationBudget {
     pub(crate) fn new(
         status: ExecutionLeaseStatus,
-        work_ceiling: u64,
-        memory_ceiling: u64,
+        work_ceiling: Option<u64>,
+        memory_ceiling: Option<u64>,
     ) -> Self {
         Self(Arc::new(LeasedCustomMeter {
             status,
@@ -69,16 +70,31 @@ impl CustomPreparationBudget {
         stop.get_or_insert(CustomPreparationStop::UncheckedCustomKernel);
     }
 
+    /// Candidate-local inspection is request work, not a rule's allowance.
+    pub(crate) fn try_visit(&self, units: usize) -> bool {
+        let meter = CustomInvariantWorkMeter {
+            maximum: None,
+            consumed: Arc::new(AtomicU64::new(0)),
+            exhausted: Arc::new(AtomicBool::new(false)),
+            leased: Some(Arc::clone(&self.0)),
+        };
+        meter.try_charge_work(u64::try_from(units).unwrap_or(u64::MAX))
+    }
+
     pub(crate) fn try_plan_item(&self, retained_bytes: u64) -> bool {
-        let meter =
-            CustomInvariantWorkMeter::new(NonZeroU64::new(u64::MAX).unwrap()).with_lease(self);
-        meter.try_charge(1) && meter.try_claim_bytes(retained_bytes)
+        let meter = CustomInvariantWorkMeter {
+            maximum: None,
+            consumed: Arc::new(AtomicU64::new(0)),
+            exhausted: Arc::new(AtomicBool::new(false)),
+            leased: Some(Arc::clone(&self.0)),
+        };
+        meter.try_charge_work(1) && meter.try_claim_bytes(retained_bytes)
     }
 }
 
 #[derive(Clone)]
 pub(crate) struct CustomInvariantWorkMeter {
-    maximum: NonZeroU64,
+    maximum: Option<NonZeroU64>,
     consumed: Arc<AtomicU64>,
     exhausted: Arc<AtomicBool>,
     leased: Option<Arc<LeasedCustomMeter>>,
@@ -87,7 +103,7 @@ pub(crate) struct CustomInvariantWorkMeter {
 impl CustomInvariantWorkMeter {
     pub(crate) fn new(maximum: NonZeroU64) -> Self {
         Self {
-            maximum,
+            maximum: Some(maximum),
             consumed: Arc::new(AtomicU64::new(0)),
             exhausted: Arc::new(AtomicBool::new(false)),
             leased: None,
@@ -102,6 +118,7 @@ impl CustomInvariantWorkMeter {
     pub(crate) fn for_evaluation(&self, budget: &CustomPreparationBudget) -> Self {
         let remaining = self
             .maximum
+            .expect("only installed invariant meters enter evaluation")
             .get()
             .saturating_sub(self.consumed.load(Ordering::Relaxed));
         let meter = Self::new(NonZeroU64::new(remaining.max(1)).unwrap()).with_lease(budget);
@@ -143,7 +160,7 @@ impl CustomInvariantWorkMeter {
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                 current
                     .checked_add(bytes)
-                    .filter(|next| *next <= leased.memory_ceiling)
+                    .filter(|next| leased.memory_ceiling.is_none_or(|ceiling| *next <= ceiling))
             })
             .is_err()
         {
@@ -162,7 +179,7 @@ impl CustomInvariantWorkMeter {
                 .claimed_memory
                 .load(Ordering::Relaxed)
                 .checked_add(bytes)
-                .is_some_and(|peak| peak <= leased.memory_ceiling)
+                .is_some_and(|peak| leased.memory_ceiling.is_none_or(|ceiling| peak <= ceiling))
     }
 
     fn safe_point(&self) -> bool {
@@ -183,8 +200,20 @@ impl CustomInvariantWorkMeter {
         if self.exceeded() || !self.safe_point() {
             return false;
         }
-        let units = u64::try_from(units).unwrap_or(u64::MAX);
+        let Ok(units) = u64::try_from(units) else {
+            self.stop(CustomPreparationStop::WorkExhausted);
+            return false;
+        };
         if !self.try_claim_bytes(units.saturating_mul(STRUCTURAL_UNIT_BYTES)) {
+            return false;
+        }
+        self.try_charge_work(units)
+    }
+
+    // Read-only planning visits have work but no allocation. Every retained
+    // plan payload is claimed explicitly by try_plan_item's byte declaration.
+    pub(super) fn try_charge_work(&self, units: u64) -> bool {
+        if self.exceeded() || !self.safe_point() {
             return false;
         }
         if let Some(leased) = &self.leased {
@@ -193,7 +222,7 @@ impl CustomInvariantWorkMeter {
                 .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                     current
                         .checked_add(units)
-                        .filter(|next| *next <= leased.work_ceiling)
+                        .filter(|next| leased.work_ceiling.is_none_or(|ceiling| *next <= ceiling))
                 })
                 .is_err()
             {
@@ -206,7 +235,7 @@ impl CustomInvariantWorkMeter {
             .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
                 current
                     .checked_add(units)
-                    .filter(|next| *next <= self.maximum.get())
+                    .filter(|next| self.maximum.is_none_or(|maximum| *next <= maximum.get()))
             })
             .is_err()
         {
@@ -215,8 +244,13 @@ impl CustomInvariantWorkMeter {
         }
         true
     }
+    /// Exact charged units; diagnostic provenance keeps its nonzero minimum.
+    pub(crate) fn charged_work(&self) -> u64 {
+        self.consumed.load(Ordering::Relaxed)
+    }
+
     pub(crate) fn consumed(&self) -> NonZeroU64 {
-        NonZeroU64::new(self.consumed.load(Ordering::Relaxed).max(1)).unwrap()
+        NonZeroU64::new(self.charged_work().max(1)).unwrap()
     }
     pub(crate) fn exceeded(&self) -> bool {
         self.exhausted.load(Ordering::Relaxed)
@@ -228,7 +262,7 @@ impl CustomInvariantWorkMeter {
 
 impl crate::validation::data::CustomInvariantLeaseBudget for CustomInvariantWorkMeter {
     fn checkpoint(&self, units: u64) -> bool {
-        usize::try_from(units).is_ok_and(|units| self.try_charge(units))
+        self.try_charge_work(units)
     }
 
     fn claim_result(&self, bytes: u64) -> bool {
@@ -243,3 +277,6 @@ impl crate::validation::data::CustomInvariantLeaseBudget for CustomInvariantWork
         self.check_claim_peak(bytes)
     }
 }
+
+#[cfg(test)]
+mod allocation_tests;

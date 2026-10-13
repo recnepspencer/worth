@@ -41,6 +41,7 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
     let feature_truth = recovered
         .read_truth()
         .read_observation(execution, &feature_basis.observation())
+        .expect("read request remains live")
         .unwrap();
     assert!(feature_truth.get_entity(source_entity).is_some());
     assert!(feature_truth
@@ -242,6 +243,7 @@ fn invalid_store_path_does_not_relabel_performed_in_memory_publication() {
     let truth = runtime
         .read_truth()
         .read_observation(execution, &basis.observation())
+        .expect("read request remains live")
         .expect("the finalized performed root is readable");
     assert_eq!(truth.entities().len(), 1);
     assert_eq!(

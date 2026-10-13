@@ -22,6 +22,7 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
         let read = runtime
             .read_truth()
             .read_snapshot(&explicit_snapshot, execution)
+            .expect("read request remains live")
             .unwrap();
         read_entity_name(read.get_entity(entity).unwrap())
             .unwrap()
@@ -30,7 +31,8 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
     let serial_version_name = {
         let read = runtime
             .read_truth()
-            .read_version(execution, created_version_id);
+            .read_version(execution, created_version_id)
+            .expect("read request remains live");
         read_entity_name(read.get_entity(entity).unwrap())
             .unwrap()
             .to_string()
@@ -39,6 +41,7 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
         let read = runtime
             .read_truth()
             .read_snapshot(&updated.snapshot, execution)
+            .expect("read request remains live")
             .unwrap();
         read_entity_name(read.get_entity(entity).unwrap())
             .unwrap()
@@ -56,13 +59,16 @@ fn concurrent_snapshot_and_version_reads_match_serial_truth() {
                 let snapshot_read = runtime
                     .read_truth()
                     .read_snapshot(&explicit_snapshot, execution)
+                    .expect("read request remains live")
                     .unwrap();
                 let version_read = runtime
                     .read_truth()
-                    .read_version(execution, created_version_id);
+                    .read_version(execution, created_version_id)
+                    .expect("read request remains live");
                 let latest_read = runtime
                     .read_truth()
                     .read_snapshot(&published_snapshot, execution)
+                    .expect("read request remains live")
                     .unwrap();
                 (
                     read_entity_name(snapshot_read.get_entity(entity).unwrap())
@@ -121,7 +127,8 @@ fn concurrent_read_pressure_keeps_cache_diagnostics_coherent() {
                     .expect("published snapshot diagnostics");
                 let historical = runtime
                     .read_truth()
-                    .read_version(execution, created_version_id);
+                    .read_version(execution, created_version_id)
+                    .expect("read request remains live");
                 let historical_name = read_entity_name(historical.get_entity(entity).unwrap())
                     .unwrap()
                     .to_string();

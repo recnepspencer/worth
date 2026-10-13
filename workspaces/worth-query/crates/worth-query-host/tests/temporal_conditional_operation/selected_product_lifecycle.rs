@@ -50,7 +50,7 @@ fn foreign_and_retired_tokens_fail_before_query_basis_work() {
         .expect("installed host call opens");
     assert_eq!(
         foreign_denial,
-        WorthQueryProductBranchAdmissionDenial::ForeignOwner
+        WorthQueryProductBranchAdmissionDenial::Refused(worth_query_host::facade::product::WorthQueryProductBranchAdmissionRefusalKind::ForeignOwner)
     );
     assert_eq!(
         observer.observe().acquisitions(),
@@ -101,7 +101,7 @@ fn foreign_and_retired_tokens_fail_before_query_basis_work() {
         .expect("installed host call opens");
     assert_eq!(
         retired_denial,
-        WorthQueryProductBranchAdmissionDenial::RetiredBranch
+        WorthQueryProductBranchAdmissionDenial::Refused(worth_query_host::facade::product::WorthQueryProductBranchAdmissionRefusalKind::RetiredBranch)
     );
     assert_eq!(
         observer.observe().acquisitions(),
@@ -119,7 +119,7 @@ fn foreign_and_retired_tokens_fail_before_query_basis_work() {
             .expect("installed host call opens"),
         WorthQueryApplicationProductBranchCloseDenial::Product(
             WorthQueryProductBranchCloseDenial::Selection(
-                WorthQueryProductBranchAdmissionDenial::RetiredBranch
+                WorthQueryProductBranchAdmissionDenial::Refused(worth_query_host::facade::product::WorthQueryProductBranchAdmissionRefusalKind::RetiredBranch)
             )
         )
     ));

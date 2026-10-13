@@ -13,6 +13,7 @@ pub(crate) trait InvariantBudget {
     fn checkpoint(&self, units: u64) -> bool;
     fn claim_result(&self, bytes: u64) -> bool;
     fn claim_scratch(&self, bytes: u64) -> bool;
+    fn remaining_scratch(&self) -> u64;
     fn check_scratch_peak(&self, bytes: u64) -> bool;
     fn ensure_result_total(&self, bytes: u64) -> bool;
     fn check_result_peak(&self, bytes: u64) -> bool;
@@ -62,6 +63,9 @@ impl<'a, 'b, 'c, 'd> LeasedInvariantBudget<'a, 'b, 'c, 'd> {
 }
 
 impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
+    fn remaining_scratch(&self) -> u64 {
+        self.context.borrow().remaining_scratch()
+    }
     fn checkpoint(&self, units: u64) -> bool {
         self.attempt(|context| context.checkpoint(units))
     }
@@ -98,8 +102,8 @@ impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
         let context = self.context.borrow();
         CustomPreparationBudget::new(
             self.status.clone(),
-            context.remaining_work(),
-            context.remaining_scratch(),
+            Some(context.remaining_work()),
+            Some(context.remaining_scratch()),
         )
     }
 

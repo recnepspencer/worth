@@ -6,10 +6,7 @@ use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 use crate::visibility::snapshot_states::HistoricalVisibilityBasis;
 
-use super::read_record_identity_ordering::{
-    authoritative_entity_records_are_identity_ordered,
-    authoritative_relation_records_are_identity_ordered, relation_identity_order_key,
-};
+use super::read_record_identity_ordering::relation_identity_order_key;
 use super::VisibilityProjectionView;
 
 pub(super) struct HistoricalProjectionReader<'view> {
@@ -53,27 +50,61 @@ impl<'view> HistoricalProjectionReader<'view> {
         Self { view, basis }
     }
 
-    pub(super) fn entity_records(&self, kind_id: KindId) -> Vec<EntityReadRecord> {
-        let storage = self.storage();
-        let registry = self.registry();
-        let mut records = Vec::new();
-        for partition_id in storage.partition_ids() {
-            records.extend(
-                self.view
-                    .reader()
-                    .visible_entities_of_kind_in_partition_from_state_with_registry(
-                        &storage,
-                        registry,
-                        partition_id,
-                        kind_id,
-                        self.view.version_id(),
-                    ),
-            );
-        }
-        debug_assert!(authoritative_entity_records_are_identity_ordered(&records));
-        records
+    pub(super) fn entity_records(
+        &self,
+        kind: KindId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        self.collect_entity_records(Some(kind), charge)
     }
-
+    pub(super) fn all_entity_records(
+        &self,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        self.collect_entity_records(None, charge)
+    }
+    fn collect_entity_records(
+        &self,
+        kind: Option<KindId>,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        let mut records = Vec::new();
+        for partition in self.storage().partition_ids() {
+            records.extend(self.entity_records_in_selected_partition(partition, kind, charge)?);
+        }
+        debug_assert!(
+            super::read_record_identity_ordering::authoritative_entity_records_are_identity_ordered(
+                &records
+            )
+        );
+        Ok(records)
+    }
+    pub(super) fn entity_records_in(
+        &self,
+        partition: PartitionId,
+        kind: KindId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        self.entity_records_in_selected_partition(partition, Some(kind), charge)
+    }
+    fn entity_records_in_selected_partition(
+        &self,
+        partition: PartitionId,
+        kind: Option<KindId>,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<EntityReadRecord>, worth_execution::MapKernelStop> {
+        self.view.reader().paid_entities_in_partition(
+            &self.storage(),
+            self.registry(),
+            partition,
+            kind,
+            super::super::reader::KindScanVisibility::for_selected_version(
+                self.view.current_version,
+                self.view.version_id(),
+            ),
+            charge,
+        )
+    }
     pub(super) fn entity_record(&self, entity_id: EntityId) -> Option<EntityReadRecord> {
         let storage = self.storage();
         let registry = self.registry();
@@ -87,65 +118,58 @@ impl<'view> HistoricalProjectionReader<'view> {
             )
     }
 
-    pub(super) fn all_entity_records(&self) -> Vec<EntityReadRecord> {
-        let storage = self.storage();
-        let mut records = Vec::new();
-        for (partition_id, slots) in self
-            .view
-            .reader()
-            .visible_entity_slots_from_state(&storage, self.view.version_id())
-        {
-            for slot in slots.iter_set_slots() {
-                if let Some(record) =
-                    self.entity_record(EntityId::new(partition_id, slot as u64, 0))
-                {
-                    records.push(record);
-                }
-            }
-        }
-        debug_assert!(authoritative_entity_records_are_identity_ordered(&records));
-        records
-    }
-
-    pub(super) fn entity_records_in(
+    pub(super) fn relation_records(
         &self,
-        partition_id: PartitionId,
-        kind_id: KindId,
-    ) -> Vec<EntityReadRecord> {
-        let storage = self.storage();
-        let registry = self.registry();
-        self.view
-            .reader()
-            .visible_entities_of_kind_in_partition_from_state_with_registry(
-                &storage,
-                registry,
-                partition_id,
-                kind_id,
-                self.view.version_id(),
-            )
+        kind: KindId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        self.collect_relation_records(Some(kind), charge)
     }
-
-    pub(super) fn relation_records(&self, kind_id: KindId) -> Vec<RelationReadRecord> {
-        let storage = self.storage();
-        let registry = self.registry();
+    pub(super) fn all_relation_records(
+        &self,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        self.collect_relation_records(None, charge)
+    }
+    fn collect_relation_records(
+        &self,
+        kind: Option<KindId>,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
         let mut records = Vec::new();
-        for partition_id in storage.partition_ids() {
-            records.extend(
-                self.view
-                    .reader()
-                    .visible_relations_of_kind_in_partition_from_state_with_registry(
-                        &storage,
-                        registry,
-                        partition_id,
-                        kind_id,
-                        self.view.version_id(),
-                    ),
-            );
+        for partition in self.storage().partition_ids() {
+            records.extend(self.relation_records_in_selected_partition(partition, kind, charge)?);
         }
         records.sort_by_key(relation_identity_order_key);
-        records
+        debug_assert!(super::read_record_identity_ordering::authoritative_relation_records_are_identity_ordered(&records));
+        Ok(records)
     }
-
+    pub(super) fn relation_records_in(
+        &self,
+        partition: PartitionId,
+        kind: KindId,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        self.relation_records_in_selected_partition(partition, Some(kind), charge)
+    }
+    fn relation_records_in_selected_partition(
+        &self,
+        partition: PartitionId,
+        kind: Option<KindId>,
+        charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+    ) -> Result<Vec<RelationReadRecord>, worth_execution::MapKernelStop> {
+        self.view.reader().paid_relations_in_partition(
+            &self.storage(),
+            self.registry(),
+            partition,
+            kind,
+            super::super::reader::KindScanVisibility::for_selected_version(
+                self.view.current_version,
+                self.view.version_id(),
+            ),
+            charge,
+        )
+    }
     pub(super) fn relation_record(&self, relation_id: RelationId) -> Option<RelationReadRecord> {
         let storage = self.storage();
         let registry = self.registry();
@@ -157,50 +181,6 @@ impl<'view> HistoricalProjectionReader<'view> {
                 relation_id,
                 self.view.version_id(),
             )
-    }
-
-    pub(super) fn all_relation_records(&self) -> Vec<RelationReadRecord> {
-        let storage = self.storage();
-        let mut records = Vec::new();
-        for (partition_id, slots) in self
-            .view
-            .reader()
-            .visible_relation_slots_from_state(&storage, self.view.version_id())
-        {
-            for slot in slots.iter_set_slots() {
-                if let Some(record) =
-                    self.relation_record(RelationId::new(partition_id, slot as u64, 0))
-                {
-                    records.push(record);
-                }
-            }
-        }
-        records.sort_by_key(relation_identity_order_key);
-        debug_assert!(authoritative_relation_records_are_identity_ordered(
-            &records
-        ));
-        records
-    }
-
-    pub(super) fn relation_records_in(
-        &self,
-        partition_id: PartitionId,
-        kind_id: KindId,
-    ) -> Vec<RelationReadRecord> {
-        let storage = self.storage();
-        let registry = self.registry();
-        let mut records = self
-            .view
-            .reader()
-            .visible_relations_of_kind_in_partition_from_state_with_registry(
-                &storage,
-                registry,
-                partition_id,
-                kind_id,
-                self.view.version_id(),
-            );
-        records.sort_by_key(relation_identity_order_key);
-        records
     }
 
     pub(super) fn storage(&self) -> HistoricalProjectionStorage<'_> {

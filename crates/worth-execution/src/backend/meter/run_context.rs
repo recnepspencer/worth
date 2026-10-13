@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use crate::authority::{ExecutionResourceLease, SerialRequest};
 
-use super::{activity, PhysicalActivity, RunLimits, WorkerActivity, ACTIVE_METER};
+use super::{
+    activity, NestedComputationStop, NestedStopOwner, PhysicalActivity, RunLimits, WorkerActivity,
+    ACTIVE_METER,
+};
 
 impl RunLimits {
     pub(crate) fn for_run(lease: Option<&ExecutionResourceLease<'_>>, serial: bool) -> Self {
@@ -30,6 +33,7 @@ impl RunLimits {
         let (
             deadline,
             ceiling,
+            ceiling_owner,
             worker_activity,
             physical_activity,
             physical_cell_charged,
@@ -42,6 +46,7 @@ impl RunLimits {
             (
                 parent.limits.deadline,
                 parent.limits.ceiling.saturating_sub(parent.work),
+                parent.limits.ceiling_owner,
                 Arc::clone(&parent.limits.worker_activity),
                 Arc::clone(&parent.limits.physical_activity),
                 false,
@@ -59,6 +64,7 @@ impl RunLimits {
             (
                 None,
                 u64::MAX,
+                NestedStopOwner::Request,
                 Arc::new(WorkerActivity::default()),
                 physical,
                 charged,
@@ -71,6 +77,7 @@ impl RunLimits {
             tokens,
             deadline,
             ceiling,
+            ceiling_owner,
             worker_activity,
             physical_activity,
             physical_cell_charged,
@@ -85,7 +92,11 @@ impl RunLimits {
                 (Some(parent), None) => Some(parent),
                 (None, child) => child,
             };
-            limits.ceiling = limits.ceiling.min(lease.policy().budget().work_ceiling());
+            let requested = lease.policy().budget().work_ceiling();
+            if requested <= limits.ceiling {
+                limits.ceiling = requested;
+                limits.ceiling_owner = NestedStopOwner::Request;
+            }
         }
         limits
     }
@@ -109,7 +120,10 @@ impl RunLimits {
 
     /// Narrows the ceiling to a computation's declared work, never widening it.
     pub(crate) fn within_work_ceiling(mut self, work_ceiling: u64) -> Self {
-        self.ceiling = self.ceiling.min(work_ceiling);
+        if work_ceiling < self.ceiling {
+            self.ceiling = work_ceiling;
+            self.ceiling_owner = NestedStopOwner::Computation(NestedComputationStop::WorkCeiling);
+        }
         self
     }
 }

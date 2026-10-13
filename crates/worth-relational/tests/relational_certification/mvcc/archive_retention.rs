@@ -113,7 +113,7 @@ fn snapshot_contains_entity(
 ) -> bool {
     runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .unwrap()
         .entity_record_with_projection_scope(
             execution,
@@ -121,5 +121,6 @@ fn snapshot_contains_entity(
             ProjectionAspectScope::empty(),
             |_| Some(()),
         )
+        .expect("fixture read request remains live")
         .is_some()
 }

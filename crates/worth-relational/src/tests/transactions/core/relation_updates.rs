@@ -32,6 +32,7 @@ fn relation_endpoint_update_preserves_relation_identity_and_rewrites_endpoints()
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -137,6 +138,7 @@ fn relation_endpoint_update_accepts_same_batch_created_target() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -200,6 +202,7 @@ fn relation_endpoint_update_to_same_batch_created_target_survives_old_target_ret
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -274,6 +277,7 @@ fn relation_endpoint_update_to_same_batch_created_source_survives_old_source_ret
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .expect("updated snapshot should read");
     let updated = read
         .relations()
@@ -340,6 +344,7 @@ fn relation_identity_can_be_replaced_in_one_transaction() {
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)
+        .expect("read request remains live")
         .expect("replacement snapshot should read");
     let replacements = read
         .relations()

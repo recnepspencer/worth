@@ -80,20 +80,27 @@ pub(super) fn observe(
             check_request_live(observation_request, "workflow retained evidence")?;
             let view = runtime
                 .read_truth()
-                .project_snapshot(snapshot, execution)
+                .project_snapshot(snapshot)
                 .ok_or_else(|| denial("applicability snapshot is unavailable"))?;
             for (entity, kind) in [(resource, binding.from), (related, binding.to)] {
-                let matches = view.entity_record_with_projection_scope(
-                    execution,
-                    entity,
-                    ProjectionAspectScope::empty(),
-                    |record| {
-                        Some(
-                            record.kind_id() == kind
-                                && record.lifecycle() == RecordLifecycleState::Live,
+                let matches =
+                    view.entity_record_with_projection_scope(
+                        execution,
+                        entity,
+                        ProjectionAspectScope::empty(),
+                        |record| {
+                            Some(
+                                record.kind_id() == kind
+                                    && record.lifecycle() == RecordLifecycleState::Live,
+                            )
+                        },
+                    )
+                    .map_err(|cause| {
+                        WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                            cause,
+                            "authoritative observation",
                         )
-                    },
-                ) == Some(true);
+                    })? == Some(true);
                 if !matches {
                     return Err(denial(
                         "applicability endpoint is absent or has another kind",
@@ -109,6 +116,12 @@ pub(super) fn observe(
                     1,
                 )
                 .map_err(|unavailable| match unavailable {
+                    AdjacencyStructuralRevisionDenial::Execution(cause) => {
+                        WorthQueryApplicationAttemptDenial::relational_read_stopped(
+                            cause,
+                            "applicability revision",
+                        )
+                    }
                     AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                         denial("applicability native revision exceeds its comparison work")
                     }

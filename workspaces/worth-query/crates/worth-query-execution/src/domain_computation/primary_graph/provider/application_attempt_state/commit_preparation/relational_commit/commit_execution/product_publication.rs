@@ -1,8 +1,9 @@
-use worth_runtime_world::facade::{
-    RuntimeWorldConditionalDefinitionPublicationOutcome, RuntimeWorldPublicationOutcome,
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 
-use super::{failure, world_no_effect};
+use super::{failure, publication_request_stop, world_no_effect};
 use crate::domain_computation::primary_graph::provider::{
     WorthQueryPrimaryGraphApplicationAttempt, WorthQueryPrimaryGraphProvider,
 };
@@ -49,7 +50,10 @@ pub(super) fn publish(
     let Some(change) = attempt.take_conditional_definition() else {
         let prepared = product
             .prepare_relational_candidate(candidate, &request, successor_observation_requested)
-            .map_err(world_no_effect)?;
+            .map_err(|denial| match denial {
+                PublicationDenial::Stopped(stop) => publication_request_stop(stop),
+                PublicationDenial::Refused(no_effect) => world_no_effect(no_effect),
+            })?;
         let lineage_slot = prepare_lineage_slot(
             provider,
             attempt,
@@ -74,7 +78,7 @@ pub(super) fn publish(
             )
             .map_err(|()| capacity_exhausted())?;
         return match prepared.execute(execution) {
-            RuntimeWorldPublicationOutcome::Performed(publication) => {
+            Ok(PublicationOutcome::Performed(publication)) => {
                 reservation.release();
                 Ok(WorthQueryApplicationProductPublicationOutcome::Performed(
                     WorthQueryPerformedApplicationProductPublication {
@@ -83,7 +87,7 @@ pub(super) fn publish(
                     },
                 ))
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => Ok(
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => Ok(
                 WorthQueryApplicationProductPublicationOutcome::Unpublished {
                     unpublished:
                         crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
@@ -96,7 +100,11 @@ pub(super) fn publish(
                     reservation,
                 },
             ),
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                reservation.release();
+                Err(publication_request_stop(stop))
+            }
+            Err(PublicationDenial::Refused(no_effect)) => {
                 reservation.release();
                 Err(world_no_effect(no_effect))
             }
@@ -120,7 +128,7 @@ pub(super) fn publish(
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let prepared = product
             .prepare_combined_candidate(candidate, &request, successor_observation_requested)
-            .map_err(world_no_effect)?;
+            .map_err(|denial| match denial {PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDenial::Refused(no_effect)=>world_no_effect(no_effect)})?;
         let predecessor = bridge
             .admit_exact_conditional_signal_basis(
                 &parts.predecessor,
@@ -148,10 +156,7 @@ pub(super) fn publish(
             )
             .map_err(|()| capacity_exhausted())?;
         match prepared.execute(execution, bridge_prepared, &bridge) {
-            RuntimeWorldConditionalDefinitionPublicationOutcome::Performed {
-                publication,
-                lowering,
-            } => {
+            Ok(PublicationOutcome::Performed((publication, lowering))) => {
                 reservation.release();
                 Ok(WorthQueryApplicationProductPublicationOutcome::Performed(WorthQueryPerformedApplicationProductPublication {
                     publication: terminal.fill(
@@ -161,7 +166,7 @@ pub(super) fn publish(
                     prepared_lineage_slot: lineage_slot,
                 }))
             }
-            RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects) => {
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 Ok(WorthQueryApplicationProductPublicationOutcome::Unpublished {
                     unpublished: crate::domain_computation::WorthQueryProductUnpublishedApplication::new_conditional_definition(
                         effects,
@@ -173,7 +178,8 @@ pub(super) fn publish(
                     reservation,
                 })
             }
-            RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => {reservation.release(); Err(publication_request_stop(stop))},
+            Err(PublicationDenial::Refused(no_effect)) => {
                 reservation.release();
                 Err(world_no_effect(no_effect))
             }

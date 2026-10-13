@@ -35,9 +35,10 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     let name = locator("name", "name");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .entity_field_revision(execution, entity, &name)
+        .expect("read request remains live")
         .expect("created field has a native owner revision");
     runtime.durability_authority().checkpoint().unwrap();
     let recovery = runtime
@@ -53,9 +54,10 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     assert_eq!(
         recovered
             .read_truth()
-            .project_snapshot(&snapshot, execution)
+            .project_snapshot(&snapshot)
             .unwrap()
-            .entity_field_revision(execution, entity, &name),
+            .entity_field_revision(execution, entity, &name)
+            .expect("read request remains live"),
         Some(before)
     );
     recovered.snapshots().release_snapshot(&snapshot).unwrap();
@@ -72,9 +74,10 @@ fn checkpoint_restore_preserves_exact_field_revision() {
     assert_eq!(
         reopened
             .read_truth()
-            .project_snapshot(&reopened_snapshot, execution)
+            .project_snapshot(&reopened_snapshot)
             .unwrap()
-            .entity_field_revision(execution, entity, &name),
+            .entity_field_revision(execution, entity, &name)
+            .expect("read request remains live"),
         Some(before)
     );
     reopened
@@ -113,9 +116,10 @@ fn checkpoint_restore_preserves_relation_field_revision() {
     let label = locator("label", "label");
     let before = runtime
         .read_truth()
-        .project_snapshot(&created.snapshot, execution)
+        .project_snapshot(&created.snapshot)
         .unwrap()
         .relation_field_revision(execution, relation, &label)
+        .expect("read request remains live")
         .unwrap();
     assert_eq!(before.presence(), RelationalFieldPresence::Present);
 
@@ -132,9 +136,10 @@ fn checkpoint_restore_preserves_relation_field_revision() {
     assert_eq!(
         recovered
             .read_truth()
-            .project_snapshot(&snapshot, execution)
+            .project_snapshot(&snapshot)
             .unwrap()
-            .relation_field_revision(execution, relation, &label),
+            .relation_field_revision(execution, relation, &label)
+            .expect("read request remains live"),
         Some(before)
     );
     recovered.snapshots().release_snapshot(&snapshot).unwrap();
@@ -313,6 +318,7 @@ fn field_at(
 ) -> Option<RelationalFieldRevision> {
     runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)?
+        .project_snapshot(snapshot)?
         .entity_field_revision(execution, entity, locator)
+        .expect("read request remains live")
 }

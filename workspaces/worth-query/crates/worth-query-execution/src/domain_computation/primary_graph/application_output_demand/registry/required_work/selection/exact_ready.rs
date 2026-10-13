@@ -3,6 +3,20 @@
 use super::*;
 
 impl SelectedReadyReadmission {
+    pub(in crate::domain_computation::primary_graph) fn retain(
+        &self,
+        admission: &mut InvalidationEditAdmission,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        admission
+            .charge_external_work((std::mem::size_of::<Self>() + 3) as u64)
+            .map_err(|_| work_denial())?;
+        Ok(Self {
+            completion: self.completion.clone(),
+            readmission: Arc::clone(&self.readmission),
+            membership: Arc::clone(&self.membership),
+        })
+    }
+
     /// The registry row this Ready belongs to.
     pub(in crate::domain_computation::primary_graph) fn key(&self) -> &WorthQueryOutputDemandKey {
         self.membership.key()
@@ -24,7 +38,7 @@ impl SelectedReadyReadmission {
                 .is_some_and(|source| Arc::ptr_eq(source, &self.readmission))
             && matches!(&record.state,
                 DemandState::Output(output)
-                    if matches!(output.advancement, WorthQueryOutputAdvancement::Idle)
+                    if matches!(output.advancement(), WorthQueryOutputAdvancement::Idle)
                         && matches!(&output.checkpoint,
                             Some(WorthQueryOutputCheckpoint::Ready(current))
                                 if current.same_cell(&self.completion)))

@@ -32,7 +32,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
         crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
     let current = request.at(&retained);
     let maximum_work = NonZeroUsize::new(4_096).unwrap();
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         for zero_memory in [false, true] {
@@ -67,17 +67,19 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
             };
             match (placement, zero_memory) {
                 (_, false) => assert_eq!(cause, Denial::Resource(Resource::WorkExhausted)),
-                (Placement::Serial, true) => {
-                    assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit))
+                (Placement::Serial | Placement::Leased(_), true) => {
+                    let Denial::Resource(Resource::MemoryLimit {
+                        level,
+                        requested,
+                        admitted,
+                    }) = cause
+                    else {
+                        panic!("the opening refusal names its memory limit: {cause:?}");
+                    };
+                    assert_eq!(level, Level::Policy);
+                    assert_eq!(admitted, 0);
+                    assert!(requested > 0);
                 }
-                (Placement::Leased(_), true) => assert!(matches!(
-                    cause,
-                    Denial::Resource(Resource::MemoryLimit {
-                        level: Level::Policy,
-                        admitted: 0,
-                        ..
-                    })
-                )),
                 (Placement::World | Placement::Certified { .. }, true) => {
                     panic!("the custody matrix selects serial and leased placement explicitly")
                 }
@@ -90,3 +92,5 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
         }
     }
 }
+
+// Custody probes share this module's existing observer boundary.

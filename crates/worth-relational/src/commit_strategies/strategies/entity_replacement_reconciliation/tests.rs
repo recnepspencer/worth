@@ -181,6 +181,7 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
     let replacement_read = runtime
         .visibility_reads()
         .read_snapshot(&replacement_snapshot, request_execution)
+        .expect("read request remains live")
         .expect("replacement snapshot should read");
     let replacement_record = replacement_read
         .get_entity(replacement_id)

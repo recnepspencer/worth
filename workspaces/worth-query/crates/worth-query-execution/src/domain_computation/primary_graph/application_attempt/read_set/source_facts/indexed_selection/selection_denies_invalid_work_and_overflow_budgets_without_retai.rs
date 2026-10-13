@@ -1,5 +1,7 @@
 //! selection denies invalid work and overflow budgets without retaining partial results.
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 #[test]
 fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_results() {
@@ -68,7 +70,9 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
                         .unwrap();
                     assert_eq!(
                         denial.kind(),
-                        WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded
+                        WorthQueryEntityResolutionDenialKind::Stopped(
+                            NativeReadStop::WorkExhausted
+                        )
                     );
                 },
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
@@ -91,17 +95,21 @@ fn selection_denies_invalid_work_and_overflow_budgets_without_retaining_partial_
                         for (limit, expected) in [
                             (
                                 0,
-                                WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
+                                WorthQueryEntityResolutionDenialKind::Refused(
+                                    ResolutionRefusal::InvalidCandidateLimit,
+                                ),
                             ),
                             (
                                 usize::MAX,
-                                WorthQueryEntityResolutionDenialKind::InvalidCandidateLimit,
+                                WorthQueryEntityResolutionDenialKind::Refused(
+                                    ResolutionRefusal::InvalidCandidateLimit,
+                                ),
                             ),
                             (
                                 1,
-                                WorthQueryEntityResolutionDenialKind::CandidateLimitExceeded {
-                                    maximum: 1,
-                                },
+                                WorthQueryEntityResolutionDenialKind::Refused(
+                                    ResolutionRefusal::CandidateLimitExceeded { maximum: 1 },
+                                ),
                             ),
                         ] {
                             let denial = reader

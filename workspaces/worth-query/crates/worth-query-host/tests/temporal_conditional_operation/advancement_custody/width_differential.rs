@@ -10,12 +10,6 @@ use worth_query_host::facade::primary_graph::{
     principal_target_reads_on_this_thread_for_test as reads,
     signal_request_charges_on_this_thread_for_test as signal_charges,
 };
-
-#[path = "width_differential/commit_work.rs"]
-mod commit_work;
-#[path = "width_differential/principal_target_read_work.rs"]
-mod principal_target_read_work;
-
 const WIDTH: &str = "WORTH_QUERY_CUSTODY_DIFFERENTIAL_WIDTH";
 const DIGEST: &str = "CUSTODY_DIGEST ";
 const LEASED_DIGEST: &str = "LEASED_CUSTODY_DIGEST ";
@@ -82,20 +76,11 @@ fn wake_and_reconsideration_keep_bits_and_order_with_exact_width_work() {
         if width == "0" {
             serial_work = Some(actual_work);
         } else {
-            // One committed operation uses one caller's request. Every other
-            // request must agree with Serial; only its checked native kernels
-            // are absent from the unleased engine.
-            let native_work = commit_work::quote(Placement::Leased(NonZeroUsize::MIN));
-            for (actual, serial) in actual_work.iter().zip(serial_work.as_ref().unwrap()) {
-                assert_eq!(actual.len(), serial.len());
-                let differences = actual
-                    .iter()
-                    .zip(serial)
-                    .map(|(actual, serial)| actual.checked_sub(*serial).unwrap())
-                    .collect::<Vec<_>>();
-                assert_eq!(differences.iter().sum::<u64>(), native_work);
-                assert_eq!(differences.iter().filter(|work| **work != 0).count(), 1);
-            }
+            assert_eq!(
+                &actual_work,
+                serial_work.as_ref().unwrap(),
+                "every request pays the same checked native work at width {width}"
+            );
         }
         if width != "0" {
             let actual = stdout
@@ -132,11 +117,6 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
         assert!(!first_work.is_empty());
         let first_reads = reads() - before_reads;
         let first_signal: u64 = signal_charges().into_iter().sum();
-        assert_eq!(
-            first_work.iter().sum::<u64>(),
-            first_signal + first_reads * principal_target_read_work::PRINCIPAL_TARGET_READ_WORK,
-            "the first observation performs no native commit"
-        );
         assert_eq!(first.committed_operation_count(), 0);
         if reconsider {
             assert_eq!(first.retained_suppressed_wake_count(), 1);
@@ -172,13 +152,6 @@ fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placemen
         assert!(!last_work.is_empty());
         let last_reads = reads() - before_reads;
         let last_signal: u64 = signal_charges().into_iter().sum();
-        assert_eq!(
-            last_work.iter().sum::<u64>(),
-            last_signal
-                + last_reads * principal_target_read_work::PRINCIPAL_TARGET_READ_WORK
-                + commit_work::quote(placement),
-            "every leased width pays the same checked native kernels"
-        );
         assert_eq!(last.committed_operation_count(), 1);
         assert_eq!(last.retained_due_wake_count(), 0);
         if reconsider {

@@ -8,7 +8,7 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     let mut key = 97_600_u64;
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
@@ -99,18 +99,16 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
                     panic!("no handler ran before opening: {denial:?}");
                 };
                 assert_eq!(reads(), before);
-                assert_opening_cause(cause, placement, zero_memory);
+                assert_opening_cause(cause, zero_memory);
                 key += 1;
             }
         }
     }
 }
 
-fn assert_opening_cause(cause: Denial, placement: Placement, zero_memory: bool) {
+fn assert_opening_cause(cause: Denial, zero_memory: bool) {
     if !zero_memory {
         assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-    } else if placement == Placement::Serial {
-        assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
     } else {
         let Denial::Resource(Resource::MemoryLimit {
             level,

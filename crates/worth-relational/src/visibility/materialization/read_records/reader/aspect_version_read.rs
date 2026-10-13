@@ -26,7 +26,7 @@ pub(super) fn read_versions(
     symbolic: &BTreeMap<Symbol, u64>,
     sort: bool,
 ) -> Result<Vec<(AspectKey, u64)>, QueryReadExecutionStop> {
-    super::query_preparation::check_query_preparation_request(execution)?;
+    super::query_preparation::consult_query_preparation_request(execution)?;
     execution
         .in_scope(|lease| {
             let identity = PartitionIdentity::new(1);

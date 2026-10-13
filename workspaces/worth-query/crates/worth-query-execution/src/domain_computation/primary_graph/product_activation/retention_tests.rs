@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::domain_computation::execution_runtime::product_world::{
     activation::{WorthQueryProductActivationDenial, WorthQueryProductActivationRegistry},
     test_product_world_resources,
@@ -75,6 +76,10 @@ fn foreign_product_is_denied_by_owner_affinity_before_local_coordination() {
             .application
             .product_runtime
             .admit_product_branch(selection.branch_identity()),
-        Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignOwner)
+        Err(
+            crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner
+            )
+        )
     ));
 }

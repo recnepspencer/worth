@@ -63,7 +63,7 @@ pub(super) fn prepare<const REUSE: bool, const MODE: u8, const WORKFLOW: bool>(
             let capability = application
                 .installed_schema()
                 .capability(
-                    super::super::super::super::entry_correction::CorrectEntryCapability::<
+                    super::super::super::super::entry_correction::capability::CorrectEntryCapability::<
                         CheckpointSchema,
                     >::reference(),
                     CorrectEntryValue::reference(),

@@ -4,7 +4,6 @@ use super::retired_tokens::{retired_hyphen_fragment, retired_underscore_fragment
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 /// A documented engine whose items the audience leaf facades re-export, so
 /// the facade documentation ratchet resolves every leaf name.
@@ -34,13 +33,8 @@ pub struct LegacyReferenceTestRepository {
 impl LegacyReferenceTestRepository {
     /// Create a unique empty root for one scenario. Caller must [`cleanup`].
     pub fn create(label: &str) -> Self {
-        let nanos = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("system clock")
-            .as_nanos();
-        let root = std::env::temp_dir().join(format!(
-            "boundary-check-legacy-{label}-{}-{nanos}",
-            std::process::id()
+        let root = worth_harness::tooling::fixture_path::unique_path(&format!(
+            "boundary-check-legacy-{label}"
         ));
         let _ = fs::remove_dir_all(&root);
         Self { root }

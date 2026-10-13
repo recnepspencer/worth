@@ -15,17 +15,19 @@ impl<'a> ExecutionResourceLease<'a> {
     }
     pub fn child(&self, request: LeaseRequest) -> Result<Self, LeaseDenial> {
         if request.policy.determinism() != self.policy.determinism() {
-            return Err(LeaseDenial::EquivalenceContractUnavailable);
+            return Err(LeaseDenial::refused(
+                LeaseDenial::EquivalenceContractUnavailable,
+            ));
         }
         let budget = request.policy.budget();
         if budget.max_workers().get() > self.node.max_workers {
-            return Err(LeaseDenial::WorkerLimitExceedsParent);
+            return Err(LeaseDenial::refused(LeaseDenial::WorkerLimitExceedsParent));
         }
         if budget.charged_memory_bytes() > self.node.charged_memory_bytes {
-            return Err(LeaseDenial::MemoryLimitExceedsParent);
+            return Err(LeaseDenial::refused(LeaseDenial::MemoryLimitExceedsParent));
         }
         if budget.work_ceiling() > self.policy.budget().work_ceiling() {
-            return Err(LeaseDenial::WorkLimitExceedsParent);
+            return Err(LeaseDenial::refused(LeaseDenial::WorkLimitExceedsParent));
         }
         Ok(self.child_from_validated_request(request))
     }
@@ -48,7 +50,8 @@ impl<'a> ExecutionResourceLease<'a> {
     fn child_from_validated_request(&self, request: LeaseRequest) -> Self {
         let budget = request.policy.budget();
         Self {
-            authority: self.authority,
+            authority: Arc::clone(&self.authority),
+            _authority: std::marker::PhantomData,
             node: Arc::new(LeaseNode {
                 id: self.authority.next_id(),
                 parent: Some(Arc::clone(&self.node)),

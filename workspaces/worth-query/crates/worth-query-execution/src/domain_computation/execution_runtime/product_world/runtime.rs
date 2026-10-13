@@ -22,6 +22,8 @@ pub(crate) struct WorthQueryProductRootIdentity {
 /// default branch is a caller convenience; World alone resolves its current head.
 #[derive(Clone)]
 pub struct WorthQueryProductRuntime {
+    pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
+    pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     pub(crate) owner: Arc<RuntimeWorldOwner<(), (), (), (), ()>>,
     pub(crate) source: RuntimeBridgeRelationalSource,
     pub(crate) activations: Arc<WorthQueryProductActivationRegistry>,
@@ -69,6 +71,8 @@ impl WorthQueryProductRuntime {
         let _ = default_branch;
         Self {
             owner: Arc::new(owner),
+            adoption_preparation: Arc::default(),
+            named_read_probe: Arc::default(),
             source,
             activations: Arc::new(activations),
             clock,

@@ -213,10 +213,26 @@ fn resolve_indeterminate_commit(
             WorthQueryProviderProgressionOutcome::Aborted
         }
         Ok(WorthQueryProviderIdempotencyResolution::Drift)
-        | Ok(WorthQueryProviderIdempotencyResolution::Unpublished)
-        | Err(_) => WorthQueryProviderProgressionOutcome::Indeterminate(evidence),
+        | Ok(WorthQueryProviderIdempotencyResolution::Unpublished) => {
+            WorthQueryProviderProgressionOutcome::Indeterminate(evidence)
+        }
+        Err(denial) => indeterminate_read_denied(evidence, denial),
     }
 }
+
+fn indeterminate_read_denied(
+    evidence: WorthQueryApplicationUnresolvedCommitEvidence,
+    denial: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
+) -> WorthQueryProviderProgressionOutcome {
+    let evidence = match denial {
+        crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial::ExecutionDenied(stop) => evidence.with_read_stop(stop),
+        _ => evidence,
+    };
+    WorthQueryProviderProgressionOutcome::Indeterminate(evidence)
+}
+
+#[cfg(test)]
+mod read_fold_tests;
 
 mod committed_components;
 use committed_components::{

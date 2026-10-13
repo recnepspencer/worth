@@ -93,7 +93,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         current.identity_value.clone(),
                         &current.expected_revision,
                     );
-                    let host_projection = current_intent.is_ok().then(|| {
+                    let host_projection = matches!(current_intent, Ok(true)).then(|| {
                         self.invoker
                             .project(candidate.input(), reader, projected_scope)
                     });
@@ -103,7 +103,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         .map_err(|super::invoker_isolation::TemporalInvokerPanicked| super::super::WorthQueryConditionalReentryFailure::ProjectionInvokerPanicked)?
         .map_err(WorthQueryTemporalReentryDenial::from_projection)?;
         let ((host_projection, current_intent), projection, _) = projected.into_parts();
-        if current_intent.is_err() {
+        if !current_intent? {
             return Ok(None);
         }
         let host_projection = host_projection

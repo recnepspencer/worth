@@ -26,7 +26,7 @@ pub(super) fn entity_kind(
     work.read()?;
     work.prepare(view.exact_entity_state_read_work_bound().unwrap(), 0)?;
     Ok(view
-        .with_exact_entity_state(execution, id, |metadata, _| metadata.kind_id)
+        .with_exact_entity_state(id, |metadata, _| metadata.kind_id)
         .expect("exact basis checked"))
 }
 

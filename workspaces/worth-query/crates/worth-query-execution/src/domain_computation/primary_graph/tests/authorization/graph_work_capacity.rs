@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Duration;
 
 use super::super::fixture::{
@@ -76,7 +77,9 @@ fn operation_graph_capacity_denial_and_drop_return_exact_reservations() {
             };
             assert_eq!(
                 denial.kind(),
-                WorthQueryOperationAuthorizationDenialKind::GraphWorkAdmissionUnavailable
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::GraphWorkAdmissionUnavailable
+                )
             );
             assert!(denial.subject().contains("CapacityUnavailable"));
             drop(retained.pop());

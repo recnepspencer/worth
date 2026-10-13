@@ -10,7 +10,8 @@ use crate::runtime::VisibilityProjectionView;
 use crate::storage::data::RelationReadRecord;
 
 use super::{
-    change_routing::ChangeRouting, entry_edits::edit, reads, record_metadata, work::MaintenanceWork,
+    change_routing::ChangeRouting, entry_edits::edit, persistent_allocation::UngroupedAllocation,
+    reads, record_metadata, work::MaintenanceWork,
 };
 
 pub(super) fn refresh(
@@ -22,18 +23,19 @@ pub(super) fn refresh(
     after: &VisibilityProjectionView,
     work: &mut MaintenanceWork,
 ) -> Result<(), Denial> {
+    let mut allocation = UngroupedAllocation::new();
     let affected = affected_shared(execution, definition, changes, before, after, work)?;
     for shared in affected {
         let old = rows_for_shared(execution, before, shared, definition, work)?;
         let new = rows_for_shared(execution, Some(after), shared, definition, work)?;
         for (key, row) in &old {
             if new.get(key) != Some(row) {
-                edit(entries, *key, *row, false, Ord::cmp, work)?;
+                edit(entries, *key, *row, false, Ord::cmp, &mut allocation, work)?;
             }
         }
         for (key, row) in &new {
             if old.get(key) != Some(row) {
-                edit(entries, *key, *row, true, Ord::cmp, work)?;
+                edit(entries, *key, *row, true, Ord::cmp, &mut allocation, work)?;
             }
         }
     }
@@ -134,6 +136,7 @@ fn rows_for_shared(
     for (left_id, left_relation) in left {
         for (right_id, right_relation) in &right {
             work.derive_row()?;
+            work.ordered::<RelationJoinKey, RelationJoinEntry>(rows.len(), 1, 0)?;
             rows.insert(
                 RelationJoinKey::new(left_id, *right_id),
                 RelationJoinEntry::new(shared, left_relation, *right_relation),
@@ -178,6 +181,7 @@ fn insert_leg(
         return Ok(());
     }
     work.charge(1)?;
+    work.ordered::<EntityId, RelationId>(selected.len(), 1, 0)?;
     selected
         .entry(external)
         .and_modify(|id| *id = (*id).min(relation.relation_id))

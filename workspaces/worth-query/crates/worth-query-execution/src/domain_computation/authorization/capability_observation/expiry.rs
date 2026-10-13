@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 
 use super::*;
@@ -22,8 +23,8 @@ pub(super) fn observe_grant_expiry(
     )]);
     relational
         .read_truth()
-        .project_snapshot(snapshot, execution)
-        .and_then(|view| {
+        .project_snapshot(snapshot)
+        .map(|view| {
             view.entity_record_with_projection_scope(execution, grant, scope, |record| {
                 (record.kind_id() == installed.grant_kind()
                     && record.lifecycle()
@@ -36,9 +37,19 @@ pub(super) fn observe_grant_expiry(
                     .flatten()
             })
         })
+        .transpose()
+        .map_err(|cause| {
+            crate::domain_computation::authorization::denial::relational_read_denial(
+                cause,
+                installed.contract().name(),
+            )
+        })?
+        .flatten()
         .ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 installed.contract().name(),
             )
         })

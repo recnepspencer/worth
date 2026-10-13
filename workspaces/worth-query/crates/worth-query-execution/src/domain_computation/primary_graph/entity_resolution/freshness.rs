@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::indexes::{BoundedEntityFieldLookupRequest, BoundedIndexParityMode};
 
 use super::super::{
@@ -15,7 +16,9 @@ pub(super) fn validate<Schema, Entity>(
         || identity.binding_identity() != &truth.installed.binding_identity
     {
         return Err(denial(
-            WorthQueryEntityResolutionDenialKind::ForeignResolutionTruth,
+            WorthQueryEntityResolutionDenialKind::Refused(
+                ResolutionRefusal::ForeignResolutionTruth,
+            ),
             identity.entity_name(),
         ));
     }
@@ -40,7 +43,7 @@ pub(super) fn validate<Schema, Entity>(
         || lookup.candidate_entity_ids()[0] != identity.entity_id()
     {
         return Err(denial(
-            WorthQueryEntityResolutionDenialKind::UnknownEntity,
+            WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity),
             identity.entity_name(),
         ));
     }

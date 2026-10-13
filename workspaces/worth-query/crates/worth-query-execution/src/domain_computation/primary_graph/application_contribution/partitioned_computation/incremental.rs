@@ -12,12 +12,18 @@
 //!
 //! A run's result, its charged work and the partition a work ceiling names
 //! never depend on reuse; request memory and checkpoint count do, since a
-//! carried partition holds no gather bytes. Carried charges replay in a full
+//! carried partition reserves its actual held objects rather than a full
+//! run's gathers and scratch. Memory is physical, so its refusal may differ
+//! with reuse or posture; work-ceiling stops and logical outcomes may not. Carried charges replay in a full
 //! run's order among the calls made again, membership, item keys, gathers and
 //! kernels by identity over the run's own items and partitions, then the
 //! combines of the run's own tree, so a ceiling names the partition a full
 //! run would name.
 
+mod kernel_steps;
+pub(super) use kernel_steps::KernelSteps;
+mod kernel_recording;
+pub(super) use kernel_recording::KernelRecording;
 mod carriage;
 mod deposit;
 mod next_tree;
@@ -144,7 +150,10 @@ pub(super) fn begin<Key, Item, Reduced, Schema, Operation>(
     installation: &ComputationInstallation,
     input_digest: [u8; 32],
     remaining_work: RemainingWork,
-) -> Begun<Key, Item, Reduced>
+) -> Result<
+    Begun<Key, Item, Reduced>,
+    crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+>
 where
     Key: Send + Sync + 'static,
     Item: Send + Sync + 'static,
@@ -153,16 +162,18 @@ where
     let prior = match reader.take_computation_prior() {
         Ok(prior) => prior,
         Err(reason) => {
-            return Begun::Full {
+            return Ok(Begun::Full {
                 basis: Err(reason.suppression()),
                 cause: reason.full_cause(),
-            }
+            });
         }
     };
     let basis = RetainedBasis::new(installation.clone(), prior.edition, input_digest);
-    let full = |basis, cause| Begun::Full {
-        basis: Ok(RetainedBasisToken(basis)),
-        cause,
+    let full = |basis, cause| {
+        Ok(Begun::Full {
+            basis: Ok(RetainedBasisToken(basis)),
+            cause,
+        })
     };
     if super::certification_reuse::disabled() {
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
@@ -198,11 +209,18 @@ where
         partitions: BTreeMap::new(),
     };
     for (key, fact, readers) in retained.facts.facts() {
+        #[cfg(test)]
+        let _read = observed::RetainedFactComparison::enter();
         let movement = match reader.observe_retained(execution, &COMPARATOR, key) {
             Ok(observed) => match FactMovement::between(fact, &observed).movement() {
                 Movement::Unmoved => KeyMovement::Unchanged,
                 Movement::Moved => KeyMovement::Changed,
             },
+            Err(denial) if matches!(denial.kind(),
+                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ExecutionRequest(_)
+                | crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::Cancelled
+                | crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::DeadlineExceeded
+            ) => return Err(denial),
             Err(_) => KeyMovement::NotObservable,
         };
         let moved = movement != KeyMovement::Unchanged;
@@ -228,7 +246,7 @@ where
             keys.push(key.clone());
         }
     }
-    Begun::Incremental(run)
+    Ok(Begun::Incremental(run))
 }
 
 #[cfg(test)]

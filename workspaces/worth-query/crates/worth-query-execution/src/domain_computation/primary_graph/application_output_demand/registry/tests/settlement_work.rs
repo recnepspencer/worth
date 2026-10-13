@@ -86,7 +86,10 @@ fn nonempty_exact_settlement_lookup_denies_before_pinning_and_retries() {
 
 fn queued_terminal(
     identity: &Arc<RecordedSettlementIdentity>,
-) -> (DemandRegistryState, Arc<WorthQueryOutputDemandKey>) {
+) -> (
+    WorthQueryOutputDemandRegistry,
+    Arc<WorthQueryOutputDemandKey>,
+) {
     let (mut state, _upstream) = populated_index(identity);
     let downstream = Arc::new(key("terminal-dependent", 2, 2));
     let mut row = record(
@@ -102,56 +105,82 @@ fn queued_terminal(
         * std::mem::size_of::<(Arc<RecordedSettlementIdentity>, usize)>();
     state.records.insert(downstream.as_ref().clone(), row);
     assert!(state.defer_terminal_cleanup(&downstream, 0));
-    (state, downstream)
+    {
+        let registry = WorthQueryOutputDemandRegistry::default();
+        *registry.state.lock().unwrap() = state;
+        (registry, downstream)
+    }
 }
 
 #[test]
 fn queued_historical_settlement_cleanup_denies_before_unlink_and_retries() {
     let (_lineage, identity) = crate::domain_computation::primary_graph::output_lineage::registry_fixture::recorded_settlement();
-    let (mut completed, _) = queued_terminal(&identity);
+    let (completed, _) = queued_terminal(&identity);
     let mut measured = admission(1_000_000);
     completed
-        .drain_terminal_cleanup(&mut measured)
+        .drain_terminal_cleanup_admitted(&source_owner(), &mut measured)
         .expect("admitted cleanup removes the selected historical posting");
     let full_work = measured.charged_work();
     assert!(full_work > 1);
-    assert!(completed.pending_cleanup_head.is_none());
-    assert_eq!(completed.required_reserved_bytes, 0);
+    assert!(completed
+        .state
+        .lock()
+        .unwrap()
+        .pending_cleanup_head
+        .is_none());
+    assert_eq!(completed.state.lock().unwrap().required_reserved_bytes, 0);
 
-    let (mut retry, downstream) = queued_terminal(&identity);
-    let bytes_before = retry.required_reserved_bytes;
+    let (retry, downstream) = queued_terminal(&identity);
+    let bytes_before = retry.state.lock().unwrap().required_reserved_bytes;
     let mut short = admission(full_work - 1);
     let denial = retry
-        .drain_terminal_cleanup(&mut short)
+        .drain_terminal_cleanup_admitted(&source_owner(), &mut short)
         .expect_err("one short work unit preserves the queued row and exact posting");
     assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
     );
-    assert!(retry.pending_cleanup_head.is_some());
-    assert!(retry.records.contains_key(downstream.as_ref()));
-    assert_eq!(retry.required_reserved_bytes, bytes_before);
+    assert!(retry.state.lock().unwrap().pending_cleanup_head.is_some());
     assert!(retry
+        .state
+        .lock()
+        .unwrap()
+        .records
+        .contains_key(downstream.as_ref()));
+    assert_eq!(
+        retry.state.lock().unwrap().required_reserved_bytes,
+        bytes_before
+    );
+    assert!(retry
+        .state
+        .lock()
+        .unwrap()
         .settlement_keys
         .get_exact_admitted(&identity, &mut admission(1_000_000))
         .unwrap()
         .is_some());
 
     retry
-        .drain_terminal_cleanup(&mut admission(full_work))
+        .drain_terminal_cleanup_admitted(&source_owner(), &mut admission(full_work))
         .expect("the same selected cleanup succeeds with enough work");
-    assert!(retry.pending_cleanup_head.is_none());
+    assert!(retry.state.lock().unwrap().pending_cleanup_head.is_none());
     assert!(retry
+        .state
+        .lock()
+        .unwrap()
         .settlement_keys
         .get_exact_admitted(&identity, &mut admission(1_000_000))
         .unwrap()
         .is_none());
-    assert_eq!(retry.required_reserved_bytes, 0);
+    assert_eq!(retry.state.lock().unwrap().required_reserved_bytes, 0);
 }
 
 fn queued_obligations_only(
     commit: &worth_runtime_world::facade::CompositeCommitIdentity,
-) -> (DemandRegistryState, Arc<WorthQueryOutputDemandKey>) {
+) -> (
+    WorthQueryOutputDemandRegistry,
+    Arc<WorthQueryOutputDemandKey>,
+) {
     let mut state = DemandRegistryState::default();
     let key = Arc::new(key("terminal-obligations", 3, 3));
     let mut row = record(
@@ -176,7 +205,11 @@ fn queued_obligations_only(
     let member = state.prepare_required_member(key.as_ref()).unwrap();
     state.install_required_member(member);
     assert!(state.defer_terminal_cleanup(&key, 0));
-    (state, key)
+    {
+        let registry = WorthQueryOutputDemandRegistry::default();
+        *registry.state.lock().unwrap() = state;
+        (registry, key)
+    }
 }
 
 #[test]
@@ -185,63 +218,99 @@ fn obligations_only_terminal_cleanup_preserves_custody_on_denial_and_refunds_on_
     // an output-currentness oracle. No synthetic Ready authority is involved.
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let commit = receipt.committed_product_publication().composite_commit();
-    let (mut completed, key) = queued_obligations_only(commit);
+    let (completed, key) = queued_obligations_only(commit);
     let mut measured = admission(1_000_000);
-    completed.drain_terminal_cleanup(&mut measured).unwrap();
-    assert!(!completed.records.contains_key(key.as_ref()));
-    assert!(completed.required_keys.is_empty());
-    assert_eq!(completed.obligation_reserved_bytes, 0);
-    assert_eq!(completed.required_reserved_bytes, 0);
+    completed
+        .drain_terminal_cleanup_admitted(&source_owner(), &mut measured)
+        .unwrap();
+    assert!(!completed
+        .state
+        .lock()
+        .unwrap()
+        .records
+        .contains_key(key.as_ref()));
+    assert!(completed.state.lock().unwrap().required_keys.is_empty());
+    assert_eq!(completed.state.lock().unwrap().obligation_reserved_bytes, 0);
+    assert_eq!(completed.state.lock().unwrap().required_reserved_bytes, 0);
 
-    let (mut retry, key) = queued_obligations_only(commit);
-    let obligation_bytes = retry.obligation_reserved_bytes;
-    let required_bytes = retry.required_reserved_bytes;
+    let (retry, key) = queued_obligations_only(commit);
+    let obligation_bytes = retry.state.lock().unwrap().obligation_reserved_bytes;
+    let required_bytes = retry.state.lock().unwrap().required_reserved_bytes;
     let denial = retry
-        .drain_terminal_cleanup(&mut admission(measured.charged_work() - 1))
+        .drain_terminal_cleanup_admitted(
+            &source_owner(),
+            &mut admission(measured.charged_work() - 1),
+        )
         .expect_err("one short unit must preserve the entire queued obligation row");
     assert_eq!(
         denial.kind(),
         WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
     );
-    assert_eq!(retry.records[key.as_ref()].performed_obligations.len(), 2);
-    assert!(retry.required_keys.contains(key.as_ref()));
-    assert!(retry.pending_cleanup_head.is_some());
-    assert_eq!(retry.obligation_reserved_bytes, obligation_bytes);
-    assert_eq!(retry.required_reserved_bytes, required_bytes);
+    assert_eq!(
+        retry.state.lock().unwrap().records[key.as_ref()]
+            .performed_obligations
+            .len(),
+        2
+    );
+    assert!(retry
+        .state
+        .lock()
+        .unwrap()
+        .required_keys
+        .contains(key.as_ref()));
+    assert!(retry.state.lock().unwrap().pending_cleanup_head.is_some());
+    assert_eq!(
+        retry.state.lock().unwrap().obligation_reserved_bytes,
+        obligation_bytes
+    );
+    assert_eq!(
+        retry.state.lock().unwrap().required_reserved_bytes,
+        required_bytes
+    );
 
     retry
-        .drain_terminal_cleanup(&mut admission(measured.charged_work()))
+        .drain_terminal_cleanup_admitted(&source_owner(), &mut admission(measured.charged_work()))
         .unwrap();
-    assert!(!retry.records.contains_key(key.as_ref()));
-    assert!(retry.required_keys.is_empty());
-    assert!(retry.pending_cleanup_head.is_none());
-    assert_eq!(retry.obligation_reserved_bytes, 0);
-    assert_eq!(retry.required_reserved_bytes, 0);
+    assert!(!retry
+        .state
+        .lock()
+        .unwrap()
+        .records
+        .contains_key(key.as_ref()));
+    assert!(retry.state.lock().unwrap().required_keys.is_empty());
+    assert!(retry.state.lock().unwrap().pending_cleanup_head.is_none());
+    assert_eq!(retry.state.lock().unwrap().obligation_reserved_bytes, 0);
+    assert_eq!(retry.state.lock().unwrap().required_reserved_bytes, 0);
 }
 
 #[test]
 fn last_interest_drop_preserves_queued_obligations_for_admitted_cleanup() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
-    let (mut state, key) =
+    let (registry, key) =
         queued_obligations_only(receipt.committed_product_publication().composite_commit());
-    let row = state.records.get_mut(key.as_ref()).unwrap();
-    row.interests = 1;
-    let wake = Arc::clone(&row.wake);
-    let obligation_bytes = state.obligation_reserved_bytes;
-    let required_bytes = state.required_reserved_bytes;
-    let registry = WorthQueryOutputDemandRegistry::default();
-    *registry.state.lock().unwrap() = state;
-    let closing = interest(&registry, key.as_ref().clone(), wake);
-    drop(closing);
-    let state = registry.state.lock().unwrap();
-    let row = &state.records[key.as_ref()];
-    assert_eq!(row.interests, 0);
-    assert_eq!(row.performed_obligations.len(), 2);
-    assert!(row.pending_cleanup_queued);
-    assert!(state.required_keys.contains(key.as_ref()));
-    assert_eq!(state.obligation_reserved_bytes, obligation_bytes);
-    assert_eq!(state.required_reserved_bytes, required_bytes);
-    drop(state);
+    let (wake, obligation_bytes, required_bytes) = {
+        let mut state = registry.state.lock().unwrap();
+        let mut row = state.records.get_mut(key.as_ref()).unwrap();
+        row.interests = 1;
+        let wake = Arc::clone(&row.wake);
+        row.finish();
+        (
+            wake,
+            state.obligation_reserved_bytes,
+            state.required_reserved_bytes,
+        )
+    };
+    drop(interest(&registry, key.as_ref().clone(), wake));
+    {
+        let state = registry.state.lock().unwrap();
+        let row = &state.records[key.as_ref()];
+        assert_eq!(row.interests, 0);
+        assert_eq!(row.performed_obligations.len(), 2);
+        assert!(row.pending_cleanup_queued);
+        assert!(state.required_keys.contains(key.as_ref()));
+        assert_eq!(state.obligation_reserved_bytes, obligation_bytes);
+        assert_eq!(state.required_reserved_bytes, required_bytes);
+    }
     registry
         .drain_terminal_cleanup_admitted(&source_owner(), &mut admission(1_000_000))
         .unwrap();

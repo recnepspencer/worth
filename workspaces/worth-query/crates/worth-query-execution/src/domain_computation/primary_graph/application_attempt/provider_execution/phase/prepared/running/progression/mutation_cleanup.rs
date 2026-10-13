@@ -18,10 +18,15 @@ pub(super) enum WorthQueryApplicationMutationCleanupOwner {
 impl WorthQueryApplicationMutationCleanupOwner {
     pub(super) fn finish(
         self,
+        provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         running: WorthQueryRunningDirectRun,
         terminal: WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
     ) -> Result<WorthQueryMutationGraphWorkCompletion, ()> {
+        #[cfg(test)]
+        if provider.take_fault(crate::domain_computation::primary_graph::provider::fault_port::WorthQueryPrimaryGraphFault::RejectedManagedCleanup) { return Err(()); }
+        #[cfg(not(test))]
+        let _ = provider;
         match self {
             Self::Unbound(run) => run.finish(running, terminal, snapshot_release),
             Self::ProviderBound(run) => run.finish(running, terminal, snapshot_release),

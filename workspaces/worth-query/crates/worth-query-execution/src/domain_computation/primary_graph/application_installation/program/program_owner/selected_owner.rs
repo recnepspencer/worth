@@ -1,5 +1,6 @@
 //! Resolve one occurrence-bound program owner.
 use super::*;
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
@@ -30,7 +31,9 @@ where
     {
         if !std::ptr::eq(selected.application(), &self.runtime) {
             return Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(
-                crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignOwner,
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignOwner,
+                ),
             ));
         }
         let inspection = selected

@@ -1,5 +1,6 @@
 //! Runtime, root and original-observation checks for detached fixed outputs.
 use super::{RootConnection, WorthQueryProgramApplicationRuntime};
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationRequiredOutputConnection, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryPreparedRequiredOutputSource,
@@ -81,11 +82,20 @@ where
         )?;
         use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
         let kind = match request.interruption() {
-            Some(WorthQueryRequestInterruption::Cancelled) => Some(WorthQueryOutputDemandDenialKind::Cancelled),
-            Some(WorthQueryRequestInterruption::DeadlineExceeded) => Some(WorthQueryOutputDemandDenialKind::TimedOut),
-            None if self.runtime.authentication_is_expired(principal.valid_until()) => Some(
-                WorthQueryOutputDemandDenialKind::SourcePrincipal(
-                    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication)),
+            Some(WorthQueryRequestInterruption::Cancelled) => {
+                Some(WorthQueryOutputDemandDenialKind::Cancelled)
+            }
+            Some(WorthQueryRequestInterruption::DeadlineExceeded) => {
+                Some(WorthQueryOutputDemandDenialKind::TimedOut)
+            }
+            None if self
+                .runtime
+                .authentication_is_expired(principal.valid_until()) =>
+            {
+                Some(WorthQueryOutputDemandDenialKind::SourcePrincipal(
+                    PrincipalRefusal::ExpiredAuthentication,
+                ))
+            }
             None => None,
         };
         match kind {

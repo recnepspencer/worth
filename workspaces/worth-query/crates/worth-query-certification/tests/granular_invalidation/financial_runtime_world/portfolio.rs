@@ -32,7 +32,7 @@ fn assert_indexed_maintenance_requires_retained_state(
     host.amend_portfolio_rank(2, 3);
     host.portfolio_clock_control.push(2, 11);
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .conditional_clock(request_execution, &host.portfolio_clock)
+        .conditional_clock(&host.portfolio_clock)
         .unwrap()
         .observe(request_execution)
     else {
@@ -222,7 +222,7 @@ fn perform_sibling(
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) -> WorthQueryPrimaryGranularMaintenancePerformed {
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .conditional_clock(request_execution, &host.sibling_portfolio_clock)
+        .conditional_clock(&host.sibling_portfolio_clock)
         .unwrap()
         .observe(request_execution)
     else {
@@ -257,11 +257,11 @@ fn world(
     let query = query::build_portfolio_with_unrelated_rows(request_execution, &host, 64);
     assert_rank_is_private_maintenance_support(&query);
     drop(
-        host.conditional_clock(request_execution, &host.sibling_portfolio_clock)
+        host.conditional_clock(&host.sibling_portfolio_clock)
             .unwrap(),
     );
     assert!(matches!(
-        host.conditional_clock(request_execution, &host.portfolio_clock)
+        host.conditional_clock(&host.portfolio_clock)
             .unwrap()
             .observe(request_execution),
         WorthQueryConditionalClockObservationOutcome::Accepted(_)
@@ -297,7 +297,7 @@ fn perform(
     binding: &WorthQueryPrimaryRuntimeInvalidationBinding,
 ) -> WorthQueryPrimaryGranularMaintenancePerformed {
     let WorthQueryConditionalClockObservationOutcome::Accepted(mut receipt) = host
-        .conditional_clock(request_execution, &host.portfolio_clock)
+        .conditional_clock(&host.portfolio_clock)
         .unwrap()
         .observe(request_execution)
     else {

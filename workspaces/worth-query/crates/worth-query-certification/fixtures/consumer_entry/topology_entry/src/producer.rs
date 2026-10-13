@@ -63,18 +63,11 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for P
 
 pub struct InitialPlanarProvider {
     authorization_denials: Arc<AtomicUsize>,
-    key_mask: u64,
+    pub(crate) key_mask: u64,
     domain_denial: Arc<AtomicBool>,
 }
 
 impl InitialPlanarProvider {
-    #[cfg(test)]
-    pub(crate) fn with_uniform_decimal_key_width(mut self) -> Self {
-        // Twenty decimal digits for every source identity, independent of hashing.
-        self.key_mask = 3 << 62;
-        self
-    }
-
     #[cfg(test)]
     pub(crate) fn has_uniform_decimal_key_width(&self) -> bool {
         self.key_mask != 0

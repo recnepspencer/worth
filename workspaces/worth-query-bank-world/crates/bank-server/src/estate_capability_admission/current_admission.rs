@@ -5,6 +5,7 @@ use bank_domain::{
     },
     schema::{ViewEstateAdministrationCapability, ViewRestrictedEstateOperation},
 };
+use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_host::facade::{
     declaration::application_schema::ApplicationScalarValueBinding,
     primary_graph::WorthQueryOperationAuthorizationDenialKind,
@@ -75,21 +76,27 @@ fn revoked_expired_future_and_workflow_drifted_grants_fail_current_admission() {
     revoked.status = CapabilityGrantStatus::Revoked;
     assert_eq!(
         view_denial("revoked", revoked, EstateWorkflowStage::Administration),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
 
     let mut expired = GrantSpec::view();
     expired.not_after = 1;
     assert_eq!(
         view_denial("expired", expired, EstateWorkflowStage::Administration),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
 
     let mut future = GrantSpec::view();
     future.not_before = u64::MAX;
     assert_eq!(
         view_denial("future", future, EstateWorkflowStage::Administration),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
 
     let mut workflow = GrantSpec::view();
@@ -100,7 +107,9 @@ fn revoked_expired_future_and_workflow_drifted_grants_fail_current_admission() {
             workflow,
             EstateWorkflowStage::Administration
         ),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityAuthorizationMissing
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityAuthorizationMissing
+        )
     );
 }
 

@@ -1,5 +1,6 @@
 //! Accessors and current-authority revalidation for admitted operations.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
@@ -58,13 +59,17 @@ impl<Schema, Operation, Input, Scope>
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         if self.runtime_authority != runtime_authority {
             return Err(WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ForeignRuntime,
+                ),
                 &self.operation,
             ));
         }
         if &self.binding_identity != binding_identity {
             return Err(WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::StaleInstalledSchema,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleInstalledSchema,
+                ),
                 &self.operation,
             ));
         }
@@ -234,13 +239,17 @@ impl<Schema, Operation, Input, Scope>
     > {
         let authorization = self.authorization.take().ok_or_else(|| {
             WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 &self.operation,
             )
         })?;
         if !authorization.bridge_is_retained(bridge) {
             return Err(WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 &self.operation,
             ));
         }

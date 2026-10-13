@@ -12,10 +12,11 @@ pub(in crate::domain_computation::primary_graph) use commit_outcome::WorthQueryP
 pub use commit_outcome::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationNoEffect,
-    WorthQueryApplicationNoEffectCause, WorthQueryApplicationSettlementDeferred,
-    WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationUncommitted, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationManagedCleanupFailure,
+    WorthQueryApplicationNoEffect, WorthQueryApplicationNoEffectCause,
+    WorthQueryApplicationSettlementDeferred, WorthQueryApplicationSettlementNextAction,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationUnresolvedCommitEvidence,
 };
 pub use commit_receipt::{
     WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,

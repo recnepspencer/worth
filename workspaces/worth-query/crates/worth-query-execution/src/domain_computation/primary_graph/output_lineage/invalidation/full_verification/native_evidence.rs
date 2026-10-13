@@ -24,7 +24,7 @@ impl FullVerificationImage<'_> {
             let witness = source
                 .native_output_witness()
                 .ok_or(FullVerificationStop::OutputEvidenceUnavailable)?;
-            if !witness.unchanged_in(execution, self.runtime, self.snapshot, admission)? {
+            if !witness.unchanged_in(self.runtime, self.snapshot, admission)? {
                 return Ok(FullVerificationDecision::Changed);
             }
             reserve_pending(&mut pending, source.upstream().len(), admission)?;

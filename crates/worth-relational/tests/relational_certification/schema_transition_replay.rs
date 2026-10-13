@@ -91,6 +91,7 @@ fn retained_v2_snapshot_materializes_kind_metadata_from_its_root_authority() {
         .runtime
         .read_truth()
         .read_snapshot(&transitioned.snapshot, execution)
+        .expect("fixture read request remains live")
         .expect("the retained V2 snapshot remains readable after its branch advances");
     assert!(!read.entities().is_empty());
     assert!(!read.relations().is_empty());
@@ -159,6 +160,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
         .runtime
         .read_truth()
         .read_snapshot(&transitioned.snapshot, execution)
+        .expect("fixture read request remains live")
         .expect("the retained V2 snapshot supplies exact query targets");
     let cargo_id = world.handles.medical_cargo().id;
     let entity = retained_view
@@ -205,6 +207,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
         .runtime
         .read_truth()
         .read_snapshot(&successor.snapshot, execution)
+        .expect("fixture read request remains live")
         .expect("the changed V2 successor is readable");
     let successor_cargo = successor_view
         .entities()

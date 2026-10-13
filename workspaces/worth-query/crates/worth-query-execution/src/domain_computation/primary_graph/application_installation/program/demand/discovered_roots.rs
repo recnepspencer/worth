@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -87,11 +88,20 @@ where
             })?;
         use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
         let kind = match request.interruption() {
-            Some(WorthQueryRequestInterruption::Cancelled) => Some(WorthQueryOutputDemandDenialKind::Cancelled),
-            Some(WorthQueryRequestInterruption::DeadlineExceeded) => Some(WorthQueryOutputDemandDenialKind::TimedOut),
-            None if self.runtime.authentication_is_expired(principal.valid_until()) => Some(
-                WorthQueryOutputDemandDenialKind::SourcePrincipal(
-                    crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenialKind::ExpiredAuthentication)),
+            Some(WorthQueryRequestInterruption::Cancelled) => {
+                Some(WorthQueryOutputDemandDenialKind::Cancelled)
+            }
+            Some(WorthQueryRequestInterruption::DeadlineExceeded) => {
+                Some(WorthQueryOutputDemandDenialKind::TimedOut)
+            }
+            None if self
+                .runtime
+                .authentication_is_expired(principal.valid_until()) =>
+            {
+                Some(WorthQueryOutputDemandDenialKind::SourcePrincipal(
+                    PrincipalRefusal::ExpiredAuthentication,
+                ))
+            }
             None => None,
         };
         match kind {

@@ -41,14 +41,15 @@ use admission::admission;
 use execution::{authorization, continuation, live, one_shot, product_selection};
 use installation::{capability_installation, query_installation};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BankApplicationQueryLaneDenial<Kind> {
-    kind: Kind,
+    kind: Box<Kind>,
     authorization: Option<BankAuthorizationDenial>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankApplicationOutputSettlementDenialKind {
+    RelationalExecution(worth_query_host::facade::primary_graph::RelationalExecutionDenialCause),
     BridgeConditional(Box<worth_query_host::facade::primary_graph::BridgeConditionalDenialKind>),
     CorrespondenceDelivery(Box<worth_query_host::facade::primary_graph::BridgeCorrespondenceDeliveryStop>),
     ProductDelivery(Box<worth_query_host::facade::product::WorthQueryPerformedRelationalProductChangeDeliveryDenialKind>),
@@ -89,11 +90,11 @@ impl<Kind> BankApplicationQueryLaneDenial<Kind>
 where
     Kind: Copy,
 {
-    pub const fn kind(self) -> Kind {
-        self.kind
+    pub const fn kind(&self) -> Kind {
+        *self.kind
     }
 
-    pub const fn authorization(self) -> Option<BankAuthorizationDenial> {
+    pub const fn authorization(&self) -> Option<BankAuthorizationDenial> {
         self.authorization
     }
 
@@ -102,7 +103,7 @@ where
         authorization: Option<&WorthQueryOperationAuthorizationDenial>,
     ) -> Self {
         Self {
-            kind,
+            kind: Box::new(kind),
             authorization: authorization
                 .cloned()
                 .map(BankAuthorizationDenial::from_query),
@@ -281,9 +282,9 @@ impl BankApplicationQueryDenial {
             Query::SourceQueryInstallation(kind) => {
                 Bank::SourceQueryInstallation(query_installation(kind))
             }
-            Query::SourcePrincipal(kind) => Bank::SourcePrincipal(kind),
+            Query::SourcePrincipal(kind) => Bank::SourcePrincipal(WorthQueryPrincipalResolutionDenialKind::Refused(kind)),
             Query::SourceScope(kind) => {
-                Bank::SourceScope(BankEntityResolutionDenial::from_query(kind).kind())
+                Bank::SourceScope(BankEntityResolutionDenial::from_query(worth_query_host::facade::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(kind)).kind())
             }
             Query::SourceQueryAdmission(kind) => Bank::SourceQueryAdmission(admission(kind)),
             Query::SourceQueryExecution(kind) => Bank::SourceQueryExecution(one_shot(kind)),
@@ -292,8 +293,8 @@ impl BankApplicationQueryDenial {
             Query::AmbiguousApplicableProducer => Bank::AmbiguousApplicableProducer,
             Query::ProducerUnavailable => Bank::ProducerUnavailable,
             Query::ProducerDomainDenied => Bank::ProducerDomainDenied,
-            Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(kind)),
-            Query::ProductSelection(denial) => Bank::ProductSelection(product_selection(denial)),
+            Query::RequestAuthorization(kind) => Bank::RequestAuthorization(authorization(worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(kind))),
+            Query::ProductSelection(refusal) => Bank::ProductSelection(product_selection(worth_query_host::facade::primary_graph::WorthQueryProductBranchAdmissionDenial::Refused(refusal))),
             Query::SchedulingRejected => Bank::SchedulingRejected,
             Query::SchedulingDeferred => Bank::SchedulingDeferred,
             Query::PublicationStale => Bank::PublicationStale,

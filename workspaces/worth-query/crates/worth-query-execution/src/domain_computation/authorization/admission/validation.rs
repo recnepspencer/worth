@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
@@ -64,7 +65,9 @@ where
         .validate_application_operation(operation)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleInstalledOperation,
+                ),
                 operation.operation(),
             )
         })
@@ -81,14 +84,18 @@ where
 {
     if principal.is_expired() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication,
+            ),
             principal.binding(),
         ));
     }
     let authority = runtime.runtime.authority_identity();
     if principal.runtime_authority() != authority || scope.runtime_authority() != authority {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
             operation.operation(),
         ));
     }
@@ -97,7 +104,9 @@ where
         || runtime.installed_schema.binding_identity() != *operation.binding_identity()
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::StaleInstalledSchema,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleInstalledSchema,
+            ),
             operation.operation(),
         ));
     }
@@ -116,7 +125,9 @@ pub(super) fn validate_decision(
         || !bridge_runtime.retains(bridge)
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
             policy,
         ));
     }
@@ -124,7 +135,9 @@ pub(super) fn validate_decision(
         Ok(())
     } else {
         Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::PermissionDenied,
+            ),
             policy,
         ))
     }
@@ -136,11 +149,15 @@ pub(in crate::domain_computation::authorization) fn admit_request(
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
     match scope.interruption() {
         Some(WorthQueryRequestInterruption::Cancelled) => Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::Cancelled,
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+            )),
             subject,
         )),
         Some(WorthQueryRequestInterruption::DeadlineExceeded) => Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::DeadlineExceeded,
+            WorthQueryOperationAuthorizationDenialKind::Stopped(Err(
+                crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+            )),
             subject,
         )),
         None => Ok(()),

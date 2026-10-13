@@ -91,12 +91,15 @@ where
         let installed = self.installed_capability_plan(supporting.request())?;
         if supporting.capability_authority_identity()
             != installed.capability_authority_identity().as_ref()
-            || !supporting.decision().remains_current_in(
-                execution,
-                runtime,
-                snapshot,
-                self.authorization.bridge(),
-            )
+            || !supporting
+                .decision()
+                .remains_current_in(execution, runtime, snapshot, self.authorization.bridge())
+                .map_err(|cause| {
+                    crate::domain_computation::authorization::denial::relational_read_denial(
+                        cause,
+                        "authorization currentness",
+                    )
+                })?
         {
             return Err(stale_authorization());
         }

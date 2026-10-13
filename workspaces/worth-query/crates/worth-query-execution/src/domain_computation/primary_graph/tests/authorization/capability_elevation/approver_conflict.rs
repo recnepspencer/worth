@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::identity::PartitionId;
 use worth_relational::facade::symbols::ClientKey;
 use worth_relational::facade::transactions::{
@@ -58,7 +59,9 @@ fn exact_conflicted_approver_cannot_open_elevation_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationApproverConflict
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationApproverConflict
+        )
     );
 }
 
@@ -123,7 +126,9 @@ fn approver_conflict_drift_stales_admitted_elevation_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }
 

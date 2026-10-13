@@ -51,6 +51,7 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
     let historical = runtime
         .read_truth()
         .read_observation(execution, &retained_basis.observation())
+        .expect("read request remains live")
         .unwrap();
     let relation_record = historical
         .relations

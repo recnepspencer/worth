@@ -23,6 +23,30 @@ type Denial = WorthQueryPartitionedComputationDenial<u32>;
 
 #[test]
 fn a_second_declared_capacity_with_no_sum_is_an_overflow_before_its_gather() {
+    const CHILD: &str = "WORTH_QUERY_GATHER_OVERFLOW_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let filter = concat!(
+            module_path!(),
+            "::a_second_declared_capacity_with_no_sum_is_an_overflow_before_its_gather"
+        )
+        .split_once("::")
+        .unwrap()
+        .1;
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", filter, "--nocapture"])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "isolated capacity proof failed: {}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
+        return;
+    }
+    assert_eq!(std::env::var(CHILD).unwrap(), "1");
     let request = live_scope();
     let execution = QueryRequestExecution::open(
         RuntimeWorldExecutionPlacement::Serial(test_policy(NonZeroUsize::MIN, u64::MAX)),

@@ -52,6 +52,7 @@ fn unheld_performed_sources_release_the_oldest_with_commit_order_work() {
                 retired_sources: Vec::new(),
                 retired: None,
                 token_count: 0,
+                cleanup: Default::default(),
                 completed: false,
             },
         );

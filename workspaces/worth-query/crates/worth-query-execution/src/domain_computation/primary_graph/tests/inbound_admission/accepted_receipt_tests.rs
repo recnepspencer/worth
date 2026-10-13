@@ -257,7 +257,7 @@ fn old_executed_phase_drop_cannot_release_a_new_publication_claim() {
     );
     let receipt = old_phase.progress_for_test(&cancelled).unwrap();
     assert_eq!(receipt.posture(), Posture::AcceptedPending);
-    assert_eq!(receipt.pending_reason(), Some(Reason::OwnerRetryRequired));
+    assert_eq!(receipt.pending_reason(), Some(crate::domain_computation::primary_graph::WorthQueryInboundPendingReason::ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Interrupted(crate::domain_computation::primary_graph::WorthQueryManagedComputationInterruption::Cancelled))));
 
     let reclaimed = world
         .application

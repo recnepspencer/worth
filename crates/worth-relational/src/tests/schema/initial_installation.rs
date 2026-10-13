@@ -65,6 +65,7 @@ fn initial_schema_installation_moves_empty_exact_basis_without_revoking_retained
     assert!(runtime
         .read_truth()
         .read_version(execution, crate::identity::data::VersionId(0))
+        .expect("read request remains live")
         .entities()
         .is_empty());
 

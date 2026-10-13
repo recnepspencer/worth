@@ -115,6 +115,11 @@ impl WorthQueryStaleDecisionReadSet {
     pub fn counters(&self) -> WorthQueryDecisionReadSetCounters {
         self.counters
     }
+
+    #[cfg(test)]
+    pub(crate) fn stale_fact_identities_for_test(&self) -> &[Arc<str>] {
+        &self.stale_evidence_identities
+    }
 }
 
 impl WorthQuerySessionReadAuthority<'_> {

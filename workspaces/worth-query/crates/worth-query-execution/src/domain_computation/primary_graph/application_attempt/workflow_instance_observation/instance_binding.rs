@@ -24,7 +24,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_en
         entity,
         kind,
         &layout.instance.state,
-    );
+    )?;
     for (ended, denial_kind, subject) in [
         (
             WorkflowInstanceState::Cancelled,
@@ -60,7 +60,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn owner_c
 {
     let kind = layout.instance.entity_kind;
     let locator = layout.instance.owner_custody.clone();
-    match observe_field_value(runtime, execution, snapshot, entity_id, kind, &locator) {
+    match observe_field_value(runtime, execution, snapshot, entity_id, kind, &locator)? {
         None => Ok((
             None,
             WorthQueryApplicationObservedFact::AbsentField {
@@ -118,7 +118,7 @@ pub(super) fn inherited(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<u64, WorthQueryApplicationAttemptDenial> {
     let kind = layout.instance.entity_kind;
-    match observe_field_value(runtime, execution, snapshot, entity_id, kind, locator) {
+    match observe_field_value(runtime, execution, snapshot, entity_id, kind, locator)? {
         None => {
             facts.push(WorthQueryApplicationObservedFact::AbsentField {
                 entity_id,
@@ -154,7 +154,7 @@ pub(super) fn resume_definition(
     let entity_id = instance.entity_id();
     let kind = layout.instance.entity_kind;
     let locator = &layout.instance.resume_node_path;
-    match observe_field_value(runtime, execution, snapshot, entity_id, kind, locator) {
+    match observe_field_value(runtime, execution, snapshot, entity_id, kind, locator)? {
         None => {
             facts.push(WorthQueryApplicationObservedFact::AbsentField {
                 entity_id,
@@ -191,7 +191,7 @@ pub(super) fn exact_u64(
     locator: &worth_foundational::facade::AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<u64, WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow transition field is unavailable"))?;
     let AspectValue::UInt64(number) = value else {
         return Err(denial("workflow transition field has the wrong type"));
@@ -215,7 +215,7 @@ pub(super) fn exact(
     expected: AspectValue,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    let value = observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .ok_or_else(|| denial("workflow instance field is unavailable"))?;
     if value != expected {
         return Err(denial("workflow instance field changed"));

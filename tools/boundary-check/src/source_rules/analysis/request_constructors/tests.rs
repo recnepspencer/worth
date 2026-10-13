@@ -229,3 +229,81 @@ fn relational_constructor_fence_refuses_mints_and_accepts_the_borrowed_twin() {
     )
     .is_empty());
 }
+
+#[test]
+fn relational_work_fence_has_positive_controls_for_both_escape_codes() {
+    let rule = rule("worth-relational");
+    for (source, message) in [
+        (
+            "fn seam(_execution: &ExecutionRequest) {}",
+            "ignored production request parameter",
+        ),
+        (
+            "use worth_execution::ExecutionRequest as Request; fn seam(_: &Request) {}",
+            "ignored production request parameter",
+        ),
+        (
+            "#[cfg(windows)] fn seam(_request: &ExecutionRequest) {}",
+            "ignored production request parameter",
+        ),
+        (
+            "fn seam() { let read = |_execution: &ExecutionRequest| {}; }",
+            "ignored production request parameter",
+        ),
+        (
+            "use worth_execution::ExecutionRequest as Request; fn seam() { let read = |_: &Request| {}; }",
+            "ignored production request parameter",
+        ),
+        (
+            "fn seam() { scan.bounded_entities_of_kind(request, kind, usize::MAX); }",
+            "unbounded production work amount",
+        ),
+        (
+            "fn seam() { meter.checkpoint(u64::MAX); }",
+            "unbounded production work amount",
+        ),
+        (
+            "fn seam() { let budget = Budget { maximum_work_units: usize::MAX }; }",
+            "unbounded production work amount",
+        ),
+        (
+            "fn seam() { let work = u64::MAX; }",
+            "unbounded production work amount",
+        ),
+        (
+            "const WORK: usize = usize::MAX;",
+            "unbounded production work amount",
+        ),
+        (
+            "fn seam() { CustomInvariantWorkMeter::new(NonZeroU64::new(u64::MAX)); }",
+            "unbounded production work amount",
+        ),
+        (
+            "fn seam() { ExecutionBudget::new(workers, memory, u64::MAX); }",
+            "unbounded production work amount",
+        ),
+        (
+            "fn remaining_work() -> u64 { meter.map_or(u64::MAX, work) }",
+            "unbounded production work amount",
+        ),
+    ] {
+        let found = check_graphs(&[graph(source, None)], &rule);
+        assert!(
+            found.iter().any(|denial| denial.code()
+                == crate::diagnostics::DiagnosticCode::Bc7008RequestConstruction
+                && denial.message().contains(message)),
+            "accepted {source}: {found:?}"
+        );
+    }
+    for source in [
+        "fn seam(execution: &ExecutionRequest) { execution.consult(); }",
+        "fn seam() { let read = |execution: &ExecutionRequest| execution.consult(); }",
+        "fn metadata(_id: u64) { assert_eq!(id, u64::MAX); }",
+        "fn bytes() { let budget = Budget { maximum_bytes: usize::MAX }; }",
+        "fn bytes() { ExecutionBudget::new(workers, u64::MAX, 7); }",
+        "#[cfg(test)] fn fixture(_execution: &ExecutionRequest) { meter.checkpoint(u64::MAX); }",
+        "#[cfg(test)] mod tests { fn fixture(_execution: &ExecutionRequest) { let budget = Budget { maximum_work_units: usize::MAX }; } }",
+    ] {
+        assert!(check_graphs(&[graph(source, None)], &rule).is_empty(), "refused permitted source: {source}");
+    }
+}

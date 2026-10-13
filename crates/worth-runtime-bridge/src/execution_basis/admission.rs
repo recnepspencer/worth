@@ -66,7 +66,7 @@ fn admit_execution_basis(
         .materialize_truth_view_observation(planned, execution)
         .map_err(|error| {
             denial(
-                BridgeExecutionBasisDenialKind::TruthMaterializationFailed,
+                super::denial::truth_materialization_denial(&error),
                 error.to_string(),
                 &counters,
             )

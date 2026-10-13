@@ -5,7 +5,6 @@ use super::*;
 fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
     let world = installed_authorization_world(true);
     let request = live_scope();
-    let execution = serial_request(&request);
     let external = world.authenticate("alice", Duration::from_secs(60), &request);
     world
         .application
@@ -114,7 +113,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
             let keys = world
                 .application
                 .reconstruct_managed_derived_collection_pair(
-                    worth_execution::ExecutionRequest::serial(&execution),
+                    *request_execution,
                     &view,
                     selected.product(),
                     &membership,

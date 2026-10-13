@@ -1,4 +1,5 @@
 use crate::domain_computation::authorization::application_disclosure::WorthQueryApplicationDisclosureReceipt;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
@@ -7,7 +8,7 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 #[test]
 fn application_outcome_families_draw_non_aliasing_exact_identities() {
     let denial = WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::PermissionDenied,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied),
         "identity-family-denial",
     );
     let disclosure = WorthQueryApplicationDisclosureReceipt::governed(

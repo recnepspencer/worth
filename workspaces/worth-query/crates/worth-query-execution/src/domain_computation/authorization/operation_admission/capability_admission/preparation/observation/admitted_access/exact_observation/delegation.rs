@@ -1,5 +1,6 @@
 //! Atomic delegation resolution and exact parent-support observation.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityDelegationRequestProjection;
@@ -356,21 +357,27 @@ fn rejected(
     installed: &WorthQueryInstalledCapabilityPlan,
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::DelegationRejected,
+        ),
         installed.contract().name(),
     )
 }
 
 fn stale(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization,
+        ),
         subject,
     )
 }
 
 fn inconsistent(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InconsistentDecision,
+        ),
         subject,
     )
 }

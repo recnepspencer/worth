@@ -1,5 +1,6 @@
 //! Retained capability decision authority and its one-way commit transition.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityValidityTimeline;
@@ -220,22 +221,35 @@ impl WorthQueryRetainedCapabilityAuthorization {
     ) -> Result<(), super::WorthQueryOperationAuthorizationDenialKind> {
         if !self
             .principal
-            .remains_current_in(execution, runtime, snapshot)
+            .remains_current_in(execution, runtime, snapshot)?
         {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::StalePrincipal);
+            return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StalePrincipal,
+            ));
         }
         if !self
             .decision
             .remains_current_in(execution, runtime, snapshot, bridge)
+            .map_err(|cause| {
+                super::denial::relational_read_denial(cause, "capability currentness").kind()
+            })?
         {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization);
+            return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization,
+            ));
         }
-        if self.supporting.as_ref().is_some_and(|supporting| {
-            !supporting
+        if let Some(supporting) = &self.supporting {
+            if !supporting
                 .decision()
                 .remains_current_in(execution, runtime, snapshot, bridge)
-        }) {
-            return Err(super::WorthQueryOperationAuthorizationDenialKind::StaleAuthorization);
+                .map_err(|cause| {
+                    super::denial::relational_read_denial(cause, "support currentness").kind()
+                })?
+            {
+                return Err(super::WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleAuthorization,
+                ));
+            }
         }
         Ok(())
     }

@@ -1,4 +1,9 @@
 //! Suspending the current generated output of a selected product.
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
@@ -6,7 +11,6 @@ use std::sync::Arc;
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::RelationalMaterializationSuspensionCompletion;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::super::context::WorthQuerySelectedProductOperation;
 use super::{
@@ -191,7 +195,16 @@ where
         let prepared = product
             .publication_binding()
             .prepare_relational_candidate(candidate, request, true)
-            .map_err(|_| WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)?;
+            .map_err(|denial| match denial {
+                PublicationDenial::Stopped(stop) => {
+                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(advancement_denial(
+                        stop,
+                    ))
+                }
+                PublicationDenial::Refused(_) => {
+                    WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect
+                }
+            })?;
         let correspondence = exact.correspondence;
         let producer = ProducerQualification {
             binding_type: TypeId::of::<Producer>(),
@@ -219,7 +232,7 @@ where
                     WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
                 })?,
         ) {
-            RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()
                     .relational_commit_result()
@@ -238,11 +251,16 @@ where
                     commit,
                 ))
             }
-            RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                Err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
+                    advancement_denial(stop),
+                ))
+            }
+            Err(PublicationDenial::Refused(no_effect)) => {
                 drop(no_effect);
                 Err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let product = application.unpublished_materialization(effects, &product);
                 Err(
                     WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(

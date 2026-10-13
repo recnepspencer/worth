@@ -3,16 +3,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 fn unique_temp(label: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("clock")
-        .as_nanos();
-    std::env::temp_dir().join(format!(
-        "authority-value-gate-forgery-{label}-{}-{nanos}",
-        std::process::id()
+    worth_harness::tooling::fixture_path::unique_path(&format!(
+        "authority-value-gate-forgery-{label}"
     ))
 }
 

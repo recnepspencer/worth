@@ -30,7 +30,7 @@ use super::{
     },
     WorthQueryAdmittedApplicationQueryPlan,
 };
-pub(super) use denial::{managed_read_denial, read_execution_denial};
+pub(super) use denial::{managed_read_denial, read_execution_denial, relational_read_denial};
 pub(super) use denial::{
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };

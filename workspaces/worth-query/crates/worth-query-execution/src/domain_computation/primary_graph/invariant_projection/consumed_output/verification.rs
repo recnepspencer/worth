@@ -91,6 +91,7 @@ pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerification
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum ConsumedOutputVerificationStop {
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Unavailable,
     CapacityExhausted,
     PendingUpstream,

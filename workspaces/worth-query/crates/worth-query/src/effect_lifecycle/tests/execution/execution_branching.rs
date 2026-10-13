@@ -90,6 +90,7 @@ fn lowered_mutation_execution_preserves_branch_scoped_authority_target() {
     let read_view = runtime
         .read_truth()
         .read_snapshot(&snapshot, request_execution)
+        .expect("fixture read request remains live")
         .expect("snapshot should read");
     let updated = read_view
         .entities()
@@ -167,6 +168,7 @@ fn retained_lowered_mutation_denies_after_intervening_truth_change() {
     let read_view = runtime
         .read_truth()
         .read_snapshot(&snapshot, request_execution)
+        .expect("fixture read request remains live")
         .expect("snapshot should read");
     let updated = read_view
         .entities()

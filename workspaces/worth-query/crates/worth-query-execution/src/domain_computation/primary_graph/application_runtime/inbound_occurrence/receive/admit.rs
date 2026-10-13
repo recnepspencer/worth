@@ -238,6 +238,7 @@ fn map_owner_read(
     use WorthQueryCommittedDispatchOutboxReadDenial as Read;
     use WorthQueryInboundAdmissionDenial as Denial;
     match denial {
+        Read::ReadExecution(_) => Denial::OwnerReadDenied(denial),
         Read::ForeignPhase => Denial::OwnerReadDenied(denial),
         Read::Missing => Denial::UnknownCorrelation,
         // Publication settles, the index is repaired and snapshots in use

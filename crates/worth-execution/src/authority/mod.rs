@@ -23,3 +23,5 @@ pub use memory::{
 };
 pub use request::ExecutionRequest;
 pub use serial::SerialRequest;
+
+pub(crate) use request::consult_observation;

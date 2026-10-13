@@ -242,3 +242,7 @@ impl WorthQueryApplicationBasisObservation {
         self.acquisitions
     }
 }
+
+#[cfg(test)]
+#[path = "basis_registry/maintenance_refusal_cleanup.rs"]
+mod maintenance_refusal_cleanup;

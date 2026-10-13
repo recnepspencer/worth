@@ -1,5 +1,6 @@
 //! Bounded Query-owned capability delegation progression.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
 use super::capability_observation::WorthQueryObservedCapabilityDecision;
@@ -293,7 +294,9 @@ impl WorthQueryBoundCapabilityObservation<'_> {
         })?;
         if expected.is_some_and(|expected| !expected.has_same_lineage(observed.decision())) {
             return Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::DelegationLineageChanged,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::DelegationLineageChanged,
+                ),
                 self.installed.contract().name(),
             ));
         }

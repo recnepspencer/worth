@@ -63,14 +63,16 @@ fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
         connections,
         connections,
         component_limits(occurrences),
-        16 * 1024 * 1024,
+        super::document_retention_model::host::WORKFLOW_DEFINITION_BYTES,
         2,
         u32::from(nodes),
         256 * 1024,
     )
     .expect("finite control workflow resources");
-    let application =
-        retain_workflow_with_resources(publish_on_first_program_for_workflow_scale(), resources);
+    let application = retain_workflow_with_resources(
+        publish_on_first_program_for_workflow_scale(nodes, connections),
+        resources,
+    );
     let runtime = application.runtime();
     let cancellation = WorthQueryCancellationSource::new();
     let scope = WorthQueryRequestScope::new(

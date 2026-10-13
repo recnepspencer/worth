@@ -225,3 +225,24 @@ pub(crate) fn execution_memory_requirement_for_lease<T, R, E>(
     let context = RunLimits::framework_context_bytes_for_lease(lease, count)?;
     batch.checked_add(context)
 }
+
+impl<T: ChargedBytes> AdmittedBatch<T> {
+    pub(crate) fn owned_storage_bytes(&self) -> u64 {
+        let Self {
+            declaration,
+            values,
+        } = self;
+        let BatchDeclaration {
+            identities,
+            max_result_bytes,
+            kernel_scratch_bytes: _,
+            declared_result_bytes: _,
+            access_memory_bytes,
+        } = declaration;
+        values
+            .additional_charged_bytes()
+            .saturating_add((identities.capacity() * size_of::<PartitionIdentity>()) as u64)
+            .saturating_add(max_result_bytes.additional_charged_bytes())
+            .saturating_add(*access_memory_bytes)
+    }
+}

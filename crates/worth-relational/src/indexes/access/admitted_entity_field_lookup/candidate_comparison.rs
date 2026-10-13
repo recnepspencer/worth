@@ -2,12 +2,15 @@ use super::*;
 
 pub(super) fn borrowed_matches<E>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    index: DerivedIndexId,
     view: &VisibilityProjectionView,
     entity: EntityId,
     locator: &AspectFieldLocator,
     expected: &AspectValue,
-    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
 ) -> Result<Option<(EntityId, KindId, bool)>, Stop<E>> {
+    crate::execution::check_request(execution)
+        .map_err(|cause| denied(Denial::Execution(cause), index))?;
     let read = view
         .exact_entity_state_read_work_bound()
         .ok_or(Stop::ExactBasisRequired)?;
@@ -20,8 +23,8 @@ pub(super) fn borrowed_matches<E>(
             .ok_or(Stop::AccountingOverflow)?,
         0,
     )?;
-    prepare(SelectedIndexReadWork::OrderedNavigation(navigation), 0).map_err(Stop::Admission)?;
-    view.with_exact_entity_state(execution, entity, |metadata, state| {
+    prepare(SelectedIndexReadWork::OrderedNavigation(navigation), 0)?;
+    view.with_exact_entity_state(entity, |metadata, state| {
         let matches = state_matches(state, locator, expected, prepare)?;
         Ok((metadata.entity_id, metadata.kind_id, matches))
     })
@@ -33,7 +36,7 @@ fn state_matches<E>(
     state: Option<&AuthoritativeRecordAspectState>,
     locator: &AspectFieldLocator,
     expected: &AspectValue,
-    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
 ) -> Result<bool, Stop<E>> {
     let Some(state) = state else { return Ok(false) };
     let aspect = locator.aspect().aspect_key();
@@ -68,7 +71,7 @@ fn state_matches<E>(
 }
 
 fn admit_text_descent<E>(
-    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), E>,
+    prepare: &mut impl FnMut(SelectedIndexReadWork, u64) -> Result<(), Stop<E>>,
     entries: usize,
     text: usize,
 ) -> Result<(), Stop<E>> {
@@ -79,5 +82,5 @@ fn admit_text_descent<E>(
         all.checked_sub(path).ok_or(Stop::AccountingOverflow)?,
         0,
     )?;
-    prepare(SelectedIndexReadWork::OrderedNavigation(path), 0).map_err(Stop::Admission)
+    prepare(SelectedIndexReadWork::OrderedNavigation(path), 0)
 }

@@ -1,5 +1,10 @@
 //! Re-admits the retained adoption facts inside the caller's active advancement.
 use super::*;
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement(
         &self,
@@ -53,7 +58,16 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(denial) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                drop(unpublished);
+                return Err(failure(
+                    WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(advancement_denial(
+                        stop,
+                    )),
+                    recovery,
+                ));
+            }
+            Err(PublicationDenial::Refused(denial)) => {
                 drop(unpublished);
                 return Err(failure(
                     WorthQueryBranchAdoptionRecoveryDenial::AdoptionPreparation(denial),
@@ -73,7 +87,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             support_custody,
         } = recovery;
         match prepared.execute(execution) {
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 let adoption = WorthQueryPerformedBranchAdoption::new(
                     performed.consume(),
                     source,
@@ -88,7 +102,19 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 );
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup })
             }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(no_effect) => {
+            Err(PublicationDenial::Stopped(stop)) => Err(failure(
+                WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(advancement_denial(stop)),
+                WorthQueryBranchAdoptionRecovery {
+                    source,
+                    target,
+                    selected_entity_count,
+                    migration,
+                    custody,
+                    product,
+                    support_custody,
+                },
+            )),
+            Err(PublicationDenial::Refused(no_effect)) => {
                 Ok(WorthQueryBranchAdoptionRecoveryOutcome::NoEffect {
                     no_effect,
                     recovery: WorthQueryBranchAdoptionRecovery {
@@ -102,9 +128,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     },
                 })
             }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(
-                effects,
-            ) => {
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let next = WorthQueryUnpublishedBranchAdoption::new(
                     source,
                     target,

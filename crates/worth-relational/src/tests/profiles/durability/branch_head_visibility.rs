@@ -76,7 +76,8 @@ fn branch_head_protection_can_be_lazy_without_populating_visibility_cache() {
 
     let _ = runtime
         .read_truth()
-        .read_version(execution, base.version_id);
+        .read_version(execution, base.version_id)
+        .expect("read request remains live");
     let warmed_stats = runtime.storage_access().storage_stats();
     assert_eq!(warmed_stats.cached_visibility_version_count, 0);
     assert_eq!(warmed_stats.protected_visibility_version_count, 2);

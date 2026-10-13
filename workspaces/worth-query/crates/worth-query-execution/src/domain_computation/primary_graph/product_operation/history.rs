@@ -1,5 +1,6 @@
 //! Query audience binding for bounded World-owned product history.
 
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use std::num::NonZeroUsize;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -87,17 +88,21 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
     > {
         let phase_request = match phase.execution_request_for(&self.application.product_runtime) {
             Ok(request) => request,
-            Err(_) => return Err(WorthQueryProductBranchAdmissionDenial::ForeignPhase),
+            Err(_) => {
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignPhase,
+                ))
+            }
         };
         let execution = &phase_request;
 
-        let expected = self
-            .history
-            .commits()
-            .nth(entry.index)
-            .ok_or(WorthQueryProductBranchAdmissionDenial::ObservationRejected)?;
+        let expected = self.history.commits().nth(entry.index).ok_or(
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),
+        )?;
         if !std::ptr::eq(entry.commit, expected) {
-            return Err(WorthQueryProductBranchAdmissionDenial::ObservationRejected);
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationRejected,
+            ));
         }
         let product = self
             .application

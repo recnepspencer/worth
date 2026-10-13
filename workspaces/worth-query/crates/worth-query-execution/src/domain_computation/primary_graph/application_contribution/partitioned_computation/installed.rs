@@ -169,6 +169,11 @@ where
                     input_digest,
                     remaining_work,
                 )
+                .map_err(|denial| {
+                    WorthQueryPartitionedComputationDenial::Read(
+                        super::reader::WorthQueryComputationReadDenial::RetainedFact(denial.kind()),
+                    )
+                })?
             }
         };
         let deposit = reader.computation_deposit();
@@ -188,6 +193,7 @@ where
                         prepared_work: prepared.remaining_work().spent(),
                         run: PreparedRun::Incremental(prepared),
                         deposit,
+                        kernel_observation_for_test: None,
                     });
                 }
                 // Routing again met a partition identity collision, and the
@@ -296,6 +302,7 @@ where
                 cause,
             },
             deposit,
+            kernel_observation_for_test: None,
         })
     }
 }

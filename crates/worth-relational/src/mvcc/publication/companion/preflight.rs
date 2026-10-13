@@ -25,6 +25,7 @@ pub struct CompanionPreflightBudget {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CompanionPreflightStop {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     TopologyPending,
     SelectedSourceMismatch,
     SelectedPositionUnavailable {

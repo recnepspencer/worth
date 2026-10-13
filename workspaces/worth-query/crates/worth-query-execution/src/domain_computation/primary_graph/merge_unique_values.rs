@@ -37,6 +37,13 @@ const MERGE_UNIQUE_CANDIDATE_LIMIT: usize = 2;
 /// Why a merge's unique values refused it.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryMergeUniqueValueDenialKind {
+    /// The caller's read request stopped.
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// Another live entity at the target head holds a value the merge
     /// writes, or the merge writes one value twice.
     ValueTaken,
@@ -199,11 +206,20 @@ fn admit_fields(
         );
         let candidates = match selection {
             Ok(candidates) => candidates,
+
             // More holders than the limit: the value is held.
             Err(WorthQueryIndexedSelectionRefusal::Overflowed) => {
                 return Err(field_denial(
                     WorthQueryMergeUniqueValueDenialKind::ValueTaken,
                     locator,
+                ))
+            }
+            Err(WorthQueryIndexedSelectionRefusal::Execution(cause)) => {
+                return Err(denial(
+                    WorthQueryMergeUniqueValueDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    "unique field lookup",
                 ))
             }
             Err(WorthQueryIndexedSelectionRefusal::Unavailable) => {
@@ -265,7 +281,7 @@ impl TargetHead<'_> {
         let snapshot = self.snapshot()?;
         let truth = runtime.read_truth();
         let view = truth
-            .project_snapshot(snapshot, execution)
+            .project_snapshot(snapshot)
             .ok_or_else(target_head_unavailable)?;
         view.entity_record_with_projection_scope(
             execution,
@@ -273,6 +289,14 @@ impl TargetHead<'_> {
             ProjectionAspectScope::empty(),
             |record| (record.lifecycle() == RecordLifecycleState::Live).then(|| record.kind_id()),
         )
+        .map_err(|cause| {
+            denial(
+                WorthQueryMergeUniqueValueDenialKind::ReadExecution(
+                    crate::facade::primary_graph::relational_execution_kind(cause, None),
+                ),
+                format!("{entity_id:?}"),
+            )
+        })?
         .ok_or_else(|| {
             denial(
                 WorthQueryMergeUniqueValueDenialKind::MergedEntityNotLive,

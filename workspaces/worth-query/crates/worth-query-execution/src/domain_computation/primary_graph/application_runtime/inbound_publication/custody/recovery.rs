@@ -1,10 +1,14 @@
 //! Exact continuation of World unpublished transport completion effects.
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_installation::facade::ApplicationSchema;
-use worth_runtime_world::facade::RuntimeWorldPublicationOutcome;
 
 use super::{
     InstalledTransportCompletion, InstalledTransportPendingReason,
@@ -118,7 +122,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let prepared = match publication.prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(_) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                return RecoveryProgress::Pending(
+                    prior,
+                    None,
+                    Pending::ExecutionRequest(advancement_denial(stop)),
+                )
+            }
+            Err(PublicationDenial::Refused(_)) => {
                 return RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
             }
         };
@@ -135,7 +146,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         drop(publication);
         drop(lease);
         match outcome {
-            RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 let terminal = PerformedInstalledTransportCompletion::new(
                     evidence,
                     binding,
@@ -147,10 +158,15 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .err();
                 RecoveryProgress::Performed(terminal, release)
             }
-            RuntimeWorldPublicationOutcome::NoEffect(_) => {
+            Err(PublicationDenial::Stopped(stop)) => RecoveryProgress::Pending(
+                prior,
+                None,
+                Pending::ExecutionRequest(advancement_denial(stop)),
+            ),
+            Err(PublicationDenial::Refused(_)) => {
                 RecoveryProgress::Pending(prior, None, Pending::ProductRecoveryRequired)
             }
-            RuntimeWorldPublicationOutcome::ProductUnpublished(effects) => {
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let next = WorthQueryProductUnpublishedApplication::new(
                     effects,
                     world_recovery,

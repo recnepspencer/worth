@@ -139,7 +139,8 @@ fn collect_pair_minimum_violations(
     let Some(minimum) = contract.pair_min else {
         return;
     };
-    for ((source, target), count) in &snapshot.directed_pair_counts {
+    for (key, count) in snapshot.directed_pair_counts.iter() {
+        let (source, target) = (&key.source, &key.target);
         if !context.checkpoint(1) {
             return;
         }

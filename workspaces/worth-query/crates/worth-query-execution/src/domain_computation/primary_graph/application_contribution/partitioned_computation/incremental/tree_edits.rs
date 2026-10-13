@@ -6,7 +6,8 @@ use super::tree_attempt::{EditDisposition, TreeAttempt};
 use super::tree_report::WorthQueryPartitionedTreeRebuildCause as Cause;
 use std::collections::BTreeMap;
 use worth_execution::{
-    ChargedBytes, MapKernelStop, ReductionPlan, ReductionRunFailure, ReductionTree,
+    ChargedBytes, MapKernelStop, ReductionEditMemoryBoundError, ReductionInsertMemoryBoundError,
+    ReductionPlan, ReductionRunFailure, ReductionTree,
 };
 use worth_foundational::facade::PartitionIdentity;
 
@@ -38,15 +39,28 @@ where
     );
     for (identity, edit) in edits {
         let tree = attempt.outcome().as_ref().expect("prior edits completed");
-        let present = tree.leaf(identity).is_some();
-        let bound = match edit {
-            None => tree.checked_delete_memory_bound(identity, declared_bytes),
-            Some(value) => if present {
-                tree.checked_update_memory_bound(identity, declared_bytes)
-            } else {
-                tree.checked_insert_memory_bound(identity, declared_bytes)
+        let (path, present) = match edit {
+            None => (
+                tree.checked_delete_memory_bound(identity, declared_bytes),
+                false,
+            ),
+            Some(_) => match tree.checked_insert_memory_bound(identity, declared_bytes) {
+                Err(ReductionInsertMemoryBoundError::AlreadyPresent(_)) => (
+                    tree.checked_update_memory_bound(identity, declared_bytes),
+                    true,
+                ),
+                Ok(bound) => (Ok(bound), false),
+                Err(ReductionInsertMemoryBoundError::Overflow) => {
+                    (Err(ReductionEditMemoryBoundError::Overflow), false)
+                }
+            },
+        };
+        let bound = match path {
+            Ok(path) => path.checked_add(edit.map_or(0, ChargedBytes::additional_charged_bytes)),
+            Err(ReductionEditMemoryBoundError::Overflow) => None,
+            Err(ReductionEditMemoryBoundError::UnknownIdentity(_)) => {
+                return attempt.map_result(|_| Ok(EditDisposition::Rebuild(Cause::EditDenied)));
             }
-            .and_then(|path| path.checked_add(value.additional_charged_bytes())),
         };
         let Some(next_hold) = bound.and_then(|bound| held.checked_add(bound)) else {
             return attempt

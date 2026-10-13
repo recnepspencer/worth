@@ -12,6 +12,29 @@ pub(super) fn change_input(
     branch: product::WorthQueryProductBranch,
     input: &str,
 ) -> primary_graph::WorthQueryApplicationCommitOutcome {
+    change_input_with_commit_probe(
+        request_execution,
+        application,
+        invariant,
+        branch,
+        input,
+        || (),
+    )
+}
+
+pub(super) fn change_input_with_commit_probe<Guard>(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &application_installation::WorthQueryProgramApplicationRuntime<
+        TemporalHostSchema,
+        TemporalInstallationProgram,
+    >,
+    invariant: &primary_graph::WorthQueryApplicationInvariantProjectionAuthority<
+        TemporalHostSchema,
+    >,
+    branch: product::WorthQueryProductBranch,
+    input: &str,
+    arm: impl FnOnce() -> Guard,
+) -> primary_graph::WorthQueryApplicationCommitOutcome {
     let schema = application.installed_schema();
     let principal_binding = schema
         .principal_binding(TemporalPrincipalBinding::reference())
@@ -147,6 +170,7 @@ pub(super) fn change_input(
         >("source-change", "source-change")
         .unwrap(),
     );
+    let _commit_probe = arm();
     application
         .on_branch(branch)
         .transaction()

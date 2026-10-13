@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Instant;
 
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
@@ -52,7 +53,9 @@ where
         && progression != WorthQueryCapabilityOperationProgression::ElevationLifecycle
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationTransitionRequired,
+            ),
             operation.operation(),
         ));
     }
@@ -62,7 +65,9 @@ where
         && progression != WorthQueryCapabilityOperationProgression::DelegationActivation
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::DelegationTransitionRequired,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationTransitionRequired,
+            ),
             operation.operation(),
         ));
     }
@@ -72,13 +77,17 @@ where
         && progression != WorthQueryCapabilityOperationProgression::CapabilityRevocation
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::DelegationTransitionRequired,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationTransitionRequired,
+            ),
             operation.operation(),
         ));
     }
     if access.runtime_authority != runtime.runtime.authority_identity() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
             access.operation.as_ref(),
         ));
     }
@@ -86,7 +95,9 @@ where
         || runtime.installed_schema.binding_identity() != *operation.binding_identity()
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::StaleInstalledSchema,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleInstalledSchema,
+            ),
             access.operation.as_ref(),
         ));
     }
@@ -119,7 +130,9 @@ where
     }
     if !operation.contracts().authorization().requires_capability() {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::CapabilityNotRequired,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityNotRequired,
+            ),
             operation.operation(),
         ));
     }
@@ -151,7 +164,9 @@ where
     admit_request(&access.request_scope, &access.operation)?;
     if Instant::now() >= access.authentication_valid_until {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::ExpiredAuthentication,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication,
+            ),
             access.operation.as_ref(),
         ));
     }
@@ -160,14 +175,18 @@ where
 
 fn stale_operation(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::StaleInstalledOperation,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleInstalledOperation,
+        ),
         subject,
     )
 }
 
 fn inconsistent(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InconsistentDecision,
+        ),
         subject,
     )
 }

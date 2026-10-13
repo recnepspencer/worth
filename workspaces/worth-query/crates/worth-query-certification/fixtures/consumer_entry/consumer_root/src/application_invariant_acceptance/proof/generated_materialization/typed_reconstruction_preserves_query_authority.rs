@@ -1,5 +1,6 @@
 //! typed reconstruction preserves query authority.
 use super::*;
+use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 
 pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     application: &ProgramApplication,
@@ -135,10 +136,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     };
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read(request, &vertices[0].body_key), retained);
-    let recovery = match foreign
-        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            execution, recovery, scope,
-        ) {
+    let recovery = match execution.run(worth_execution::ExecutionWorkCeiling::new(crate::application_invariant_acceptance::resources::EXECUTION_POLICY.budget().work_ceiling()), |_| foreign.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(execution, recovery, scope)).expect("funded recovery request opens").0 {
         Ok(_) => panic!("a foreign Query runtime must not settle suspension custody"),
         Err(failure) => {
             assert_eq!(
@@ -148,10 +146,7 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             failure.into_recovery()
         }
     };
-    let suspended = application
-        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(
-            execution, recovery, scope,
-        )
+    let suspended = execution.run(worth_execution::ExecutionWorkCeiling::new(crate::application_invariant_acceptance::resources::EXECUTION_POLICY.budget().work_ceiling()), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<ConsumerSchema>>(execution, recovery, scope)).expect("funded recovery request opens").0
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled suspension into World: {:?}",
@@ -167,7 +162,9 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
     match unavailable {
         Err(WorthQueryApplicationRequestQueryDenial::PrincipalResolution(denial)) => assert_eq!(
             denial.kind(),
-            WorthQueryPrincipalResolutionDenialKind::BranchMaterializationSuspended,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::BranchMaterializationSuspended
+            ),
         ),
         Err(denial) => panic!("suspended generated materialization reported {denial:?}"),
         Ok(_) => panic!("suspended generated materialization must not be currently readable"),
@@ -195,8 +192,17 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         _ => panic!("the injected owner failure must retain opaque restoration recovery"),
     };
     assert_eq!(recovery.product_branch(), branch);
-    let recovery = match foreign
-        .continue_generated_output_restoration_recovery(execution, recovery, scope)
+    let recovery = match execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(
+                crate::application_invariant_acceptance::resources::EXECUTION_POLICY
+                    .budget()
+                    .work_ceiling(),
+            ),
+            |_| foreign.continue_generated_output_restoration_recovery(execution, recovery, scope),
+        )
+        .expect("funded recovery request opens")
+        .0
     {
         Ok(_) => panic!("a foreign Query runtime must not settle restoration custody"),
         Err(failure) => {
@@ -207,8 +213,20 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
             failure.into_recovery()
         }
     };
-    application
-        .continue_generated_output_restoration_recovery(execution, recovery, scope)
+    execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(
+                crate::application_invariant_acceptance::resources::EXECUTION_POLICY
+                    .budget()
+                    .work_ceiling(),
+            ),
+            |_| {
+                application
+                    .continue_generated_output_restoration_recovery(execution, recovery, scope)
+            },
+        )
+        .expect("funded recovery request opens")
+        .0
         .unwrap_or_else(|failure| {
             panic!(
                 "Query must adopt the settled restoration into World: {:?}",
@@ -248,4 +266,37 @@ pub(in super::super) fn typed_reconstruction_preserves_query_authority(
         "worth.query.certification.planar-final-output-producer.v2"
     );
     retained::preserved_outputs_remain_read_only(application, request, scope, retained_source);
+}
+
+#[cfg(test)]
+mod journey_test {
+    use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
+    #[test]
+    fn generated_reconstruction_journey_preserves_query_authority() {
+        std::thread::Builder::new()
+            .stack_size(8 * 1024 * 1024)
+            .spawn(|| {
+                use super::super::super::{authentication, installation};
+                let schema = crate::installed_schema();
+                let world = installation::install(&schema);
+                let foreign = installation::install(&schema);
+                let scope = authentication::request_scope();
+                let adapter = authentication::admit(world.application.installed_schema());
+                let principal = authentication::block_on(adapter.authenticate(
+                    authentication::LocalCredential::issued_for_model_owner(),
+                    &scope,
+                ))
+                .unwrap();
+                let request = world.application.request(&principal, &scope);
+                super::typed_reconstruction_preserves_query_authority(
+                    &world.application,
+                    &foreign.application,
+                    &request,
+                    &scope,
+                );
+            })
+            .unwrap()
+            .join()
+            .unwrap();
+    }
 }

@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Duration;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
 
@@ -90,14 +91,18 @@ fn request_upper_bound_cannot_widen_scope_or_swap_purpose() {
                 target_account: "account-2".to_owned(),
                 ..honest_input()
             },
-            WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityGrantMissing,
+            ),
         ),
         (
             RequestElevationInput {
                 target_purpose: CapabilityPurpose::Audit,
                 ..honest_input()
             },
-            WorthQueryOperationAuthorizationDenialKind::ElevationRequestRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationRequestRejected,
+            ),
         ),
     ] {
         let world = request_world();
@@ -167,12 +172,16 @@ fn proposed_grant_must_independently_authorize_the_governed_upper_bound() {
                 .expect("a different grant cannot become the elevation upper bound");
             assert_eq!(
                 denial.kind(),
-                WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::CapabilityGrantMissing
+                )
             );
             assert!(denial.identity().is_some());
             assert_eq!(
                 denial.causes(),
-                [WorthQueryOperationAuthorizationDenialKind::CapabilityGrantMissing]
+                [WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::CapabilityGrantMissing
+                )]
             );
         })
         .expect("the fixture block owns its installed host call")

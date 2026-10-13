@@ -107,10 +107,10 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(prepared) = prepared_record {
             state.install_prepared_record(prepared);
         }
-        let record = state.records.get_mut(&key).expect("admitted record exists");
+        let mut record = state.records.get_mut(&key).expect("admitted record exists");
         if !record.source_commits.contains(source_commit) {
             if let Some(growth) = prepared_commit_growth {
-                growth.install(record);
+                growth.install(&mut record);
             }
             record.source_commits.push(source_commit.clone());
         }
@@ -132,7 +132,8 @@ impl WorthQueryOutputDemandRegistry {
         }
         record.interests = record.interests.saturating_add(1);
         record.required_interests += 1;
-        let interest = interest(self, key, record, true);
+        let interest = interest(self, key, &record, true);
+        record.finish();
         state.obligation_reserved_bytes = state
             .obligation_reserved_bytes
             .saturating_add(new_bytes)

@@ -30,6 +30,7 @@ pub enum BankGraphReadPlanReviewDenialKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationQueryAdmissionDenialKind {
+    ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     InstalledQuery(BankApplicationQueryInstallationDenialKind),
     ForeignPrincipal,
     ForeignScope,
@@ -73,6 +74,7 @@ pub enum BankApplicationQueryAdmissionDenialKind {
 pub(super) const fn admission(kind: Query) -> BankApplicationQueryAdmissionDenialKind {
     use BankApplicationQueryAdmissionDenialKind as Bank;
     match kind {
+        Query::ExecutionRequest(kind) => Bank::ExecutionRequest(kind),
         Query::InstalledQuery(kind) => Bank::InstalledQuery(query_installation(kind)),
         Query::ForeignPrincipal => Bank::ForeignPrincipal,
         Query::ForeignScope => Bank::ForeignScope,
@@ -146,3 +148,26 @@ const fn graph_read(kind: QueryGraphRead) -> BankGraphReadPlanReviewDenialKind {
         QueryGraphRead::UnsupportedGraphIndexSupport => Bank::UnsupportedGraphIndexSupport,
     }
 }
+
+#[cfg(test)]
+mod request_stop_tests {
+    use super::*;
+    #[test]
+    fn currency_work_stop_keeps_its_execution_kind() {
+        use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
+        use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind as Kind;
+        let kind = Kind::ExecutionResource {
+            denial: Resource::WorkExhausted,
+            partition_identity: None,
+            policy_ancestor: None,
+        };
+        assert_eq!(
+            admission(Query::ExecutionRequest(kind)),
+            BankApplicationQueryAdmissionDenialKind::ExecutionRequest(kind)
+        );
+    }
+}
+
+#[cfg(test)]
+#[path = "admission/request_stop_tests.rs"]
+mod admission_request_stop_tests;

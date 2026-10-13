@@ -20,6 +20,7 @@ pub struct AdjacencyStructuralRevision {
 /// distinct so a caller can tell an unpaid read from a missing anchor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum AdjacencyStructuralRevisionDenial {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     /// The caller's maximum cannot pay the one owner-index lookup. Nothing
     /// was read.
     WorkBudgetExceeded,
@@ -51,6 +52,9 @@ impl VisibilityProjectionView {
         if maximum_work < 1 {
             return Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded);
         }
+        execution
+            .consult()
+            .map_err(|stop| AdjacencyStructuralRevisionDenial::Execution(stop.into()))?;
         if self
             .entity_record_with_projection_scope(
                 execution,
@@ -58,6 +62,7 @@ impl VisibilityProjectionView {
                 super::ProjectionAspectScope::empty(),
                 |_| Some(()),
             )
+            .map_err(AdjacencyStructuralRevisionDenial::Execution)?
             .is_none()
         {
             return Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable);
@@ -105,7 +110,7 @@ mod tests {
         let revision_at = |snapshot| {
             let view = runtime
                 .read_truth()
-                .project_snapshot(snapshot, execution)
+                .project_snapshot(snapshot)
                 .expect("commit snapshot remains readable");
             let revision = view
                 .bounded_adjacency_structural_revision(
@@ -119,7 +124,6 @@ mod tests {
                 .revision();
             assert_eq!(
                 view.exact_adjacency_structural_revision(
-                    execution,
                     source,
                     KindId(2),
                     RelationalAdjacencyDirection::Outgoing,
@@ -140,7 +144,7 @@ mod tests {
         );
         let deleted_view = runtime
             .read_truth()
-            .project_snapshot(&deletion_commit.snapshot, execution)
+            .project_snapshot(&deletion_commit.snapshot)
             .expect("deleted-relation snapshot remains readable");
         assert_eq!(
             deleted_view.bounded_adjacency_structural_revision(
@@ -196,7 +200,7 @@ mod tests {
         assert_eq!(
             recovered
                 .read_truth()
-                .project_snapshot(&recovered_snapshot, execution)
+                .project_snapshot(&recovered_snapshot)
                 .expect("recovered main basis is readable")
                 .bounded_adjacency_structural_revision(
                     execution,

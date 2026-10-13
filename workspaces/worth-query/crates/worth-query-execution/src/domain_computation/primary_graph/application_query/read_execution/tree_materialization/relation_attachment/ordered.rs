@@ -121,7 +121,7 @@ pub(super) fn ordered_lookup_denial(
 ) -> WorthQueryApplicationReadExecutionDenial {
     let kind = match kind {
         BoundedRelatedEntityOrderedLookupDenialKind::Execution(cause) => {
-            return super::super::super::denial::relational_cause_denial(cause, subject)
+            return super::super::super::denial::relational_read_denial(cause, subject)
         }
         BoundedRelatedEntityOrderedLookupDenialKind::InvalidPageWidth => {
             WorthQueryApplicationReadExecutionDenialKind::ContinuationPageWidthInvalid

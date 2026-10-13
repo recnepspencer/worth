@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::{
     ApplicationCapabilityEntitySelector, ApplicationCapabilityRequestContext,
     ApplicationCapabilityRequestProjection,
@@ -74,34 +75,6 @@ impl ApplicationOperationMarkerIdentity<IdentityExecutionSchema>
 mod exact_active_elevation_admits_and_revalidates_with_ordinary_capa;
 
 #[test]
-fn selector_only_admission_cannot_bypass_the_approval_transition() {
-    let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
-    world.authorization_time.script([time(100)]);
-    let request = live_scope();
-    let principal = world
-        .application
-        .with_host_advancement(|phase| {
-            authenticated_principal(&(phase).test_host_request(), &world, &request)
-        })
-        .expect("the fixture read owns its installed host call");
-
-    let Err(denial) = world
-        .application
-        .with_host_advancement(|phase| {
-            admit_raw(&phase, &world, &principal, &request, Some("elevation-1"))
-        })
-        .expect("the fixture read owns its installed host call")
-    else {
-        panic!("a raw selector must not substitute for approved lifecycle authority");
-    };
-
-    assert_eq!(
-        denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
-    );
-}
-
-#[test]
 fn governed_capability_without_elevation_preserves_required_explanation() {
     let world = installed_elevated_capability_world(CapabilityElevationScenario::Active);
     world.authorization_time.script([time(100)]);
@@ -123,7 +96,9 @@ fn governed_capability_without_elevation_preserves_required_explanation() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationRequired
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationRequired
+        )
     );
     assert_eq!(
         denial.explanation_cause(),
@@ -167,7 +142,9 @@ fn resource_selector_cannot_substitute_for_the_declared_elevation_identity() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationProjectionRejected
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationProjectionRejected
+        )
     );
 }
 
@@ -219,7 +196,9 @@ fn revoked_approved_elevation_cannot_open_active_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationInactive
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationInactive
+        )
     );
     assert_eq!(
         denial.explanation_cause(),
@@ -293,7 +272,9 @@ fn approver_drift_after_admission_is_stale_before_operation_authority() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        )
     );
 }
 
@@ -390,3 +371,6 @@ fn elevated_input(elevation: Option<&str>) -> ElevatedCapabilityTouchInput {
         amount: 50,
     }
 }
+
+#[path = "capability_elevation/selector_only_admission.rs"]
+mod selector_only_admission;

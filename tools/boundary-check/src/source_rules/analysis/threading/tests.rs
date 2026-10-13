@@ -2,19 +2,12 @@ use super::enforce_threading_boundary;
 use crate::config::ThreadingSiteConfig;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::{AtomicUsize, Ordering};
-
-static NEXT_FIXTURE: AtomicUsize = AtomicUsize::new(0);
 
 struct Fixture(PathBuf);
 
 impl Fixture {
     fn new() -> Self {
-        let path = std::env::temp_dir().join(format!(
-            "worth-threading-boundary-{}-{}",
-            std::process::id(),
-            NEXT_FIXTURE.fetch_add(1, Ordering::Relaxed)
-        ));
+        let path = worth_harness::tooling::fixture_path::unique_path("worth-threading-boundary");
         fs::create_dir_all(&path).unwrap();
         Self(path)
     }

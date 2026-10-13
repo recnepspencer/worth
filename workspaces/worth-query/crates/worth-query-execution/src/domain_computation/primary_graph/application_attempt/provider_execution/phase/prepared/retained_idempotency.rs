@@ -1,6 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph as graph;
-use graph::application_attempt::provider_compare_denial::provider_session_kind_denied;
+use graph::application_attempt::provider_compare_denial::provider_session_execution_denied;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
 
@@ -90,7 +90,7 @@ where
             ),
         )),
         Ok(Err(IdempotencyDenial::ExecutionDenied(kind))) => Some(
-            WorthQueryApplicationCommitOutcome::Denied(provider_session_kind_denied(
+            WorthQueryApplicationCommitOutcome::Denied(provider_session_execution_denied(
                 kind,
                 ExecutionDenialStage::Idempotency,
                 "pending publication execution refused",

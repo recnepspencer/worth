@@ -1,7 +1,7 @@
 use super::{
     admission::BatchDeclaration,
     input::InputMode,
-    meter::KernelFailure,
+    meter::{record_nested_outcome, KernelFailure},
     port::{BatchOutcome, BatchStop},
     PreparedBatchResources,
 };
@@ -38,6 +38,7 @@ impl<I: InputMode> RunCustody<I> {
         &mut self,
         mut outcome: BatchOutcome<R, E>,
         batch: &BatchDeclaration,
+        charge_parent: bool,
     ) -> BatchOutcome<R, E> {
         if let Some(index) = self.inputs.as_mut().and_then(InputMode::discard) {
             // No input was dispatched on this path, so there is no prefix.
@@ -53,6 +54,7 @@ impl<I: InputMode> RunCustody<I> {
         drop(self.reservation.take());
         drop(self.serial_reservation.take());
         drop(self.taken.take());
+        record_nested_outcome(outcome.report, outcome.stop_owner, charge_parent);
         outcome
     }
 }

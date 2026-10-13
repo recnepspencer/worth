@@ -18,7 +18,10 @@ impl VisibilityProjectionView {
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         maximum_work_units: usize,
-    ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
+    ) -> Result<
+        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         self.bounded_relations_for_frontier(
             execution,
             entity_ids,
@@ -35,7 +38,10 @@ impl VisibilityProjectionView {
         entity_ids: &BTreeSet<EntityId>,
         kind_id: KindId,
         maximum_work_units: usize,
-    ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
+    ) -> Result<
+        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         self.bounded_relations_for_frontier(
             execution,
             entity_ids,
@@ -55,7 +61,10 @@ impl VisibilityProjectionView {
         kind_id: KindId,
         outgoing: bool,
         maximum_work_units: usize,
-    ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
+    ) -> Result<
+        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         self.bounded_relations_for_frontier(
             execution,
             entity_ids,
@@ -78,49 +87,56 @@ impl VisibilityProjectionView {
         direction: AdjacencyDirection,
         maximum_work_units: usize,
         include_audit: bool,
-    ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
-        let Some(root) = self.basis.root() else {
-            let mut lists = 0;
-            for _ in entity_ids {
-                charge(maximum_work_units, lists, 0, 0)?;
-                lists += 1;
-            }
-            return Ok(BoundedFrontierAdjacencyTruthRead {
-                records: Vec::new(),
-                adjacency_lists_read: lists,
-                relation_records_examined: 0,
-            });
-        };
-        let adjacency_basis = AdjacencyKindBasis::of_current_version(
-            self.basis.root_version() == Some(self.version_id()),
-        );
-        let mut ledger = AdjacencyLeaseLedger::default();
-        let mut records = Vec::new();
-        let mut lists = 0_usize;
-        let mut examined = 0_usize;
-        for entity_id in entity_ids {
-            if let Err(exceeded) = charge(maximum_work_units, lists, examined, records.len()) {
-                ledger.settle_instrumentation(&self.instrumentation);
-                return Err(exceeded);
-            }
-            lists += 1;
-            let relation_ids = ledger.lease(
-                root.get_partition(entity_id.partition_id)
-                    .and_then(|partition| direction.table(partition).get(entity_id.slot_index())),
-                adjacency_basis,
-                kind_id,
+    ) -> Result<
+        Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        super::super::read_request::checked(execution, || {
+            let Some(root) = self.basis.root() else {
+                let mut lists = 0;
+                for _ in entity_ids {
+                    charge(maximum_work_units, lists, 0, 0)?;
+                    lists += 1;
+                }
+                return Ok(BoundedFrontierAdjacencyTruthRead {
+                    records: Vec::new(),
+                    adjacency_lists_read: lists,
+                    relation_records_examined: 0,
+                });
+            };
+            let adjacency_basis = AdjacencyKindBasis::of_current_version(
+                self.basis.root_version() == Some(self.version_id()),
             );
-            for relation_id in relation_ids.iter().copied() {
+            let mut ledger = AdjacencyLeaseLedger::default();
+            let mut records = Vec::new();
+            let mut lists = 0_usize;
+            let mut examined = 0_usize;
+            for entity_id in entity_ids {
                 if let Err(exceeded) = charge(maximum_work_units, lists, examined, records.len()) {
                     ledger.settle_instrumentation(&self.instrumentation);
                     return Err(exceeded);
                 }
-                examined += 1;
-                let Some(record) = self.authoritative_relation_record(execution, relation_id)
-                else {
-                    continue;
-                };
-                if record.kind.kind_id != kind_id
+                lists += 1;
+                let relation_ids = ledger.lease(
+                    root.get_partition(entity_id.partition_id)
+                        .and_then(|partition| {
+                            direction.table(partition).get(entity_id.slot_index())
+                        }),
+                    adjacency_basis,
+                    kind_id,
+                );
+                for relation_id in relation_ids.iter().copied() {
+                    if let Err(exceeded) =
+                        charge(maximum_work_units, lists, examined, records.len())
+                    {
+                        ledger.settle_instrumentation(&self.instrumentation);
+                        return Err(exceeded);
+                    }
+                    examined += 1;
+                    let Some(record) = self.project_relation_record(relation_id) else {
+                        continue;
+                    };
+                    if record.kind.kind_id != kind_id
                     || !(record.lifecycle == crate::storage::data::RecordLifecycleState::Live
                         || (include_audit && record.lifecycle
                             == crate::storage::data::RecordLifecycleState::RetainedDanglingForAudit))
@@ -128,19 +144,22 @@ impl VisibilityProjectionView {
                 {
                     continue;
                 }
-                if let Err(exceeded) = charge(maximum_work_units, lists, examined, records.len()) {
-                    ledger.settle_instrumentation(&self.instrumentation);
-                    return Err(exceeded);
+                    if let Err(exceeded) =
+                        charge(maximum_work_units, lists, examined, records.len())
+                    {
+                        ledger.settle_instrumentation(&self.instrumentation);
+                        return Err(exceeded);
+                    }
+                    records.push(record);
                 }
-                records.push(record);
             }
-        }
-        ledger.settle_instrumentation(&self.instrumentation);
-        records.sort_by_key(relation_identity_order_key);
-        Ok(BoundedFrontierAdjacencyTruthRead {
-            records,
-            adjacency_lists_read: lists,
-            relation_records_examined: examined,
+            ledger.settle_instrumentation(&self.instrumentation);
+            records.sort_by_key(relation_identity_order_key);
+            Ok(BoundedFrontierAdjacencyTruthRead {
+                records,
+                adjacency_lists_read: lists,
+                relation_records_examined: examined,
+            })
         })
     }
 }

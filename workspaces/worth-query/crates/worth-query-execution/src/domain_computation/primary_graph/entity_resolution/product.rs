@@ -1,3 +1,5 @@
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 mod retained_scope;
 use super::{
     admit_request, entity_denial, ApplicationFieldRef, ApplicationFieldUnit,
@@ -47,7 +49,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .execution_request_for(&self.application().product_runtime)
             .map_err(|_| {
                 entity_denial(
-                    WorthQueryEntityResolutionDenialKind::ForeignPhase,
+                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::ForeignPhase),
                     field.field(),
                 )
             })?;
@@ -86,7 +88,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         admit_request(request, field.field())?;
         let encoded = Field::Binding::encode(&value).map_err(|_| {
             entity_denial(
-                WorthQueryEntityResolutionDenialKind::ValueEncodingRejected,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::ValueEncodingRejected,
+                ),
                 field.field(),
             )
         })?;
@@ -125,21 +129,23 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .is_some_and(|admission| admission.remaining_work() < 3)
         {
             return Err(entity_denial(
-                WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
                 field,
             ));
         }
         let application = self.application();
         let graph = application.runtime.primary_graph().ok_or_else(|| {
             entity_denial(
-                WorthQueryEntityResolutionDenialKind::PrimaryGraphNotInstalled,
+                WorthQueryEntityResolutionDenialKind::Refused(
+                    ResolutionRefusal::PrimaryGraphNotInstalled,
+                ),
                 entity,
             )
         })?;
         let key_bytes = AuthoritativeFieldComparisonKey::required_encoded_capacity_bytes(&encoded)
             .ok_or_else(|| {
                 entity_denial(
-                    WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                    WorthQueryEntityResolutionDenialKind::Stopped(NativeReadStop::WorkExhausted),
                     field,
                 )
             })?;
@@ -163,15 +169,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 })
                 .ok_or_else(|| {
                     entity_denial(
-                        WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                        WorthQueryEntityResolutionDenialKind::Stopped(
+                            NativeReadStop::MemoryOverflow,
+                        ),
                         field,
                     )
                 })?;
-            admission.admit_read_scratch(bounded_ids).map_err(|_| {
-                entity_denial(
-                    WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
-                    field,
-                )
+            admission.admit_read_scratch(bounded_ids).map_err(|stop| {
+                let kind = match super::super::provider::relational_execution_denial::preflight_execution_cause(stop) {
+                    Ok(cause) => WorthQueryEntityResolutionDenialKind::Stopped(cause),
+                    Err(_) => WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                };
+                entity_denial(kind, field)
             })?;
         }
         let installed = graph.retain_entity_resolution_context();
@@ -180,7 +189,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             if let Some(admission) = admission.as_deref_mut() {
                 let index = selected_index.ok_or_else(|| {
                     entity_denial(
-                        WorthQueryEntityResolutionDenialKind::FieldNotInstalled,
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::FieldNotInstalled,
+                        ),
                         field,
                     )
                 })?;
@@ -193,7 +204,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .map_err(|stop| selected_index_admission_denial(stop, field))?;
                 if !current {
                     return Err(entity_denial(
-                        WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
+                        WorthQueryEntityResolutionDenialKind::Refused(
+                            ResolutionRefusal::EqualityIndexUnavailable,
+                        ),
                         field,
                     ));
                 }
@@ -204,20 +217,18 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         relational,
                         self.product().relational_basis(),
                     )
-                    .map_err(|_| {
-                        entity_denial(
-                            WorthQueryEntityResolutionDenialKind::EqualityIndexUnavailable,
-                            field,
-                        )
+                    .map_err(|denial| {
+                        use super::super::index_currency::WorthQueryPrimaryIndexCurrencyDenial as Currency;
+                        let kind = match denial {
+                            Currency::Execution(cause) => WorthQueryEntityResolutionDenialKind::Stopped(cause),
+                            Currency::Basis(_) | Currency::IndexUnavailable(_) =>
+                                WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::EqualityIndexUnavailable),
+                        };
+                        entity_denial(kind, field)
                     })?;
             }
             installed
-                .at_snapshot(
-                    execution,
-                    relational,
-                    self.application_basis().snapshot_handle(),
-                    mode,
-                )
+                .at_snapshot(relational, self.application_basis().snapshot_handle(), mode)
                 .map(|truth| truth.resolve_with_work(execution, entity, aspect, field, encoded))
         })?;
         if let Some(admission) = admission {
@@ -230,16 +241,15 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 })
                 .ok_or_else(|| {
                     entity_denial(
-                        WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                        WorthQueryEntityResolutionDenialKind::Stopped(
+                            NativeReadStop::WorkExhausted,
+                        ),
                         field,
                     )
                 })?;
-            admission.charge_external_work(actual_work).map_err(|_| {
-                entity_denial(
-                    WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
-                    field,
-                )
-            })?;
+            admission
+                .charge_external_work(actual_work)
+                .map_err(|stop| selected_index_admission_denial(stop, field))?;
         }
         let result = result?;
         admit_request(request, field)?;
@@ -266,12 +276,5 @@ fn selected_index_admission_denial(
     stop: CompanionPreflightStop,
     field: &str,
 ) -> WorthQueryEntityResolutionDenial {
-    let kind = match stop {
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow => {
-            WorthQueryEntityResolutionDenialKind::ProjectionPreparationMemoryExhausted
-        }
-        _ => WorthQueryEntityResolutionDenialKind::ProjectionWorkBudgetExceeded,
-    };
-    entity_denial(kind, field)
+    super::preflight::denial(stop, field)
 }

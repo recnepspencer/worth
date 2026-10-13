@@ -312,6 +312,7 @@ fn assert_snapshot_status(
     let view = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
+        .expect("fixture read request remains live")
         .expect("branch snapshot is readable");
     let record = view
         .entities()

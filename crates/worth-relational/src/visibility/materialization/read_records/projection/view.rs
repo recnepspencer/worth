@@ -1,13 +1,10 @@
-use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
+use crate::identity::data::{KindId, VersionId};
 use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
 
 use super::super::reader::VisibilityReadContext;
 use super::contracts::{assert_declared_projection_aspects, ProjectionAspectScope};
-use super::projection_records::{
-    EntityProjectionRecord, EntityRecordProjection, RelationProjectionRecord,
-    RelationRecordProjection,
-};
+use super::projection_records::{EntityRecordProjection, RelationRecordProjection};
 
 #[derive(Debug, Clone)]
 pub struct VisibilityProjectionView {
@@ -47,153 +44,6 @@ impl VisibilityProjectionView {
         self.basis.root().map(|root| root.schema_authority())
     }
 
-    pub fn entities<T: EntityRecordProjection>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Vec<T> {
-        let projection_scope = self.assert_entity_projection_contract::<T>();
-        self.authoritative_entity_records(execution, T::KIND)
-            .into_iter()
-            .filter_map(|record| {
-                T::from_record(EntityProjectionRecord::new(&record, &projection_scope))
-            })
-            .collect()
-    }
-
-    pub fn entities_in<T: EntityRecordProjection>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        partition_id: PartitionId,
-    ) -> Vec<T> {
-        let projection_scope = self.assert_entity_projection_contract::<T>();
-        self.authoritative_entity_records_in(execution, partition_id, T::KIND)
-            .into_iter()
-            .filter_map(|record| {
-                T::from_record(EntityProjectionRecord::new(&record, &projection_scope))
-            })
-            .collect()
-    }
-
-    pub fn entity<T: EntityRecordProjection>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity_id: EntityId,
-    ) -> Option<T> {
-        let projection_scope = self.assert_entity_projection_contract::<T>();
-        self.project_entity_record(execution, entity_id, &projection_scope, T::from_record)
-    }
-
-    pub fn entity_records_with_projection_scope<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        kind_id: KindId,
-        projection_scope: ProjectionAspectScope,
-        mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Vec<T> {
-        self.assert_entity_projection_scope(kind_id, &projection_scope);
-        self.authoritative_entity_records(execution, kind_id)
-            .into_iter()
-            .filter_map(|record| project(EntityProjectionRecord::new(&record, &projection_scope)))
-            .collect()
-    }
-
-    pub fn entity_record_with_projection_scope<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity_id: EntityId,
-        projection_scope: ProjectionAspectScope,
-        mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Option<T> {
-        self.project_entity_record(execution, entity_id, &projection_scope, |record| {
-            self.assert_entity_projection_scope(record.kind_id(), &projection_scope);
-            project(record)
-        })
-    }
-
-    pub(crate) fn entity_record_of_expected_kind_with_projection_scope<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        entity_id: EntityId,
-        expected_kind_id: KindId,
-        projection_scope: ProjectionAspectScope,
-        mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Result<Option<T>, KindId> {
-        self.project_entity_record(execution, entity_id, &projection_scope, |record| {
-            Some(if record.kind_id() != expected_kind_id {
-                Err(record.kind_id())
-            } else {
-                self.assert_entity_projection_scope(expected_kind_id, &projection_scope);
-                Ok(project(record))
-            })
-        })
-        .unwrap_or(Ok(None))
-    }
-
-    pub fn relations<T: RelationRecordProjection>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Vec<T> {
-        let projection_scope = self.assert_relation_projection_contract::<T>();
-        self.authoritative_relation_records(execution, T::KIND)
-            .into_iter()
-            .filter_map(|record| {
-                T::from_record(RelationProjectionRecord::new(&record, &projection_scope))
-            })
-            .collect()
-    }
-
-    pub fn relations_in<T: RelationRecordProjection>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        partition_id: PartitionId,
-    ) -> Vec<T> {
-        let projection_scope = self.assert_relation_projection_contract::<T>();
-        self.authoritative_relation_records_in(execution, partition_id, T::KIND)
-            .into_iter()
-            .filter_map(|record| {
-                T::from_record(RelationProjectionRecord::new(&record, &projection_scope))
-            })
-            .collect()
-    }
-
-    pub fn relation<T: RelationRecordProjection>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        relation_id: RelationId,
-    ) -> Option<T> {
-        let projection_scope = self.assert_relation_projection_contract::<T>();
-        self.authoritative_relation_record(execution, relation_id)
-            .and_then(|record| {
-                T::from_record(RelationProjectionRecord::new(&record, &projection_scope))
-            })
-    }
-
-    pub fn relation_records_with_projection_scope<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        kind_id: KindId,
-        projection_scope: ProjectionAspectScope,
-        mut project: impl FnMut(RelationProjectionRecord<'_>) -> Option<T>,
-    ) -> Vec<T> {
-        self.assert_relation_projection_scope(kind_id, &projection_scope);
-        self.authoritative_relation_records(execution, kind_id)
-            .into_iter()
-            .filter_map(|record| project(RelationProjectionRecord::new(&record, &projection_scope)))
-            .collect()
-    }
-
-    pub fn relation_record_with_projection_scope<T>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        relation_id: RelationId,
-        projection_scope: ProjectionAspectScope,
-        mut project: impl FnMut(RelationProjectionRecord<'_>) -> Option<T>,
-    ) -> Option<T> {
-        let record = self.authoritative_relation_record(execution, relation_id)?;
-        self.assert_relation_projection_scope(record.kind.kind_id, &projection_scope);
-        project(RelationProjectionRecord::new(&record, &projection_scope))
-    }
-
     pub(super) fn reader(&self) -> super::super::reader::ProjectionRecordReader<'_> {
         super::super::reader::ProjectionRecordReader::new(
             self.current_version,
@@ -201,7 +51,7 @@ impl VisibilityProjectionView {
         )
     }
 
-    fn assert_entity_projection_contract<T: EntityRecordProjection>(
+    pub(super) fn assert_entity_projection_contract<T: EntityRecordProjection>(
         &self,
     ) -> ProjectionAspectScope {
         let projection_scope = T::projection_scope();
@@ -214,7 +64,7 @@ impl VisibilityProjectionView {
         projection_scope
     }
 
-    fn assert_relation_projection_contract<T: RelationRecordProjection>(
+    pub(super) fn assert_relation_projection_contract<T: RelationRecordProjection>(
         &self,
     ) -> ProjectionAspectScope {
         let projection_scope = T::projection_scope();
@@ -227,7 +77,7 @@ impl VisibilityProjectionView {
         projection_scope
     }
 
-    fn assert_entity_projection_scope(
+    pub(super) fn assert_entity_projection_scope(
         &self,
         kind_id: KindId,
         projection_scope: &ProjectionAspectScope,
@@ -240,7 +90,7 @@ impl VisibilityProjectionView {
         );
     }
 
-    fn assert_relation_projection_scope(
+    pub(super) fn assert_relation_projection_scope(
         &self,
         kind_id: KindId,
         projection_scope: &ProjectionAspectScope,
@@ -288,7 +138,6 @@ impl VisibilityProjectionView {
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub(crate) fn project_branch_head(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &crate::history::data::BranchId,
         version_id: VersionId,
     ) -> Result<Option<VisibilityProjectionView>, crate::branch::RelationalBranchBasisDenial> {
@@ -307,10 +156,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub(crate) fn project_historical_version(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: VersionId,
     ) -> VisibilityProjectionView {
-        self.try_project_historical_version(execution, version_id)
+        self.try_project_historical_version(version_id)
             .expect("internal historical projection requires retained MVCC coverage")
     }
 
@@ -318,7 +166,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// it, so a fork's commit is read from the fork's own root.
     pub fn try_project_historical_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: VersionId,
     ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
         let basis = crate::visibility::cache_state::historical_basis_for_retained_version(
@@ -334,7 +181,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 
     pub(crate) fn try_project_retained_commit(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: crate::history::data::CommitId,
         branch_id: crate::history::data::BranchId,
         version_id: VersionId,
@@ -353,11 +199,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         ))
     }
 
-    pub fn project_snapshot(
-        &self,
-        handle: &SnapshotHandle,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Option<VisibilityProjectionView> {
+    /// Retain immutable basis metadata; record reads consult their request.
+    pub fn project_snapshot(&self, handle: &SnapshotHandle) -> Option<VisibilityProjectionView> {
         let basis =
             crate::visibility::snapshot_states::resolve_snapshot_basis(self.runtime(), handle)?;
         if basis.root().has_materialization_unavailable() {

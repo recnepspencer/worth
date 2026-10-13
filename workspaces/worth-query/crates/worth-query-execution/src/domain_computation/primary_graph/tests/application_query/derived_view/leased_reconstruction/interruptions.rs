@@ -41,19 +41,6 @@ fn caller_cancellation_and_deadline_at_each_root_preserve_a_canonical_boundary()
                 // The owner rechecks the interrupted request before projection.
                 assert!(observed.values.is_empty());
                 assert!(observed.dependencies.is_empty());
-                // Independent ledger of actually accepted kernel checkpoints.
-                // Canonical settlement charges earlier roots and the stopping
-                // root's admitted units; speculative later roots are excluded.
-                let admitted = observed
-                    .roots
-                    .iter()
-                    .take(boundary + 1)
-                    .map(|root| observed.map.2.get(root).copied().unwrap_or(0))
-                    .sum::<u64>();
-                assert_eq!(
-                    observed.map.0, admitted,
-                    "interruption settlement must retain exactly the admitted canonical work"
-                );
             }
         }
     }

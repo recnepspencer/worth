@@ -1,3 +1,10 @@
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::execution_runtime::product_world::{
+    prepare_conditional_publication, publish_conditional_definition,
+};
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
 
@@ -49,22 +56,11 @@ where
         let identity = product.branch_identity();
         let gate = self.product_runtime.activations.gate(identity)?;
         gate.publish(|| {
-            let prepared_world = match self
-                .product_runtime
-                .owner
-                .publication_port()
-                .prepare_with_signal(
-                    product.observation().clone(),
-                    CompositePublicationIntent::with_signal(None),
-                    cancellation,
-                    None,
-                ) {
+            let publication = self.product_runtime.owner.publication_port();
+            let prepared_world = match prepare_conditional_publication(&publication, product.observation().clone(), CompositePublicationIntent::with_signal(None), cancellation, None) {
                 Ok(prepared) => prepared,
-                Err(denial) => {
-                    return Err(
-                        WorthQueryProductConditionalPublicationDenial::WorldPreparation(denial),
-                    )
-                }
+                Err(PublicationDenial::Stopped(stop)) => return Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))),
+                Err(PublicationDenial::Refused(denial)) => return Err(WorthQueryProductConditionalPublicationDenial::WorldPreparation(denial)),
             };
             let bridge = self.bridge.conditional();
             let predecessor = bridge
@@ -83,24 +79,12 @@ where
                     )
                 }
             };
-            let outcome = self
-                .product_runtime
-                .owner
-                .publication_port()
-                .publish_bridge_conditional_definition(
-                    phase
-                        .execution_request_for(&self.product_runtime)
-                        .map_err(|cause| {
-                            WorthQueryProductConditionalPublicationDenial::ExecutionRequest(
-                                cause.into(),
-                            )
-                        })?,
-                    prepared_world,
-                    prepared_bridge,
-                    &bridge,
-                    cancellation,
-                );
-            Ok(outcome)
+            match publish_conditional_definition(&publication, phase.execution_request_for(&self.product_runtime).map_err(|cause| WorthQueryProductConditionalPublicationDenial::ExecutionRequest(cause.into()))?, prepared_world, prepared_bridge, &bridge, cancellation) {
+                Ok(PublicationOutcome::Performed((publication, lowering))) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::Performed { publication, lowering }),
+                Ok(PublicationOutcome::ProductUnpublished(effects)) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::ProductUnpublished(effects)),
+                Err(PublicationDenial::Stopped(stop)) => Err(WorthQueryProductConditionalPublicationDenial::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::advancement_denial(stop))),
+                Err(PublicationDenial::Refused(no_effect)) => Ok(RuntimeWorldConditionalDefinitionPublicationOutcome::NoEffect(no_effect)),
+            }
         })?
     }
 }

@@ -301,7 +301,7 @@ fn related_ordering_rebuilds_retained_historical_child_values_after_update() {
     assert!(!result.has_more());
 }
 
-fn register_related_name_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
+pub(super) fn register_related_name_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
     runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "relation.owns.child-name".to_string(),

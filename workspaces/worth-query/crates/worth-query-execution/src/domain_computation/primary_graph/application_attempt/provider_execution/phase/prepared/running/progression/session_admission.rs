@@ -181,3 +181,6 @@ mod overlay_conflict_tests;
 #[cfg(test)]
 #[path = "session_admission/comparison_scope_tests.rs"]
 mod comparison_scope_tests;
+
+#[cfg(test)]
+mod principal_comparison_tests;

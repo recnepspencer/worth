@@ -341,3 +341,6 @@ fn set_note(
         )),
     );
 }
+
+#[path = "tests/counted_read_stops.rs"]
+mod counted_read_stops;

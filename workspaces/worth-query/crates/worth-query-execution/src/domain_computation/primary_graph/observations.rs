@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 mod principal_target_read_observation;
 pub use principal_target_read_observation::principal_target_reads_on_this_thread_for_test;
 use std::sync::Arc;
@@ -40,54 +41,8 @@ pub(super) struct WorthQueryPrincipalTargetObservation {
     pub(super) adjacency_revision: Option<worth_relational::facade::identity::VersionId>,
 }
 
-pub(super) fn observe_mapping(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    snapshot: &SnapshotHandle,
-    mapping_id: EntityId,
-    layout: &WorthQueryPrimaryPrincipalBindingLayout,
-    binding: &str,
-) -> Result<WorthQueryPrincipalMappingObservation, WorthQueryPrincipalResolutionDenial> {
-    let view = runtime
-        .read_truth()
-        .project_snapshot(snapshot, execution)
-        .ok_or_else(|| stale_proof_denial(binding))?;
-    let scope = mapping_projection_scope(layout);
-    let identity_revision = view
-        .entity_field_revision(
-            execution,
-            mapping_id,
-            &authoritative(&layout.identity_locator),
-        )
-        .ok_or_else(|| stale_proof_denial(binding))?;
-    let status_revision = view
-        .entity_field_revision(
-            execution,
-            mapping_id,
-            &authoritative(&layout.status_locator),
-        )
-        .ok_or_else(|| stale_proof_denial(binding))?;
-    view.entity_record_with_projection_scope(execution, mapping_id, scope, |record| {
-        if record.kind_id() != layout.mapping_kind
-            || record.lifecycle() != RecordLifecycleState::Live
-        {
-            return None;
-        }
-        let identity = projected_field(record, &layout.identity_locator)?.clone();
-        let AspectValue::Bool(enabled) = projected_field(record, &layout.status_locator)? else {
-            return None;
-        };
-        Some(WorthQueryPrincipalMappingObservation {
-            entity_id: record.entity_id(),
-            kind_id: record.kind_id(),
-            identity,
-            enabled: *enabled,
-            identity_revision,
-            status_revision,
-        })
-    })
-    .ok_or_else(|| stale_proof_denial(binding))
-}
+mod principal_mapping;
+pub(super) use principal_mapping::observe_mapping;
 
 pub(super) fn resolve_principal_target(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -134,13 +89,17 @@ pub(super) fn resolve_principal_target(
     });
     let relation = relations.next().ok_or_else(|| {
         WorthQueryPrincipalResolutionDenial::new(
-            WorthQueryPrincipalResolutionDenialKind::MissingPrincipalTarget,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::MissingPrincipalTarget,
+            ),
             binding,
         )
     })?;
     if relations.next().is_some() {
         return Err(WorthQueryPrincipalResolutionDenial::new(
-            WorthQueryPrincipalResolutionDenialKind::AmbiguousPrincipalTarget,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::AmbiguousPrincipalTarget,
+            ),
             binding,
         ));
     }
@@ -153,7 +112,9 @@ pub(super) fn resolve_principal_target(
         .ok_or_else(|| stale_proof_denial(binding))?;
     if principal.kind.kind_id != layout.principal_kind {
         return Err(WorthQueryPrincipalResolutionDenial::new(
-            WorthQueryPrincipalResolutionDenialKind::WrongPrincipalTargetKind,
+            WorthQueryPrincipalResolutionDenialKind::Refused(
+                PrincipalRefusal::WrongPrincipalTargetKind,
+            ),
             binding,
         ));
     }
@@ -188,9 +149,15 @@ pub(super) fn observe_exact_principal_target(
     layout: &WorthQueryPrimaryPrincipalBindingLayout,
     binding: &str,
 ) -> Result<WorthQueryPrincipalTargetObservation, WorthQueryPrincipalResolutionDenial> {
+    execution.consult().map_err(|stop| {
+        super::resolution_denial::query_read_resolution_denial(
+            worth_relational::facade::runtime::QueryReadExecutionStop::Request(stop),
+            binding,
+        )
+    })?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let relation = view
         .relation_record_with_projection_scope(
@@ -206,6 +173,7 @@ pub(super) fn observe_exact_principal_target(
                 ))
             },
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     let principal = view
         .entity_record_with_projection_scope(
@@ -214,6 +182,7 @@ pub(super) fn observe_exact_principal_target(
             ProjectionAspectScope::empty(),
             |record| Some((record.kind_id(), record.lifecycle())),
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     if relation.0 != layout.relation_kind
         || relation.1 != RecordLifecycleState::Live
@@ -254,9 +223,15 @@ fn observe_principal_identity(
     ),
     WorthQueryPrincipalResolutionDenial,
 > {
+    execution.consult().map_err(|stop| {
+        super::resolution_denial::query_read_resolution_denial(
+            worth_relational::facade::runtime::QueryReadExecutionStop::Request(stop),
+            binding,
+        )
+    })?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     let scope = ProjectionAspectScope::from_requirements([projection_requirement(
         &layout.principal_identity_locator,
@@ -267,6 +242,7 @@ fn observe_principal_identity(
             principal_id,
             &authoritative(&layout.principal_identity_locator),
         )
+        .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
         .ok_or_else(|| stale_proof_denial(binding))?;
     view.entity_record_with_projection_scope(execution, principal_id, scope, |record| {
         if record.kind_id() != layout.principal_kind
@@ -278,6 +254,7 @@ fn observe_principal_identity(
             .cloned()
             .map(|value| (value, revision))
     })
+    .map_err(|cause| super::resolution_denial::relational_read_denial(cause, binding))?
     .ok_or_else(|| stale_proof_denial(binding))
 }
 
@@ -311,9 +288,15 @@ fn principal_adjacency_revision(
     Option<worth_relational::facade::identity::VersionId>,
     WorthQueryPrincipalResolutionDenial,
 > {
+    execution.consult().map_err(|stop| {
+        super::resolution_denial::query_read_resolution_denial(
+            worth_relational::facade::runtime::QueryReadExecutionStop::Request(stop),
+            binding,
+        )
+    })?;
     let view = runtime
         .read_truth()
-        .project_snapshot(snapshot, execution)
+        .project_snapshot(snapshot)
         .ok_or_else(|| stale_proof_denial(binding))?;
     view.bounded_adjacency_structural_revision(execution,
         mapping,
@@ -323,9 +306,10 @@ fn principal_adjacency_revision(
     )
     .map(|revision| revision.revision())
     .map_err(|unavailable| match unavailable {
+        worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => super::resolution_denial::relational_read_denial(cause, binding),
         worth_relational::facade::runtime::AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
             WorthQueryPrincipalResolutionDenial::new(
-                WorthQueryPrincipalResolutionDenialKind::ProjectionWorkBudgetExceeded,
+                WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::application_contribution::WorthQueryManagedComputationResourceDenial::WorkExhausted, partition_identity: None, policy_ancestor: None })),
                 binding,
             )
         }
@@ -363,7 +347,7 @@ fn target_plan_key(mapping_id: EntityId, relation_kind: KindId) -> Deterministic
 
 fn stale_proof_denial(binding: &str) -> WorthQueryPrincipalResolutionDenial {
     WorthQueryPrincipalResolutionDenial::new(
-        WorthQueryPrincipalResolutionDenialKind::StalePrincipalProof,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::StalePrincipalProof),
         binding,
     )
 }

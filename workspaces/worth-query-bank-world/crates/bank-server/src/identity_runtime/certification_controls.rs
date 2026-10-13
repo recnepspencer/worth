@@ -52,3 +52,18 @@ impl BankIdentityRuntime {
             .panic_before_product_compare_once_for_test();
     }
 }
+
+impl BankIdentityRuntime {
+    /// Drops only reconstructible index generations; returns the declared inventory.
+    #[doc(hidden)]
+    pub fn release_primary_index_generations_for_test(&self) -> usize {
+        let application = self.application_program().runtime();
+        application
+            .with_host_advancement(|phase| {
+                application
+                    .release_primary_index_generations_for_test(&phase)
+                    .expect("control borrows its own runtime")
+            })
+            .expect("control opens its host call")
+    }
+}

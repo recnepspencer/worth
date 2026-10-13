@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
@@ -18,6 +19,11 @@ pub struct WorthQueryApplicationPreviewRequest {
     identity: String,
 }
 
+#[cfg(test)]
+mod counted_read_stops;
+#[cfg(test)]
+mod discard_fault;
+
 impl WorthQueryApplicationPreviewRequest {
     pub fn new(identity: impl Into<String>) -> Self {
         Self {
@@ -33,8 +39,16 @@ pub enum WorthQueryApplicationPreviewReadmissionDenial {
     ForeignRuntime,
     ForeignPhase,
     SourceUnavailable,
+    SourceSelection(crate::basis::WorthQueryProductBranchAdmissionDenial),
     AdmissionRejected,
     CleanupRejected,
+    CleanupRejectedAfterStop {
+        stop: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+        cleanup: worth_runtime_bridge::facade::BridgeSpeculationErrorKind,
+    },
 }
 
 pub struct WorthQueryApplicationPreviewSession {
@@ -42,6 +56,8 @@ pub struct WorthQueryApplicationPreviewSession {
     source: Option<std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>>,
     runtime_authority: u64,
     source_commit: CompositeCommitIdentity,
+    #[cfg(test)]
+    discard_fault: std::rc::Rc<std::cell::Cell<bool>>,
 }
 
 pub struct WorthQueryReadmittedApplicationPreview {
@@ -73,7 +89,20 @@ impl WorthQueryApplicationPreviewSession {
             .select_with_request(execution)
         {
             Ok(current) => current,
-            Err(_) => {
+            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)) => {
+                return Err(match self.discard_active() {
+                    Ok(()) => WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(
+                        crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop),
+                    ),
+                    Err(cleanup) => {
+                        WorthQueryApplicationPreviewReadmissionDenial::CleanupRejectedAfterStop {
+                            stop,
+                            cleanup: cleanup.kind(),
+                        }
+                    }
+                });
+            }
+            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_)) => {
                 self.discard_active()
                     .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::CleanupRejected)?;
                 return Err(WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable);
@@ -100,6 +129,17 @@ impl WorthQueryApplicationPreviewSession {
     fn discard_active(
         &mut self,
     ) -> Result<(), worth_runtime_bridge::facade::BridgeSpeculationError> {
+        #[cfg(test)]
+        if self.discard_fault.get() {
+            return self
+                .handle
+                .take()
+                .expect("active preview owns its handle")
+                .discard(vec![
+                    BridgePreviewResidueClass::AuthoritativeDiagnosticsResidue,
+                ])
+                .map(|_| ());
+        }
         discard_handle(
             self.handle
                 .take()
@@ -173,10 +213,15 @@ where
         let selected = self
             .select_application_read_observation_with_request(execution, observation)
             .map_err(|denial| match denial {
-                crate::basis::WorthQueryProductBranchAdmissionDenial::ForeignOwner => {
-                    WorthQueryApplicationPreviewReadmissionDenial::ForeignObservation
+                cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                    WorthQueryApplicationPreviewReadmissionDenial::SourceSelection(cause)
                 }
-                _ => WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable,
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignOwner,
+                ) => WorthQueryApplicationPreviewReadmissionDenial::ForeignObservation,
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                    WorthQueryApplicationPreviewReadmissionDenial::SourceUnavailable
+                }
             })?;
         let source = selected.product().bridge_source();
         let snapshot = source.snapshot_identity().clone();
@@ -222,6 +267,8 @@ where
             source: Some(source),
             runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
+            #[cfg(test)]
+            discard_fault: Default::default(),
         })
     }
 }

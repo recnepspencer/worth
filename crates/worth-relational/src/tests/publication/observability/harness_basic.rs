@@ -125,7 +125,8 @@ fn harness_fixture_loads_declared_aspect_field_patches() {
     let snapshot = runtime.visibility_authority().snapshot();
     let read = runtime
         .read_truth()
-        .read_version(execution, snapshot.version_id);
+        .read_version(execution, snapshot.version_id)
+        .expect("read request remains live");
     let entity_id = crate::facade::identity::EntityId::new(PartitionId::main(), 0, 1);
     let entity = read.get_entity(entity_id).expect("fixture entity visible");
 

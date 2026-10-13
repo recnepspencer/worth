@@ -9,7 +9,7 @@ pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryP
 /// for diagnostics.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryOutputDemandDenial {
-    pub(super) kind: WorthQueryOutputDemandDenialKind,
+    pub(super) kind: Box<WorthQueryOutputDemandDenialKind>,
     evidence: Option<Box<DemandDenialEvidence>>,
     pub(super) subject: std::borrow::Cow<'static, str>,
     pub(super) domain_reason: Option<&'static str>,
@@ -55,7 +55,7 @@ impl WorthQueryOutputDemandDenial {
             .and_then(|evidence| evidence.requested_output.take())
     }
     pub fn kind(&self) -> WorthQueryOutputDemandDenialKind {
-        self.kind.clone()
+        self.kind.as_ref().clone()
     }
 
     /// The original pre-effect commit refusal, when this demand ran a producer.
@@ -132,13 +132,14 @@ impl WorthQueryOutputDemandDenial {
         kind: WorthQueryOutputDemandDenialKind,
         subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
+        let recovery_posture = kind.default_recovery_posture();
         Self {
-            kind: kind.clone(),
+            kind: Box::new(kind),
             evidence: None,
             domain_reason: None,
             readmission_failure: None,
             subject: subject.into(),
-            recovery_posture: kind.default_recovery_posture(),
+            recovery_posture,
         }
     }
 
@@ -158,10 +159,16 @@ impl WorthQueryOutputDemandDenial {
         denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
         subject: impl Into<std::borrow::Cow<'static, str>>,
     ) -> Self {
-        Self::new(
-            WorthQueryOutputDemandDenialKind::ProductSelection(denial),
-            subject,
-        )
+        use crate::basis::WorthQueryProductBranchAdmissionDenial as Branch;
+        use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+        let kind = match denial {
+            Branch::Stopped(Err(Control::Cancelled)) => WorthQueryOutputDemandDenialKind::Cancelled,
+            Branch::Stopped(Err(Control::TimedOut)) => WorthQueryOutputDemandDenialKind::TimedOut,
+            Branch::Stopped(Ok(cause)) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
+                crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind::ExecutionRequest(cause)),
+            Branch::Refused(refused) => WorthQueryOutputDemandDenialKind::ProductSelection(refused),
+        };
+        Self::new(kind, subject)
     }
 
     pub(in crate::domain_computation::primary_graph) fn with_recovery_posture(

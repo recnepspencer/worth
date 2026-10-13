@@ -80,6 +80,7 @@ where
                     None,
                 )
                 .map_err(|denial| match denial {
+                    crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ExecutionDenied(kind) => redo_read_stop(kind),
                     crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial::ActiveSnapshotCapacityExhausted {
                         maximum_active_snapshots,
                     } => WorthQueryRedoDenial::active_snapshot_capacity_exhausted(
@@ -338,4 +339,13 @@ pub(crate) fn map_recovery_denial(
         | K::DisclosureAdmissionRequired
         | K::UnresolvedExternalPosture => WorthQueryRedoDenialKind::NewlyUnauthorized,
     })
+}
+
+fn redo_read_stop(
+    stop: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> WorthQueryRedoDenial {
+    WorthQueryRedoDenial::new(super::WorthQueryRedoDenialKind::ExecutionRequest(stop))
 }

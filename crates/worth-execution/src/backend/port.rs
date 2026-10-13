@@ -8,7 +8,7 @@ use crate::{
 use super::{
     admission::AdmittedBatch,
     input::{BorrowedInputs, OwnedInputs},
-    meter::{KernelContext, KernelFailure},
+    meter::{KernelContext, KernelFailure, NestedStopOwner},
     run::run_batch,
     PreparedBatchResources,
 };
@@ -21,7 +21,7 @@ pub(crate) enum BackendKind {
 }
 
 pub(crate) struct TaskOutcome<R, E> {
-    pub(crate) result: Result<R, KernelFailure<E>>,
+    pub(crate) result: super::task_result::TaskResult<R, E>,
     pub(crate) work: u64,
     pub(crate) span: u64,
 }
@@ -44,6 +44,7 @@ pub(crate) struct BatchOutcome<R, E> {
     /// Exclusive identity boundary; every earlier partition settled.
     pub(crate) prefix_boundary: Option<PartitionIdentity>,
     pub(crate) report: ExecutionReport,
+    pub(crate) stop_owner: Option<NestedStopOwner>,
 }
 
 pub(crate) fn run_checked_batch<T, R, E, F>(
@@ -171,4 +172,36 @@ where
         None,
         taken,
     )
+}
+
+/// The receiver owns this recorder for exactly this controlled dispatch.
+pub(crate) fn run_owned_batch_perturbed_for_test<T, R, E, F>(
+    lease: Option<&ExecutionResourceLease<'_>>,
+    batch: AdmittedBatch<T>,
+    seed: u64,
+    kernel: &F,
+) -> (BatchOutcome<R, E>, Vec<usize>)
+where
+    T: ChargedBytes + Send,
+    R: ChargedBytes + Send,
+    E: ChargedBytes + Send,
+    F: Fn(T, &mut KernelContext<'_, '_>) -> Result<R, KernelFailure<E>> + Sync,
+{
+    let (declaration, values) = batch.into_parts();
+    let order = std::sync::Mutex::new(Vec::new());
+    let inputs = super::input::TracedOwnedInputsForTest {
+        values: OwnedInputs(values),
+        order: &order,
+    };
+    let outcome = run_batch(
+        lease,
+        &declaration,
+        inputs,
+        BackendKind::Perturbation(seed),
+        kernel,
+        true,
+        None,
+        None,
+    );
+    (outcome, order.into_inner().unwrap())
 }

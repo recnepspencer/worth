@@ -83,7 +83,7 @@ impl WorthQueryOutputDemandRegistry {
         let DemandState::Output(output) = &record.state else {
             return Ok(None);
         };
-        if !matches!(output.advancement, WorthQueryOutputAdvancement::Idle) {
+        if !matches!(output.advancement(), WorthQueryOutputAdvancement::Idle) {
             return Ok(None);
         }
         let Some(WorthQueryOutputCheckpoint::Ready(completion)) = &output.checkpoint else {
@@ -140,12 +140,13 @@ impl WorthQueryOutputDemandRegistry {
             notifications: WorthQueryOutputDemandNotifications { wake },
             owner: self.clone(),
         };
-        let record = state
+        let mut record = state
             .records
             .get_mut(key)
             .expect("selected cached Ready retained");
         record.interests = interests;
         record.required_interests = required;
+        record.finish();
         state.install_required_member(member);
         drop(state);
         Ok(Some((

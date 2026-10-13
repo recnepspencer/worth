@@ -9,6 +9,8 @@
 //! mints attempt-local provider sessions, and carries execution evidence.
 
 #![forbid(unsafe_code)]
+// Rustdoc's auto-trait walk through relational trees exceeds its default depth.
+#![cfg_attr(doc, recursion_limit = "256")]
 
 mod basis;
 mod domain_computation;
@@ -29,3 +31,6 @@ mod bridge_host_request;
 #[cfg(test)]
 #[path = "test_support/process_deadline.rs"]
 mod process_deadline;
+
+#[cfg(test)]
+mod test_read_stops;

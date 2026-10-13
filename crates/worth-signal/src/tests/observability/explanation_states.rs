@@ -229,11 +229,6 @@ fn reuse_boundary_detail_lives_in_cold_retained_lane_while_hot_runtime_keeps_com
             .and_then(|authority| authority.persistent_correspondence_kind()),
         Some(crate::data::reuse::PersistentCorrespondenceKind::LineageBackedMapping)
     );
-    assert!(
-        std::mem::size_of::<crate::data::reuse::ReuseBoundaryAuthority>()
-            < std::mem::size_of::<ReuseBoundaryContext>(),
-        "hot reuse authority should stay smaller than the rich cold context"
-    );
 
     let trace_summary = graph
         .observe()

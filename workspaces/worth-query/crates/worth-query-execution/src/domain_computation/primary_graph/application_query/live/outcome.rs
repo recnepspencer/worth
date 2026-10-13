@@ -208,6 +208,8 @@ pub enum WorthQueryApplicationLiveOutcome<Query, QueryResult> {
     ProjectionDenied(WorthQueryApplicationProjectionDenialKind),
     /// The buffered cause could not be turned into a delivery.
     CauseDenied(WorthQueryApplicationLiveCauseDenialKind),
+    /// The caller's resource or execution request stopped the read.
+    ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     /// The request was cancelled.
     Cancelled,
     /// The request reached its deadline.

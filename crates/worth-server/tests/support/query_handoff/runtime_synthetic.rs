@@ -26,7 +26,7 @@ impl WorthServerQueryWorkspaceProvider for TestWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        crate::test_execution_policy::with_bootstrap(|request_execution| {
+        crate::test_bootstrap_policy::with_bootstrap(|request_execution| {
             bind_with_backend(
                 request_execution,
                 TestQueryRuntimeBackend::default(),
@@ -56,7 +56,7 @@ impl WorthServerQueryWorkspaceProvider for ProfiledTestWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        crate::test_execution_policy::with_bootstrap(|request_execution| {
+        crate::test_bootstrap_policy::with_bootstrap(|request_execution| {
             bind_with_backend(
                 request_execution,
                 TestQueryRuntimeBackend::new(self.support_profile.clone()),
@@ -93,7 +93,7 @@ impl WorthServerQueryWorkspaceProvider for ProfiledCountingTestWorkspaceProvider
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        crate::test_execution_policy::with_bootstrap(|request_execution| {
+        crate::test_bootstrap_policy::with_bootstrap(|request_execution| {
             bind_with_backend(
                 request_execution,
                 TestQueryRuntimeBackend::new_with_attempted_writes(
@@ -118,7 +118,7 @@ impl WorthServerQueryWorkspaceProvider for PanicOnReadTestWorkspaceProvider {
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        crate::test_execution_policy::with_bootstrap(|request_execution| {
+        crate::test_bootstrap_policy::with_bootstrap(|request_execution| {
             bind_with_backend(
                 request_execution,
                 TestQueryRuntimeBackend::new_panicking_on_live_reads(),

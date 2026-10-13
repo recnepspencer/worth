@@ -8,7 +8,8 @@ pub(crate) fn read_view_from_snapshot_state(
     runtime: &RelationalRuntime,
     state: &SnapshotState,
     handle: &crate::snapshots::data::SnapshotHandle,
-) -> RelationalReadView {
+    charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+) -> Result<RelationalReadView, worth_execution::MapKernelStop> {
     debug_assert_eq!(state.basis.branch_id(), &handle.branch_id);
     debug_assert_eq!(state.basis.version_id(), handle.version_id);
     let (entities, relations) = match &state.basis {
@@ -17,28 +18,33 @@ pub(crate) fn read_view_from_snapshot_state(
                 Some(root_version) => root_version == state.handle.version_id,
                 None => state.handle.version_id.is_zero(),
             });
-            materialize_exact(runtime, state, basis.root().as_ref())
+            materialize_exact(runtime, state, basis.root().as_ref(), charge)?
         }
-        SnapshotStateBasis::Historical(basis) => {
-            materialize_historical(runtime, state, basis.root(), state.handle.version_id)
-        }
+        SnapshotStateBasis::Historical(basis) => materialize_historical(
+            runtime,
+            state,
+            basis.root(),
+            state.handle.version_id,
+            charge,
+        )?,
     };
     runtime.services.instrumentation.count(|counters| {
         counters.visible_authoritative_entity_records_materialized += entities.len();
         counters.visible_authoritative_relation_records_materialized += relations.len();
     });
-    RelationalReadView {
+    Ok(RelationalReadView {
         snapshot: handle.clone(),
         entities,
         relations,
-    }
+    })
 }
 
 fn materialize_exact(
     runtime: &RelationalRuntime,
     state: &SnapshotState,
     root: &crate::branch::RelationalBranchRoot,
-) -> (Vec<EntityReadRecord>, Vec<RelationReadRecord>) {
+    charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+) -> Result<(Vec<EntityReadRecord>, Vec<RelationReadRecord>), worth_execution::MapKernelStop> {
     let reader = runtime.read_truth();
     let registry = root.schema_authority().registry();
     materialize_pins(
@@ -57,6 +63,7 @@ fn materialize_exact(
                 crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
             )
         },
+        charge,
     )
 }
 
@@ -65,7 +72,8 @@ fn materialize_historical(
     state: &SnapshotState,
     root: Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>,
     version_id: crate::identity::data::VersionId,
-) -> (Vec<EntityReadRecord>, Vec<RelationReadRecord>) {
+    charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+) -> Result<(Vec<EntityReadRecord>, Vec<RelationReadRecord>), worth_execution::MapKernelStop> {
     let empty = std::collections::BTreeMap::new();
     let access: &dyn PartitionAccess = root.map_or(&empty, |root| root.as_ref());
     let registry = root.map_or(&runtime.config.schema.registry, |root| {
@@ -90,6 +98,7 @@ fn materialize_historical(
                 version_id,
             )
         },
+        charge,
     )
 }
 
@@ -100,16 +109,21 @@ fn materialize_pins(
         crate::identity::data::PartitionId,
         usize,
     ) -> Option<RelationReadRecord>,
-) -> (Vec<EntityReadRecord>, Vec<RelationReadRecord>) {
+    charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
+) -> Result<(Vec<EntityReadRecord>, Vec<RelationReadRecord>), worth_execution::MapKernelStop> {
     let mut entities = Vec::with_capacity(state.pinned_entity_count);
     let mut relations = Vec::with_capacity(state.pinned_relation_count);
     for (partition_id, pins) in &state.pinned_partitions {
-        for slot in pins.entity_slots.iter_set_slots() {
+        for slot in pins.entity_slots.set_slots() {
+            charge(crate::visibility::materialization::read_records::read_prices::EXAMINE_SLOT)?;
+            charge(crate::visibility::materialization::read_records::read_prices::RESERVE_RECORD)?;
             if let Some(record) = read_entity(*partition_id, slot) {
                 entities.push(record);
             }
         }
-        for slot in pins.relation_slots.iter_set_slots() {
+        for slot in pins.relation_slots.set_slots() {
+            charge(crate::visibility::materialization::read_records::read_prices::EXAMINE_SLOT)?;
+            charge(crate::visibility::materialization::read_records::read_prices::RESERVE_RECORD)?;
             if let Some(mut record) = read_relation(*partition_id, slot) {
                 if pins
                     .retained_relation_slots
@@ -123,5 +137,5 @@ fn materialize_pins(
             }
         }
     }
-    (entities, relations)
+    Ok((entities, relations))
 }

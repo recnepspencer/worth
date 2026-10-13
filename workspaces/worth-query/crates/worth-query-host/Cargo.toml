@@ -14,7 +14,9 @@ worth-query-installation = { path = "../worth-query-installation" }
 worth-query-publication = { path = "../worth-query-publication" }
 
 [dev-dependencies]
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
 worth-execution = { path = "../../../../crates/worth-execution" }
+worth-harness = { path = "../../../../crates/worth-harness" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-decl = { path = "../worth-query-decl" }
 worth-query-execution = { path = "../worth-query-execution" }

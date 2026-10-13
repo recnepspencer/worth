@@ -1,4 +1,5 @@
 use super::{admission_denial, map_index_currency_denial, WorthQueryApplicationQueryBasisCustody};
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
@@ -93,25 +94,37 @@ fn map_product_admission_denial(
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     use crate::basis::WorthQueryProductBranchAdmissionDenial as Product;
     let kind = match denial {
-        Product::ForeignOwner => WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
-        Product::ActiveSnapshotCapacityExhausted {
+        Product::Refused(AdmissionRefusal::ForeignOwner) => {
+            WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis
+        }
+        Product::Refused(AdmissionRefusal::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        } => WorthQueryApplicationQueryAdmissionDenialKind::ActiveSnapshotCapacityExhausted {
+        }) => WorthQueryApplicationQueryAdmissionDenialKind::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
         },
-        Product::RetentionCapacityExhausted => {
+        Product::Refused(AdmissionRefusal::RetentionCapacityExhausted) => {
             WorthQueryApplicationQueryAdmissionDenialKind::RetentionCapacityExhausted
         }
-        Product::RetentionIdentityExhausted => {
+        Product::Refused(AdmissionRefusal::RetentionIdentityExhausted) => {
             WorthQueryApplicationQueryAdmissionDenialKind::RetentionIdentityExhausted
         }
-        Product::SnapshotIdentityExhausted => {
+        Product::Refused(AdmissionRefusal::SnapshotIdentityExhausted) => {
             WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
         }
-        Product::RetiredBranch | Product::IncarnationChanged => {
+        Product::Refused(AdmissionRefusal::RetiredBranch)
+        | Product::Refused(AdmissionRefusal::IncarnationChanged) => {
             WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis
         }
-        _ => WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
+        Product::Stopped(stop) => match stop {
+            Ok(kind) => WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind),
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => {
+                WorthQueryApplicationQueryAdmissionDenialKind::Cancelled
+            }
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => {
+                WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded
+            }
+        },
+        Product::Refused(_) => WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
     };
     admission_denial(
         kind,

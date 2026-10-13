@@ -1,5 +1,6 @@
 //! explicit purpose mismatch preserves its exact explanation cause.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn explicit_purpose_mismatch_preserves_its_exact_explanation_cause() {
@@ -37,7 +38,7 @@ fn explicit_purpose_mismatch_preserves_its_exact_explanation_cause() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::PurposeMismatch
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PurposeMismatch)
     );
     assert_eq!(
         denial.explanation_cause(),

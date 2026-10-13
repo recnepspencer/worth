@@ -223,7 +223,7 @@ impl WorthServerQueryWorkspaceProvider for StatefulCountingMutationWorkspaceProv
         &self,
         request: &WorthServerQueryWorkspaceBindingRequest,
     ) -> Result<WorthQueryWorkspace, WorthServerQueryWorkspaceBindingError> {
-        crate::test_execution_policy::with_bootstrap(|request_execution| {
+        crate::test_bootstrap_policy::with_bootstrap(|request_execution| {
             let workspace_id = request
                 .resolved_request_context()
                 .request_context()

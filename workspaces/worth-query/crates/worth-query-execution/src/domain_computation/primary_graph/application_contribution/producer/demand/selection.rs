@@ -8,7 +8,6 @@ use crate::domain_computation::primary_graph::{
     },
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryPrimaryGraphApplicationRuntime,
 };
-use worth_relational::facade::{runtime::ProjectionAspectScope, storage::RecordLifecycleState};
 
 type SelectedWithEntry<'a, Schema> = (
     WorthQuerySelectedApplicationProducer,
@@ -16,6 +15,7 @@ type SelectedWithEntry<'a, Schema> = (
 );
 
 mod recovered_candidates;
+pub(in crate::domain_computation::primary_graph::application_contribution::producer::demand) mod retained_liveness;
 mod selected_basis;
 pub(super) use selected_basis::source_basis_is_admitted;
 use selected_basis::{charge, selection_budget_denial};
@@ -152,11 +152,17 @@ where
             } else {
                 let retained = self
                     .select_application_read_observation_with_request(execution, retained_basis)
-                    .map_err(|_| {
-                        WorthQueryOutputDemandDenial::new(
-                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                            Family::IDENTITY,
-                        )
+                    .map_err(|cause| match cause {
+                        cause
+                        @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                            WorthQueryOutputDemandDenial::product_selection(cause, Family::IDENTITY)
+                        }
+                        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                            WorthQueryOutputDemandDenial::new(
+                                WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                                Family::IDENTITY,
+                            )
+                        }
                     })?;
                 if crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
                     retained.product().observation(),
@@ -264,7 +270,7 @@ where
             let current = self.primary_provider.graph.with_runtime(execution, |runtime| {
                 let truth = runtime.read_truth();
                 let view = truth
-                    .project_snapshot(selected.application_basis().snapshot_handle(), execution)
+                    .project_snapshot(selected.application_basis().snapshot_handle())
                     .ok_or_else(|| {
                         WorthQueryOutputDemandDenial::new(
                             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
@@ -274,11 +280,7 @@ where
                 let mut current = Vec::with_capacity(live_candidates.len());
                 use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIdentity;
                 for (candidate, entity) in &live_candidates {
-                    let live = view.entity_record_with_projection_scope(execution,
-                        *entity,
-                        ProjectionAspectScope::empty(),
-                        |record| Some(record.lifecycle()),
-                    ) == Some(RecordLifecycleState::Live);
+                    let live=retained_liveness::read(execution,&view,*entity)?;
                     let identity_current = candidate.source_identity.is_some_and(|identity| {
                         match identity {
                             RecordedSourceIdentity::Runtime(runtime) => runtime == source.idempotency_identity(),
@@ -287,8 +289,7 @@ where
                     });
                     // The source facts and the performed output witness are
                     // one fact set: either half moving ends exact reuse, and a
-                    // live output then selects the Preserve posture below.
-                    // A checkpoint row states the output half among its
+                    // live output selects Preserve. Checkpoints state the output half among their
                     // facts. A row of this runtime proves it by a sealed
                     // witness and a settlement the cutoff verifies: one the
                     // cutoff declines is not exact. A settlement it verifies
@@ -325,7 +326,7 @@ where
                             OutputDependencySelection::Reuse
                         )
                         && matches!(
-                            compare_retained_output_witness(execution,
+                            compare_retained_output_witness(
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 witness,

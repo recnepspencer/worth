@@ -2,8 +2,8 @@
 mod fixture;
 #[path = "../../worth-relational/examples/support.rs"]
 mod relational_support;
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
 
 use std::{
     num::NonZeroUsize,

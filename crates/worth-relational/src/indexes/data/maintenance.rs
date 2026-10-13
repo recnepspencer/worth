@@ -49,6 +49,7 @@ pub enum DerivedIndexMaintenanceDenialKind {
     CandidateUnavailable,
     CandidateIndexesAlreadyPrepared,
     GenerationIdentityExhausted,
+    Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

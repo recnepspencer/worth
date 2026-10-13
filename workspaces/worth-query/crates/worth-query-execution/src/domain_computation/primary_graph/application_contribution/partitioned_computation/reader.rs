@@ -115,6 +115,8 @@ where
 /// Why a read through the lent reader was refused.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryComputationReadDenial {
+    /// The retained computation's fact comparison stopped under its request.
+    RetainedFact(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind),
     Field(WorthQueryInvariantDecisionPlanDenial),
     Relations(WorthQueryInvariantProjectionTraversalDenial),
 }
@@ -131,5 +133,15 @@ pub enum WorthQueryComputationInputDenial<Stopped> {
 impl<Stopped> From<WorthQueryComputationReadDenial> for WorthQueryComputationInputDenial<Stopped> {
     fn from(denial: WorthQueryComputationReadDenial) -> Self {
         Self::Read(denial)
+    }
+}
+
+impl worth_execution::ChargedBytes for WorthQueryComputationReadDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
+            Self::RetainedFact(_) => 0,
+            Self::Field(denial) => denial.additional_charged_bytes(),
+            Self::Relations(denial) => denial.additional_charged_bytes(),
+        }
     }
 }

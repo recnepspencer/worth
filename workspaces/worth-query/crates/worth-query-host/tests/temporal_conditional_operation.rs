@@ -1,5 +1,11 @@
+use worth_query_execution::facade;
+#[path = "temporal_conditional_operation/counted_read_stops.rs"]
+mod counted_read_stops;
 #[path = "support/process_deadline.rs"]
 mod process_deadline;
+#[allow(dead_code)] // This target uses the request-backed branch of the shared oracle.
+#[path = "../../worth-query-execution/src/test_read_stops.rs"]
+mod test_read_stops;
 
 #[path = "temporal_conditional_operation/adapters.rs"]
 mod adapters;
@@ -370,3 +376,9 @@ fn provider_replacement_requires_fresh_runtime_publication() {
 
 #[path = "temporal_conditional_operation/advancement_custody.rs"]
 mod advancement_custody;
+
+#[path = "temporal_conditional_operation/read_ceiling_terminal.rs"]
+mod read_ceiling_terminal;
+
+#[path = "temporal_conditional_operation/publication_request_stop.rs"]
+mod publication_request_stop;

@@ -46,7 +46,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .snapshots()
                 .snapshot_for_observation(&observation.basis().relational_basis().observation())
                 .ok()?;
-            let witness = prepared.finish(execution, &correspondence, runtime, &committed);
+            let witness = prepared.finish(&correspondence, runtime, &committed);
             let read_basis = runtime.read_truth().positioned_snapshot(&committed).ok();
             crate::relational_snapshot_release::release_query_snapshot(runtime, &committed);
             witness.zip(read_basis)

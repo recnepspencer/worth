@@ -67,6 +67,7 @@ fn native_same_record_updates_conflict_before_truth_or_publication_changes() {
         let read = runtime
             .read_truth()
             .read_snapshot(&after_snapshot, execution)
+            .expect("read request remains live")
             .expect("unchanged snapshot");
         let value = read
             .get_entity(entity)

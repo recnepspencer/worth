@@ -37,7 +37,12 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
                 .on_branch(branch)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .checked_execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")
@@ -109,7 +114,12 @@ pub(crate) fn application_commits_relational_and_signal_in_one_world_publication
                 .on_branch(branch)
                 .select(&phase)
                 .unwrap()
-                .conditional_clock(request_execution, &world.clock)
+                .conditional_clock(
+                    &phase
+                        .checked_execution_request_for(world.application.product_runtime())
+                        .expect("phase belongs to application"),
+                    &world.clock,
+                )
                 .unwrap()
         })
         .expect("installed host call opens")

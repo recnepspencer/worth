@@ -12,7 +12,6 @@ impl VisibilityProjectionView {
     /// absent when that live entity has no installed value for the aspect.
     pub fn entity_aspect_version(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         aspect: &AspectKey,
     ) -> Option<Option<u64>> {

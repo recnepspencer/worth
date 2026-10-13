@@ -19,3 +19,5 @@ mod transport_tests;
 mod verifier;
 
 mod advancement_custody;
+
+mod publication_stop_tests;

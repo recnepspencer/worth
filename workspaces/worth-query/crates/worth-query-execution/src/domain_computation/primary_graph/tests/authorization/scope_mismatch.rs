@@ -1,5 +1,6 @@
 //! Exact scope-mismatch explanation evidence.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::time::Duration;
 
 use super::super::fixture::{
@@ -84,7 +85,7 @@ fn explicit_scope_mismatch_preserves_its_exact_explanation_cause() {
 
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ScopeMismatch
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ScopeMismatch)
     );
     assert_eq!(
         denial.explanation_cause(),

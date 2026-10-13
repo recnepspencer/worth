@@ -20,10 +20,18 @@ use crate::domain_computation::primary_graph::schema_layout::WorthQueryAftermath
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryAftermathCausalityReadDenial {
-    ActiveSnapshotCapacityExhausted { maximum_active_snapshots: usize },
+    ActiveSnapshotCapacityExhausted {
+        maximum_active_snapshots: usize,
+    },
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
     SnapshotIdentityExhausted,
+    ExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     Unavailable,
 }
 
@@ -95,9 +103,9 @@ impl WorthQueryPrimaryGraphProvider {
                 pending,
                 outcome_identity,
             }
-            .resolve(execution, );
+            .resolve(execution);
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            resolution.map_err(Into::into)
+            resolution
         })
     }
 
@@ -126,7 +134,6 @@ impl WorthQueryPrimaryGraphProvider {
             outcome_identity,
         }
         .resolve(execution)
-        .map_err(Into::into)
     }
 }
 
@@ -134,6 +141,8 @@ fn aftermath_index_currency_denial(
     denial: crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial,
 ) -> WorthQueryAftermathCausalityReadDenial {
     match denial {
+        crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Execution(stop) => WorthQueryAftermathCausalityReadDenial::ExecutionDenied(crate::facade::primary_graph::relational_execution_kind(stop, None)),
+
         crate::domain_computation::primary_graph::index_currency::WorthQueryPrimaryIndexCurrencyDenial::Basis(
             crate::domain_computation::primary_graph::WorthQueryExactBasisSnapshotDenial::RetentionCapacityExhausted,
         ) => WorthQueryAftermathCausalityReadDenial::RetentionCapacityExhausted,
@@ -181,7 +190,8 @@ impl WorthQueryAftermathCausalityRead<'_> {
     fn resolve(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<WorthQueryCommittedAftermathCausality>, &'static str> {
+    ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial>
+    {
         let Some(entity_id) = self.lookup_entity(execution)? else {
             return Ok(None);
         };
@@ -191,7 +201,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
             .zip(self.expected_values(&values).iter())
             .any(|(observed, expected)| observed.as_ref() != Some(expected))
         {
-            return Err("aftermath causality record drifted from admitted meaning");
+            return Err("aftermath causality record drifted from admitted meaning".into());
         }
         let committed = self
             .runtime
@@ -204,13 +214,16 @@ impl WorthQueryAftermathCausalityRead<'_> {
             RecordRef::Entity(entity_id),
         )
         .map(Some)
-        .ok_or("aftermath causality is not a linear Relational child")
+        .ok_or(WorthQueryAftermathCausalityReadDenial::Unavailable)
     }
 
     fn lookup_entity(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<worth_relational::facade::identity::EntityId>, &'static str> {
+    ) -> Result<
+        Option<worth_relational::facade::identity::EntityId>,
+        WorthQueryAftermathCausalityReadDenial,
+    > {
         let request = BoundedEntityFieldLookupRequest::new(
             self.snapshot.clone(),
             self.layout.key_index_id,
@@ -219,7 +232,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
             self.key_value(),
             2,
         )
-        .map_err(|_| "aftermath causality lookup request was rejected")?;
+        .map_err(|_| WorthQueryAftermathCausalityReadDenial::Unavailable)?;
         let lookup = self
             .runtime
             .index_access()
@@ -228,9 +241,12 @@ impl WorthQueryAftermathCausalityRead<'_> {
                 BoundedIndexParityMode::Production,
                 execution,
             )
-            .map_err(|_| "aftermath causality index lookup failed")?;
+            .map_err(|denied|match denied.kind(){
+            worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind::Execution(cause)=>aftermath_read_stop(cause),
+            _=>WorthQueryAftermathCausalityReadDenial::Unavailable,
+        })?;
         if lookup.overflowed() || lookup.candidate_entity_ids().len() > 1 {
-            return Err("aftermath causality key is not unique");
+            return Err(WorthQueryAftermathCausalityReadDenial::Unavailable);
         }
         Ok(lookup.candidate_entity_ids().first().copied())
     }
@@ -239,7 +255,7 @@ impl WorthQueryAftermathCausalityRead<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: worth_relational::facade::identity::EntityId,
-    ) -> Result<AftermathCausalityRecord, &'static str> {
+    ) -> Result<AftermathCausalityRecord, WorthQueryAftermathCausalityReadDenial> {
         let fields = required_fields(self.layout)?;
         let aspect = self.layout.key_locator.aspect().aspect_key().clone();
         let scope =
@@ -249,8 +265,8 @@ impl WorthQueryAftermathCausalityRead<'_> {
             )]);
         self.runtime
             .read_truth()
-            .project_snapshot(self.snapshot, execution)
-            .and_then(|view| {
+            .project_snapshot(self.snapshot)
+            .map(|view| {
                 view.entity_record_with_projection_scope(execution, entity_id, scope, |record| {
                     (record.kind_id() == self.layout.entity_kind
                         && record.lifecycle() == RecordLifecycleState::Live)
@@ -262,8 +278,11 @@ impl WorthQueryAftermathCausalityRead<'_> {
                             (record.created_at_version(), values)
                         })
                 })
+                .map_err(aftermath_read_stop)
             })
-            .ok_or("aftermath causality record is not authoritative")
+            .transpose()?
+            .flatten()
+            .ok_or(WorthQueryAftermathCausalityReadDenial::Unavailable)
     }
 
     fn expected_values(&self, observed: &AftermathCausalityValues) -> [AspectValue; 5] {
@@ -317,3 +336,14 @@ fn as_u64(value: &AspectValue) -> Option<u64> {
         _ => None,
     }
 }
+
+fn aftermath_read_stop(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> WorthQueryAftermathCausalityReadDenial {
+    WorthQueryAftermathCausalityReadDenial::ExecutionDenied(
+        super::relational_execution_denial::relational_execution_kind(cause, None),
+    )
+}
+
+#[cfg(test)]
+mod counted_read_stops;

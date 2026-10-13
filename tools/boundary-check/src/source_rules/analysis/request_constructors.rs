@@ -13,6 +13,7 @@ use std::path::Path;
 use syn::visit::{self, Visit};
 use syn::{ImplItem, Item, TraitItem};
 mod request_aliases;
+mod request_work;
 mod signal_host_doors;
 
 pub(crate) fn enforce_request_constructor_denials(
@@ -37,6 +38,19 @@ fn check_graphs(graphs: &[ModuleGraph], rule: &RequestConstructorDenialConfig) -
     let mut diagnostics = Vec::new();
     let mut host_seen = false;
     for module in production_modules(graphs) {
+        if rule.caller_paid_work {
+            diagnostics.extend(
+                request_work::violations(module.items, &constructor_owners)
+                    .into_iter()
+                    .map(|(message, line)| {
+                        Diagnostic::new(
+                            DiagnosticCode::Bc7008RequestConstruction,
+                            format!("{}/{}:{line}", rule.crate_root, module.relative_source),
+                            format!("{message}: {}", rule.guidance),
+                        )
+                    }),
+            );
+        }
         let mut visitor = RequestBackingNames {
             constructor_names: rule.constructor_names.iter().cloned().collect(),
             constructor_owners: constructor_owners.clone(),

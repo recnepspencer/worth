@@ -11,12 +11,18 @@ mod field;
 mod field_keys;
 mod join;
 mod ordering;
+mod persistent_allocation;
 mod preparation;
 mod publication;
 mod refresh_preparation;
 use publication::PreparedRefresh;
+#[cfg(test)]
+pub(crate) mod charge_rendezvous;
 mod reads;
 mod record_metadata;
+mod request_payment;
+#[cfg(test)]
+pub(crate) use request_payment::last_allocation_bytes;
 mod work;
 
 use super::{IndexAuthority, IndexGenerationPublicationBasis};
@@ -36,8 +42,7 @@ impl IndexAuthority<'_> {
         request: DerivedIndexBuildRequest,
         budget: DerivedIndexMaintenanceBudget,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
-        let mut work = MaintenanceWork::new(budget);
-        let result = (|| {
+        let (prepared, counts) = request_payment::run(execution, budget, |work| {
             work.charge(request.index_ids.len())?;
             let recorded = self
                 .runtime
@@ -51,7 +56,6 @@ impl IndexAuthority<'_> {
                 .runtime
                 .read_truth()
                 .try_project_retained_commit(
-                    execution,
                     request.source_commit_id,
                     request.branch_id.clone(),
                     recorded.commit.version_id,
@@ -67,14 +71,14 @@ impl IndexAuthority<'_> {
             {
                 return Err(DerivedIndexMaintenanceDenialKind::CommitMismatch);
             }
-            self.prepare_refresh(execution, &request, None, &projection, &mut work)
-        })();
-        result
-            .map(|prepared| DerivedIndexMaintenanceOutcome {
-                generations: prepared.publish(self.runtime),
-                work: work.counts,
-            })
-            .map_err(|kind| work.deny(kind))
+            let prepared = self.prepare_refresh(execution, &request, None, &projection, work)?;
+            prepared.prepare_publication(work)?;
+            Ok(prepared)
+        })?;
+        Ok(DerivedIndexMaintenanceOutcome {
+            generations: prepared.value.publish(self.runtime),
+            work: counts,
+        })
     }
 
     /// Refresh one exact published basis. The optional before snapshot enables
@@ -89,14 +93,15 @@ impl IndexAuthority<'_> {
         budget: DerivedIndexMaintenanceBudget,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
-        let mut work = MaintenanceWork::new(budget);
-        let result = self.prepare_basis_refresh(&request, basis, before, &mut work, execution);
-        result
-            .map(|prepared| DerivedIndexMaintenanceOutcome {
-                generations: prepared.publish(self.runtime),
-                work: work.counts,
-            })
-            .map_err(|kind| work.deny(kind))
+        let (prepared, counts) = request_payment::run(execution, budget, |work| {
+            let prepared = self.prepare_basis_refresh(&request, basis, before, work, execution)?;
+            prepared.prepare_publication(work)?;
+            Ok(prepared)
+        })?;
+        Ok(DerivedIndexMaintenanceOutcome {
+            generations: prepared.value.publish(self.runtime),
+            work: counts,
+        })
     }
 
     fn prepare_basis_refresh(
@@ -119,7 +124,7 @@ impl IndexAuthority<'_> {
         let after = self
             .runtime
             .read_truth()
-            .project_observation(execution, &observation)
+            .project_observation(&observation)
             .map_err(DerivedIndexMaintenanceDenialKind::Basis)?;
         let before = before
             .map(|snapshot| {
@@ -128,7 +133,7 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(DerivedIndexMaintenanceDenialKind::SnapshotUnavailable)
             })
             .transpose()?;
@@ -137,3 +142,11 @@ impl IndexAuthority<'_> {
         self.prepare_refresh(execution, request, before.as_ref(), &after, work)
     }
 }
+
+#[cfg(test)]
+mod persistent_allocation_tests;
+
+#[cfg(test)]
+mod allocation_price_proof;
+#[cfg(test)]
+pub(crate) use allocation_price_proof::two_row_patch_bytes;

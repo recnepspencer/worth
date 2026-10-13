@@ -42,7 +42,7 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
         &self,
         entity_id: EntityId,
     ) -> Result<&'runtime AuthoritativeRecordAspectState, StructuralReadError> {
-        if !self.work.try_charge(1) {
+        if !self.work.try_charge_work(1) {
             return Err(StructuralReadError::WorkBudgetExceeded);
         }
         let metadata = self
@@ -61,7 +61,7 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
         &self,
         relation_id: RelationId,
     ) -> Result<&'runtime AuthoritativeRecordAspectState, StructuralReadError> {
-        if !self.work.try_charge(1) {
+        if !self.work.try_charge_work(1) {
             return Err(StructuralReadError::WorkBudgetExceeded);
         }
         let metadata = self
@@ -98,7 +98,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
     }
 
     pub fn entity_kind(&self, entity_id: EntityId) -> Result<KindId, StructuralReadError> {
-        if !self.work.try_charge(1) {
+        if !self.work.try_charge_work(1) {
             return Err(StructuralReadError::WorkBudgetExceeded);
         }
         let metadata = self
@@ -115,7 +115,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
         &self,
         entity_id: EntityId,
     ) -> Result<Option<KindId>, StructuralReadError> {
-        if !self.work.try_charge(1) {
+        if !self.work.try_charge_work(1) {
             return Err(StructuralReadError::WorkBudgetExceeded);
         }
         let metadata = self
@@ -140,7 +140,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
         &self,
         relation_id: RelationId,
     ) -> Result<StructuralRelationRecord, StructuralReadError> {
-        if !self.work.try_charge(1) {
+        if !self.work.try_charge_work(1) {
             return Err(StructuralReadError::WorkBudgetExceeded);
         }
         let metadata = self

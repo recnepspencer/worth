@@ -4,6 +4,7 @@ use crate::errors::data::{ErrorContext, ErrorOperation, RelationalSubsystem, Sug
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReplayFailureClass {
+    Execution(crate::execution::RelationalExecutionDenialCause),
     MissingCommit,
     MissingAuthoritativeParentClosure,
     BranchMismatch,

@@ -19,6 +19,7 @@ pub enum WorthQueryCurrentOutputSelection<Schema, Entity> {
 /// Why the current output for a producer could not be selected.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCurrentOutputDenialKind {
+    ExecutionRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     /// The projection has no selected product, or the output family is not
     /// installed for this operation's binding.
     FamilyUnavailable,

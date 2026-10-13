@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::sync::Arc;
 
 use worth_query_declaration::facade::application_capability::{
@@ -47,7 +48,9 @@ where
         .sample_interval(elevation.temporal.timeline, proposed.duration())
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::TrustedTimeUnavailable,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::TrustedTimeUnavailable,
+                ),
                 installed.contract().name(),
             )
         })?;

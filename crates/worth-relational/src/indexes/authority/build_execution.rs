@@ -101,27 +101,31 @@ pub(super) fn execute_index_inputs(
     lease: Option<&ExecutionResourceLease<'_>>,
     work_budget: Option<&RequestWorkBudget>,
 ) -> Result<Vec<(IndexReductionKey, IndexPreparationResult)>, DerivedIndexExecutionDenial> {
-    let streams = execute_read_only_packets_with_budget(
-        inputs,
-        lease,
-        work_budget,
-        |packet, context| {
-            if lease.is_some() {
-                index_packet_result_checked(execution, projection, packet, context)
-            } else {
-                Ok(index_packet_result(execution, projection, packet))
-            }
-        },
-        |stream: &IndexResultStream| {
-            stream.owned_allocation_capacity_bytes(|_, result| {
-                result
-                    .entries
-                    .as_ref()
-                    .map_or(0, DerivedIndexEntries::owned_allocation_capacity_bytes)
-            })
-        },
-    )
-    .map_err(index_execution_denial)?;
+    crate::execution::admit_read_only_packet_order(&inputs)
+        .map_err(PacketExecutionStop::Admission)
+        .map_err(index_execution_denial)?;
+    let streams = if let Some(lease) = lease {
+        execute_read_only_packets_with_budget(
+            inputs,
+            lease,
+            work_budget,
+            |packet, context| index_packet_result_checked(execution, projection, packet, context),
+            |stream: &IndexResultStream| {
+                stream.owned_allocation_capacity_bytes(|_, result| {
+                    result
+                        .entries
+                        .as_ref()
+                        .map_or(0, DerivedIndexEntries::owned_allocation_capacity_bytes)
+                })
+            },
+        )
+        .map_err(index_execution_denial)?
+    } else {
+        crate::execution::execute_unleased_read_only_packets(&inputs, |packet| {
+            index_packet_result(execution, projection, packet)
+        })
+        .map_err(|stop| index_execution_denial(stop.into()))?
+    };
     let merged = if let Some(lease) = lease {
         canonical_merge_streams_checked(
             streams,
@@ -211,13 +215,13 @@ fn index_packet_result(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &IndexProjectionSource<'_>,
     packet: &IndexPreparationPacket,
-) -> IndexResultStream {
+) -> Result<IndexResultStream, crate::execution::RelationalExecutionDenialCause> {
     let entries = match &packet.definition.kind {
         DerivedIndexKind::EntityField { field_locator } => DerivedIndexEntries::EntityField(
-            build_entity_aspect_field_index(execution, projection, field_locator).into(),
+            build_entity_aspect_field_index(execution, projection, field_locator)?.into(),
         ),
         DerivedIndexKind::RelationField { field_locator } => DerivedIndexEntries::RelationField(
-            build_relation_aspect_field_index(execution, projection, field_locator).into(),
+            build_relation_aspect_field_index(execution, projection, field_locator)?.into(),
         ),
         DerivedIndexKind::RelatedEntityOrdering {
             relation_kind,
@@ -234,20 +238,20 @@ fn index_packet_result(
                     *child_kind,
                     ordering,
                 ),
-            )
+            )?
             .into(),
         ),
         DerivedIndexKind::RelationJoin(definition) => DerivedIndexEntries::RelationJoin(
-            build_relation_join_index(execution, projection, *definition).into(),
+            build_relation_join_index(execution, projection, *definition)?.into(),
         ),
     };
-    OrderedReductionStream::singleton(
+    Ok(OrderedReductionStream::singleton(
         packet.header.reduction_key,
         IndexPreparationResult {
             index_id: packet.definition.index_id,
             entries: Some(entries),
         },
-    )
+    ))
 }
 
 pub(super) fn index_execution_denial(stop: PacketExecutionStop) -> DerivedIndexExecutionDenial {

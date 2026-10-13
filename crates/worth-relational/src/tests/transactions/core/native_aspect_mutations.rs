@@ -36,6 +36,7 @@ fn native_entity_patch_supports_optional_whole_clear() {
     let read = runtime
         .read_truth()
         .read_snapshot(&cleared.snapshot, execution)
+        .expect("read request remains live")
         .expect("cleared snapshot");
     let state = read
         .get_entity(entity)
@@ -90,6 +91,7 @@ fn native_struct_field_clear_uses_exact_contract_basis() {
     let read = runtime
         .read_truth()
         .read_snapshot(&updated.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let value = read
         .get_entity(entity)
@@ -137,6 +139,7 @@ fn native_relation_creation_synthesizes_endpoint_aspects_and_publishes_updates()
     let read = runtime
         .read_truth()
         .read_snapshot(&created.snapshot, execution)
+        .expect("read request remains live")
         .unwrap();
     let state = read
         .get_relation(relation)

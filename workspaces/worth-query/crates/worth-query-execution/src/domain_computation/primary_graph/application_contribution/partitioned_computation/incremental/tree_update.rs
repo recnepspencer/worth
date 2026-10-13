@@ -105,7 +105,7 @@ where
                         .map_or(0, ChargedBytes::additional_charged_bytes),
                 )
             });
-        let held = Tree::<Reduced>::checked_build_memory_bound(count, declared_bytes)
+        let held = Tree::<Reduced>::checked_serial_build_memory_bound(count, declared_bytes)
             .and_then(|build| {
                 build.checked_add(
                     inline::<(PartitionIdentity, Reduced)>()?

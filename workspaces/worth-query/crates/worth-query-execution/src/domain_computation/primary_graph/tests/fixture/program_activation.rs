@@ -1,4 +1,5 @@
 //! Publish fixture activation through World before preparing program-owned work.
+use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
 
 use super::{prepare_relational_mutation_on_application, AuthorizationWorld};
 use crate::domain_computation::primary_graph::program_occurrence::program_revision_rendering;
@@ -44,9 +45,7 @@ pub(in crate::domain_computation::primary_graph) fn seed_program_activation(
     let request = super::live_scope();
     let prepared =
         prepare_relational_mutation_on_application(execution, &world.application, batch, &request);
-    let worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) =
-        prepared.execute(*execution)
-    else {
+    let Ok(PublicationOutcome::Performed(performed)) = prepared.execute(*execution) else {
         panic!("activation seed must publish through World");
     };
     let activation = performed

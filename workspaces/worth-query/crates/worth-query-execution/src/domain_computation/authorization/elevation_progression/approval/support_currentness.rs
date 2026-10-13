@@ -1,5 +1,6 @@
 //! Fresh observation of the exact governed support carried by a request receipt.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -81,24 +82,31 @@ fn support_observation_denial(
     denial: WorthQueryOperationAuthorizationDenial,
 ) -> WorthQueryOperationAuthorizationDenial {
     match denial.kind() {
-        WorthQueryOperationAuthorizationDenialKind::PermissionDenied
-        | WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected => {
-            stale_support(subject)
-        }
-        _ => denial,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::PermissionDenied,
+        )
+        | WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::RelationalObservationRejected,
+        ) => stale_support(subject),
+        WorthQueryOperationAuthorizationDenialKind::Stopped(_)
+        | WorthQueryOperationAuthorizationDenialKind::Refused(_) => denial,
     }
 }
 
 fn stale_support(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization,
+        ),
         subject,
     )
 }
 
 fn inconsistent_support(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InconsistentDecision,
+        ),
         subject,
     )
 }

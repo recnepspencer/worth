@@ -231,9 +231,19 @@ impl From<WorthQueryApplicationUncommitted> for WorthQueryApplicationCommitOutco
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationUnresolvedCommitEvidence {
     recovery: WorthQueryApplicationCommitRecoveryKind,
-    denial_kind: crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
+    denial_kind: Result<
+        crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
     stage: crate::domain_computation::provider_session::WorthQueryProviderSessionProtocolStage,
     detail: String,
+    cleanup_failure: Option<WorthQueryApplicationManagedCleanupFailure>,
+}
+
+/// Additional managed cleanup evidence retained alongside the unresolved commit cause.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationManagedCleanupFailure {
+    RunFinishRejected,
 }
 
 /// Distinguishes commit-path vs abort-path recovery requirement (R8.26).
@@ -250,10 +260,30 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
     ) -> Self {
         Self {
             recovery,
-            denial_kind: failure.kind(),
+            denial_kind: failure.checked_read_stop().unwrap_or(Ok(failure.kind())),
             stage: failure.stage(),
             detail: failure.detail().to_owned(),
+            cleanup_failure: None,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_read_stop(
+        mut self,
+        cause: Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ) -> Self {
+        self.denial_kind = cause;
+        self
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn with_cleanup_failure(mut self) -> Self {
+        self.cleanup_failure = Some(WorthQueryApplicationManagedCleanupFailure::RunFinishRejected);
+        self
+    }
+    pub const fn cleanup_failure(&self) -> Option<WorthQueryApplicationManagedCleanupFailure> {
+        self.cleanup_failure
     }
 
     pub const fn recovery(&self) -> WorthQueryApplicationCommitRecoveryKind {
@@ -262,7 +292,10 @@ impl WorthQueryApplicationUnresolvedCommitEvidence {
 
     pub const fn denial_kind(
         &self,
-    ) -> crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind {
+    ) -> Result<
+        crate::domain_computation::provider_session::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    > {
         self.denial_kind
     }
 

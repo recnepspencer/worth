@@ -4,6 +4,8 @@ use worth_query_declaration::facade::application_operation::{
 use worth_query_installation::facade::ApplicationSchema;
 
 pub use super::super::handler::{CandidateWriter, DecisionReader, HandlerInterruption};
+mod decision_plan;
+pub use decision_plan::WorthQueryDecisionPlan;
 mod completed_candidate;
 mod execution;
 mod execution_report;
@@ -73,6 +75,16 @@ where
         input: &Binding::Input,
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Binding::Decision, Binding::Denial>;
+
+    /// Prepare every read on the owner and return compute plus owner completion.
+    /// A handler without computation keeps its decision implementation unchanged.
+    fn prepare_decision(
+        &self,
+        input: &Binding::Input,
+        reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
+    ) -> WorthQueryDecisionPlan<Binding::Decision, Binding::Denial> {
+        WorthQueryDecisionPlan::immediate(self.decide(input, reader))
+    }
 
     fn candidate_requirements(
         &self,

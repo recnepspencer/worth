@@ -20,18 +20,13 @@ impl VisibilityProjectionView {
     /// list visits. No kind names or read records are materialized.
     pub fn exact_adjacency_structural_revision(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         anchor: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,
     ) -> Result<Option<VersionId>, RelationalBorrowedRecordReadDenial> {
-        match self.exact_adjacency_structural_revision_admitted(
-            _execution,
-            anchor,
-            kind,
-            direction,
-            |_| Ok::<(), std::convert::Infallible>(()),
-        ) {
+        match self.exact_adjacency_structural_revision_admitted(anchor, kind, direction, |_| {
+            Ok::<(), std::convert::Infallible>(())
+        }) {
             Ok(result) => result,
             Err(never) => match never {},
         }
@@ -41,7 +36,6 @@ impl VisibilityProjectionView {
     /// adjacency trees. The unrestricted entry shares this authority core.
     pub fn exact_adjacency_structural_revision_admitted<Stop>(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         anchor: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,
@@ -54,7 +48,7 @@ impl VisibilityProjectionView {
             return Ok(Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired));
         };
         admit(entity_work)?;
-        match self.with_exact_entity_state(_execution, anchor, |_, _| ()) {
+        match self.with_exact_entity_state(anchor, |_, _| ()) {
             Ok(Some(())) => {}
             Ok(None) => return Ok(Ok(None)),
             Err(denial) => return Ok(Err(denial)),
@@ -68,14 +62,11 @@ impl VisibilityProjectionView {
             return Ok(Ok(None));
         };
         let table = direction.table(partition);
-        admit(u64::try_from(table.navigation_work_bound()).unwrap_or(u64::MAX))?;
+        admit(table.navigation_work_bound() as u64)?;
         let Some(adjacency) = table.get(anchor.slot_index()) else {
             return Ok(Ok(None));
         };
-        admit(
-            u64::try_from(adjacency.structural_revision_navigation_work_bound())
-                .unwrap_or(u64::MAX),
-        )?;
+        admit(adjacency.structural_revision_navigation_work_bound() as u64)?;
         Ok(Ok(adjacency.structural_revision(kind)))
     }
 
@@ -83,56 +74,58 @@ impl VisibilityProjectionView {
     /// exact pinned substrate. A refusing visitor stops before the next id.
     pub fn try_visit_adjacency_ids<Stop>(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,
         mut visit: impl FnMut(RelationalAdjacencyVisit) -> Result<(), Stop>,
-    ) -> Result<(), Stop> {
-        visit(RelationalAdjacencyVisit::List)?;
-        visit(RelationalAdjacencyVisit::Prepare { work: 33, bytes: 0 })?;
-        let Some(root) = self.basis.root() else {
-            return Ok(());
-        };
-        let direction = match direction {
-            RelationalAdjacencyDirection::Outgoing => AdjacencyDirection::Outgoing,
-            RelationalAdjacencyDirection::Incoming => AdjacencyDirection::Incoming,
-        };
-        let basis = AdjacencyKindBasis::of_current_version(
-            self.basis.root_version() == Some(self.version_id()),
-        );
-        let table = root
-            .get_partition(entity.partition_id)
-            .map(|partition| direction.table(partition));
-        let adjacency = if let Some(table) = table {
-            visit(RelationalAdjacencyVisit::Prepare {
-                work: u64::try_from(table.navigation_work_bound()).unwrap_or(u64::MAX),
-                bytes: 0,
-            })?;
-            table.get(entity.slot_index())
-        } else {
-            None
-        };
-        if let Some(adjacency) = adjacency {
-            visit(RelationalAdjacencyVisit::Prepare {
-                work: u64::try_from(adjacency.selected_kind_navigation_work_bound(basis))
-                    .unwrap_or(u64::MAX),
-                bytes: 0,
-            })?;
-        }
-        let mut ledger = AdjacencyLeaseLedger::default();
-        let ids = ledger.lease(adjacency, basis, kind);
-        let result = (|| {
-            let mut ids = ids
-                .try_iter(|work, bytes| visit(RelationalAdjacencyVisit::Prepare { work, bytes }))?;
-            while let Some(id) = ids
-                .try_next(|work, bytes| visit(RelationalAdjacencyVisit::Prepare { work, bytes }))?
-            {
-                visit(RelationalAdjacencyVisit::Relation(*id))?;
+    ) -> Result<Result<(), Stop>, crate::execution::RelationalExecutionDenialCause> {
+        crate::visibility::materialization::read_records::read_request::checked(execution, || {
+            visit(RelationalAdjacencyVisit::List)?;
+            visit(RelationalAdjacencyVisit::Prepare { work: 33, bytes: 0 })?;
+            let Some(root) = self.basis.root() else {
+                return Ok(());
+            };
+            let direction = match direction {
+                RelationalAdjacencyDirection::Outgoing => AdjacencyDirection::Outgoing,
+                RelationalAdjacencyDirection::Incoming => AdjacencyDirection::Incoming,
+            };
+            let basis = AdjacencyKindBasis::of_current_version(
+                self.basis.root_version() == Some(self.version_id()),
+            );
+            let table = root
+                .get_partition(entity.partition_id)
+                .map(|partition| direction.table(partition));
+            let adjacency = if let Some(table) = table {
+                visit(RelationalAdjacencyVisit::Prepare {
+                    work: table.navigation_work_bound() as u64,
+                    bytes: 0,
+                })?;
+                table.get(entity.slot_index())
+            } else {
+                None
+            };
+            if let Some(adjacency) = adjacency {
+                visit(RelationalAdjacencyVisit::Prepare {
+                    work: adjacency.selected_kind_navigation_work_bound(basis) as u64,
+                    bytes: 0,
+                })?;
             }
-            Ok(())
-        })();
-        ledger.settle_instrumentation(&self.instrumentation);
-        result
+            let mut ledger = AdjacencyLeaseLedger::default();
+            let ids = ledger.lease(adjacency, basis, kind);
+            let result = (|| {
+                let mut ids = ids.try_iter(|work, bytes| {
+                    visit(RelationalAdjacencyVisit::Prepare { work, bytes })
+                })?;
+                while let Some(id) = ids.try_next(|work, bytes| {
+                    visit(RelationalAdjacencyVisit::Prepare { work, bytes })
+                })? {
+                    visit(RelationalAdjacencyVisit::Relation(*id))?;
+                }
+                Ok(())
+            })();
+            ledger.settle_instrumentation(&self.instrumentation);
+            result
+        })
     }
 }

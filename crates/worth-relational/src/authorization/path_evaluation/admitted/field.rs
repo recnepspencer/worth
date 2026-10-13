@@ -16,11 +16,13 @@ pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
     kind: KindId,
     state: &mut State<'_, A>,
 ) -> ObservationResult<bool, A> {
+    crate::execution::check_request(execution)
+        .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
     admission::prepare(state.admission, 1, 0)?;
     state.counters.entity_records_inspected += 1;
     Ok(context
         .view
-        .with_exact_entity_state(execution, entity, |metadata, _| {
+        .with_exact_entity_state(entity, |metadata, _| {
             metadata.kind_id == kind && metadata.lifecycle == RecordLifecycleState::Live
         })
         .map_err(|_| RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?
@@ -35,6 +37,8 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     locator: &AspectFieldLocator,
     state: &mut State<'_, A>,
 ) -> ObservationResult<Option<AspectValue>, A> {
+    crate::execution::check_request(execution)
+        .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
     admission::prepare(state.admission, 1, 0)?;
     let Some(field) = locator.field_path().fields().first() else {
         return Ok(None);
@@ -95,10 +99,12 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     if !scalar && !structured {
         return Ok(None);
     }
+    crate::execution::check_request(execution)
+        .map_err(RelationalAuthorizationBudgetedObservationStop::Execution)?;
     admission::prepare(state.admission, 1, 0)?;
     let value = context
         .view
-        .with_exact_entity_state(execution, entity, |metadata, authoritative| {
+        .with_exact_entity_state(entity, |metadata, authoritative| {
             if metadata.kind_id != kind || metadata.lifecycle != RecordLifecycleState::Live {
                 return Ok(None);
             }

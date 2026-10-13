@@ -222,7 +222,7 @@ fn collect_node(
                         field.field_key().clone(),
                     ),
                 ),
-            ),
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, node.result_path()))?,
         });
         work.charge_source_observation(1, field.result_path())?;
     }
@@ -252,6 +252,7 @@ fn collect_node(
                 work.remaining_work(),
             )
             .map_err(|unavailable| match unavailable {
+                AdjacencyStructuralRevisionDenial::Execution(cause) => super::super::denial::relational_read_denial(cause, relation.result_path()),
                 AdjacencyStructuralRevisionDenial::WorkBudgetExceeded => {
                     crate::domain_computation::primary_graph::application_query::read_execution::read_execution_denial(
                         crate::domain_computation::primary_graph::application_query::read_execution::WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
@@ -298,7 +299,7 @@ fn collect_node(
                                 predicate.field_key().clone(),
                             ),
                         ),
-                    ),
+                    ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, node.result_path()))?,
                 });
                 work.charge_source_observation(1, relation.result_path())?;
             }

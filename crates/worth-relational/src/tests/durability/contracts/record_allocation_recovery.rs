@@ -45,14 +45,16 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
     assert!(replacement.generation.0 > original.generation.0);
     let current = recovered
         .read_truth()
-        .read_version(execution, recovered.current_version_id());
+        .read_version(execution, recovered.current_version_id())
+        .expect("read request remains live");
     assert_eq!(
         read_entity_name(current.get_entity(replacement).unwrap()),
         Some("allocation-after".into())
     );
     let historical = recovered
         .read_truth()
-        .read_version(execution, created.version_id);
+        .read_version(execution, created.version_id)
+        .expect("read request remains live");
     assert_eq!(
         read_entity_name(historical.get_entity(original).unwrap()),
         Some("allocation-before".into())

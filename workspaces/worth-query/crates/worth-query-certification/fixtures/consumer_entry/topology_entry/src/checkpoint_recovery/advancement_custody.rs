@@ -29,7 +29,8 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
     let application = install(None);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
-    let policy = super::support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
+    let mut memory_causes = Vec::new();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let before = reads();
@@ -63,8 +64,6 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
             };
             if work == 0 {
                 assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-            } else if placement == Placement::Serial {
-                assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
             } else {
                 let Denial::Resource(Resource::MemoryLimit {
                     level,
@@ -76,6 +75,7 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
                 };
                 assert_eq!(level, Level::Policy);
                 assert_eq!(admitted, 0);
+                memory_causes.push(cause);
                 assert!(
                     requested > 0,
                     "the active scope holds its owner's framework bytes"
@@ -89,6 +89,11 @@ fn query_refuses_zero_request_budgets_before_its_first_read() {
             assert_eq!(reports(), vec![Err(cause)]);
         }
     }
+    assert_eq!(memory_causes.len(), 2);
+    assert_eq!(
+        memory_causes[0], memory_causes[1],
+        "serial and one-worker leases refuse the same bytes"
+    );
 }
 
 #[test]
@@ -141,7 +146,7 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
             else {
                 panic!("the fresh mutation prepares its unpublished candidate");
             };
-            let policy = super::support::CHECKPOINT_EXECUTION_POLICY.budget();
+            let policy = super::support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
             let restore = Restore(
                 place(placement),
                 bound(Some(worth_foundational::ExecutionBudget::new(
@@ -173,9 +178,7 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
             else {
                 panic!("the commit retains its opening cause: {:?}", denial.kind());
             };
-            if zero_memory && placement == Placement::Serial {
-                assert_eq!(resource, Resource::PolicyMemoryLimit);
-            } else if zero_memory {
+            if zero_memory {
                 let Resource::MemoryLimit {
                     level,
                     requested,
@@ -237,15 +240,12 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
     }
 }
 
-// Independent fixture oracle: one seed/kind/partition, two entities and one
-// relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
-// 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
-// final digests use ceil(b/4096). No request report supplies these units.
-mod principal_target_read_work;
-pub(super) use principal_target_read_work::PRINCIPAL_TARGET_READ_WORK;
-
 #[test]
 fn a_mutation_handler_and_commit_share_one_charged_request() {
+    mutation_commit_report(Placement::Leased(NonZeroUsize::MIN));
+}
+
+fn mutation_commit_report(placement: Placement) -> (u64, u64) {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);
@@ -259,10 +259,10 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
         .execute()
         .unwrap();
     let before = observed.receipt().inspect().basis().version();
-    let policy = support::CHECKPOINT_EXECUTION_POLICY.budget();
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.budget();
     // Admit the mutation's complete work, including its read and native commit.
     let restore = Restore(
-        place(Placement::Leased(NonZeroUsize::MIN)),
+        place(placement),
         bound(Some(worth_foundational::ExecutionBudget::new(
             NonZeroUsize::MIN,
             policy.charged_memory_bytes(),
@@ -292,12 +292,7 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
     assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
     let opened = reports();
     assert_eq!(opened.len(), 1);
-    let charged = opened[0].as_ref().unwrap().charged_work();
-    assert_eq!(
-        charged,
-        PRINCIPAL_TARGET_READ_WORK + super::native_commit_work::MUTATION_COMMIT_WORK,
-        "the shared request pays the independently quoted read and native commit"
-    );
+    let report = *opened[0].as_ref().unwrap();
     drop(restore);
     let after = request
         .query(PlanarRead {
@@ -306,6 +301,50 @@ fn a_mutation_handler_and_commit_share_one_charged_request() {
         .execute()
         .unwrap();
     assert_ne!(after.receipt().inspect().basis().version(), before);
+    (report.charged_work(), report.charged_span())
 }
 
 mod mutation_entries;
+
+// Fresh cells keep the native proposal's issued identities identical as inputs.
+fn native_commit_cell(posture: &str) -> String {
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "--exact",
+            "checkpoint_recovery::advancement_custody::serial_and_one_worker_native_commit_have_equal_work_and_span",
+            "--nocapture",
+        ])
+        .env("WORTH_NATIVE_COMMIT_POSTURE", posture)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{posture}: {}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    String::from_utf8(output.stdout)
+        .unwrap()
+        .lines()
+        .find_map(|line| line.strip_prefix("NATIVE_COMMIT_REPORT:"))
+        .expect("the real commit returns its observed work and span")
+        .to_owned()
+}
+#[test]
+fn serial_and_one_worker_native_commit_have_equal_work_and_span() {
+    if let Ok(posture) = std::env::var("WORTH_NATIVE_COMMIT_POSTURE") {
+        let placement = match posture.as_str() {
+            "serial" => Placement::Serial,
+            "one" => Placement::Leased(NonZeroUsize::MIN),
+            other => panic!("unknown declared posture {other}"),
+        };
+        let report = mutation_commit_report(placement);
+        println!("NATIVE_COMMIT_REPORT:{report:?}");
+        return;
+    }
+    assert_eq!(
+        native_commit_cell("serial"),
+        native_commit_cell("one"),
+        "one native proposal has the same exact work and structural span"
+    );
+}

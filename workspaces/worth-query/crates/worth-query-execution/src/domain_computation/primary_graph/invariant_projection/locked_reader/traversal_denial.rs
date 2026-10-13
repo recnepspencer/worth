@@ -2,6 +2,13 @@
 /// projection was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionTraversalDenialKind {
+    /// The caller's read request stopped.
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The relation is not installed.
     RelationNotInstalled,
@@ -136,3 +143,10 @@ impl std::fmt::Display for WorthQueryInvariantProjectionTraversalDenial {
 }
 
 impl std::error::Error for WorthQueryInvariantProjectionTraversalDenial {}
+
+impl worth_execution::ChargedBytes for WorthQueryInvariantProjectionTraversalDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self { kind: _, relation } = self;
+        relation.capacity() as u64
+    }
+}

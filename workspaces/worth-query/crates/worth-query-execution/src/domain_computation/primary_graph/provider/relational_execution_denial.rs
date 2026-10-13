@@ -1,3 +1,5 @@
+mod preflight;
+pub(in crate::domain_computation::primary_graph) use preflight::preflight_execution_cause;
 /// The only conversion from Relational execution causes to Query denial kinds.
 pub fn relational_execution_kind(
     cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
@@ -111,6 +113,9 @@ pub(in crate::domain_computation::primary_graph) fn native_preparation_kind(
     Option<crate::domain_computation::WorthQueryProviderSessionDenialKind>,
     crate::domain_computation::WorthQueryProviderSessionControlStopKind,
 > {
+    if let Some(stop) = failure.checked_read_stop() {
+        return stop.map(Some);
+    }
     use worth_relational::facade::transactions::{
         CommitExecutionDenialKind, TransactionCommitError,
     };

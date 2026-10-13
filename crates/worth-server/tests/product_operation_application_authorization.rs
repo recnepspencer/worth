@@ -1,5 +1,6 @@
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
+
 use std::sync::{Arc, Mutex};
 
 use worth_server::{

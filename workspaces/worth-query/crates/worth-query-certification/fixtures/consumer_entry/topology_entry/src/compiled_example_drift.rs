@@ -50,7 +50,8 @@ fn compiled_examples_match_build_guide() {
         let compiled = source
             .split_once("// compiled-example: begin\n")
             .and_then(|(_, rest)| rest.split_once("// compiled-example: end\n"))
-            .map(|(example, _)| example)
+            // The closing marker's indentation is metadata, not example code.
+            .map(|(example, _)| example.trim_end_matches([' ', '\t']))
             .unwrap_or_else(|| panic!("{name}: source markers are missing"));
         if block != compiled {
             let guide_lines: Vec<_> = block.split_inclusive('\n').collect();
@@ -69,7 +70,12 @@ fn compiled_examples_match_build_guide() {
     }
     assert_eq!(
         examples,
-        ["warehouse_inventory.rs", "sensor_telemetry.rs"],
-        "both examples must retain their compiled markers"
+        [
+            "warehouse_inventory.rs",
+            "sensor_telemetry.rs",
+            "checkpoint_recovery/computation_partition/demand.rs",
+            "checkpoint_recovery/required_chain/concurrent_waves/application.rs",
+        ],
+        "all examples must retain their compiled markers"
     );
 }

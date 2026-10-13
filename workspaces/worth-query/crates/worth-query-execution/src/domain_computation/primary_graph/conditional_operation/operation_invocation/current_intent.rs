@@ -52,7 +52,7 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
         identity: IdentityValue,
         expected_revision: &RevisionValue,
-    ) -> Result<(), String>
+    ) -> Result<bool, WorthQueryTemporalReentryDenial>
     where
         Schema: ApplicationSchema,
         IdentityField: OperationReads<Operation>,
@@ -65,9 +65,15 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
     {
-        let intent = reader
-            .resolve_entity(self.identity_field, identity)
-            .map_err(|denial| denial.to_string())?;
+        let _read_observation = super::super::read_observation::IntentReadObservation::enter();
+        let intent = match reader.resolve_entity(self.identity_field, identity) {
+            Ok(intent) => intent,
+            Err(denial) => match denial.kind() {
+                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(_) => return Err(WorthQueryTemporalReentryDenial::from_entity(denial)),
+                crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => return Ok(false),
+            },
+        };
+        let currentness = (|| -> Result<(), String> {
         reader
             .decision_field(&intent, self.identity_field)
             .map_err(|denial| denial.to_string())?
@@ -93,6 +99,8 @@ _execution: &worth_execution::ExecutionRequest<'_, '_>,
             return Err("temporal intent is no longer active".into());
         }
         Ok(())
+        })();
+        Ok(currentness.is_ok())
     }
 
     pub(in crate::domain_computation::primary_graph::conditional_operation) fn resolve_current_intent(
@@ -115,6 +123,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         LifecycleField::Binding: ApplicationReadableScalarValueBinding<Value = LifecycleValue>,
         LifecycleValue: Clone,
     {
+        let _read_observation = super::super::read_observation::IntentReadObservation::enter();
         let identity_value = IdentityField::Binding::decode(record_identity)
             .map_err(super::super::WorthQueryConditionalReentryFailure::IntentIdentityDecode)?;
         let entity = product
@@ -133,7 +142,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 self.observe_current_intent(execution, reader, identity_value.clone(), &expected_revision)
             }, worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .map_err(WorthQueryTemporalReentryDenial::from_invariant)?;
-        Ok(current.output().is_ok().then_some(WorthQueryCurrentTemporalIntent {
+        let is_current = current.into_output()?;
+        Ok(is_current.then_some(WorthQueryCurrentTemporalIntent {
             identity_value,
             entity,
             expected_revision,

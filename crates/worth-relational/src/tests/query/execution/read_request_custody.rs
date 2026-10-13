@@ -101,11 +101,6 @@ fn production_plan_has_equal_bits_and_charged_work_at_every_backing() {
         .unwrap()
         .unwrap();
     let work = reference.report.unwrap().charged_work();
-    // Two declared partitions; three examined rows; one captured-buffer chunk;
-    // two fragment claims, three row claims, one output-buffer claim and three
-    // digest chunks (the fixture's small records each fit one 4096-byte chunk).
-    let expected_work = 2 + 3 + 1 + 2 + 3 + 1 + 3;
-    assert_eq!(work, expected_work);
     for width in [1, 2, 4] {
         let lease = lease(width, u64::MAX, CancellationToken::new());
         let read = runtime

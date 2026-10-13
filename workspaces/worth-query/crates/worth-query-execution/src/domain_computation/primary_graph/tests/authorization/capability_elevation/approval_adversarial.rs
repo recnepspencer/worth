@@ -3,6 +3,7 @@ use super::super::super::fixture::{
     Account, ApproveCapabilityElevationOperation, ApproveElevationInput,
     CapabilityElevationScenario, CapabilityElevationStatus, IdentityExecutionSchema,
 };
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationCommitDenialKind,
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
@@ -93,7 +94,9 @@ fn ordinary_operation_and_commit_paths_cannot_publish_approval_authority() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::ElevationTransitionRequired
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationTransitionRequired
+        )
     );
 
     let ordinary = world

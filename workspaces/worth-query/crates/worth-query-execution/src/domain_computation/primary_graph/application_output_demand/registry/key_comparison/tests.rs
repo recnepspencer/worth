@@ -21,3 +21,10 @@ fn empty_predecessor_selection_compares_no_predecessor_keys() {
         0
     );
 }
+
+#[test]
+fn registry_seeks_and_record_navigation_share_the_node_bound() {
+    assert_eq!(ordered_comparisons(2, 3), Some(6));
+    assert_eq!(ordered_comparisons(2, usize::MAX), Some(22));
+    assert_eq!(ordered_comparisons(usize::MAX, usize::MAX), None);
+}

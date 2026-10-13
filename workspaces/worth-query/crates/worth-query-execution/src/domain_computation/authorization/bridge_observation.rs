@@ -1,5 +1,6 @@
 //! Runtime Bridge observations derived from neutral Relational evidence.
 
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationEvidence;
 use worth_runtime_bridge::facade::{
     BridgeAuthorizationClauseObservation, BridgeAuthorizationDependencyCardinality,
@@ -107,7 +108,9 @@ impl ObservationBinding<'_> {
 
 fn invalid_shape(policy: &str) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         policy,
     )
 }

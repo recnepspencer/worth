@@ -19,8 +19,11 @@ pub(crate) use read_only_packets::{
     PacketExecutionStop, PacketKernelContext, ReadOnlyPacket,
 };
 
+mod unleased_read_only_packets;
+pub(crate) use read_only_packets::admit_read_only_packet_order;
+pub(crate) use unleased_read_only_packets::execute_unleased_read_only_packets;
+
 mod request_custody;
 pub(crate) use request_custody::check_request;
-
 #[cfg(test)]
 pub(crate) use request_work::observation as work_observation;

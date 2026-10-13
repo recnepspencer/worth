@@ -104,8 +104,6 @@ fn page_resume_and_live_entries_refuse_before_their_own_reader() {
                 assert_eq!(reads(), before, "refused entry {entry} reached its reader");
                 if !zero_memory {
                     assert_eq!(cause, Denial::Resource(Resource::WorkExhausted));
-                } else if placement == Placement::Serial {
-                    assert_eq!(cause, Denial::Resource(Resource::PolicyMemoryLimit));
                 } else {
                     let Denial::Resource(Resource::MemoryLimit {
                         level,

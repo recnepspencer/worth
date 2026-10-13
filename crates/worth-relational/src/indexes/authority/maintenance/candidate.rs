@@ -56,10 +56,13 @@ impl IndexAuthority<'_> {
         budget: DerivedIndexMaintenanceBudget,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DerivedIndexMaintenanceWork, DerivedIndexMaintenanceDenial> {
-        let mut work = MaintenanceWork::new(budget);
-        let result =
-            self.prepare_candidate_indexes(candidate, index_ids, before, &mut work, execution);
-        result.map(|()| work.counts).map_err(|kind| work.deny(kind))
+        let (prepared, counts) = super::request_payment::run(execution, budget, |work| {
+            self.prepare_candidate_indexes(candidate, index_ids, before, work, execution)
+        })?;
+        candidate
+            .attach_prepared_indexes(prepared.value)
+            .map(|()| counts)
+            .map_err(|kind| DerivedIndexMaintenanceDenial { kind, work: counts })
     }
 
     fn prepare_candidate_indexes(
@@ -69,7 +72,7 @@ impl IndexAuthority<'_> {
         before: Option<&SnapshotHandle>,
         work: &mut MaintenanceWork,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
+    ) -> Result<PreparedCandidateIndexPublication, Denial> {
         if candidate.runtime_instance_id() != self.runtime.runtime_instance_id() {
             return Err(Denial::ForeignCandidate);
         }
@@ -85,6 +88,8 @@ impl IndexAuthority<'_> {
         let (expected_root, prepared_root) = candidate
             .index_preparation_roots()
             .ok_or(Denial::CandidateUnavailable)?;
+        work.prepare(0, (candidate.branch().0.len() * 3) as u64)?;
+        work.array::<DerivedIndexId>(index_ids.len())?;
         let branch_id = candidate.branch().clone();
         let envelope = prepared_root
             .canonical_envelope()
@@ -106,7 +111,7 @@ impl IndexAuthority<'_> {
                 }
                 self.runtime
                     .read_truth()
-                    .project_snapshot(snapshot, execution)
+                    .project_snapshot(snapshot)
                     .ok_or(Denial::SnapshotUnavailable)
             })
             .transpose()?;
@@ -114,7 +119,13 @@ impl IndexAuthority<'_> {
         basis::validate_prepared(&request, before.as_ref(), &after)?;
         let prepared = self.prepare_refresh(execution, &request, before.as_ref(), &after, work)?;
         work.charge(prepared.entries.len())?;
-        work.counts.generation_publications_reserved = prepared.entries.len();
+        work.reserve_generation_publications(prepared.entries.len());
+        work.array::<DerivedIndexGeneration>(prepared.entries.len())?;
+        work.array::<crate::indexes::data::DerivedIndexGenerationId>(prepared.entries.len())?;
+        work.prepare(
+            0,
+            (prepared.publication.branch_id.0.len() * 2 * prepared.entries.len()) as u64,
+        )?;
         let generation_ids = self
             .runtime
             .indexes
@@ -128,7 +139,7 @@ impl IndexAuthority<'_> {
                 prepared_generation(&prepared.publication, generation_id, index_id, entries)
             })
             .collect();
-        candidate.attach_prepared_indexes(PreparedCandidateIndexPublication {
+        Ok(PreparedCandidateIndexPublication {
             root_id: prepared_root.id(),
             branch_id,
             commit_id: request.source_commit_id,

@@ -1,7 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 // Disabled optional edges belong to Store's existing other-team root.
 // Keep the exact DAG assertions while honoring the one-build owner policy.
@@ -11,11 +10,7 @@ struct Repository {
 
 impl Repository {
     fn new() -> Self {
-        let id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let root = std::env::temp_dir().join(format!("snapshot-dependency-classes-{id}"));
+        let root = worth_harness::tooling::fixture_path::unique_path("snapshot-dependency-classes");
         write(
             &root,
             ".boundary-check-mock-root",

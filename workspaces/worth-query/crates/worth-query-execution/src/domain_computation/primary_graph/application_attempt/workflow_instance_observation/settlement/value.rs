@@ -17,7 +17,7 @@ pub(super) fn observed_text(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<String, WorthQueryApplicationAttemptDenial> {
     let value =
-        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
             .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
     let retained = value.clone();
     let AspectValue::String(value) = &value else {
@@ -51,7 +51,7 @@ pub(super) fn observed_optional_text(
     locator: &AspectFieldLocator,
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
-    if super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+    if super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
         .is_none()
     {
         facts.push(WorthQueryApplicationObservedFact::AbsentField {
@@ -74,7 +74,7 @@ pub(super) fn observed_bool(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
     let value =
-        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
             .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
     let AspectValue::Bool(posture) = value else {
         return Err(denial(
@@ -100,7 +100,7 @@ pub(super) fn observed_u64(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<u64, WorthQueryApplicationAttemptDenial> {
     let value =
-        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
             .ok_or_else(|| denial("workflow assessment evidence field is unavailable"))?;
     let AspectValue::UInt64(number) = value else {
         return Err(denial(
@@ -126,7 +126,7 @@ pub(super) fn optional_identity(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<Option<[u8; 32]>, WorthQueryApplicationAttemptDenial> {
     let Some(value) =
-        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)
+        super::super::observe_field_value(runtime, execution, snapshot, entity, kind, locator)?
     else {
         return Ok(None);
     };

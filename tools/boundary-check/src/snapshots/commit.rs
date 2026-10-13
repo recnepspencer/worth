@@ -83,15 +83,10 @@ fn cleanup(paths: &[PathBuf]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn late_replacement_failure_restores_the_original_set() {
-        let id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        let root = std::env::temp_dir().join(format!("boundary-snapshot-commit-{id}"));
+        let root = worth_harness::tooling::fixture_path::unique_path("boundary-snapshot-commit");
         let paths = [
             root.join("crate-dag.toml"),
             root.join("facades.toml"),

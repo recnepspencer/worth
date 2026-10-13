@@ -1,5 +1,6 @@
 //! idempotency inspection denies before receipt after grant revocation.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
@@ -50,11 +51,15 @@ fn idempotency_inspection_denies_before_receipt_after_grant_revocation() {
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
-            WorthQueryOperationAuthorizationDenialKind::StaleAuthorization
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleAuthorization
+            )
         )
     );
     assert_eq!(
         denial.authorization().map(|denial| denial.kind()),
-        Some(WorthQueryOperationAuthorizationDenialKind::StaleAuthorization)
+        Some(WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization
+        ))
     );
 }

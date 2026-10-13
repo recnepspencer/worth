@@ -10,7 +10,7 @@ pub(super) fn execute_fresh<Schema, Binding>(
     request_scope: &WorthQueryRequestScope,
     branch: WorthQueryProductBranch,
     required_output: RequiredOutputDemandContext,
-    provider: &Binding::Provider,
+    provider: &std::sync::Arc<Binding::Provider>,
     disclosure: FreshOutputDisclosure<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>,
     successor_of: Option<[u8; 32]>,
     commit_authority: WorthQueryProducerCommitAuthority,
@@ -31,7 +31,14 @@ where
     let selected = runtime
         .on_branch(branch)
         .select_with_request(execution)
-        .map_err(|error| failed(Binding::IDENTITY, error))?;
+        .map_err(|error| match error {
+            stopped @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                WorthQueryOutputDemandDenial::product_selection(stopped, Binding::IDENTITY)
+            }
+            refused @ crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                failed(Binding::IDENTITY, refused)
+            }
+        })?;
     if !disclosure.admits(
         external_principal,
         request_scope,
@@ -83,7 +90,6 @@ where
         )
         .map_err(|error| request_authority_denied(Binding::IDENTITY, error))?;
     post_authorization::execute_authorized::<Schema, Binding>(
-        execution,
         phase,
         runtime,
         &selected,

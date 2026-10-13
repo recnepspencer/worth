@@ -4,6 +4,7 @@ use super::super::fixture::{
     TouchAccountCapability,
 };
 use super::capability_progression::{capability_input, time};
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind;
 
 #[test]
@@ -40,6 +41,8 @@ fn structured_input_validation_is_enforced_by_capability_admission() {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::InvalidOperationInput
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidOperationInput
+        )
     );
 }

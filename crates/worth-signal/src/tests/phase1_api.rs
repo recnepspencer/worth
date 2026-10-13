@@ -16,6 +16,7 @@ mod runtime_configuration;
 mod runtime_policy_defaults;
 mod runtime_telemetry;
 mod source_corpus;
+mod timing_assertions;
 mod topology_boundaries;
 mod transaction_flow;
 mod zero_broad_entry_access;

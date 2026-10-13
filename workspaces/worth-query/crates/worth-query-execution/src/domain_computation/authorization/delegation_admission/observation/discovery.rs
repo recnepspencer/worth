@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_relational::facade::authorization::{
     RelationalAuthorizationEntityAnchor, RelationalAuthorizationObservationPlan,
     RelationalAuthorizationPathPlan, RelationalAuthorizationRelatedEntityConstraint,
@@ -52,7 +53,9 @@ pub(super) fn observe_parent(
         .observe_authorization(plan, execution)
         .map_err(|_| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::RelationalObservationRejected,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::RelationalObservationRejected,
+                ),
                 installed.contract().name(),
             )
         })?;
@@ -65,7 +68,9 @@ pub(super) fn observe_parent(
         || evidence.counters().maximum_frontier_width > 1
     {
         return Err(denial(
-            WorthQueryOperationAuthorizationDenialKind::DelegationRejected,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::DelegationRejected,
+            ),
             installed.contract().name(),
         ));
     }
@@ -94,7 +99,9 @@ fn reverse(traversal: &RelationalAuthorizationTraversal) -> RelationalAuthorizat
 
 fn invalid_policy(subject: &str) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::InvalidInstalledPolicy,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InvalidInstalledPolicy,
+        ),
         subject,
     )
 }

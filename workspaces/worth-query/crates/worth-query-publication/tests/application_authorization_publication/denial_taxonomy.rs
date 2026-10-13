@@ -8,6 +8,7 @@ use worth_foundational::facade::{
     FoundationalProfileAttachmentTargetKind, FoundationalProfileSet, FoundationalProfileSetInput,
     ObservationActivationProfile, RetentionDeliveryProfile, SupportPostureProfile,
 };
+use worth_query_execution::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind as Kind,
 };
@@ -25,8 +26,14 @@ fn real_missing_and_explicit_deny_publish_without_semantic_or_identity_aliasing(
     let explicit = real_denial(CompositionScenario::ExplicitDeny);
 
     assert_eq!(missing.subject(), explicit.subject());
-    assert_eq!(missing.kind(), Kind::CapabilityAuthorizationMissing);
-    assert_eq!(explicit.kind(), Kind::ExplicitDenyRuleMatched);
+    assert_eq!(
+        missing.kind(),
+        Kind::Refused(AuthorizationRefusal::CapabilityAuthorizationMissing)
+    );
+    assert_eq!(
+        explicit.kind(),
+        Kind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched)
+    );
     let published_missing = assert_publication(&missing, ExpectedDenialPublication::MISSING);
     let published_explicit = assert_publication(&explicit, ExpectedDenialPublication::EXPLICIT);
 
@@ -42,10 +49,10 @@ fn real_accumulated_prohibitions_retain_order_and_publish_explicit_deny_preceden
     assert_eq!(
         denial.causes(),
         [
-            Kind::ExplicitDenyRuleMatched,
-            Kind::ConflictRuleMatched,
-            Kind::SeparationOfDutyRuleMatched,
-            Kind::DistinctActorRuleMatched,
+            Kind::Refused(AuthorizationRefusal::ExplicitDenyRuleMatched),
+            Kind::Refused(AuthorizationRefusal::ConflictRuleMatched),
+            Kind::Refused(AuthorizationRefusal::SeparationOfDutyRuleMatched),
+            Kind::Refused(AuthorizationRefusal::DistinctActorRuleMatched),
         ]
     );
     assert_publication(&denial, ExpectedDenialPublication::EXPLICIT);

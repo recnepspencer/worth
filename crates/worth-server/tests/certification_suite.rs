@@ -6,8 +6,9 @@ mod query_handoff_fixture;
 mod query_handoff_runtime;
 #[path = "support/response_fixture.rs"]
 mod response_fixture;
-#[path = "support/test_execution_policy.rs"]
-mod test_execution_policy;
+#[path = "support/test_bootstrap_policy.rs"]
+mod test_bootstrap_policy;
+
 #[path = "support/worth_native/assertions.rs"]
 mod worth_native_assertions;
 #[path = "support/worth_native/runtime.rs"]

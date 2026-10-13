@@ -19,7 +19,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     /// allocating a tracked snapshot handle.
     pub fn project_observation(
         &self,
-        _execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &crate::mvcc::RelationalBranchObservation,
     ) -> Result<VisibilityProjectionView, crate::branch::RelationalBranchBasisDenial> {
         if observation.identity().runtime_instance_id() != self.runtime().runtime_instance_id() {

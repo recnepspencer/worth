@@ -1,3 +1,4 @@
+use worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
 mod support;
 
 use bank_domain::model::BankPrincipalId;
@@ -29,7 +30,7 @@ fn unknown_dynamic_identity_is_denied() {
             CausalCredential::for_identity(&unknown),
             &request_scope(),
         )),
-        WorthQueryPrincipalResolutionDenialKind::UnknownPrincipal,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal),
     );
 }
 
@@ -48,7 +49,7 @@ fn disabled_dynamic_identity_is_denied() {
             CausalCredential::for_identity(&disabled),
             &request_scope(),
         )),
-        WorthQueryPrincipalResolutionDenialKind::DisabledPrincipal,
+        WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal),
     );
 }
 

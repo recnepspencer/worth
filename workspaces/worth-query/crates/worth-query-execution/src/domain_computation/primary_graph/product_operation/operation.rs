@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
@@ -33,7 +34,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         WorthQueryOperationAuthorizationDenial,
     > {
         let execution = phase.execution_request_for(&self.application().product_runtime)
-            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, operation.operation()))?;
+            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), operation.operation()))?;
         self.authorize_operation_with_request(
             &execution,
             principal,
@@ -96,7 +97,7 @@ phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         let execution = phase.execution_request_for(&self.application().product_runtime)
-            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "capability access"))?;
+            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "capability access"))?;
         self.admit_capability_access_with_request(&execution, principal, capability, input, request)
     }
 
@@ -161,7 +162,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         let execution = phase.execution_request_for(&self.application().product_runtime)
-            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "encoded capability access"))?;
+            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "encoded capability access"))?;
         self.admit_encoded_capability_access_with_request(
             &execution,
             publication_access,
@@ -235,7 +236,7 @@ phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
     {
         let execution = phase.execution_request_for(&self.application().product_runtime)
-            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::ForeignPhase, "approved elevation access"))?;
+            .map_err(|_| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "approved elevation access"))?;
         self.admit_approved_elevation_access_with_request(
             &execution, approved, principal, capability, input, request,
         )

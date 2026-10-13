@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
 };
@@ -20,7 +21,9 @@ where
 {
     Operation::InputBinding::validate(input).map_err(|_| {
         WorthQueryOperationAuthorizationDenial::new(
-            WorthQueryOperationAuthorizationDenialKind::InvalidOperationInput,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InvalidOperationInput,
+            ),
             operation.operation(),
         )
     })

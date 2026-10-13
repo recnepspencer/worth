@@ -65,8 +65,9 @@ fn relation_kind_scans_return_only_visible_relations_of_that_kind() {
     };
     let visible = runtime
         .read_truth()
-        .project_historical_version(execution, deleted.version_id)
-        .relations::<EdgeProjection>(execution);
+        .project_historical_version(deleted.version_id)
+        .relations::<EdgeProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(visible.len(), 1);
     assert_eq!(visible[0].relation_id, r2);
@@ -86,8 +87,9 @@ fn relation_kind_scans_are_deterministic_across_equivalent_insert_order() {
     let _ = create_relation(execution, &runtime_a, a_right, a_third, "r2");
     let scan_a = runtime_a
         .read_truth()
-        .project_historical_version(execution, runtime_a.current_version_id())
-        .relations::<EdgeProjection>(execution);
+        .project_historical_version(runtime_a.current_version_id())
+        .relations::<EdgeProjection>(execution)
+        .expect("read request remains live");
 
     let runtime_b =
         runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
@@ -98,8 +100,9 @@ fn relation_kind_scans_are_deterministic_across_equivalent_insert_order() {
     let _ = create_relation(execution, &runtime_b, b_left, b_right, "r1");
     let scan_b = runtime_b
         .read_truth()
-        .project_historical_version(execution, runtime_b.current_version_id())
-        .relations::<EdgeProjection>(execution);
+        .project_historical_version(runtime_b.current_version_id())
+        .relations::<EdgeProjection>(execution)
+        .expect("read request remains live");
 
     assert_eq!(scan_a.len(), scan_b.len());
     assert_eq!(
@@ -130,12 +133,14 @@ fn all_authoritative_relation_records_use_canonical_relation_order_not_creation_
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .relations::<EdgeProjection>(execution);
+        .project_historical_version(runtime.current_version_id())
+        .relations::<EdgeProjection>(execution)
+        .expect("read request remains live");
     let all_records = runtime
         .read_truth()
-        .project_historical_version(execution, runtime.current_version_id())
-        .all_authoritative_relation_records(execution);
+        .project_historical_version(runtime.current_version_id())
+        .all_authoritative_relation_records(execution)
+        .expect("read request remains live");
 
     assert_eq!(
         all_records
@@ -163,6 +168,7 @@ fn relation_aspects_at_version_follow_declared_contract_shape() {
     let aspects = runtime
         .read_truth()
         .relation_aspects_at_version(execution, relation, version_id)
+        .expect("read request remains live")
         .unwrap();
 
     assert_eq!(

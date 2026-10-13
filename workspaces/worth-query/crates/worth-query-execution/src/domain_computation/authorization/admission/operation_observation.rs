@@ -4,6 +4,7 @@ use super::{
     validation::denial, WorthQueryConventionalAuthorizationObservation,
     WorthQueryObservedConventionalOperation,
 };
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
     WorthQueryPrincipalCurrentnessDependency, WorthQueryRetainedAuthorizationDecisionFacts,
@@ -53,7 +54,9 @@ where
     {
         let graph = self.runtime.primary_graph().ok_or_else(|| {
             denial(
-                WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::ForeignRuntime,
+                ),
                 operation.operation(),
             )
         })?;
@@ -64,7 +67,9 @@ where
             .cloned()
             .ok_or_else(|| {
                 denial(
-                    WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::StalePrincipal,
+                    ),
                     principal.binding(),
                 )
             })?;
@@ -86,7 +91,9 @@ where
             WorthQueryExternalPrincipalIdentityBinding::encode(principal.external_identity())
                 .map_err(|_| {
                     denial(
-                        WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
+                        WorthQueryOperationAuthorizationDenialKind::Refused(
+                            AuthorizationRefusal::StalePrincipal,
+                        ),
                         principal.binding(),
                     )
                 })?;
@@ -99,25 +106,31 @@ where
                 &principal_layout,
                 &expected_external_identity,
             )
-            .map_err(|_| {
-                denial(
-                    WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
-                    principal.binding(),
-                )
+            .map_err(|cause| {
+                denial(super::super::denial::principal_currentness(cause), principal.binding())
             })?;
             entity_resolution
                 .at_snapshot(
-                    execution,
                     relational,
                     &snapshot,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .and_then(|truth| truth.validate_entity_freshness(execution, scope_identity))
-                .map_err(|_| {
-                    denial(
-                        WorthQueryOperationAuthorizationDenialKind::StaleScope,
-                        scope_identity.entity_name(),
-                    )
+                .map_err(|cause| {
+                    match cause.kind() {
+                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Stopped(cause) => {
+                            super::super::denial::relational_read_denial(
+                                cause,
+                                scope_identity.entity_name(),
+                            )
+                        }
+                        crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(_) => {
+                            denial(
+                                WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleScope),
+                                scope_identity.entity_name(),
+                            )
+                        }
+                    }
                 })?;
             self.observe_authorization_requirements(
                 execution,
@@ -163,7 +176,9 @@ impl WorthQueryObservedConventionalOperation {
             WorthQueryInstalledApplicationOperationAuthorization::Principal
             | WorthQueryInstalledApplicationOperationAuthorization::Capability => {
                 return Err(denial(
-                    WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InconsistentDecision,
+                    ),
                     operation.operation(),
                 ));
             }
@@ -172,7 +187,9 @@ impl WorthQueryObservedConventionalOperation {
             Ok(authorization)
         } else {
             Err(denial(
-                WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::InconsistentDecision,
+                ),
                 operation.operation(),
             ))
         }

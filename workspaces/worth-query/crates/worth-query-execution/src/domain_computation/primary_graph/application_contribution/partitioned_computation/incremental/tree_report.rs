@@ -77,10 +77,14 @@ pub enum WorthQueryPartitionedTreeRun {
 }
 
 impl WorthQueryPartitionedTreeRun {
-    pub const fn metrics_for_test(self) -> WorthQueryPartitionedTreeMetrics {
+    pub(super) const fn metrics(self) -> WorthQueryPartitionedTreeMetrics {
         match self {
             Self::Full(_, metrics) | Self::Edited(metrics) | Self::Rebuilt(_, metrics) => metrics,
         }
+    }
+
+    pub const fn metrics_for_test(self) -> WorthQueryPartitionedTreeMetrics {
+        self.metrics()
     }
 
     pub const fn partitions_for_test(self) -> WorthQueryPartitionedComputationRunForTest {

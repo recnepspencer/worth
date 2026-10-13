@@ -232,10 +232,9 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let lease = authority
         .request_lease(lease_request(32 * 1024 * 1024, CancellationToken::new()))
         .expect("generous lease is admitted");
-    let parallel = runtime.index_authority().build_for_commit_with_lease(
+    let parallel = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&lease),
         request.clone(),
-        &lease,
     );
     assert!(parallel.execution_denial.is_none());
     assert_eq!(serial.generations.len(), 1);
@@ -252,10 +251,9 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let cancelled_lease = authority
         .request_lease(lease_request(32 * 1024 * 1024, cancelled.token()))
         .expect("cancelled request still receives a lease for typed execution stop");
-    let stopped_index = runtime.index_authority().build_for_commit_with_lease(
+    let stopped_index = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&cancelled_lease),
         request.clone(),
-        &cancelled_lease,
     );
     assert_eq!(
         stopped_index.execution_denial.map(|denial| denial.kind),
@@ -282,10 +280,9 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let small_lease = authority
         .request_lease(small_request)
         .expect("zero-memory policy is admitted");
-    let exhausted_index = runtime.index_authority().build_for_commit_with_lease(
+    let exhausted_index = runtime.index_authority().build_for_commit(
         &worth_execution::ExecutionRequest::leased(&small_lease),
         request,
-        &small_lease,
     );
     let Some(DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
         requested,

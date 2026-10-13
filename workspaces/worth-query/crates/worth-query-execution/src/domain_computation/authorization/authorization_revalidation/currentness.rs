@@ -1,29 +1,34 @@
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub(super) fn foreign_runtime() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignRuntime),
         "application-authorization",
     )
 }
 
 pub(super) fn inconsistent_authorization() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::InconsistentDecision,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::InconsistentDecision,
+        ),
         "application-authorization",
     )
 }
 
 pub(super) fn stale_authorization() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::StaleAuthorization,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::StaleAuthorization,
+        ),
         "application-authorization",
     )
 }
 
 pub(super) fn stale_principal() -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
-        WorthQueryOperationAuthorizationDenialKind::StalePrincipal,
+        WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal),
         "application-authorization",
     )
 }
@@ -49,11 +54,19 @@ pub(super) fn validate_observed_currentness(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-    if !authorization.principal_remains_current_in(execution, runtime, snapshot) {
+    if !authorization
+        .principal_remains_current_in(execution, runtime, snapshot)
+        .map_err(|kind| {
+            WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+        })?
+    {
         return Err(stale_principal());
     }
     authorization
         .decisions_remain_current_in(execution, runtime, snapshot, bridge)
+        .map_err(|kind| {
+            WorthQueryOperationAuthorizationDenial::new(kind, "authorization currentness")
+        })?
         .then_some(())
         .ok_or_else(stale_authorization)
 }

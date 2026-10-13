@@ -18,13 +18,16 @@ fn historical_relation_inspection_keeps_direct_commit_history_when_retained_only
         .release_snapshot(&relation_outcome.snapshot)
         .is_ok());
 
-    let inspection = runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("main".to_string()),
-        relation_outcome.version_id,
-        crate::facade::transactions::RecordRef::Relation(relation),
-        HistoricalInspectionMode::RetainedOnly,
-    );
+    let inspection = runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("main".to_string()),
+            relation_outcome.version_id,
+            crate::facade::transactions::RecordRef::Relation(relation),
+            HistoricalInspectionMode::RetainedOnly,
+        )
+        .expect("read request remains live");
 
     assert_eq!(
         inspection.record_observation.availability,
@@ -75,13 +78,16 @@ fn historical_relation_inspection_reconstructs_record_truth_without_inventing_li
         .release_snapshot(&relation_outcome.snapshot)
         .is_ok());
 
-    let inspection = runtime.inspect_what_happened().inspect_historical_record(
-        execution,
-        &BranchId("main".to_string()),
-        relation_outcome.version_id,
-        crate::facade::transactions::RecordRef::Relation(relation),
-        HistoricalInspectionMode::AllowCanonicalReconstruction,
-    );
+    let inspection = runtime
+        .inspect_what_happened()
+        .inspect_historical_record(
+            execution,
+            &BranchId("main".to_string()),
+            relation_outcome.version_id,
+            crate::facade::transactions::RecordRef::Relation(relation),
+            HistoricalInspectionMode::AllowCanonicalReconstruction,
+        )
+        .expect("read request remains live");
 
     assert_eq!(
         inspection.record_observation.availability,

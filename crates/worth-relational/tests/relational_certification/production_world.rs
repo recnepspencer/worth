@@ -22,6 +22,7 @@ fn supply_chain_world_compiles_causally_through_public_facades() {
         .runtime
         .read_truth()
         .read_snapshot(&world.handles.snapshot, execution)
+        .expect("fixture read request remains live")
         .is_some());
     let certified = audit_supply_chain_baseline(execution, world)
         .expect("empty production baseline is observable");

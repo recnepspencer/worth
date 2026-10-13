@@ -1,5 +1,6 @@
 //! later grant extension cannot extend the original approval.
 use super::*;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 #[test]
 fn later_grant_extension_cannot_extend_the_original_approval() {
@@ -73,6 +74,8 @@ fn later_grant_extension_cannot_extend_the_original_approval() {
         .expect("the fixture read owns its installed host call");
     assert_eq!(
         denial.kind(),
-        WorthQueryOperationAuthorizationDenialKind::CapabilityExpired
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::CapabilityExpired
+        )
     );
 }

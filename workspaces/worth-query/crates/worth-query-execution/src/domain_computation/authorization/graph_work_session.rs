@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkIntent;
 use worth_query_admission::integration::{
     admit_application_operation_graph_work, admit_application_operation_read_graph_work,
@@ -38,7 +39,9 @@ where
 {
     let graph = runtime.runtime.primary_graph().ok_or_else(|| {
         denial(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
             operation.operation(),
         )
     })?;
@@ -91,7 +94,9 @@ where
 {
     let graph = runtime.runtime.primary_graph().ok_or_else(|| {
         denial(
-            WorthQueryOperationAuthorizationDenialKind::ForeignRuntime,
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
             operation.operation(),
         )
     })?;
@@ -158,7 +163,9 @@ where
 
 fn graph_work_denial(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
-        WorthQueryOperationAuthorizationDenialKind::GraphWorkAdmissionUnavailable,
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+        ),
         subject,
     )
 }
@@ -177,13 +184,19 @@ fn snapshot_lease_denial(
     let kind = match lease_denial {
         WorthQueryApplicationSnapshotLeaseDenial::ActiveSnapshotCapacityExhausted {
             maximum_active_snapshots,
-        } => WorthQueryOperationAuthorizationDenialKind::ActiveSnapshotCapacityExhausted {
-            maximum_active_snapshots,
-        },
+        } => WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            },
+        ),
         WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted => {
-            WorthQueryOperationAuthorizationDenialKind::SnapshotIdentityExhausted
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::SnapshotIdentityExhausted,
+            )
         }
-        _ => WorthQueryOperationAuthorizationDenialKind::GraphWorkAdmissionUnavailable,
+        _ => WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+        ),
     };
     denial(kind, subject)
 }

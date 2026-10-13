@@ -141,3 +141,38 @@ fn ondemand_defer_perf_10k_nodes() {
         max_eval_ms
     );
 }
+
+#[test]
+fn source_seed_work_does_not_grow_with_chain_length() {
+    let work = [16, 10_000].map(|count| {
+        let (mut graph, chain) =
+            crate::tests::performance_support::with_perf_topology_asserts_disabled(|| {
+                crate::tests::performance_support::build_chain_graph(count)
+            });
+        evaluate_chain_bulk(&mut graph, &chain);
+        let capture = graph
+            .begin_observation_session(
+                crate::logic::transaction::SignalObservationRequest::telemetry(),
+            )
+            .unwrap();
+        assert!(graph.telemetry_mut().is_some());
+        graph.reset_telemetry();
+        mark_dirty(&mut graph, chain[0], ASPECT_B).unwrap();
+        let work = graph.telemetry().invalidation;
+        assert_eq!(work.frontier_seed_count, 1);
+        assert_eq!(work.direct_subscriber_candidates_examined, 0);
+        assert_eq!(work.reverse_subscription_bucket_probes, 0);
+        assert_eq!(graph.get_state(chain[0]).unwrap(), NodeState::Dirty);
+        assert_eq!(graph.get_state(chain[1]).unwrap(), NodeState::Clean);
+        assert_eq!(
+            graph.get_state(*chain.last().unwrap()).unwrap(),
+            NodeState::Clean
+        );
+        graph.cancel_observation_session(&capture).unwrap();
+        work
+    });
+    assert_eq!(
+        work[0], work[1],
+        "all seeding work is independent of chain length"
+    );
+}

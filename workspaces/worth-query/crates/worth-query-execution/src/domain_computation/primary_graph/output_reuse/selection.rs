@@ -1,4 +1,5 @@
 use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 use crate::domain_computation::primary_graph::{
     application_attempt::{
@@ -34,11 +35,30 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
     match first_moved_fact(execution, runtime, snapshot, facts, admission) {
         Ok(None) => Ok(OutputDependencySelection::Reuse),
         Ok(Some(_)) => Ok(OutputDependencySelection::FreshRequired),
-        Err(RetainedFactStop::Work) => Err(work_denial()),
-        Err(RetainedFactStop::Unavailable(fact)) => Err(WorthQueryOutputDemandDenial::new(
+        Err(stop) => Err(retained_fact_denial(
+            stop,
+            "retained comparison unavailable",
+        )),
+    }
+}
+
+pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
+    stop: RetainedFactStop<'_>,
+    unavailable: &str,
+) -> WorthQueryOutputDemandDenial {
+    match stop {
+        RetainedFactStop::Work => work_denial(),
+        RetainedFactStop::Memory => memory_denial(),
+        RetainedFactStop::Execution(cause) => read_denial(cause),
+        RetainedFactStop::Interrupted(event) => interruption_denial(event),
+        RetainedFactStop::Refused(refusal) => WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            format!("{unavailable}: {refusal:?}"),
+        ),
+        RetainedFactStop::Unavailable(fact) => WorthQueryOutputDemandDenial::new(
             WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
             fact.locator_identity(),
-        )),
+        ),
     }
 }
 
@@ -46,6 +66,10 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_depe
 pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
+    Memory,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+    Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
+    Refused(CompanionPreflightStop),
     /// The snapshot cannot answer this fact.
     Unavailable(&'fact WorthQueryApplicationObservedFact),
 }
@@ -63,15 +87,56 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
         match fact.source_currentness_in(runtime, execution, snapshot, admission) {
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
+            Ok(Err(WorthQuerySourceCurrentnessFailure::Execution(cause))) => {
+                return Err(RetainedFactStop::Execution(cause))
+            }
             Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable)) => {
                 return Err(RetainedFactStop::Unavailable(fact));
             }
-            Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) | Err(_) => {
-                return Err(RetainedFactStop::Work);
+            Err(CompanionPreflightStop::Interrupted(event)) => {
+                return Err(RetainedFactStop::Interrupted(event))
             }
+            Ok(Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)) => {
+                return Err(RetainedFactStop::Work)
+            }
+            Err(stop) => return Err(preflight_stop(stop)),
         }
     }
     Ok(None)
+}
+
+pub(in crate::domain_computation::primary_graph) fn preflight_stop(
+    stop: CompanionPreflightStop,
+) -> RetainedFactStop<'static> {
+    match stop {
+        CompanionPreflightStop::Execution(cause) => RetainedFactStop::Execution(cause),
+        CompanionPreflightStop::PreparationMemoryExhausted { .. }
+        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
+            RetainedFactStop::Memory
+        }
+        CompanionPreflightStop::WorkExhausted { .. }
+        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } => RetainedFactStop::Work,
+        CompanionPreflightStop::PreparationMemoryCounterOverflow => {
+            RetainedFactStop::Execution(NativeReadStop::ChargedBytesOverflow)
+        }
+        CompanionPreflightStop::WorkCounterOverflow => {
+            RetainedFactStop::Execution(NativeReadStop::WorkCounterOverflow)
+        }
+        CompanionPreflightStop::Interrupted(event) => RetainedFactStop::Interrupted(event),
+        refusal @ (CompanionPreflightStop::TopologyPending
+        | CompanionPreflightStop::SelectedSourceMismatch
+        | CompanionPreflightStop::SelectedPositionUnavailable { .. }
+        | CompanionPreflightStop::ForeignCell
+        | CompanionPreflightStop::RegistrationChanged) => RetainedFactStop::Refused(refusal),
+    }
+}
+
+pub(in crate::domain_computation::primary_graph) fn memory_denial() -> WorthQueryOutputDemandDenial
+{
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+        "retained output comparison exceeded preparation memory",
+    )
 }
 
 /// The other half of a retained output's canonical fact set: the performed
@@ -81,7 +146,6 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
 /// A row no sealed witness covers is decided by its source facts and by the
 /// full verification its lineage row requires.
 pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witness(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<&SealedNativeOutputWitness>,
@@ -91,7 +155,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witn
         return Ok(OutputDependencySelection::Reuse);
     };
     let unchanged = owner_read(
-        witness.unchanged_in(execution, runtime, snapshot, admission),
+        witness.unchanged_in(runtime, snapshot, admission),
         "retained output witness could not be compared",
     )?;
     Ok(if unchanged {
@@ -134,19 +198,11 @@ pub(in crate::domain_computation::primary_graph) fn retained_output_settlement_i
 
 /// One owner read on the selection's meter: what it charged stays spent
 /// whether or not it answered.
-fn owner_read<Answer>(
+pub(in crate::domain_computation::primary_graph) fn owner_read<Answer>(
     answer: Result<Answer, CompanionPreflightStop>,
     unavailable: &'static str,
 ) -> Result<Answer, WorthQueryOutputDemandDenial> {
-    answer.map_err(|stop| match stop {
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-        | CompanionPreflightStop::WorkCounterOverflow => work_denial(),
-        _ => WorthQueryOutputDemandDenial::new(
-            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-            unavailable,
-        ),
-    })
+    answer.map_err(|stop| retained_fact_denial(preflight_stop(stop), unavailable))
 }
 
 fn work_denial() -> WorthQueryOutputDemandDenial {
@@ -168,6 +224,32 @@ fn reusable_facts(
         .ok_or(OutputDependencySelection::FreshRequired)
 }
 
+pub(in crate::domain_computation::primary_graph) fn read_denial(
+    cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+) -> WorthQueryOutputDemandDenial {
+    use crate::domain_computation::primary_graph::WorthQueryApplicationOneShotDenialKind as Execution;
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    let kind = match crate::facade::primary_graph::relational_execution_kind(cause, None) {
+        Ok(kind) => WorthQueryOutputDemandDenialKind::SourceQueryExecution(
+            Execution::ExecutionRequest(kind),
+        ),
+        Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
+        Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
+    };
+    WorthQueryOutputDemandDenial::new(kind, "retained output comparison")
+}
+
+pub(in crate::domain_computation::primary_graph) fn interruption_denial(
+    event: worth_relational::facade::mvcc::RelationalInterruptionEvent,
+) -> WorthQueryOutputDemandDenial {
+    use worth_relational::facade::mvcc::RelationalOperationInterruption;
+    let kind = match event.interruption() {
+        RelationalOperationInterruption::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+        RelationalOperationInterruption::TimedOut => WorthQueryOutputDemandDenialKind::TimedOut,
+    };
+    WorthQueryOutputDemandDenial::new(kind, "retained output comparison")
+}
+
 #[cfg(test)]
 mod tests {
     use super::{reusable_facts, OutputDependencySelection};
@@ -186,5 +268,25 @@ mod tests {
             reusable_facts(false, None),
             Err(OutputDependencySelection::FreshRequired)
         ));
+    }
+}
+
+#[cfg(test)]
+mod read_fold_tests {
+    use super::*;
+    #[test]
+    fn read_fold_output_memory_stop_keeps_memory() {
+        let mut admission = InvalidationEditAdmission::new(
+            worth_relational::facade::mvcc::CompanionPreflightBudget {
+                maximum_work_visits: 10,
+                maximum_preparation_bytes: 0,
+            },
+        );
+        let stop = admission.admit_read_scratch(1).unwrap_err();
+        let denial = retained_fact_denial(preflight_stop(stop), "retained comparison unavailable");
+        assert_eq!(
+            denial.kind(),
+            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
+        );
     }
 }

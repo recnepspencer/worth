@@ -21,7 +21,9 @@ use super::authentication::BankHttpApplicationAuthenticator;
 mod commit_denial;
 pub(super) use commit_denial::{commit_denial, execution_resource};
 mod denial;
-pub(super) use denial::{pending_execution_denial, request_mutation_denial};
+pub(super) use denial::{
+    pending_execution_denial, pending_execution_stop, request_mutation_denial,
+};
 
 pub(super) enum AdmittedBankHttpMutation {
     Deposit(Deposit),
@@ -232,15 +234,13 @@ fn describe_commit_outcome(
                     BankHttpProviderRecoveryKind::AbortRecoveryRequired
                 }
             };
+            let denial = denial::unresolved_execution_stop(evidence.denial_kind());
             BankHttpMutationOutcome::NotApplied {
                 request_id: Some(request_id),
                 failure: BankHttpMutationFailureKind::Indeterminate,
                 stale_fact_count: None,
                 provider_recovery: Some(provider_recovery),
-                denial: BankHttpDenial::new(
-                    BankHttpDenialKind::Unavailable,
-                    BankHttpNextAction::ContactOperator,
-                ),
+                denial,
             }
         }
     }

@@ -1,3 +1,8 @@
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -17,7 +22,7 @@ use crate::domain_computation::WorthQueryProductUnpublishedRecovery;
 /// handed back to continue again.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputRestorationRecoveryStage {
-    /// The host request was refused before inspecting recovery facts.
+    /// The request stopped while continuing retained recovery.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The unpublished product state could not be inspected.
     Inspection,
@@ -295,17 +300,25 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .prepare_settled_relational_adoption(&unpublished, request)
         {
             Ok(prepared) => prepared,
-            Err(_) => {
+            Err(PublicationDenial::Stopped(stop)) => {
+                return Err(failure(
+                    WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
+                        advancement_denial(stop),
+                    ),
+                    RecoveryState::World { recovery, retry },
+                ))
+            }
+            Err(PublicationDenial::Refused(_)) => {
                 return Err(failure(
                     WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPreparation,
                     RecoveryState::World { recovery, retry },
-                ));
+                ))
             }
         };
         drop(unpublished);
         let publication = retry.publication.clone();
         match prepared.execute(publication_execution) {
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::Performed(performed) => {
+            Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()
                     .relational_commit_result()
@@ -325,15 +338,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     },
                 )
             }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::NoEffect(_) => {
-                Err(failure(
-                    WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPublication,
-                    RecoveryState::World { recovery, retry },
-                ))
-            }
-            worth_runtime_world::facade::RuntimeWorldPublicationOutcome::ProductUnpublished(
-                effects,
-            ) => {
+            Err(PublicationDenial::Stopped(stop)) => Err(failure(
+                WorthQueryGeneratedOutputRestorationRecoveryStage::ExecutionDenied(
+                    advancement_denial(stop),
+                ),
+                RecoveryState::World { recovery, retry },
+            )),
+            Err(PublicationDenial::Refused(_)) => Err(failure(
+                WorthQueryGeneratedOutputRestorationRecoveryStage::AdoptionPublication,
+                RecoveryState::World { recovery, retry },
+            )),
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 let next = self
                     .unpublished_materialization_from_binding(effects, &publication)
                     .into_recovery();

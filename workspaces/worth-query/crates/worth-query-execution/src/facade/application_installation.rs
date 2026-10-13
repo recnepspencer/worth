@@ -13,12 +13,12 @@ pub use crate::domain_computation::primary_graph::application_installation::{
     WorthQueryInMemoryApplicationDenial, WorthQueryInMemoryApplicationLimits,
     WorthQueryInMemoryApplicationProfile, WorthQueryProgramApplicationRuntime,
     WorthQueryProgramOutputAdvance, WorthQueryProgramOwner, WorthQueryProgramRootDemand,
-    WorthQueryProgramSupportRetirementReceipt, WorthQueryReadmittedApplicationPreview,
-    WorthQueryRecoveredProgramOutputSource, WorthQuerySelectedProgramOwner,
-    WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
-    WorthQuerySupportedProgramHandle, WorthQueryUnpublishedProgramOutputSource,
-    WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
-    WorthQueryWorkflowVocabulary,
+    WorthQueryProgramSupportRetirementFailure, WorthQueryProgramSupportRetirementReceipt,
+    WorthQueryReadmittedApplicationPreview, WorthQueryRecoveredProgramOutputSource,
+    WorthQuerySelectedProgramOwner, WorthQuerySelectedProgramOwnerDenial,
+    WorthQuerySettledProgramOutput, WorthQuerySupportedProgramHandle,
+    WorthQueryUnpublishedProgramOutputSource, WorthQueryWorkflowApplicationRuntime,
+    WorthQueryWorkflowRuntimeBindingDenial, WorthQueryWorkflowVocabulary,
 };
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,

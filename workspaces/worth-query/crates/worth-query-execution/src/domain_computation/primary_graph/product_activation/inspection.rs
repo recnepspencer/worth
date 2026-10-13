@@ -1,3 +1,4 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramIdentity, ApplicationProgramRevision,
 };
@@ -30,6 +31,13 @@ impl WorthQuerySelectedProgramInspection {
 /// Why the program carried by a selected product could not be inspected.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQuerySelectedProgramInspectionDenial {
+    /// The caller's read request stopped.
+    ReadExecution(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     /// The runtime has no installed program support.
     ProgramSupportUnavailable,
     /// No program activation is published.
@@ -62,15 +70,22 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
     let rendering =
         graph
             .with_runtime(execution, |runtime| {
-                let field = locator.field_path().fields().first()?.clone();
+                let field = locator
+                    .field_path()
+                    .fields()
+                    .first()
+                    .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable)?
+                    .clone();
                 let aspect = locator.aspect().aspect_key();
                 let scope = ProjectionAspectScope::from_requirements([
                     ProjectionAspectRequirement::fields(aspect.clone(), [field.clone()]),
                 ]);
                 runtime
                     .read_truth()
-                    .project_observation(execution, &basis.observation())
-                    .ok()?
+                    .project_observation(&basis.observation())
+                    .map_err(|_| {
+                        WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable
+                    })?
                     .entity_record_with_projection_scope(execution, activation, scope, |record| {
                         if record.kind_id() != layout.entity_kind
                             || record.lifecycle() != RecordLifecycleState::Live
@@ -79,7 +94,12 @@ pub(in crate::domain_computation::primary_graph) fn inspect_selected_program<
                         }
                         record.aspect_field_value(aspect, &field).cloned()
                     })
-            })
+                    .map_err(|cause| {
+                        WorthQuerySelectedProgramInspectionDenial::ReadExecution(
+                            crate::facade::primary_graph::relational_execution_kind(cause, None),
+                        )
+                    })
+            })?
             .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable)?;
     let entry = support
         .rostered_for_rendering(&rendering)
@@ -100,14 +120,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
         let inspection = inspect_selected_program(execution, self, basis);
+        if let Err(WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) = &inspection {
+            return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(*stop));
+        }
         let interpretation = if let (Some(support), Ok(selected)) =
             (self.installed_program_support(), &inspection)
         {
-            Some(
-                support.retain_interpretation(selected.revision()).ok_or(
-                    crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected,
-                )?,
-            )
+            Some(support.retain_interpretation(selected.revision()).ok_or(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationRejected,
+                ),
+            )?)
         } else {
             None
         };
@@ -131,7 +154,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             || basis.identity().descriptor() != relational.descriptor()
             || basis.version_id() != relational.observation().version_id()
         {
-            return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationRejected);
+            return Err(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationRejected,
+                ),
+            );
         }
         let (selected, interpretation) = self
             .retain_selected_program_interpretation(execution, relational)?

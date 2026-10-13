@@ -1,6 +1,6 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::{
-    control_stopped_outcome, provider_session_denied, provider_session_kind_denied,
+    control_stopped_outcome, provider_session_denied, provider_session_execution_denied,
 };
 use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
 use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
@@ -120,7 +120,8 @@ fn unreachable_child_policy_causes_and_non_relational_retained_state_stay_termin
 fn pending_and_invariant_resources_keep_category_stage_and_terminal_posture() {
     for stage in [Stage::Idempotency, Stage::InvariantExecution] {
         for (kind, expected) in execution_cases() {
-            let denial = provider_session_kind_denied(kind, stage, "owner supplied detail");
+            let denial =
+                provider_session_execution_denied(Ok(kind), stage, "owner supplied detail");
             assert_eq!(denial.kind(), expected);
             assert_eq!(denial.stage(), stage);
             assert_eq!(denial.detail(), Some("owner supplied detail"));
@@ -216,12 +217,12 @@ fn custody_faults_never_retry_through_either_projection() {
             classify_denial(&direct),
             Outcome::TerminalFailure(_)
         ));
-        let provider = provider_session_kind_denied(
-            Session::ExecutionResource {
+        let provider = provider_session_execution_denied(
+            Ok(Session::ExecutionResource {
                 denial: resource,
                 partition_identity: None,
                 policy_ancestor: None,
-            },
+            }),
             Stage::ProviderCommit,
             "custody fault through the provider",
         );

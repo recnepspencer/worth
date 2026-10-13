@@ -304,18 +304,12 @@ fn leased_kind_scan_stops_at_a_record_checkpoint() {
             &worth_execution::ExecutionRequest::leased(&constrained),
         )
         .map(|read| read.map(|read| read.outcome));
-    assert!(
-        matches!(
-            &actual,
-            Err(QueryReadExecutionStop::PreparationStopped {
-                reason: MapStop::WorkExhausted { .. },
-                ..
-            }) | Err(QueryReadExecutionStop::PacketStopped {
-                reason: MapStop::WorkExhausted { .. },
-                ..
-            })
+    assert_eq!(
+        actual.unwrap_err().execution_denial().unwrap().kind,
+        crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::execution::RelationalExecutionDenialCause::WorkExhausted
         ),
-        "{actual:?}"
+        "the record read preserves its exhausted caller"
     );
 }
 

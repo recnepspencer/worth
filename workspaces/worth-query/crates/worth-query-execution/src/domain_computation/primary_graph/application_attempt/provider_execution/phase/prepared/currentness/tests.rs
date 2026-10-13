@@ -1,5 +1,6 @@
 //! Current-basis selection frees a performed observation no caller holds.
 use super::*;
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::domain_computation::primary_graph::application_output_demand::{
     PreparedOutputRootKind, WorthQueryPerformedOutputDemandSource,
 };
@@ -77,9 +78,9 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
     loop {
         match runtime.admit_product_occurrence(occurrence) {
             Ok(product) => held.push(product),
-            Err(
-                crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted,
-            ) => break,
+            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationCapacityExhausted,
+            )) => break,
             Err(denial) => panic!("unexpected product refusal: {denial:?}"),
         }
     }
@@ -93,7 +94,7 @@ fn current_commit_basis_reclaims_an_abandoned_performed_observation() {
         assert_eq!(registry.validate_recovery_root_kind(&retained_receipt, kind).unwrap_err().kind(),
             crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);
         assert!(matches!(runtime.admit_product_occurrence(occurrence),
-            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::ObservationCapacityExhausted)),
+            Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted))),
             "the reclaimed slot funds the current basis while other observers stay held");
     }).unwrap();
 }

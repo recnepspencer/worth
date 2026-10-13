@@ -115,22 +115,25 @@ fn perf_cad_topology_matrix() {
             let explicit_query_micros = explicit_started_at.elapsed().as_micros();
 
             let connectivity_started_at = Instant::now();
-            let summary = runtime.inspect_what_happened().connectivity_summary(
-                execution,
-                &ConnectivityInspectionRequest {
-                    scope: InspectionScope::Current,
-                    partition_scope: None,
-                    relation_kind_scope: Some(vec![KindId(2)]),
-                    include_members: false,
-                    budget: ConnectivityInspectionBudget {
-                        max_entities: 64,
-                        max_relations: 64,
-                        max_frontier: 64,
-                        max_components: 8,
-                        max_work_units: 256,
+            let summary = runtime
+                .inspect_what_happened()
+                .connectivity_summary(
+                    execution,
+                    &ConnectivityInspectionRequest {
+                        scope: InspectionScope::Current,
+                        partition_scope: None,
+                        relation_kind_scope: Some(vec![KindId(2)]),
+                        include_members: false,
+                        budget: ConnectivityInspectionBudget {
+                            max_entities: 64,
+                            max_relations: 64,
+                            max_frontier: 64,
+                            max_components: 8,
+                            max_work_units: 256,
+                        },
                     },
-                },
-            );
+                )
+                .expect("read request remains live");
             let connectivity_summary_micros = connectivity_started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 

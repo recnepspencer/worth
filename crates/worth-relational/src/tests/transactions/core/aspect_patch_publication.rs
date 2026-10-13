@@ -82,6 +82,7 @@ fn entity_patch_aspects_follow_declared_contract_targets() {
     let updated_read = runtime
         .read_truth()
         .read_snapshot(&updated.snapshot, execution)
+        .expect("read request remains live")
         .expect("updated snapshot should read");
     let updated_record = updated_read
         .get_entity(entity)

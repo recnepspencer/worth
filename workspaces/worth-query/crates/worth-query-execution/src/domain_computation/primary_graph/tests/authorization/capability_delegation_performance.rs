@@ -1,3 +1,4 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 
@@ -110,7 +111,7 @@ fn exact_pair_population_overflow_denies_before_authority() {
 
     assert_eq!(
         denial.kind(),
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::GrantSelectionLimitExceeded
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::GrantSelectionLimitExceeded)
     );
 }
 
