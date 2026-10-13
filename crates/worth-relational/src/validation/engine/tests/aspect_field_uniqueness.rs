@@ -15,6 +15,8 @@ use worth_foundational::facade::{
     StructAspectValue,
 };
 
+mod scratch;
+
 #[test]
 fn unique_entity_aspect_field_invariant_rejects_duplicate_struct_field_projection() {
     let host_request = crate::test_execution_policy::serial_request();

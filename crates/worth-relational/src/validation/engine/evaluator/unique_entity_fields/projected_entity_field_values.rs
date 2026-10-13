@@ -41,10 +41,16 @@ pub(super) fn projected_entity_aspect_field_value_for_metadata(
     let state = context
         .enforcement_state_view()
         .entity_aspect_state(metadata.entity_id)?;
-    projection
-        .value_from_state(state)
-        .cloned()
-        .map(|value| ProjectedEntityAspectFieldValue { value })
+    let value = projection.value_from_state(state)?;
+    // The record is borrowed. Only this admitted field is cloned and retained
+    // with its comparison key; unrelated aspects own none of this scratch.
+    let value_bytes = value.owned_allocation_capacity_bytes() as u64;
+    if !context.check_scratch_peak(value_bytes.saturating_mul(4).saturating_add(128)) {
+        return None;
+    }
+    Some(ProjectedEntityAspectFieldValue {
+        value: value.clone(),
+    })
 }
 
 impl AdmittedEntityAspectFieldProjection {
