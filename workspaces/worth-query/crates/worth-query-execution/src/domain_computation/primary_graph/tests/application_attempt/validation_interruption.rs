@@ -7,7 +7,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
 };
 use crate::domain_computation::WorthQueryInvariantExecutionDenialKind;
-use crate::domain_computation::WorthQueryProviderSessionControlStopKind;
 use std::time::{Duration, Instant};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -70,8 +69,8 @@ fn omitted_work_budget_keeps_live_cancellation_through_native_validation() {
     );
     assert_eq!(
         denial.invariant_execution_failure().unwrap().kind(),
-        WorthQueryInvariantExecutionDenialKind::ExecutionControlStopped(
-            WorthQueryProviderSessionControlStopKind::Cancelled
+        WorthQueryInvariantExecutionDenialKind::RequestInterrupted(
+            worth_relational::facade::mvcc::RelationalOperationInterruption::Cancelled
         )
     );
     assert_eq!(

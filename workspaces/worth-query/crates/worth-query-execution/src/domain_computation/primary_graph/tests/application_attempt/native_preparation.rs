@@ -61,14 +61,9 @@ fn native_preparation_cancellation_leaves_head_and_key_available_for_fresh_retry
         idempotency(95, 95),
         ExecutionAllocationPolicy::SystemAllocation,
     );
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome else {
-        panic!("the request-paid seam retains its typed interruption: {outcome:?}");
-    };
-    assert_eq!(
-        denial.execution_denial_cause(),
-        Some(Err(
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled
-        ))
+    assert!(
+        matches!(outcome, WorthQueryApplicationCommitOutcome::Cancelled),
+        "the request-paid seam retains cancellation: {outcome:?}"
     );
     world
         .application
