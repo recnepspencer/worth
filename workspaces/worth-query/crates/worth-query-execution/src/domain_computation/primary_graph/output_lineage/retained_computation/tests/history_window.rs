@@ -89,13 +89,14 @@ fn a_superseded_pinned_parent_stays_charged_until_it_leaves_the_history_window()
         };
     record(&mut lineage, parent);
     let run = sealed_run_for_lineage_test();
-    let bytes = run.state.fixture_byte_formula();
     let retained = lineage.retain_computation(
         run,
         None,
         None,
         lineage.prepay_computation_fork_scan_for_test(),
     );
+    let bytes = lineage.retention.retained_bytes();
+    assert!(bytes > 0);
     let old_generation = parent.reference_generation().get();
     let occurrence = parent.lifecycle_incarnation();
     lineage.by_source[&source][&occurrence][&old_generation][0]

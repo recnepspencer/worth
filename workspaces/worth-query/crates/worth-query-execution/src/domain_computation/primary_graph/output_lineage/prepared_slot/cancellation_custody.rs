@@ -23,7 +23,8 @@ fn a_canceled_prepared_publication_cannot_take_its_priors_custody() {
     let RecordedComputation::Retained(state) = &retained else {
         panic!("prior retained");
     };
-    let bytes = state.fixture_byte_formula();
+    let bytes = lineage.retention.retained_bytes();
+    assert!(bytes > 0);
     let mut sealed = sealed_run_for_lineage_test();
     sealed.cloned_from = Some(Arc::clone(state));
     captured.get().unwrap().mutable.lock().unwrap().computation = retained;

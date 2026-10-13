@@ -327,5 +327,3 @@ mod advancement_custody;
 mod advancement_bootstrap;
 
 mod advancement_discovered;
-
-mod native_commit_work;

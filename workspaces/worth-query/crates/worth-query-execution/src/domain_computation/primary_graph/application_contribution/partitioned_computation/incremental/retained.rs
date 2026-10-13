@@ -306,6 +306,3 @@ impl RetainedComputation {
         self.bytes = None;
     }
 }
-
-#[cfg(test)]
-mod fixture_bytes;

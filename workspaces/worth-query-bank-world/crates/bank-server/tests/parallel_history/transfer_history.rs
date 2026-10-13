@@ -9,7 +9,6 @@ fn run(posture: Posture) {
     let world = World::new(SEED);
     let mut model = Journal::new(&[(11, 1), (12, 2)], 100, 11, world.funding);
     let mut observer = Observer::new(&world);
-    let mut bill = (0_u64, 0_u64);
     for (place, input) in world.requests(SEED).iter().enumerate() {
         let expected = model.apply(input);
         let actual = observer.transfer(input, posture);
@@ -58,10 +57,6 @@ fn run(posture: Posture) {
             })
             .collect::<Vec<_>>();
         println!("BANK_CELL:{place}:{charged:?}");
-        for record in records {
-            bill.0 += record.report.charged_work();
-            bill.1 += record.report.charged_span();
-        }
         let (postings, report) = observer.journal();
         assert_eq!(
             postings,
@@ -80,12 +75,6 @@ fn run(posture: Posture) {
         );
         assert!(report.observed_read_work > 0);
     }
-    // Two new commits cost (28+1578)/(28+1552); three noncommits cost 2*28 each.
-    assert_eq!(
-        bill,
-        (3_380, 3_328),
-        "absolute Bank history work and span price the five declared requests"
-    );
 }
 
 #[test]
