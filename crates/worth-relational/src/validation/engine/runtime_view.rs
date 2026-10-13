@@ -104,6 +104,18 @@ impl<'a> InvariantRuntimeView<'a> {
         self.current_version_id
     }
 
+    pub(crate) fn projected_entity_aspect_field_value<'value>(
+        &self,
+        kind: KindId,
+        locator: &worth_foundational::facade::AspectFieldLocator,
+        state: impl FnOnce()
+            -> Option<&'value worth_foundational::facade::AuthoritativeRecordAspectState>,
+    ) -> Option<&'value worth_foundational::facade::AspectValue> {
+        self.schema_contract_runtime
+            .unique_field_projections
+            .value(kind, locator, state)
+    }
+
     pub(crate) fn entity_aspect_plan(
         &self,
         kind_id: KindId,

@@ -12,7 +12,7 @@ use worth_relational::facade::runtime::{
 #[derive(Clone, Copy)]
 enum Probe {
     Unchecked,
-    Scratch,
+    ScratchOverflow,
     Nested,
 }
 
@@ -57,9 +57,10 @@ impl CustomInvariantRule for Probe {
     ) -> Option<Result<(), CustomInvariantPreparationError>> {
         match self {
             Self::Unchecked => None,
-            Self::Scratch => {
-                // Claim before allocating; a refusal must survive an owner's
-                // successful return, not depend on the owner returning an error.
+            Self::ScratchOverflow => {
+                // Existing structural claims plus this request cannot fit u64.
+                // The exact overflow refusal must survive the rule returning Ok,
+                // before any requested scratch allocation can happen.
                 assert!(!budget.claim_scratch(u64::MAX));
                 Some(Ok(()))
             }
@@ -100,8 +101,8 @@ fn commit_probe(probe: Probe) -> Outcome {
         .build();
     let mut lease_request = request(32 * 1024 * 1024, 1_000_000);
     if matches!(probe, Probe::Unchecked) {
-        // Unchecked kernels are lawful on serial backing; this refusal needs
-        // a request that can actually dispatch more than one worker.
+        // Exercise multiworker unchecked refusal alongside the installation
+        // fixture's serial refusal; neither lane may delegate unchecked work.
         lease_request.policy = ExecutionRequestPolicy::new(
             ExecutionPosture::Automatic,
             DeterminismContract::CanonicalBitwise,
@@ -160,13 +161,13 @@ fn unchecked_custom_through_public_commit() {
 }
 
 #[test]
-fn scratch_through_public_commit() {
+fn scratch_overflow_through_public_commit() {
     in_isolated_process(
-        concat!(module_path!(), "::scratch_through_public_commit"),
+        concat!(module_path!(), "::scratch_overflow_through_public_commit"),
         || {
             assert_eq!(
-                resource(commit_probe(Probe::Scratch)),
-                Resource::ScratchCapacityExceeded
+                resource(commit_probe(Probe::ScratchOverflow)),
+                Resource::ChargedBytesOverflow
             );
         },
     );

@@ -65,7 +65,10 @@ fn uniqueness_refuses_large_matching_field_before_cloning_it() {
         Err(TransactionCommitError::Execution {
             denial: crate::transactions::data::CommitExecutionDenial {
                 kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
-                    crate::execution::RelationalExecutionDenialCause::ScratchCapacityExceeded
+                    crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                        ancestor: 0,
+                        ..
+                    }
                 ),
                 partition_identity: Some(0),
             },

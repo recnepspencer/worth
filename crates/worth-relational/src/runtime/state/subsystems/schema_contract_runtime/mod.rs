@@ -1,3 +1,5 @@
+mod unique_field_projections;
+
 use crate::runtime::state::subsystems::RuntimeSubsystem;
 use crate::schema::data::AspectContractPlanCatalog;
 #[cfg(test)]
@@ -9,6 +11,8 @@ use crate::validation::FrozenCustomInvariantRegistry;
 #[derive(Debug, Clone, Default)]
 pub(crate) struct SchemaContractRuntimeSubsystem {
     pub(crate) aspect_contract_plans: AspectContractPlanCatalog,
+    pub(crate) unique_field_projections:
+        std::sync::Arc<unique_field_projections::UniqueFieldProjectionCatalog>,
     #[cfg(test)]
     pub(crate) relation_integrity_plans: RelationIntegrityPlanCatalog,
     pub(crate) relation_integrity_registrations: Vec<InvariantRegistration>,
@@ -21,9 +25,15 @@ impl RuntimeSubsystem for SchemaContractRuntimeSubsystem {
     type Config = crate::config::data::RelationalRuntimeConfig;
 
     fn new(config: &Self::Config) -> Self {
+        let aspect_contract_plans = lower_aspect_plans(&config.schema.registry);
+        let unique_field_projections = unique_field_projections::UniqueFieldProjectionCatalog::new(
+            &aspect_contract_plans,
+            &config.schema.invariant_catalog.registrations,
+        );
         let relation_integrity_plans = lower_relation_integrity_plans(&config.schema.registry);
         Self {
-            aspect_contract_plans: lower_aspect_plans(&config.schema.registry),
+            aspect_contract_plans,
+            unique_field_projections: std::sync::Arc::new(unique_field_projections),
             relation_integrity_registrations: relation_integrity_plans
                 .relation_plans
                 .values()
