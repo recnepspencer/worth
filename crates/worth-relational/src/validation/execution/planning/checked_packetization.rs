@@ -28,46 +28,31 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
     planned: PreparedInvariantExecution<'state>,
     lease: &ExecutionResourceLease<'_>,
     work_budget: Option<&RequestWorkBudget>,
-    retained_plan_bytes: u64,
 ) -> Result<CheckedPacketPlan<'state>, PacketExecutionStop> {
-    let packet_ceiling = lease.policy().budget().charged_memory_bytes()
-        / (planned.packets.len().max(1) as u64).saturating_mul(8);
     let mut metadata = None;
-    let (packets, _) =
-        prepare_borrowed_packets(lease, work_budget, |budget| {
-            let (proof_boundary, scope_units) = fold_scope(&planned, budget)?;
-            metadata = Some((proof_boundary, scope_units));
-            let mut packets = Vec::new();
-            for packet in planned.packets {
-                budget
-                    .claim_packet::<crate::authority::commit::preparation::InvariantWorkPacket<'_>>(
-                    )?;
-                packets
-                    .try_reserve(1)
-                    .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
-                let scope_bytes = match &packet.locality.partition_scope {
-                    PreparationPartitionScope::AllObserved => 0,
-                    PreparationPartitionScope::TouchedPartitions(partitions) => {
-                        (partitions.len() as u64).saturating_mul(size_of::<PartitionId>() as u64)
-                    }
-                };
-                packets.push(ReadOnlyPacket {
-                    identity: PartitionIdentity::new(packet.packet_index as u64),
-                    input_bytes: scope_bytes.saturating_add(
-                        (packet.reduction_key.partition_scope.len() as u64)
-                            .saturating_mul(size_of::<PartitionId>() as u64),
-                    ),
-                    kernel_scratch_bytes: packet_ceiling,
-                    max_result_bytes: packet_ceiling,
-                    value: packet,
-                });
-            }
-            Ok(packets)
-        })?;
-    let mut packets = packets;
-    if let Some(first) = packets.first_mut() {
-        first.input_bytes = first.input_bytes.saturating_add(retained_plan_bytes);
-    }
+    let (packets, _) = prepare_borrowed_packets(lease, work_budget, |budget| {
+        let (proof_boundary, scope_units) = fold_scope(&planned, budget)?;
+        metadata = Some((proof_boundary, scope_units));
+        let mut packets = Vec::new();
+        for packet in planned.packets {
+            budget
+                .claim_packet::<crate::authority::commit::preparation::InvariantWorkPacket<'_>>()?;
+            packets
+                .try_reserve(1)
+                .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
+            packets.push(ReadOnlyPacket {
+                identity: PartitionIdentity::new(packet.packet_index as u64),
+                // Nested inputs retain the live planning owner's custody.
+                input_bytes: 0,
+                // Fixed input/framework storage is admitted by the map.
+                // Invariant allocations reserve on that map's child lease.
+                kernel_scratch_bytes: 0,
+                max_result_bytes: 0,
+                value: packet,
+            });
+        }
+        Ok(packets)
+    })?;
     let (proof_boundary, scope_units) = metadata.expect("checked scope fold completed");
     Ok(CheckedPacketPlan {
         packets,

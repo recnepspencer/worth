@@ -8,15 +8,17 @@ use crate::authority::commit::preparation::planning::strategy::PreparationStrate
 use crate::execution::{PacketBudgetDenial, PacketExecutionStop, RequestWorkBudget};
 use crate::validation::engine::{InvariantExecutionRequest, InvariantProofBoundarySummary};
 use crate::validation::execution::InvariantWorkerEnvelope;
+use crate::validation::execution::{InvariantEnvelopeCustody, LeasedInvariantEnvelopes};
 
 struct ReductionInput {
     envelopes: RefCell<Option<Vec<InvariantWorkerEnvelope>>>,
-    owned_bytes: u64,
+    _custody: InvariantEnvelopeCustody,
 }
 
 impl ChargedBytes for ReductionInput {
     fn additional_charged_bytes(&self) -> u64 {
-        self.owned_bytes
+        // The dispatch's live tickets accompany these inputs through reduction.
+        0
     }
 }
 
@@ -35,10 +37,11 @@ pub(crate) fn reduce_invariant_execution_checked(
     request: &InvariantExecutionRequest<'_>,
     strategy: PreparationStrategy,
     proof_boundary: InvariantProofBoundarySummary,
-    envelopes: Vec<InvariantWorkerEnvelope>,
+    envelopes: LeasedInvariantEnvelopes,
     lease: &ExecutionResourceLease<'_>,
     work_budget: Option<&RequestWorkBudget>,
 ) -> Result<ReducedInvariants, PacketExecutionStop> {
+    let (envelopes, custody) = envelopes.into_reduction();
     let owned_bytes = (envelopes.capacity() as u64)
         .saturating_mul(size_of::<InvariantWorkerEnvelope>() as u64)
         .saturating_add(
@@ -52,7 +55,7 @@ pub(crate) fn reduce_invariant_execution_checked(
         identity,
         ReductionInput {
             envelopes: RefCell::new(Some(envelopes)),
-            owned_bytes,
+            _custody: custody,
         },
     )])?;
     let ceiling = owned_bytes

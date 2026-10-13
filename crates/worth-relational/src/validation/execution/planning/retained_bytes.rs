@@ -1,27 +1,10 @@
 use std::mem::size_of;
 
 use crate::identity::data::KindId;
-use crate::validation::data::{
-    CustomInvariantAccessContract, InvariantRegistration, InvariantRule,
-};
+use crate::validation::data::{CustomInvariantAccessContract, InvariantRegistration};
 
 pub(super) fn native_registration_retained_bytes(registration: &InvariantRegistration) -> u64 {
-    let nested = match &registration.rule {
-        InvariantRule::UniqueEntityAspectField { field_locator } => {
-            field_locator.owned_allocation_capacity_bytes() as u64
-        }
-        InvariantRule::EndpointKindContract(contract) => kind_vec(&contract.allowed_source_kinds)
-            .saturating_add(kind_vec(&contract.allowed_target_kinds)),
-        InvariantRule::CardinalityMinimumContract(contract) => {
-            kind_vec(&contract.candidate_source_kinds)
-                .saturating_add(kind_vec(&contract.candidate_target_kinds))
-        }
-        InvariantRule::ConnectivityMinimumContract(contract) => {
-            kind_vec(&contract.source_kind_ids).saturating_add(kind_vec(&contract.target_kind_ids))
-        }
-        _ => 0,
-    };
-    nested.saturating_add(size_of::<InvariantRegistration>() as u64)
+    crate::validation::execution::envelope::native_rule_bytes(&registration.rule)
 }
 
 fn kind_vec(kinds: &Vec<KindId>) -> u64 {
@@ -33,4 +16,20 @@ pub(super) fn custom_access_retained_bytes(access: &CustomInvariantAccessContrac
         .saturating_add(kind_vec(&access.read_relation_kinds))
         .saturating_add(kind_vec(&access.affected_entity_kinds))
         .saturating_add(kind_vec(&access.affected_relation_kinds))
+}
+
+pub(super) fn arc_bytes<T>() -> u64 {
+    std::alloc::Layout::new::<[usize; 2]>()
+        .extend(std::alloc::Layout::new::<T>())
+        .expect("planning layout fits")
+        .0
+        .pad_to_align()
+        .size() as u64
+}
+
+pub(super) fn arc_slice_bytes<T>(count: usize) -> u64 {
+    std::alloc::Layout::array::<T>(count)
+        .and_then(|layout| std::alloc::Layout::new::<[usize; 2]>().extend(layout))
+        .map(|(layout, _)| layout.pad_to_align().size() as u64)
+        .unwrap_or(u64::MAX)
 }

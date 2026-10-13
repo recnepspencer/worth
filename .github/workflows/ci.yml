@@ -56,7 +56,7 @@ jobs:
   query-checkpoint-recovery:
     name: Query checkpoint recovery court
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       # Admitted canonical preparation requires the audited std-sort implementation

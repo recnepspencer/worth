@@ -1,12 +1,14 @@
 //! Owner-side admission mints the concrete read capability and raw scope binding.
 
 use super::super::Denial;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 #[cfg(test)]
 use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::{
+    WorthQueryApplicationAuthorizationWorkEvidence,
     authorized_read::{
-        execute_authorized_read, refresh_governed_authorization,
-        WorthQueryAuthorizedApplicationReadDenial,
+        WorthQueryAuthorizedApplicationReadDenial, execute_authorized_read,
+        refresh_governed_authorization,
     },
     one_shot::{
         map_authorized_read_denial,
@@ -14,19 +16,17 @@ use crate::domain_computation::primary_graph::application_query::{
         plan_admission::{reserve_one_shot_result_buffer_in_batch, validate_one_shot_plan},
     },
     read_execution::{
-        prepared_pair::{batch::PreparedBatchRead, PreparedPair, PreparedRead},
+        prepared_pair::{PreparedPair, PreparedRead, batch::PreparedBatchRead},
         read_plan::ReadPlan,
     },
-    WorthQueryApplicationAuthorizationWorkEvidence,
 };
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
 use worth_relational::facade::identity::EntityId;
 
-impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
-    WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
+impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>
+    WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>
 {
     pub(super) fn admit(
         &mut self,
@@ -43,7 +43,6 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     > {
         self.admit_batch_reads(root)?;
         if self.first.scope.entity_id() != root
-            || self.second.scope.entity_id() != root
             || (self.first.basis.identity().descriptor()
                 != self.second.basis.identity().descriptor()
                 || self.first.basis.identity().selection()
@@ -122,23 +121,12 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     ) -> Result<PreparedPair<'_>, Denial> {
         let first_batch = self.first_batch.take();
         let second_batch = self.second_batch.take();
-        let locator = self.second.scope.identity_locator();
-        let slot = self
-            .first
-            .query
-            .read_family_binding()
-            .planning_contract()
-            .projections()
-            .iter()
-            .find(|field| {
-                field.parent_path() == "root"
-                    && field.aspect_key() == locator.aspect().aspect_key()
-                    && *locator.field_path()
-                        == worth_foundational::facade::CanonicalFieldPath::single(
-                            field.field_key().clone(),
-                        )
-            })
-            .ok_or(Denial::IncompleteDependencies)?;
+        let binding = crate::domain_computation::primary_graph::application_query::read_execution::prepared_pair::binding::PreparedPairBinding::new(
+            self.second.scope.entity_id(),
+            self.first.query.read_family_binding().planning_contract().projections(),
+            self.second.scope.identity_locator(),
+            self.second.scope.identity_value(),
+        )?;
         let first_buffer =
             reserve_one_shot_result_buffer_in_batch(application, &self.first, self.batch.as_ref())
                 .map_err(|denial| Denial::ReadDenied { root, denial })?;
@@ -199,8 +187,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
                 buffer: second_buffer,
                 batch: second_batch,
             },
-            binding_slot: slot.slot_type(),
-            binding_value: self.second.scope.identity_value(),
+            binding,
         })
     }
 

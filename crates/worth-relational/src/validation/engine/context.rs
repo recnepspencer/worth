@@ -1,6 +1,5 @@
 mod created_kinds;
 use crate::identity::data::KindId;
-use crate::schema::data::LoweredAspectContractPlan;
 use crate::transactions::data::MergedCommitPlan;
 use crate::validation::engine::InvariantRuntimeView;
 
@@ -190,8 +189,15 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
             })
     }
 
-    pub(crate) fn entity_aspect_plan(&self, kind_id: KindId) -> Option<&LoweredAspectContractPlan> {
-        self.runtime.entity_aspect_plan(kind_id)
+    pub(crate) fn projected_entity_aspect_field_value<'value>(
+        &self,
+        kind: KindId,
+        locator: &worth_foundational::facade::AspectFieldLocator,
+        state: impl FnOnce()
+            -> Option<&'value worth_foundational::facade::AuthoritativeRecordAspectState>,
+    ) -> Option<&'value worth_foundational::facade::AspectValue> {
+        self.runtime
+            .projected_entity_aspect_field_value(kind, locator, state)
     }
 
     pub fn metrics(&self) -> InvariantMetrics<'runtime> {

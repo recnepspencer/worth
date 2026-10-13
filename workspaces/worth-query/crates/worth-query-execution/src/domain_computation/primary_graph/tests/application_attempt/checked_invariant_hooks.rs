@@ -43,14 +43,14 @@ struct Case {
     publications: usize,
 }
 
-fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparation: bool) -> Case {
+fn run_case(work: bool, ceiling: Option<u64>, cancel_in_preparation: bool) -> Case {
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(Placement::Serial), bound(None));
     let source = WorthQueryCancellationSource::new();
     let contacts = Contacts::default();
     let world = world::install(AccountingRule {
-        checked,
+        checked: true,
         work,
         cancellation: cancel_in_preparation.then(|| source.clone()),
         contacts: contacts.clone(),
@@ -66,9 +66,7 @@ fn run_case(checked: bool, work: bool, ceiling: Option<u64>, cancel_in_preparati
         .store(true, std::sync::atomic::Ordering::SeqCst);
     let before = contacts.snapshot();
     reports();
-    place(Placement::Leased(
-        NonZeroUsize::new(if checked { 1 } else { 2 }).unwrap(),
-    ));
+    place(Placement::Leased(NonZeroUsize::MIN));
     bound(ceiling.map(|work| {
         worth_foundational::ExecutionBudget::new(NonZeroUsize::MIN, 64 * 1024 * 1024, work)
     }));
@@ -116,7 +114,7 @@ fn checked_application_rule_charges_its_exact_work_and_refuses_one_unit_short() 
     // The zero-body control has the same schema, plan, scope and installation.
     // Its owner work is an independent baseline; the authored visit counts,
     // rather than a measured total from the paid rule, define the exact limit.
-    let control = run_case(true, false, None, false);
+    let control = run_case(false, None, false);
     assert!(matches!(
         control.outcome,
         WorthQueryApplicationCommitOutcome::Committed(_)
@@ -125,7 +123,7 @@ fn checked_application_rule_charges_its_exact_work_and_refuses_one_unit_short() 
     assert_eq!(control.contacts, [0, 1, 1, 0]);
     let authored_work = PREPARATION_UNITS + EVALUATION_UNITS;
     let exact_ceiling = control.work.unwrap() + authored_work;
-    let exact = run_case(true, true, Some(exact_ceiling), false);
+    let exact = run_case(true, Some(exact_ceiling), false);
     assert!(
         matches!(
             exact.outcome,
@@ -138,7 +136,7 @@ fn checked_application_rule_charges_its_exact_work_and_refuses_one_unit_short() 
     assert_eq!(exact.work, Some(exact_ceiling));
     assert_eq!(exact.contacts, [0, 1, 1, authored_work as usize]);
     assert_eq!(exact.publications, 1);
-    let short = run_case(true, true, Some(exact_ceiling - 1), false);
+    let short = run_case(true, Some(exact_ceiling - 1), false);
     let WorthQueryApplicationCommitOutcome::Denied(denial) = short.outcome else {
         panic!(
             "one unit short must be a typed stop: {:?}, {:?}",
@@ -162,7 +160,7 @@ fn checked_application_rule_charges_its_exact_work_and_refuses_one_unit_short() 
 #[test]
 fn checked_application_rule_keeps_cancellation_raised_in_preparation() {
     let _isolation = isolated_request_owner();
-    let cancelled = run_case(true, true, None, true);
+    let cancelled = run_case(true, None, true);
     let WorthQueryApplicationCommitOutcome::Denied(denial) = cancelled.outcome else {
         panic!(
             "cancellation inside the checked hook must reach the commit door: {:?}",
@@ -178,21 +176,31 @@ fn checked_application_rule_keeps_cancellation_raised_in_preparation() {
 }
 
 #[test]
-fn undeclared_application_rule_is_refused_before_any_rule_work() {
+fn undeclared_application_rule_is_refused_at_installation_before_any_rule_work() {
+    use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind;
+
     let _isolation = isolated_request_owner();
-    let unchecked = run_case(false, true, None, false);
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = unchecked.outcome else {
-        panic!(
-            "the multiworker request must refuse the undeclared rule: {:?}",
-            unchecked.outcome
-        );
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let _restore = Restore(place(Placement::Serial), bound(None));
+    let contacts = Contacts::default();
+    let result = world::try_install(AccountingRule {
+        checked: false,
+        work: true,
+        cancellation: None,
+        contacts: contacts.clone(),
+    });
+    let Err(denial) = result else {
+        panic!("an unchecked rule must not publish an application runtime");
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryApplicationCommitDenialKind::ExecutionUncheckedCustomKernel {
-            partition_identity: None,
+        WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
+            kind: WorthQueryProviderSessionDenialKind::ExecutionUncheckedCustomKernel {
+                partition_identity: None,
+            },
         }
     );
-    assert_eq!(unchecked.contacts, [0, 0, 0, 0]);
-    assert_eq!(unchecked.publications, 0);
+    assert_eq!(contacts.snapshot(), [0, 0, 0, 0]);
 }

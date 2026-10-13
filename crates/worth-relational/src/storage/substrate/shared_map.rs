@@ -138,8 +138,13 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
     }
 
     pub(crate) fn allocation_bytes(&self) -> u64 {
-        let per_entry = Arc::<MapNode<K, V>>::layout_bytes() + Arc::<V>::layout_bytes();
-        (self.len() as u64).saturating_mul(per_entry)
+        (self.len() as u64).saturating_mul(Self::entry_allocation_bytes())
+    }
+
+    /// One new node and value in a uniquely owned map. Shared paths additionally
+    /// require copy-on-write allocations; this quote does not cover those.
+    pub(crate) fn entry_allocation_bytes() -> u64 {
+        Arc::<MapNode<K, V>>::layout_bytes() + Arc::<V>::layout_bytes()
     }
 }
 

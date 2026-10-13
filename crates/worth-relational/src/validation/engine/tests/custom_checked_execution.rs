@@ -328,20 +328,27 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
     let result = InvariantEngine::new(&runtime)
         .execute(&worth_execution::ExecutionRequest::leased(&lease), request);
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 0);
-    assert!(matches!(
-        result,
-        Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
-                        crate::execution::RelationalExecutionDenialCause::ScratchCapacityExceeded
-                    ),
+    assert!(
+        matches!(
+            result,
+            Err(
+                crate::transactions::data::TransactionCommitError::Execution {
+                    denial: crate::transactions::data::CommitExecutionDenial {
+                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                            crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                                ancestor: 0, requested, admitted, ..
+                            }
+                        ),
+                        ..
+                    },
                     ..
-                },
-                ..
-            }
-        )
-    ));
+                }
+            ) if requested > admitted
+        ),
+        "the actual refusing lease level must survive: {result:?}"
+    );
+    assert_eq!(lease.charged_memory_bytes(), 0);
 }
 
 mod cancellation;
+mod live_memory;

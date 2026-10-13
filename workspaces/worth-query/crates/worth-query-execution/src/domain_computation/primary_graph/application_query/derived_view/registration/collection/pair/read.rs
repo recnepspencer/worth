@@ -10,7 +10,9 @@ use super::{
 };
 use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::application_query::derived_view::dependency::ViewDependency;
-use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult;
+use crate::domain_computation::primary_graph::application_query::{
+    WorthQueryApplicationOneShotResult, WorthQueryApplicationQueryAccessReceipt,
+};
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -137,6 +139,59 @@ where
         Value: WorthQueryManagedDerivedValue,
         LinkKey: Eq,
     {
+        self.read_managed_entry_pair_from_result_with_receipts(
+            view,
+            product,
+            expected_root,
+            first_result,
+            second_for,
+            first_link,
+            second_link,
+            |first, second, _, _| Ok(project(first, second)),
+        )
+    }
+    pub(super) fn read_managed_entry_pair_from_result_with_receipts<
+        MembershipQuery,
+        FirstQuery,
+        FirstResult,
+        SecondQuery,
+        SecondResult,
+        Value,
+        LinkKey,
+    >(
+        &self,
+        view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+        product: &WorthQueryProductBranchLease,
+        expected_root: EntityId,
+        first_result: WorthQueryApplicationOneShotResult<FirstQuery, FirstResult>,
+        second_for: impl FnOnce(
+            &FirstResult,
+        ) -> Result<
+            WorthQueryApplicationOneShotResult<SecondQuery, SecondResult>,
+            Denial,
+        >,
+        first_link: impl FnOnce(&FirstResult) -> LinkKey,
+        second_link: impl FnOnce(&SecondResult) -> LinkKey,
+        project: impl FnOnce(
+            &FirstResult,
+            &SecondResult,
+            &WorthQueryApplicationQueryAccessReceipt,
+            &WorthQueryApplicationQueryAccessReceipt,
+        ) -> Result<Value, Denial>,
+    ) -> Result<
+        (
+            WorthQueryManagedDerivedViewKey,
+            Value,
+            BTreeSet<ViewDependency>,
+        ),
+        Denial,
+    >
+    where
+        FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery>,
+        SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery>,
+        Value: WorthQueryManagedDerivedValue,
+        LinkKey: Eq,
+    {
         self.admit_view_product(view, product)?;
         let first_identity = view
             .state
@@ -187,6 +242,15 @@ where
             second_result.result_set_observation().source(),
             second_identity,
         )?);
-        Ok((key, project(first_row, second_row), dependencies))
+        Ok((
+            key,
+            project(
+                first_row,
+                second_row,
+                first_result.receipt(),
+                second_result.receipt(),
+            )?,
+            dependencies,
+        ))
     }
 }

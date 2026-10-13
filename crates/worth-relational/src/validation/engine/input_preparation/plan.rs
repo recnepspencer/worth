@@ -1,10 +1,10 @@
 use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 
-use dashmap::DashMap;
+use super::allocation::{arc_bytes, CandidateInputAllocation};
+use super::cache_map::CandidateInputMap;
 
-use crate::identity::data::KindId;
 use crate::identity::data::{EntityId, PartitionId, RelationId, VersionId};
 use crate::performance::data::CandidateInputCounts;
 use crate::validation::engine::state_view::slot_resolution::AspectLocation;
@@ -24,6 +24,7 @@ pub(crate) enum CandidateInputBasis {
 pub(crate) struct SharedCandidateInputs {
     pub(super) entries: CandidateInputEntries,
     pub(super) sharing_enabled: bool,
+    pub(super) allocation: CandidateInputAllocation,
 }
 
 impl CandidateInputBasis {
@@ -62,34 +63,32 @@ impl CandidateInputBasis {
 
 #[derive(Default)]
 pub(super) struct CandidateInputEntries {
-    pub(super) entities: DashMap<
+    pub(super) entities: CandidateInputMap<
         (CandidateInputBasis, VersionId, EntityId),
-        Arc<OnceLock<Option<VisibleEntityMetadata>>>,
+        Option<VisibleEntityMetadata>,
     >,
-    pub(super) relations: DashMap<
+    pub(super) relations: CandidateInputMap<
         (CandidateInputBasis, VersionId, RelationId),
-        Arc<OnceLock<Option<VisibleRelationMetadata>>>,
+        Option<VisibleRelationMetadata>,
     >,
     pub(super) entity_aspects:
-        DashMap<(CandidateInputBasis, VersionId, EntityId), Arc<OnceLock<Option<AspectLocation>>>>,
-    pub(super) relation_aspects: DashMap<
-        (CandidateInputBasis, VersionId, RelationId),
-        Arc<OnceLock<Option<AspectLocation>>>,
-    >,
+        CandidateInputMap<(CandidateInputBasis, VersionId, EntityId), Option<AspectLocation>>,
+    pub(super) relation_aspects:
+        CandidateInputMap<(CandidateInputBasis, VersionId, RelationId), Option<AspectLocation>>,
     pub(super) adjacency:
-        DashMap<(CandidateInputBasis, VersionId, EntityId, bool), Arc<OnceLock<Arc<[RelationId]>>>>,
+        CandidateInputMap<(CandidateInputBasis, VersionId, EntityId, bool), Arc<[RelationId]>>,
     pub(super) adjacency_counts:
-        DashMap<(CandidateInputBasis, VersionId, EntityId, bool), Arc<OnceLock<usize>>>,
+        CandidateInputMap<(CandidateInputBasis, VersionId, EntityId, bool), usize>,
     pub(super) touched_entities:
-        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Arc<[EntityId]>>>>,
+        CandidateInputMap<(CandidateInputBasis, VersionId), Arc<[EntityId]>>,
     pub(super) touched_relations:
-        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Arc<[RelationId]>>>>,
+        CandidateInputMap<(CandidateInputBasis, VersionId), Arc<[RelationId]>>,
     pub(super) touched_partitions:
-        DashMap<(CandidateInputBasis, VersionId), Arc<OnceLock<Option<Arc<[PartitionId]>>>>>,
+        CandidateInputMap<(CandidateInputBasis, VersionId), Option<Arc<[PartitionId]>>>,
     pub(super) touched_entity_slots:
-        DashMap<(CandidateInputBasis, VersionId, PartitionId), Arc<OnceLock<Option<Arc<[usize]>>>>>,
+        CandidateInputMap<(CandidateInputBasis, VersionId, PartitionId), Option<Arc<[usize]>>>,
     pub(super) touched_relation_slots:
-        DashMap<(CandidateInputBasis, VersionId, PartitionId), Arc<OnceLock<Option<Arc<[usize]>>>>>,
+        CandidateInputMap<(CandidateInputBasis, VersionId, PartitionId), Option<Arc<[usize]>>>,
     pub(super) entity_reads: AtomicUsize,
     pub(super) relation_reads: AtomicUsize,
     pub(super) entity_aspect_reads: AtomicUsize,
@@ -108,10 +107,19 @@ pub(super) struct CandidateInputEntries {
 impl SharedCandidateInputs {
     #[cfg(test)]
     pub(crate) fn sharing_for_test() -> Self {
-        Self {
+        Self::new(true, None).unwrap()
+    }
+
+    pub(super) fn new(
+        sharing_enabled: bool,
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    ) -> Result<Self, crate::execution::PacketBudgetDenial> {
+        let allocation = CandidateInputAllocation::new(lease, arc_bytes::<Self>())?;
+        Ok(Self {
             entries: CandidateInputEntries::default(),
-            sharing_enabled: true,
-        }
+            sharing_enabled,
+            allocation,
+        })
     }
 
     /// Installation declares the overlap. Runtime reads only fill exact entries
@@ -119,14 +127,24 @@ impl SharedCandidateInputs {
     pub(crate) fn from_installed(
         runtime: &InvariantRuntimeView<'_>,
         request: &InvariantExecutionRequest<'_>,
-    ) -> Option<Self> {
-        let mut entity_kinds = BTreeSet::<KindId>::new();
-        let mut relation_kinds = BTreeSet::<KindId>::new();
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    ) -> Result<Option<Self>, crate::execution::PacketBudgetDenial> {
+        let registrations = &runtime.schema_contract_runtime.custom_invariant_registries;
+        if lease.is_some() {
+            return if registrations
+                .iter()
+                .any(|registration| request.includes_custom_registration(registration))
+            {
+                Self::new(true, lease).map(Some)
+            } else {
+                Ok(None)
+            };
+        }
+        let mut entities = BTreeSet::new();
+        let mut relations = BTreeSet::new();
         let mut rule_count = 0;
         let mut sharing_enabled = false;
-        for registration in runtime
-            .schema_contract_runtime
-            .custom_invariant_registries
+        for registration in registrations
             .iter()
             .filter(|registration| request.includes_custom_registration(registration))
         {
@@ -140,22 +158,20 @@ impl SharedCandidateInputs {
                 .read_relation_kinds
                 .iter()
                 .chain(&access.affected_relation_kinds);
-            if rule_entities
-                .clone()
-                .any(|kind| entity_kinds.contains(kind))
-                || rule_relations
-                    .clone()
-                    .any(|kind| relation_kinds.contains(kind))
-            {
-                sharing_enabled = true;
-            }
-            entity_kinds.extend(rule_entities.copied());
-            relation_kinds.extend(rule_relations.copied());
+            sharing_enabled |= rule_entities.clone().any(|kind| entities.contains(kind))
+                || rule_relations.clone().any(|kind| relations.contains(kind));
+            entities.extend(rule_entities.copied());
+            relations.extend(rule_relations.copied());
         }
-        (rule_count > 0).then(|| Self {
-            entries: CandidateInputEntries::default(),
-            sharing_enabled,
-        })
+        if rule_count == 0 {
+            return Ok(None);
+        }
+        // Admission precedes both the owner Arc and every cache entry.
+        Self::new(sharing_enabled, lease).map(Some)
+    }
+
+    pub(crate) fn failure(&self) -> Option<crate::execution::PacketBudgetDenial> {
+        self.allocation.failure()
     }
 
     pub(crate) fn counters(&self) -> CandidateInputCounts {
@@ -192,6 +208,7 @@ mod tests {
         let inputs = SharedCandidateInputs {
             entries: CandidateInputEntries::default(),
             sharing_enabled: true,
+            allocation: CandidateInputAllocation::new(None, 0).unwrap(),
         };
         let id = EntityId::new(PartitionId::main(), 7, 1);
         let value = VisibleEntityMetadata {

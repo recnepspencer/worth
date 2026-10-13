@@ -182,21 +182,6 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("ordinary-read-wave-proof");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut features = demand_policy::feature_specs_with_output::<demand_policy::FinalArtifact>(
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
-                .derived_artifact::<computation::Artifact>()
-                .managed_computation::<computation::Computation>()
-                .mutation::<PlanarEditBinding<CheckpointSchema>>()
-                .mutation::<VertexReplacementBinding<CheckpointSchema>>()
-                .conditional_operation::<MutatePlanar>()
-                .finish(),
-        );
-        features.push(
-            ApplicationFeatureSpec::root::<CheckpointSchema, program::ChainFeature>()
-                .provides::<program::ChainOutput>()
-                .conditional_operation::<PublishChain>()
-                .finish(),
-        );
-        features
+        super::application::feature_specs()
     }
 }

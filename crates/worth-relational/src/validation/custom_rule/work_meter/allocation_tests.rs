@@ -63,3 +63,61 @@ fn authored_checkpoints_do_not_allocate_structural_nodes() {
     assert!(!work.claim_scratch(1));
     assert_eq!(budget.stop(), Some(CustomPreparationStop::MemoryExhausted));
 }
+
+#[test]
+fn dynamic_structural_claims_and_peaks_use_the_actual_request_lease() {
+    use crate::execution::RelationalExecutionDenialCause;
+    use crate::execution::{InvariantPacketAllocations, PacketBudgetDenial};
+    use crate::validation::data::CustomInvariantLeaseBudget;
+
+    for refuse_peak in [false, true] {
+        let lease = crate::tests::support::test_execution_lease();
+        let allocations = InvariantPacketAllocations::new(&lease).unwrap();
+        let admission = allocations.scratch();
+        let budget = CustomPreparationBudget::with_scratch_admission(
+            lease.status(),
+            Some(100),
+            admission.clone(),
+        );
+        let work = CustomInvariantWorkMeter::new(NonZeroU64::new(100).unwrap()).with_lease(&budget);
+        let geometry_bytes = 12 * 1024 * 1024;
+        assert!(work.claim_scratch(geometry_bytes));
+        assert!(work.check_scratch_peak(1024 * 1024));
+        assert_eq!(budget.claimed_memory(), geometry_bytes);
+        assert!(
+            work.try_charge(1),
+            "structural reads use the same admission"
+        );
+        let admitted_memory = budget.claimed_memory();
+        let refused = if refuse_peak {
+            work.check_scratch_peak(64 * 1024 * 1024)
+        } else {
+            work.claim_scratch(64 * 1024 * 1024)
+        };
+        assert!(!refused, "growth beyond the real 32 MiB lease is refused");
+        assert_eq!(budget.claimed_memory(), admitted_memory);
+        assert_eq!(budget.stop(), Some(CustomPreparationStop::MemoryExhausted));
+        let failure = admission
+            .failure()
+            .expect("owner retains the typed refusal");
+        assert!(
+            matches!(
+                failure,
+                PacketBudgetDenial::ReadRequest(
+                    RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                        requested, admitted, ..
+                    }
+                ) if requested > admitted
+            ),
+            "unexpected allocation refusal: {failure:?}"
+        );
+        assert!(!work.claim_scratch(1));
+        let PacketBudgetDenial::ReadRequest(original_cause) = failure else {
+            unreachable!("the allocation refusal was checked above")
+        };
+        assert!(
+            matches!(admission.failure(), Some(PacketBudgetDenial::ReadRequest(latched)) if latched == original_cause)
+        );
+        assert_eq!(budget.claimed_memory(), admitted_memory);
+    }
+}

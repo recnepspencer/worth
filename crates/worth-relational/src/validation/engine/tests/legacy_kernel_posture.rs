@@ -1,4 +1,4 @@
-//! A kernel needing no parallel contract remains callable on a serial backing.
+//! Unchecked kernels use lease-free System execution; funded requests fail closed.
 use super::custom_rules::AlwaysViolatesCustomRule;
 use super::validation_engine_fixtures::*;
 use std::num::NonZeroUsize;
@@ -26,7 +26,7 @@ fn lease(posture: ExecutionPosture, workers: usize) -> ExecutionResourceLease<'s
 }
 
 #[test]
-fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel() {
+fn an_unchecked_custom_kernel_is_denied_by_every_leased_posture() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
@@ -44,29 +44,38 @@ fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel(
     };
     let serial_request = crate::test_execution_policy::serial_request();
     let expected = run(&ExecutionRequest::serial(&serial_request)).unwrap();
+    assert!(matches!(
+        expected.results()[0].verdict,
+        crate::validation::data::InvariantVerdict::Violation(_)
+    ));
     for (posture, workers) in [
         (ExecutionPosture::Serial, 4),
         (ExecutionPosture::Automatic, 1),
+        (ExecutionPosture::Automatic, 2),
     ] {
+        runtime.performance_access().reset_counters();
         let lease = lease(posture, workers);
-        let actual = run(&ExecutionRequest::leased(&lease))
-            .expect("a serial-backed request can call the existing custom kernel");
-        assert_eq!(actual.results(), expected.results());
+        assert!(matches!(
+            run(&ExecutionRequest::leased(&lease)),
+            Err(
+                crate::transactions::data::TransactionCommitError::Execution {
+                    denial: crate::transactions::data::CommitExecutionDenial {
+                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                            crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel
+                        ),
+                        partition_identity: None,
+                    },
+                    ..
+                }
+            )
+        ));
+        assert_eq!(
+            runtime
+                .performance_access()
+                .counters()
+                .custom_invariant_execution_count,
+            0
+        );
         assert_eq!(lease.charged_memory_bytes(), 0);
     }
-    let parallel = lease(ExecutionPosture::Automatic, 2);
-    assert!(matches!(
-        run(&ExecutionRequest::leased(&parallel)),
-        Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
-                        crate::execution::RelationalExecutionDenialCause::UncheckedCustomKernel
-                    ),
-                    partition_identity: None,
-                },
-                ..
-            }
-        )
-    ));
 }

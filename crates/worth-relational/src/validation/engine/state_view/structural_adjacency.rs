@@ -7,7 +7,10 @@ use super::InvariantStateView;
 
 impl<'state> InvariantStateView<'state> {
     pub(crate) fn outgoing_relations_for_entity(&self, entity_id: EntityId) -> Vec<RelationId> {
-        self.relation_candidates(entity_id, true)
+        let Some(candidates) = self.relation_candidates(entity_id, true) else {
+            return Vec::new();
+        };
+        candidates
             .iter()
             .copied()
             .filter(|relation_id| {
@@ -18,7 +21,10 @@ impl<'state> InvariantStateView<'state> {
     }
 
     pub(crate) fn incoming_relations_for_entity(&self, entity_id: EntityId) -> Vec<RelationId> {
-        self.relation_candidates(entity_id, false)
+        let Some(candidates) = self.relation_candidates(entity_id, false) else {
+            return Vec::new();
+        };
+        candidates
             .iter()
             .copied()
             .filter(|relation_id| {
@@ -30,11 +36,12 @@ impl<'state> InvariantStateView<'state> {
 
     pub(crate) fn all_relations_for_entity(&self, entity_id: EntityId) -> Vec<RelationId> {
         let mut relation_ids = BTreeSet::new();
-        for relation_id in self
-            .relation_candidates(entity_id, true)
+        let outgoing = self.relation_candidates(entity_id, true);
+        let incoming = self.relation_candidates(entity_id, false);
+        for relation_id in outgoing
             .iter()
-            .copied()
-            .chain(self.relation_candidates(entity_id, false).iter().copied())
+            .chain(incoming.iter())
+            .flat_map(|ids| ids.iter().copied())
         {
             let Some(metadata) = self.relation_metadata(relation_id) else {
                 continue;
@@ -50,13 +57,55 @@ impl<'state> InvariantStateView<'state> {
         &self,
         entity_id: EntityId,
         outgoing: bool,
-    ) -> std::sync::Arc<[RelationId]> {
+    ) -> Option<std::sync::Arc<[RelationId]>> {
         if let Some((inputs, basis)) = self.candidate_inputs() {
-            return inputs.adjacency(*basis, self.version_id(), entity_id, outgoing, || {
-                self.gather_relation_candidates(entity_id, outgoing)
-            });
+            let count = self.read_relation_candidate_count(entity_id, outgoing);
+            return inputs.adjacency(
+                *basis,
+                self.version_id(),
+                entity_id,
+                outgoing,
+                count,
+                |ids| {
+                    for partition in [
+                        self.state().get_partition(entity_id.partition_id),
+                        self.state().base_partition(entity_id.partition_id),
+                    ]
+                    .into_iter()
+                    .flatten()
+                    {
+                        let table = if outgoing {
+                            &partition.adjacency
+                        } else {
+                            &partition.reverse_adjacency
+                        };
+                        let Some(relations) = table.get(entity_id.slot_index()) else {
+                            continue;
+                        };
+                        let mut temporary = inputs.temporary_allocation();
+                        let Ok(candidates) = relations.current_ids().try_iter(|_, bytes| {
+                            if temporary.claim(bytes) {
+                                Ok(())
+                            } else {
+                                Err(())
+                            }
+                        }) else {
+                            return false;
+                        };
+                        for candidate in candidates {
+                            if !temporary.claim(0) {
+                                return false;
+                            }
+                            ids.push(*candidate);
+                        }
+                    }
+                    ids.sort_unstable();
+                    ids.dedup();
+                    true
+                },
+            );
         }
-        self.gather_relation_candidates(entity_id, outgoing).into()
+        Some(self.gather_relation_candidates(entity_id, outgoing).into())
     }
 
     fn gather_relation_candidates(&self, entity_id: EntityId, outgoing: bool) -> Vec<RelationId> {

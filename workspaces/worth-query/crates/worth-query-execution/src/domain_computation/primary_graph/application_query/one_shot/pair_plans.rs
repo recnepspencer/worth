@@ -7,13 +7,14 @@ use super::super::{
 
 /// Two admitted public reads whose rooted identity is bound by Query before
 /// dispatch. Application projection stays on the caller's thread. The second
-/// scope must be the first row's declared identity field on the same basis.
+/// scope must be an actual node's declared identity in the first projected tree,
+/// on the same basis. Its declared scope family may also differ from the first.
 /// No callback can select a new basis or issue another read on a worker.
-pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C> {
+pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C, SC = C> {
     pub(in crate::domain_computation::primary_graph::application_query) first:
         WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
     pub(in crate::domain_computation::primary_graph::application_query) second:
-        WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
+        WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, SC>,
     pub(in crate::domain_computation::primary_graph::application_query) batch:
         Option<WorthQueryApplicationQueryBatchAdmission>,
     pub(in crate::domain_computation::primary_graph::application_query) first_batch:
@@ -22,15 +23,18 @@ pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C
         Option<PreparedBatchRead>,
 }
 
-impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
-    WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
+#[cfg(test)]
+mod scope_tests;
+
+impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>
+    WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>
 {
     /// Carry both issued plans to the request's owner-side preparation stage.
     /// Query checks their identities and constructs the closed worker binding
     /// only inside the reconstruction request.
     pub fn new(
         first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
-        second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
+        second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, SC>,
     ) -> Self {
         Self {
             first,
@@ -42,10 +46,9 @@ impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
     }
     /// Carry the same genuine shared read loan into closed pair preparation.
     /// Issued planned items are checked against this loan before dispatch.
-    #[cfg(test)]
-    pub(crate) fn in_batch(
+    pub fn in_batch(
         first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
-        second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
+        second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, SC>,
         batch: &WorthQueryApplicationQueryBatchAdmission,
     ) -> Self {
         Self {

@@ -137,23 +137,45 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("concurrent-wave-proof");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        let mut features = demand_policy::feature_specs_with_output::<demand_policy::FinalArtifact>(
-            ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
-                .derived_artifact::<computation::Artifact>()
-                .managed_computation::<computation::Computation>()
-                .mutation::<PlanarEditBinding<CheckpointSchema>>()
-                .mutation::<VertexReplacementBinding<CheckpointSchema>>()
-                .conditional_operation::<MutatePlanar>()
-                .finish(),
-        );
-        features.push(
-            ApplicationFeatureSpec::root::<CheckpointSchema, program::ChainFeature>()
-                .provides::<program::ChainOutput>()
-                .conditional_operation::<PublishChain>()
-                .finish(),
-        );
-        features
+        feature_specs()
     }
+}
+
+struct SourceReconstruction;
+impl worth_query_decl::facade::application_program::ApplicationChangeShape
+    for SourceReconstruction
+{
+    const IDENTITY: &'static str = "concurrent-wave-source-reconstruction";
+    const POSTURE: worth_query_decl::facade::application_program::ApplicationChangePosture =
+        worth_query_decl::facade::application_program::ApplicationChangePosture::Reconstruct;
+}
+
+// Both wave handlers use the same governed source actions and output contract.
+pub(super) fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+    let source = ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
+        .provides::<PlanarBodyOutput>()
+        .mutation::<PlanarEditBinding<CheckpointSchema>>()
+        .mutation_with_locality_and_change::<PlanarSourceAdjustmentBinding<CheckpointSchema>, computation::Locality, SourceReconstruction>()
+        .finish();
+    let output = ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
+        .derived_artifact::<computation::Artifact>()
+        .managed_computation::<computation::Computation>()
+        .mutation::<PlanarEditBinding<CheckpointSchema>>()
+        .mutation::<VertexReplacementBinding<CheckpointSchema>>()
+        .conditional_operation::<MutatePlanar>()
+        .finish();
+    let mut features = demand_policy::feature_specs_with_source(
+        source,
+        output,
+        demand_policy::final_output_feature::<demand_policy::FinalArtifact>().finish(),
+    );
+    features.push(
+        ApplicationFeatureSpec::root::<CheckpointSchema, program::ChainFeature>()
+            .provides::<program::ChainOutput>()
+            .conditional_operation::<PublishChain>()
+            .finish(),
+    );
+    features
 }
 
 #[test]

@@ -33,6 +33,8 @@ pub trait CustomInvariantRule: Send + Sync + RefUnwindSafe + 'static {
         false
     }
 
+    /// Required for every leased request, including serial placement. None refuses.
+    /// Lease-free System execution uses prepare_scope instead.
     fn prepare_scope_checked(
         &self,
         _planner: &mut CustomInvariantScopePlanner<'_>,
@@ -47,8 +49,9 @@ pub trait CustomInvariantRule: Send + Sync + RefUnwindSafe + 'static {
         scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError>;
 
-    /// Opt in to multiworker execution by checkpointing every candidate and
-    /// claiming retained output before growth. Other rules run on serial backings.
+    /// Required for leased execution at every worker count. Checkpoint each
+    /// candidate and claim allocations before growth; None fails closed with
+    /// UncheckedCustomKernel. Lease-free System execution uses evaluate instead.
     fn evaluate_checked(
         &self,
         _context: &CustomInvariantExecutionContext<'_>,

@@ -6,15 +6,16 @@ use super::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::basis::WorthQueryProductBranchLease;
+#[cfg(test)]
+use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::derived_view::retention::{
     RetainedMemberToken, WorthQueryManagedDerivedMemberToken,
 };
 use crate::domain_computation::primary_graph::application_query::one_shot::outcome::finalize_one_shot;
-#[cfg(test)]
-use crate::domain_computation::primary_graph::application_query::DispatchWitness;
 use crate::domain_computation::primary_graph::application_query::{
-    read_execution::read_plan::ReadPlan, WorthQueryApplicationAuthorizationWorkEvidence,
-    WorthQueryApplicationOneShotResult, WorthQueryDerivedPairReadPlans,
+    WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationOneShotResult,
+    WorthQueryApplicationQueryAccessReceipt, WorthQueryDerivedPairReadPlans,
+    read_execution::read_plan::ReadPlan,
 };
 use std::collections::BTreeMap;
 use worth_execution::{
@@ -27,6 +28,7 @@ use worth_relational::facade::identity::EntityId;
 mod canonical_results;
 use super::reconstruction::{denial, owner_stage};
 mod preparation;
+mod row_projection;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Reconstruct unique roots under the caller's bounded request. Owner
@@ -41,7 +43,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// reads overlap while the map preserves canonical order and caller charging.
     /// Cancellation and deadline boundaries may differ with placement: each
     /// reports a canonical prefix and only its admitted work, not width equality.
-    pub fn reconstruct_managed_derived_collection_pair<
+    /// The owner projection borrows both genuine read receipts. It may refuse
+    /// disclosure, cardinality or application conditions without retaining a
+    /// partial image; settled native work remains charged.
+    pub fn reconstruct_managed_derived_collection_pair_with_receipts<
         'a,
         MQ,
         MR,
@@ -55,6 +60,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         A: 'a,
         I: 'a,
         C: 'a,
+        SC: 'a,
         Value,
         Link,
     >(
@@ -67,12 +73,17 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         mut prepare: impl FnMut(
             &Member,
         ) -> Result<
-            WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C>,
+            WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>,
             Denial,
         >,
         first_link: impl Fn(&FR) -> Link,
         second_link: impl Fn(&SR) -> Link,
-        mut project: impl FnMut(&FR, &SR) -> Value,
+        mut project: impl FnMut(
+            &FR,
+            &SR,
+            &WorthQueryApplicationQueryAccessReceipt,
+            &WorthQueryApplicationQueryAccessReceipt,
+        ) -> Result<Value, Denial>,
     ) -> Result<Vec<WorthQueryManagedDerivedViewKey>, Denial>
     where
         FR: WorthQueryApplicationProjection<Schema, FQ> + 'a,
@@ -96,7 +107,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let roots =
                         CanonicalUniqueVec::from_btree_set(expected.keys().copied().collect());
                     let slots = std::mem::size_of::<
-                        WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C>,
+                        WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>,
                     >()
                     .checked_add(
                         2 * std::mem::size_of::<WorthQueryApplicationAuthorizationWorkEvidence>(),
@@ -240,7 +251,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             )
                             .map_err(read_denied)?;
                             let (key, value, dependencies) = self
-                                .read_managed_entry_pair_from_result(
+                                .read_managed_entry_pair_from_result_with_receipts(
                                     view,
                                     product,
                                     root,
@@ -248,7 +259,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                                     |_| Ok(second),
                                     &first_link,
                                     &second_link,
-                                    |first, second| project(first, second),
+                                    |first, second, first_receipt, second_receipt| project(first, second, first_receipt, second_receipt),
                                 )?;
                             #[cfg(test)]
                             DispatchWitness::applied(root, &dependencies);

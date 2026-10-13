@@ -1,19 +1,19 @@
 //! The worker carries a scope-free read capability and a closed raw binding.
 //! Native reads carry exact immutable custody and cannot name the owner port.
 pub(in crate::domain_computation::primary_graph::application_query) mod batch;
+pub(in crate::domain_computation::primary_graph::application_query) mod binding;
 
 use super::super::{
     derived_view::WorthQueryManagedDerivedViewDenial as Denial,
     resource_lifecycle::WorthQueryApplicationResultBufferReservation,
 };
-use super::{read_plan::ReadPlan, OneShotReadWorkObservation, RawNonLiveKernelOutcome};
+use super::{OneShotReadWorkObservation, RawNonLiveKernelOutcome, read_plan::ReadPlan};
 use crate::domain_computation::provider_session::{
     WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
     WorthQueryPreparedSessionRead,
 };
 use std::cell::{Cell, RefCell};
 use worth_execution::{ChargedBytes, MapKernelContext, MapKernelFailure, MapKernelStop};
-use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::EntityId;
 
 pub(in crate::domain_computation::primary_graph::application_query) struct PreparedRead<'a> {
@@ -34,9 +34,8 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Prepa
         Option<std::sync::Arc<super::dispatch_witness::DispatchWitness>>,
     pub(in crate::domain_computation::primary_graph::application_query) first: PreparedRead<'a>,
     pub(in crate::domain_computation::primary_graph::application_query) second: PreparedRead<'a>,
-    pub(in crate::domain_computation::primary_graph::application_query) binding_slot: &'a str,
-    pub(in crate::domain_computation::primary_graph::application_query) binding_value:
-        &'a AspectValue,
+    pub(in crate::domain_computation::primary_graph::application_query) binding:
+        binding::PreparedPairBinding<'a>,
 }
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ReadOutput {
@@ -74,8 +73,7 @@ impl ChargedBytes for PreparedPair<'_> {
             root: _root,
             first,
             second,
-            binding_slot: _binding_slot,
-            binding_value: _binding_value,
+            binding: _binding,
             #[cfg(test)]
                 witness: _witness,
         } = self;
@@ -145,9 +143,7 @@ impl PreparedPair<'_> {
         let [row] = first.raw.raw.rows.raw_rows() else {
             return Err(MapKernelFailure::Domain(Denial::IncompleteDependencies));
         };
-        if row.entity_id() != self.root
-            || row.field(self.binding_slot).map(|field| field.value()) != Some(self.binding_value)
-        {
+        if row.entity_id() != self.root || !self.binding.matches(row, context)? {
             return Err(MapKernelFailure::Domain(Denial::IncompleteDependencies));
         }
         #[cfg(test)]

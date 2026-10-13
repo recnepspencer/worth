@@ -21,6 +21,12 @@ pub(super) struct World {
 }
 
 pub(super) fn install(rule: AccountingRule) -> World {
+    try_install(rule).expect("checked rule permits principal bootstrap publication")
+}
+
+pub(super) fn try_install(
+    rule: AccountingRule,
+) -> Result<World, WorthQueryPrimaryGraphInstallationDenial> {
     with_test_advancement(|phase| {
         let declaration = HookSchema::declaration().unwrap();
         let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
@@ -87,19 +93,17 @@ pub(super) fn install(rule: AccountingRule) -> World {
             ))
             .unwrap();
         let invariant = bootstrap.retain_invariant_projection_authority();
-        let application = bootstrap
-            .publish_application_runtime(
-                &phase.bootstrap_for_test(),
-                runtime,
-                authority,
-                schema,
-                worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
-            )
-            .unwrap();
-        World {
+        let application = bootstrap.publish_application_runtime(
+            &phase.bootstrap_for_test(),
+            runtime,
+            authority,
+            schema,
+            worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
+        )?;
+        Ok(World {
             application,
             binding,
             invariant,
-        }
+        })
     })
 }

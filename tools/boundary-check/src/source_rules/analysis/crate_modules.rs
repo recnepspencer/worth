@@ -7,7 +7,7 @@
 
 use super::module_source::{
     all_path_selectors, child_module_dir, directory_after_loading_file, path_attribute_dir,
-    resolve_child_sources,
+    path_attribute_source, resolve_child_sources,
 };
 use crate::cargo_graph::normalize_path;
 use std::collections::BTreeMap;
@@ -323,7 +323,7 @@ fn load_child_module(
     let path_parent_dir = path_attribute_dir(parent_source, parent_dir);
     let path_selected_sources = all_path_selectors(&item_mod.attrs)
         .into_iter()
-        .map(|selector| path_parent_dir.join(selector))
+        .map(|selector| path_attribute_source(&path_parent_dir, &selector))
         .collect::<Vec<_>>();
     let sources = resolve_child_sources(parent_dir, &path_parent_dir, file_name, &item_mod.attrs)?;
     for source in sources {

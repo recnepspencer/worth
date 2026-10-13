@@ -5,7 +5,7 @@
 //! Every selectable `path` / `cfg_attr(..., path = ...)` branch is collected
 //! fail-closed so conditional path selection cannot hide a hostile body.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use syn::{Attribute, Lit, Meta};
 
 /// Virtual directory of a module for resolving child `#[path]` and out-of-line files.
@@ -40,6 +40,28 @@ pub(super) fn path_attribute_dir(parent_source: &Path, module_dir: &Path) -> Pat
         Ok(inline_suffix) => physical_parent.join(inline_suffix),
         Err(_) => module_dir.to_path_buf(),
     }
+}
+
+/// Inline module directories are virtual. Collapse their lexical `..` before
+/// consulting the filesystem, which otherwise requires the virtual directory
+/// to exist on Unix even when its parent names a real source file.
+pub(super) fn path_attribute_source(parent_dir: &Path, selector: &str) -> PathBuf {
+    let joined = parent_dir.join(selector);
+    let mut resolved = PathBuf::new();
+    for component in joined.components() {
+        match component {
+            Component::CurDir => {}
+            Component::ParentDir => match resolved.components().next_back() {
+                Some(Component::Normal(_)) => {
+                    resolved.pop();
+                }
+                Some(Component::RootDir | Component::Prefix(_)) => {}
+                Some(Component::ParentDir | Component::CurDir) | None => resolved.push(".."),
+            },
+            other => resolved.push(other.as_os_str()),
+        }
+    }
+    resolved
 }
 
 /// All module path selectors on a `mod` item: direct `#[path]` and nested
@@ -151,7 +173,7 @@ pub(super) fn resolve_child_sources(
     let mut sources = Vec::new();
     let selectors = all_path_selectors(attrs);
     for rel in &selectors {
-        let resolved = path_attribute_parent_dir.join(rel);
+        let resolved = path_attribute_source(path_attribute_parent_dir, rel);
         if resolved.is_file() {
             sources.push(resolved);
         } else {
@@ -182,4 +204,37 @@ pub(super) fn resolve_child_sources(
         ));
     }
     Ok(sources)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parent_selector_resolves_without_a_physical_inline_directory() {
+        let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/source_rules/analysis");
+        let virtual_directory = directory.join("unmaterialized-inline-module");
+        assert!(!virtual_directory.exists());
+        let attributes = [syn::parse_quote!(#[path = "../module_source.rs"])];
+        let sources = resolve_child_sources(
+            &virtual_directory,
+            &virtual_directory,
+            "selected_source",
+            &attributes,
+        )
+        .unwrap();
+        assert_eq!(sources, [directory.join("module_source.rs")]);
+    }
+
+    #[test]
+    fn parent_selector_still_refuses_a_missing_source() {
+        let directory = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("src/source_rules/analysis/unmaterialized-inline-module");
+        let attributes = [syn::parse_quote!(#[path = "../unmaterialized-source.rs"])];
+        assert!(resolve_child_sources(&directory, &directory, "missing", &attributes).is_err());
+        assert_eq!(
+            path_attribute_source(Path::new("one"), "../../file.rs"),
+            Path::new("../file.rs")
+        );
+    }
 }

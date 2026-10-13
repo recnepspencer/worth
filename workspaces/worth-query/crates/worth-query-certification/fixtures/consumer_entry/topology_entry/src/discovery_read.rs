@@ -16,13 +16,14 @@ pub struct PlanarDiscoveryRead {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PlanarDiscoveryResult {
+    pub entity: worth_query_host::facade::application_invariants::EntityId,
     pub source_body_keys: Vec<String>,
 }
 
 pub struct PlanarDiscoveryParameters;
 worth_query_structured_value_binding!(pub PlanarDiscoveryInputBinding for PlanarDiscoveryRead { identity: "worth.query.certification.planar-discovery-input.v1" });
 worth_query_structured_value_binding!(pub PlanarDiscoveryParametersBinding for PlanarDiscoveryParameters { identity: "worth.query.certification.planar-discovery-parameters.v1" });
-worth_query_structured_value_binding!(pub PlanarDiscoveryResultBinding for PlanarDiscoveryResult { identity: "worth.query.certification.planar-discovery-result.v1" });
+worth_query_structured_value_binding!(pub PlanarDiscoveryResultBinding for PlanarDiscoveryResult { identity: "worth.query.certification.planar-discovery-result.v2" });
 
 pub struct PlanarDiscoveryQuery;
 pub struct DiscoverySourcesSlot;
@@ -187,6 +188,9 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProjection<Schema, Plan
             .iter()
             .map(|source| source.field(body_key::<Schema, DiscoveredKeySlot>()))
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self { source_body_keys })
+        Ok(Self {
+            entity: row.entity_id(),
+            source_body_keys,
+        })
     }
 }

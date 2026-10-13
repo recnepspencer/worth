@@ -14,17 +14,19 @@ use worth_query_host::facade::{
         WorthQueryApplicationUncommitted, WorthQueryCustomInvariantDenial,
     },
 };
-use worth_query_topology_entry::{PlanarEdit, PlanarMutation, PlanarRead};
 use worth_query_topology_entry::{
     INVARIANT_PROBE_EVALUATION_EXPANSION, INVARIANT_PROBE_STANDARD,
     INVARIANT_PROBE_UNDECLARED_ACCESS,
 };
+use worth_query_topology_entry::{PlanarEdit, PlanarMutation, PlanarRead};
 
 use super::{authentication, installation, seed::length};
 use crate::ConsumerSchema;
 
 mod application_program;
 mod current_output_selector;
+#[cfg(test)]
+mod dependent_pair;
 mod generated_materialization;
 mod output_correspondence;
 mod prior_output_family;
@@ -133,7 +135,9 @@ pub(crate) fn run(foreign: &WorthQueryInstalledApplicationSchema<ConsumerSchema>
         output_correspondence::observed_source(&foreign_request, "anchor-a"),
     );
     output_correspondence::run(&request, &world.application);
-    println!("Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, idempotency");
+    println!(
+        "Public candidate journey passed: variable cyclic allocation, atomic source-bound publication/read, producer-qualified current-output selection, sibling progress, retained-read correctness, root/child/nested aspect and adjacency ABA denial, exact invariant denial, idempotency"
+    );
 }
 
 fn typed_invariant_access_is_bounded(request: &Request<'_>, world: &installation::ConsumerWorld) {
