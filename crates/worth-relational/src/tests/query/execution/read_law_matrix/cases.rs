@@ -141,7 +141,7 @@ pub(super) fn table(world: &fixture::World) -> Vec<Case> {
             relations: &[0, 1],
         },
     ];
-    for (name, scope, entities, relations, _examined) in [
+    for (name, scope, entities, relations) in [
         (
             "outgoing",
             QueryScope::OutgoingNeighborhood {
@@ -150,7 +150,6 @@ pub(super) fn table(world: &fixture::World) -> Vec<Case> {
             },
             &[0, 1][..],
             &[0][..],
-            4,
         ),
         (
             "incoming",
@@ -160,7 +159,6 @@ pub(super) fn table(world: &fixture::World) -> Vec<Case> {
             },
             &[2, 1][..],
             &[1][..],
-            4,
         ),
         (
             "connectivity",
@@ -171,7 +169,6 @@ pub(super) fn table(world: &fixture::World) -> Vec<Case> {
             },
             &[0, 1, 2][..],
             &[0, 1][..],
-            6,
         ),
         (
             "depth-zero-cut",
@@ -182,7 +179,6 @@ pub(super) fn table(world: &fixture::World) -> Vec<Case> {
             },
             &[0][..],
             &[][..],
-            2,
         ),
     ] {
         cases.push(Case {
