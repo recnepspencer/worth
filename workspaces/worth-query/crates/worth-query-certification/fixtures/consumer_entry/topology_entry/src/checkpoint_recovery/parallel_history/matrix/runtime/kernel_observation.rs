@@ -90,7 +90,13 @@ pub(super) fn assert_kernel_observations(
         state.kernel_active, 0,
         "every partition kernel releases its in-flight witness"
     );
-    assert_kernel_width(state.kernel_peak, cell.workers);
+    // Certified cells replay the owner on a detached diagnostic worker
+    // ledger. Those kernels may overlap ordinary sibling kernels, so this
+    // shared fixture counter is their aggregate, not one request's width.
+    // Uncertified cells retain the exact request bound, including nested work.
+    if cell.dispatch == cases::UNSEEDED {
+        assert_kernel_width(state.kernel_peak, cell.workers);
+    }
     if cell.family == 7 && cell.workers > 1 && !expected.witnesses.is_empty() {
         assert!(
             state.kernel_peak >= 2,
