@@ -753,7 +753,8 @@ let outcome = request
 
 Choose `expect_source`, `expect_result_set`, or `without_source` as the binding
 permits, and supply `idempotency` before execution. This example executes in
-its program. On a runtime without a program, use `execute()` instead.
+its program. On a runtime without a program, use `execute(allocation_policy)`
+instead.
 
 - **Source expectation.** A `WorthQueryObservedSource<Query>` comes from a
   published query row. It records the branch, basis, query identity,
@@ -833,14 +834,17 @@ where
 `HandlerResult` distinguishes `Completed`, `DomainDenied`, `ExecutionDenied`,
 `Cancelled`, and `DeadlineExceeded`.
 
-**Ways to execute a mutation.**
+**Ways to execute a mutation.** Every lane takes an `ExecutionAllocationPolicy`
+(`worth_query_host::facade::runtime`): `SystemAllocation` or
+`Execution(&lease)`. The caller chooses; there is no default. The program lanes
+take the installed program runtime first.
 
 | Lane | Use it when |
 |---|---|
-| `execute()` | The runtime was installed without a program (`in_memory`). On a runtime installed with a program, it refuses every mutation with `ApplicationProgramRequired`. |
-| `execute_in_program(&program_runtime)` | The runtime was installed with a program (`in_memory_program` or `in_memory_rostered_program`). Every mutation on such a runtime uses this lane or one of the program lanes below. The runtime reads which program the branch runs; the caller never names it. |
+| `execute(allocation_policy)` | The runtime was installed without a program (`in_memory`). On a runtime installed with a program, it refuses every mutation with `ApplicationProgramRequired`. |
+| `execute_in_program(&program_runtime, allocation_policy)` | The runtime was installed with a program (`in_memory_program` or `in_memory_rostered_program`). Every mutation on such a runtime uses this lane or one of the program lanes below. The runtime reads which program the branch runs; the caller never names it. |
 | `execute_capability_in_program` | As above, through a capability. |
-| `execute_retained` / `execute_retained_in_program` | You want to commit and keep a retained read of the result. `execute_retained` is for a runtime without a program, like `execute()`; on a program runtime use `execute_retained_in_program`. |
+| `execute_retained` / `execute_retained_in_program` | You want to commit and keep a retained read of the result. `execute_retained` is for a runtime without a program, like `execute(..)`; on a program runtime use `execute_retained_in_program`. |
 | `execute_performed` / `execute_performed_discovered` | You need the program outputs the operation requires to be produced after commit. |
 
 `commit_for_program`, reached through `WorthQueryProductEntry::transaction()`,
@@ -1556,7 +1560,7 @@ later step
 WORTH never collapses "didn't work" into one error. Each family calls for a
 different response.
 
-`execute()` and `execute_in_program(..)` both return
+`execute(..)` and `execute_in_program(..)` both return
 `Result<WorthQueryApplicationMutationOutcome, ..RequestMutationDenial>`:
 
 - The `Err` side covers refusals **before any effect**: binding, principal,
@@ -1569,7 +1573,7 @@ different response.
 
 | Family | Variants | What to do |
 |---|---|---|
-| Landed | `Committed { receipt, result }`, `AlreadyCommitted(receipt)` | Use the receipt. `AlreadyCommitted` is an idempotent replay. |
+| Landed | `Committed { receipt, result }`, `AlreadyCommitted(receipt)`, `PreviouslyCommitted(historical)` | Use the receipt. `AlreadyCommitted` is an idempotent replay. `PreviouslyCommitted` means the same intent committed earlier, but its live receipt and handler result are not retained: read current state with a fresh query. |
 | Domain | `DomainDenied(denial)`, `IdempotencyIntentDrift` | Report it. New intent needs a new key. |
 | Stopped | `Cancelled`, `DeadlineExceeded` | Nothing landed. |
 | Not a clean landing | `Commit(WorthQueryApplicationUncommitted)` | Match the inner commit outcome (below). Some of these *did* move the branch. Never treat this family as "retry". |
@@ -1676,8 +1680,9 @@ The calls, with real code:
 Full guide:
 [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
 
-A workflow is a branch-local, versioned graph of steps: operations,
-assessments, conditions, approvals, evidence joins, and terminals. There is no
+A workflow is a branch-local, versioned graph of steps. It has seven node
+kinds: operations, assessments, inbound waits (`AwaitInbound`), conditions,
+approvals, evidence joins, and terminals. There is no
 read-only node kind; a read that feeds a decision is an assessment or a
 condition. A workflow is authored against an installed vocabulary. A purchase
 request, for example, goes from draft, through budget and vendor checks, to a
@@ -1715,7 +1720,9 @@ workflow runtime value, `WorthQueryWorkflowApplicationRuntime`):
   `ProjectionDenied` is different: the commit landed, carries its receipt,
   and only its projection was refused.
 - **Approvals need fresh authentication and a signature.** Replaying a
-  recorded key is the only exception.
+  recorded key is the only exception. An approval is evidence, not
+  permission, and a guarded operation needs one only when its binding or
+  definition asks for it ([§13.1](#131-who-may-run-a-guarded-operation)).
 - **Definitions have explicit predecessors.** Publishing names the revision it
   expects to replace. There is no last-writer-wins overwrite.
 - **Instances pin their definition revision.** A new revision supersedes the
@@ -1728,6 +1735,57 @@ workflow runtime value, `WorthQueryWorkflowApplicationRuntime`):
   instance and the instances it was migrated or continued from), live
   instances per definition lineage, and an optional total deadline on the
   trusted clock.
+
+### 13.1 Who may run a guarded operation
+
+A workflow-bound business operation passes up to three checks. They answer
+different questions, are declared in different places, and none grants another.
+
+| Check | Question it answers | Declared by | Checked when |
+|---|---|---|---|
+| Operation authorization | May this principal perform this business operation on this scope? | The operation's capability or policy binding | Ordinary mutation admission, on every execution, including workflow-bound ones |
+| Workflow occurrence authority | Is this exactly the operation, input, and branch the instance is waiting for now, and not already spent? | `workflow_authority required` on the mutation binding | Issued by an advance that reaches a guarded Operation node (`AwaitingOperation`); bound by `for_workflow_operation`; rechecked at commit |
+| Required approval evidence | Must a current signed Approve decision also exist? | The binding's `workflow_requirements` plus any `approval_authority` edge authored in the definition | Resolved by the advance before authority is issued; the approver's grant is rechecked at commit |
+
+An unguarded mutation needs check 1 only. A guarded mutation needs checks 1
+and 2, always, and check 3 when the installed requirement asks for an approval
+or the definition wires an `approval_authority` edge to it. Approving needs the
+approval capability plus a fresh signature; advancing needs the advance
+capability. Neither satisfies check 1: permission to pump an instance is not
+permission to execute the business operations in it.
+
+| `workflow_requirements` declared | Meaning |
+|---|---|
+| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
+| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
+
+**Leaving `workflow_requirements` out does not mean "no approval". It means
+"exactly one approval".** To run a guarded operation without a signature,
+declare `new()`.
+
+### 13.2 Propose, authorize, execute
+
+An Operation node is a proposal slot or a guarded effect, decided by its
+binding. At an unguarded Operation node, `prepare_workflow_proposal` records
+the operation, input type, an input-identity digest, and the node path. It
+runs no handler, writes no business state, and does not retain the input value.
+Assessments and conditions take their subject from the proposal
+(`proposal_for_assessment`, `condition_subject`) and read that subject's
+current state on the branch, never the proposed value. At a guarded node (`workflow_authority required`), an advance returns
+`AwaitingOperation` carrying single-use authority for that occurrence; nothing
+is committed. The caller then runs the business operation with
+`for_workflow_operation(..)` and `execute_in_program(..)`. That runs ordinary
+admission (check 1), requires the input to hash to the proposal's digest, and
+commits the business write together with the node's settlement. If the handler
+denies, nothing commits and the node still waits; the authority was spent at
+admission, so advance again for fresh authority before retrying. After a
+commit, advance again to move to the successor.
+
+Full rules:
+[Workflows, Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations).
+Real calls:
+[Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows).
 
 ---
 
@@ -1821,6 +1879,16 @@ Nine crates for semantic durable programs (snapshots, branch deltas, schema
 lineage, live-query sync, subscriptions, bulk ingest, extensions, analysis,
 claim boundaries) exist but are dormant. Until the wiring lands, treat Query
 applications as memory-resident.
+
+To survive a restart today, use the app-owned checkpoint lane. The installed
+runtime captures an opaque `WorthQueryApplicationCheckpoint` with
+`capture_application_checkpoint_with_sections`; the application stores and
+transports its bytes, and reinstalls with
+`in_memory_rostered_program_from_checkpoint` (or another `*_from_checkpoint`
+constructor), which readmits committed truth and accepted-output identities.
+Live handles and retained observations are not restored.
+See [Build an Application §4.4](build-an-application.md#44-checkpoint-program-transitions).
+Do not build host persistence of platform truth as a substitute.
 
 ### 15.2 Server: the transport boundary
 
@@ -1944,7 +2012,12 @@ to see the two facades used end to end.
   deadlines can change how far a call gets.
 - When a name you need is not on the audience facades, the answer is a
   missing platform capability to report. It is not a reason to reach into an
-  internal crate.
+  internal crate. Do not build a substitute. Follow the missing-capability
+  procedure in the [Capability Index](capability-index.md) before reporting.
+- A guarded workflow operation still needs ordinary operation permission.
+  An approval is evidence, not permission, and is required only when the
+  binding or definition asks for one
+  ([§13.1](#131-who-may-run-a-guarded-operation)).
 
 ---
 

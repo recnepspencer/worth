@@ -651,7 +651,9 @@ explains a transition; it does not perform the transition.
 
 An installed application runtime can capture its opaque Query checkpoint and
 encoder-owned section report together with
-`capture_application_checkpoint_with_sections(policy)`. The report splits Query
+`capture_application_checkpoint_with_sections(phase, policy)`, where `phase`
+is a `WorthQueryAdvancementPhase` lent by the same runtime (for example by
+`with_host_advancement`). The report splits Query
 framing, native Relational bytes and accepted-output identities; a locally
 captured native checkpoint also reports envelope, branch-root, branch-cell,
 partition-mirror, derived-index and framing bytes. These sizes describe the
@@ -691,6 +693,12 @@ hardware; an absolute seconds threshold is not a portable Query contract.
 - maintaining a local temporal scheduler or conditional wake registry;
 - retrying an indeterminate mutation as though it definitely failed;
 - teaching provisional undo or redo as an accepted application contract.
+
+Before concluding that the platform lacks a capability, follow the
+missing-capability procedure in the
+[Capability Index](../../../../../../docs/capability-index.md). Do not build a
+substitute: no parallel registry, copied authority, host executor, host
+scheduler, or host persistence of platform truth.
 
 ## Current Limits
 

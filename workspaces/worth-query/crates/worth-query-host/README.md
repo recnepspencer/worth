@@ -89,6 +89,12 @@ cleanup reports a failure: the publication already took effect. A fresh
 without executing a mutation. Both entrances preserve typed authorization,
 interruption, identity and owner failures.
 
+> **Interim custody.** [Milestone 9.17.6.4](../../../../plans/WORTH-query/milestone-9.17.6.4.md)
+> (planned) introduces a Query-owned operation continuation; whether it covers
+> these non-output entrances is an open decision in that plan. Until that
+> decision lands, follow this section exactly, and do not build a general
+> continuation or retry framework around it.
+
 Discovered output sources have a separate move-only partial owner. A genuine
 `execute_performed_discovered` publication failure returns `ProductUnpublished`
 with its original preparation and typed discovery. Keep that owner and the exact
@@ -119,6 +125,11 @@ Both output-source lanes retain unsupported `SettlementDeferred` and
 `Indeterminate` outcomes with their original preparation in non-actionable
 `Blocked` custody. They are not no-effect outcomes or evidence that recovery
 finished. Workflow recovery remains outside these entrances.
+
+> **Interim custody.** The same planned milestone moves the discovered and
+> required output-source custody above into the Query-owned operation
+> continuation. Until it lands, keep the owners exactly as described, and do not
+> wrap these entrances in a general continuation or retry framework.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through
@@ -643,6 +654,12 @@ Host code must not:
 - invent a host-local temporal binding or idempotency hash, or derive either
   again during commit.
 
+Before concluding that the facade lacks a capability, follow the
+missing-capability procedure in the
+[Capability Index](../../../../docs/capability-index.md). Do not build a host
+substitute: no parallel registry, copied authority, host executor, host
+scheduler, or host persistence of platform truth.
+
 ## Application Readiness For Editors
 
 An editor or transport host that owns an installed primary-graph application
@@ -667,7 +684,8 @@ admission, and currentness checks.
 - [Programs And Adoption](../worth-query/docs/foundations/programs-and-adoption.md)
 - [Workflows](../worth-query/docs/foundations/workflows.md)
 - [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
-- [WORTH Query Orientation](../worth-query/docs/AI_README.md)
+- [Capability Index](../../../../docs/capability-index.md): find the facade call for a task
+- [Query Engine Architecture Map](../worth-query/docs/AI_README.md): engine-internal, for Query maintainers
 - [Application Authorization And Emergency Elevation](../worth-query/docs/capabilities/application-authorization-and-emergency-elevation.md)
 - [Runtime-Installed Domains And Operations](../worth-query/docs/domain-capabilities/runtime-installed-domains.md)
 - [Canonical Graph Obligation Progression](../worth-query/docs/domain-capabilities/canonical-graph-obligation-progression.md)

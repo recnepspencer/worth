@@ -8,12 +8,22 @@ the term is commonly mistaken for) and **See** (where the mechanism is
 explained). Rust names are given where a type embodies the term.
 
 **Jump to:** [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) ·
-[H](#h) · [I](#i) · [L](#l) · [M](#m) · [O](#o) · [P](#p) · [R](#r) ·
+[G](#g) · [H](#h) · [I](#i) · [L](#l) · [M](#m) · [O](#o) · [P](#p) · [R](#r) ·
 [S](#s) · [T](#t) · [V](#v) · [W](#w)
 
 ---
 
 ## A
+
+**Action**
+: Something a feature owns in a program, recorded as an
+  `ApplicationActionDeclaration`: a mutation binding, a declared operation, or
+  a conditional operation, attached with `ApplicationFeatureSpec`
+  (`mutation::<Binding>()`, `operation::<Op>()`,
+  `conditional_operation::<Op>()`). The installed program lists its actions
+  (`installed_program().actions()`). **Not** the same as an *Operation*: an
+  action is program ownership of an operation.
+  **See** *Operation* and [Build an Application §3.2](build-an-application.md#32-attach-actions-to-features).
 
 **Admission**
 : The owner's check that a request or value may proceed *now*, against
@@ -45,6 +55,22 @@ explained). Rust names are given where a type embodies the term.
   An escaping external effect cannot be reversible.
   **See** [How WORTH Works §14](how-it-works.md#14-aftermath-and-recovery).
 
+**Approval**
+: In a workflow, an `Approval` node (`approval::<Capability>(id)`) waits for a
+  decision about a *proposal*. The decision is a control step
+  (`prepare_workflow_approval` with `WorkflowApprovalDecision::Approve` or
+  `Reject`), authorized by the approval's own capability and signed with a
+  fresh *signature*. The recorded decision (`PerformedWorkflowApproval`, with
+  `approver()`) is evidence, not permission: it never satisfies a guarded
+  operation's ordinary operation authorization, and a guarded operation needs
+  one only when its binding's `workflow_requirements` or an `approval_authority`
+  edge asks for it.
+  **Not** an *elevation approval*, a step in the emergency-elevation
+  capability lifecycle (`authorize_elevation_approval`), where approving is
+  also not using.
+  **See** [How WORTH Works §13.1](how-it-works.md#131-who-may-run-a-guarded-operation)
+  and [Workflows, Approvals](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#approvals).
+
 **Artifact**
 : A payload that carries its phase, proof set, and assumption basis in its
   type (`worth_proof::Artifact<P, T, S, A>`). A function that needs a phase
@@ -74,6 +100,14 @@ explained). Rust names are given where a type embodies the term.
   minted by its owner. Holding the value is the permission, and it cannot be
   forged, copied into another lane, or assembled from parts.
   **Not** a report, digest, descriptor, token, or receipt clone.
+  The word has three narrower uses; keep them apart. (1) *Workflow occurrence
+  authority*: the single-use binding an advance issues for one guarded
+  operation occurrence; it is not permission. (2) *Approval authority*
+  (`approval_authority`): a definition edge that routes an approval node's
+  decision to an Operation node as required evidence; it grants nothing.
+  (3) *Execution authority*: the physical owner of computation workers and the
+  charged-memory ledger, unrelated to permission.
+  **See** *Workflow occurrence authority* and *Execution authority*.
 
 ## B
 
@@ -116,7 +150,11 @@ explained). Rust names are given where a type embodies the term.
 **Capability**
 : A declared, installed permission to perform a class of actions, such as
   starting a workflow or approving a step. Capabilities are granted to
-  principals and checked at admission.
+  principals and checked at admission. For a workflow approval, the capability
+  is also the type parameter that names what the approval means
+  (`approval::<Capability, Operation, Input>()` when installing the vocabulary,
+  `approval::<Capability>(id)` when authoring), and the *signature*'s signing
+  intent includes it. Declare one capability per signature meaning.
 
 **Commit**
 : The atomic landing of a validated candidate on a branch. A commit moves the
@@ -297,6 +335,21 @@ explained). Rust names are given where a type embodies the term.
   Crossing a trust boundary weakens freshness. Only explicit readmission
   restores it.
 
+## G
+
+**Guarded operation**
+: An installed mutation whose binding declares `workflow_authority required`
+  (`REQUIRES_WORKFLOW_AUTHORITY`). It commits only inside the workflow
+  occurrence that awaits it: bind the request with `for_workflow_operation`
+  after an advance returns `AwaitingOperation`. Without that binding the
+  request is refused before any effect (`RequiresWorkflowTransition`);
+  authority already consumed is `WorkflowAuthoritySpent`. It still needs
+  ordinary operation authorization,
+  and needs an *approval* only as its `workflow_requirements` or the
+  definition demand. Leaving `workflow_requirements` out means exactly one
+  approval; `ApplicationWorkflowExecutionRequirements::new()` means none.
+  **See** [How WORTH Works §13.1](how-it-works.md#131-who-may-run-a-guarded-operation).
+
 ## H
 
 **Handler**
@@ -395,6 +448,33 @@ explained). Rust names are given where a type embodies the term.
   mutation was based on (`WorthQueryObservedSource`). It is descriptive input,
   checked at admission. It is not read authority.
 
+**Occurrence**
+: One concrete instance of something otherwise named in general. The word has
+  several senses; the context names which. (1) *Product occurrence*: one live
+  occurrence of the application's world, selected on a product branch
+  (`ProgramNotActiveOnOccurrence`). (2) *Workflow occurrence*: the exact
+  operation, input, and branch a workflow instance is waiting for now; see
+  *Workflow occurrence authority*. (3) *Inbound occurrence*: one authenticated
+  inbound message received through an installed inbound source
+  (`inbound_occurrences().receive(..)`); its decoded claims are data.
+  (4) *Component occurrence*: one named expansion of a reusable workflow
+  component (`expand_component(occurrence, &component)`), which prefixes the
+  expanded node paths. (5) *Producer occurrence*: one producer run admitted in
+  a *required wave*.
+
+**Operation**
+: (1) *Installed operation*: a business operation declared in the schema
+  (`worth_query_operation!`, `ApplicationOperationMarkerIdentity`). A mutation
+  binding names it (`type Operation`); a receipt reports it
+  (`installed_operation()`). (2) *Operation node*: a workflow node
+  (`Operation { operation, requires_workflow_authority }`) that refers to an
+  installed operation. It is a proposal slot when the binding is unguarded and
+  a *guarded operation* when it requires workflow authority. (3) *Control
+  operation*: the schema-declared operation a workflow control capability
+  gates (the `Operation` in `approval::<Capability, Operation, Input>()` and
+  the `*_capability` calls); the kernel records it and no handler serves it.
+  **See** *Action* and *Guarded operation*.
+
 **Owner**
 : The single runtime that holds a kind of authority and alone may mint it.
   Relational owns committed truth, Signal owns derived computation, the Bridge
@@ -479,6 +559,18 @@ explained). Rust names are given where a type embodies the term.
 : Type-level evidence that a fact holds, minted only by an authority that
   proves it (`worth_proof::Proof<P, A>`). It has no runtime cost.
 
+**Proposal**
+: The record that a workflow instance has proposed input at an unguarded
+  Operation node, published with `prepare_workflow_proposal`
+  (`PublishedWorkflowProposalRef`). It records the operation, the input type,
+  an input-identity digest, the source identity when present, and the node
+  path, plus the subjects it covers. It does not retain the input value, runs
+  no handler, and writes no business state. Assessments and conditions read
+  the current state of a covered subject, never the proposed value. An
+  *approval* decides on a proposal, and a guarded
+  operation's input must hash to the proposal's digest.
+  **See** [How WORTH Works §13.2](how-it-works.md#132-propose-authorize-execute).
+
 ## R
 
 **Readmission**
@@ -558,6 +650,19 @@ explained). Rust names are given where a type embodies the term.
   restart; that requires Store's durable ownership
   ([How WORTH Works §15.1](how-it-works.md#151-store-durable-physical-survival)).
 
+**Settlement**
+: The word is used at several levels; the context names which. (1) *Commit
+  settlement*: finishing durability and Query publication after the branch
+  moved (see *Settled*; `SettlementDeferred`,
+  `recover_deferred_application_settlement`). (2) *Output settlement*: the
+  recorded result of a program output's producer, which *marking* marks dirty
+  or pending and which a demand reports as `Settled`. (3) *Workflow node
+  settlement*: the record that a node took its control outcome. A guarded
+  operation's business write and its node settlement publish in the same
+  candidate; navigating back publishes one Back settlement. (4) *Owner
+  settlement*: an external effect's owner accepting its result, which ends
+  *custody*.
+
 **Shard**
 : A placement unit for storage or execution. Its placement does not determine
   which facts changed or which consumers require recomputation: the *touched
@@ -567,6 +672,23 @@ explained). Rust names are given where a type embodies the term.
 **Signal**
 : The runtime for deterministic, incremental derived computation. Signal
   decides whether an output changed meaningfully. It is never truth.
+
+**Signature**
+: The signed form of a workflow *approval* decision: a fresh authentication
+  event (`WorthQueryAuthenticationEvent`) that the installed
+  authentication-event owner issues to the approving principal for one exact
+  signing intent. Each signing consumes one use; the owner's policy bounds the
+  event's age and its uses (`SingleUse` or `AtMost(n)`). The signing intent
+  (`WorthQueryAuthenticationEventIntent`, purpose `workflow-approval-signature`)
+  digests the branch, instance, definition and its content identity, program
+  revision, approval node path, approval capability, target operation, the
+  proposal (identity, operation, input type, input identity), and the
+  decision. A separate subject-coverage digest covers the instance, the
+  proposal, and the proposal's source when present. A replayed key returns
+  the recorded decision without a new event.
+  **Not** a package release signature or an inbound-message signature, which
+  are verified by their own owners and authorize no approval.
+  **See** *Capability* and [Workflows, Approvals](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#approvals).
 
 **Span**
 : An execution-layer cost measuring the structural length of charged dependent
@@ -648,9 +770,10 @@ explained). Rust names are given where a type embodies the term.
   with *span* and the report's physical metrics.
 
 **Workflow**
-: A branch-local, versioned graph of steps (operations, assessments,
-  conditions, approvals, evidence joins, terminals), authored against an
-  installed vocabulary (*spec*). A *definition* is one published revision. An
+: A branch-local, versioned graph of steps, authored against an installed
+  vocabulary (*spec*). Its seven node kinds are operations, assessments,
+  inbound waits (`AwaitInbound`), conditions, approvals, evidence joins, and
+  terminals. A *definition* is one published revision. An
   *instance* is one run of a pinned definition revision. *Control steps*
   (publish or retire a definition; start, cancel, migrate, or continue an
   instance on a fork; advance or navigate back; approve) are governed
@@ -672,6 +795,17 @@ explained). Rust names are given where a type embodies the term.
   does not refund compute work already settled. This frontier is
   separate from a required wave and from application workflow control steps.
   **See** [How WORTH Works §9.9](how-it-works.md#99-resources-execution-and-cost).
+
+**Workflow occurrence authority**
+: The single-use binding an advance issues when it reaches a guarded
+  Operation node, carried by `AwaitingOperation`. `for_workflow_operation`
+  binds a mutation request to it; the request's operation and input must
+  match the awaited occurrence, and the authority is rechecked at commit. It
+  lives in memory: if it is lost, advance again. It binds one occurrence and is
+  not permission: ordinary operation authorization still applies.
+  **Not** an *approval* and **not** *execution authority*.
+  **See** *Guarded operation*, *Authority*, and
+  [How WORTH Works §13.1](how-it-works.md#131-who-may-run-a-guarded-operation).
 
 **World (Runtime World)**
 : The runtime that composes exact component bases into product branches and

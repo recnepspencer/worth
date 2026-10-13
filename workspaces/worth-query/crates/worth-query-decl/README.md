@@ -131,7 +131,7 @@ are compiled consumers of this shape.
 - [Workflows](../worth-query/docs/foundations/workflows.md)
 - [Ordinary Application Front Door](../worth-query/docs/foundations/ordinary-application-front-door.md)
 - [Branches And Previews](../worth-query/docs/foundations/branches-and-previews.md)
-- [WORTH Query Orientation](../worth-query/docs/AI_README.md)
+- [Query Engine Architecture Map](../worth-query/docs/AI_README.md): engine-internal, for Query maintainers
 - [Feature Capsule Authoring](../worth-query/docs/authoring/feature-capsule-authoring.md)
 - [Read Composition](../worth-query/docs/authoring/read-composition.md)
 - [Query Docs Index](../worth-query/docs/README.md)

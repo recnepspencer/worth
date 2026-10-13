@@ -37,7 +37,10 @@ facades expose on its behalf. See [§7](#7-internal-crates-do-not-import).
 > `worth-query-publication`, `worth-query-declaration`, `worth-proof`,
 > `worth-runtime-bridge`, or `worth-runtime-world` to an application's
 > `Cargo.toml`, stop. The capability you need is already on
-> `worth_query_host::facade` or `worth_query_decl::facade`. Search there first.
+> `worth_query_host::facade` or `worth_query_decl::facade`. Search there first,
+> then look the task up in the [Capability Index](capability-index.md). If you
+> still cannot find it, follow the index's missing-capability procedure: report
+> the gap, and do not build a substitute.
 
 ---
 
@@ -139,16 +142,24 @@ let sources = published.observed_sources();
 
 // A mutation. The outcome is a type you must match; nothing is implied.
 // On a runtime installed with a program, every mutation runs through the
-// program the branch runs. Plain execute() refuses it with
+// program the branch runs. Plain execute(..) refuses it with
 // ApplicationProgramRequired; it is only for a runtime installed without one.
+// Every mutation lane takes an ExecutionAllocationPolicy
+// (worth_query_host::facade::runtime). The caller chooses; there is no default.
 match request
     .mutate(SomeOperation::new(input))
     .without_source()                        // or .expect_source(source)
     .idempotency(&key)
-    .execute_in_program(&application)?       // the installed program runtime
+    .execute_in_program(
+        &application,                                 // the installed program runtime
+        ExecutionAllocationPolicy::SystemAllocation,  // or Execution(&lease)
+    )?
 {
     Committed { receipt, result } => { /* new state is published */ }
     AlreadyCommitted(receipt)     => { /* this key already committed */ }
+    PreviouslyCommitted(earlier)  => { /* the same intent committed earlier; its live
+                                        receipt and handler result are not retained.
+                                        Read current state with a fresh query. */ }
     IdempotencyIntentDrift        => { /* same key, different intent */ }
     DomainDenied(denial)          => { /* your handler refused */ }
     Cancelled | DeadlineExceeded  => { /* stopped before commit */ }
@@ -159,7 +170,10 @@ match request
 ```
 
 The names above are shortened. The outcome type is
-`WorthQueryApplicationMutationOutcome<Denial, Result>`. Mutation requests also
+`WorthQueryApplicationMutationOutcome<Denial, Result>`; the match above covers
+all of its variants. `PreviouslyCommitted` carries a
+`WorthQueryHistoricalApplicationCommit` (its `commit_id()` only), which grants no
+mutation, publication, or receipt authority. Mutation requests also
 take `preconditions`. A mutation that feeds the program's output graph runs
 with `execute_performed::<Program, Root>(&application, allocation_policy)` instead; see
 [Build an Application §5](build-an-application.md#5-run-the-program). How WORTH Works
@@ -273,14 +287,27 @@ when you are building a host around it.
 | `worth-ui-native-platform` | Crate root | The only native-display entry point | [UI README](../workspaces/worth-ui/README.md) |
 | `worth-store` | Crate-root modules: `physical_runtime`, `integrity_observation`, `aspect_native`, `contracts`, `physical_format`, `terminal_projection` | The durable physical store and its runtime lifecycle | [Workspace](../workspaces/worth-store/README.md), [facade](../workspaces/worth-store/crates/worth-store/README.md) |
 
-Two caveats:
+Three caveats:
 
 - **Using Relational or Signal directly means you hold their contracts
   yourself.** Query is what composes truth, derived work, admission, and
   publication into one governed request. Standalone use gives you one owner's
   guarantees, not the platform's.
 - **Store is not yet wired to Query.** No crate outside the Store workspace
-  depends on it today. Query's durable execution parity is planned, not done.
+  depends on it today. Query's store-backed durable execution and restore are
+  planned, not done.
+- **Restart today uses the app-owned checkpoint lane.** An installed runtime
+  captures an opaque `WorthQueryApplicationCheckpoint` with
+  `capture_application_checkpoint_with_sections` (or
+  `capture_application_checkpoint`). Your application stores and transports its
+  `bytes()`; on restart it rebuilds the value with
+  `WorthQueryApplicationCheckpoint::from_untrusted_bytes` and reinstalls through
+  `in_memory_rostered_program_from_checkpoint` (or another `*_from_checkpoint`
+  constructor on `application_installation`), which readmits committed truth and
+  accepted-output identities, not live handles or retained observations. See
+  [Build an Application §4.4](build-an-application.md#44-checkpoint-program-transitions).
+  Do not build host persistence of platform truth: no mirrored tables, saved
+  authority, or replayed history as a substitute.
 
 ---
 

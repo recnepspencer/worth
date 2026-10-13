@@ -91,6 +91,7 @@ then apply the following hostile sequences through the ordinary public entrance.
 | Independent cleanup | Leave a real native cleanup obligation while source/output work succeeds; refuse cleanup admission, then retry or explicitly close. | Delivery and cleanup have separate outcomes. Refusal retains remaining cleanup custody. Neither drop nor a delivered result claims external cleanup or durability. |
 | Pending and stop boundaries | Use actual native deferred output work, cancellation and exhausted admission at each effect-bearing handoff. | One advancement respects its single native phase and latched stop. Pending remains pumpable; interrupted/refused states preserve every live obligation. No hidden polling, replacement request or larger budget evades the boundary. |
 | Source and workflow distinctions | Execute a lawful source-only save and independent assessment; exercise a workflow operation recovery with its original required transition authority. | Source-only completion cannot stand in for required output completion. Assessment cannot authorize workflow business progression. Generic mutation recovery cannot erase `WorkflowUnsupported`. |
+| Approval revoked before first advance | Bind a workflow operation owner to issued authority whose installed requirement or authored `approval_authority` edge needs an approval. Revoke the approver's real grant after the owner is created and before its first effectful advance. | The first advance is denied by the existing approval recheck before any business effect or node settlement. The owner neither reissues nor clones the slot, and the retained descriptor cannot restore it. Continuing requires fresh approval and a fresh workflow advance through existing owners. Product history independently shows no effect. |
 
 Choose the smallest real fixtures that expose each boundary, then increase actual
 discovered fan-out and unrelated retained population independently. Under the same
@@ -478,7 +479,8 @@ phase machine or a `wait_until_ready` loop to restore the guarantees.
 
 ### Phase A: Fixed Owning Journey And Exact Delivery
 
-Establish descriptor ownership, canonical typed delivery meaning/installation,
+Resolve the non-output lane decision recorded under Documentation Deliverables
+before Phase A begins; the builder split depends on it. Establish descriptor ownership, canonical typed delivery meaning/installation,
 fresh admission, the fixed adapter, independent cleanup custody and lawful close.
 Establish the ordinary/advanced builder split, borrowed request view, exact typed
 action selection, terminal native posture and registered fixed replay continuation.
@@ -517,7 +519,9 @@ then workflow operation and assessment adapters over their native authority.
 Prove fresh admission, original workflow binding, honest stopping outcomes and
 independent cleanup. Reject required-output bypass, observer-as-approval and generic
 mutation recovery of workflows. No second workflow or managed-run state machine
-may appear. Ordinary consumers can now select every supported semantic lane.
+may appear. The same slice updates the workflow operation sections of Query
+`docs/AI_README.md` and `docs/foundations/workflows.md`, per the workflow
+coordination below. Ordinary consumers can now select every supported semantic lane.
 
 ### Phase D: Consumer Deletion, Cost And Compatibility Closure
 
@@ -546,6 +550,63 @@ competing milestone-shaped usage guide. Repository-relative paths:
 | Workflow users: Query `docs/domain-capabilities/workflow/README.md` | Operation versus assessment, original transition authority and stopping outcomes; compiled adapter example and negative authority proof. |
 | Runtime hosts: Query `docs/domain-capabilities/execution-resource-admission-and-managed-runs.md` and `workspaces/worth-query/README.md` | Fresh admission, caller pumping, native pending and resource accounting; operation continuation versus provider managed run; no new polling constants or hidden budgets. Verify against existing native policies and the finite-policy courts. |
 | Entry-band consumers: `workspaces/worth-query/crates/worth-query-host/README.md` | Default owning entry and exported typed outcomes, retained original intent, delivery refusal and close custody; correct the manual ordinary lifecycle instructions while retaining explicitly advanced native use. Compile public examples and run facade enforcement. |
+| Application authors: Query `docs/foundations/ordinary-application-front-door.md` | Its "Preparing a program action before publication" section and "Branch-resolved mutation lanes" table present `prepare_in_program`, `execute_retained_in_program` and `execute_performed` as ordinary lanes. Reclassify each covered lane per the non-output lane decision below; the owning entry becomes the ordinary required-output path. |
+| Workflow users: Query `docs/foundations/workflows.md` | The application workflow guide. Its "Operations" section ("Execute through the same funnel") documents `for_workflow_operation(..).execute_in_program(..)`. Update it per the workflow coordination below. The existing `docs/domain-capabilities/workflow/README.md` row targets an internal-engine (`WorthQueryWorkspace`) page; application workflow users read this guide. |
+| Crate selection: `docs/api.md` | §3.2 names the host facade's ordinary entry points. Name the owning entry as ordinary and list covered manual lanes only as advanced. |
+| AI consumers: `docs/capability-index.md` | The task index rows for running a mutation, mutations with required outputs and retries. Point each at the owning entry once its lane lands; keep the "Never build" column. Add a row for any new capability this milestone ships. |
+
+Do not revise Query `docs/domain-capabilities/installed-operation-reexecution-and-replay.md`
+for this milestone. It documents re-execution of installed domain operations on
+the internal engine (`WorthQueryWorkspace`) and certification replay. It is not
+the application mutation retry, idempotent replay or operation continuation this
+milestone changes. Where a revised document mentions replay, distinguish the two.
+
+**Documentation lands per phase.** Each phase updates the documents for the
+lanes it cuts over in the same slice; Phase D does not batch them. Between
+Phase A and Phase D, every manual lifecycle section that a landed lane covers
+carries a short interim notice: the owning entry exists for that lane, names it,
+and links to it; the manual sequence remains valid until its consumers cut over
+in Phase D. Remove each notice when its section moves under the Advanced heading.
+
+**Open decision: non-output lanes.** The builder split above moves "manual
+execute" transitions behind `advanced()` and names `execute_performed`,
+unpublished recovery and the output transitions as covered. It does not say
+whether "unpublished recovery" includes the non-output
+`recover_unpublished_in_program`, or which other non-output lanes it covers. Today the ordinary mutation builder carries `execute_in_program`,
+`execute_capability_in_program`, `prepare_in_program`,
+`execute_retained_in_program`, `recover_unpublished_in_program` and
+`resolve_idempotency_in_program`. None of them starts required outputs.
+`execute_in_program` is also the documented ordinary mutation entry and the
+workflow operation funnel. Before Phase A, this plan must state for each lane
+whether it stays on the ordinary builder or moves behind `advanced()`, and why.
+This decision is not made here.
+
+**Advanced entrances.** Documents present a manual entrance only under an
+explicit "Advanced" heading. Each such section opens by linking back to the
+ordinary entry it is an alternative to. A manual entrance never appears in an
+ordinary journey, quick-start or task table without that label.
+
+**Compiled examples need a mechanism.** "Compile examples" means a check that
+fails CI: a block bound by a `<!-- compiled: X -->` marker to fixture source, or
+a rustdoc doctest that CI runs. Today CI checks only the four marked blocks of
+`docs/build-an-application.md`, by
+`worth-query-certification/fixtures/consumer_entry/topology_entry/src/compiled_example_drift.rs`.
+The front door is the rustdoc of
+`workspaces/worth-query-bank-world/crates/bank-estate-certification/src/lib.rs`,
+so its non-`ignore` blocks are doctests, but CI does not run them.
+A `rust,ignore` block, a shape excerpt or reviewer reading does not satisfy a
+compile requirement in the table above. Each phase names the mechanism for every
+example it claims compiled and extends the marker list or doctests accordingly.
+
+**Workflow coordination.** `plans/WORTH-query/workflow-operation-execution.md`
+keeps `for_workflow_operation(..).execute_in_program(..)` as the single execution
+funnel. Before Phase C, this plan states whether that call stays the documented
+ordinary funnel, or becomes the advanced substrate beneath the workflow
+operation adapter with the adapter documented as ordinary. Either way the
+funnel's admission, occurrence authority and approval rechecks remain the
+native owners. Phase C updates the operation sections of Query
+`docs/AI_README.md` and `docs/foundations/workflows.md` in the same slice as the
+adapter, and adds the approval-revocation court above.
 
 ## Must Ship, Must Preserve And Closure
 
@@ -567,6 +628,17 @@ Completion requires all of the following, not only new types or compile evidence
 - The courts and mutation probes above pass through real native owners, with
   independent product observations. Existing exact invalidation, native parallel
   execution, finite admission and evolution/checkpoint guarantees stay green.
+- Every document in the Documentation Deliverables table, including the front
+  door, workflows guide, API map and capability index, teaches the owning entry
+  as the ordinary path for every lane the recorded decisions place under it.
+  Its documents landed with their phase, and no interim
+  notice remains. Manual entrances appear only under an explicit Advanced
+  heading that links back to the ordinary entry.
+- The non-output lane decision is recorded in this plan, and the ordinary
+  builder, facade snapshot and documents match it. The workflow funnel's
+  documented status matches the decision recorded under workflow coordination.
+- Every example the documents call compiled is checked in CI by a marker-bound
+  fixture block or a doctest; the approval-revocation court passes.
 - Final joined correctness and structure review, scoped deletion/facade checks,
   compiled examples and affected Query gate suites all agree. No production claim
   is closed solely by this specification or a private adopter's compile result.

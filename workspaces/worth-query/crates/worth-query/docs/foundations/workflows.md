@@ -7,8 +7,8 @@ a public name reachable through those facades unless the guide says otherwise.
 ## In one paragraph
 
 A workflow is branch-local, versioned data that describes a bounded graph of
-steps: operations, assessments, conditions, approvals, evidence joins, and
-terminals. An application declares a workflow vocabulary (`ApplicationWorkflowSpec`),
+steps: operations, assessments, inbound waits, conditions, approvals, evidence
+joins, and terminals. An application declares a workflow vocabulary (`ApplicationWorkflowSpec`),
 installs it against one installed program, authors a definition with
 `ApplicationWorkflowDefinitionBuilder`, binds it to the installed vocabulary,
 and publishes it on one branch with an explicit expected predecessor. An
@@ -29,30 +29,31 @@ effects when an instance is canceled, migrated, or continued on a fork.
 6. [Install the vocabulary](#install-the-vocabulary)
 7. [Give the runtime its vocabulary per program](#give-the-runtime-its-vocabulary-per-program)
 8. [Node kinds](#node-kinds)
-9. [Author a definition](#author-a-definition)
-10. [Bind and publish a definition](#bind-and-publish-a-definition)
-11. [Discover and retire definitions](#discover-and-retire-definitions)
-12. [Start an instance](#start-an-instance)
-13. [Propose and advance](#propose-and-advance)
-14. [Assessments](#assessments)
-15. [Conditions](#conditions)
-16. [Approvals](#approvals)
-17. [Operations](#operations)
-18. [Navigate back](#navigate-back)
-19. [The ordinary convenience lane](#the-ordinary-convenience-lane)
-20. [Caller-pumped progression](#caller-pumped-progression)
-21. [Cancellation](#cancellation)
-22. [Owner custody](#owner-custody)
-23. [Budgets and deadlines](#budgets-and-deadlines)
-24. [Observations and notifications](#observations-and-notifications)
-25. [Migration and fork continuation](#migration-and-fork-continuation)
-26. [Portable definition drafts (WQWD)](#portable-definition-drafts-wqwd)
-27. [Denials](#denials)
-28. [You can](#you-can)
-29. [You cannot](#you-cannot)
-30. [Misconceptions](#misconceptions)
-31. [Worked example: purchase-request approval](#worked-example-purchase-request-approval)
-32. [Related documents](#related-documents)
+9. [Propose, authorize, execute and settle](#propose-authorize-execute-and-settle)
+10. [Author a definition](#author-a-definition)
+11. [Bind and publish a definition](#bind-and-publish-a-definition)
+12. [Discover and retire definitions](#discover-and-retire-definitions)
+13. [Start an instance](#start-an-instance)
+14. [Propose and advance](#propose-and-advance)
+15. [Assessments](#assessments)
+16. [Conditions](#conditions)
+17. [Approvals](#approvals)
+18. [Operations](#operations)
+19. [Navigate back](#navigate-back)
+20. [The ordinary convenience lane](#the-ordinary-convenience-lane)
+21. [Caller-pumped progression](#caller-pumped-progression)
+22. [Cancellation](#cancellation)
+23. [Owner custody](#owner-custody)
+24. [Budgets and deadlines](#budgets-and-deadlines)
+25. [Observations and notifications](#observations-and-notifications)
+26. [Migration and fork continuation](#migration-and-fork-continuation)
+27. [Portable definition drafts (WQWD)](#portable-definition-drafts-wqwd)
+28. [Denials](#denials)
+29. [You can](#you-can)
+30. [You cannot](#you-cannot)
+31. [Misconceptions](#misconceptions)
+32. [Worked example: purchase-request approval](#worked-example-purchase-request-approval)
+33. [Related documents](#related-documents)
 
 ## Terms
 
@@ -67,7 +68,8 @@ effects when an instance is canceled, migrated, or continued on a fork.
 | Node | One step in a definition. Each node has a kind (see [Node kinds](#node-kinds)). |
 | Node path | The string that names a node inside a definition, for example `approval` or `checks/budget`. Nodes inside an expanded component are prefixed with the component occurrence. |
 | Transition | One recorded step of an instance: the node it settled and the control outcome it took. `PerformedWorkflowTransition` is its public receipt. |
-| Control step | A workflow action that the kernel authorizes and records itself, with no application handler: publishing or retiring a definition, starting, canceling, migrating, or continuing an instance, advancing, and approving. Its binding sets `WORKFLOW_CONTROL`. See [Control steps](#control-steps-and-workflow_control). |
+| Control step | A workflow action that the kernel authorizes and records itself, with no application handler: publishing or retiring a definition, starting, canceling, migrating, or continuing an instance, proposing, advancing, and approving. Its binding sets `WORKFLOW_CONTROL` (both shipped examples also propose through a `WORKFLOW_CONTROL` binding). See [Control steps](#control-steps-and-workflow_control). |
+| Proposal | What `prepare_workflow_proposal` records when it settles a proposal slot: the operation, input type, an input-identity digest, the node path, and the assessment subjects. It does not keep the input value. See [Propose, authorize, execute and settle](#propose-authorize-execute-and-settle). |
 | Pump | One caller request that asks the kernel to take the next step. |
 | Workflow kernel | The part of Query that authorizes, adjudicates, and records workflow steps. Application code reaches it only through the workflow runtime. |
 | Workflow runtime | `WorthQueryWorkflowApplicationRuntime`: the host value that carries the installed vocabularies. Instance requests take it (`&workflow` in the examples); definition publication does not. |
@@ -136,7 +138,7 @@ Every workflow action is a declared application mutation intent. Its binding
 | Constant | Default | Meaning when `true` |
 |---|---|---|
 | `REQUIRES_APPLICATION_PROGRAM` | `false` | The mutation must commit under the program the branch runs. |
-| `REQUIRES_WORKFLOW_AUTHORITY` | `false` | The mutation is a guarded effect. It runs only with authority issued by a workflow operation step. |
+| `REQUIRES_WORKFLOW_AUTHORITY` | `false` | The mutation is a guarded effect. It runs only with workflow authority that an advance issues when it reaches the effect's Operation node. Ordinary operation permission is still checked; see [Three independent checks](#three-independent-checks). |
 | `WORKFLOW_CONTROL` | `false` | The mutation is a workflow control step (see the table below). |
 
 Each control step is authorized by one installed control capability:
@@ -145,6 +147,7 @@ Each control step is authorized by one installed control capability:
 |---|---|---|
 | Publish or retire a definition | `prepare_workflow_publication`, `prepare_workflow_definition_retirement` | `authoring_capability` |
 | Start, cancel, migrate, or continue an instance on a fork | `prepare_workflow_instance_start`, `prepare_workflow_instance_cancellation`, `prepare_workflow_instance_migration`, `prepare_workflow_fork_continuation` | `instance_start_capability` |
+| Propose | `prepare_workflow_proposal` | the proposing intent's own capability. Both shipped examples propose with the authoring intent, so `authoring_capability` authorizes it there. |
 | Advance, navigate back | `prepare_workflow_advance`, `prepare_workflow_navigate_back` | `advance_capability` |
 | Approve or reject | `prepare_workflow_approval` | the approval's own capability (`.approval::<Capability, ..>()`) |
 
@@ -155,8 +158,10 @@ Why no handler serves a control step:
 - The ordinary mutation lane refuses a `WORKFLOW_CONTROL` binding with `WorthQueryApplicationRequestMutationDenial::Handler(MutationHandlerExecutionDenial::WorkflowControl)`. Control intents reach the kernel only through the workflow request methods (`prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance`, `prepare_workflow_approval`, and the rest).
 
 A guarded effect (`REQUIRES_WORKFLOW_AUTHORITY = true`) is different. It has an
-ordinary handler, but it commits only when the request carries authority from
-the workflow step that requires it. See [Operations](#operations).
+ordinary handler and passes ordinary operation admission, and it commits only
+when the request also carries the workflow authority issued for its Operation
+node. Workflow authority does not replace operation permission. See
+[Operations](#operations).
 
 ## Install the vocabulary
 
@@ -237,12 +242,13 @@ A branch whose program has no installed vocabulary is refused before any effect.
 
 ## Node kinds
 
-The workflow node families are:
+`ApplicationWorkflowNodeKind` has seven kinds:
 
 | Kind | Builder method | What it does | Outgoing control outcomes |
 |---|---|---|---|
-| `Operation { operation, requires_workflow_authority }` | `operation::<Operation>(id, requires_workflow_authority)` or `operation_binding::<Binding>(id)` | Runs one installed operation. With `requires_workflow_authority`, the step issues authority that a guarded effect consumes. `operation_binding` takes the flag from `Binding::REQUIRES_WORKFLOW_AUTHORITY`. | `Completed` |
+| `Operation { operation, requires_workflow_authority }` | `operation::<Operation>(id, requires_workflow_authority)` or `operation_binding::<Binding>(id)` | One of two things, decided by its binding. A **proposal slot** (unguarded): the caller settles it with `prepare_workflow_proposal`, which runs no handler and writes no business state. A **guarded effect** (`requires_workflow_authority`): an advance issues authority for the occurrence, and the caller then executes the business operation through `for_workflow_operation`, which still passes ordinary operation admission ([Three independent checks](#three-independent-checks)). `operation_binding` takes the flag from `Binding::REQUIRES_WORKFLOW_AUTHORITY`. See [Propose, authorize, execute and settle](#propose-authorize-execute-and-settle). | `Completed` |
 | `Assessment(..)` | `assessment::<Query>(id)`, `assessment_for::<Query>(id, selector)`, `assessment_when_related_relation_present::<..>(..)` | Evaluates one installed query and records its result as evidence. | `Completed` |
+| `AwaitInbound(..)` | `await_inbound::<Effect>(id, &origin, inbound, wait)` | Waits for the installed inbound completion of a preceding operation's external effect. A fresh advance observes the owner's settled result. See [Waiting for an inbound completion](#waiting-for-an-inbound-completion). | `Completed` |
 | `Condition(..)` | `condition(id, source, operands)` | Evaluates a pure Bool expression over named query results. It is not an effect. | `ConditionSatisfied`, `ConditionUnsatisfied` |
 | `Approval(..)` | `approval::<Capability>(id)` | Waits for a signed decision by an authorized principal. | `Approved`, `Rejected` |
 | `EvidenceJoin(policy)` | `evidence_join(id, policy)` | Joins assessment evidence. `AllRequiredPassing` or `AllRequiredCompleted`. | `EvidenceSatisfied`, `EvidenceFailed` |
@@ -262,6 +268,48 @@ Validation rules for routes (`ApplicationWorkflowValidationDenialKind`):
 
 There is no separate read-only node kind. A read that feeds a decision is an
 assessment or a condition.
+
+## Propose, authorize, execute and settle
+
+An Operation node is one of two things, decided by its binding:
+
+- **Proposal slot** (unguarded binding): the caller records proposed input with
+  `prepare_workflow_proposal`. This runs no handler and writes no business state.
+- **Guarded effect** (`workflow_authority required`): an advance issues authority for the
+  occurrence; the caller then executes the business operation through `for_workflow_operation`.
+
+The sequence:
+
+1. **Propose.** At an unguarded Operation node, a proposal records the operation, input type,
+   an input-identity digest, and the node path, and settles the node with `Completed`. No
+   handler runs and no business state changes. The input value itself is not retained: it is
+   the caller's domain data. If it must survive across requests, record it in your own schema
+   (for example, a draft entity); the proposal binds only its digest.
+2. **Assess, branch, join.** Assessments and conditions read the subject's current state,
+   not the proposed value. An assessment's subject is an entity in the proposing request's
+   admitted capability scope, picked by the assessment's selector
+   (`ApplicationWorkflowSubjectSelector`: `Resource`, `Related`, or a context slot).
+   The kernel requires the assessment query's source root to be that subject and checks the
+   query's contract (query, parameter type, result type, binding). It does not pass the
+   proposed input to the query or compare the query's parameters with it.
+3. **Approve (optional).** A signed Approve or Reject decision about the proposal. Evidence, not
+   permission.
+4. **Authorize.** An advance at a guarded Operation node returns `AwaitingOperation` carrying
+   single-use authority for that occurrence. Nothing is committed. The authority lives in memory
+   on the returned `RequiredWorkflowOperation`; if it is lost, advance again.
+5. **Execute and settle.** `for_workflow_operation(..)` then `execute_in_program(..)` runs ordinary
+   admission (check 1 in [Three independent checks](#three-independent-checks)), requires the
+   input to hash to the proposal's digest (`for_workflow_operation` refuses another input with
+   `RequirementMismatch`), and commits the business write together with the node's settlement.
+   If the handler denies, nothing commits and the node still waits. The authority is spent
+   once ordinary admission passes, so a handler denial needs a fresh advance.
+6. **External effects** settle through [owner custody](#owner-custody) and an `AwaitInbound` node.
+7. **Advance again** to move to the successor or terminal.
+
+Advancing at a proposal slot returns `PreparationDenied` whose kind is
+`WorkflowTransitionNodeUnsupported` and whose subject is the node path. It means "this node
+needs a proposal", not a fault. There is no `AwaitingProposal` outcome (see
+[Known gaps](#known-gaps)).
 
 ## Author a definition
 
@@ -290,13 +338,20 @@ Connection methods return `&mut Self` and chain:
 | `control(&source, outcome, &target)` | Routes one control outcome. |
 | `retry(&source, retry, &target)` | Routes a bounded retry (see below). |
 | `sequence(&[operations])` | Chains operations on `Completed`. Returns `Result`. |
-| `proposal_for_assessment(&operation, &assessment)` | The proposal an operation produced is the assessment's subject. |
-| `condition_subject(&operation, &condition)` | The proposal is the condition's subject. |
+| `proposal_for_assessment(&operation, &assessment)` | The proposal fixes the assessment's subject: the entity in the proposing request's admitted capability scope that the assessment's selector picks. The assessment reads that entity's current state, not the proposed input. |
+| `condition_subject(&operation, &condition)` | Ties the condition to the proposal; validation requires exactly one. The condition evaluates the query results the caller supplies, each checked against the advancing request's admitted scope entity, not the proposed input. |
 | `proposal_for_approval(&operation, &approval)` | The proposal is what the approver decides on. |
 | `assessment_evidence(&assessment, &join)` | Feeds evidence into a join. |
 | `joined_evidence(&join, &approval)` | The approver sees the joined evidence. |
-| `approval_authority(&approval, &operation)` | The approval authorizes that operation. |
-| `operation_input(&operation, &operation)` | One operation's input comes from another's proposal. |
+| `approval_authority(&approval, &operation)` | The approval is required evidence for that guarded operation. It is not permission: ordinary operation permission still applies (see [Three independent checks](#three-independent-checks)). |
+| `operation_input(&operation, &operation)` | The guarded operation's input must be the proposed input. The platform binds the proposal's input-identity digest; the caller supplies the same value to `for_workflow_operation`. The two input types must be equal (`IncompatibleOperationInput`). |
+
+`validate()` enforces these minimums (`ApplicationWorkflowValidationDenialKind`):
+
+- Each assessment has exactly one subject (`MissingAssessmentSubject`); each condition has exactly one subject (`MissingConditionSubject`).
+- Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
+- Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
+- A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `workflow_requirements` omitted, or `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and declares no `workflow_requirements` (`UnexpectedWorkflowAuthority`).
 
 `finish()` returns `Result<AuthoredWorkflowDefinition<Spec>,
 ApplicationWorkflowAuthoringDenial>`. `validate()` checks the whole graph and
@@ -379,11 +434,15 @@ Preparation refusals are `WorthQueryWorkflowDefinitionPublicationPreparationDeni
 Discovery asks one selected branch occurrence which revision is current for an identity:
 
 ```rust,ignore
-let found = runtime
-    .on_branch(branch)
-    .select()?
-    .discover_workflow_definition::<PurchaseWorkflowSpec>(&identity)?;
+// `execution` is the host's `ExecutionRequest`
+// (`worth_query_host::facade::primary_graph::ExecutionRequest`).
+let selected = runtime
+    .with_host_advancement(|phase| runtime.on_branch(branch).select(&phase))??;
+let found = selected.discover_workflow_definition::<PurchaseWorkflowSpec>(execution, &identity)?;
 ```
+
+The runnable example builds its `ExecutionRequest` with `ExecutionRequest::serial(..)`
+(`worth-query-certification/examples/authored_workflow/main.rs`).
 
 `WorthQueryWorkflowDefinitionDiscovery`:
 
@@ -397,6 +456,9 @@ let found = runtime
 
 | Variant | Meaning |
 |---|---|
+| `ExecutionRequest(..)` | The native request stopped while reading the selected occurrence. |
+| `Cancelled` | The caller cancelled this discovery. |
+| `DeadlineExceeded` | The caller's deadline elapsed during discovery. |
 | `ForeignLineage` | Another spec published this identity. Discover it through that spec. |
 | `LineageUnreadable` | The lineage records cannot be read within their fixed bounds. Retrying the same discovery cannot succeed. |
 | `IndexUnavailable` | The lineage index could not be made current within its reconstruction budget. |
@@ -440,12 +502,35 @@ not move running instances.
 
 ## Propose and advance
 
-**Propose.** `prepare_workflow_proposal(&workflow, instance)` publishes a
-proposal: the typed input of the proposal intent. Assessments, conditions,
-approvals, and guarded operations read it through the data connections you
-authored. `WorkflowProposalOutcome` is `Published(PerformedWorkflowProposal)`
-(with `proposal()` returning `PublishedWorkflowProposalRef`), `Application(..)`,
-or `ProjectionDenied(..)`.
+**Propose.** `prepare_workflow_proposal(&workflow, instance)` settles the
+unguarded Operation node at the instance head. It runs no handler. It records
+the operation, input type, an input-identity digest of the intent's input, the
+node path, and the assessment subjects, and the node takes `Completed`. The
+input value is not kept. Assessments, conditions, and approvals use the
+proposal through the data connections you authored; a guarded operation
+connected by `operation_input` requires the same input digest.
+`WorkflowProposalOutcome` is `Published(PerformedWorkflowProposal)` (with
+`proposal()` returning `PublishedWorkflowProposalRef`), `Application(..)`, or
+`ProjectionDenied(..)`.
+
+The proposing intent must be capability-bound; its capability authorizes the
+proposal. Its operation must be installed in the vocabulary
+(`.operation::<Binding>()`), or preparation is refused with
+`WorkflowTransitionAuthorityMismatch`. The head node must be a proposal slot
+for that operation and input type. When it is not, the kernel looks for an
+earlier matching proposal to replay and, finding none, refuses with
+`WorkflowTransitionAffinityMismatch`. Both shipped examples propose with the
+authoring control intent:
+
+- The certification example installs `WorkflowDefinitionAuthoringBinding` as a
+  vocabulary operation as well as the authoring capability, authors the slot as
+  `operation::<WorkflowDefinitionAuthoringOperation>("propose", false)`, and
+  proposes with `WorkflowDefinitionAuthoringIntent`. Its input type,
+  `WorkflowDefinitionAuthoringInput`, is a type alias of the guarded
+  operation's input `SetRetentionInput`, so `operation_input` accepts it.
+- The Bank approved-payment workflow proposes with
+  `ApprovedBusinessPaymentAuthoringIntent { input: ApprovePayment }`, the same
+  input type its guarded `ApprovePaymentMutationBinding` takes.
 
 **Advance.** `prepare_workflow_advance(&workflow, instance)` returns
 `Result<WorthQueryWorkflowAdvanceRequest, WorthQueryWorkflowAdvancePreparationDenial>`.
@@ -465,6 +550,10 @@ or `ProjectionDenied(..)`.
 | `PreparationDenied(WorthQueryApplicationAttemptDenial)` | The kernel refused the step. Read `kind()` (see [Denials](#denials)). |
 | `AuthenticationDenied(..)` | The authentication event was refused. |
 | `IdempotencyDenied(..)` | The key conflicts with a different recorded request. |
+
+At a proposal slot, `execute()` returns `PreparationDenied` whose kind is
+`WorkflowTransitionNodeUnsupported` and whose subject is the node path: the
+node needs a proposal, not another advance.
 
 `WorthQueryWorkflowAdvancePreparationDenial` has `RuntimeMismatch`,
 `RequestAdmission(..)`, `TransitionPreparation(..)`, `Authentication(..)`, and
@@ -607,13 +696,47 @@ let outcome = signing.sign(&event).map(|request| request.execute())?;
 - `required` is the `RequiredWorkflowApproval` from `AwaitingApproval`. `proposal` is the `PublishedWorkflowProposalRef` the approver decides on.
 - `WorkflowApprovalDecision` is `Approve` or `Reject`.
 - `prepare_workflow_approval` returns `WorthQueryWorkflowApprovalSigningRequest`. When the key already recorded a decision, `authentication_intent()` is `None` and `execute_replay()` returns the recorded outcome without a new event.
-- On `Approved`, the approval's authority flows to the operation connected by `approval_authority`. On `Rejected`, a retry route (if authored) sends the instance back.
+- On `Approved`, the approval becomes required evidence for the operation connected by `approval_authority`. It is not permission: the principal who later executes that operation still needs ordinary permission for it and need not be the approver (see [Three independent checks](#three-independent-checks)). On `Rejected`, a retry route (if authored) sends the instance back.
 
 Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalStale`,
 `WorkflowApprovalGrantUnavailable`, `WorkflowApprovalExpired`,
 `WorkflowApprovalDelegationChanged`, and `WorkflowApprovalAuthorityDenied`.
 
 ## Operations
+
+### Three independent checks
+
+A workflow-bound business operation passes up to three checks. They answer different
+questions, are declared in different places, and none grants another.
+
+| Check | Question it answers | Declared by | Checked when |
+|---|---|---|---|
+| Operation authorization | May this principal perform this business operation on this scope? | The operation's capability or policy binding | Ordinary mutation admission, on every execution, including workflow-bound ones |
+| Workflow occurrence authority | Is this exactly the operation, input, and branch the instance is waiting for now, and not already spent? | `workflow_authority required` on the mutation binding | Issued by an advance that reaches a guarded Operation node (`AwaitingOperation`); bound by `for_workflow_operation`; rechecked at commit |
+| Required approval evidence | Must a current signed Approve decision also exist? | The binding's `workflow_requirements` plus any `approval_authority` edge authored in the definition | Resolved by the advance before authority is issued; the approver's grant is rechecked at commit |
+
+Decision procedure:
+
+1. An unguarded business mutation needs check 1 only.
+2. A guarded mutation (`workflow_authority required`) needs checks 1 and 2, always.
+3. It also needs check 3 when the installed requirement asks for an approval, or when the
+   definition wires an `approval_authority` edge to the operation.
+4. Approving needs the approval capability plus a fresh signature. Advancing needs the advance
+   capability. Neither satisfies check 1. Permission to pump an instance is not permission to
+   execute the business operations in it.
+5. An approval is evidence, not permission. Workflow authority is a binding to one occurrence,
+   not permission.
+
+What these checks mean in practice:
+
+- Approval whose assessment evidence is no longer current is visible only as
+  `AuthorityUnavailable`. When the advance finds that evidence changed or incomplete, it still returns
+  `AwaitingOperation`, but issues no authority; `for_workflow_operation` then refuses with
+  `WorthQueryWorkflowOperationBindingDenial::AuthorityUnavailable`.
+- The approver's grant is rechecked before the handler runs and again at commit. A grant
+  revoked or expired after the advance stops the operation from committing.
+- The principal who executes the operation may differ from the approver. Nothing ties the two;
+  the executing principal passes check 1 on its own.
 
 ### Declare evidence, not authorization modes
 
@@ -622,7 +745,8 @@ its exact current workflow occurrence. The supplier owns business-state checks
 and required evidence. Being allowed to pump an instance does not grant permission
 to execute every business operation within it.
 
-For a new information-gathering binding, declare no additional workflow evidence:
+For a guarded operation that needs no approval (occurrence-only execution),
+declare no additional workflow evidence:
 
 ```rust,ignore
 // Inside worth_query_mutation_binding!(...), alongside its other contracts:
@@ -644,6 +768,18 @@ facade. Manual `ApplicationMutationBinding` implementations return `Some(...)`
 from `workflow_execution_requirements()`. The default `None` preserves the old
 guarded-binding contract: exactly one native approval is required. It is not the
 same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
+
+| Declared | Meaning |
+|---|---|
+| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
+| `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
+| `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
+
+**Warning:** leaving `workflow_requirements` out does not mean "no approval". It
+means "exactly one approval". To run a guarded operation without a signature,
+declare `new()`. The runnable
+[`information.rs`](../../../worth-query-certification/examples/authored_workflow/information.rs)
+example does this.
 
 The installed binding establishes a minimum evidence requirement. Definition
 authoring cannot remove or substitute it. Wire a required approval with the
@@ -675,10 +811,11 @@ let committed = runtime
     .without_source()
     .idempotency(&key)
     .for_workflow_operation(&workflow, &required)?
-    .execute_in_program(workflow.program_runtime(), allocation)?;
+    .execute_in_program(workflow.program_runtime(), ExecutionAllocationPolicy::SystemAllocation)?;
 ```
 
-- `for_workflow_operation` returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match the requirement or no authority was issued (`AuthorityUnavailable`).
+- `for_workflow_operation` returns `WorthQueryWorkflowOperationBindingDenial`: `RuntimeMismatch` if the workflow belongs to another runtime; `RequirementMismatch` if the intent's binding, operation, workflow requirements, input type, or branch does not match the requirement, or its input does not hash to the proposal's input-identity digest; `AuthorityUnavailable` if the advance issued no authority (see [Three independent checks](#three-independent-checks)); `Identity(..)` if the input cannot be encoded.
+- The authority is single-use and lives only in the returned `RequiredWorkflowOperation`. Execution takes it after ordinary admission and idempotency resolution, before the handler runs; a new attempt with the same requirement that is not resolved as an idempotent replay is refused with `WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent`. If it is lost or spent without a commit, advance again for a fresh one. Nothing was committed when it was issued.
 - `execute_in_program` resolves the program from the request's branch and returns `WorthQueryApplicationMutationOutcome` (for example `Committed { .. }`).
 - A local effect and its native operation settlement publish in the same candidate. Advance again to follow `Completed` to the successor; do not execute the business effect again. External effects retain owner custody and settle only through their completion/recovery protocol.
 - Retrying the same logical request preserves its key and exact intent. It can recover `AlreadyCommitted` without repeating the handler's effects. A new request against a stale/spent occurrence is denied; reconcile rather than automatically retrying a lifecycle mutation.
@@ -701,7 +838,7 @@ The ordinary lane wraps the common steps on a mutation request:
 
 | Call | Does |
 |---|---|
-| `mutate(intent).workflow(&workflow, authored)` | Validates the authored definition and binds it against the vocabulary for the branch's program. Returns `WorthQueryOrdinaryWorkflowDraft` or `WorthQueryOrdinaryWorkflowPublicationDenial` (`RuntimeMismatch`, `InvalidDefinition`, `UnsupportedDefinition`, `Preparation`). |
+| `mutate(intent).workflow(&phase, &workflow, authored)` | Validates the authored definition and binds it against the vocabulary for the branch's program. `phase` is a `WorthQueryAdvancementPhase`, for example the one `with_host_advancement` lends. Returns `WorthQueryOrdinaryWorkflowDraft` or `WorthQueryOrdinaryWorkflowPublicationDenial` (`RuntimeMismatch`, `ProductSelection`, `InvalidDefinition`, `UnsupportedDefinition`, `Preparation`). |
 | `.publish(expected).idempotency(&key).execute()` | Publishes. Returns `WorkflowDefinitionPublicationOutcome`. |
 | `mutate(intent).start_workflow(&workflow, definition).idempotency(&key).execute()` | Starts. Returns `WorkflowInstanceStartOutcome`. |
 | `mutate(intent).run_workflow(&workflow, instance).idempotency_keys(&keys).execute()` | Advances repeatedly, one key per attempted step. Returns `WorthQueryOrdinaryWorkflowRunProgress`. |
@@ -718,8 +855,8 @@ The ordinary lane wraps the common steps on a mutation request:
 | `PreparationDenied(..)` | A step could not be prepared. |
 | `Outcome(WorkflowProgressOutcome)` | A step returned a wait or denial. Settle it with the matching lane. |
 
-`run_workflow` only advances. An assessment, condition, approval, or operation
-still needs its own lane and its own key.
+`run_workflow` only advances. A proposal, assessment, condition, approval, or
+operation still needs its own lane and its own key.
 
 ## Caller-pumped progression
 
@@ -729,6 +866,19 @@ still needs its own lane and its own key.
 - Every step happens because a caller sent a request. A caller that stops pumping leaves the instance where it is.
 - Each outcome is typed, so a caller (or an AI agent) can read the `Awaiting*` variant and choose the next request.
 - Each request carries its own idempotency key. Retrying a key replays the recorded outcome.
+
+### Known gaps
+
+These limits are current, consumer-visible, and verified in source. Before
+concluding something else is missing, follow the procedure in the
+[capability index](../../../../../../docs/capability-index.md).
+
+| Gap | What exists today | Do not |
+|---|---|---|
+| No facade read of a workflow instance's state or history (current node, transitions, proposals, approvals) | Only the typed outcomes your own requests return: `PerformedWorkflowTransition`, `PerformedWorkflowApproval` (`approver()`), `Awaiting*`; idempotent replay of the same key returns the recorded outcome | Do not mirror kernel state into your schema as truth or use a status table to decide whether to advance. Advance and match the typed outcome. |
+| Instance and proposal references cannot be rebuilt in another process (`PublishedWorkflowInstanceRef` / `PublishedWorkflowProposalRef` have no public constructor or serialization; no instance discovery) | Keep the references in the process that owns the instance | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
+| Proposal and transition records do not retain the acting principal (approvals do retain the approver) | Capability separation-of-duty / distinct-actor rules exist but cannot see the proposer | Do not treat a caller-supplied "actor" field in input as admitted identity. |
+| No outcome names "awaiting a proposal" | `PreparationDenied(WorkflowTransitionNodeUnsupported)` with the node path | Do not treat it as a fault to retry blindly. |
 
 ## Cancellation
 
@@ -778,7 +928,7 @@ origin with the matching effect, protocol, source and limits. The installed
 source completes the original operation through Query custody and World. A
 fresh owner acceptance first settles the operation's receipt; before that,
 advance still returns `AwaitingOperation`. A subsequent fresh
-`advance_workflow` observes the terminal owner result at `await_inbound` and
+`prepare_workflow_advance(..).execute()` observes the terminal owner result at `await_inbound` and
 may enter its successor. A notification only cues those caller requests.
 Neither callback bytes nor a correlation token can resume the instance.
 
@@ -910,6 +1060,7 @@ Read with `WorthQueryApplicationAttemptDenial::kind()` and `subject()`.
 | `WorthQueryApplicationWorkflowInstallationDenial` | Installation and `bind_definition` |
 | `WorthQueryWorkflowRuntimeBindingDenial` | `retain_workflow_spec`, `support_workflow_spec` |
 | `WorthQueryWorkflowDefinitionDiscoveryDenial` | Discovery |
+| `WorthQueryWorkflowProposalPreparationDenial` | `prepare_workflow_proposal`. Variants: `RuntimeMismatch`, `RequestAdmission(..)`, `ProposalPreparation(..)`, `IdempotencyResolution(..)`, `InstanceBranchMismatch` |
 | `WorthQueryWorkflowAdvancePreparationDenial` | `prepare_workflow_advance` |
 | `WorthQueryWorkflowAssessmentAcceptanceDenial`, `WorthQueryWorkflowConditionAcceptanceDenial` | Accepting assessment evidence and condition results |
 | `WorthQueryWorkflowOperationOwnerAcceptanceDenial` | `accept_operation_from_owner`, `accept_recovered_operation_from_owner`. Variants: `Binding`, `Request`, `Inspection`, `Owner`, `RecoveryNotRequired`, and `Acceptance(WorthQueryWorkflowOperationAcceptanceDenial)` |
@@ -966,8 +1117,9 @@ declare; they do not exist in this repository. The Query names are real.
 
 A requester drafts a purchase request. Two checks run: the budget is available
 and the vendor is approved. A manager approves or rejects. A rejection sends the
-request back to the draft step at most twice. An approval authorizes one
-guarded effect that places the order. The whole request must finish within
+request back to the draft step at most twice. An approval is the required
+evidence for one guarded effect that places the order; the principal who
+places it still needs ordinary permission for that operation. The whole request must finish within
 seven days.
 
 ```text
@@ -1099,6 +1251,14 @@ and a second revision):
 ```text
 cargo run -p worth-query-certification --example authored_workflow
 ```
+
+The same run first executes `information.rs`, an unsigned workflow: a
+`propose` slot, a guarded `record` operation whose binding declares
+`workflow_requirements ApplicationWorkflowExecutionRequirements::new()`, and a
+terminal. It proposes, advances to `AwaitingOperation`, executes the write
+through `for_workflow_operation(..).execute_in_program(..)`, and advances to
+`done` with no approval. Both parts propose with the authoring control intent
+(see [Propose and advance](#propose-and-advance)).
 
 The Bank reference world (`workspaces/worth-query-bank-world`) runs business
 payment approval as a workflow. Its control bindings declare `WORKFLOW_CONTROL`.
