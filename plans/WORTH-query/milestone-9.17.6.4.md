@@ -64,8 +64,9 @@ Where a native operation uses a managed run, delegate that run unchanged.
 The joined upstream foundation also includes typed demand-only roots,
 `WorthQueryApplicationOutputDemandContinuation` and ordinary retained-current
 reads. Source-only followed by independent assessment reuses these owners;
-this milestone must not rebuild them. Implementation begins from the joined,
-certified public foundation with these native contracts preserved.
+this milestone must not rebuild them. The initial review at `3129c8b7fb`
+predated upstream `9bd4509e99`; implementation begins from the final joined and
+certified public revision, with these additions preserved.
 
 ## Adversarial Courtroom
 
@@ -86,7 +87,7 @@ then apply the following hostile sequences through the ordinary public entrance.
 | Replay and resumption | Lose the reply after a genuine commit and initiate the same key/action/input again. Exercise live registered receipt recovery, an unavailable registration and a genuinely historical receipt on fixed and discovered lanes. | Registered replay resumes through native receipt recovery without a new source effect. Unrecoverable registration and historical replay return terminal historical evidence with remaining cleanup; neither manufactures the original handler result nor reports required outputs complete. |
 | Discovered committed retention | Produce a real source effect whose discovered carrier could not be registered. Refuse retention again before a lawful retry. | The original discovered roots, typed result and unregistered custody survive every refusal. Retry promotes that carrier; receipt-only lookup and rediscovery cannot substitute. Existing settled roots and admitted prefixes remain owned. |
 | Delivery refusal | Settle outputs, then deny the final read or exhaust its native admitted work. Retry with a fresh lawful request. | Settlement and immutable descriptor survive. Retry proves currentness and queries at one authentic observation. It does not publish or compute the original operation again merely because delivery failed. |
-| Stale/current distinction | Advance an unrelated domain and then a consumed fact between settlement and delivery; also request a lawful historical observation. | Unrelated progress follows native exact invalidation. A changed required settlement returns typed Stale with original history/cleanup; it cannot yield a current result or advance a closed handle. A later observation is current only if the original settlement passes the complete native check. Historical delivery stays explicitly historical. |
+| Stale/current distinction | Advance an unrelated domain and then a consumed fact between settlement and delivery; also request a lawful historical observation. | Unrelated progress follows native exact invalidation. A stale required settlement cannot yield a current result. A historical read is explicitly historical; a newer current delivery identifies its actual basis and does not counterfeit the original handler result. |
 | Independent cleanup | Leave a real native cleanup obligation while source/output work succeeds; refuse cleanup admission, then retry or explicitly close. | Delivery and cleanup have separate outcomes. Refusal retains remaining cleanup custody. Neither drop nor a delivered result claims external cleanup or durability. |
 | Pending and stop boundaries | Use actual native deferred output work, cancellation and exhausted admission at each effect-bearing handoff. | One advancement respects its single native phase and latched stop. Pending remains pumpable; interrupted/refused states preserve every live obligation. No hidden polling, replacement request or larger budget evades the boundary. |
 | Source and workflow distinctions | Execute a lawful source-only save and independent assessment; exercise a workflow operation recovery with its original required transition authority. | Source-only completion cannot stand in for required output completion. Assessment cannot authorize workflow business progression. Generic mutation recovery cannot erase `WorkflowUnsupported`. |
@@ -154,14 +155,9 @@ Choose an internal borrowed request view for native materialization. Native
 staging/recovery borrows the immutable typed intent, key and preconditions;
 retained observed-source loans use their existing Arc-backed charge. Do not add
 an `Intent: Clone` requirement or reconstruct/clone the domain input per pump.
-Preserve existing binding input Clone bounds and native governed-input ownership,
-snapshots and accounting; this is not a promise of zero native clones.
 Refactor the native staging view where today's single-use owned request takes
 these fields. Both owned advanced requests and the borrowed ordinary view delegate
 one native admission/staging implementation; no copied validation or schema.
-The view is an internal borrowing seam over the actual installed binding/input;
-it does not implement a short-lived public `ApplicationMutationIntent`, weaken
-that trait's existing static bound or introduce a replacement public intent type.
 
 ### Compose Owners, Do Not Replicate Engines
 
@@ -203,13 +199,6 @@ not endless BindingMismatch retry. Preserve receipt, any actually retained
 handler result, original descriptor and cleanup. Terminal outcomes still support
 lawful cleanup/close and their permitted historical delivery. No fitted retry cap
 or caller classifier substitutes for native Retryable/Terminal meaning.
-
-Classify fresh caller-context mismatches before delegating destructive terminal
-handoffs. Wrong runtime/branch/program context returns typed refusal with unchanged
-custody; a correct fresh context remains usable. A native denial labeled Terminal
-for such a mismatch does not prove the underlying retained source or carrier is
-unrecoverable. Authoritative terminal source/custody posture is distinct from an
-invalid caller attempt; the terminal court must prove the former.
 
 `AlreadyCommitted` composes registered receipt recovery for the original typed
 action and root demand derived from the descriptor. Fixed and discovered adapters
@@ -253,10 +242,6 @@ several instances; first-binding lookup cannot select an action or delivery.
 Prove two instances using one binding and different lawful delivery contracts;
 each typed action must deliver only its own contract. The reference is pure
 meaning, not an authority grant or a new registry.
-Carry that exact action identity through descriptor, installation lookup, source
-execution/admission, recovery and delivery. Selecting delivery precisely while
-source execution still first-matches the binding is forbidden; the two-instance
-court must exercise different lawful action meaning as well as returned queries.
 
 Use the existing query declarations and typed selection machinery. Pure selector
 construction may use their existing authoring mechanisms; it must not become an
@@ -347,15 +332,12 @@ native contracts.
 
 The immutable descriptor holds workflow identity, not a grant. The workflow
 lane's native owner separately carries exactly the originally issued single-use
-`WorkflowOperationAuthoritySlot` until native preparation consumes it.
+`WorkflowOperationAuthoritySlot` until the first effectful advance consumes it.
 It cannot clone/reissue the slot. Subsequent recovery delegates the existing
 `for_workflow_operation_recovery` identity binding and original native custody;
 it does not reacquire mutation authority from the descriptor. Prove pre-effect
 interruption, consumption, refusal/recovery and rejection of reused transition
 authority. Assessment delegates its own phase seam and remains observational.
-Preserve the actual native take boundary before handler validation/outcome;
-cancellation, domain denial or refusal after take cannot restore the grant.
-Native idempotency replay precedes take and must retain that ordering.
 
 ## Destination Topology And Ownership
 
@@ -474,14 +456,8 @@ match operation.advance(&program, &fresh_request, native_policy) {
     Advance::Settled(mut settled) => {
         // Read refusal retains the actual settlement and cleanup in this owner.
         let delivery = settled.read_current(&program, &fresh_request, delivery_policy);
-        match delivery {
-            Delivery::Current(result) => {
-                consume_current_result(result);
-                retain_or_finish_close(settled.close(&program, &fresh_request));
-            }
-            Delivery::Retryable(cause) => host.retain_delivery(settled, cause),
-            Delivery::Stale(evidence) => host.retain_historical(settled, evidence),
-        }
+        consume_typed_delivery(delivery);
+        retain_or_finish_close(settled.close(&program, &fresh_request));
     }
     Advance::Terminal(terminal) => {
         // Receipt/history/cleanup remain owned. Terminal has no advance method.
@@ -514,11 +490,10 @@ Refused delivery must retry without losing settlement. This first usable vertica
 slice includes the fixed cleanup/refusal proof; cleanup cannot be deferred behind
 a facade that claims completion. Compiler tests deny counterfeit settled views
 and invalid source modes. Include the real nondefault-precondition/result-set
-descriptor court and its omission/defaulting mutations in this phase. Further
+descriptor court and its omission/defaulting mutations in this phase. The next
 required courts include fixed reply-loss replay, unavailable registration,
 terminal carrier absence, branch switching, action-instance selection and finite
-delivery policy. Each ordinary journey runs through the public owning entrance,
-with existing advanced hostile courts and compile-fail checks as specified above. The next
+delivery policy. All must run through the actual public owning entrance. The next
 phase may trust original identity ownership,
 one-phase delegation and recoverable final delivery.
 
