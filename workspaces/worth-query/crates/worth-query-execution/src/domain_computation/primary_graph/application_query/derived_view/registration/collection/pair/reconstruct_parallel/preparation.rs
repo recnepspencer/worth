@@ -25,8 +25,8 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
 use worth_relational::facade::identity::EntityId;
 
-impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
-    WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
+impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>
+    WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>
 {
     pub(super) fn admit(
         &mut self,

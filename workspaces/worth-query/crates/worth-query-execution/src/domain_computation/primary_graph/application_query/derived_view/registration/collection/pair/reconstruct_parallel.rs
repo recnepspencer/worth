@@ -61,6 +61,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         A: 'a,
         I: 'a,
         C: 'a,
+        SC: 'a,
         Value,
         Link,
     >(
@@ -73,7 +74,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         mut prepare: impl FnMut(
             &Member,
         ) -> Result<
-            WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C>,
+            WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>,
             Denial,
         >,
         first_link: impl Fn(&FR) -> Link,
@@ -145,7 +146,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let roots =
                         CanonicalUniqueVec::from_btree_set(expected.keys().copied().collect());
                     let slots = std::mem::size_of::<
-                        WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C>,
+                        WorthQueryDerivedPairReadPlans<'a, Schema, FQ, FP, FR, SQ, SP, SR, A, I, C, SC>,
                     >()
                     .checked_add(
                         2 * std::mem::size_of::<WorthQueryApplicationAuthorizationWorkEvidence>(),
