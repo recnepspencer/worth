@@ -58,12 +58,6 @@ pub(super) fn evaluate_unique_entity_aspect_field(
             let Some(metadata) = state_view.entity_metadata_for_slot(partition_id, slot) else {
                 continue;
             };
-            let state_bytes = state_view
-                .entity_aspect_state(metadata.entity_id)
-                .map_or(0, |state| state.owned_allocation_capacity_bytes() as u64);
-            if !context.check_scratch_peak(state_bytes.saturating_mul(4).saturating_add(128)) {
-                return None;
-            }
             let Some(projected) =
                 projected_entity_aspect_field_value_for_metadata(context, &metadata, field_locator)
             else {

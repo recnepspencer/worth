@@ -19,10 +19,10 @@ mod workflow;
 pub use capability_delegation::WorthQueryApplicationCapabilityDelegationDenial;
 pub use capability_revocation::WorthQueryApplicationCapabilityRevocationDenial;
 pub use demand::{
-    WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandHandle,
-    WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationOutputDemandRequest,
-    WorthQueryApplicationOutputDemandSettlement, WorthQueryOutputDemandControls,
-    WorthQueryOutputSettlementPosture,
+    WorthQueryApplicationOutputDemandContinuation, WorthQueryApplicationOutputDemandDenial,
+    WorthQueryApplicationOutputDemandHandle, WorthQueryApplicationOutputDemandProgress,
+    WorthQueryApplicationOutputDemandRequest, WorthQueryApplicationOutputDemandSettlement,
+    WorthQueryOutputDemandControls, WorthQueryOutputSettlementPosture,
 };
 pub use denial::{
     WorthQueryApplicationRequestMutationDenial, WorthQueryApplicationRequestMutationDenialKind,
@@ -105,9 +105,9 @@ pub use query_batch::{
 };
 pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
-    WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
-    WorthQueryApplicationRetainedRequest, WorthQueryOutputCurrentnessDenial,
-    WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryApplicationReadObservationDenial, WorthQueryApplicationRequest,
+    WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
+    WorthQueryOutputCurrentnessDenial, WorthQueryProgramOutputCurrentnessDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use workflow::{

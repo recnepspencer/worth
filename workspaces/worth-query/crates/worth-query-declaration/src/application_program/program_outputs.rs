@@ -3,8 +3,9 @@ use std::marker::PhantomData;
 use crate::application_schema::ApplicationSchema;
 
 use super::{
-    ApplicationConnectionDeclaration, ApplicationDiscoveredOutputGraph, ApplicationNoOutputGraph,
-    ApplicationOutputGraph, ApplicationOutputGraphShape, ApplicationProgramOutputShape,
+    ApplicationConnectionDeclaration, ApplicationDemandOutputGraph,
+    ApplicationDiscoveredOutputGraph, ApplicationNoOutputGraph, ApplicationOutputGraph,
+    ApplicationOutputGraphShape, ApplicationProgramOutputShape,
 };
 
 /// Complete set of independently startable output trees in one program.
@@ -145,5 +146,29 @@ where
     fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>) {
         Left::append_root_graph_types(roots);
         Right::append_root_graph_types(roots);
+    }
+}
+
+impl<RootConnection, Dependents> sealed::ProgramOutputRootsShape
+    for ApplicationDemandOutputGraph<RootConnection, Dependents>
+{
+}
+
+impl<Schema, RootConnection, Dependents> ApplicationProgramOutputRootsShape<Schema>
+    for ApplicationDemandOutputGraph<RootConnection, Dependents>
+where
+    Schema: ApplicationSchema,
+    Self: ApplicationOutputGraphShape<Schema>,
+{
+    fn append_connections(connections: &mut Vec<ApplicationConnectionDeclaration>) {
+        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connections());
+    }
+
+    fn append_connection_types(connections: &mut Vec<std::any::TypeId>) {
+        connections.extend(<Self as ApplicationProgramOutputShape<Schema>>::connection_types());
+    }
+
+    fn append_root_graph_types(roots: &mut Vec<std::any::TypeId>) {
+        roots.push(std::any::TypeId::of::<Self>());
     }
 }

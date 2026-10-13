@@ -276,6 +276,22 @@ impl ApplicationProgramManifest {
                 ],
             )
         }));
+        records.extend(
+            connections
+                .iter()
+                .filter(|connection| connection.is_demand_only_root())
+                .map(|connection| {
+                    framed_record(
+                        "output-root",
+                        [
+                            ("connection", connection.identity().to_owned()),
+                            ("source-instance", connection.source_instance().to_owned()),
+                            ("target-instance", connection.target_instance().to_owned()),
+                            ("posture", "demand-only".to_owned()),
+                        ],
+                    )
+                }),
+        );
         records.sort_unstable();
         Self {
             program_identity: program_identity.to_owned(),

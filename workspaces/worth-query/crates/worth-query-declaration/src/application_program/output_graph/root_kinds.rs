@@ -1,4 +1,6 @@
-use super::{sealed, ApplicationDiscoveredOutputGraph, ApplicationOutputGraph};
+use super::{
+    sealed, ApplicationDemandOutputGraph, ApplicationDiscoveredOutputGraph, ApplicationOutputGraph,
+};
 
 /// A discovered root cannot enter the single required-root lane.
 ///
@@ -9,7 +11,38 @@ use super::{sealed, ApplicationDiscoveredOutputGraph, ApplicationOutputGraph};
 /// fn required<Root: ApplicationRequiredOutputRoot>() {}
 /// fn main() { required::<ApplicationDiscoveredOutputGraph<(), ApplicationOutputLeaf>>(); }
 /// ```
-pub trait ApplicationRequiredOutputRoot: sealed::RequiredRootKind {}
+pub trait ApplicationRequiredOutputRoot:
+    ApplicationFixedOutputRoot + sealed::RequiredRootKind
+{
+}
+
+/// A statically selected installed root, either required or explicitly demanded.
+/// Demand-only roots cannot acquire performed/prepared source authority.
+///
+/// ```compile_fail
+/// use worth_query_declaration::facade::application_program::{
+///     ApplicationDemandOutputGraph, ApplicationOutputLeaf, ApplicationRequiredOutputRoot,
+/// };
+/// fn required<Root: ApplicationRequiredOutputRoot>() {}
+/// fn main() { required::<ApplicationDemandOutputGraph<(), ApplicationOutputLeaf>>(); }
+/// ```
+///
+/// ```
+/// use worth_query_declaration::facade::application_program::{
+///     ApplicationDemandOutputGraph, ApplicationOutputGraph, ApplicationOutputLeaf,
+///     ApplicationFixedOutputRoot,
+/// };
+/// fn fixed<Root: ApplicationFixedOutputRoot>() {}
+/// fn main() {
+///     fixed::<ApplicationDemandOutputGraph<(), ApplicationOutputLeaf>>();
+///     fixed::<ApplicationOutputGraph<(), ApplicationOutputLeaf>>();
+/// }
+/// ```
+pub trait ApplicationFixedOutputRoot: sealed::FixedRootKind {}
+impl<C, D> sealed::FixedRootKind for ApplicationOutputGraph<C, D> {}
+impl<C, D> ApplicationFixedOutputRoot for ApplicationOutputGraph<C, D> {}
+impl<C, D> sealed::FixedRootKind for ApplicationDemandOutputGraph<C, D> {}
+impl<C, D> ApplicationFixedOutputRoot for ApplicationDemandOutputGraph<C, D> {}
 
 /// A single required root cannot enter the discovered-root lane.
 ///

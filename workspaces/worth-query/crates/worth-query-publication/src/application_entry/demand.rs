@@ -7,7 +7,9 @@ pub(in crate::application_entry) use program_interest::{
     WorthQueryApplicationProgramDemandHandle, WorthQueryApplicationProgramDemandProgress,
 };
 
-pub use interest::WorthQueryApplicationOutputDemandHandle;
+pub use interest::{
+    WorthQueryApplicationOutputDemandContinuation, WorthQueryApplicationOutputDemandHandle,
+};
 pub use request::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandRequest,
     WorthQueryOutputDemandControls,

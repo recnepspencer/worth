@@ -93,7 +93,7 @@ where
     pub fn admit_program_root_output<Root>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         source: WorthQueryApplicationOutputDemandSource<
             SourceQuery<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             SourceValue<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
@@ -105,7 +105,7 @@ where
     >
     where
         Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+            + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
         let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
@@ -120,6 +120,9 @@ where
                 "selected output root is not installed for this program",
             ));
         }
+        self.validate_program_root_artifact_source::<Root,
+            <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Source,
+        >(access)?;
         let artifact = self.validate_root_artifact_demand::<Root>()?;
         let limits = self.resolve_artifact_limits(limits, artifact)?;
         self.runtime

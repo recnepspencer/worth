@@ -25,8 +25,8 @@ use worth_proof::CanonicalUniqueVec;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 mod canonical_results;
+use super::reconstruction::owner_stage;
 use super::reconstruction_denial as denial;
-use super::reconstruction_stage as owner_stage;
 mod preparation;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -91,7 +91,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     // plans and projected image, independently of view limit policy.
                     let mut owner_hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
                         .map_err(denial::lease)?;
-                    let (expected, membership) = owner_stage::membership(
+                    let (expected, membership) = super::reconstruction::membership::prepare(
                         self, lease, &mut owner_hold, view, product, membership_result, members,
                     )?;
                     let roots =

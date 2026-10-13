@@ -1,6 +1,6 @@
 use worth_query_declaration::facade::application_program::{
-    ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
-    ApplicationRequiredOutputRoot,
+    ApplicationConnectionShape, ApplicationFixedOutputRoot, ApplicationOutputGraphShape,
+    ApplicationProgramDefinition,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -44,7 +44,7 @@ where
     >
     where
         Program: ApplicationProgramDefinition<Schema>,
-        Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+        Root: ApplicationOutputGraphShape<Schema> + ApplicationFixedOutputRoot,
         RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
@@ -54,6 +54,10 @@ where
         if !program.contains_output_root::<Root>() {
             return Err(WorthQueryApplicationOutputDemandDenial::ProgramOutputUndeclared);
         }
+        program.validate_program_root_artifact_source::<Root,
+            <RootConnection<Schema, Root> as WorthQueryApplicationRequiredOutputConnection<Schema>>::Source,
+        >(&worth_query_execution::publication_boundary::program_publication_access())
+            .map_err(WorthQueryApplicationOutputDemandDenial::Demand)?;
         self.start_with_program_selection::<Program, <Root as ApplicationOutputGraphShape<Schema>>::RootConnection>(program)
     }
 
@@ -105,7 +109,7 @@ where
             *program.installed_program().revision(),
         );
         let mut handle = self.start()?;
-        handle.selected_program = Some(selection);
+        handle.continuation.selected_program = Some(selection);
         Ok(handle)
     }
 }

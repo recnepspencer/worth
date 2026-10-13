@@ -5550,6 +5550,10 @@ committed-retention retry and typed canonical delivery meaning. Required deliver
 checks the actual complete required set and queries at one authentic observation;
 read refusal retains settlement. Cleanup remains independent of delivered results.
 Source-only completion and workflow assessment remain semantically distinct.
+Registered idempotent replay resumes through native receipt recovery; missing
+registration and genuinely historical replay retain honest terminal evidence.
+Stale delivery retains history/cleanup and offers no hidden refresh. Exact typed
+action-instance selection governs source execution and delivery together.
 
 Four phases establish the first real fixed owning journey, discovered retention
 and complete-set delivery, source-only/workflow adapters, then ordinary consumer

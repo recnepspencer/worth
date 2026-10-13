@@ -32,6 +32,24 @@ handles, and pending cleanup are memory-resident. Process loss releases those
 capabilities. Restart durability belongs to Store and requires fresh owner
 readmission; Query does not serialize live authority.
 
+An ordinary root or dependent demand can transfer its actual native owner with
+`handle.into_continuation()`. The returned
+`WorthQueryApplicationOutputDemandContinuation<Schema, Demand>` retains the same
+admitted source, program selection, controls and interest without retaining an
+application borrow, principal or request scope. Advance or settle supplies the
+original runtime and a fresh authenticated request:
+
+```rust,ignore
+let mut continuation = handle.into_continuation();
+let progress = continuation.settle(application.runtime(), &fresh_request)?;
+```
+
+Native runtime/schema/source affinity and request admission still apply. Refusal
+does not consume the continuation. Explicit close or Drop releases that caller's
+interest; a settled value must remain owned through the consumer's final
+currentness and delivery checks. This transfer neither republishes the source
+nor supplies restart durability.
+
 `WorthQueryApplicationCheckpoint` clones share immutable byte backing. Capture,
 program transition and each repair attempt receive an explicit
 `WorthQueryCheckpointCapturePolicy`: `SystemAllocation` uses fallible uncharged

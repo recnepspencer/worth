@@ -1,5 +1,6 @@
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
 mod advance;
+mod continuation;
 mod selected_program;
 mod types;
 mod workflow;
@@ -29,6 +30,7 @@ use super::settlement::{
     WorthQueryApplicationOutputDemandProgress, WorthQueryApplicationOutputDemandSettlement,
 };
 
+pub use continuation::WorthQueryApplicationOutputDemandContinuation;
 use types::{ConnectionBinding, Family, RootConnection, SourceBinding, SourceQuery, SourceValue};
 
 /// An admitted output demand. The source selector, parameters, and scope are
@@ -41,10 +43,7 @@ where
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
     application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
-    controls: WorthQueryOutputDemandControls,
-    selected_program: Option<(ApplicationProgramIdentity, ApplicationProgramRevision)>,
-    closed: bool,
+    continuation: WorthQueryApplicationOutputDemandContinuation<Schema, Demand>,
 }
 
 impl<'application, 'principal, 'scope, Schema, Demand>
@@ -94,7 +93,7 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
         Root: ApplicationOutputGraphShape<Schema>
-            + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
+            + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
         RootConnection<Schema, Root>:
             WorthQueryApplicationRequiredOutputConnection<Schema, Demand = Demand>,
     {
@@ -337,24 +336,31 @@ where
         let controls = WorthQueryOutputDemandControls::from_limits(self.resolved_limits());
         WorthQueryApplicationOutputDemandHandle {
             application: self.application,
-            admitted,
-            controls,
-            selected_program: None,
-            closed: false,
+            continuation: WorthQueryApplicationOutputDemandContinuation::new(admitted, controls),
         }
     }
 }
 
-impl<Schema, Demand> Drop for WorthQueryApplicationOutputDemandHandle<'_, Schema, Demand>
+impl<Schema, Demand> WorthQueryApplicationOutputDemandHandle<'_, Schema, Demand>
 where
     Schema: ApplicationSchema,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
-    fn drop(&mut self) {
-        if !self.closed {
-            self.admitted.close();
-            self.closed = true;
-        }
+    pub fn close(&mut self) {
+        self.continuation.close();
+    }
+    pub fn notifications(
+        &self,
+    ) -> Result<WorthQueryOutputDemandNotifications, WorthQueryApplicationOutputDemandDenial> {
+        self.continuation.notifications()
+    }
+    /// Transfers the exact admitted demand without retaining an application borrow.
+    /// Advancement supplies the original runtime and fresh authenticated request;
+    /// the native demand continues to enforce its runtime and source affinity.
+    pub fn into_continuation(
+        self,
+    ) -> WorthQueryApplicationOutputDemandContinuation<Schema, Demand> {
+        self.continuation
     }
 }
 

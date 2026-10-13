@@ -14,6 +14,12 @@ pub struct ApplicationOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
 }
 
+/// An installed output tree evaluated only when explicitly demanded.
+/// Saving its source does not require producing this tree.
+pub struct ApplicationDemandOutputGraph<RootConnection, Dependents> {
+    marker: PhantomData<fn() -> (RootConnection, Dependents)>,
+}
+
 /// A performed action whose required root outputs are discovered at its retained commit.
 pub struct ApplicationDiscoveredOutputGraph<RootConnection, Dependents> {
     marker: PhantomData<fn() -> (RootConnection, Dependents)>,
@@ -31,12 +37,15 @@ mod sealed {
     pub trait ConnectionShape {}
     pub trait OutputEdgesShape {}
     pub trait OutputChildrenShape<ParentFeature> {}
+    pub trait FixedRootKind {}
     pub trait RequiredRootKind {}
     pub trait DiscoveredRootKind {}
 }
 
 mod root_kinds;
-pub use root_kinds::{ApplicationDiscoveredOutputRoot, ApplicationRequiredOutputRoot};
+pub use root_kinds::{
+    ApplicationDiscoveredOutputRoot, ApplicationFixedOutputRoot, ApplicationRequiredOutputRoot,
+};
 
 /// A fully typed authored connection that lowers without a repeated runtime
 /// connection inventory.
@@ -57,118 +66,7 @@ where
     fn declaration() -> ApplicationConnectionDeclaration;
 }
 
-impl<Schema, SourceFeature, SourcePort, TargetFeature, TargetPort, Binding>
-    ApplicationConnectionShape<Schema>
-    for ApplicationConnectionRef<
-        Schema,
-        SourceFeature,
-        SourcePort,
-        TargetFeature,
-        TargetPort,
-        Binding,
-    >
-where
-    Schema: ApplicationSchema + 'static,
-    SourceFeature: ApplicationFeature<Schema>,
-    TargetFeature: ApplicationFeature<Schema>,
-    SourcePort: ApplicationOutputPort<Schema, SourceFeature>,
-    TargetPort: ApplicationInputPort<
-        Schema,
-        TargetFeature,
-        Value = <SourcePort as ApplicationOutputPort<Schema, SourceFeature>>::Value,
-    >,
-    Binding: ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, TargetFeature>,
-{
-    type Binding = Binding;
-    type SourceFeature = SourceFeature;
-    type SourcePort = SourcePort;
-    type TargetFeature = TargetFeature;
-    type TargetPort = TargetPort;
-
-    fn declaration() -> ApplicationConnectionDeclaration {
-        Self::declaration()
-    }
-}
-
-impl<
-        Schema,
-        SourceInstance,
-        SourceFeature,
-        SourcePort,
-        TargetInstance,
-        TargetFeature,
-        TargetPort,
-        Binding,
-    > ApplicationConnectionShape<Schema>
-    for ApplicationConnectionInstanceRef<
-        Schema,
-        SourceInstance,
-        SourceFeature,
-        SourcePort,
-        TargetInstance,
-        TargetFeature,
-        TargetPort,
-        Binding,
-    >
-where
-    Schema: ApplicationSchema + 'static,
-    SourceInstance: super::ApplicationCompositionInstance,
-    TargetInstance: super::ApplicationCompositionInstance,
-    SourceFeature: ApplicationFeature<Schema>,
-    TargetFeature: ApplicationFeature<Schema>,
-    SourcePort: ApplicationOutputPort<Schema, SourceFeature>,
-    TargetPort: ApplicationInputPort<
-        Schema,
-        TargetFeature,
-        Value = <SourcePort as ApplicationOutputPort<Schema, SourceFeature>>::Value,
-    >,
-    Binding: ApplicationOccurrenceConnectionBinding<Schema, SourceFeature, TargetFeature>,
-{
-    type Binding = Binding;
-    type SourceFeature = SourceFeature;
-    type SourcePort = SourcePort;
-    type TargetFeature = TargetFeature;
-    type TargetPort = TargetPort;
-
-    fn declaration() -> ApplicationConnectionDeclaration {
-        Self::declaration()
-    }
-}
-
-impl<Schema, SourceFeature, SourcePort, TargetFeature, TargetPort, Binding> sealed::ConnectionShape
-    for ApplicationConnectionRef<
-        Schema,
-        SourceFeature,
-        SourcePort,
-        TargetFeature,
-        TargetPort,
-        Binding,
-    >
-{
-}
-
-impl<
-        Schema,
-        SourceInstance,
-        SourceFeature,
-        SourcePort,
-        TargetInstance,
-        TargetFeature,
-        TargetPort,
-        Binding,
-    > sealed::ConnectionShape
-    for ApplicationConnectionInstanceRef<
-        Schema,
-        SourceInstance,
-        SourceFeature,
-        SourcePort,
-        TargetInstance,
-        TargetFeature,
-        TargetPort,
-        Binding,
-    >
-{
-}
+mod connections;
 
 pub trait ApplicationOutputGraphShape<Schema>: ApplicationProgramOutputShape<Schema>
 where
@@ -180,6 +78,17 @@ where
 
 impl<Schema, RootConnection, Dependents> ApplicationOutputGraphShape<Schema>
     for ApplicationOutputGraph<RootConnection, Dependents>
+where
+    Schema: ApplicationSchema,
+    RootConnection: ApplicationConnectionShape<Schema>,
+    Dependents: ApplicationOutputChildrenShape<Schema, RootConnection::TargetFeature>,
+{
+    type RootConnection = RootConnection;
+    type Dependents = Dependents;
+}
+
+impl<Schema, RootConnection, Dependents> ApplicationOutputGraphShape<Schema>
+    for ApplicationDemandOutputGraph<RootConnection, Dependents>
 where
     Schema: ApplicationSchema,
     RootConnection: ApplicationConnectionShape<Schema>,

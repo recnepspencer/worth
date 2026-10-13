@@ -1,7 +1,7 @@
 //! Serial runtime-dependent planning on one request and native read loan.
 
 use super::{
-    reconstruction_denial as denial, reconstruction_stage as stage, Denial,
+    reconstruction::owner_stage as stage, reconstruction_denial as denial, Denial,
     WorthQueryApplicationProjection, WorthQueryManagedDerivedValue, WorthQueryManagedDerivedView,
     WorthQueryManagedDerivedViewKey, WorthQueryPrimaryGraphApplicationRuntime,
 };
@@ -72,7 +72,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             let result = (|| {
                 let mut hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
                     .map_err(denial::lease)?;
-                let (expected, membership) = stage::membership(
+                let (expected, membership) = super::reconstruction::membership::prepare(
                     self, lease, &mut hold, view, product, membership_result, members,
                 )?;
                 let slot_bytes = std::mem::size_of::<(
