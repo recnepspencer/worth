@@ -291,4 +291,36 @@
 //! }
 //! ```
 
+//! Local scope borrows can execute through a Query-issued dependent read context.
+//!
+//! ```
+//! use worth_query_host::facade::primary_graph::{
+//!     WorthQueryDependentPairReadContext, WorthQueryAdmittedApplicationQueryPlan,
+//!     WorthQueryApplicationProjection, WorthQueryManagedDerivedViewDenial,
+//! };
+//! use worth_query_host::facade::domain::ApplicationSchema;
+//! fn execute_branch<S: ApplicationSchema, Q, P, R, A, I, C>(
+//!     read: &mut WorthQueryDependentPairReadContext<'_, '_, '_, '_, '_, S, Q, R>,
+//!     plan: WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
+//! ) -> Result<(), WorthQueryManagedDerivedViewDenial>
+//! where R: WorthQueryApplicationProjection<S, Q> {
+//!     let observed = read.execute(plan)?;
+//!     let _receipt = observed.receipt();
+//!     Ok(())
+//! }
+//! fn independent_in_one_loan<'a, S, Q, P, R, A, I, C>(
+//!     first: WorthQueryAdmittedApplicationQueryPlan<'a, S, Q, P, R, A, I, C>,
+//!     second: WorthQueryAdmittedApplicationQueryPlan<'a, S, Q, P, R, A, I, C>,
+//!     batch: &worth_query_host::facade::primary_graph::WorthQueryApplicationQueryBatchAdmission,
+//! ) -> worth_query_host::facade::primary_graph::WorthQueryDerivedPairReadPlans<'a, S, Q, P, R, Q, P, R, A, I, C> {
+//!     worth_query_host::facade::primary_graph::WorthQueryDerivedPairReadPlans::in_batch(first, second, batch)
+//! }
+//! ```
+//!
+//! ```compile_fail
+//! use worth_query_host::facade::primary_graph::WorthQueryDependentPairReadContext;
+//! // Ordinary code must receive this context from Query's reconstruction owner.
+//! let forged = WorthQueryDependentPairReadContext::new();
+//! ```
+
 pub mod facade;

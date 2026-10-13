@@ -1,13 +1,15 @@
 //! Total preservation of execution stops at the derived-view boundary.
 
-use super::super::Denial;
+use super::WorthQueryManagedDerivedViewDenial as Denial;
 use worth_execution::{
     ChargedBytes, LeaseDenial, MapKernelFailure, MapKernelStop, MapStop, MemoryLimitLevel,
     WorkCeilingDenial,
 };
 use worth_relational::facade::identity::EntityId;
 
-pub(super) fn lease(denial: LeaseDenial) -> Denial {
+pub(in crate::domain_computation::primary_graph::application_query) fn lease(
+    denial: LeaseDenial,
+) -> Denial {
     match denial {
         LeaseDenial::WorkerLimitExceedsParent => Denial::WorkerLimitExceedsParent,
         LeaseDenial::MemoryLimitExceedsParent => Denial::MemoryLimitExceedsParent,
@@ -24,7 +26,10 @@ pub(super) fn lease(denial: LeaseDenial) -> Denial {
     }
 }
 
-pub(super) fn kernel(stop: MapKernelStop, root: Option<EntityId>) -> Denial {
+pub(in crate::domain_computation::primary_graph::application_query) fn kernel(
+    stop: MapKernelStop,
+    root: Option<EntityId>,
+) -> Denial {
     match stop {
         MapKernelStop::Cancelled => Denial::Cancelled,
         MapKernelStop::DeadlineElapsed => Denial::DeadlineElapsed,
@@ -34,7 +39,9 @@ pub(super) fn kernel(stop: MapKernelStop, root: Option<EntityId>) -> Denial {
     }
 }
 
-pub(super) fn scope(stop: WorkCeilingDenial) -> Denial {
+pub(in crate::domain_computation::primary_graph::application_query) fn scope(
+    stop: WorkCeilingDenial,
+) -> Denial {
     match stop {
         WorkCeilingDenial::Admission(cause) => lease(cause),
         WorkCeilingDenial::Stopped(cause) => kernel(cause, None),
@@ -42,7 +49,10 @@ pub(super) fn scope(stop: WorkCeilingDenial) -> Denial {
     }
 }
 
-pub(super) fn map(stop: MapStop<Denial>, roots: &[EntityId]) -> Denial {
+pub(in crate::domain_computation::primary_graph::application_query) fn map(
+    stop: MapStop<Denial>,
+    roots: &[EntityId],
+) -> Denial {
     let root_at =
         |identity: worth_foundational::PartitionIdentity| roots[(identity.value() - 1) as usize];
     match stop {
@@ -63,14 +73,18 @@ pub(super) fn map(stop: MapStop<Denial>, roots: &[EntityId]) -> Denial {
     }
 }
 
-pub(super) fn rounds(cause: worth_execution::RoundsDenial) -> Denial {
+pub(in crate::domain_computation::primary_graph::application_query) fn rounds(
+    cause: worth_execution::RoundsDenial,
+) -> Denial {
     match cause {
         worth_execution::RoundsDenial::RoundCountOverflow => Denial::CapacityOverflow,
         worth_execution::RoundsDenial::MemoryUnavailable => Denial::AllocationUnavailable,
     }
 }
 
-pub(super) fn owner(cause: MapKernelFailure<Denial>) -> Denial {
+pub(in crate::domain_computation::primary_graph::application_query) fn owner(
+    cause: MapKernelFailure<Denial>,
+) -> Denial {
     match cause {
         MapKernelFailure::Domain(cause) => cause,
         MapKernelFailure::Stop(cause) => kernel(cause, None),
@@ -142,7 +156,7 @@ impl ChargedBytes for Denial {
     }
 }
 
-pub(super) fn session(
+pub(in crate::domain_computation::primary_graph::application_query) fn session(
     cause: crate::domain_computation::provider_session::WorthQueryManagedGraphReadDenial,
     root: EntityId,
     plan: &crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan<'_>,

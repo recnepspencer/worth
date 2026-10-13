@@ -25,8 +25,8 @@ use worth_proof::CanonicalUniqueVec;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 mod canonical_results;
-mod denial;
-mod owner_stage;
+use super::reconstruction_denial as denial;
+use super::reconstruction_stage as owner_stage;
 mod preparation;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -91,47 +91,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     // plans and projected image, independently of view limit policy.
                     let mut owner_hold = ExecutionMemoryReservation::reserve_in_scope(lease, 0)
                         .map_err(denial::lease)?;
-                    let (expected, membership) = owner_stage::run(lease, |context| {
-                        context
-                            .checkpoint(1)
-                            .map_err(|stop| denial::kernel(stop, None))?;
-                        self.admit_view_product(view, product)?;
-                        if membership_result.rows().len()
-                            != membership_result.observed_sources().len()
-                        {
-                            return Err(Denial::IncompleteDependencies);
-                        }
-                        let mut membership = self.checked_view_dependencies(
-                            view,
-                            product,
-                            membership_result.result_set_observation().source(),
-                        )?;
-                        owner_stage::retain_dependencies(&mut owner_hold, &membership)?;
-                        let mut expected = BTreeMap::new();
-                        for (row, source) in membership_result
-                            .rows()
-                            .iter()
-                            .zip(membership_result.observed_sources())
-                        {
-                            context
-                                .checkpoint(1)
-                                .map_err(|stop| denial::kernel(stop, None))?;
-                            let dependencies =
-                                self.checked_view_dependencies(view, product, source)?;
-                            owner_stage::retain_dependencies(&mut owner_hold, &dependencies)?;
-                            membership.extend(dependencies);
-                            for (root, member) in members(row) {
-                                owner_stage::retain_member(&mut owner_hold, &member)?;
-                                if expected.insert(root, member).is_some() {
-                                    return Err(Denial::DuplicateRoot { root });
-                                }
-                                if view.state.limits.rejects_entries(expected.len()) {
-                                    return Err(Denial::EntryCapacityExceeded);
-                                }
-                            }
-                        }
-                        Ok((expected, membership))
-                    })?;
+                    let (expected, membership) = owner_stage::membership(
+                        self, lease, &mut owner_hold, view, product, membership_result, members,
+                    )?;
                     let roots =
                         CanonicalUniqueVec::from_btree_set(expected.keys().copied().collect());
                     let slots = std::mem::size_of::<

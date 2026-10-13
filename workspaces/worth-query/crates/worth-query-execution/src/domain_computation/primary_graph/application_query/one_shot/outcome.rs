@@ -177,6 +177,16 @@ where
                 plan.query.name(),
             )
         })?;
+    if let Some(spent) = spent {
+        spent
+            .charge_scope_copies(custody.scope, plan.query.name())
+            .map_err(|read| {
+                super::map_authorized_read_denial(
+                    super::WorthQueryAuthorizedApplicationReadDenial::Read(read),
+                    plan.query.name(),
+                )
+            })?;
+    }
     let scope_selector = std::sync::Arc::new(
         super::super::observed_source::WorthQueryObservedScopeSelector::new(
             scope_locator,
@@ -184,9 +194,6 @@ where
             scope_charge,
         ),
     );
-    if let Some(spent) = spent {
-        spent.scope(custody.scope);
-    }
     let parameter_charge = kernel
         .result_buffer
         .claim_retained_source(parameter_bytes)
@@ -213,11 +220,18 @@ where
             parameter_charge,
         ),
     );
+    if let Some(spent) = spent {
+        spent
+            .charge_descriptor_copies(custody.descriptor, plan.query.name())
+            .map_err(|read| {
+                super::map_authorized_read_denial(
+                    super::WorthQueryAuthorizedApplicationReadDenial::Read(read),
+                    plan.query.name(),
+                )
+            })?;
+    }
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
-    if let Some(spent) = spent {
-        spent.descriptor(custody.descriptor);
-    }
     let descriptor_charge = std::sync::Arc::new(descriptor_charge);
     let mut observed_sources = Vec::with_capacity(source_footprints.len());
     for footprint in source_footprints {

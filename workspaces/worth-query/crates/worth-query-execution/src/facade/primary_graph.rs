@@ -308,7 +308,9 @@ pub use worth_signal::facade::SignalCheckpointDenial as SignalCheckpointDenialFo
 pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
 pub use crate::domain_computation::primary_graph::ExecutionRequest;
 pub use crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints;
-pub use crate::domain_computation::primary_graph::WorthQueryDerivedPairReadPlans;
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
+};
 
 pub use crate::domain_computation::primary_graph::carried_read_basis_custody_for_test;
 

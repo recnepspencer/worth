@@ -580,6 +580,7 @@ exports = [
     "WorthQueryCustomInvariantDenial",
     "WorthQueryDecisionPlan",
     "WorthQueryDelegationActivationProgram",
+    "WorthQueryDependentPairReadContext",
     "WorthQueryDerivedPairReadPlans",
     "WorthQueryDispatchOutboxDurabilityPosture",
     "WorthQueryDispatchOutboxRecord",

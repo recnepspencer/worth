@@ -374,7 +374,9 @@ pub use super::application_contribution::{
     WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
     WorthQueryAdvancementObservationForTest,
 };
-pub use crate::domain_computation::primary_graph::application_query::WorthQueryDerivedPairReadPlans;
+pub use crate::domain_computation::primary_graph::application_query::{
+    WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
+};
 pub use worth_execution::ExecutionRequest;
 
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;

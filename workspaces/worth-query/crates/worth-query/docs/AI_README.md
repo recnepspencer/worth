@@ -354,6 +354,18 @@ incremental state, mark a row complete only from current contributor evidence
 observed through one retained request observation, and must reproduce the same
 rows on reconstruction.
 
+Cold managed pair views distinguish independent preplanned reads from serial
+reads whose second scope is supplied by the first row. Independent plans use
+`WorthQueryDerivedPairReadPlans::new` or `in_batch` and the closed reconstruction
+map. Dependent callers use
+`reconstruct_managed_derived_collection_pair_dependent_in_batch`: each local
+admission executes through its Query-issued `WorthQueryDependentPairReadContext`
+on the calling thread, under one execution request, exact product basis and
+native loan. Query retains both issued row claims until link/source checks and
+projection finish and publishes the retained image atomically. See the
+[Host pair read contract](../../worth-query-host/README.md#dependent-managed-pair-reads)
+for the ordinary call shape.
+
 **Speculative work.** A preview starts from a Query-issued retained read
 observation, keeps that exact Bridge source basis live, carries no mutation or
 publication authority, and must be readmitted against the current program

@@ -62,18 +62,24 @@ impl<'charge> OneShotReadWorkObservation<'charge> {
         self.tree.set(work);
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn scope(
+    pub(in crate::domain_computation::primary_graph::application_query) fn charge_scope_copies(
         &self,
         work: usize,
-    ) {
+        subject: &str,
+    ) -> Result<(), super::WorthQueryApplicationReadExecutionDenial> {
+        self.charge(work, subject)?;
         self.scope.set(work);
+        Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph::application_query) fn descriptor(
+    pub(in crate::domain_computation::primary_graph::application_query) fn charge_descriptor_copies(
         &self,
         work: usize,
-    ) {
+        subject: &str,
+    ) -> Result<(), super::WorthQueryApplicationReadExecutionDenial> {
+        self.charge(work, subject)?;
         self.descriptor.set(work);
+        Ok(())
     }
 
     /// Root and tree work: what the read examined.

@@ -157,6 +157,14 @@ where
             return Err(Denial::IncompleteDependencies);
         }
         let key = first_source.managed_derived_view_key();
+        let mut dependencies =
+            self.checked_view_dependencies_for_query(view, product, first_source, first_identity)?;
+        dependencies.extend(self.checked_view_dependencies_for_query(
+            view,
+            product,
+            first_result.result_set_observation().source(),
+            first_identity,
+        )?);
         let second_result = second_for(first_row)?;
         self.admit_view_product(view, product)?;
         let ([second_row], [second_source]) =
@@ -167,14 +175,6 @@ where
         if first_key != second_link(second_row) {
             return Err(Denial::IncompleteDependencies);
         }
-        let mut dependencies =
-            self.checked_view_dependencies_for_query(view, product, first_source, first_identity)?;
-        dependencies.extend(self.checked_view_dependencies_for_query(
-            view,
-            product,
-            first_result.result_set_observation().source(),
-            first_identity,
-        )?);
         dependencies.extend(self.checked_view_dependencies_for_query(
             view,
             product,

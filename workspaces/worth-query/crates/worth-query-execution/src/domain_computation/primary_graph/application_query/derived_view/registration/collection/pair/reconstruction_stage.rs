@@ -1,6 +1,6 @@
 //! Calling-thread stages use the ordered execution pattern's meter and custody.
 
-use super::super::Denial;
+use super::Denial;
 use std::num::NonZeroUsize;
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionRounds, MapKernelContext, MapStop, RoundsOutcome,
@@ -12,7 +12,7 @@ pub(super) fn run<T>(
 ) -> Result<T, Denial> {
     let result = (|| {
         let stages = ExecutionRounds::try_new(NonZeroUsize::new(1).unwrap())
-            .map_err(super::denial::rounds)?;
+            .map_err(super::reconstruction_denial::rounds)?;
         let mut operation = Some(operation);
         let mut value = None;
         let outcome = stages.run(
@@ -33,13 +33,13 @@ pub(super) fn run<T>(
                 value.expect("the owner stage completed")
             }
             RoundsOutcome::Stopped { reason, .. } => Err(match reason {
-                MapStop::Admission(cause) => super::denial::lease(cause),
+                MapStop::Admission(cause) => super::reconstruction_denial::lease(cause),
                 MapStop::WorkExhausted { .. } => Denial::WorkExhausted { root: None },
-                MapStop::Failure { cause, .. } => super::denial::owner(cause),
+                MapStop::Failure { cause, .. } => super::reconstruction_denial::owner(cause),
             }),
         }
     })();
-    crate::domain_computation::primary_graph::application_query::one_shot::retain_reconstruction_result(lease, result, super::denial::lease)
+    crate::domain_computation::primary_graph::application_query::one_shot::retain_reconstruction_result(lease, result, super::reconstruction_denial::lease)
 }
 
 use crate::domain_computation::primary_graph::application_query::derived_view::{
@@ -58,8 +58,9 @@ fn retain(hold: &mut ExecutionMemoryReservation, bytes: usize) -> Result<(), Den
         .bytes()
         .checked_add(bytes)
         .ok_or(Denial::ChargedBytesOverflow)?;
-    hold.resize(total)
-        .map_err(|cause| super::denial::lease(worth_execution::LeaseDenial::MemoryExhausted(cause)))
+    hold.resize(total).map_err(|cause| {
+        super::reconstruction_denial::lease(worth_execution::LeaseDenial::MemoryExhausted(cause))
+    })
 }
 pub(super) fn retain_dependencies(
     hold: &mut ExecutionMemoryReservation,
@@ -116,4 +117,55 @@ pub(super) fn retain_image<Key: Clone + Ord, Value: WorthQueryManagedDerivedValu
         Some(tokens),
     )?;
     retain(hold, bytes)
+}
+
+/// Validate one genuine membership result before staging either read topology.
+pub(super) fn membership<S, MQ, MR, Member, Value>(
+    application: &super::WorthQueryPrimaryGraphApplicationRuntime<S>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    hold: &mut ExecutionMemoryReservation,
+    view: &super::WorthQueryManagedDerivedView<MQ, Value>,
+    product: &crate::basis::WorthQueryProductBranchLease,
+    result: &crate::domain_computation::primary_graph::application_query::WorthQueryApplicationOneShotResult<MQ, MR>,
+    members: impl Fn(&MR) -> Vec<(EntityId, Member)>,
+) -> Result<(BTreeMap<EntityId, Member>, BTreeSet<ViewDependency>), Denial>
+where
+    S: worth_query_declaration::facade::application_schema::ApplicationSchema,
+    Member: WorthQueryManagedDerivedMemberToken,
+    Value: WorthQueryManagedDerivedValue,
+{
+    run(lease, |context| {
+        context
+            .checkpoint(1)
+            .map_err(|stop| super::reconstruction_denial::kernel(stop, None))?;
+        application.admit_view_product(view, product)?;
+        if result.rows().len() != result.observed_sources().len() {
+            return Err(Denial::IncompleteDependencies);
+        }
+        let mut dependencies = application.checked_view_dependencies(
+            view,
+            product,
+            result.result_set_observation().source(),
+        )?;
+        retain_dependencies(hold, &dependencies)?;
+        let mut expected = BTreeMap::new();
+        for (row, source) in result.rows().iter().zip(result.observed_sources()) {
+            context
+                .checkpoint(1)
+                .map_err(|stop| super::reconstruction_denial::kernel(stop, None))?;
+            let row_dependencies = application.checked_view_dependencies(view, product, source)?;
+            retain_dependencies(hold, &row_dependencies)?;
+            dependencies.extend(row_dependencies);
+            for (root, member) in members(row) {
+                retain_member(hold, &member)?;
+                if expected.insert(root, member).is_some() {
+                    return Err(Denial::DuplicateRoot { root });
+                }
+                if view.state.limits.rejects_entries(expected.len()) {
+                    return Err(Denial::EntryCapacityExceeded);
+                }
+            }
+        }
+        Ok((expected, dependencies))
+    })
 }

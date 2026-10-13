@@ -127,7 +127,7 @@ pub use resource_lifecycle::{
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 
-pub use one_shot::WorthQueryDerivedPairReadPlans;
+pub use one_shot::{WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans};
 
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_witness::{

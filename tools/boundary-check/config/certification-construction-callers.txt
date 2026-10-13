@@ -23,6 +23,10 @@ installation workspaces/worth-query/crates/worth-query-execution/src/domain_comp
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/mutation_work_scale/locality.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_field_mutation.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query.rs
+# cfg(test) owner fixture resolves installed query metadata before ordinary admitted dependent-plan execution.
+# Phase, selected product, authenticated principal, batch, read plan and publication remain native;
+# installed-query lookup creates no execution/admission/publication authority.
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/dependent_reconstruction.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/leased_reconstruction/observation.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/member_token_reconciliation.rs
 installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/derived_view/membership_reconciliation.rs
