@@ -1488,6 +1488,20 @@ their marks agree, whoever the writer was.
 - **Certification.** The owner tests compare marking with full verification
   and reject disagreement; diagnostic comparison is not a consumer mode.
 
+The neutral [installed locality court](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/locality.rs)
+grows independent copies through ordinary commits at 1, 10 and 100 copies in
+one runtime. It compares equivalent source edits, checks the exact contacted
+output roots and consumed-output decisions, and verifies clean unrelated
+outputs through their retained demand handles. Source-query entries, request
+charges and whole-registry visits are separate observations. The baseline
+reports whole-registry visits during ordinary advancement, so exact producer
+contacts do not certify total locality. These observations do not measure
+native retained-fact comparisons or marking work. Its
+[lifecycle cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/exact_invalidation/locality/lifecycle.rs)
+carry ordinarily authored values through native fork divergence and checkpoint
+reopening, then demand the results of new edits. These cases do not certify
+application product-branch merge or implementation-edition changes.
+
 Query's native marking is distinct from Signal delivery after product
 publication. Native marking is part of commit publication: Relational
 prepares it before entering the branch's critical section and installs it in
