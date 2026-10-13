@@ -388,6 +388,10 @@ cross-feature proof gates before final certification:
   authority, with structured patterns, partitioners, per-partition reuse and
   parallel advancement; it replaces the canceled Signal Milestones 14-17 and the
   9.17.6 touched-evidence-only rules
+- `Milestone 9.17.6.4` follows 9.17.6.3 with framework-owned operation
+  continuations over existing native owners: retained original intent, fresh
+  admission, fixed/discovered retention and settlement, exact current delivery,
+  independent cleanup, source-only/workflow adapters and ordinary consumer deletion
 - `Milestone 9.17.7` adds authenticated bounded inbound occurrences and exact
   external-effect completion before workflow eligibility
 - `Milestone 9.18` accepts tree-based semantic undo and redo as freshly
@@ -437,8 +441,13 @@ above do not weaken any intervening milestone, acceptance gate, or proof
 obligation. 9.17.7 is complete; its inbound contract now supplies the gate for
 9.18 external-effect integration and final acceptance.
 
-`Milestone 9.17.6.3` runs beside this chain rather than in it. Every phase
-depends only on completed work, and no chain milestone waits on it.
+The completed `Milestone 9.17.6.3` runs beside this historical chain rather
+than in it. Its immediate successor is planned `Milestone 9.17.6.4`, which
+composes existing Query owners into the ordinary owning operation API.
+The side chain is `9.17.6.3` -> `9.17.6.4` -> ordinary lifecycle adoption.
+This does not reopen completed milestones or retroactively gate 9.17.7 or the
+9.17 umbrella. New adopters claiming framework-owned operation lifecycle wait
+for the 9.17.6.4 public proof and consume its certified revision.
 
 Store handoffs are explicit:
 
@@ -5527,6 +5536,29 @@ parallel advancement, and closure. Charged work is identical at every worker cou
 performance. Portable and distributed backends are deferred; see
 [deferred work](../deferred-work.md).
 
+## Milestone 9.17.6.4: Framework-Owned Operation Continuations
+
+**Planned.** [milestone-9.17.6.4.md](./milestone-9.17.6.4.md) immediately follows
+the completed 9.17.6.3. Query owns the original typed operation description and
+live native obligations from entry through recovery, required output settlement,
+honest delivery and lawful close. Fresh admission remains mandatory; the retained
+descriptor grants no authority.
+
+Existing publication, recovery, output, workflow and managed-run owners remain
+authoritative. The milestone adds owning composition, the missing discovered
+committed-retention retry and typed canonical delivery meaning. Required delivery
+checks the actual complete required set and queries at one authentic observation;
+read refusal retains settlement. Cleanup remains independent of delivered results.
+Source-only completion and workflow assessment remain semantically distinct.
+
+Four phases establish the first real fixed owning journey, discovered retention
+and complete-set delivery, source-only/workflow adapters, then ordinary consumer
+deletion and cost/compatibility closure. Real public partial-effect and refused-read
+courts, compile-time misuse denial and mutation-sensitive evidence protect the
+default API. No second engine, scheduler, aggregate quota or new durability claim
+is introduced. Private adopters consume the certified public revision and prove
+their actual domain journeys separately.
+
 ## Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
 [milestone-9.17.7.md](./milestone-9.17.7.md) consumes the completed workflow kernel but
@@ -5999,6 +6031,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Shared typed expression language | Milestone 9.17.6.1; shared substrate for Worth UI 3.17 | Foundational grammar, canonical typed programs, pure bounded evaluator, strict numerics/units/digital values, installed functions, tracked consumption and runtime-owned reuse | No arbitrary code, ambient reads, expression-issued authority, unmetered iteration, hash-only identity, stale reuse, or competing workflow evaluator | Cross-target/conformance and independent semantic vectors; real Query condition cutover, UI source/rebind pulse, proprietary CAD selection/rule, digital and scale/exhaustion/reconstruction courts |
 | Exact invalidation | Milestone 9.17.6.3; replaces the 9.17.6 touched-evidence-only rules | Observable-revision touched records with index keys; aspect versions bumped only by a changed field; settle-time reverse index with insertion replay; commit-time marking and upstream propagation; clean reuse; input and output cutoff; one-call advancement of the required set; counted full-verification fallback; one Query-owned envelope subscription for outputs, live queries and workflow coverage | No demand-time re-check of clean state, commit scan of settlements or waiting work, second delivery path, footprint-keyed reuse, or application settle polling | Equal marking, verification and contact counts for a fixed edit at 1, 10 and 100 model copies; zero-check clean demand; randomized differential against full verification; counted fallback triggers; mutation probes turn evidence red |
 | Platform parallel computation | Milestone 9.17.6.3; replaces Signal Milestones 14-17 | One execution authority and lease hierarchy for every runtime; structured map/reduce/scan/fork-join/rounds/decompose; keyed, component and bisection partitioners; per-partition reuse with a retained canonical reduction tree; proof-carrying Signal graph parallelism and scope-path locality; parallel advancement inside caller-pumped `advance` | No thread, pool or Rayon use outside `worth-execution`, user-asserted parallel safety, worker-count-dependent partition identity or reduction shape, completion-order publication, or partition key used as an invalidation cause | Serial-oracle equality at one, two, machine and oversubscribed widths under forced schedules; identical charged work at every width; per-partition reuse and island stability by operation count; lease and backpressure bounds; mutation probes turn evidence red |
+| Framework-owned operation continuations | Milestone 9.17.6.4; immediate successor to 9.17.6.3 | Owned original typed descriptor, fresh native admission, fixed/discovered retention and output composition, canonical typed delivery at one observation, independent cleanup and source-only/workflow adapters | No duplicate native state machine, receipt-reconstructed custody, handler replay on read failure, stale currentness, observer-issued authority, hidden polling or delivery-as-cleanup | Real public partial-effect/retention/read-refusal courts, complete discovered-set currentness, finite-policy and cleanup proof, compile-fail misuse, mutation probes and ordinary consumer deletion |
 | Inbound occurrences and external effect completion | Milestone 9.17.7 | Installed inbound protocols; authenticated bounded immutable occurrences; exact dispatch/branch correlation; external-effect-owner consumption; workflow posture delivery | Raw callback, payload, status, transport acknowledgement or workflow command cannot complete an effect; fork, duplicate and redispatch races cannot duplicate consumption | Static Bank death-notice process court, publication-gap/custody owner court and approved-payment workflow reconstruction; real CAD remote effects require a later adoption court |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |
@@ -6117,6 +6150,7 @@ must gain a row in the same patch or the roadmap is incomplete.
 - [milestone-9.17.6.md](./milestone-9.17.6.md)
 - [milestone-9.17.6.1.md](./milestone-9.17.6.1.md)
 - [milestone-9.17.6.3.md](./milestone-9.17.6.3.md)
+- [milestone-9.17.6.4.md](./milestone-9.17.6.4.md)
 - [milestone-9.17.7.md](./milestone-9.17.7.md)
 - [milestone-9.18.md](./milestone-9.18.md)
 - [milestone-9.19.md](./milestone-9.19.md)
