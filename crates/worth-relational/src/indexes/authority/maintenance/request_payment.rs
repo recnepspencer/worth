@@ -47,9 +47,18 @@ pub(super) fn run<T>(
             // reserved incrementally on the same request before allocation.
             let outcome = scan.run(lease, (), 0, 0, 0, 0, |_, _, context| {
                 let mut work = MaintenanceWork::request_paid(budget, context, &mut memory);
-                prepared = Some(prepare(&mut work));
+                let result = prepare(&mut work);
                 counts = work.counts();
-                Ok::<_, MapKernelFailure<()>>(((), ()))
+                match result {
+                    Ok(value) => {
+                        prepared = Some(Ok(value));
+                        Ok(((), ()))
+                    }
+                    Err(denial) => {
+                        prepared = Some(Err(denial));
+                        Err(MapKernelFailure::Domain(()))
+                    }
+                }
             });
             #[cfg(test)]
             LAST_ALLOCATION_BYTES.with(|bytes| bytes.set(memory.bytes()));
@@ -60,6 +69,17 @@ pub(super) fn run<T>(
                         value,
                         _memory: memory,
                     }),
+                ScanOutcome::Stopped {
+                    reason:
+                        MapStop::Failure {
+                            cause: MapKernelFailure::Domain(()),
+                            ..
+                        },
+                    ..
+                } => match prepared.expect("the failed pass retained its denial") {
+                    Err(denial) => Err(denial),
+                    Ok(_) => unreachable!("a domain failure carries the preparation refusal"),
+                },
                 ScanOutcome::Stopped { reason, .. } => Err(Denial::Execution(match reason {
                     MapStop::Admission(denial) => execution::denial::lease_denial(denial),
                     MapStop::WorkExhausted { .. } => Cause::WorkExhausted,
@@ -70,7 +90,7 @@ pub(super) fn run<T>(
                         MapKernelFailure::Panic => Cause::WorkerFailed,
                         MapKernelFailure::ResultCapacityExceeded => Cause::ResultCapacityExceeded,
                         MapKernelFailure::Domain(()) => {
-                            unreachable!("maintenance returns native refusal as preparation")
+                            unreachable!("the preparation denial is returned above")
                         }
                     },
                 })),
