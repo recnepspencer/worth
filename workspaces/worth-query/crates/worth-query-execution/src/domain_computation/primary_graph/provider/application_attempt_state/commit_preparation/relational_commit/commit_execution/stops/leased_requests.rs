@@ -70,7 +70,7 @@ pub(super) fn authority() -> &'static ExecutionAuthority {
     static AUTHORITY: OnceLock<ExecutionAuthority> = OnceLock::new();
     AUTHORITY.get_or_init(|| {
         ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-            max_workers: NonZeroUsize::MIN,
+            max_workers: NonZeroUsize::new(2).unwrap(),
             charged_memory_bytes: Some(64 * 1024 * 1024),
         })
         .expect("one authority in this probe process")
