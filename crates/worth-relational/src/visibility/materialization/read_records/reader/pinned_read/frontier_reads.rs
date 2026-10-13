@@ -62,7 +62,7 @@ impl RelationalPinnedRead {
             worth_execution::WorkCeilingDenial,
         >,
     > {
-        ProjectionRecordReader::new(self.current_version, &self.instrumentation)
+        ProjectionRecordReader::new(self.basis.version_id(), &self.instrumentation)
             .bounded_relations_for_frontier_in_state(
                 self.basis.root().as_ref(),
                 self.schema(),
@@ -89,7 +89,7 @@ impl RelationalPinnedRead {
             worth_execution::WorkCeilingDenial,
         >,
     > {
-        ProjectionRecordReader::new(self.current_version, &self.instrumentation)
+        ProjectionRecordReader::new(self.basis.version_id(), &self.instrumentation)
             .bounded_entity_field_equals_for_frontier_in_state(
                 self.basis.root().as_ref(),
                 self.schema(),
