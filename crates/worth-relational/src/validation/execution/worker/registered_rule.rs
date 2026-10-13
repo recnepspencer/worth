@@ -24,7 +24,7 @@ pub(super) fn evaluate_registered_rule<'state>(
     runtime: &InvariantRuntimeView<'state>,
     packet: &InvariantWorkPacket<'state>,
     budget: Option<&dyn InvariantBudget>,
-) -> RegisteredInvariantEvaluation {
+) -> Option<RegisteredInvariantEvaluation> {
     match &packet.registration {
         crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(
             registration,
@@ -59,13 +59,13 @@ pub(super) fn evaluate_registered_rule<'state>(
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
             );
-            RegisteredInvariantEvaluation {
+            Some(RegisteredInvariantEvaluation {
                 reported_rule: InvariantReportedRule::Custom(registration.descriptor().identity.clone()),
                 groups: registration.groups(),
                 cost: registration.cost_class(),
                 custom_provenance: Some(provenance),
                 verdicts: vec![InvariantVerdict::NotApplicable],
-            }
+            })
         }
     }
 }
@@ -75,7 +75,7 @@ fn evaluate_native_registration<'state>(
     packet: &InvariantWorkPacket<'state>,
     registration: &crate::validation::data::InvariantRegistration,
     budget: Option<&dyn InvariantBudget>,
-) -> RegisteredInvariantEvaluation {
+) -> Option<RegisteredInvariantEvaluation> {
     let mut context = InvariantExecutionContext::new(
         runtime,
         packet.observation.clone(),
@@ -98,6 +98,13 @@ fn evaluate_native_registration<'state>(
         registration.execution_point.class(),
         &registration.rule,
     );
+    if budget.is_some_and(|budget| {
+        !budget.claim_result(
+            (violations.len().max(1) * std::mem::size_of::<InvariantVerdict>()) as u64,
+        )
+    }) {
+        return None;
+    }
     let verdicts = if violations.is_empty() {
         vec![InvariantVerdict::Pass]
     } else {
@@ -106,13 +113,13 @@ fn evaluate_native_registration<'state>(
             .map(|violation| registration.verdict_for_violation(violation))
             .collect()
     };
-    RegisteredInvariantEvaluation {
+    Some(RegisteredInvariantEvaluation {
         reported_rule: InvariantReportedRule::Native(registration.rule.clone()),
         groups: registration.groups(),
         cost: registration.cost(),
         custom_provenance: None,
         verdicts,
-    }
+    })
 }
 
 fn evaluate_custom_registration<'state>(
@@ -125,20 +132,12 @@ fn evaluate_custom_registration<'state>(
     prepared_scope: &crate::validation::data::PreparedCustomInvariantScope,
     retained_touched: &std::sync::Arc<crate::validation::data::TouchedStructuralSet>,
     budget: Option<&dyn InvariantBudget>,
-) -> RegisteredInvariantEvaluation {
+) -> Option<RegisteredInvariantEvaluation> {
     let structural_budget = budget.map(InvariantBudget::custom_structural_budget);
     let work = prepared_execution.work_meter();
     let work = structural_budget
         .as_ref()
-        .map_or(work.clone(), |structural| {
-            if !registration.supports_checked_preparation()
-                && runtime.custom_kernel_posture == worth_foundational::ExecutionPosture::Serial
-            {
-                work.clone().with_lease(structural)
-            } else {
-                work.for_evaluation(structural)
-            }
-        });
+        .map_or(work.clone(), |structural| work.for_evaluation(structural));
     let ready = budget.is_none_or(|budget| budget.checkpoint(1));
     let context = CustomInvariantExecutionContext::new(
         runtime,
@@ -161,11 +160,6 @@ fn evaluate_custom_registration<'state>(
     } else if let Some(budget) = budget {
         match prepared_execution.evaluate_checked(&context, budget.custom_meter()) {
             Some(outcome) => outcome,
-            None if runtime.custom_kernel_posture
-                == worth_foundational::ExecutionPosture::Serial =>
-            {
-                prepared_execution.evaluate(&context)
-            }
             None => {
                 budget.deny_unchecked_custom();
                 crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
@@ -176,26 +170,36 @@ fn evaluate_custom_registration<'state>(
     } else {
         prepared_execution.evaluate(&context)
     };
+    if let (Some(budget), Some(structural)) = (budget, structural_budget.as_ref()) {
+        let _ = budget.settle_custom_structural(structural);
+    }
+    if budget
+        .is_some_and(|budget| !budget.claim_result(std::mem::size_of::<InvariantVerdict>() as u64))
+    {
+        return None;
+    }
     let mut verdicts = match outcome {
         crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
             crate::validation::data::CustomInvariantVerdict::Pass,
         ) => vec![InvariantVerdict::Pass],
         crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
             crate::validation::data::CustomInvariantVerdict::Violation,
-        ) => vec![InvariantVerdict::Violation(
+        ) => {
+            vec![InvariantVerdict::Violation(
             crate::validation::data::InvariantViolation {
                 class: registration.execution_point().class(),
                 code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
-                detail: format!(
+                detail: super::allocation::format_detail(budget, format_args!(
                     "custom invariant '{}' reported a structural violation",
                     registration.rule_id().as_str()
-                ),
+                ))?,
                 fields:
                     crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
                         identity: registration.descriptor().identity.clone(),
                     },
             },
-        )],
+        )]
+        }
         crate::validation::data::PreparedCustomInvariantExecutionOutcome::Failure(failure) => {
             if failure.kind == CustomInvariantFailureKind::Panic
                 && failure.phase == CustomInvariantRuntimePhase::Execution
@@ -206,23 +210,27 @@ fn evaluate_custom_registration<'state>(
                 custom_invariant_failure_violation(
                     registration.execution_point().class(),
                     &failure,
-                ),
+                    budget,
+                )?,
             )]
         }
     };
     let custom_provenance = context.provenance();
-    if let (Some(budget), Some(structural)) = (budget, structural_budget.as_ref()) {
-        let _ = budget.settle_custom_structural(structural);
-    }
     if work.exceeded() {
-        verdicts = vec![InvariantVerdict::Violation(
+        if budget.is_some_and(|budget| {
+            !budget.claim_result(std::mem::size_of::<InvariantVerdict>() as u64)
+        }) {
+            return None;
+        }
+        verdicts =
+            vec![InvariantVerdict::Violation(
             crate::validation::data::InvariantViolation {
                 class: registration.execution_point().class(),
                 code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
-                detail: format!(
+                detail: super::allocation::format_detail(budget, format_args!(
                     "custom invariant '{}' exceeded its installed work budget",
                     registration.rule_id().as_str(),
-                ),
+                ))?,
                 fields:
                     crate::validation::data::InvariantViolationFields::CustomInvariantViolation {
                         identity: registration.descriptor().identity.clone(),
@@ -230,28 +238,35 @@ fn evaluate_custom_registration<'state>(
             },
         )];
     }
-    RegisteredInvariantEvaluation {
+    Some(RegisteredInvariantEvaluation {
         reported_rule: InvariantReportedRule::Custom(registration.descriptor().identity.clone()),
         groups: registration.groups(),
         cost: registration.cost_class(),
         custom_provenance: Some(custom_provenance),
         verdicts,
-    }
+    })
 }
 
 fn custom_invariant_failure_violation(
     class: crate::validation::data::InvariantClass,
     failure: &CustomInvariantFailure,
-) -> crate::validation::data::InvariantViolation {
-    crate::validation::data::InvariantViolation {
+    budget: Option<&dyn InvariantBudget>,
+) -> Option<crate::validation::data::InvariantViolation> {
+    if budget.is_some_and(|budget| !budget.claim_result(failure.detail.len() as u64)) {
+        return None;
+    }
+    Some(crate::validation::data::InvariantViolation {
         class,
         code: crate::diagnostics::data::DiagnosticCode::InvariantViolation,
-        detail: format!(
-            "custom invariant '{}' failed during {}: {}",
-            failure.identity.rule_id.as_str(),
-            failure.phase.diagnostic_label(),
-            failure.detail
-        ),
+        detail: super::allocation::format_detail(
+            budget,
+            format_args!(
+                "custom invariant '{}' failed during {}: {}",
+                failure.identity.rule_id.as_str(),
+                failure.phase.diagnostic_label(),
+                failure.detail
+            ),
+        )?,
         fields: crate::validation::data::InvariantViolationFields::CustomInvariantFailure {
             identity: crate::validation::data::CustomInvariantFailureIdentity::new(
                 failure.identity.clone(),
@@ -260,7 +275,7 @@ fn custom_invariant_failure_violation(
             failure: custom_invariant_failure_kind(failure.kind),
             detail: failure.detail.to_string(),
         },
-    }
+    })
 }
 
 fn custom_invariant_failure_phase(

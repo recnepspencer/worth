@@ -3,6 +3,8 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
 
+use crate::execution::InvariantScratchAdmission;
+
 // Fixed-size ID, BTree node, and wrapper retention for materializing
 // structural visits. Borrowed reads and authored checkpoints charge work only;
 // variable-size keys and aspect values are claimed separately.
@@ -17,11 +19,16 @@ pub(crate) enum CustomPreparationStop {
     UncheckedCustomKernel,
 }
 
+enum CustomMemoryAdmission {
+    Prequoted(Option<u64>),
+    Dynamic(InvariantScratchAdmission),
+}
+
 struct LeasedCustomMeter {
     status: ExecutionLeaseStatus,
     work_ceiling: Option<u64>,
     consumed_work: AtomicU64,
-    memory_ceiling: Option<u64>,
+    memory: CustomMemoryAdmission,
     claimed_memory: AtomicU64,
     stop: std::sync::Mutex<Option<CustomPreparationStop>>,
 }
@@ -30,6 +37,14 @@ struct LeasedCustomMeter {
 pub(crate) struct CustomPreparationBudget(Arc<LeasedCustomMeter>);
 
 impl CustomPreparationBudget {
+    pub(crate) fn allocation_bytes() -> u64 {
+        (std::mem::size_of::<LeasedCustomMeter>() + 2 * std::mem::size_of::<usize>()) as u64
+    }
+
+    pub(crate) fn evaluation_meter_allocation_bytes() -> u64 {
+        arc_allocation_bytes::<AtomicU64>() + arc_allocation_bytes::<AtomicBool>()
+    }
+
     pub(crate) fn new(
         status: ExecutionLeaseStatus,
         work_ceiling: Option<u64>,
@@ -39,7 +54,22 @@ impl CustomPreparationBudget {
             status,
             work_ceiling,
             consumed_work: AtomicU64::new(0),
-            memory_ceiling,
+            memory: CustomMemoryAdmission::Prequoted(memory_ceiling),
+            claimed_memory: AtomicU64::new(0),
+            stop: std::sync::Mutex::new(None),
+        }))
+    }
+
+    pub(crate) fn with_scratch_admission(
+        status: ExecutionLeaseStatus,
+        work_ceiling: Option<u64>,
+        admission: InvariantScratchAdmission,
+    ) -> Self {
+        Self(Arc::new(LeasedCustomMeter {
+            status,
+            work_ceiling,
+            consumed_work: AtomicU64::new(0),
+            memory: CustomMemoryAdmission::Dynamic(admission),
             claimed_memory: AtomicU64::new(0),
             stop: std::sync::Mutex::new(None),
         }))
@@ -54,41 +84,26 @@ impl CustomPreparationBudget {
     }
 
     pub(crate) fn stop(&self) -> Option<CustomPreparationStop> {
-        *self
-            .0
-            .stop
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
+        self.0.stop_reason()
     }
 
     pub(crate) fn deny_unchecked(&self) {
-        let mut stop = self
-            .0
-            .stop
-            .lock()
-            .unwrap_or_else(|error| error.into_inner());
-        stop.get_or_insert(CustomPreparationStop::UncheckedCustomKernel);
+        self.0
+            .record_stop(CustomPreparationStop::UncheckedCustomKernel);
     }
 
     /// Candidate-local inspection is request work, not a rule's allowance.
     pub(crate) fn try_visit(&self, units: usize) -> bool {
-        let meter = CustomInvariantWorkMeter {
-            maximum: None,
-            consumed: Arc::new(AtomicU64::new(0)),
-            exhausted: Arc::new(AtomicBool::new(false)),
-            leased: Some(Arc::clone(&self.0)),
-        };
-        meter.try_charge_work(u64::try_from(units).unwrap_or(u64::MAX))
+        self.0
+            .try_charge_work(u64::try_from(units).unwrap_or(u64::MAX))
     }
 
     pub(crate) fn try_plan_item(&self, retained_bytes: u64) -> bool {
-        let meter = CustomInvariantWorkMeter {
-            maximum: None,
-            consumed: Arc::new(AtomicU64::new(0)),
-            exhausted: Arc::new(AtomicBool::new(false)),
-            leased: Some(Arc::clone(&self.0)),
-        };
-        meter.try_charge_work(1) && meter.try_claim_bytes(retained_bytes)
+        self.0.try_charge_work(1) && self.try_claim_bytes(retained_bytes)
+    }
+
+    pub(crate) fn try_claim_bytes(&self, bytes: u64) -> bool {
+        self.0.try_claim_bytes(bytes)
     }
 }
 
@@ -130,71 +145,49 @@ impl CustomInvariantWorkMeter {
 
     fn stop(&self, reason: CustomPreparationStop) {
         if let Some(leased) = &self.leased {
-            let mut stop = leased
-                .stop
-                .lock()
-                .unwrap_or_else(|error| error.into_inner());
-            stop.get_or_insert(reason);
+            leased.record_stop(reason);
         }
         self.mark_exceeded();
     }
 
     pub(crate) fn leased_stop(&self) -> Option<CustomPreparationStop> {
-        self.leased.as_ref().and_then(|leased| {
-            *leased
-                .stop
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-        })
+        self.leased.as_ref().and_then(|leased| leased.stop_reason())
     }
 
     pub(crate) fn try_claim_bytes(&self, bytes: u64) -> bool {
-        let Some(leased) = &self.leased else {
-            return true;
-        };
-        if !self.safe_point() {
-            return false;
-        }
-        if leased
-            .claimed_memory
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                current
-                    .checked_add(bytes)
-                    .filter(|next| leased.memory_ceiling.is_none_or(|ceiling| *next <= ceiling))
-            })
-            .is_err()
+        if self
+            .leased
+            .as_ref()
+            .is_none_or(|leased| leased.try_claim_bytes(bytes))
         {
-            self.stop(CustomPreparationStop::MemoryExhausted);
-            return false;
+            return true;
         }
-        true
+        self.mark_exceeded();
+        false
     }
 
     fn check_claim_peak(&self, bytes: u64) -> bool {
-        let Some(leased) = &self.leased else {
+        if self
+            .leased
+            .as_ref()
+            .is_none_or(|leased| leased.check_claim_peak(bytes))
+        {
             return true;
-        };
-        self.safe_point()
-            && leased
-                .claimed_memory
-                .load(Ordering::Relaxed)
-                .checked_add(bytes)
-                .is_some_and(|peak| leased.memory_ceiling.is_none_or(|ceiling| peak <= ceiling))
+        }
+        self.mark_exceeded();
+        false
     }
 
     fn safe_point(&self) -> bool {
-        let Some(leased) = &self.leased else {
+        if self
+            .leased
+            .as_ref()
+            .is_none_or(|leased| leased.safe_point())
+        {
             return true;
-        };
-        if leased.status.is_cancelled() {
-            self.stop(CustomPreparationStop::Cancelled);
-            return false;
         }
-        if leased.status.deadline_elapsed() {
-            self.stop(CustomPreparationStop::DeadlineElapsed);
-            return false;
-        }
-        self.leased_stop().is_none()
+        self.mark_exceeded();
+        false
     }
     pub(crate) fn try_charge(&self, units: usize) -> bool {
         if self.exceeded() || !self.safe_point() {
@@ -216,19 +209,13 @@ impl CustomInvariantWorkMeter {
         if self.exceeded() || !self.safe_point() {
             return false;
         }
-        if let Some(leased) = &self.leased {
-            if leased
-                .consumed_work
-                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
-                    current
-                        .checked_add(units)
-                        .filter(|next| leased.work_ceiling.is_none_or(|ceiling| *next <= ceiling))
-                })
-                .is_err()
-            {
-                self.stop(CustomPreparationStop::WorkExhausted);
-                return false;
-            }
+        if self
+            .leased
+            .as_ref()
+            .is_some_and(|leased| !leased.try_charge_work(units))
+        {
+            self.mark_exceeded();
+            return false;
         }
         if self
             .consumed
@@ -276,6 +263,106 @@ impl crate::validation::data::CustomInvariantLeaseBudget for CustomInvariantWork
     fn check_scratch_peak(&self, bytes: u64) -> bool {
         self.check_claim_peak(bytes)
     }
+}
+
+impl LeasedCustomMeter {
+    fn record_stop(&self, reason: CustomPreparationStop) {
+        self.stop
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .get_or_insert(reason);
+    }
+
+    fn stop_reason(&self) -> Option<CustomPreparationStop> {
+        *self.stop.lock().unwrap_or_else(|error| error.into_inner())
+    }
+
+    fn safe_point(&self) -> bool {
+        if self.status.is_cancelled() {
+            self.record_stop(CustomPreparationStop::Cancelled);
+            return false;
+        }
+        if self.status.deadline_elapsed() {
+            self.record_stop(CustomPreparationStop::DeadlineElapsed);
+            return false;
+        }
+        self.stop_reason().is_none()
+    }
+
+    fn try_charge_work(&self, units: u64) -> bool {
+        if !self.safe_point() {
+            return false;
+        }
+        if self
+            .consumed_work
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+                current
+                    .checked_add(units)
+                    .filter(|next| self.work_ceiling.is_none_or(|ceiling| *next <= ceiling))
+            })
+            .is_err()
+        {
+            self.record_stop(CustomPreparationStop::WorkExhausted);
+            return false;
+        }
+        true
+    }
+
+    fn try_claim_bytes(&self, bytes: u64) -> bool {
+        if !self.safe_point() {
+            return false;
+        }
+        if let CustomMemoryAdmission::Dynamic(admission) = &self.memory {
+            if admission.claim(bytes).is_err() {
+                self.record_stop(CustomPreparationStop::MemoryExhausted);
+                return false;
+            }
+        }
+        if self
+            .claimed_memory
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |current| {
+                current
+                    .checked_add(bytes)
+                    .filter(|next| match &self.memory {
+                        CustomMemoryAdmission::Prequoted(ceiling) => {
+                            ceiling.is_none_or(|ceiling| *next <= ceiling)
+                        }
+                        CustomMemoryAdmission::Dynamic(_) => true,
+                    })
+            })
+            .is_err()
+        {
+            self.record_stop(CustomPreparationStop::MemoryExhausted);
+            return false;
+        }
+        true
+    }
+
+    fn check_claim_peak(&self, bytes: u64) -> bool {
+        if !self.safe_point() {
+            return false;
+        }
+        let admitted = match &self.memory {
+            CustomMemoryAdmission::Prequoted(ceiling) => self
+                .claimed_memory
+                .load(Ordering::Relaxed)
+                .checked_add(bytes)
+                .is_some_and(|peak| ceiling.is_none_or(|ceiling| peak <= ceiling)),
+            CustomMemoryAdmission::Dynamic(admission) => admission.check_peak(bytes).is_ok(),
+        };
+        if !admitted {
+            self.record_stop(CustomPreparationStop::MemoryExhausted);
+        }
+        admitted
+    }
+}
+
+// Include both Arc counters and the backing allocation's alignment padding.
+fn arc_allocation_bytes<T>() -> u64 {
+    let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
+        .extend(std::alloc::Layout::new::<T>())
+        .expect("fixed meter metadata fits an allocation layout");
+    layout.pad_to_align().size() as u64
 }
 
 #[cfg(test)]

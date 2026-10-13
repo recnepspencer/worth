@@ -9,26 +9,45 @@ pub(super) fn invariant_violation_witness_key(
     code: DiagnosticCode,
     fields: &InvariantViolationFields,
 ) -> InvariantWitnessKey {
+    invariant_violation_witness_key_checked(code, fields, &mut |_| true)
+        .expect("unleased witness construction has no admission refusal")
+}
+
+pub(super) fn invariant_violation_witness_key_checked(
+    code: DiagnosticCode,
+    fields: &InvariantViolationFields,
+    admit: &mut impl FnMut(u64) -> bool,
+) -> Option<InvariantWitnessKey> {
+    macro_rules! admitted_format {
+        ($($argument:tt)*) => {{
+            let mut count = WitnessTextLength(0);
+            std::fmt::write(&mut count, format_args!($($argument)*)).ok()?;
+            if !admit(count.0 as u64) { return None; }
+            let mut text = String::with_capacity(count.0);
+            std::fmt::write(&mut text, format_args!($($argument)*)).ok()?;
+            text
+        }};
+    }
     let key = match fields {
-        InvariantViolationFields::None => format!("none:{code:?}"),
+        InvariantViolationFields::None => admitted_format!("none:{code:?}"),
         InvariantViolationFields::MergedIntentLimit {
             merged_intent_count,
             limit,
-        } => format!("merged_intents:{merged_intent_count}:{limit}"),
+        } => admitted_format!("merged_intents:{merged_intent_count}:{limit}"),
         InvariantViolationFields::SnapshotEntityLimit {
             version_id, limit, ..
         } => {
-            format!("snapshot_entity_limit:{}:{limit}", version_id.as_u64())
+            admitted_format!("snapshot_entity_limit:{}:{limit}", version_id.as_u64())
         }
         InvariantViolationFields::UniqueEntityField {
             field_locator,
             value,
-        } => return unique_entity_aspect_field_witness_key(code, field_locator, value),
+        } => return unique_entity_aspect_field_witness_key(code, field_locator, value, admit),
         InvariantViolationFields::SidecarConsistency {
             partition_id,
             slot,
             missing_label,
-        } => format!(
+        } => admitted_format!(
             "sidecar_consistency:{}:{slot}:{missing_label}",
             partition_id.as_u32()
         ),
@@ -38,7 +57,7 @@ pub(super) fn invariant_violation_witness_key(
             target,
             boundary,
             ..
-        } => format!(
+        } => admitted_format!(
             "endpoint_kind_mismatch:{}:{source:?}:{target:?}:{}",
             relation_kind_id.as_u32(),
             relation_endpoint_boundary_label(*boundary)
@@ -48,7 +67,7 @@ pub(super) fn invariant_violation_witness_key(
             source,
             target,
             ..
-        } => format!(
+        } => admitted_format!(
             "endpoint_kind_self_edge:{}:{source:?}:{target:?}",
             relation_kind_id.as_u32()
         ),
@@ -57,7 +76,7 @@ pub(super) fn invariant_violation_witness_key(
             source_partition_id,
             target_partition_id,
             ..
-        } => format!(
+        } => admitted_format!(
             "endpoint_kind_cross_context:{}:{}:{}",
             relation_kind_id.as_u32(),
             source_partition_id.as_u32(),
@@ -68,7 +87,7 @@ pub(super) fn invariant_violation_witness_key(
             entity_id,
             boundary,
             ..
-        } => format!(
+        } => admitted_format!(
             "cardinality_endpoint:{}:{entity_id:?}:{}",
             relation_kind_id.as_u32(),
             relation_cardinality_boundary_label(*boundary)
@@ -78,7 +97,7 @@ pub(super) fn invariant_violation_witness_key(
             source,
             target,
             ..
-        } => format!(
+        } => admitted_format!(
             "cardinality_pair:{}:{source:?}:{target:?}",
             relation_kind_id.as_u32()
         ),
@@ -88,7 +107,7 @@ pub(super) fn invariant_violation_witness_key(
             source,
             target,
             ..
-        } => format!(
+        } => admitted_format!(
             "uniqueness:{}:{source:?}:{target:?}:{}",
             relation_kind_id.as_u32(),
             uniqueness_scope_label(*scope)
@@ -99,7 +118,7 @@ pub(super) fn invariant_violation_witness_key(
             target,
             mode,
             ..
-        } => format!(
+        } => admitted_format!(
             "symmetry:{}:{source:?}:{target:?}:{}",
             relation_kind_id.as_u32(),
             symmetry_mode_label(*mode)
@@ -109,7 +128,7 @@ pub(super) fn invariant_violation_witness_key(
             entity_id,
             mode,
             ..
-        } => format!(
+        } => admitted_format!(
             "endpoint_deletion:{}:{entity_id:?}:{}",
             relation_kind_id.as_u32(),
             endpoint_deletion_integrity_mode_label(*mode)
@@ -124,7 +143,7 @@ pub(super) fn invariant_violation_witness_key(
             failure,
             ..
         } => {
-            format!(
+            admitted_format!(
                 "storage_inconsistency:{entity_id:?}:{partition_id:?}:{slot:?}:{}:{}:{}:{}",
                 field.as_ref().map(|field| field.as_str()).unwrap_or("none"),
                 scan.map(|value| value.diagnostic_label()).unwrap_or("none"),
@@ -141,7 +160,7 @@ pub(super) fn invariant_violation_witness_key(
             phase,
             failure,
             ..
-        } => format!(
+        } => admitted_format!(
             "custom_failure:{}:{}.{}:{}:{}",
             identity.semantic_identity().rule_id.as_str(),
             identity.semantic_identity().semantic_version.major,
@@ -149,7 +168,7 @@ pub(super) fn invariant_violation_witness_key(
             phase.diagnostic_label(),
             failure.diagnostic_label()
         ),
-        InvariantViolationFields::CustomInvariantViolation { identity } => format!(
+        InvariantViolationFields::CustomInvariantViolation { identity } => admitted_format!(
             "custom_violation:{}:{}.{}",
             identity.rule_id.as_str(),
             identity.semantic_version.major,
@@ -161,7 +180,7 @@ pub(super) fn invariant_violation_witness_key(
             source_partition_id,
             target_partition_id,
             ..
-        } => format!(
+        } => admitted_format!(
             "partition_isolation:{}:{relation_id:?}:{}:{}",
             relation_kind_id.as_u32(),
             source_partition_id.as_u32(),
@@ -172,7 +191,7 @@ pub(super) fn invariant_violation_witness_key(
             source,
             target,
             ..
-        } => format!(
+        } => admitted_format!(
             "acyclicity:{}:{source:?}:{target:?}",
             relation_kind_id.as_u32()
         ),
@@ -180,33 +199,69 @@ pub(super) fn invariant_violation_witness_key(
             relation_kind_id,
             source,
             ..
-        } => format!(
+        } => admitted_format!(
             "connectivity_minimum:{}:{source:?}",
             relation_kind_id.as_u32()
         ),
     };
-    InvariantWitnessKey::new(key)
+    Some(InvariantWitnessKey::new(key))
 }
 
 fn unique_entity_aspect_field_witness_key(
     code: DiagnosticCode,
     field_locator: &worth_foundational::facade::AspectFieldLocator,
     value: &worth_foundational::facade::AspectValue,
-) -> InvariantWitnessKey {
+    admit: &mut impl FnMut(u64) -> bool,
+) -> Option<InvariantWitnessKey> {
+    let locator_len = 2usize
+        .checked_add(4)?
+        .checked_add(field_locator.aspect().aspect_key().as_str().len())?
+        .checked_add(4)?;
+    let locator_len = field_locator
+        .field_path()
+        .fields()
+        .iter()
+        .try_fold(locator_len, |bytes, field| {
+            bytes.checked_add(4)?.checked_add(field.as_str().len())
+        })?;
+    let value_len = crate::aspect_wire::encoded_aspect_value_len(value)?.checked_add(4)?;
+    // Each encoded Vec can grow to twice its length. The value encoder also
+    // holds its body buffer; hex strings hold exactly two bytes per input byte.
+    let encoding = locator_len
+        .checked_mul(2)?
+        .checked_add(value_len.checked_mul(4)?)?
+        .checked_add((field_locator.owned_allocation_capacity_bytes() as usize).checked_mul(2)?)?
+        .checked_add(value.owned_allocation_capacity_bytes())?;
+    let hex = locator_len.checked_add(value_len)?.checked_mul(2)?;
+    if !admit(encoding.checked_add(hex)? as u64) {
+        return None;
+    }
     let field_locator_canonical_bytes = encode_aspect_field_locator(field_locator);
     let value_canonical_bytes = canonical_aspect_value_witness_basis(value);
-    let key = format!(
-        "unique_entity_aspect_field:{code:?}:{}:{}",
-        hex_bytes(&field_locator_canonical_bytes),
-        hex_bytes(&value_canonical_bytes)
-    );
-    InvariantWitnessKey::unique_entity_aspect_field(
+    let locator_hex = hex_bytes(&field_locator_canonical_bytes);
+    let value_hex = hex_bytes(&value_canonical_bytes);
+    let mut count = WitnessTextLength(0);
+    std::fmt::write(
+        &mut count,
+        format_args!("unique_entity_aspect_field:{code:?}:{locator_hex}:{value_hex}"),
+    )
+    .ok()?;
+    if !admit(count.0 as u64) {
+        return None;
+    }
+    let mut key = String::with_capacity(count.0);
+    std::fmt::write(
+        &mut key,
+        format_args!("unique_entity_aspect_field:{code:?}:{locator_hex}:{value_hex}"),
+    )
+    .ok()?;
+    Some(InvariantWitnessKey::unique_entity_aspect_field(
         key,
         field_locator.clone(),
         value.clone(),
         field_locator_canonical_bytes,
         value_canonical_bytes,
-    )
+    ))
 }
 
 fn canonical_aspect_value_witness_basis(
@@ -266,5 +321,13 @@ fn endpoint_deletion_integrity_mode_label(mode: EndpointDeletionIntegrityMode) -
             "require_relation_deletion_in_same_commit"
         }
         EndpointDeletionIntegrityMode::RequireRelationRetirement => "require_relation_retirement",
+    }
+}
+
+struct WitnessTextLength(usize);
+impl std::fmt::Write for WitnessTextLength {
+    fn write_str(&mut self, text: &str) -> std::fmt::Result {
+        self.0 = self.0.checked_add(text.len()).ok_or(std::fmt::Error)?;
+        Ok(())
     }
 }

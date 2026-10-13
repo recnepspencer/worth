@@ -52,15 +52,14 @@ impl<'runtime> InvariantEngine<'runtime> {
     where
         'runtime: 'state,
     {
-        if lease.is_some_and(|lease| {
-            lease.resolved_posture() == worth_foundational::ExecutionPosture::Automatic
-        }) && self
-            .runtime
-            .schema_contract_runtime
-            .custom_invariant_registries
-            .iter()
-            .filter(|registration| request.includes_custom_registration(registration))
-            .any(|registration| !registration.supports_checked_preparation())
+        if lease.is_some()
+            && self
+                .runtime
+                .schema_contract_runtime
+                .custom_invariant_registries
+                .iter()
+                .filter(|registration| request.includes_custom_registration(registration))
+                .any(|registration| !registration.supports_checked_preparation())
         {
             return Err(
                 crate::transactions::data::TransactionCommitError::execution(
@@ -73,19 +72,29 @@ impl<'runtime> InvariantEngine<'runtime> {
                 ),
             );
         }
-        let mut runtime = self.runtime.with_candidate_input_plan(&request);
-        runtime.custom_kernel_posture = lease.map_or(
-            worth_foundational::ExecutionPosture::Serial,
-            ExecutionResourceLease::resolved_posture,
-        );
-        let (planned, retained_bytes) = if let Some(lease) = lease {
-            let (planned, retained_bytes, _) =
+        let runtime = self
+            .runtime
+            .with_candidate_input_plan(&request, lease)
+            .map_err(|failure| {
+                crate::transactions::data::TransactionCommitError::execution(
+                    crate::transactions::data::CommitExecutionDenial {
+                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                            crate::execution::kernel_failure(
+                                worth_execution::MapKernelFailure::Domain(failure),
+                            ),
+                        ),
+                        partition_identity: None,
+                    },
+                )
+            })?;
+        let (planned, _planning_custody) = if let Some(lease) = lease {
+            let (planned, planning_custody, _) =
                 crate::validation::execution::plan_checked_invariant_preparation(
                     &runtime, &request, lease,
                 )?;
-            (planned, retained_bytes)
+            (planned, Some(planning_custody))
         } else {
-            (plan_invariant_execution(&runtime, &request, None), 0)
+            (plan_invariant_execution(&runtime, &request, None), None)
         };
         let strategy = planned.strategy;
         let (proof_boundary, packets) = if let Some(lease) = lease {
@@ -94,7 +103,6 @@ impl<'runtime> InvariantEngine<'runtime> {
                 planned,
                 lease,
                 runtime.commit_work_budget.as_ref(),
-                retained_bytes,
             )?;
             self.record_preparation_shape(counters.packet_count, checked.scope_units, strategy);
             (checked.proof_boundary, checked.packets)
@@ -122,21 +130,13 @@ impl<'runtime> InvariantEngine<'runtime> {
         };
         crate::execution::admit_read_only_packet_order(&packets)
             .map_err(crate::execution::PacketExecutionStop::Admission)?;
-        let envelopes = if let Some(lease) = lease {
-            crate::execution::execute_read_only_packets_with_budget(
-                packets,lease,runtime.commit_work_budget.as_ref(),
-                |packet,context|crate::validation::execution::evaluate_invariant_packet_checked(
-                    &runtime,packet,context,lease.status(),
-                ),
-                crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes,
-            )?
-        } else {
-            crate::execution::execute_unleased_read_only_packets(&packets, |packet| {
-                Ok(evaluate_invariant_packet(&runtime, packet))
-            })
-            .map_err(crate::execution::PacketExecutionStop::from)?
-        };
         let (result, _, reducer_conflicts) = if let Some(lease) = lease {
+            let envelopes = crate::validation::execution::execute_leased_invariant_packets(
+                packets,
+                lease,
+                runtime.commit_work_budget.as_ref(),
+                &runtime,
+            )?;
             reduce_invariant_execution_checked(
                 &request,
                 strategy,
@@ -146,6 +146,11 @@ impl<'runtime> InvariantEngine<'runtime> {
                 runtime.commit_work_budget.as_ref(),
             )?
         } else {
+            let envelopes =
+                crate::execution::execute_unleased_read_only_packets(&packets, |packet| {
+                    Ok(evaluate_invariant_packet(&runtime, packet))
+                })
+                .map_err(crate::execution::PacketExecutionStop::from)?;
             reduce_invariant_execution(&request, strategy, proof_boundary, envelopes)
         };
         if let Some(inputs) = runtime.shared_candidate_inputs() {

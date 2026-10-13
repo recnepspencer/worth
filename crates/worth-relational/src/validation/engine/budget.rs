@@ -42,7 +42,13 @@ impl<'a, 'b, 'c, 'd> LeasedInvariantBudget<'a, 'b, 'c, 'd> {
     }
 
     pub(crate) fn take_failure(&self) -> Option<InvariantBudgetStop> {
-        self.failure.borrow_mut().take()
+        self.failure.borrow_mut().take().or_else(|| {
+            self.context
+                .borrow()
+                .scratch_admission()
+                .and_then(|admission| admission.failure())
+                .map(MapKernelFailure::Domain)
+        })
     }
 
     fn attempt(
@@ -100,6 +106,13 @@ impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
 
     fn custom_structural_budget(&self) -> CustomPreparationBudget {
         let context = self.context.borrow();
+        if let Some(admission) = context.scratch_admission() {
+            return CustomPreparationBudget::with_scratch_admission(
+                self.status.clone(),
+                Some(context.remaining_work()),
+                admission,
+            );
+        }
         CustomPreparationBudget::new(
             self.status.clone(),
             Some(context.remaining_work()),
@@ -111,7 +124,12 @@ impl InvariantBudget for LeasedInvariantBudget<'_, '_, '_, '_> {
         let mut context = self.context.borrow_mut();
         // Flush measured view work even when the view observed cancellation.
         let work_result = context.account_completed_work(budget.charged_work());
-        let memory_result = context.claim_scratch(budget.claimed_memory());
+        let memory_result = match context.scratch_admission() {
+            Some(admission) => admission
+                .failure()
+                .map_or(Ok(()), |failure| Err(MapKernelFailure::Domain(failure))),
+            None => context.claim_scratch(budget.claimed_memory()),
+        };
         let stop = budget.stop();
         let mut failure = self.failure.borrow_mut();
         if failure.is_none() {

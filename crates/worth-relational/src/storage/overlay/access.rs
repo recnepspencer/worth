@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::ops::ControlFlow;
 
 use crate::identity::data::PartitionId;
 
@@ -14,6 +15,33 @@ pub(crate) trait PartitionAccess: Sync {
 
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
         None
+    }
+
+    /// Visits without collecting and stops on `Break`. The result reports
+    /// source presence, independently of whether the visitor stopped early.
+    fn visit_touched_partition_ids(
+        &self,
+        _visitor: &mut dyn FnMut(PartitionId) -> ControlFlow<()>,
+    ) -> bool {
+        false
+    }
+
+    /// Stops on `Break`; a present journal returns true even with no slots.
+    fn visit_touched_entity_slots(
+        &self,
+        _partition: PartitionId,
+        _visitor: &mut dyn FnMut(usize) -> ControlFlow<()>,
+    ) -> bool {
+        false
+    }
+
+    /// Stops on `Break`; a present journal returns true even with no slots.
+    fn visit_touched_relation_slots(
+        &self,
+        _partition: PartitionId,
+        _visitor: &mut dyn FnMut(usize) -> ControlFlow<()>,
+    ) -> bool {
+        false
     }
 
     fn touched_entity_slots(&self, _partition_id: PartitionId) -> Option<Vec<usize>> {
@@ -150,6 +178,29 @@ impl<S: PartitionAccess> PartitionAccess for OverlayStateView<'_, S> {
                 (None, None) => None,
             }
         }))
+    }
+
+    fn visit_touched_partition_ids(
+        &self,
+        visitor: &mut dyn FnMut(PartitionId) -> ControlFlow<()>,
+    ) -> bool {
+        self.staged.visit_touched_partition_ids(visitor)
+    }
+
+    fn visit_touched_entity_slots(
+        &self,
+        partition: PartitionId,
+        visitor: &mut dyn FnMut(usize) -> ControlFlow<()>,
+    ) -> bool {
+        self.staged.visit_touched_entity_slots(partition, visitor)
+    }
+
+    fn visit_touched_relation_slots(
+        &self,
+        partition: PartitionId,
+        visitor: &mut dyn FnMut(usize) -> ControlFlow<()>,
+    ) -> bool {
+        self.staged.visit_touched_relation_slots(partition, visitor)
     }
 
     fn touched_entity_slots(&self, partition_id: PartitionId) -> Option<Vec<usize>> {

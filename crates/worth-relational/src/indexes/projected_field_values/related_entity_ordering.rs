@@ -101,7 +101,7 @@ pub(in crate::indexes) fn build_related_entity_ordering_index_checked(
                                             worth_foundational::facade::AspectValue,
                                         >()) as u64,
                                 ))?;
-                                budget.borrow().check_result_peak(owned.saturating_add(
+                                budget.borrow_mut().check_result_peak(owned.saturating_add(
                                     ((values.len() + 1)
                                         * std::mem::size_of::<
                                             crate::indexes::data::RelatedEntityOrderingValue,

@@ -44,6 +44,7 @@ pub(crate) struct PacketKernelContext<'a, 'b, 'c> {
     result_limit: u64,
     scratch_bytes: u64,
     result_bytes: u64,
+    allocations: Option<&'a mut super::InvariantPacketAllocations>,
 }
 
 impl PacketKernelContext<'_, '_, '_> {
@@ -52,7 +53,16 @@ impl PacketKernelContext<'_, '_, '_> {
     }
 
     pub(crate) fn remaining_scratch(&self) -> u64 {
+        if let Some(allocations) = self.allocations.as_ref() {
+            return allocations.scratch().remaining_hint();
+        }
         self.scratch_limit.saturating_sub(self.scratch_bytes)
+    }
+
+    pub(crate) fn scratch_admission(&self) -> Option<super::InvariantScratchAdmission> {
+        self.allocations
+            .as_ref()
+            .map(|allocations| allocations.scratch())
     }
 
     pub(crate) fn account_completed_work(
@@ -74,6 +84,12 @@ impl PacketKernelContext<'_, '_, '_> {
         &mut self,
         bytes: u64,
     ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
+        if let Some(allocations) = self.allocations.as_mut() {
+            return allocations
+                .scratch()
+                .claim(bytes)
+                .map_err(MapKernelFailure::Domain);
+        }
         self.scratch_bytes =
             self.scratch_bytes
                 .checked_add(bytes)
@@ -92,6 +108,12 @@ impl PacketKernelContext<'_, '_, '_> {
         &self,
         bytes: u64,
     ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
+        if let Some(allocations) = self.allocations.as_ref() {
+            return allocations
+                .scratch()
+                .check_peak(bytes)
+                .map_err(MapKernelFailure::Domain);
+        }
         let peak = self
             .scratch_bytes
             .checked_add(bytes)
@@ -110,6 +132,11 @@ impl PacketKernelContext<'_, '_, '_> {
         &mut self,
         bytes: u64,
     ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
+        if let Some(allocations) = self.allocations.as_mut() {
+            return allocations
+                .claim_result(bytes)
+                .map_err(MapKernelFailure::Domain);
+        }
         self.result_bytes = self
             .result_bytes
             .checked_add(bytes)
@@ -121,9 +148,14 @@ impl PacketKernelContext<'_, '_, '_> {
     }
 
     pub(crate) fn check_result_peak(
-        &self,
+        &mut self,
         bytes: u64,
     ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
+        if let Some(allocations) = self.allocations.as_mut() {
+            return allocations
+                .check_result_peak(bytes)
+                .map_err(MapKernelFailure::Domain);
+        }
         let peak = self
             .result_bytes
             .checked_add(bytes)
@@ -138,10 +170,31 @@ impl PacketKernelContext<'_, '_, '_> {
         &mut self,
         bytes: u64,
     ) -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
+        if let Some(allocations) = self.allocations.as_mut() {
+            return allocations
+                .ensure_result_total(bytes)
+                .map_err(MapKernelFailure::Domain);
+        }
         if bytes > self.result_bytes {
             self.claim_result(bytes - self.result_bytes)?;
         }
         Ok(())
+    }
+}
+
+impl<'a, 'b, 'c> PacketKernelContext<'a, 'b, 'c> {
+    pub(crate) fn with_allocations(
+        meter: &'a mut MapKernelContext<'b, 'c>,
+        allocations: &'a mut super::InvariantPacketAllocations,
+    ) -> Self {
+        Self {
+            meter,
+            allocations: Some(allocations),
+            scratch_limit: 0,
+            result_limit: 0,
+            scratch_bytes: 0,
+            result_bytes: 0,
+        }
     }
 }
 
@@ -257,6 +310,7 @@ where
                     result_limit: packet.result_limit,
                     scratch_bytes: 0,
                     result_bytes: 0,
+                    allocations: None,
                 };
                 let value = kernel(&packet.value, &mut packet_context)?;
                 Ok(ChargedPacketResult {

@@ -169,11 +169,8 @@ impl InvariantViolationFields {
                         .as_ref()
                         .map_or(0, |label| label.capacity() as u64),
                 ),
-            Fields::CustomInvariantFailure {
-                identity, detail, ..
-            } => (identity.semantic_identity().rule_id.as_str().len() as u64)
-                .saturating_add(detail.capacity() as u64),
-            Fields::CustomInvariantViolation { identity } => identity.rule_id.as_str().len() as u64,
+            Fields::CustomInvariantFailure { detail, .. } => detail.capacity() as u64,
+            Fields::CustomInvariantViolation { .. } => 0,
             Fields::RelationEndpointKindMismatch { contract_id, .. }
             | Fields::RelationEndpointKindSelfEdge { contract_id, .. }
             | Fields::RelationEndpointKindCrossContext { contract_id, .. }
@@ -216,6 +213,12 @@ pub struct InvariantViolation {
 impl InvariantViolation {
     pub fn witness_key(&self) -> InvariantWitnessKey {
         witness_keys::invariant_violation_witness_key(self.code, &self.fields)
+    }
+    pub(crate) fn witness_key_checked(
+        &self,
+        admit: &mut impl FnMut(u64) -> bool,
+    ) -> Option<InvariantWitnessKey> {
+        witness_keys::invariant_violation_witness_key_checked(self.code, &self.fields, admit)
     }
 }
 

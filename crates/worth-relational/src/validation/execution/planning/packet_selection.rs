@@ -11,6 +11,47 @@ pub(super) fn eligible_registrations<'state>(
     request: &'state InvariantExecutionRequest<'state>,
     preparation_budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
 ) -> Vec<InvariantPacketRegistration> {
+    let mut capacity = 0;
+    for registration in runtime
+        .config
+        .schema
+        .invariant_catalog
+        .registrations
+        .iter()
+        .chain(
+            runtime
+                .schema_contract_runtime
+                .relation_integrity_registrations
+                .iter(),
+        )
+    {
+        if preparation_budget.is_some_and(|budget| !budget.try_visit(1)) {
+            return Vec::new();
+        }
+        if registration.execution_point == request.execution_point()
+            && request.includes_registration(registration)
+        {
+            capacity += 1;
+        }
+    }
+    for registration in runtime
+        .schema_contract_runtime
+        .custom_invariant_registries
+        .iter()
+    {
+        if preparation_budget.is_some_and(|budget| !budget.try_visit(1)) {
+            return Vec::new();
+        }
+        if request.includes_custom_registration(registration) {
+            capacity += 1;
+        }
+    }
+    if preparation_budget.is_some_and(|budget| {
+        !budget.try_claim_bytes((capacity * size_of::<InvariantPacketRegistration>()) as u64)
+    }) {
+        return Vec::new();
+    }
+    let mut selected = Vec::with_capacity(capacity);
     let touched_kinds = std::cell::OnceCell::new();
     let native = runtime
         .config
@@ -31,10 +72,7 @@ pub(super) fn eligible_registrations<'state>(
         })
         .filter_map(|registration| {
             if preparation_budget.is_some_and(|budget| {
-                !budget.try_plan_item(
-                    native_registration_retained_bytes(registration)
-                        .saturating_add(2 * size_of::<InvariantPacketRegistration>() as u64),
-                )
+                !budget.try_plan_item(native_registration_retained_bytes(registration))
             }) {
                 return None;
             }
@@ -50,9 +88,8 @@ pub(super) fn eligible_registrations<'state>(
         .filter_map(|registration| {
             if preparation_budget.is_some_and(|budget| {
                 !budget.try_plan_item(
-                    (2 * size_of::<InvariantPacketRegistration>() as u64).saturating_add(
-                        custom_access_retained_bytes(registration.access_contract()),
-                    ),
+                    custom_access_retained_bytes(registration.access_contract())
+                        .saturating_add(crate::validation::custom_rule::CustomPreparationBudget::evaluation_meter_allocation_bytes()),
                 )
             }) {
                 return None;
@@ -80,6 +117,9 @@ pub(super) fn eligible_registrations<'state>(
                 return None;
             }
             if unrelated {
+                if preparation_budget.is_some_and(|budget| !budget.try_claim_bytes(
+                    crate::validation::data::PreparedCustomInvariantScope::empty_allocation_bytes(),
+                )) { return None }
                 let prepared_scope = crate::validation::data::PreparedCustomInvariantScope::empty();
                 let retained_touched = prepared_scope.retained_touched();
                 return Some(InvariantPacketRegistration::CustomNotApplicable {
@@ -89,6 +129,11 @@ pub(super) fn eligible_registrations<'state>(
                     work,
                 });
             }
+            if preparation_budget.is_some_and(|budget| !budget.try_claim_bytes(
+                crate::validation::data::PreparedCustomInvariantScope::empty_allocation_bytes()
+                    + super::retained_bytes::arc_bytes::<crate::validation::data::CustomInvariantAccessContract>()
+                    + custom_access_retained_bytes(registration.access_contract()),
+            )) { return None }
             let prepared_scope =
                 crate::validation::data::PreparedCustomInvariantScope::capture_with_shared_inputs(
                     request.observation(),
@@ -122,15 +167,7 @@ pub(super) fn eligible_registrations<'state>(
                     work,
                 });
             }
-            let prepared_execution = if !registration.supports_checked_preparation()
-                && runtime.custom_kernel_posture == worth_foundational::ExecutionPosture::Serial
-            {
-                // The request cannot schedule this kernel on another worker.
-                // Scope capture still uses the same request-backed meter.
-                registration
-                    .executable()
-                    .prepare_for_execution(runtime, &mut planner)
-            } else if let Some(budget) = preparation_budget {
+            let prepared_execution = if let Some(budget) = preparation_budget {
                 match registration.executable().prepare_for_execution_checked(
                     runtime,
                     &mut planner,
@@ -164,7 +201,8 @@ pub(super) fn eligible_registrations<'state>(
             })
         });
 
-    native.chain(custom).collect()
+    selected.extend(native.chain(custom));
+    selected
 }
 
 #[cfg(test)]

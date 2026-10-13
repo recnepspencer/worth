@@ -18,6 +18,17 @@ pub(crate) struct PreparedCustomInvariantScope {
 }
 
 impl PreparedCustomInvariantScope {
+    /// The retained set owner and the nine slice headers, before any elements.
+    pub(crate) fn empty_allocation_bytes() -> u64 {
+        std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<TouchedStructuralSet>())
+            .expect("scope layout fits")
+            .0
+            .pad_to_align()
+            .size() as u64
+            + 9 * std::mem::size_of::<[usize; 2]>() as u64
+    }
+
     pub(crate) fn empty() -> Self {
         Self {
             touched: Arc::new(TouchedStructuralSet::new(

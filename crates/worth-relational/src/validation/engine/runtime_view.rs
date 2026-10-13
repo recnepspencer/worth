@@ -12,7 +12,6 @@ use crate::runtime::{
 /// installs a new one meanwhile.
 #[derive(Clone)]
 pub(crate) struct InvariantRuntimeView<'a> {
-    pub(crate) custom_kernel_posture: worth_foundational::ExecutionPosture,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: std::sync::Arc<SchemaContractRuntimeSubsystem>,
@@ -30,7 +29,6 @@ pub(crate) struct InvariantRuntimeView<'a> {
 impl<'a> InvariantRuntimeView<'a> {
     pub(crate) fn from_runtime(runtime: &'a RelationalRuntime) -> Self {
         Self {
-            custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
             commit_work_budget: None,
             config: std::sync::Arc::clone(&runtime.config),
             schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
@@ -50,7 +48,6 @@ impl<'a> InvariantRuntimeView<'a> {
         state: &crate::branch::RelationalBranchRootState,
     ) -> Self {
         Self {
-            custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
             commit_work_budget: runtime.commit_work_budget.clone(),
             config: std::sync::Arc::clone(&runtime.config),
             schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
@@ -72,26 +69,28 @@ impl<'a> InvariantRuntimeView<'a> {
     pub(crate) fn with_candidate_input_plan<'state>(
         &self,
         request: &super::InvariantExecutionRequest<'state>,
-    ) -> InvariantRuntimeView<'state>
+        lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    ) -> Result<InvariantRuntimeView<'state>, crate::execution::PacketBudgetDenial>
     where
         'a: 'state,
     {
-        InvariantRuntimeView {
-            custom_kernel_posture: self.custom_kernel_posture,
+        Ok(InvariantRuntimeView {
             commit_work_budget: self.commit_work_budget.clone(),
             config: std::sync::Arc::clone(&self.config),
             schema_contract_runtime: std::sync::Arc::clone(&self.schema_contract_runtime),
             instrumentation: self.instrumentation,
             shared_candidate_inputs:
-                super::input_preparation::SharedCandidateInputs::from_installed(self, request)
-                    .map(std::sync::Arc::new),
+                super::input_preparation::SharedCandidateInputs::from_installed(
+                    self, request, lease,
+                )?
+                .map(std::sync::Arc::new),
             #[cfg(test)]
             current_version_id: self.current_version_id,
             entity_count: self.entity_count,
             relation_count: self.relation_count,
             version_depth: self.version_depth,
             snapshot_pressure: self.snapshot_pressure,
-        }
+        })
     }
 
     pub(crate) fn shared_candidate_inputs(

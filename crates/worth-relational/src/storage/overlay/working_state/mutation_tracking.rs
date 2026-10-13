@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::ops::ControlFlow;
 
 use crate::identity::data::PartitionId;
 
@@ -76,6 +77,50 @@ impl PartitionAccess for WorkingState {
 
     fn touched_partition_ids(&self) -> Option<Vec<PartitionId>> {
         (!self.mutation_journal.is_empty()).then(|| self.mutation_journal.keys().copied().collect())
+    }
+
+    fn visit_touched_partition_ids(
+        &self,
+        visitor: &mut dyn FnMut(PartitionId) -> ControlFlow<()>,
+    ) -> bool {
+        for partition in self.mutation_journal.keys() {
+            if visitor(*partition).is_break() {
+                return true;
+            }
+        }
+        !self.mutation_journal.is_empty()
+    }
+
+    fn visit_touched_entity_slots(
+        &self,
+        partition: PartitionId,
+        visitor: &mut dyn FnMut(usize) -> ControlFlow<()>,
+    ) -> bool {
+        let Some(journal) = self.mutation_journal.get(&partition) else {
+            return false;
+        };
+        for slot in &journal.entity_slots {
+            if visitor(*slot).is_break() {
+                return true;
+            }
+        }
+        true
+    }
+
+    fn visit_touched_relation_slots(
+        &self,
+        partition: PartitionId,
+        visitor: &mut dyn FnMut(usize) -> ControlFlow<()>,
+    ) -> bool {
+        let Some(journal) = self.mutation_journal.get(&partition) else {
+            return false;
+        };
+        for slot in &journal.relation_slots {
+            if visitor(*slot).is_break() {
+                return true;
+            }
+        }
+        true
     }
 
     fn touched_entity_slots(&self, partition_id: PartitionId) -> Option<Vec<usize>> {

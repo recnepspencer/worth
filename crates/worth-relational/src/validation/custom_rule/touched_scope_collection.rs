@@ -33,9 +33,10 @@ pub(crate) fn collect_touched_structural_set(
     let mut planned_relation_deletes = Vec::new();
     let mut planned_relation_endpoint_updates = Vec::new();
 
-    if let Some(ids) =
-        state_view.touched_visible_entity_ids_with_budget(|units| work.try_charge(units))
-    {
+    if let Some(ids) = state_view.touched_visible_entity_ids_with_budget(
+        |units| work.try_charge(units),
+        |units| work.try_charge_work(units as u64),
+    ) {
         for entity_id in ids.iter().copied() {
             include_affected_entity(
                 &mut visible_entities,
@@ -46,9 +47,10 @@ pub(crate) fn collect_touched_structural_set(
             );
         }
     }
-    if let Some(ids) =
-        state_view.touched_visible_relation_ids_with_budget(|units| work.try_charge(units))
-    {
+    if let Some(ids) = state_view.touched_visible_relation_ids_with_budget(
+        |units| work.try_charge(units),
+        |units| work.try_charge_work(units as u64),
+    ) {
         for relation_id in ids.iter().copied() {
             include_affected_relation(
                 &mut visible_entities,

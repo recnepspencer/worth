@@ -91,20 +91,26 @@ fn sparse_speculative_overlay_reads_untouched_entity_truth_from_base_partition()
     let mut charged_slots = 0;
     assert_eq!(
         guarded_view
-            .touched_visible_entity_ids_with_budget(|units| {
-                charged_slots += units;
-                true
-            })
+            .touched_visible_entity_ids_with_budget(
+                |units| {
+                    charged_slots += units;
+                    true
+                },
+                |_| true
+            )
             .unwrap()
             .len(),
         1
     );
     assert_eq!(
         guarded_view
-            .touched_visible_entity_ids_with_budget(|units| {
-                charged_slots += units;
-                true
-            })
+            .touched_visible_entity_ids_with_budget(
+                |units| {
+                    charged_slots += units;
+                    true
+                },
+                |_| true
+            )
             .unwrap()
             .len(),
         1
@@ -153,6 +159,19 @@ impl PartitionAccess for NoWorldPartitionEnumeration<'_> {
 
     fn touched_entity_slots(&self, partition_id: PartitionId) -> Option<Vec<usize>> {
         self.state.touched_entity_slots(partition_id)
+    }
+    fn visit_touched_partition_ids(
+        &self,
+        visitor: &mut dyn FnMut(PartitionId) -> std::ops::ControlFlow<()>,
+    ) -> bool {
+        self.state.visit_touched_partition_ids(visitor)
+    }
+    fn visit_touched_entity_slots(
+        &self,
+        partition_id: PartitionId,
+        visitor: &mut dyn FnMut(usize) -> std::ops::ControlFlow<()>,
+    ) -> bool {
+        self.state.visit_touched_entity_slots(partition_id, visitor)
     }
 }
 
