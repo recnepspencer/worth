@@ -108,9 +108,13 @@ fn empty_index_request_keeps_its_cause_and_publishes_no_generation() {
     );
     assert!(built.failed_indexes.is_empty());
     assert_eq!(
-        built.generations.len(),
-        1,
-        "the admitted build publishes its requested index"
+        built
+            .generations
+            .iter()
+            .map(|generation| generation.index_id)
+            .collect::<Vec<_>>(),
+        [index.index_id],
+        "the admitted request builds the declared source index"
     );
 }
 #[test]
