@@ -240,11 +240,6 @@ fn held_mutation_commit_refuses_zero_budgets_before_revalidation() {
     }
 }
 
-// Independent fixture oracle: one seed/kind/partition, two entities and one
-// relation. Their record bounds are 819, 601 and 257 bytes; the fragment's
-// 2021 retained bytes fit one chunk. Visit digests use ceil((4*b+1024)/4096),
-// final digests use ceil(b/4096). No request report supplies these units.
-
 #[test]
 fn a_mutation_handler_and_commit_share_one_charged_request() {
     mutation_commit_report(Placement::Leased(NonZeroUsize::MIN));
