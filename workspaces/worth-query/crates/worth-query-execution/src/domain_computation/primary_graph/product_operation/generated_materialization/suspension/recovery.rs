@@ -136,9 +136,11 @@ impl WorthQueryGeneratedOutputSuspensionRecoveryFailure {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Opens one advancement under the fresh request scope and lends its native
+    /// execution request through recovery. Admission refusal returns the original
+    /// recovery before inspecting or consuming its custody.
     pub fn continue_generated_output_suspension_recovery<Producer>(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         recovery: WorthQueryGeneratedOutputSuspensionRecovery,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<
@@ -150,7 +152,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         let mut retained = Some(recovery);
         let result = self.with_application_advancement(request, |phase| {
-            let phase = &phase;
+            let execution = match phase.execution_request_for(&self.product_runtime) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    return Err(failure(
+                        WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                            cause.into(),
+                        ),
+                        retained.take().expect("one refused recovery").state,
+                    ));
+                }
+            };
+            let execution = &execution;
             let recovery = retained.take().expect("one admitted recovery");
 
             if !retry_matches::<Schema, Producer>(self, recovery.state.retry()) {
@@ -164,7 +177,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     let needs_settlement = product.relational_requires_settlement();
                     self.continue_world(
                         execution,
-                        phase,
                         product.into_recovery(),
                         retry,
                         needs_settlement,
@@ -181,14 +193,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                             ));
                         }
                     };
-                    self.continue_world(
-                        execution,
-                        phase,
-                        recovery,
-                        retry,
-                        needs_settlement,
-                        request,
-                    )
+                    self.continue_world(execution, recovery, retry, needs_settlement, request)
                 }
                 RecoveryState::HandoffWorld { old, next, retry } => {
                     self.finish_handoff(old, next, retry)
@@ -245,7 +250,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn continue_world(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
         needs_settlement: bool,
@@ -260,13 +264,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        self.adopt_settled(execution, phase, recovery, retry, request)
+        self.adopt_settled(execution, recovery, retry, request)
     }
 
     fn adopt_settled(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: WorthQueryProductUnpublishedRecovery,
         retry: SuspensionRetry,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -281,7 +284,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .map_err(|cause| {
                     Admission::Stopped(advancement_denial(cause).provider_denial_cause())
                 })
-                .and_then(|()| self.on_branch(retry.branch).select(phase))
+                .and_then(|()| self.on_branch(retry.branch).select_with_request(execution))
         };
         let selected = match source_read {
             Ok(selected) => selected,
@@ -308,15 +311,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 RecoveryState::World { recovery, retry },
             ));
         }
-        let publication_execution = match phase.execution_request_for(&self.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return Err(failure(
-                    WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(cause.into()),
-                    RecoveryState::World { recovery, retry },
-                ))
-            }
-        };
         let unpublished = match recovery.inspect() {
             Ok(unpublished) => unpublished,
             Err(_) => {
@@ -345,7 +339,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
         };
         drop(unpublished);
-        match prepared.execute(publication_execution) {
+        match prepared.execute(*execution) {
             Ok(PublicationOutcome::Performed(performed)) => {
                 let commit = performed
                     .component_results()

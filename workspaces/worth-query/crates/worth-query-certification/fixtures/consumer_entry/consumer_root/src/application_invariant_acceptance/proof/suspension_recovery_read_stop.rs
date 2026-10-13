@@ -14,7 +14,7 @@ use worth_query_topology_entry::{PlanarFinalOutputProducer, PlanarSourceAdjustme
 fn suspension_recovery_keeps_the_cancelled_source_read_and_live_retry() {
     std::thread::Builder::new()
         .stack_size(8 * 1024 * 1024)
-        .spawn(|| prove(false, false))
+        .spawn(|| prove(false))
         .unwrap()
         .join()
         .unwrap();
@@ -24,23 +24,13 @@ fn suspension_recovery_keeps_the_cancelled_source_read_and_live_retry() {
 fn suspension_recovery_keeps_cancellation_inside_adoption_preparation() {
     std::thread::Builder::new()
         .stack_size(8 * 1024 * 1024)
-        .spawn(|| prove(true, false))
+        .spawn(|| prove(true))
         .unwrap()
         .join()
         .unwrap();
 }
 
-#[test]
-fn suspension_recovery_keeps_the_external_request_cancellation() {
-    std::thread::Builder::new()
-        .stack_size(8 * 1024 * 1024)
-        .spawn(|| prove(false, true))
-        .unwrap()
-        .join()
-        .unwrap();
-}
-
-fn prove(at_preparation: bool, external_only: bool) {
+fn prove(at_preparation: bool) {
     let schema = crate::installed_schema();
     let world = installation::install(&schema);
     let application = &world.application;
@@ -122,50 +112,30 @@ fn prove(at_preparation: bool, external_only: bool) {
             .product_runtime()
             .before_adoption_preparation_for_test(move || preparation_cancellation.cancel())
     });
-    let external_cancellation = worth_execution::CancellationSource::new();
-    let external_stop = external_cancellation.clone();
-    let host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
-        external_cancellation.token(),
-        None,
-    );
-    let execution = worth_execution::ExecutionRequest::serial(&host);
     let _named = application
         .product_runtime()
         .observe_named_read_consults_for_test();
     let observed_runtime = application.product_runtime().clone();
-    let at_read = std::rc::Rc::new(std::cell::Cell::new(None));
+    let at_read = std::rc::Rc::new(std::cell::Cell::new(false));
     let fired = std::rc::Rc::clone(&at_read);
-    let (result, consults) = worth_execution::with_request_consult_observer_for_test(
-        move |at| {
+    let (result, _) = worth_execution::with_request_consult_observer_for_test(
+        move |_at| {
             if !at_preparation
                 && observed_runtime.generated_recovery_source_selection_is_active_for_test()
-                && fired.get().is_none()
+                && !fired.get()
             {
-                fired.set(Some(at));
-                if external_only {
-                    external_stop.cancel();
-                } else {
-                    cancellation.cancel();
-                }
+                fired.set(true);
+                cancellation.cancel();
             }
         },
         || {
-            if external_only {
-                // No outer SDK run: the application scope stays live, so only
-                // consulting the supplied request can observe this cancellation.
-                application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &interrupted)
-            } else {
-                execution.run(worth_execution::ExecutionWorkCeiling::new(100_000), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &interrupted)).unwrap().0
-            }
+            application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(recovery, &interrupted)
         },
     );
     if !at_preparation {
         assert!(
-            consults
-                >= at_read
-                    .get()
-                    .expect("the generated recovery source selection consult was reached")
+            at_read.get(),
+            "the generated recovery source selection consult was reached"
         );
     }
     let failure = match result {
@@ -189,12 +159,8 @@ fn prove(at_preparation: bool, external_only: bool) {
     let recovery = failure.into_recovery();
     assert_eq!(recovery.product_branch(), branch);
     assert_eq!(read_y(&request, "final:anchor-b"), retained);
-    let retry_host = worth_execution::SerialRequest::from_memory(
-        worth_execution::SerialMemoryBudget::new(64 * 1024 * 1024),
-        worth_execution::CancellationSource::new().token(),
-        None,
-    );
-    let execution = worth_execution::ExecutionRequest::serial(&retry_host);
-    let suspended = execution.run(worth_execution::ExecutionWorkCeiling::new(100_000), |_| application.continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(&execution, recovery, &scope)).unwrap().0.unwrap_or_else(|failure| panic!("live retry adopts the retained effects: {:?}", failure.stage()));
+    let suspended = application
+        .continue_generated_output_suspension_recovery::<PlanarFinalOutputProducer<crate::ConsumerSchema>>(recovery, &scope)
+        .unwrap_or_else(|failure| panic!("live retry adopts the retained effects: {:?}", failure.stage()));
     assert_eq!(suspended.product_branch(), branch);
 }
