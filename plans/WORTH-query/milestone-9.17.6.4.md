@@ -657,7 +657,9 @@ where `ApprovePaymentMutationBinding` is guarded and requires the
 
 Mutation probes: moving the authority take above authorization turns step 4 into
 `WorkflowAuthoritySpent`; skipping operation authorization when workflow authority
-is present turns step 2 into a commit.
+is present must invalidate step 2's exact `Authorization(PermissionDenied)` outcome.
+Bank's independent authenticated-actor handler may deny later; that later denial
+does not satisfy the required ordinary authorization refusal.
 
 **0.2 A guarded operation's input is validated when it is authored.** A guarded
 Operation node needs exactly one `operation_input` source, but

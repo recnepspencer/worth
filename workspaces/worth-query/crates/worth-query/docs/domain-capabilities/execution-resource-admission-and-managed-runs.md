@@ -167,7 +167,9 @@ fixture constants cannot satisfy this proof.
   heap reservation. Provider demand estimates are not aggregate memory proof.
   Managed reservations retain their consuming lifecycle.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 const LIMITS: ApplicationQueryBindingLimits =
     ApplicationQueryBindingLimits::results(1);
 

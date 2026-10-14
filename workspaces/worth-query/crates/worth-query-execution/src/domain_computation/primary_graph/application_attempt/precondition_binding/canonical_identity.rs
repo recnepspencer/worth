@@ -18,7 +18,7 @@ pub(super) struct WorthQueryPreconditionCanonicalIdentity {
 }
 
 pub(super) fn prepare_precondition_identity(
-    entries: &[TypedMutationPrecondition],
+    entries: &[&TypedMutationPrecondition],
     scope_entity_id: EntityId,
     budget: CanonicalDigestWorkBudget,
 ) -> Result<WorthQueryPreconditionCanonicalIdentity, ()> {

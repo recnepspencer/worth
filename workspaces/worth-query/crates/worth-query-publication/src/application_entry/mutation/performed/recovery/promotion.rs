@@ -51,13 +51,23 @@ where
     /// Every refusal returns the complete move-only recovery owner.
     pub fn promote_recovered_required_outputs<Program, Root>(
         self,
-        recovery: WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+        recovery: WorthQueryUnpublishedRequiredApplicationMutation<
+            Schema,
+            Intent::Binding,
+            Program,
+            Root,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         WorthQueryRecoveredRequiredOutputs<Schema, Program, Root, Intent::Binding>,
         (
             WorthQueryApplicationRecoveryRequestDenial,
-            WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+            WorthQueryUnpublishedRequiredApplicationMutation<
+                Schema,
+                Intent::Binding,
+                Program,
+                Root,
+            >,
         ),
     >
     where
@@ -91,18 +101,31 @@ where
         }
     }
 
-    fn promote_recovered_required_outputs_in_advancement<Program, Root>(
+    pub(in crate::application_entry) fn promote_recovered_required_outputs_in_advancement<
+        Program,
+        Root,
+    >(
         mut self,
         phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
             '_,
         >,
-        recovery: WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+        recovery: WorthQueryUnpublishedRequiredApplicationMutation<
+            Schema,
+            Intent::Binding,
+            Program,
+            Root,
+        >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
         WorthQueryRecoveredRequiredOutputs<Schema, Program, Root, Intent::Binding>,
         (
             WorthQueryApplicationRecoveryRequestDenial,
-            WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+            WorthQueryUnpublishedRequiredApplicationMutation<
+                Schema,
+                Intent::Binding,
+                Program,
+                Root,
+            >,
         ),
     >
     where
@@ -196,7 +219,12 @@ where
             '_,
         >,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
-        recovery: &WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+        recovery: &WorthQueryUnpublishedRequiredApplicationMutation<
+            Schema,
+            Intent::Binding,
+            Program,
+            Root,
+        >,
     ) -> Result<
         worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
         WorthQueryApplicationRecoveryRequestDenial,

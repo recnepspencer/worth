@@ -47,6 +47,14 @@ impl LegacyReferenceTestRepository {
     /// Assemble the canonical thin-orchestrator layout, config, and snapshot body.
     pub fn assemble_canonical_layout(&self, snapshot_body: &str) {
         self.write_file(
+            "tools/boundary-check/config/consumer-docs.toml",
+            "documents = []\ndoctests = []\n",
+        );
+        self.write_file(
+            "tools/boundary-check/snapshots/consumer-doc-fence-debt.toml",
+            "documents = []\n",
+        );
+        self.write_file(
             ".boundary-check-mock-root",
             "Declared boundary-check mock root.\n",
         );

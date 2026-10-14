@@ -95,8 +95,8 @@ pub(super) fn encode_node(
     Ok(())
 }
 
-/// Decodes one node record written under draft protocol `version`.
-pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<DraftNode, Denial> {
+/// Decodes one node record under the admitted current draft protocol.
+pub(super) fn decode_node(input: &mut BinaryInput<'_>) -> Result<DraftNode, Denial> {
     let tag = input.u8()?;
     let identity = nonempty_text(input)?;
     let member = match tag {
@@ -109,7 +109,7 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<D
                 input_type,
                 binding,
                 requires_workflow_authority: boolean(input)?,
-                workflow_execution_requirements: if version >= 4 {
+                workflow_execution_requirements: {
                     let encoded = owned_text(input)?;
                     if encoded.is_empty() {
                         None
@@ -117,8 +117,6 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<D
                         Some(worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&encoded)
                             .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?)
                     }
-                } else {
-                    None
                 },
             }
         }
@@ -144,7 +142,6 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<D
                 related_relation,
             }
         }
-        3 if version == 1 => DraftMember::Condition(condition::decode_version_1_condition(input)?),
         3 => DraftMember::Condition(condition::decode_condition(input)?),
         4 => DraftMember::Approval {
             identifier: nonempty_text(input)?,
@@ -154,7 +151,7 @@ pub(super) fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<D
             policy: nonempty_text(input)?,
         },
         6 => DraftMember::Terminal,
-        7 if version >= 3 => DraftMember::AwaitInbound(await_inbound::decode(input)?),
+        7 => DraftMember::AwaitInbound(await_inbound::decode(input)?),
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(DraftNode { identity, member })

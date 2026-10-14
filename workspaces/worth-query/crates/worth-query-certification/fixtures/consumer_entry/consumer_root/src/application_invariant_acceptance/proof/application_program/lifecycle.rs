@@ -6,8 +6,8 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationOutputDemandDenial, WorthQueryApplicationOutputDemandProgress,
     WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
-    WorthQueryApplicationRequestExt, WorthQueryOutputDemandControls,
-    WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryApplicationRequestExt, WorthQueryOutputCurrentnessDenial,
+    WorthQueryOutputDemandControls,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind;
 use worth_query_topology_entry::{
@@ -126,7 +126,7 @@ pub(super) fn two_forks_preserve_predecessor_output(
         left_request
             .at(right_settled.observation())
             .require_current_program_output(&right_settled, NonZeroUsize::new(4_096).unwrap()),
-        Err(WorthQueryProgramOutputCurrentnessDenial::ForeignBranch)
+        Err(WorthQueryOutputCurrentnessDenial::ForeignBranch)
     ));
     assert_eq!(
         root_request
@@ -219,14 +219,14 @@ type ProgramApplication =
 
 type Prepared = worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
     ConsumerSchema,
-    PlanarSourceAdjustment,
+    worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
 >;
 
 type Started = worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<
     ConsumerSchema,
-    PlanarSourceAdjustment,
+    worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
 >;

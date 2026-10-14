@@ -103,7 +103,18 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn i
         .unwrap_or_else(|(denial, _)| panic!("initial source promotion: {denial:?}"))
         .into_parts();
     assert_eq!(initial_cause, ProductUnpublishedCause::SettlementPending);
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    let (read, publication_failure, cleanup_failure, pending_cleanup) = performed.into_parts();
+    let released = world
+        .application
+        .release_product_publication_recovery(
+            pending_cleanup.expect("program-source recovery retains exact old record cleanup"),
+            0,
+        )
+        .unwrap();
+    assert!(
+        released.is_complete(),
+        "native old-record cleanup completed"
+    );
     assert!(publication_failure.is_none());
     assert!(cleanup_failure.is_none());
     assert!(prior_cleanup.is_empty());

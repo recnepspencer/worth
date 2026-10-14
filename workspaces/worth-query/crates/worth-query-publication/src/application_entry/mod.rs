@@ -9,6 +9,14 @@ mod inbound_occurrence;
 mod live;
 mod mandatory_review;
 mod mutation;
+mod operation;
+pub use operation::{
+    WorthQueryClosedOperation, WorthQueryFixedOperation, WorthQueryOperationAdvance,
+    WorthQueryOperationAdvanceDenial, WorthQueryOperationCloseDenial,
+    WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
+    WorthQueryOperationDescription, WorthQueryOperationProgress, WorthQuerySettledFixedOperation,
+    WorthQueryTerminalFixedOperation,
+};
 mod programs;
 mod query;
 mod query_batch;
@@ -107,7 +115,7 @@ pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
     WorthQueryApplicationReadObservationDenial, WorthQueryApplicationRequest,
     WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
-    WorthQueryOutputCurrentnessDenial, WorthQueryProgramOutputCurrentnessDenial,
+    WorthQueryOutputCurrentnessDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use workflow::{

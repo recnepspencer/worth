@@ -39,7 +39,9 @@ admitted source, program selection, controls and interest without retaining an
 application borrow, principal or request scope. Advance or settle supplies the
 original runtime and a fresh authenticated request:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut continuation = handle.into_continuation();
 let progress = continuation.settle(application.runtime(), &fresh_request)?;
 ```

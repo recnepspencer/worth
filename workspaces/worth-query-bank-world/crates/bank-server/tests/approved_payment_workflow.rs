@@ -18,6 +18,8 @@ mod authentication;
 mod fixture;
 #[path = "approved_payment_workflow/journey.rs"]
 mod journey;
+#[path = "approved_payment_workflow/operation_authorization.rs"]
+mod operation_authorization;
 #[path = "approved_payment_workflow/owner_custody.rs"]
 mod owner_custody;
 #[path = "approved_payment_workflow/postures.rs"]

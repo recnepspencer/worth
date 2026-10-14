@@ -141,7 +141,21 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
         .into_parts();
     assert_eq!(initial, ProductUnpublishedCause::SettlementPending);
     assert!(prior.is_empty());
-    let (read, publication, cleanup) = performed.into_parts();
+    let (read, publication, cleanup, pending_cleanup) = performed.into_parts();
+    let released = host
+        .with_application_advancement(&scope, |phase| {
+            host.release_product_publication_recovery_in_advancement(
+                &phase,
+                pending_cleanup.expect("required-source recovery transfers real cleanup custody"),
+                0,
+            )
+        })
+        .unwrap()
+        .unwrap();
+    assert!(
+        released.is_complete(),
+        "native old-record cleanup completed"
+    );
     assert!(publication.is_none());
     assert!(cleanup.is_none());
     let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) =

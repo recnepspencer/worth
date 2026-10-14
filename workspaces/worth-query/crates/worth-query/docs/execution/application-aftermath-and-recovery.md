@@ -560,7 +560,9 @@ but World does not publish the target program, the
 migration and custody dispositions, the unpublished World recovery, and
 mandatory support custody. Continue it only through the same branch request:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let recovery = unpublished.into_recovery();
 let outcome = application
     .request(&principal, &fresh_scope)

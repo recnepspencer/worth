@@ -26,6 +26,10 @@ use crate::ConsumerSchema;
 pub(crate) mod correspondence;
 pub(crate) mod external_input;
 mod features;
+mod fixed_delivery;
+pub(crate) mod fixed_successors;
+pub use fixed_delivery::ConsumerFixedAction;
+pub(crate) use fixed_delivery::ConsumerFixedDelivery;
 mod omitted_program_binding;
 mod roots;
 mod validation_denials;
@@ -283,6 +287,10 @@ type PlanarSummaryConnection = ApplicationConnectionRef<
 >;
 
 impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
+    fn adoption_authorization<Visitor: worth_query_decl::facade::application_program::ApplicationProgramAdoptionAuthorizationVisitor<ConsumerSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<crate::program_deployment::ConsumerProgramDeploymentBinding>()
+    }
+
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Outputs = ApplicationProgramOutputs<(
         ConsumerProgramRoot,
@@ -302,7 +310,7 @@ impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
         ApplicationProgramIdentity::new("worth.query.certification.consumer-program.v3");
 
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        features::consumer_feature_specs()
+        features::consumer_fixed_feature_specs()
     }
 }
 

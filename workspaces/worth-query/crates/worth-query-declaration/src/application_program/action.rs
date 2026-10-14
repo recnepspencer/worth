@@ -1,3 +1,7 @@
+mod delivery;
+mod reference;
+pub use delivery::{ApplicationActionDeliveryDeclaration, ApplicationFixedActionDelivery};
+pub use reference::{ApplicationActionReference, ApplicationFixedAction};
 use std::any::TypeId;
 use std::marker::PhantomData;
 
@@ -97,6 +101,7 @@ pub struct ApplicationActionDeclaration {
     operation_input_identity: WorthQueryPortableTypeIdentity,
     conditional_only: bool,
     required_output_source: bool,
+    delivery: Option<ApplicationActionDeliveryDeclaration>,
     correspondence: Option<ApplicationActionCorrespondenceDeclaration>,
     evaluated_requirement: Option<ApplicationActionEvaluatedRequirementDeclaration>,
     external_input: Option<ApplicationActionExternalInputDeclaration>,
@@ -184,6 +189,22 @@ impl ApplicationActionDeclaration {
         });
     }
 
+    pub fn delivery(&self) -> Option<&ApplicationActionDeliveryDeclaration> {
+        self.delivery.as_ref()
+    }
+    pub(crate) fn attach_fixed_delivery<Schema, Binding, Delivery>(&mut self)
+    where
+        Schema: crate::application_schema::ApplicationSchema,
+        Binding: crate::application_operation::ApplicationMutationBinding<Schema>,
+        Delivery: ApplicationFixedActionDelivery<Schema, Binding>,
+    {
+        self.delivery = Some(ApplicationActionDeliveryDeclaration::fixed::<
+            Schema,
+            Binding,
+            Delivery,
+        >());
+    }
+
     pub(crate) fn mark_required_output_source(&mut self) {
         self.required_output_source = true;
     }
@@ -251,6 +272,7 @@ where
                 <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
             conditional_only: false,
             required_output_source: false,
+            delivery: None,
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,
@@ -287,6 +309,7 @@ where
             operation_input_identity: Operation::InputBinding::IDENTITY,
             conditional_only: false,
             required_output_source: false,
+            delivery: None,
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,

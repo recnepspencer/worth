@@ -24,6 +24,7 @@ plumbing.
 
 Application declarations import `worth_query_decl::facade`:
 
+<!-- doctest: bank-estate-certification -->
 ```rust
 use worth_query_decl::facade::{
     application_capability,
@@ -34,6 +35,7 @@ use worth_query_decl::facade::{
 
 Application hosts import `worth_query_host::facade`:
 
+<!-- doctest: bank-estate-certification -->
 ```rust
 use worth_query_host::facade::{
     admission,
@@ -113,7 +115,9 @@ caller's parent policy or shortening payload custody to the request's lifetime.
 Use `execute_in_program_report` when a caller needs the installed handler's
 decision projection evidence alongside the ordinary outcome:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::WorthQueryMutationHandlerWork;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
@@ -173,7 +177,9 @@ For a contribution-composed application, install through
 Execute through a borrowed typed request. A mutation whose action belongs to an
 installed program commits through the branch-resolved program lane:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
@@ -303,7 +309,9 @@ releases the lease. Retained requests cannot open live subscriptions.
 Host integrations that explicitly own a selected product attempt can use the
 selection and admission surface for reads:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let branch = application.current_world();
 let selected = application.on_branch(branch).select()?;
 let admitted = selected.admit_application_query(
@@ -325,7 +333,9 @@ A mutation does not name the program that commits it. Each lane selects the
 request's exact branch, resolves the commit owner from the program that branch
 carries, and commits through that installed owner:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 let outcome = application
@@ -369,7 +379,9 @@ request answers `RecordedIntentUnverifiable`, never drift.
 A host integration that already owns an admitted change can use the advanced
 product-transaction lane instead of a request lane. It is not the ordinary path:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = application
     .on_branch(branch)
     .transaction()
@@ -395,7 +407,9 @@ occurrence, and closes runtime resources.
 An ordinary request selects program meaning from its exact product branch. It
 does not consult a process-wide "latest program":
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let programs = application
     .request(&principal, &scope)
     .on_branch(branch)
@@ -449,6 +463,7 @@ commit terminal that did not land arrives as
 Host code that receives a raw `WorthQueryApplicationCommitOutcome` splits it with
 `landed()`:
 
+<!-- doctest: bank-estate-certification -->
 ```rust,no_run
 # use worth_query_host::facade::primary_graph::{
 #     WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitReceipt,
@@ -487,6 +502,7 @@ re-entry therefore do not inherit stale permission from an earlier request.
 A domain-native read keeps the caller-facing shape small while still using the
 installed Query path:
 
+<!-- doctest: bank-estate-certification -->
 ```rust,no_run
 # use bank_domain::model::AccountId;
 # use bank_server::{
@@ -528,7 +544,7 @@ show(summary);
 ```
 
 This Markdown is included directly in the Bank certification crate's API docs.
-Its Rust blocks are doctested against the real public types, so changes to the
+Its marked doctest blocks are checked against the real public types, so changes to the
 constructor or method sequence break CI rather than leaving the guide stale.
 
 The wrapper chooses product vocabulary. The fresh principal, controls, and
@@ -539,6 +555,7 @@ typed outcome remain part of the real Query progression.
 Money movement must preserve commit uncertainty and idempotent retry rather
 than translating every transport success or failure into a business result:
 
+<!-- doctest: bank-estate-certification -->
 ```rust,no_run
 # use bank_domain::{proposals::{BankIdempotencyKey, BankProposalDenial}, schema::SendMoney};
 # use bank_server::{
@@ -611,6 +628,39 @@ installed operation and conditional node
 The host submits observations. Signal decides whether a derived wake is
 eligible. Query then freshly admits and invokes the installed application
 operation. See the conditional-operation guide for the complete contract.
+
+## Owning Fixed-Output Actions
+
+A conventional unguarded fixed source action declares its root and read through
+`ApplicationFixedActionDelivery` and
+`fixed_output_action::<Binding, Delivery>()`. An exact typed
+`ApplicationActionReference` includes the composition instance and feature;
+matching only a mutation binding does not select an occurrence.
+
+The prepared mutation's `idempotency_owned(key)` returns an immutable operation
+description. `retain_fixed::<Program, Action>(&program)` resolves actual installed
+delivery meaning and its concrete selector implementation, returning that description
+on refusal. A different delivery type with copied metadata does not resolve. `advance(&fresh_request)`
+opens one native phase and borrows the original intent, key, conditions and
+source proof. The branch-selected installed owner checks the cached original
+action meaning in the actual source execution and recovery paths.
+
+After native settlement, `read_current` validates all output lineages and queries
+at one fresh retained observation. Delivery refusal keeps the settled owner;
+retry uses fresh authority and does not publish the source again. The recovered
+native progress and a fresh handler reply have separate accessors.
+
+`close` retains an undisposed native recovery record and every refused owner
+cleanup until a funded retry can discharge them. It returns the complete settled
+owner on refusal. A real post-recovery caller capability can block release, so
+observation custody and cleanup custody remain independent.
+
+The executable
+[`fixed partial-publication journey`](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs)
+uses the actual append fault, fresh recovery, all four dependent settlements,
+World observation-capacity refusal and World caller-capability cleanup refusal.
+Source-only and the remaining native adapter lanes retain their existing
+entrances until their owning replacement is complete.
 
 ## How It Relates To Other Features
 

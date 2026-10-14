@@ -26,12 +26,8 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 const MAGIC: &[u8; 4] = b"WQWD";
 
 /// Current deterministic workflow definition draft protocol. Version 4
-/// carries operation evidence contracts; versions 1 through 3 remain readable.
+/// carries operation evidence contracts. Only this version is supported.
 pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 4;
-
-/// The oldest draft protocol still read. Its conditions readmit as migrated
-/// expressions; nothing writes it.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION: u16 = 1;
 
 /// Encodes one validated definition's authored meaning. Only the draft
 /// travels: nothing about instances, approvals or publication is read.
@@ -101,7 +97,7 @@ pub fn decode_workflow_definition_draft(
     )?;
     let mut nodes = Vec::with_capacity(node_count);
     for _ in 0..node_count {
-        let node = records::decode_node(&mut input, version)?;
+        let node = records::decode_node(&mut input)?;
         if nodes
             .last()
             .is_some_and(|previous: &super::DraftNode| previous.identity >= node.identity)

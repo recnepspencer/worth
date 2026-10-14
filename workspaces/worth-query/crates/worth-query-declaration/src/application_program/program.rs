@@ -12,6 +12,12 @@ use super::{
 };
 
 mod definition_validation;
+mod delivery_validation;
+mod validation_denial;
+use validation_denial::denial;
+pub use validation_denial::{
+    ApplicationProgramValidationDenial, ApplicationProgramValidationDenialKind,
+};
 mod dependency_graph;
 mod validation;
 use definition_validation::validate_features_and_actions;
@@ -90,61 +96,6 @@ where
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum ApplicationProgramValidationDenialKind {
-    InvalidIdentity,
-    DuplicateFeature,
-    DuplicateAction,
-    DuplicateConnection,
-    DanglingFeature,
-    MissingRequiredInput,
-    DuplicateInputBinding,
-    DuplicateOutput,
-    DuplicateDerivedArtifact,
-    AmbiguousDerivedArtifactProducer,
-    UndeclaredOutput,
-    UndeclaredArtifactOutput,
-    UndeclaredInput,
-    UnexportedCrossInstanceConnection,
-    CyclicConnection,
-    DuplicateRule,
-    IncompleteActionChangeContract,
-    UngovernedDerivedOutput,
-    DuplicateManagedComputation,
-    MissingManagedComputationArtifact,
-    MismatchedManagedComputationPartition,
-    InvalidManagedComputationResources,
-    DuplicateDerivedCollection,
-    CanonicalRevisionBudgetExceeded,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ApplicationProgramValidationDenial {
-    kind: ApplicationProgramValidationDenialKind,
-    subject: String,
-}
-
-impl ApplicationProgramValidationDenial {
-    pub const fn kind(&self) -> ApplicationProgramValidationDenialKind {
-        self.kind
-    }
-    pub fn subject(&self) -> &str {
-        &self.subject
-    }
-}
-
-impl std::fmt::Display for ApplicationProgramValidationDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "application program denied: {:?} ({})",
-            self.kind, self.subject
-        )
-    }
-}
-
-impl std::error::Error for ApplicationProgramValidationDenial {}
-
 /// Validated immutable program meaning consumed by installation.
 pub struct ValidatedApplicationProgram<Schema, Program> {
     identity: ApplicationProgramIdentity,
@@ -214,14 +165,4 @@ pub(in crate::application_program) fn deny_canonical_revision_budget(
         ApplicationProgramValidationDenialKind::CanonicalRevisionBudgetExceeded,
         format!("{}: {budget}", identity.as_str()),
     )
-}
-
-fn denial(
-    kind: ApplicationProgramValidationDenialKind,
-    subject: impl Into<String>,
-) -> ApplicationProgramValidationDenial {
-    ApplicationProgramValidationDenial {
-        kind,
-        subject: subject.into(),
-    }
 }

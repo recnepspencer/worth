@@ -1,326 +1,319 @@
-//! Actual append failure, original source recovery and one-use output promotion.
-
-use super::super::settle;
+//! The ordinary fixed journey owns every native handoff and refused close.
 use super::*;
-use crate::ConsumerProgram;
-use std::time::{Duration, Instant};
+use crate::application_program::ConsumerFixedAction;
+use worth_query_decl::facade::application_program::{
+    ApplicationActionReference, ApplicationCompositionInstance,
+};
+use worth_query_host::facade::application_entry::WorthQueryOperationConstructionDenial;
+use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
+
+struct MissingActionOccurrence;
+impl ApplicationCompositionInstance for MissingActionOccurrence {
+    const PATH: &'static str = "uninstalled-source-occurrence";
+}
+type MissingFixedAction = ApplicationActionReference<
+    ConsumerSchema,
+    MissingActionOccurrence,
+    worth_query_topology_entry::PlanarSourceFeature,
+    PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    crate::application_program::ConsumerFixedDelivery,
+>;
+
+use worth_query_decl::facade::application_operation::{
+    ApplicationMutationBinding, ApplicationMutationIntent,
+};
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationPerformedMutationOutcome, WorthQueryApplicationProgramOutputProgress,
+    WorthQueryOperationAdvance as Advance, WorthQueryOperationCloseDenial,
+    WorthQueryOperationDeliveryDenial, WorthQueryOperationProgress as Progress,
 };
-use worth_query_host::facade::{
-    admission::authenticated_principal::{WorthQueryCancellationSource, WorthQueryRequestScope},
-    application_entry::{
-        WorthQueryApplicationRecoveryRequestDenial, WorthQueryDiscoveredRecoveryProgress,
-    },
-    primary_graph::{
-        WorthQueryApplicationIdempotencyResolution, WorthQueryManagedApplicationRecoveryDenial,
-    },
-    runtime::{ExecutionAllocationPolicy, ProductUnpublishedCause},
-};
+use worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial;
+use worth_query_host::facade::runtime::ProductUnpublishedCause;
 use worth_query_topology_entry::{
-    planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts,
+    planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, PlanarOutputRead,
+    PlanarSourceAdjustmentBinding,
 };
-use worth_query_topology_entry::{
-    PlanarAlternateFinalToSummaryConnection, PlanarFinalToSummaryConnection, PlanarOutputRead,
-    PlanarOutputToAlternateFinalConnection, PlanarOutputToFinalConnection,
-};
+
+// This consumer cannot clone its initiating intent.
+struct OriginalAdjustment(PlanarSourceAdjustment);
+impl ApplicationMutationIntent<ConsumerSchema> for OriginalAdjustment {
+    type Binding = PlanarSourceAdjustmentBinding<ConsumerSchema>;
+    fn input(&self) -> &PlanarSourceAdjustment {
+        &self.0
+    }
+    fn scope_binding(
+        &self,
+    ) -> <Self::Binding as ApplicationMutationBinding<ConsumerSchema>>::ScopeBinding {
+        <PlanarSourceAdjustment as ApplicationMutationIntent<ConsumerSchema>>::scope_binding(
+            &self.0,
+        )
+    }
+}
 
 pub(in crate::application_invariant_acceptance::proof::application_program) fn original_partial_recovers_required_outputs(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
         ConsumerSchema,
     >,
 ) {
-    let world = installation::install(foreign);
-    let scope = authentication::request_scope();
+    use crate::application_program::fixed_successors::{RemovedFixed, UnchangedFixed};
+    use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
+    let roster = worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new()
+        .support(ApplicationProgramAuthoring::<ConsumerSchema, UnchangedFixed>::begin().validated_program().unwrap())
+        .support(ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin().validated_program().unwrap());
+    let grants = [
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<crate::ConsumerProgram>(
+            "model-owner",
+            "model-owner",
+        ),
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<UnchangedFixed>(
+            "model-owner",
+            "model-owner",
+        ),
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<RemovedFixed>(
+            "model-owner",
+            "model-owner",
+        ),
+    ];
+    let world = installation::install_with_roster(foreign, 8192, 4096, roster, &grants).unwrap();
     let adapter = authentication::admit(world.application.installed_schema());
-    let principal = authentication::block_on(adapter.authenticate(
-        authentication::LocalCredential::issued_for_model_owner(),
-        &scope,
-    ))
-    .unwrap();
-    let request = world.application.request(&principal, &scope);
-    let original = request
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .unwrap();
-    let source = original.observed_sources()[0].clone();
-    let intent = PlanarSourceAdjustment {
+    let contact_identity = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
         replacement_y: length(2),
     };
-    let key = 10_062;
-    reset_planar_source_adjustment_contacts(&intent);
+    reset_planar_source_adjustment_contacts(&contact_identity);
+    let operation = {
+        let scope = authentication::request_scope();
+        let principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &scope,
+        ))
+        .unwrap();
+        let request = world.application.request(&principal, &scope);
+        let source = request
+            .query(PlanarRead {
+                body_key: "anchor-a".to_owned(),
+            })
+            .execute()
+            .unwrap()
+            .observed_sources()[0]
+            .clone();
+        let description = request
+            .mutate(OriginalAdjustment(contact_identity.clone()))
+            .expect_source(source)
+            .idempotency_owned(10_062);
+        let (description, denial) = description
+            .retain_fixed::<crate::ConsumerProgram, MissingFixedAction>(&world.application)
+            .err()
+            .expect("an uninstalled exact occurrence refuses construction");
+        assert!(matches!(
+            denial,
+            WorthQueryOperationConstructionDenial::Action(
+                worth_query_host::facade::domain::WorthQueryActionResolutionDenial::Missing
+            )
+        ));
+        assert_eq!(planar_source_adjustment_contacts(&contact_identity), (0, 0));
+        description
+            .retain_fixed::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+            .unwrap_or_else(|(_, denial)| {
+                panic!("returned original description constructs: {denial:?}")
+            })
+    };
+    // Initiating authority is gone before the first native admission.
     world
         .application
         .with_host_advancement(|phase| {
             world.application.fail_next_durable_append_for_test(
                 &phase
                     .checked_execution_request_for(world.application.product_runtime())
-                    .expect("matching installed phase"),
+                    .unwrap(),
             )
         })
-        .expect("fixture control owns its host call");
-    let outcome = request
-        .mutate(intent.clone())
-        .expect_source(source.clone())
-        .idempotency(&key)
-        .execute_performed::<ConsumerProgram, crate::ConsumerProgramRoot>(
-            &world.application,
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
         .unwrap();
-    let WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(mut recovery) = outcome
-    else {
-        panic!("the actual append fault must retain the required-output native partial")
+    let scope = authentication::request_scope();
+    let principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &scope,
+    ))
+    .unwrap();
+    let operation = match operation.advance(&world.application.request(&principal, &scope)) {
+        Advance::Progress {
+            operation,
+            progress: Progress::SourceUnpublished,
+        } => operation,
+        _ => panic!("the actual append fault retains original fixed partial custody"),
     };
-    assert_eq!(
-        recovery.initial_cause(),
-        ProductUnpublishedCause::SettlementPending
-    );
-    assert!(recovery.performed().is_none());
-    assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
+    assert_eq!(planar_source_adjustment_contacts(&contact_identity), (1, 1));
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),
-        0,
-        "unpublished effects have not manufactured a registered output source"
+        0
     );
 
-    macro_rules! original_request {
-        ($scope:expr, $input:expr, $key:expr) => {
-            world
-                .application
-                .request(&principal, $scope)
-                .mutate($input)
-                .expect_source(source.clone())
-                .idempotency($key)
-        };
-    }
-    let cancellation = WorthQueryCancellationSource::new();
-    let stopped = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(120)),
-        cancellation.token(),
-    );
-    cancellation.cancel();
-    assert!(matches!(
-        original_request!(&stopped, intent.clone(), &key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application),
-        Err(WorthQueryApplicationRecoveryRequestDenial::Recovery(worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial::ExecutionDenied(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled))))
-    ));
-    let fresh_scope = authentication::request_scope();
-    let wrong_key = key + 1;
-    let wrong_input = PlanarSourceAdjustment {
-        replacement_y: length(3),
-        ..intent.clone()
-    };
-    for (input, request_key) in [(wrong_input, &key), (intent.clone(), &wrong_key)] {
-        assert!(original_request!(&fresh_scope, input, request_key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application)
-            .is_err());
-        assert!(recovery.performed().is_none());
-        assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
-    }
+    let mut held_partial = None;
+    let mut operation = Some(operation);
+    let settled = (0..32)
+        .find_map(|_| {
+            let fresh_scope = authentication::request_scope();
+            let fresh_principal = authentication::block_on(adapter.authenticate(
+                authentication::LocalCredential::issued_for_model_owner(),
+                &fresh_scope,
+            ))
+            .unwrap();
+            let current = operation
+                .take()
+                .expect("each progress returns its complete operation");
+            match current.advance(&world.application.request(&fresh_principal, &fresh_scope)) {
+                Advance::Progress { operation: next, progress } => {
+                    if matches!(progress, Progress::Recovery(worth_query_host::facade::application_entry::WorthQueryProgramSourceRecoveryProgress::Performed)) {
+                        // A post-recovery view blocks record release, rather than recovery.
+                        let catalog = world.application.product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap()).unwrap();
+                        assert_eq!(catalog.rows().len(), 1);
+                        let inspector = world.application.readmit_product_publication_recovery(catalog.rows()[0].handle()).unwrap();
+                        let partial = inspector.inspect().unwrap();
+                        assert_eq!(partial.cause(), ProductUnpublishedCause::SettlementPending);
+                        held_partial = Some(partial);
+                    }
+                    let next = if matches!(progress, Progress::SourcePromoted) {
+                        let request = world.application.request(&fresh_principal, &fresh_scope);
+                        adopt(&request, *world.application.supported_program::<RemovedFixed>().unwrap().owned_revision());
+                        let next = match next.advance(&request) {
+                            Advance::Refused { operation, denial: worth_query_host::facade::application_entry::WorthQueryOperationAdvanceDenial::Action(_) } => operation,
+                            _ => panic!("changed installed action refuses before output progression"),
+                        };
+                        adopt(&request, *world.application.supported_program::<UnchangedFixed>().unwrap().owned_revision());
+                        next
+                    } else { next };
+                    operation = Some(next);
+                    None
+                }
+                Advance::Settled(settled) => Some(settled),
+                Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => {
+                    panic!("original fixed native progression: {denial:?}")
+                }
+            }
+        })
+        .expect("the native graph settles within its authored bound");
     assert!(
+        held_partial.is_some(),
+        "the real caller capability remains live for close refusal"
+    );
+    assert!(
+        settled.handler_result().is_none(),
+        "recovery never invents a handler reply"
+    );
+    assert!(settled.recovered_progress().is_some());
+    assert_eq!(settled.settlement().output_count(), 4);
+    assert_eq!(
+        settled.settlement().root_producer_contacts_in_this_demand(),
+        1
+    );
+    assert_eq!(planar_source_adjustment_contacts(&contact_identity), (1, 1));
+    assert_eq!(
+        world.application.retained_source_custody_count_for_test(),
+        0
+    );
+
+    // Independent retained observations exhaust actual World read capacity.
+    let request = world.application.request(&principal, &scope);
+    let mut observations = Vec::new();
+    for _ in 0..32 {
+        match request.retain_current_read() {
+            Ok(observation) => observations.push(observation),
+            Err(_) => break,
+        }
+    }
+    assert!(!observations.is_empty());
+    assert!(matches!(
+        settled.read_current(&request),
+        Err(WorthQueryOperationDeliveryDenial::Observation(_))
+    ));
+    drop(observations);
+    let delivered = settled
+        .read_current(&request)
+        .expect("current delivery retries the same settlement");
+    assert_eq!(delivered.rows()[0].value, length(3));
+    assert_eq!(planar_source_adjustment_contacts(&contact_identity), (1, 1));
+    let historical = request
+        .at(settled.settlement().observation())
+        .query(PlanarOutputRead {
+            body_key: "final:anchor-a".to_owned(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(historical.rows()[0].value, length(4));
+    drop(historical);
+    drop(delivered);
+    adopt(
+        &request,
+        *world
+            .application
+            .supported_program::<RemovedFixed>()
+            .unwrap()
+            .owned_revision(),
+    );
+    assert!(matches!(
+        settled.read_current(&request),
+        Err(WorthQueryOperationDeliveryDenial::Action(_))
+    ));
+    let historical = request
+        .at(settled.settlement().observation())
+        .query(PlanarOutputRead {
+            body_key: "final:anchor-a".to_owned(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(historical.rows()[0].value, length(4));
+    drop(historical);
+
+    let (settled, denial) = settled
+        .close(&request)
+        .err()
+        .expect("live native caller capability refuses actual cleanup");
+    assert!(matches!(denial, WorthQueryOperationCloseDenial::Recovery(worth_query_host::facade::product::WorthQueryProductUnpublishedRecoveryReleaseDenial::World(RuntimeWorldRecoveryDenial::CallerCapabilityLive))));
+    assert_eq!(
         world
             .application
-            .request(&principal, &fresh_scope)
-            .mutate(intent.clone())
-            .expect_result_set(
-                original
-                    .result_set_observation()
-                    .expect("completed query retains full result-set proof")
-                    .clone()
-            )
-            .idempotency(&key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application)
-            .is_err(),
-        "the same query's complete result set cannot replace its original row proof"
+            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+            .unwrap()
+            .rows()
+            .len(),
+        1
     );
-    assert!(recovery.performed().is_none());
-    // The same schema/program in another real runtime does not own this partial.
-    let other = installation::install(foreign);
-    let other_adapter = authentication::admit(other.application.installed_schema());
-    let other_principal = authentication::block_on(other_adapter.authenticate(
+    drop(held_partial);
+    let fresh_scope = authentication::request_scope();
+    let fresh_principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),
         &fresh_scope,
     ))
     .unwrap();
-    assert!(other
+    settled
+        .close(&world.application.request(&fresh_principal, &fresh_scope))
+        .unwrap_or_else(|(_, denial)| {
+            panic!("released native capability permits exact cleanup: {denial:?}")
+        });
+    assert!(world
         .application
-        .request(&other_principal, &fresh_scope)
-        .mutate(intent.clone())
-        .expect_source(source.clone())
-        .idempotency(&key)
-        .recover_unpublished_required_in_program(&mut recovery, &other.application)
-        .is_err());
-    assert!(recovery.performed().is_none());
+        .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+        .unwrap()
+        .rows()
+        .is_empty());
+    assert_eq!(planar_source_adjustment_contacts(&contact_identity), (1, 1));
+}
 
-    let controls = WorthQueryOutputDemandControls::new(
-        NonZeroUsize::new(4_096).unwrap(),
-        NonZeroUsize::new(8_192).unwrap(),
-    );
-    // Promotion cannot synthesize a performed witness from an unpublished owner.
-    let (denial, retained) = original_request!(&fresh_scope, intent.clone(), &key)
-        .promote_recovered_required_outputs(recovery, &world.application)
-        .err()
-        .expect("unpublished output promotion must refuse and return custody");
-    assert!(matches!(
-        denial,
-        WorthQueryApplicationRecoveryRequestDenial::Recovery(
-            WorthQueryManagedApplicationRecoveryDenial::BindingMismatch
-        )
-    ));
-    recovery = retained;
-    assert_eq!(
-        original_request!(&fresh_scope, intent.clone(), &key)
-            .recover_unpublished_required_in_program(&mut recovery, &world.application)
-            .unwrap(),
-        WorthQueryDiscoveredRecoveryProgress::Performed
-    );
-    assert!(recovery.performed().is_some());
-    assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
-    // A refused fresh keyed read must return the complete performed phase too.
-    let (_, retained) = original_request!(&fresh_scope, intent.clone(), &wrong_key)
-        .promote_recovered_required_outputs(recovery, &world.application)
-        .err()
-        .expect("wrong-key promotion must preserve the actual performed owner");
-    recovery = retained;
-    assert!(recovery.performed().is_some());
-    let changed = world
-        .application
-        .request(&principal, &fresh_scope)
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
+fn adopt(
+    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+        '_,
+        '_,
+        '_,
+        ConsumerSchema,
+    >,
+    revision: worth_query_decl::facade::application_program::ApplicationProgramRevision,
+) {
+    let programs = request.programs();
+    let requirements = programs.compare(&revision).unwrap();
+    let prepared = programs
+        .adopt(&requirements)
+        .unwrap()
+        .prepare(4096)
         .unwrap();
-    assert_eq!(changed.rows()[0].y, length(2));
-    let (_, retained) = world
-        .application
-        .request(&principal, &fresh_scope)
-        .mutate(intent.clone())
-        .expect_source(changed.observed_sources()[0].clone())
-        .idempotency(&key)
-        .promote_recovered_required_outputs(recovery, &world.application)
-        .err()
-        .expect("the newly observed current source cannot replace the original source proof");
-    recovery = retained;
-    assert!(recovery.performed().is_some());
-    assert_eq!(
-        world.application.retained_source_custody_count_for_test(),
-        0
-    );
-    let (preparation, initial_cause, performed, prior_cleanup) =
-        original_request!(&fresh_scope, intent.clone(), &key)
-            .promote_recovered_required_outputs(recovery, &world.application)
-            .unwrap_or_else(|(denial, _)| panic!("original output promotion: {denial:?}"))
-            .into_parts();
-    assert_eq!(initial_cause, ProductUnpublishedCause::SettlementPending);
-    assert!(prior_cleanup.is_empty());
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
-    assert!(publication_failure.is_none());
-    assert!(cleanup_failure.is_none());
-    let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) =
-        read.unwrap().into_resolution()
-    else {
-        panic!("native recovery must publish the exact original keyed receipt")
-    };
-    assert_eq!(
-        world.application.retained_source_custody_count_for_test(),
-        1
-    );
-    let source_commit = preparation
-        .receipt()
-        .committed_product_publication()
-        .composite_commit()
-        .clone();
-    assert_eq!(
-        &source_commit,
-        receipt.committed_product_publication().composite_commit()
-    );
-    // A fresh request starts the same typed fixed demand; no original result is invented.
-    let mut outputs = {
-        let start_scope = authentication::request_scope();
-        let start_principal = authentication::block_on(adapter.authenticate(
-            authentication::LocalCredential::issued_for_model_owner(),
-            &start_scope,
-        ))
-        .unwrap();
-        let start_request = world.application.request(&start_principal, &start_scope);
-        preparation
-            .start_required_outputs(&world.application, &start_request, controls)
-            .unwrap_or_else(|(_, denial)| panic!("fixed recovered source starts: {denial:?}"))
-    };
-    // The fixed continuation outlives its starting request and retains its prefix
-    // through genuine foreign-runtime and canceled fresh-request refusals.
-    let foreign_request = other.application.request(&other_principal, &fresh_scope);
-    assert!(
-        matches!(outputs.advance(&other.application, &foreign_request),
-        Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
-            worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(ref denial)))
-        if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSource)
-    );
-    let stopped_request = world.application.request(&principal, &stopped);
-    assert!(
-        matches!(outputs.advance(&world.application, &stopped_request),
-        Err(worth_query_host::facade::application_entry::WorthQueryRequiredOutputPreparationDenial::Demand(
-            worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(ref denial)))
-        if denial.kind() == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(worth_query_host::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled)))
-    );
-    assert_eq!(
-        world.application.retained_source_custody_count_for_test(),
-        1
-    );
-    let fresh_request = world.application.request(&principal, &fresh_scope);
-    assert_eq!(
-        outputs.source_observation().selected_commit(),
-        &source_commit
-    );
-    let settled = settle(
-        || match outputs.advance(&world.application, &fresh_request).unwrap() {
-            WorthQueryApplicationProgramOutputProgress::Pending => None,
-            WorthQueryApplicationProgramOutputProgress::Settled(settled) => Some(settled),
-        },
-    );
-    // ConsumerProgramRoot declares two branches, each with a final and summary edge.
-    assert_eq!(settled.output_count(), 4);
-    assert_eq!(
-        [
-            settled
-                .outputs_for::<ConsumerSchema, PlanarOutputToFinalConnection>()
-                .count(),
-            settled
-                .outputs_for::<ConsumerSchema, PlanarFinalToSummaryConnection>()
-                .count(),
-            settled
-                .outputs_for::<ConsumerSchema, PlanarOutputToAlternateFinalConnection>()
-                .count(),
-            settled
-                .outputs_for::<ConsumerSchema, PlanarAlternateFinalToSummaryConnection>()
-                .count(),
-        ],
-        [1; 4],
-        "recovery must settle every declared dependent edge exactly once"
-    );
-    assert_eq!(settled.root_producer_contacts_in_this_demand(), 1);
-    for (body_key, expected) in [("anchor-a", 3), ("final:anchor-a", 4)] {
-        assert_eq!(
-            fresh_request
-                .at(settled.observation())
-                .query(PlanarOutputRead {
-                    body_key: body_key.to_owned()
-                })
-                .execute()
-                .unwrap()
-                .rows()[0]
-                .value,
-            length(expected)
-        );
-    }
-    assert_eq!(planar_source_adjustment_contacts(&intent), (1, 1));
-    assert_eq!(
-        world.application.retained_source_custody_count_for_test(),
-        0
-    );
+    assert!(matches!(request.programs().publish(prepared),
+        worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)));
 }

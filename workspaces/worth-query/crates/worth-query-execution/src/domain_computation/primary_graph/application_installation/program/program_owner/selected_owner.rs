@@ -18,6 +18,7 @@ where
     ///         action_bindings: &[],
     ///         output_source_bindings: &[],
     ///         root_graph_types: &[],
+    ///         action_inventory: todo!(),
     ///     };
     /// }
     /// ```
@@ -47,6 +48,7 @@ where
                 action_bindings: &self.action_bindings,
                 output_source_bindings: &self.output_source_bindings,
                 root_graph_types: &self.root_graph_types,
+                action_inventory: self.program.action_inventory(),
             });
         }
         let record = self
@@ -60,6 +62,39 @@ where
             action_bindings: &record.action_bindings,
             output_source_bindings: &record.output_source_bindings,
             root_graph_types: &record.root_graph_types,
+            action_inventory: record.installed.action_inventory(),
         })
+    }
+}
+
+impl<Schema: ApplicationSchema> WorthQuerySelectedProgramOwner<'_, Schema> {
+    pub fn resolve_fixed_action<Binding, Action>(
+        &self,
+    ) -> Result<
+        &worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
+        worth_query_installation::facade::WorthQueryActionResolutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Action: worth_query_declaration::facade::application_program::ApplicationFixedAction<
+            Schema,
+            Binding,
+        >,
+    {
+        self.action_inventory
+            .resolve_fixed_action::<Schema, Binding, Action>()
+    }
+}
+
+impl<Schema: ApplicationSchema> WorthQuerySelectedProgramOwner<'_, Schema> {
+    pub fn resolve_declared_action<Binding: ApplicationMutationBinding<Schema>>(
+        &self,
+        declared: &worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
+    ) -> Result<
+        &worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
+        worth_query_installation::facade::WorthQueryActionResolutionDenial,
+    > {
+        self.action_inventory
+            .resolve_declared_action::<Schema, Binding>(declared)
     }
 }

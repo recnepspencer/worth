@@ -240,7 +240,9 @@ marker, the action (`WorthQueryPreserveOutput`, `WorthQueryCreateOutput` or
 the contract lists in `ROLES`. A role belongs to its contract, so one marker
 serves every binding whose `Output` is that contract:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 pub struct CreatedAccountOutput;
 
 impl WorthQueryApplicationOutputRole for CreatedAccountOutput {
@@ -369,7 +371,9 @@ One host may roster multiple validated application programs over the same
 installed native contracts. A request enters the public path with
 `application.request(&principal, &scope).on_branch(branch).programs()`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let programs = application
     .request(&principal, &scope)
     .on_branch(branch)

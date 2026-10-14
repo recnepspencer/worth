@@ -253,8 +253,7 @@ where
 }
 
 /// Every operand resolves to an installed query with its authored types, then
-/// the expression readmits over them. A version-1 condition readmits as the
-/// migrated expression over its one query.
+/// the expression readmits over them.
 fn resolve_condition<Schema, Spec>(
     subject: &str,
     condition: &DraftCondition,
@@ -283,9 +282,6 @@ where
             draft,
             operands.iter().map(resolve).collect::<Result<_, _>>()?,
         ),
-        DraftCondition::Migrated(operand) => {
-            ApplicationWorkflowCondition::migrated(resolve(operand)?.query().clone())
-        }
     };
     admitted.map_err(|refused| {
         authoring(

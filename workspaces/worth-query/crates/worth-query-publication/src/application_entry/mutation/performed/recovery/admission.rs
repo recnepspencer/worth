@@ -92,6 +92,11 @@ where
         let owner = application.selected_program_owner(&selected).map_err(
             crate::application_entry::mutation::selected_program::map_selected_program_owner_denial,
         )?;
+        if let Some(declared) = self.compiled_action {
+            owner
+                .resolve_declared_action::<Intent::Binding>(declared)
+                .map_err(WorthQueryApplicationRecoveryRequestDenial::Action)?;
+        }
         let staged = self.stage()?;
         let identities = self.identities()?;
         // Only bind the original source proof. The retained native attempt owns

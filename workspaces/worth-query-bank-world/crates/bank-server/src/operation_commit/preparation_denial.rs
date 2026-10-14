@@ -63,6 +63,7 @@ pub enum BankApplicationAttemptDenialKind {
     WorkflowDefinitionIntentIdentityUnavailable,
     WorkflowLineageUnavailable,
     WorkflowDefinitionCompilationUnavailable,
+    WorkflowDefinitionMissingOperationInput,
     WorkflowDefinitionSuperseded,
     WorkflowDefinitionRetired,
     WorkflowInstanceAffinityMismatch,
@@ -249,6 +250,9 @@ const fn application_attempt_kind(
         }
         Query::WorkflowDefinitionCompilationUnavailable => {
             BankApplicationAttemptDenialKind::WorkflowDefinitionCompilationUnavailable
+        }
+        Query::WorkflowDefinitionMissingOperationInput => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionMissingOperationInput
         }
         Query::WorkflowDefinitionSuperseded => {
             BankApplicationAttemptDenialKind::WorkflowDefinitionSuperseded

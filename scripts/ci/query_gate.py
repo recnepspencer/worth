@@ -38,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -50,7 +51,6 @@ FIXTURE = (
 BANK = "workspaces/worth-query-bank-world/Cargo.toml"
 UI = "workspaces/worth-ui/Cargo.toml"
 BOUNDARY = "tools/boundary-check/Cargo.toml"
-
 
 def packages(*names):
     return [part for name in names for part in ("-p", name)]
@@ -78,10 +78,8 @@ GROUPS = {
     "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 
-
 def lib_of(*names):
     return lambda binary: binary["package"] in names and binary["lib"]
-
 
 def everything(_binary):
     return True
@@ -118,15 +116,24 @@ PROCESS_WIDE_PROBES = (
     "tests::application_attempt::predecode_admission::",
 )
 
-
 def clippy(*selection):
     return ["cargo", "clippy", *selection, "--all-targets", "--", "-D", "warnings"]
-
 
 def bash():
     # On Windows a bare `bash` can resolve to the WSL launcher.
     git_bash = Path("C:/Program Files/Git/bin/bash.exe")
     return str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
+
+def consumer_doctest_commands():
+    configuration = tomllib.loads(
+        (ROOT / "tools/boundary-check/config/consumer-docs.toml").read_text(encoding="utf-8")
+    )
+    return [
+        ("doc-" + Path(selection["manifest"]).parent.name,
+         ["cargo", "test", "--doc", "--no-fail-fast", "--jobs", "8",
+          "--manifest-path", selection["manifest"], *packages(*selection["packages"])])
+        for selection in configuration["doctests"]
+    ]
 
 
 # suite -> [(label, command)], one command at a time
@@ -153,12 +160,10 @@ COMMAND_SUITES = {
          clippy("--manifest-path", UI, *packages("worth-ui-query-binding"))),
     ],
     # Compiled doc examples: no other suite builds them.
-    "doc": [
+    "doc-lower": [
         ("doc-root", ["cargo", "test", "--doc", "--no-fail-fast", *packages(*LOWER)]),
-        ("doc-query",
-         ["cargo", "test", "--doc", "--no-fail-fast", "--manifest-path", QUERY,
-          *packages(*QUERY_PUBLIC, "worth-query-installation")]),
     ],
+    "doc": consumer_doctest_commands(),
     "wasm": [
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
     ],
@@ -188,8 +193,7 @@ COMMAND_SUITES = {
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
-         "fixture", "ui", "bank", "doc", "wasm", "boundary", "extra"]
-
+         "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
 
 def environment():
     env = dict(os.environ)
@@ -203,11 +207,9 @@ def environment():
         env["RUSTC_WRAPPER"] = "sccache"
     return env
 
-
 def package_name(manifest):
     found = re.search(r'(?m)^name\s*=\s*"([^"]+)"', manifest.read_text(encoding="utf-8"))
     return found.group(1) if found else manifest.parent.name
-
 
 class Gate:
     def __init__(self, out):
@@ -223,6 +225,13 @@ class Gate:
                 argv, cwd=ROOT, env=self.env, stdout=sink, stderr=subprocess.STDOUT
             ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
+        if code != 0:
+            tail = "\n".join(text[-80:]).encode("utf-8")[-16384:].decode(
+                "utf-8", errors="ignore"
+            )
+            print(f"GATE failed command {label}: exit {code}; complete log: {log.resolve()}",
+                  flush=True)
+            print(tail, flush=True)
         return {
             "name": label, "exit": code, "seconds": round(time.time() - started),
             "results": [line for line in text if line.startswith("test result")],
@@ -350,11 +359,9 @@ class Gate:
                                                 encoding="utf-8")
         return result
 
-
 def failed_tests(lines):
     return sorted({line.split()[1] for line in lines
                    if line.startswith("test ") and line.rstrip().endswith("FAILED")})
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])

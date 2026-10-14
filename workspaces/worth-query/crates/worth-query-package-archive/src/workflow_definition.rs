@@ -18,7 +18,6 @@ mod tests;
 
 pub use codec::{
     decode_workflow_definition_draft, encode_workflow_definition_draft,
-    WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_OLDEST_READABLE_VERSION,
     WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION,
 };
 pub use compatibility::{
@@ -116,8 +115,6 @@ pub(crate) enum DraftCondition {
         draft: Box<[u8]>,
         operands: Box<[DraftConditionOperand]>,
     },
-    /// A version-1 condition: one Bool query read as the whole decision.
-    Migrated(DraftConditionOperand),
 }
 
 /// One named operand and the installed query it reads.

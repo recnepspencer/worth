@@ -18,6 +18,7 @@ where
         actions.extend(spec_actions);
     }
     let feature_ids = validate_features_and_actions(&features, &actions)?;
+    delivery_validation::validate_action_deliveries::<Schema, Program>(&actions)?;
     let mut rule_ids = BTreeSet::new();
     for rule in &rules {
         require_identity(rule.composition_instance())?;

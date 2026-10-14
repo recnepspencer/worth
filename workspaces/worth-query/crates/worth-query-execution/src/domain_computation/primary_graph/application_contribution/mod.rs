@@ -2,7 +2,7 @@ mod composition;
 pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
 mod contracts;
-mod execution_denial;
+pub(in crate::domain_computation) mod execution_denial;
 mod partitioned_computation;
 mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;

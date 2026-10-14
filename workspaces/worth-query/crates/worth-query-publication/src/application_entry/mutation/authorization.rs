@@ -76,13 +76,13 @@ where
         ApplicationMutationScopeResolution<Schema, IntentPrincipal<Schema, Intent>>,
 {
     let preconditions = std::mem::take(&mut request.preconditions);
-    authorize(phase, request, preconditions).map(|_| ())
+    authorize(phase, request, &preconditions).map(|_| ())
 }
 
 fn authorize<Schema, Intent, SourcePreparation>(
     phase: &AdvancementPhase<'_>,
     request: &WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>,
-    preconditions: Preconditions<Schema, Intent>,
+    preconditions: &Preconditions<Schema, Intent>,
 ) -> Result<
     AuthorizedMutation<Schema, IntentBinding<Schema, Intent>>,
     WorthQueryApplicationRequestMutationDenial,
@@ -110,7 +110,7 @@ where
 fn authorize_selected<Schema, Intent, SourcePreparation>(
     _phase: &AdvancementPhase<'_>,
     request: &WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>,
-    preconditions: Preconditions<Schema, Intent>,
+    preconditions: &Preconditions<Schema, Intent>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<
     AuthorizedMutation<Schema, IntentBinding<Schema, Intent>>,
@@ -151,7 +151,7 @@ where
         )
         .map_err(WorthQueryApplicationRequestMutationDenial::ScopeResolution)?;
     let admission = selected
-        .authorize_operation(
+        .authorize_borrowed_operation(
             _phase,
             &principal,
             &scope,
@@ -196,7 +196,13 @@ where
             <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    let authorized = authorize(phase, &request.request, staged.preconditions)?;
+    let authorized = authorize(
+        phase,
+        &request.request,
+        request
+            .borrowed_preconditions
+            .unwrap_or(&staged.preconditions),
+    )?;
     prepare_authorized(request, identities, staged.source, authorized)
 }
 
@@ -216,7 +222,14 @@ where
             <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    let authorized = authorize_selected(phase, &request.request, staged.preconditions, selected)?;
+    let authorized = authorize_selected(
+        phase,
+        &request.request,
+        request
+            .borrowed_preconditions
+            .unwrap_or(&staged.preconditions),
+        selected,
+    )?;
     prepare_authorized(request, identities, staged.source, authorized)
 }
 

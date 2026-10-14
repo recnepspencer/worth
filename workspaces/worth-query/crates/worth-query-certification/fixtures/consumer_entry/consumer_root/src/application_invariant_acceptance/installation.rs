@@ -37,6 +37,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -85,6 +86,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -134,6 +136,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -263,6 +266,22 @@ fn install_with_resource_bytes(
     candidate_bytes: u64,
     query_bytes: usize,
 ) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
+    install_with_roster(
+        foreign,
+        candidate_bytes,
+        query_bytes,
+        installation::WorthQueryApplicationProgramRoster::new(),
+        &[],
+    )
+}
+
+pub(super) fn install_with_roster(
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
+    candidate_bytes: u64,
+    query_bytes: usize,
+    roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
+    deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
+) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -277,6 +296,7 @@ fn install_with_resource_bytes(
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::clone(&parameter_calls),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -289,9 +309,14 @@ fn install_with_resource_bytes(
             .unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
-    let application = installation::in_memory_program::<ConsumerSchema, ConsumerProgram>(
-        crate::application_program::validated_program()
-            .expect("the application program is complete"),
+    let program = crate::application_program::validated_program()
+        .expect("the application program is complete");
+    let deployment_scopes: std::collections::BTreeSet<_> = std::iter::once(*program.revision())
+        .chain(deployment_grants.iter().map(|grant| grant.source()))
+        .collect();
+    let application = installation::in_memory_rostered_program::<ConsumerSchema, ConsumerProgram>(
+        program,
+        roster,
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,
@@ -307,6 +332,12 @@ fn install_with_resource_bytes(
                 authentication::external_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
+            for source in &deployment_scopes {
+                crate::program_deployment::bind_scope(graph, *source)?;
+            }
+            for grant in deployment_grants {
+                grant.bind(graph)?;
+            }
             seed::seed_cycles(bootstrap_phase, graph);
             graph.bind_principal(
                 &principal,

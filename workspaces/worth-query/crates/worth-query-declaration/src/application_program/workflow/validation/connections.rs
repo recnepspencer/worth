@@ -53,12 +53,22 @@ pub(super) fn validate_requirements(
             ApplicationWorkflowNodeKind::Operation {
                 operation,
                 requires_workflow_authority,
-            } => validate_authority(
-                node.identity(),
-                *requires_workflow_authority,
-                operation.workflow_execution_requirements(),
-                incoming(ApplicationWorkflowDataFlow::ApprovalAuthority),
-            )?,
+            } => {
+                validate_authority(
+                    node.identity(),
+                    *requires_workflow_authority,
+                    operation.workflow_execution_requirements(),
+                    incoming(ApplicationWorkflowDataFlow::ApprovalAuthority),
+                )?;
+                if *requires_workflow_authority
+                    && incoming(ApplicationWorkflowDataFlow::OperationInput) != 1
+                {
+                    return Err(denial(
+                        ApplicationWorkflowValidationDenialKind::MissingOperationInput,
+                        node.identity().as_str(),
+                    ));
+                }
+            }
             _ => {}
         }
     }

@@ -136,7 +136,11 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = recovered else {
         panic!("settled owner effects must produce a performed product successor");
     };
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    let (read, publication_failure, cleanup_failure, pending_cleanup) = performed.into_parts();
+    assert!(
+        pending_cleanup.is_none(),
+        "ordinary raw recovery already attempted native cleanup"
+    );
     assert!(publication_failure.is_none());
     assert!(cleanup_failure.is_none());
     let Resolution::AlreadyCommitted(receipt) = read.unwrap().into_resolution() else {

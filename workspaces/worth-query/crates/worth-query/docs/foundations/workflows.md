@@ -116,7 +116,9 @@ read a workflow instance.
 
 A workflow spec is a marker type:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 pub struct PurchaseWorkflowSpec;
 
 impl ApplicationWorkflowSpec for PurchaseWorkflowSpec {
@@ -167,7 +169,9 @@ node. Workflow authority does not replace operation permission. See
 
 Install the spec against one installed schema and one installed program:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
     32,                  // maximum_definition_nodes
     64,                  // maximum_definition_connections
@@ -344,7 +348,7 @@ Connection methods return `&mut Self` and chain:
 | `assessment_evidence(&assessment, &join)` | Feeds evidence into a join. |
 | `joined_evidence(&join, &approval)` | The approver sees the joined evidence. |
 | `approval_authority(&approval, &operation)` | The approval is required evidence for that guarded operation. It is not permission: ordinary operation permission still applies (see [Three independent checks](#three-independent-checks)). |
-| `operation_input(&operation, &operation)` | The guarded operation's input must be the proposed input. The platform binds the proposal's input-identity digest; the caller supplies the same value to `for_workflow_operation`. The two input types must be equal (`IncompatibleOperationInput`). |
+| `operation_input(&operation, &operation)` | Every guarded operation needs exactly one source (`MissingOperationInput`), including operations requiring no approval. Its input must be the proposed input. The platform binds the proposal's input-identity digest; the caller supplies the same value to `for_workflow_operation`. The two input types must be equal (`IncompatibleOperationInput`). Unguarded proposal slots have no input-cardinality requirement. |
 
 `validate()` enforces these minimums (`ApplicationWorkflowValidationDenialKind`):
 
@@ -352,6 +356,7 @@ Connection methods return `&mut Self` and chain:
 - Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
 - Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
 - A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `workflow_requirements` omitted, or `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and declares no `workflow_requirements` (`UnexpectedWorkflowAuthority`).
+- After the authority check, each guarded operation has exactly one `operation_input` source (`MissingOperationInput` for zero or multiple sources). Publication and imported drafts use this validation. Native reconstruction refuses unsupported stored definitions before executable readmission without rewriting their original bytes.
 
 `finish()` returns `Result<AuthoredWorkflowDefinition<Spec>,
 ApplicationWorkflowAuthoringDenial>`. `validate()` checks the whole graph and
@@ -364,7 +369,9 @@ second grammar. It creates the builder, runs your block, and evaluates to the
 `Result<_, ApplicationWorkflowAuthoringDenial>`, because it applies `?` to
 `new`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let authored = worth_query_workflow! {
     spec: PurchaseWorkflowSpec;
     identity: identity;
@@ -400,13 +407,17 @@ the occurrence name.
 
 Binding checks the validated definition against the installed vocabulary:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let contract = installed.bind_definition(validated)?; // WorthQueryInstalledWorkflowDefinitionContract
 ```
 
 Publishing is a control step on one branch:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = runtime
     .request(&principal, &scope)
     .on_branch(branch)
@@ -433,7 +444,9 @@ Preparation refusals are `WorthQueryWorkflowDefinitionPublicationPreparationDeni
 
 Discovery asks one selected branch occurrence which revision is current for an identity:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // `execution` is the host's `ExecutionRequest`
 // (`worth_query_host::facade::primary_graph::ExecutionRequest`).
 let selected = runtime
@@ -475,7 +488,9 @@ preparation refusals are `WorthQueryWorkflowDefinitionRetirementPreparationDenia
 
 ## Start an instance
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let started = runtime
     .request(&principal, &scope)
     .on_branch(definition.branch())
@@ -564,7 +579,9 @@ is observation-time readiness: no transition attempt was prepared.
 
 An assessment step settles through an output demand, then records evidence:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut handle = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -604,7 +621,9 @@ let outcome = runtime
 A condition node evaluates a Bool expression in the shared expression language.
 Its operands are named, typed results of installed queries:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let condition = builder.condition(
     "review-capacity",
     "uint64(30) / days >= uint64(5) && retained",
@@ -625,7 +644,9 @@ fixed-width integers, `f32`, `f64`, `String`, `Option<T>`, and `Vec<T>` are
 provided. A domain type states its own reading; a money amount, for example,
 reads as its exact count of minor units so comparisons never round:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 impl ApplicationExpressionOperandValue for Money<USD> {
     fn expression_type() -> ExpressionType {
         ExpressionType::INT64
@@ -642,7 +663,9 @@ When the instance returns
 request on the instance's branch, then supply every published result by name to
 a fresh advance request:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = request
     .prepare_workflow_advance(&workflow, instance)?
     .condition(&required)
@@ -677,7 +700,9 @@ A true result follows `ConditionSatisfied` and a false one
 An approval is a signed control step. Each decision needs a fresh
 authentication event:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let signing = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -748,7 +773,9 @@ to execute every business operation within it.
 For a guarded operation that needs no approval (occurrence-only execution),
 declare no additional workflow evidence:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // Inside worth_query_mutation_binding!(...), alongside its other contracts:
 workflow_authority required,
 workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
@@ -757,7 +784,9 @@ workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
 For an operation requiring a particular native approval capability, use the
 immutable constructor instead:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 workflow_authority required,
 workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approval::<ReleaseReviewCapability>(),
 ```
@@ -803,7 +832,9 @@ it is not enabled by removing an approval from an old editable definition.
 When advance returns `AwaitingOperation(required)`, run the guarded effect
 through an ordinary mutation request bound to that requirement:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let committed = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -916,7 +947,9 @@ Accept the owner's receipt (see [Operations](#operations)), then retry.
 same declared inbound binding that operation installed. Bank's approved-payment
 definition uses the public authoring shape:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
 let await_completion = builder.await_inbound::<ApprovedPaymentSettlementEffect>(
     "await-inbound",
@@ -1000,7 +1033,7 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). Version 4 retains the exact optional operation evidence contract. Version 3 added `await_inbound`; readers retain v1–3 drafts, with absent operation evidence, but reject a wait tag under v1/v2.
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). It retains the exact optional operation evidence contract and inbound wait meaning. Only the current version is supported; predecessor versions are refused before body decoding, without migration or rewriting their bytes.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
 - `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. Operation evidence must exactly match the installed binding: an old absent contract cannot silently acquire an explicit-empty or explicit-required floor. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
@@ -1147,7 +1180,9 @@ approval ──RetryExhausted──> declined
 
 ### Reusable checks component
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut checks = ApplicationWorkflowComponentBuilder::<PurchaseWorkflowSpec>::new("purchase-checks")?;
 let budget = checks.assessment::<BudgetAvailable>("budget")?;
 let vendor = checks.assessment::<VendorApproved>("vendor")?;
@@ -1165,7 +1200,9 @@ let checks = checks.finish()?;
 
 ### Definition
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let limits = ApplicationWorkflowDefinitionLimits::new(
     16, 32, 2,
     ApplicationWorkflowComponentLimits::new(8, 1, 16, 32, 32).unwrap(),
