@@ -18,6 +18,8 @@ mod dependent_recovery;
 mod descriptor_result_set;
 mod discovered;
 #[cfg(test)]
+mod fixed_batch;
+#[cfg(test)]
 mod fixed_delivery;
 pub(super) mod lifecycle;
 mod owner_demand_boundary;

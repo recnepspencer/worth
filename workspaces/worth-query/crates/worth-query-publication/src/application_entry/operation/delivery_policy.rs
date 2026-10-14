@@ -5,6 +5,8 @@ use std::num::NonZeroUsize;
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryOperationDeliveryPolicy {
     pub(super) currentness_work: NonZeroUsize,
+    pub(super) batch_limits:
+        Option<worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchLimits>,
     pub(super) query_limits: Option<(NonZeroUsize, NonZeroUsize)>,
 }
 impl WorthQueryOperationDeliveryPolicy {
@@ -13,7 +15,16 @@ impl WorthQueryOperationDeliveryPolicy {
         Self {
             currentness_work: maximum_work,
             query_limits: None,
+            batch_limits: None,
         }
+    }
+    /// Narrows the installed aggregate batch work and custody allowance.
+    pub const fn batch(
+        mut self,
+        limits: worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchLimits,
+    ) -> Self {
+        self.batch_limits = Some(limits);
+        self
     }
     /// Requests narrower declared-query result and work ceilings.
     pub const fn query(

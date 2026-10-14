@@ -1,7 +1,8 @@
 //! Closed projection shapes delegate real typed installation lookup.
 use worth_query_declaration::facade::{
     application_program::{
-        ApplicationFixedProjection, ApplicationNoProjection, ApplicationQueryProjection,
+        ApplicationFixedProjection, ApplicationNoProjection, ApplicationQueryBatchProjection,
+        ApplicationQueryProjection,
     },
     application_query::ApplicationQueryBinding,
     application_schema::ApplicationSchema,
@@ -14,6 +15,7 @@ mod sealed {
 }
 impl sealed::Installation for ApplicationNoProjection {}
 impl<Q> sealed::Installation for ApplicationQueryProjection<Q> {}
+impl<Q, const N: usize> sealed::Installation for ApplicationQueryBatchProjection<Q, N> {}
 /// Sealed fixed projection construction checks its actual native installed query, if present.
 pub trait WorthQueryFixedProjectionInstallation<S: ApplicationSchema>:
     ApplicationFixedProjection<S> + sealed::Installation
@@ -21,6 +23,15 @@ pub trait WorthQueryFixedProjectionInstallation<S: ApplicationSchema>:
     fn require_installed(
         schema: &WorthQueryInstalledApplicationSchema<S>,
     ) -> Result<(), WorthQueryApplicationQueryInstallationDenial>;
+}
+impl<S: ApplicationSchema, Q: ApplicationQueryBinding<S> + 'static, const N: usize>
+    WorthQueryFixedProjectionInstallation<S> for ApplicationQueryBatchProjection<Q, N>
+{
+    fn require_installed(
+        schema: &WorthQueryInstalledApplicationSchema<S>,
+    ) -> Result<(), WorthQueryApplicationQueryInstallationDenial> {
+        schema.installed_query_binding::<Q>().map(|_| ())
+    }
 }
 impl<S: ApplicationSchema> WorthQueryFixedProjectionInstallation<S> for ApplicationNoProjection {
     fn require_installed(

@@ -1,5 +1,16 @@
 use super::*;
 
+impl BatchPolicy {
+    // The caller holds totals, preserving the shared totals-before-plan order.
+    fn start_claim(&self) {
+        if let Self::Installed(plan) = self {
+            plan.lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .started = true;
+        }
+    }
+}
+
 /// A live aggregate memory claim. Cloning this claim is deliberately unavailable;
 /// shared source custody keeps its original claim through its existing Arc.
 pub struct WorthQueryApplicationQueryBatchMemory {
@@ -9,6 +20,36 @@ pub struct WorthQueryApplicationQueryBatchMemory {
 }
 
 impl WorthQueryApplicationQueryBatchAdmission {
+    /// Quotes actual collection/source backing before claiming or copying it.
+    /// Installed schedules add the owner's exact envelope; explicit or narrowed
+    /// custody ceilings still refuse excess, without changing read-work charges.
+    /// This storage loan grants no query or disclosure authority.
+    pub fn claim_publication_memory(
+        &self,
+        bytes: usize,
+    ) -> Result<WorthQueryApplicationQueryBatchMemory, WorthQueryApplicationQueryBatchResourceDenial>
+    {
+        let totals = self
+            .totals
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.policy.start_claim();
+        if let BatchPolicy::Installed(plan) = &self.policy {
+            let mut plan = plan
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let quoted = plan
+                .bytes
+                .checked_add(bytes)
+                .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
+            plan.bytes = plan
+                .byte_ceiling
+                .map_or(quoted, |maximum| quoted.min(maximum));
+        }
+        drop(totals);
+        self.claim_memory(bytes)
+    }
+
     /// Claim framework-owned storage before allocating or copying it. The
     /// logical byte quote excludes allocator overhead, as scalar buffers do.
     pub fn claim_memory(
@@ -20,6 +61,7 @@ impl WorthQueryApplicationQueryBatchAdmission {
             .totals
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.policy.start_claim();
         let required = totals
             .bytes
             .checked_add(bytes)

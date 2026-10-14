@@ -101,6 +101,26 @@ impl<
         }
     }
 
+    pub(super) fn execute_installed(
+self, limits: Option<WorthQueryApplicationQueryBatchLimits>, query_limits: Option<(std::num::NonZeroUsize, std::num::NonZeroUsize)>, phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>) -> Result<
+        crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
+            <Intent::Binding as ApplicationQueryBinding<Schema>>::Query,
+            <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+        >,
+        WorthQueryApplicationQueryBatchDenial,
+    >
+    where
+        <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
+        <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
+    {
+        execution::execute(
+            phase,
+            self,
+            execution::BatchExecutionPolicy::Installed(limits),
+            query_limits,
+        )
+    }
+
     pub fn limits(
         self,
         limits: WorthQueryApplicationQueryBatchLimits,
@@ -139,6 +159,11 @@ self, phase: &worth_query_execution::facade::application_contribution::WorthQuer
         <Intent::Binding as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
         <<Intent::Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Intent::Binding as ApplicationQueryBinding<Schema>>::Query>,
     {
-        execution::execute(phase, self)
+        execution::execute(
+            phase,
+            self.request,
+            execution::BatchExecutionPolicy::Explicit(self.limits),
+            None,
+        )
     }
 }

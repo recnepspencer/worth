@@ -49,6 +49,7 @@ pub struct ApplicationFixedActionDeliveryDeclaration {
     root_connection: super::super::ApplicationConnectionDeclaration,
     root_connections: Box<[super::super::ApplicationConnectionDeclaration]>,
     read: Option<crate::application_query::ApplicationQueryBindingDescriptor>,
+    batch_items: Option<usize>,
 }
 impl ApplicationFixedActionDeliveryDeclaration {
     pub fn fixed<Schema, Binding, Delivery>() -> Self
@@ -68,6 +69,8 @@ impl ApplicationFixedActionDeliveryDeclaration {
                 <Delivery::Root as ApplicationOutputGraphShape<Schema>>::RootConnection::declaration(
                 ),
             read: <Delivery::Projection as super::ApplicationFixedProjection<Schema>>::descriptor(),
+            batch_items:
+                <Delivery::Projection as super::ApplicationFixedProjection<Schema>>::batch_items(),
         }
     }
     pub const fn identity(&self) -> &'static str {
@@ -78,6 +81,9 @@ impl ApplicationFixedActionDeliveryDeclaration {
     }
     pub fn read(&self) -> Option<&crate::application_query::ApplicationQueryBindingDescriptor> {
         self.read.as_ref()
+    }
+    pub const fn batch_items(&self) -> Option<usize> {
+        self.batch_items
     }
     pub fn root_connection(&self) -> &super::super::ApplicationConnectionDeclaration {
         &self.root_connection
@@ -121,7 +127,7 @@ impl ApplicationFixedActionDeliveryDeclaration {
             .limits()
             .maximum_work()
             .map_or_else(|| "host-policy".to_owned(), |limit| limit.to_string());
-        super::super::semantic_encoding::framed_parts(&[
+        let query_meaning = super::super::semantic_encoding::framed_parts(&[
             self.identity,
             &graph,
             &result_limit,
@@ -139,6 +145,14 @@ impl ApplicationFixedActionDeliveryDeclaration {
             read.parameter_identity().as_str(),
             read.result_identity().as_str(),
             read.scope_identity().as_str(),
-        ])
+        ]);
+        match self.batch_items {
+            Some(items) => super::super::semantic_encoding::framed_parts(&[
+                "fixed-query-batch",
+                &items.to_string(),
+                &query_meaning,
+            ]),
+            None => query_meaning,
+        }
     }
 }

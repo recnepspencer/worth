@@ -40,8 +40,9 @@ pub use action::{
 pub use action::{
     ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration,
     ApplicationActionDeliveryDeclaration, ApplicationActionReference, ApplicationFixedAction,
-    ApplicationFixedActionDelivery, ApplicationFixedProjection, ApplicationFixedQueryDelivery,
-    ApplicationNoProjection, ApplicationQueryProjection,
+    ApplicationFixedActionDelivery, ApplicationFixedBatchDelivery, ApplicationFixedProjection,
+    ApplicationFixedQueryDelivery, ApplicationNoProjection, ApplicationQueryBatchProjection,
+    ApplicationQueryProjection,
 };
 pub use action_correspondence::{
     ApplicationOptionalMemberEdit, ApplicationRepeatedOptionalMemberCorrespondence,

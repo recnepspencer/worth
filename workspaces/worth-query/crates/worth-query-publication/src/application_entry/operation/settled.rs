@@ -61,6 +61,7 @@ pub enum WorthQueryOperationDeliveryDenial {
     /// Native consumed-source movement makes current delivery stale; history remains owned.
     Stale(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     Query(WorthQueryApplicationRequestQueryDenial),
+    Batch(super::super::WorthQueryApplicationQueryBatchDenial),
 }
 
 impl<'runtime, Schema, Intent, Program, Root, Action>
