@@ -152,6 +152,79 @@ They do not erase required-output source inventory: installed required-output
 actions must use their declared fixed/discovered lane. These six completion
 bindings share the installed Bank application and existing role policies.
 
+### Own estate sources, funding, reversal and deployment revocation
+
+Estate notification, retransmission, freeze, case opening, executor recognition,
+release and disbursement use their typed `mutations` constructors and
+`retain_operation()`. Each advance admits the binding's installed capability
+against the current selected program; the owner retains the original command,
+key and typed conditions. A receipt correspondence or `NoOutputGraph` does not
+substitute for the actual installed output-source inventory.
+
+Capability request selectors use the installed operation's scope and decision-read
+contracts. Declare related/context selector fields through `operation_read_field`
+(or an existing whole-entity decision read); governed elevation uses its installed
+identity field. Query checks this footprint before resolving the selector. During
+program adoption, the native candidate maintains these exact dependencies and
+capability grant joins from its authentic predecessor. This preparation grants no
+permission: an ordinary action removed by the successor still refuses, while an
+exact performed-effect handle requires fresh authorization for recovery.
+
+Funding and journal reversal retain their existing RetainedCommit delivery:
+every advance takes fresh request authority and an explicit history-work bound.
+The returned observation is the genuine original World basis. Deployment grant
+revocation uses `retain_program_deployment_revocation` with its original u64 key
+and typed conditions; a recorded issuer relationship, not an employee role,
+authorizes the fresh attempt.
+
+After completion, `close_with_evidence(&fresh_request)` releases the same native
+cleanup collection before transferring `(closed, completion)`. On refusal, keep
+the returned owner. `BankCommitReceipt::from_closed_source` publishes the original
+receipt from that tuple; cloning borrowed descriptive evidence cannot transfer
+the performed-change witness. Fresh handler results remain distinct from recovered
+receipt and publication evidence.
+
+Only after source completion and lawful close may notification/disbursement
+receipts enter the existing published-effect recovery APIs. Those native handles
+own outbox/rail reconciliation or compensation; they are not permission to rerun
+the source handler. Source cleanup uses its native issuer custody and does not
+reacquire revoked business permission. Business retries and redispatch still
+require their applicable fresh native authorization. Elevation, delegation and
+approved-payment workflow transitions keep their separate issued native owners.
+
+A freeze command enters through the same ordinary mutation frontdoor. Construction
+retains the command; it does not admit the business capability or execute an effect.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let owner = bank.mutate(mutations::freeze_estate_account(input))
+    .as_principal(&specialist)
+    .controls(BankMutationControls::new(scope.clone(), key))
+    .retain_operation()?;
+let outcome = owner.advance(&bank.request(&specialist, &scope));
+```
+
+For a publication interruption, retain the native `Progress` owner. A fresh
+unauthorized recovery returns that owner in `Refused`; recovery under an authorized
+request returns progress and then `Completed` with `Recovered` evidence. It supplies
+no replacement handler result. The [owning estate courts](../crates/bank-server/tests/ordinary_mutations/estate_operations/owning_sources.rs)
+exercise this flow, independent account truth, refusal during close, and witness transfer.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+match completed.close_with_evidence(&bank.request(&specialist, &fresh_scope)) {
+    Ok(closed_completion) => {
+        let receipt = BankCommitReceipt::from_closed_source(closed_completion);
+        // Published-effect recovery consumes this receipt through its own native owner.
+    }
+    Err((completed, denial)) => {
+        // Retain completed, including its original evidence, for a fresh lawful close.
+    }
+}
+```
+
 ### Own a retained deposit
 
 The deposit builder also provides `retain_operation()`: call it after

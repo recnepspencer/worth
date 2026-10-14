@@ -5,7 +5,6 @@ use bank_domain::estate::DeathNoticeStatus;
 use bank_server::{BankApplicationP1, BankApplicationP2};
 use worth_query_host::facade::{
     application_entry::{
-        WorthQueryApplicationMutationOutcome,
         WorthQueryApplicationProgramAdoptionPreparationDenial,
         WorthQueryBranchAdoptionPublicationOutcome,
     },
@@ -29,22 +28,24 @@ fn permission_denied(
     }
 }
 fn revoke(fixture: &NotificationFixture) {
-    let principal = fixture.authenticate_specialist();
+    let actor = fixture.authenticate_specialist();
     let scope = request_scope();
-    let outcome = fixture.world.runtime.revoke_program_deployment_grant(
-        &principal,
-        "specialist-p0-deployment",
-        &91764011_u64,
-        &scope,
-    );
-    assert!(
-        matches!(
-            outcome,
-            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-        ),
-        "the production issuer mutation must revoke: {outcome:?}"
-    );
+    let runtime = &fixture.world.runtime;
+    let operation=runtime.retain_program_deployment_revocation(&actor,bank_domain::schema::ProgramDeploymentRevocationInput { grant_identity:"specialist-p0-deployment".into() },91764011_u64,worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions::new(),&scope).unwrap_or_else(|(_, cause)| panic!("declared issuer revocation: {cause:?}"));
+    let request = runtime.request(&actor, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
+        operation.advance(&request)
+    else {
+        panic!("recorded issuer revocation completes")
+    };
+    assert!(matches!(
+        done.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+    ));
+    done.close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("issuer cleanup: {cause:?}"));
 }
+
 #[test]
 fn authenticated_actor_without_explicit_deployment_grant_cannot_compare_or_adopt() {
     let fixture = notification_world("deployment-grant-missing", DeathNoticeStatus::Verified);
@@ -180,16 +181,19 @@ fn a_non_issuer_cannot_revoke_the_deployment_grant() {
     let actor = fixture.authenticate_deceased();
     let scope = request_scope();
     let runtime = &fixture.world.runtime;
-    let result = runtime.revoke_program_deployment_grant(
-        &actor,
-        "specialist-p0-deployment",
-        &91764012_u64,
-        &scope,
+    let result = {
+        let actor = &actor;
+        let scope = &scope;
+        let operation=runtime.retain_program_deployment_revocation(actor,bank_domain::schema::ProgramDeploymentRevocationInput { grant_identity: ("specialist-p0-deployment").into() },*(&91764012_u64),worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions::new(),scope).unwrap_or_else(|(_, cause)| panic!("declared issuer revocation: {cause:?}"));
+        operation.advance(&runtime.request(actor, scope))
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: _original_revocation, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(denial)) } = result else { panic!("recorded issuer permission must refuse before effect") };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            WorthQueryOperationAuthorizationRefusalKind::PermissionDenied
+        )
     );
-    match result {
-        Err(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(denial)) => assert_eq!(denial.kind(), WorthQueryOperationAuthorizationDenialKind::Refused(WorthQueryOperationAuthorizationRefusalKind::PermissionDenied)),
-        other => panic!("Query's recorded issuer policy must refuse before effects: {other:?}"),
-    }
     let issuer = fixture.authenticate_specialist();
     let target = runtime
         .supported_program_revision::<BankApplicationP1>()

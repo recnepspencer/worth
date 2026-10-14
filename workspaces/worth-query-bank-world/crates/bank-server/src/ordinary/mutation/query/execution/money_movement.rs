@@ -1,6 +1,5 @@
 use bank_domain::schema::{
-    Account, ApplyOpeningFundingOperation, DepositOperation, Institution, ReverseJournalOperation,
-    SendMoneyOperation, WithdrawOperation,
+    Account, DepositOperation, Institution, SendMoneyOperation, WithdrawOperation,
 };
 
 use super::super::mutations;
@@ -31,11 +30,6 @@ macro_rules! execute_program_mutation {
     };
 }
 
-execute_program_mutation!(
-    mutations::OpeningFundingMutation,
-    ApplyOpeningFundingOperation,
-    Institution
-);
 execute_program_mutation!(mutations::DepositMutation, DepositOperation, Institution);
 execute_program_mutation!(
     mutations::WithdrawalMutation,
@@ -43,8 +37,3 @@ execute_program_mutation!(
     Institution
 );
 execute_program_mutation!(mutations::SendMoneyMutation, SendMoneyOperation, Account);
-execute_program_mutation!(
-    mutations::ReverseJournalMutation,
-    ReverseJournalOperation,
-    Institution
-);

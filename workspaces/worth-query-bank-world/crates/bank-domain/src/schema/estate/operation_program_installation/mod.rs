@@ -11,11 +11,15 @@ mod retransmit_death_notice;
 
 use worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBuilder;
 
-use crate::schema::BankSchema;
+use crate::schema::{BankSchema, EstateCaseIdentityField, ViewRestrictedEstateOperation};
 
 pub(super) fn install(
     schema: ApplicationSchemaDeclarationBuilder<BankSchema>,
 ) -> ApplicationSchemaDeclarationBuilder<BankSchema> {
+    let schema = schema.operation_read_field(
+        ViewRestrictedEstateOperation::reference(),
+        EstateCaseIdentityField::reference(),
+    );
     let schema = lifecycle::install(schema);
     let schema = freeze_account::install(schema);
     let schema = delegation::install(schema);

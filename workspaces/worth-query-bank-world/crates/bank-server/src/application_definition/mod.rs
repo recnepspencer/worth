@@ -1,5 +1,7 @@
 mod account_actions;
 mod composition;
+mod deployment_actions;
+mod estate_actions;
 mod governance_actions;
 mod money_actions;
 mod payment_actions;
@@ -19,3 +21,6 @@ pub use workflows::{
 
 pub use account_actions::*;
 pub use payment_actions::*;
+
+pub use deployment_actions::*;
+pub use estate_actions::*;

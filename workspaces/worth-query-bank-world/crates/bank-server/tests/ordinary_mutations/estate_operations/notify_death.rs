@@ -4,10 +4,7 @@ pub(super) mod fixture;
 use bank_domain::{
     estate::DeathNoticeStatus, model::BankPrincipalId, proposals::BankIdempotencyKey,
 };
-use bank_server::{
-    queries, BankDeathNotificationProjectionDenial, BankEstateProgressionDenial,
-    BankMutationCommitOutcome, BankReadControls,
-};
+use bank_server::{queries, BankDeathNotificationProjectionDenial, BankReadControls};
 
 use self::fixture::{notification_world, NotificationFixture};
 use crate::support::request_scope;
@@ -17,20 +14,43 @@ fn public_query_observes_one_committed_notification_request() {
     let fixture = notification_world("notify-death-commit", DeathNoticeStatus::Reported);
     let specialist = fixture.authenticate_specialist();
     let key = BankIdempotencyKey::new("notify-death-program-entry").unwrap();
-    let outcome = fixture
-        .world
-        .runtime
-        .notify_estate_death_with_key(
-            &specialist,
+    let outcome = {
+        let source_actor = &specialist;
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent = bank_domain::schema::NotifyEstateDeath::try_from(
             fixture.action(fixture.notice, fixture.deceased),
-            &key,
-            &request_scope(),
         )
-        .expect("the exact reported notice should commit one notification request");
-
-    let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-        panic!("the exact death notification must commit: {outcome:?}");
+        .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::notify_estate_death(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            source_completed,
+        ) = source_operation.advance(&source_request)
+        else {
+            panic!("native source completion required")
+        };
+        assert!(matches!(
+            source_completed.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        let closed_source = source_completed
+            .close_with_evidence(&source_request)
+            .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+        bank_server::BankCommitReceipt::from_closed_source(closed_source)
     };
+
+    let receipt = outcome;
     assert_eq!(
         receipt.changed_record_count(),
         3,
@@ -50,65 +70,115 @@ fn public_query_observes_one_committed_notification_request() {
         DeathNoticeStatus::NotificationRequested
     );
 
-    let retry = fixture
-        .world
-        .runtime
-        .notify_estate_death_with_key(
-            &specialist,
+    let retry = {
+        let source_actor = &specialist;
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent = bank_domain::schema::NotifyEstateDeath::try_from(
             fixture.action(fixture.notice, fixture.deceased),
-            &key,
-            &request_scope(),
         )
-        .expect("equivalent retry should recover before poststate inspection");
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
-        panic!("equivalent notification retry must recover: {retry:?}");
+        .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::notify_estate_death(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            source_completed,
+        ) = source_operation.advance(&source_request)
+        else {
+            panic!("native source completion required")
+        };
+        assert!(matches!(
+            source_completed.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+        ));
+        let closed_source = source_completed
+            .close_with_evidence(&source_request)
+            .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+        bank_server::BankCommitReceipt::from_closed_source(closed_source)
     };
+    let recovered = retry;
     assert_eq!(receipt.aftermath(), recovered.aftermath());
     assert!(recovered.co_committed_dispatch_outbox());
     assert_eq!(recovered.emitted_effect_count(), 1);
     assert_admission_derives_the_request_identities_once(recovered.canonical_work());
 
-    let drift = fixture
-        .world
-        .runtime
-        .notify_estate_death_with_key(
-            &specialist,
+    let _drift = {
+        let source_actor = &specialist;
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent = bank_domain::schema::NotifyEstateDeath::try_from(
             fixture.action(fixture.foreign_notice, fixture.deceased),
-            &key,
-            &request_scope(),
         )
-        .expect_err("the same key with a different input must retain typed drift");
-    assert!(matches!(
-        drift,
-        BankEstateProgressionDenial::IdempotencyIntentDrift
-    ));
+        .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::notify_estate_death(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
+            source_terminal,
+        ) = source_operation.advance(&source_request)
+        else {
+            panic!("exact keyed intent drift is terminal")
+        };
+        assert!(matches!(source_terminal.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)));
+        source_terminal
+            .close(&source_request)
+            .unwrap_or_else(|(_, cause)| panic!("lawful drift close: {cause:?}"))
+    };
 }
 
 #[test]
 fn command_authority_cannot_substitute_a_foreign_notice_or_subject() {
     let fixture = notification_world("notify-death-hostile-input", DeathNoticeStatus::Reported);
-    let foreign = notify(
+    let (_foreign_source, foreign) = {
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = notify(
         &fixture,
         fixture.foreign_notice,
         fixture.foreign_deceased,
         91,
-    )
-    .expect_err("an unrelated real notice must fail exact estate projection");
+    ) else { panic!("native pre-effect refusal") };
+        (
+            original_source,
+            cause
+                .downcast::<bank_server::BankDeathNotificationProjectionDenial>()
+                .expect("native projection cause"),
+        )
+    };
     assert!(matches!(
         foreign,
-        BankEstateProgressionDenial::DeathNotificationProjection(
-            BankDeathNotificationProjectionDenial::NoticeMismatch
-        )
+        BankDeathNotificationProjectionDenial::NoticeMismatch
     ));
     assert_eq!(notice_status(&fixture), DeathNoticeStatus::Reported);
 
-    let wrong_subject = notify(&fixture, fixture.notice, fixture.other_subject, 92)
-        .expect_err("another real principal must not replace the notice subject");
+    let (_wrong_subject_source, wrong_subject) = {
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = notify(&fixture, fixture.notice, fixture.other_subject, 92) else { panic!("native pre-effect refusal") };
+        (
+            original_source,
+            cause
+                .downcast::<bank_server::BankDeathNotificationProjectionDenial>()
+                .expect("native projection cause"),
+        )
+    };
     assert!(matches!(
         wrong_subject,
-        BankEstateProgressionDenial::DeathNotificationProjection(
-            BankDeathNotificationProjectionDenial::NoticeSubjectMismatch
-        )
+        BankDeathNotificationProjectionDenial::NoticeSubjectMismatch
     ));
     assert_eq!(notice_status(&fixture), DeathNoticeStatus::Reported);
 }
@@ -125,18 +195,23 @@ fn only_reported_notices_may_request_notification_causality() {
     .enumerate()
     {
         let fixture = notification_world(&format!("notify-death-{status:?}"), status);
-        let denial = notify(
+        let (_denial_source, denial) = {
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: original_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = notify(
             &fixture,
             fixture.notice,
             fixture.deceased,
             101 + ordinal as u8,
-        )
-        .expect_err("non-reported posture must not emit another request");
+        ) else { panic!("native pre-effect refusal") };
+            (
+                original_source,
+                cause
+                    .downcast::<bank_server::BankDeathNotificationProjectionDenial>()
+                    .expect("native projection cause"),
+            )
+        };
         assert!(matches!(
             denial,
-            BankEstateProgressionDenial::DeathNotificationProjection(
-                BankDeathNotificationProjectionDenial::NoticeNotReported
-            )
+            BankDeathNotificationProjectionDenial::NoticeNotReported
         ));
         let public_debug = format!("{denial:?}");
         if let Some(first) = &first_public_debug {
@@ -153,14 +228,51 @@ fn notify(
     notice: bank_domain::estate::DeathNoticeId,
     subject: BankPrincipalId,
     identity: u8,
-) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
+) -> worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
+    worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
+        bank_domain::schema::BankSchema,
+        bank_domain::schema::NotifyEstateDeath,
+        bank_server::BankApplication,
+        bank_server::DeathNotificationAction,
+        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+    >,
+    worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
+        bank_domain::schema::BankSchema,
+        bank_domain::schema::NotifyEstateDeath,
+        bank_server::BankApplication,
+        bank_server::DeathNotificationAction,
+        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+    >,
+    worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
+        bank_domain::schema::BankSchema,
+        bank_domain::schema::NotifyEstateDeath,
+        bank_server::BankApplication,
+        bank_server::DeathNotificationAction,
+        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+    >,
+> {
     let key = idempotency(identity);
-    fixture.world.runtime.notify_estate_death_with_key(
-        &fixture.authenticate_specialist(),
-        fixture.action(notice, subject),
-        &key,
-        &request_scope(),
-    )
+    {
+        let source_actor = &fixture.authenticate_specialist();
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent =
+            bank_domain::schema::NotifyEstateDeath::try_from(fixture.action(notice, subject))
+                .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::notify_estate_death(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+        source_operation.advance(&source_request)
+    }
 }
 
 fn notice_status(fixture: &NotificationFixture) -> DeathNoticeStatus {
@@ -184,19 +296,16 @@ fn idempotency(identity: u8) -> BankIdempotencyKey {
 fn assert_admission_derives_the_request_identities_once(
     phases: bank_server::BankCommitCanonicalWorkPhases,
 ) {
-    // Admission derives the request's two identities once each, streamed into
-    // their hashes with no basis sequence: the governed input (104 encoded
-    // bytes + 67 framing, 3 blocks) and the key `notify-death-program-entry` (48
-    // encoded bytes + 85 framing, ceil((133 + 9) / 64) = 3 blocks). A
-    // replayed retry is admitted the same way and reports the same work. Every
-    // other phase performs no canonical work.
+    // Binding-selected capability admission governs its input as well as the mutation
+    // input/key identities. All three native derivations are included here; later
+    // publication and domain recovery do not rebuild these identities.
     let admission = phases.admission();
     assert_eq!(admission.basis_preparations(), 0);
-    assert_eq!(admission.digest_derivations(), 2);
-    assert_eq!(admission.canonical_entries(), 2);
-    assert_eq!(admission.canonical_encoded_bytes(), 152);
-    assert_eq!(admission.sha256_input_bytes(), 304);
-    assert_eq!(admission.sha256_compression_blocks(), 6);
+    assert_eq!(admission.digest_derivations(), 3);
+    assert_eq!(admission.canonical_entries(), 3);
+    assert_eq!(admission.canonical_encoded_bytes(), 256);
+    assert_eq!(admission.sha256_input_bytes(), 475);
+    assert_eq!(admission.sha256_compression_blocks(), 9);
     assert_eq!(admission.digest_text_materializations(), 0);
     for work in [
         phases.installation(),

@@ -22,6 +22,35 @@ impl GenerationCatalog {
         let scopes = count
             .checked_mul(2)
             .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
+        Self::quote_batch(generations, scopes, prepare)?;
+        // The guard and all preparations above remain in the same write lock.
+        // Once one edit begins, this batch has no remaining fallible step.
+        prepare(0, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
+        for generation in generations {
+            self.publish(generation.clone());
+        }
+        Ok(())
+    }
+    /// A prepared candidate may wait while other branches grow the catalog.
+    /// Charge the existing native representational descent bound before commit;
+    /// eventual installation cannot acquire a new payer or exceed this geometry.
+    pub(in crate::runtime::state::subsystems::indexing) fn prepare_deferred_batch<Stop>(
+        generations: &[DerivedIndexGeneration],
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
+        Self::quote_batch(
+            generations,
+            crate::indexes::data::SelectedIndexReadWork::MAXIMUM_ORDERED_CONTAINER_ENTRIES,
+            prepare,
+        )?;
+        prepare(0, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)
+    }
+
+    fn quote_batch<Stop>(
+        generations: &[DerivedIndexGeneration],
+        scopes: usize,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<(), SelectedIndexGenerationAdmissionStop<Stop>> {
         let levels = usize::BITS - scopes.leading_zeros();
         let node_bytes = size_of::<((DerivedIndexId, Option<BranchId>), GenerationScope)>()
             .checked_mul(11)
@@ -60,12 +89,6 @@ impl GenerationCatalog {
                 .ok_or(SelectedIndexGenerationAdmissionStop::AccountingOverflow)?;
             prepare(visits, bytes as u64)
                 .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        }
-        // The guard and all preparations above remain in the same write lock.
-        // Once one edit begins, this batch has no remaining fallible step.
-        prepare(0, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        for generation in generations {
-            self.publish(generation.clone());
         }
         Ok(())
     }

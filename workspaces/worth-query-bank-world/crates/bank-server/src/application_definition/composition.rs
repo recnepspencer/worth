@@ -59,7 +59,7 @@ fn bank_feature_specs_with_optional_effects(
 
     let estate = ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>();
     let estate = if include_estate_notification {
-        estate.mutation::<NotifyEstateDeathMutationBinding>()
+        estate.operation_action::<NotifyEstateDeathMutationBinding, super::estate_actions::DeathNotificationDelivery>()
     } else {
         estate
     };
@@ -81,7 +81,7 @@ fn bank_feature_specs_with_optional_effects(
     };
     vec![
         ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
-            .mutation::<ProgramDeploymentRevocationBinding>()
+            .operation_action::<ProgramDeploymentRevocationBinding, super::deployment_actions::ProgramDeploymentRevocationDelivery>()
             .operation_action::<CreatePersonalAccountMutationBinding, super::account_actions::PersonalAccountCreationDelivery>()
             .operation_action::<CreateBusinessAccountMutationBinding, super::account_actions::BusinessAccountCreationDelivery>()
             .operation_action::<GrantAccountAccessMutationBinding, super::account_actions::AccountAccessGrantDelivery>()
@@ -92,12 +92,12 @@ fn bank_feature_specs_with_optional_effects(
             .operation_action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>()
             .finish(),
         estate
-            .mutation::<FreezeEstateAccountMutationBinding>()
-            .mutation::<OpenEstateCaseMutationBinding>()
-            .mutation::<RecognizeEstateExecutorMutationBinding>()
-            .mutation::<ReleaseEstateMutationBinding>()
-            .mutation::<DisburseEstateMutationBinding>()
-            .mutation::<RetransmitEstateDeathNoticeMutationBinding>()
+            .operation_action::<FreezeEstateAccountMutationBinding, super::estate_actions::EstateAccountFreezeDelivery>()
+            .operation_action::<OpenEstateCaseMutationBinding, super::estate_actions::EstateCaseOpeningDelivery>()
+            .operation_action::<RecognizeEstateExecutorMutationBinding, super::estate_actions::ExecutorRecognitionDelivery>()
+            .operation_action::<ReleaseEstateMutationBinding, super::estate_actions::EstateReleaseDelivery>()
+            .operation_action::<DisburseEstateMutationBinding, super::estate_actions::EstateDisbursementDelivery>()
+            .operation_action::<RetransmitEstateDeathNoticeMutationBinding, super::estate_actions::DeathNoticeRetransmissionDelivery>()
             .operation::<RequestEstateEmergencyAccessOperation>()
             .operation::<ApproveEstateEmergencyAccessOperation>()
             .operation::<RevokeEstateEmergencyAccessOperation>()

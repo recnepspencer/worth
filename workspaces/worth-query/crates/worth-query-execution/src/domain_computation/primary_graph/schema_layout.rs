@@ -11,6 +11,7 @@ use worth_relational::facade::schema::RelationalSchemaRegistry;
 use super::WorthQueryPrimaryGraphInstallationDenial;
 
 mod application_layout_lowering;
+mod authorization_selectors;
 mod capability_grant_join;
 mod continuation_ordering;
 mod equality_fields;
@@ -65,6 +66,7 @@ pub(in crate::domain_computation::primary_graph) use registry_lowering::{
 #[derive(Debug)]
 pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     principal_bindings: BTreeMap<String, WorthQueryPrimaryPrincipalBindingLayout>,
+    authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
     entity_kinds: BTreeMap<String, KindId>,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     application_entity_kinds: BTreeSet<KindId>,
@@ -203,6 +205,8 @@ impl WorthQueryPrimaryGraphLayout {
         let capability_grant_joins =
             lower_capability_grant_joins(schema, &entity_kinds, &relation_layouts)?;
         let fields = lower_fields(schema, &entity_kinds)?;
+        let authorization_selectors =
+            authorization_selectors::WorthQueryAuthorizationSelectors::lower(schema);
         let unique_fields = unique_fields::WorthQueryUniqueFieldNames::lower(&fields);
         let equality_field_keys =
             field_capability_keys(fields.values().filter(|layout| layout.equality_queryable));
@@ -211,6 +215,7 @@ impl WorthQueryPrimaryGraphLayout {
         Ok((
             Self {
                 principal_bindings,
+                authorization_selectors,
                 entity_kinds,
                 relation_kinds: relation_layouts,
                 application_entity_kinds,
@@ -232,29 +237,6 @@ impl WorthQueryPrimaryGraphLayout {
             },
             registry,
         ))
-    }
-
-    pub(in crate::domain_computation) fn principal_binding(
-        &self,
-        name: &str,
-    ) -> Option<&WorthQueryPrimaryPrincipalBindingLayout> {
-        self.principal_bindings.get(name)
-    }
-
-    pub(super) fn principal_bindings(
-        &self,
-    ) -> impl Iterator<Item = (&str, &WorthQueryPrimaryPrincipalBindingLayout)> {
-        self.principal_bindings
-            .iter()
-            .map(|(name, layout)| (name.as_str(), layout))
-    }
-
-    pub(super) fn principal_bindings_mut(
-        &mut self,
-    ) -> impl Iterator<Item = (&str, &mut WorthQueryPrimaryPrincipalBindingLayout)> {
-        self.principal_bindings
-            .iter_mut()
-            .map(|(name, layout)| (name.as_str(), layout))
     }
 
     pub(in crate::domain_computation) fn entity_kind(&self, entity: &str) -> Option<KindId> {

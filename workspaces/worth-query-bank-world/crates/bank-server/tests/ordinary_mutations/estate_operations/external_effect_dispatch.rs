@@ -27,7 +27,7 @@ use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::{
     LedgerStatus, RailCorrelation, RailProcessHandle, RailProtocolSupportProfile,
 };
-use bank_server::{queries, BankCommitReceipt, BankMutationCommitOutcome, BankReadControls};
+use bank_server::{queries, BankCommitReceipt, BankReadControls};
 use worth_query_host::facade::publication::application_aftermath::{
     WorthQueryPublishedExternalEffectFailure, WorthQueryPublishedExternalEffectPostureKind,
     WorthQueryPublishedUnsupportedProtocolVersionPosture,
@@ -253,68 +253,64 @@ fn late_reconciliation_observes_rail_completion_without_dispatching_again() {
     );
 }
 
-#[test]
-fn a_duplicate_acknowledgement_never_advances_the_posture_twice() {
-    let world = dispatch_world("duplicate-acknowledgement");
-    world
-        .transport
-        .under(FaultScript::DuplicateAcknowledgement, PATIENT);
-    let binding = idempotency(45);
-    let receipt = world.commit_with(binding.clone());
-    let posture = receipt
-        .external_dispatch_posture()
-        .expect("the declared effect must be dispatched");
-    assert_eq!(
-        posture.failure(),
-        Some(WorthQueryPublishedExternalEffectFailure::DuplicatedAcknowledgement)
-    );
-
-    let retry = world.notify(binding);
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
-        panic!("an equivalent retry must recover the commit: {retry:?}");
-    };
-    publication_assertions::assert_recovered_commit_axes(&receipt, &recovered);
-    assert!(
-        recovered.external_dispatch_posture().is_none(),
-        "a recovered commit re-runs no dispatch and invents no posture"
-    );
-    assert_eq!(
-        world.transport.attempts().len(),
-        1,
-        "the second acknowledgement must not become a second dispatch"
-    );
-    assert_eq!(
-        world.transport.ledger_status(&rail_correlation(&world)),
-        LedgerStatus::Acknowledged,
-        "the rail never completed this attempt"
-    );
-}
-
 impl DispatchWorld {
     fn commit_notification(&self, identity: u8) -> BankCommitReceipt {
         self.commit_with(idempotency(identity))
     }
 
     fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
-        let outcome = self.notify(binding);
-        let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-            panic!("the exact reported notice must commit: {outcome:?}");
-        };
+        let (receipt, fresh) = self.notify(binding);
+        assert!(fresh, "native fresh completion");
         receipt
     }
 
-    fn notify(&self, binding: BankIdempotencyKey) -> BankMutationCommitOutcome {
-        self.fixture
-            .world
-            .runtime
-            .notify_estate_death_with_key(
-                &self.fixture.authenticate_specialist(),
+    fn notify(&self, binding: BankIdempotencyKey) -> (BankCommitReceipt, bool) {
+        {
+            let source_actor = &self.fixture.authenticate_specialist();
+            let source_scope = &request_scope();
+            let source_key = &binding;
+            let source_intent = bank_domain::schema::NotifyEstateDeath::try_from(
                 self.fixture
                     .action(self.fixture.notice, self.fixture.deceased),
-                &binding,
-                &request_scope(),
             )
-            .expect("the lawful death notification should reach commit")
+            .expect("typed estate command preserves the exact variant");
+            let source_request = self
+                .fixture
+                .world
+                .runtime
+                .request(source_actor, source_scope);
+            let source_operation = self
+                .fixture
+                .world
+                .runtime
+                .mutate(bank_server::mutations::notify_estate_death(source_intent))
+                .as_principal(source_actor)
+                .controls(bank_server::BankMutationControls::new(
+                    (*source_scope).clone(),
+                    (*source_key).clone(),
+                ))
+                .retain_operation()
+                .unwrap_or_else(|(_, cause)| {
+                    panic!("exact declared estate construction: {cause:?}")
+                });
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+                source_completed,
+            ) = source_operation.advance(&source_request)
+            else {
+                panic!("native source completion required")
+            };
+            let fresh = matches!(
+                source_completed.evidence(),
+                worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+            );
+            let closed_source = source_completed
+                .close_with_evidence(&source_request)
+                .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+            (
+                bank_server::BankCommitReceipt::from_closed_source(closed_source),
+                fresh,
+            )
+        }
     }
 
     fn notice_status(&self) -> DeathNoticeStatus {
@@ -378,3 +374,6 @@ fn rail_correlation(world: &DispatchWorld) -> RailCorrelation {
 fn idempotency(identity: u8) -> BankIdempotencyKey {
     BankIdempotencyKey::new(format!("external-notification-{identity}")).unwrap()
 }
+
+#[path = "external_effect_dispatch/duplicate_acknowledgement.rs"]
+mod duplicate_acknowledgement;
