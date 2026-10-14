@@ -320,3 +320,6 @@ mod deployment_authorization;
 
 #[cfg(test)]
 mod fixed_replay;
+
+#[cfg(test)]
+mod fixed_missing_carrier;

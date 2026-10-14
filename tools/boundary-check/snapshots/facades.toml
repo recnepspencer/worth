@@ -804,6 +804,8 @@ exports = [
     "WorthQueryPublicationFaultGuardForTest",
     "WorthQueryPublicationFaultRegistrationDenial",
     "WorthQueryReconstructedOutputEntity",
+    "WorthQueryRecoveredProgramSourceDeliveryDenialForTest",
+    "WorthQueryRecoveredProgramSourceDeliveryForTest",
     "WorthQueryRecoveryClaimStatus",
     "WorthQueryRecoveryCompensateAdmission",
     "WorthQueryRecoveryCurrentDecision",
