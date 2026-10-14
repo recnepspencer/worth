@@ -23,6 +23,7 @@ mod history_retirement;
 mod idempotency;
 mod inbound_completion;
 mod inbound_cost;
+pub(in crate::domain_computation::primary_graph) mod publication_fault_control;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::WorthQueryInboundCompletionPreparationDenial;
 pub(in crate::domain_computation::primary_graph) use inbound_completion::{
     WorthQueryCanonicalCompletionRow, WorthQueryInboundCompletionReadDenial,
@@ -115,6 +116,7 @@ pub(crate) struct WorthQueryPrimaryGraphProvider {
     pending_application_publications:
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
     fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
+    pub(in crate::domain_computation::primary_graph) publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
     world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldLifecyclePort>,
 }
 

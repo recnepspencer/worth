@@ -157,6 +157,6 @@ impl super::WorthQueryPrimaryGraphProvider {
         &self,
         fault: WorthQueryPrimaryGraphFault,
     ) -> bool {
-        self.fault_port.take(fault)
+        self.publication_fault_control.take(fault) || self.fault_port.take(fault)
     }
 }

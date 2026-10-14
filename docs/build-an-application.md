@@ -1670,11 +1670,13 @@ The executable [fixed reply-loss journey](../workspaces/worth-query/crates/worth
 checks registered recovery, real observation-pressure refusal and retry, and
 historical replay after completion through the same ordinary entrance.
 
-The shared SourceOnly admission carrier exposes phase-taking native controls
-`execute_in_advancement`, `recover_in_advancement` and
-`resolve_keyed_in_advancement` for lifecycle composition. The SourceOnly owning
-adapter and ordinary consumer cutover remain separate work; these controls do
-not manufacture an ordinary completion or retry state.
+The SourceOnly owning adapter delegates the shared native admission, recovery
+and keyed-resolution spines. Source completion uses advance with a fresh request;
+retained commit additionally requires the explicit NonZeroUsize history-work
+bound on each advance. Replay/recovery select the exact original World observation.
+A bounded history refusal retains operation and evidence for a fresh funded retry.
+See the [retained delivery guide](../workspaces/worth-query/crates/worth-query/docs/foundations/source-only-retained-delivery.md).
+Ordinary consumer cutover remains separate work.
 
 `WorthQueryOperationCleanup` retains actual pending records and release failures.
 Its phase-taking close returns a cleanup receipt, not whole-operation completion.

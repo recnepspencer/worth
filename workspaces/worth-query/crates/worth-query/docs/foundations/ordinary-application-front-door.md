@@ -664,8 +664,12 @@ meaning. Its native SourceOnly handoff borrows original request meaning for
 binding-selected conventional or capability admission, unpublished recovery and
 keyed resolution. The actual output-source inventory can refuse that lane even
 when a caller supplies no-output metadata. No root or query stands in for source
-completion. SourceOnly's owning lifecycle and consumer cutover are not yet
-complete.
+completion. Its owning retained mode requires an explicit per-attempt history
+bound and delivers the exact native original World observation after replay or
+recovery. A bounded unavailable result preserves custody for retry; it does not
+prove historical absence. See [retained delivery](source-only-retained-delivery.md).
+Capability revocation/pinned-source posture coverage and ordinary consumer
+cutover remain separate work.
 
 Shared funded cleanup owns pending record release and native cleanup failures.
 Its receipt proves that collection was released; it does not discharge a retained
