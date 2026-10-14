@@ -11,11 +11,27 @@ mod sealed {
 pub struct ApplicationNoProjection;
 /// One installed typed query projection.
 pub struct ApplicationQueryProjection<Q>(PhantomData<fn() -> Q>);
+/// One installed query binding with an exact bounded ordered selector array.
+pub struct ApplicationQueryBatchProjection<Q, const N: usize>(PhantomData<fn() -> Q>);
 impl sealed::Projection for ApplicationNoProjection {}
 impl<Q> sealed::Projection for ApplicationQueryProjection<Q> {}
+impl<Q, const N: usize> sealed::Projection for ApplicationQueryBatchProjection<Q, N> {}
 /// Sealed projection shapes contribute their actual query descriptor, if any.
 pub trait ApplicationFixedProjection<S: ApplicationSchema>: sealed::Projection + 'static {
     fn descriptor() -> Option<ApplicationQueryBindingDescriptor>;
+    fn batch_items() -> Option<usize> {
+        None
+    }
+}
+impl<S: ApplicationSchema, Q: ApplicationQueryBinding<S> + 'static, const N: usize>
+    ApplicationFixedProjection<S> for ApplicationQueryBatchProjection<Q, N>
+{
+    fn descriptor() -> Option<ApplicationQueryBindingDescriptor> {
+        Some(Q::descriptor())
+    }
+    fn batch_items() -> Option<usize> {
+        Some(N)
+    }
 }
 impl<S: ApplicationSchema> ApplicationFixedProjection<S> for ApplicationNoProjection {
     fn descriptor() -> Option<ApplicationQueryBindingDescriptor> {

@@ -57,6 +57,8 @@ macro_rules! execute {
     };
 }
 
+#[path = "ordinary_mutations/owning_deposit.rs"]
+mod owning_deposit;
 #[path = "ordinary_mutations/program_families.rs"]
 mod program_families;
 #[path = "ordinary_mutations/retained_publication.rs"]

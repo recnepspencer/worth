@@ -17,5 +17,7 @@ mod unpublished;
 #[path = "source_only/retained.rs"]
 mod retained;
 
+#[path = "source_only/capability.rs"]
+mod capability;
 #[path = "source_only/stale_retry.rs"]
 mod stale_retry;

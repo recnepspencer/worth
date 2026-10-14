@@ -27,6 +27,7 @@ where
         }
         let connection = delivery.root_connection();
         if !action.required_output_source()
+            || delivery.batch_items() == Some(0)
             || !roots.contains(&delivery.root_type())
             || connection.source_instance() != action.composition_instance()
             || connection.source_feature() != action.feature()

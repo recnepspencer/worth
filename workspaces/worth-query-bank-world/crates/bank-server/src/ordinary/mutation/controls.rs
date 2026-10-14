@@ -22,4 +22,10 @@ impl BankMutationControls {
     pub const fn idempotency_key(&self) -> &BankIdempotencyKey {
         &self.idempotency_key
     }
+
+    pub(in crate::ordinary::mutation) fn into_parts(
+        self,
+    ) -> (WorthQueryRequestScope, BankIdempotencyKey) {
+        (self.request, self.idempotency_key)
+    }
 }

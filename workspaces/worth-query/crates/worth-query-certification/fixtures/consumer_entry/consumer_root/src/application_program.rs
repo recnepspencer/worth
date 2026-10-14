@@ -28,6 +28,7 @@ pub(crate) mod action_instances;
 pub(crate) mod correspondence;
 pub(crate) mod external_input;
 mod features;
+pub(crate) mod fixed_batch;
 mod fixed_delivery;
 pub(crate) mod fixed_successors;
 pub(crate) mod no_projection;

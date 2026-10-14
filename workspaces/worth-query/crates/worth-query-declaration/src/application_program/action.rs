@@ -1,7 +1,10 @@
+mod batch_delivery;
 mod delivery;
+pub use batch_delivery::ApplicationFixedBatchDelivery;
 mod projection;
 pub use projection::{
-    ApplicationFixedProjection, ApplicationNoProjection, ApplicationQueryProjection,
+    ApplicationFixedProjection, ApplicationNoProjection, ApplicationQueryBatchProjection,
+    ApplicationQueryProjection,
 };
 mod delivery_attachment;
 mod delivery_contract;

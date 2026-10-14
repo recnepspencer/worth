@@ -1780,9 +1780,63 @@ rather than implementing another installation or authorization policy.
 
 Do not rerun the source or rebuild the descriptor to retry delivery. A caller
 cannot enlarge installed ceilings, replace the declared selector, or refresh
-closed output owners by asking for a current read. Declared bounded batches are
-not supplied by this single-query fixed delivery surface; use its one declared
-query or explicit no-projection shape.
+closed output owners by asking for a current read.
+
+For several reads with the same installed query binding, declare
+`ApplicationQueryBatchProjection<Read, N>` and implement
+`ApplicationFixedBatchDelivery<Schema, Binding, N>`. Its pure `read_inputs`
+selector borrows the original mutation input and returns an ordered array of
+exactly `N` query inputs. `N` must be positive. The binding and cardinality are
+installed canonical meaning; the concrete delivery implementation is also
+checked at construction and current delivery. Callers cannot supply another
+selector or replace the batch at read time.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+fn read_inputs(input: &SourceAdjustment) -> [OutputRead; 2] {
+    [OutputRead { body_key: input.scope_key.clone() },
+     OutputRead { body_key: format!("final:{}", input.scope_key) }]
+}
+```
+
+`settled.read_batch_current::<N>(&fresh_request)` checks every actual settlement
+and executes all items at that same authentic observation in one admitted phase.
+The installed binding and native host profile supply finite aggregate work and
+custody allowances. Each item still receives independent ordinary scope and
+disclosure authorization. The aggregate allowance covers read work and retained
+result/source custody; it does not claim to meter all authorization or
+application-authored selector work.
+
+Use `read_batch_current_with_policy::<N>` to narrow an attempt. The policy's
+`batch(native_limits)` restricts aggregate work, retained bytes and per-item result
+bytes; `query(results, work)` narrows each installed query allowance. A larger
+aggregate request cannot enlarge installed policy. No item starts another phase
+or renews the shared loan. A late refusal returns no partial collection and
+releases staged results; the settled operation and cleanup remain yours.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let policy = WorthQueryOperationDeliveryPolicy::currentness(currentness_work)
+    .batch(narrower_batch_limits);
+match settled.read_batch_current_with_policy::<2>(&fresh_request, policy) {
+    Ok(batch) => inspect_ordered_items(batch.items()),
+    Err(denial) => retain_for_fresh_authorized_retry(denial),
+}
+```
+
+The real two-output example is
+[`fixed_batch.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_batch.rs).
+It reads two distinguishable required-output values, refuses when the common
+loan cannot fund both, then retries on the same owner with fresh authority.
+Inspect each item's ordinary receipt and the collection receipt; the latter is
+accounting evidence, not combined scope or mutation authority.
+`read_batch_historical::<N>` uses the original declared selectors at the retained
+settlement basis with fresh authorization. It does not claim currentness or
+advance outputs. This batch shape is homogeneous: all items use one installed
+query binding. Scalar query and explicit no-projection delivery remain separate
+closed shapes.
 
 
 `close` funds native recovery-record release and owner cleanup. A refusal returns
