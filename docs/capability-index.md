@@ -88,6 +88,11 @@ column names the substitute that this capability makes wrong.
 
 These are real, consumer-visible limits. Each has an answer for today.
 
+The four workflow gaps below are scheduled platform work, owned by
+[Milestone 9.17.6.5](../plans/WORTH-query/milestone-9.17.6.5.md). Do not build a
+substitute while you wait: the "Do not" column is the rule until a row is
+removed. A plan describes intent, not API; use only what the facades export.
+
 | Gap | What exists today | Do not |
 |---|---|---|
 | No facade read of a workflow instance's state or history (current node, transitions, proposals, approvals) | Only the typed outcomes your own requests return: `PerformedWorkflowTransition`, `PerformedWorkflowApproval` (`approver()`), `Awaiting*`. Idempotent replay of the same key returns the recorded outcome. | Do not mirror kernel state into your schema as truth or use a status table to decide whether to advance. Advance and match the typed outcome. |

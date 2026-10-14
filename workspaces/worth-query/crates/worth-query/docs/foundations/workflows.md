@@ -871,7 +871,10 @@ operation still needs its own lane and its own key.
 
 These limits are current, consumer-visible, and verified in source. Before
 concluding something else is missing, follow the procedure in the
-[capability index](../../../../../../docs/capability-index.md).
+[capability index](../../../../../../docs/capability-index.md). Closing them is
+scheduled platform work, owned by
+[Milestone 9.17.6.5](../../../../../../plans/WORTH-query/milestone-9.17.6.5.md);
+until a row is removed, its "Do not" rule stands and no substitute may be built.
 
 | Gap | What exists today | Do not |
 |---|---|---|
