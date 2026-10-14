@@ -26,6 +26,8 @@ mod required_unpublished_hostile;
 pub(super) mod root_selection;
 pub(super) mod selected_root_selection;
 mod settlement;
+#[cfg(test)]
+mod source_inventory;
 
 pub(super) fn performed_source_settles_required_output(
     foreign: &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<

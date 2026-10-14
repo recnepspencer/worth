@@ -1,5 +1,11 @@
 //! Owning action composition delegates the native mutation and output owners.
+mod cleanup;
 mod close;
+mod mode_construction;
+mod source_admission;
+pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt};
+pub use mode_construction::WorthQueryOperationModeFactory;
+pub use source_admission::{WorthQuerySourceDeliveryMode, WorthQuerySourceOperationAdmission};
 mod construction;
 mod descriptor;
 mod fixed;

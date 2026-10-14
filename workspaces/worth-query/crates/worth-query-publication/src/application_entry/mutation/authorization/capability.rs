@@ -10,7 +10,7 @@ phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvan
 ) -> Result<PreparedMutation<Schema, IntentBinding<Schema, Intent>>, WorthQueryApplicationRequestMutationDenial>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema> + Clone,
+    Intent: ApplicationMutationIntent<Schema>,
     IntentBinding<Schema, Intent>: ApplicationCapabilityMutationBinding<Schema>,
     <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -64,7 +64,11 @@ where
             &worth_query_execution::publication_boundary::program_publication_access(),
             &principal,
             &capability,
-            identities.encoded_input(),
+            match request.operation_input {
+                Some(Ok(input)) => input.clone(),
+                Some(Err(denial)) => return Err(WorthQueryApplicationRequestMutationDenial::Identity(worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial::Input(denial.clone()))),
+                None => identities.encoded_input(),
+            },
             request.request.scope,
         )
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
@@ -73,7 +77,14 @@ where
     let admission = request
         .request
         .application
-        .authorize_capability_operation(phase, access, binding.operation(), staged.preconditions)
+        .authorize_borrowed_capability_operation(
+            phase,
+            access,
+            binding.operation(),
+            request
+                .borrowed_preconditions
+                .unwrap_or(&staged.preconditions),
+        )
         .map_err(WorthQueryApplicationRequestMutationDenial::Authorization)?;
     prepare_authorized(
         request,

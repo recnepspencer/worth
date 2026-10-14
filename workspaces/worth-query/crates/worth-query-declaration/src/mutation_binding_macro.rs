@@ -13,6 +13,7 @@ macro_rules! worth_query_mutation_binding {
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
+        $(admission $Admission:ty,)?
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
         $(workflow_requirements $workflow_requirements:expr,)?
@@ -31,6 +32,10 @@ macro_rules! worth_query_mutation_binding {
         resources retained_representation_bytes $maximum_retained_representation_bytes:expr
     ) => {
         $vis struct $Binding<$Schema>(::std::marker::PhantomData<fn() -> $Schema>);
+        impl<$Schema: $SchemaBound> $crate::facade::application_operation::ApplicationMutationAdmissionBinding<$Schema> for $Binding<$Schema> {
+            type Admission = $crate::worth_query_mutation_binding!(@admission $($Admission)?);
+        }
+
 
         impl<$Schema: $SchemaBound>
             $crate::facade::application_operation::ApplicationMutationBinding<$Schema>
@@ -118,6 +123,7 @@ macro_rules! worth_query_mutation_binding {
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
+        $(admission $Admission:ty,)?
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
         $(workflow_requirements $workflow_requirements:expr,)?
@@ -137,6 +143,7 @@ macro_rules! worth_query_mutation_binding {
             identity $identity, input $InputBinding, operation $Operation, result $ResultBinding,
             idempotency $IdempotencyKey, identity $idempotency_identity,
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
+            $(admission $Admission,)?
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
             workflow_requirements $($workflow_requirements)?,
@@ -180,6 +187,7 @@ macro_rules! worth_query_mutation_binding {
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
         decision $Decision:ty, denial $DenialBinding:path,
         handler identity $handler_identity:literal,
+        $(admission $Admission:ty,)?
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
         $(workflow_requirements $workflow_requirements:expr,)?
@@ -198,6 +206,7 @@ macro_rules! worth_query_mutation_binding {
             identity $identity, input $InputBinding, operation $Operation, result $ResultBinding,
             idempotency $IdempotencyKey, identity $idempotency_identity,
             decision $Decision, denial $DenialBinding, handler identity $handler_identity,
+            $(admission $Admission,)?
             program $($program_requirement)?,
             workflow_authority $($workflow_authority)?,
             workflow_requirements $($workflow_requirements)?,
@@ -237,6 +246,7 @@ macro_rules! worth_query_mutation_binding {
         result $ResultBinding:path,
         idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
         decision $Decision:ty, denial $DenialBinding:path, handler identity $handler_identity:literal,
+        $(admission $Admission:ty,)?
         program $($program_requirement:ident)?,
         workflow_authority $($workflow_authority:ident)?,
         workflow_requirements $($workflow_requirements:expr)?,
@@ -253,6 +263,9 @@ macro_rules! worth_query_mutation_binding {
     ) => {
         $vis struct $Binding;
 
+        impl $crate::facade::application_operation::ApplicationMutationAdmissionBinding<$Schema> for $Binding {
+            type Admission = $crate::worth_query_mutation_binding!(@admission $($Admission)?);
+        }
         impl $crate::facade::application_operation::ApplicationMutationBinding<$Schema>
             for $Binding
         {
@@ -314,6 +327,8 @@ macro_rules! worth_query_mutation_binding {
             }
         }
     };
+    (@admission $Admission:ty) => { $Admission };
+    (@admission) => { $crate::facade::application_operation::ApplicationConventionalAdmission };
     (@workflow_requirements $requirements:expr) => { Some($requirements) };
     (@workflow_requirements) => { None };
     (@program_requirement required) => { true };

@@ -61,6 +61,13 @@ pub struct WorthQueryOperationDescription<
     Intent: ApplicationMutationIntent<Schema>,
 > {
     pub(super) intent: Intent,
+    // Freeze input custody once; attempts share it without copying domain input or authority.
+    pub(super) encoded_input: Result<
+        worth_query_declaration::facade::application_operation::ApplicationEncodedInput<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::InputBinding,
+        >,
+        worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial,
+    >,
     pub(super) key: <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
     pub(super) preconditions: Conditions<Schema, Intent>,
     pub(super) source: Option<WorthQueryMutationExpectedSource<SourceQuery<Schema, Intent>>>,

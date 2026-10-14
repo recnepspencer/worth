@@ -20,8 +20,8 @@ use super::*;
 /// {
 ///     WorthQuerySettledFixedOperation {
 ///         runtime, installed_action: todo!(), description: todo!(), settlement: todo!(),
-///         initial_cause: None, recovered: None, result: None, retired_component_count: 0,
-///         cleanup: Vec::new(), action: std::marker::PhantomData,
+///         initial_cause: None, recovered: None, result: None,
+///         cleanup: todo!(), action: std::marker::PhantomData,
 ///     }
 /// }
 /// ```
@@ -43,12 +43,12 @@ where
     pub(super) initial_cause: Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
     pub(super) recovered: Option<worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryPerformed>,
     pub(super) result: Option<<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result>,
-    pub(super) retired_component_count: usize,
-    pub(super) cleanup: Vec<worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure>,
+    pub(super) cleanup: WorthQueryOperationCleanup,
     pub(super) action: std::marker::PhantomData<Action>,
 }
 
 #[derive(Debug)]
+/// Explains current delivery refusal while the settled owner retains its output and cleanup custody.
 pub enum WorthQueryOperationDeliveryDenial {
     FreshRequestMismatch,
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),

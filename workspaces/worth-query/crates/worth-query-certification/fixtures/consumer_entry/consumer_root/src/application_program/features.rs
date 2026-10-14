@@ -97,3 +97,17 @@ pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
 pub(super) fn consumer_fixed_feature_specs() -> Vec<ApplicationFeatureSpec> {
     consumer_specs_with_source(source_builder().fixed_output_action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, ConsumerFixedDelivery>().finish())
 }
+
+pub(super) fn source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
+where
+    D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >,
+{
+    consumer_specs_with_source(
+        source_builder()
+            .operation_action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, D>()
+            .finish(),
+    )
+}

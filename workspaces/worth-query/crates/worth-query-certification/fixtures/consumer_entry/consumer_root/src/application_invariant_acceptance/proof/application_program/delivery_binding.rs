@@ -17,10 +17,7 @@ impl ApplicationFixedActionDelivery<ConsumerSchema, PlanarSourceAdjustmentBindin
 {
     type Root = ConsumerProgramRoot;
     type Read = PlanarOutputReadBinding<ConsumerSchema>;
-    const IDENTITY: &'static str = <ConsumerFixedDelivery as ApplicationFixedActionDelivery<
-        ConsumerSchema,
-        PlanarSourceAdjustmentBinding<ConsumerSchema>,
-    >>::IDENTITY;
+
     fn read_input(_: &PlanarSourceAdjustment) -> PlanarOutputRead {
         PlanarOutputRead {
             body_key: "different-selector".to_owned(),
@@ -83,7 +80,7 @@ fn counterfeit_delivery_selector_refuses_and_installed_twin_constructs() {
         .expect_source(source)
         .idempotency_owned(10_063);
     let (description, denial) = match description
-        .retain_fixed::<crate::ConsumerProgram, CounterfeitAction>(&world.application)
+        .retain_operation::<crate::ConsumerProgram, CounterfeitAction>(&world.application)
     {
         Err(refusal) => refusal,
         Ok(_) => panic!("counterfeit concrete selector was accepted by the real constructor"),
@@ -96,9 +93,90 @@ fn counterfeit_delivery_selector_refuses_and_installed_twin_constructs() {
     ));
     assert_eq!(planar_source_adjustment_contacts(&input), (0, 0));
     let _valid = description
-        .retain_fixed::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, denial)| {
             panic!("returned original description admits the installed twin: {denial:?}")
         });
     assert_eq!(planar_source_adjustment_contacts(&input), (0, 0));
+}
+
+impl
+    worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    > for CounterfeitDelivery
+{
+    type Mode = worth_query_decl::facade::application_program::ApplicationFixedDeliveryMode<
+        ConsumerProgramRoot,
+        PlanarOutputReadBinding<ConsumerSchema>,
+    >;
+    const IDENTITY: &'static str = <ConsumerFixedDelivery as worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >>::IDENTITY;
+}
+
+pub struct SourceRequestedForRequired;
+impl
+    worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    > for SourceRequestedForRequired
+{
+    type Mode = worth_query_decl::facade::application_program::ApplicationSourceCompletion;
+    const IDENTITY: &'static str = <ConsumerFixedDelivery as worth_query_decl::facade::application_program::ApplicationActionDelivery<ConsumerSchema, PlanarSourceAdjustmentBinding<ConsumerSchema>>>::IDENTITY;
+}
+type SourceRequestedAction = ApplicationActionReference<
+    ConsumerSchema,
+    ApplicationRootComposition,
+    PlanarSourceFeature,
+    PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    SourceRequestedForRequired,
+>;
+#[test]
+fn common_operation_handoff_required_output_cannot_select_source_completion() {
+    let world = installation::install(&crate::installed_schema());
+    let adapter = authentication::admit(world.application.installed_schema());
+    let scope = authentication::request_scope();
+    let principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &scope,
+    ))
+    .unwrap();
+    let request = world.application.request(&principal, &scope);
+    let input = PlanarSourceAdjustment {
+        scope_key: "anchor-a".to_owned(),
+        replacement_y: length(2),
+    };
+    reset_planar_source_adjustment_contacts(&input);
+    let source = request
+        .query(PlanarRead {
+            body_key: "anchor-a".to_owned(),
+        })
+        .execute()
+        .unwrap()
+        .observed_sources()[0]
+        .clone();
+    let description = request
+        .mutate(input.clone())
+        .expect_source(source)
+        .idempotency_owned(10_064);
+    let (description, denial) = match description
+        .retain_operation::<crate::ConsumerProgram, SourceRequestedAction>(&world.application)
+    {
+        Err(refusal) => refusal,
+        Ok(_) => panic!("required output cannot be replaced by source completion"),
+    };
+    assert!(matches!(
+        denial,
+        WorthQueryOperationConstructionDenial::Action(
+            worth_query_host::facade::domain::WorthQueryActionResolutionDenial::DeliveryMismatch
+        )
+    ));
+    assert_eq!(planar_source_adjustment_contacts(&input), (0, 0));
+    let _fixed = description
+        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+        .unwrap_or_else(|(_, denial)| {
+            panic!("returned original description preserves fixed delivery: {denial:?}")
+        });
 }

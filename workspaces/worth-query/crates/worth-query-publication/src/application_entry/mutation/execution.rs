@@ -212,7 +212,7 @@ where
         ))
     }
 
-    pub(super) fn execute_with_preparation_and_commit(
+    pub(in crate::application_entry) fn execute_with_preparation_and_commit(
         self,
         phase: &AdvancementPhase<'_>,
         prepare: impl FnOnce(

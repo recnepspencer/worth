@@ -17,14 +17,15 @@ use crate::application_schema::{ApplicationStructuredValueBinding, ApplicationVa
 ///
 /// `canonical_work` is the derivation work this carrier still has to report:
 /// the encoding it performed, or none when the request's
-/// `ApplicationMutationIdentities` already report it. A clone carries the same
+/// `ApplicationMutationIdentities` already report it. Input custody is immutable and shared.
+/// A clone carries the same
 /// work, because only one of two admissions of one request ever reaches a
 /// receipt.
 pub struct ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
 {
-    input: InputBinding::Value,
+    input: std::sync::Arc<InputBinding::Value>,
     identity: [u8; 32],
     work: ApplicationCanonicalWork,
 }
@@ -44,7 +45,7 @@ where
     pub fn encode(input: InputBinding::Value) -> Result<Self, ApplicationValueEncodeDenial> {
         let derived = input_identity::<InputBinding>(&input)?;
         Ok(Self {
-            input,
+            input: std::sync::Arc::new(input),
             identity: derived.identity(),
             work: derived.work(),
         })
@@ -55,17 +56,17 @@ impl<InputBinding> ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
 {
-    pub(super) const fn reported_elsewhere(input: InputBinding::Value, identity: [u8; 32]) -> Self {
+    pub(super) fn reported_elsewhere(input: InputBinding::Value, identity: [u8; 32]) -> Self {
         Self {
-            input,
+            input: std::sync::Arc::new(input),
             identity,
             work: ApplicationCanonicalWork::none(),
         }
     }
 
     /// The input the identity was encoded from.
-    pub const fn input(&self) -> &InputBinding::Value {
-        &self.input
+    pub fn input(&self) -> &InputBinding::Value {
+        self.input.as_ref()
     }
 
     /// Identity of the input, scoped to its input type.
@@ -78,8 +79,8 @@ where
         self.work
     }
 
-    /// The input, giving up its identity.
-    pub fn into_input(self) -> InputBinding::Value {
+    /// Gives native admission shared immutable custody of the encoded input.
+    pub fn into_shared_input(self) -> std::sync::Arc<InputBinding::Value> {
         self.input
     }
 }
@@ -87,11 +88,10 @@ where
 impl<InputBinding> Clone for ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
-    InputBinding::Value: Clone,
 {
     fn clone(&self) -> Self {
         Self {
-            input: self.input.clone(),
+            input: std::sync::Arc::clone(&self.input),
             identity: self.identity,
             work: self.work,
         }

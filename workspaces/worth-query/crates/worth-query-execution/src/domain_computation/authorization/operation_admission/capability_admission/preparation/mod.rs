@@ -51,7 +51,7 @@ impl<InputBinding> CapabilityAdmissionInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
 {
-    const fn value(&self) -> &InputBinding::Value {
+    fn value(&self) -> &InputBinding::Value {
         match self {
             Self::Derive(input) => input,
             Self::Encoded(encoded) => encoded.input(),
@@ -105,7 +105,7 @@ pub(super) struct PreparedCapabilityAdmission<
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     approved: Option<&'a WorthQueryApprovedElevation>,
-    input: Input,
+    input: std::sync::Arc<Input>,
     request_scope: WorthQueryRequestScope,
     installed: &'a WorthQueryInstalledCapabilityPlan,
     projection: ApplicationCapabilityRequestProjection<
@@ -235,7 +235,7 @@ where
         preflight::govern_input::<Schema, Capability, Operation, Input>(input, capability)?;
     let governed_input_identity = *governed_input.identity();
     let governed_input_work = governed_input.canonical_work();
-    let input = governed_input.into_input();
+    let input = governed_input.into_shared_input();
     let sample = preflight::sample_trusted_time(runtime, capability, installed)?;
     let operation_admission_identity = preflight::mint_operation_admission(capability)?;
     let graph_work = preflight::start_graph_work(

@@ -13,6 +13,15 @@ where
             continue;
         };
         require_identity(delivery.identity())?;
+        let Some(delivery) = delivery.fixed_output() else {
+            if action.required_output_source() {
+                return Err(denial(
+                    ApplicationProgramValidationDenialKind::InvalidActionDelivery,
+                    action.binding(),
+                ));
+            }
+            continue;
+        };
         require_identity(delivery.read().identity())?;
         let connection = delivery.root_connection();
         if !action.required_output_source()

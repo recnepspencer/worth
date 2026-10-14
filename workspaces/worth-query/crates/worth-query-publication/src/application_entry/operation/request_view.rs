@@ -45,6 +45,7 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
         let mut native = native.idempotency(&self.key);
         native.compiled_action = Some(installed_action);
         native.borrowed_preconditions = Some(&self.preconditions);
+        native.operation_input = Some(&self.encoded_input);
         native
     }
 }

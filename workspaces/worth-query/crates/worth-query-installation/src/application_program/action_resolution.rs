@@ -12,6 +12,22 @@ pub enum WorthQueryActionResolutionDenial {
 }
 
 impl<Schema: ApplicationSchema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
+    pub fn resolve_action<Binding, Action>(
+        &self,
+    ) -> Result<
+        &worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
+        WorthQueryActionResolutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Action: worth_query_declaration::facade::application_program::ApplicationAction<
+            Schema,
+            Binding,
+        >,
+    {
+        self.action_inventory()
+            .resolve_action::<Schema, Binding, Action>()
+    }
     pub fn resolve_fixed_action<Binding, Action>(
         &self,
     ) -> Result<
@@ -42,6 +58,19 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
     }
 }
 impl<'installed> WorthQueryInstalledActionInventory<'installed> {
+    /// Resolve the typed occurrence and delivery; retain the complete installed
+    /// declaration, including correspondence/provider meaning, for later comparison.
+    pub fn resolve_action<Schema, Binding, Action>(&self) -> Result<&'installed worth_query_declaration::facade::application_program::ApplicationActionDeclaration, WorthQueryActionResolutionDenial>
+    where Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>, Action: worth_query_declaration::facade::application_program::ApplicationAction<Schema, Binding>{
+        let declared = Action::declaration();
+        let actual = self.resolve_occurrence::<Schema, Binding>(&declared)?;
+        if actual.delivery() != declared.delivery()
+            || actual.required_output_source() != declared.required_output_source()
+        {
+            return Err(WorthQueryActionResolutionDenial::DeliveryMismatch);
+        }
+        Ok(actual)
+    }
     pub fn resolve_fixed_action<Schema, Binding, Action>(
         &self,
     ) -> Result<

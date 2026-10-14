@@ -44,3 +44,28 @@ impl<
         action
     }
 }
+
+/// References one declared action occurrence and its concrete delivery implementation.
+pub trait ApplicationAction<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>:
+    sealed::Action + 'static
+{
+    type Delivery: super::ApplicationActionDelivery<Schema, Binding>;
+    fn declaration() -> ApplicationActionDeclaration;
+}
+impl<Schema, Instance, Feature, Binding, Delivery> ApplicationAction<Schema, Binding>
+    for ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>
+where
+    Schema: ApplicationSchema,
+    Instance: ApplicationCompositionInstance,
+    Feature: ApplicationFeature<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
+    Delivery: super::ApplicationActionDelivery<Schema, Binding>,
+{
+    type Delivery = Delivery;
+    fn declaration() -> ApplicationActionDeclaration {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.attach_delivery::<Schema, Binding, Delivery>();
+        action
+    }
+}

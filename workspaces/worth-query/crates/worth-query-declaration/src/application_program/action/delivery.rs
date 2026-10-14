@@ -10,20 +10,24 @@ use std::any::TypeId;
 
 /// The installed declaration binds this concrete implementation in the running process.
 /// `IDENTITY` supplies stable canonical meaning; it does not admit another selector type.
-pub trait ApplicationFixedActionDelivery<Schema, Binding>: 'static
+pub trait ApplicationFixedActionDelivery<Schema, Binding>:
+    super::ApplicationActionDelivery<
+    Schema,
+    Binding,
+    Mode = super::ApplicationFixedDeliveryMode<Self::Root, Self::Read>,
+>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
     type Root: ApplicationOutputGraphShape<Schema> + ApplicationFixedOutputRoot;
     type Read: ApplicationQueryBinding<Schema>;
-    const IDENTITY: &'static str;
     fn read_input(input: &Binding::Input)
         -> <Self::Read as ApplicationQueryBinding<Schema>>::Input;
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ApplicationActionDeliveryDeclaration {
+pub struct ApplicationFixedActionDeliveryDeclaration {
     identity: &'static str,
     // Runtime-only binding, like the root stamp; never part of canonical encoding.
     implementation: TypeId,
@@ -32,7 +36,7 @@ pub struct ApplicationActionDeliveryDeclaration {
     root_connections: Box<[super::super::ApplicationConnectionDeclaration]>,
     read: crate::application_query::ApplicationQueryBindingDescriptor,
 }
-impl ApplicationActionDeliveryDeclaration {
+impl ApplicationFixedActionDeliveryDeclaration {
     pub fn fixed<Schema, Binding, Delivery>() -> Self
     where
         Schema: ApplicationSchema,
@@ -43,7 +47,7 @@ impl ApplicationActionDeliveryDeclaration {
             <Delivery::Root as super::super::ApplicationProgramOutputShape<Schema>>::connections();
         Self {
             root_connections: root_connections.into_boxed_slice(),
-            identity: Delivery::IDENTITY,
+            identity: <Delivery as super::ApplicationActionDelivery<Schema, Binding>>::IDENTITY,
             implementation: TypeId::of::<Delivery>(),
             root: TypeId::of::<Delivery::Root>(),
             root_connection:

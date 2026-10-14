@@ -2,6 +2,8 @@
 use super::descriptor::WorthQueryOperationDescription;
 use super::*;
 
+/// Owns the original fixed-output description and native source, output and cleanup custody.
+/// Each advancement borrows fresh request authority; refusals return the owning operation.
 pub struct WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema,
@@ -20,7 +22,7 @@ where
     pub(super) initial_cause: Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
     pub(super) recovered: Option<worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryPerformed>,
     pub(super) result: Option<<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result>,
-    pub(super) cleanup: Vec<worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure>,
+    pub(super) cleanup: WorthQueryOperationCleanup,
     pub(super) action: std::marker::PhantomData<Action>,
 }
 
@@ -76,6 +78,7 @@ pub enum WorthQueryOperationProgress {
     OutputsPending,
 }
 
+/// Returns native progress, refused custody, terminal custody, or settled output ownership.
 pub enum WorthQueryOperationAdvance<Operation, Settled, Terminal> {
     Progress {
         operation: Operation,
@@ -93,6 +96,7 @@ pub enum WorthQueryOperationAdvance<Operation, Settled, Terminal> {
 }
 
 #[derive(Debug)]
+/// Explains a refused or terminal advancement without releasing its native obligations.
 pub enum WorthQueryOperationAdvanceDenial {
     FreshRequestMismatch,
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),

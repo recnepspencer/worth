@@ -21,7 +21,9 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 #[path = "authorization/authorized.rs"]
 mod authorized;
 use authorized::AuthorizedMutation;
+mod binding_dispatch;
 mod capability;
+pub(in crate::application_entry) use binding_dispatch::WorthQueryBindingAdmission;
 pub(in crate::application_entry) use capability::prepare_capability_selected;
 
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
@@ -37,7 +39,7 @@ type MutationScope<Schema, Binding> =
         Schema,
     >>::Scope;
 
-pub(in crate::application_entry) struct PreparedMutation<Schema, Binding>
+pub struct PreparedMutation<Schema, Binding>
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,

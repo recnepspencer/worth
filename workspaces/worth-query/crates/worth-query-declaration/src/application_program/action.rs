@@ -1,7 +1,10 @@
 mod delivery;
+mod delivery_attachment;
+mod delivery_contract;
 mod reference;
-pub use delivery::{ApplicationActionDeliveryDeclaration, ApplicationFixedActionDelivery};
-pub use reference::{ApplicationActionReference, ApplicationFixedAction};
+pub use delivery::{ApplicationFixedActionDelivery, ApplicationFixedActionDeliveryDeclaration};
+pub use delivery_contract::*;
+pub use reference::{ApplicationAction, ApplicationActionReference, ApplicationFixedAction};
 use std::any::TypeId;
 use std::marker::PhantomData;
 
@@ -187,22 +190,6 @@ impl ApplicationActionDeclaration {
             identity,
             correspondence_type: TypeId::of::<Correspondence>(),
         });
-    }
-
-    pub fn delivery(&self) -> Option<&ApplicationActionDeliveryDeclaration> {
-        self.delivery.as_ref()
-    }
-    pub(crate) fn attach_fixed_delivery<Schema, Binding, Delivery>(&mut self)
-    where
-        Schema: crate::application_schema::ApplicationSchema,
-        Binding: crate::application_operation::ApplicationMutationBinding<Schema>,
-        Delivery: ApplicationFixedActionDelivery<Schema, Binding>,
-    {
-        self.delivery = Some(ApplicationActionDeliveryDeclaration::fixed::<
-            Schema,
-            Binding,
-            Delivery,
-        >());
     }
 
     pub(crate) fn mark_required_output_source(&mut self) {

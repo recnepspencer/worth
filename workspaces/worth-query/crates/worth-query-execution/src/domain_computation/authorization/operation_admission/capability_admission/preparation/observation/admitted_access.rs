@@ -163,7 +163,7 @@ where
     capability_type: Arc<str>,
     operation: Arc<str>,
     principal_entity_id: worth_relational::facade::identity::EntityId,
-    input: Input,
+    input: Arc<Input>,
     governed_input_identity: Option<[u8; 32]>,
     projection: ApplicationCapabilityRequestProjection<
         Schema,
@@ -276,10 +276,12 @@ where
             Operation,
             Input,
         >,
-        preconditions: worth_query_declaration::facade::application_schema::TypedMutationPreconditions<
-            Schema,
-            Operation,
-            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        preconditions: impl std::borrow::Borrow<
+            worth_query_declaration::facade::application_schema::TypedMutationPreconditions<
+                Schema,
+                Operation,
+                <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+            >,
         >,
     ) -> Result<
         crate::domain_computation::primary_graph::WorthQueryBoundMutationPreconditions,
@@ -327,8 +329,8 @@ where
         )
     }
 
-    pub(in crate::domain_computation::authorization) const fn capability_input(&self) -> &Input {
-        &self.input
+    pub(in crate::domain_computation::authorization) fn capability_input(&self) -> &Input {
+        self.input.as_ref()
     }
 
     /// Reports the derivations that encoded this request's key, and its input

@@ -351,3 +351,13 @@ impl ApplicationProgramDefinition<ConsumerSchema> for RequiredSourceAsActionProg
         specs
     }
 }
+
+pub(crate) fn source_delivery_specs<D>() -> Vec<ApplicationFeatureSpec>
+where
+    D: worth_query_decl::facade::application_program::ApplicationActionDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    >,
+{
+    features::source_delivery_specs::<D>()
+}

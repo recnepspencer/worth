@@ -63,7 +63,7 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
     >
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
+    Intent: ApplicationMutationIntent<Schema>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -191,7 +191,7 @@ where
             .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?
     }
 
-    fn execute_retained_with_commit(
+    pub(in crate::application_entry) fn execute_retained_with_commit(
         self,
         phase: &AdvancementPhase<'_>,
 

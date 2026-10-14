@@ -1,3 +1,8 @@
+mod admission;
+pub use admission::{
+    ApplicationCapabilityAdmission, ApplicationConventionalAdmission,
+    ApplicationMutationAdmissionBinding, ApplicationMutationAdmissionMode,
+};
 mod descriptor;
 mod identity;
 mod intent;

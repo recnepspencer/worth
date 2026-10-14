@@ -136,7 +136,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    pub const fn capability_input(&self) -> Option<&Input> {
+    pub fn capability_input(&self) -> Option<&Input> {
         self.authorization_basis.capability_input()
     }
 

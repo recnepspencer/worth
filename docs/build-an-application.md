@@ -1621,7 +1621,9 @@ cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certi
 
 For a fixed required-output action, declare its exact composition occurrence,
 output root and read binding. `ApplicationFixedActionDelivery<Schema, Binding>`
-names `Root`, `Read`, a stable `IDENTITY`, and `read_input(&Binding::Input)`.
+names `Root`, `Read`, and `read_input(&Binding::Input)`. Its
+`ApplicationActionDelivery` contract supplies the single stable `IDENTITY` and
+`ApplicationFixedDeliveryMode<Root, Read>`.
 The installed declaration binds the concrete `Delivery` implementation. Another
 type cannot substitute its selector by copying the delivery identity, root, and
 read metadata. The identity still supplies stable canonical meaning; runtime type
@@ -1631,6 +1633,39 @@ Author that source with `fixed_output_action::<Binding, Delivery>()`; use an
 `ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>` to
 select it. Program validation requires the delivery root to belong to that
 program and to start at the action's actual source occurrence.
+
+An action with no native output-source obligation declares
+`ApplicationActionDelivery::Mode = ApplicationSourceCompletion` for no projection,
+or `ApplicationRetainedCommit` for its authentic commit observation. Author it
+with `operation_action::<Binding, Delivery>()` and select its exact
+`ApplicationActionReference` through the same `retain_operation`. A copied
+identity cannot replace a required-output delivery, and the runtime's actual
+output-source inventory must also permit the no-output lane.
+
+The description freezes encoded input custody once. Native initial admission,
+recovery and keyed resolution share that immutable input; attempts borrow the
+original preconditions and fresh request authority. Source completion returns
+receipt-only success, while retained commit also returns its native observation.
+Both execution paths derive allocation policy from the supplied admitted phase.
+
+Binding-selected admission uses `ApplicationMutationAdmissionBinding::Admission`:
+`ApplicationConventionalAdmission`, or `ApplicationCapabilityAdmission<Capability>`
+with the existing `ApplicationCapabilityMutationBinding`. Generated conventional
+mutation bindings supply the conventional association; the macro's explicit
+`admission` type selects another declared association. Fresh native initial,
+unpublished-recovery and keyed-read handoffs borrow the original intent, key,
+source and full preconditions. They store no principal or request scope.
+
+The shared SourceOnly admission carrier exposes phase-taking native controls
+`execute_in_advancement`, `recover_in_advancement` and
+`resolve_keyed_in_advancement` for lifecycle composition. The SourceOnly owning
+adapter and ordinary consumer cutover remain separate work; these controls do
+not manufacture an ordinary completion or retry state.
+
+`WorthQueryOperationCleanup` retains actual pending records and release failures.
+Its phase-taking close returns a cleanup receipt, not whole-operation completion.
+Only the owning lane may report closed after its other native obligations are
+lawfully discharged. Refused cleanup retains custody for a fresh admitted retry.
 
 The owning entrance retains the original intent, key, typed preconditions,
 row or result-set expectation, and branch. Construction admits installed meaning
@@ -1648,7 +1683,7 @@ let description = request
     .expect_source(source)                 // or expect_result_set(result_set)
     .preconditions(original_conditions)
     .idempotency_owned(key);
-let operation = description.retain_fixed::<MyProgram, AdjustDraftAction>(&runtime);
+let operation = description.retain_operation::<MyProgram, AdjustDraftAction>(&runtime);
 // On construction refusal, retain the returned (description, denial).
 let operation = retain_or_handle_construction(operation);
 

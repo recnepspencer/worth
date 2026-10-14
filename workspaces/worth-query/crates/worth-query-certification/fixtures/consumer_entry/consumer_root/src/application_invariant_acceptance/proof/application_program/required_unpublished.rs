@@ -87,7 +87,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .expect_source(source)
             .idempotency_owned(10_062);
         let (description, denial) = description
-            .retain_fixed::<crate::ConsumerProgram, MissingFixedAction>(&world.application)
+            .retain_operation::<crate::ConsumerProgram, MissingFixedAction>(&world.application)
             .err()
             .expect("an uninstalled exact occurrence refuses construction");
         assert!(matches!(
@@ -98,7 +98,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         ));
         assert_eq!(planar_source_adjustment_contacts(&contact_identity), (0, 0));
         description
-            .retain_fixed::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+            .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
             .unwrap_or_else(|(_, denial)| {
                 panic!("returned original description constructs: {denial:?}")
             })

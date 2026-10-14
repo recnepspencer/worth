@@ -12,10 +12,12 @@ mod mutation;
 mod operation;
 pub use operation::{
     WorthQueryClosedOperation, WorthQueryFixedOperation, WorthQueryOperationAdvance,
-    WorthQueryOperationAdvanceDenial, WorthQueryOperationCloseDenial,
+    WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
+    WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
-    WorthQueryOperationDescription, WorthQueryOperationProgress, WorthQuerySettledFixedOperation,
-    WorthQueryTerminalFixedOperation,
+    WorthQueryOperationDescription, WorthQueryOperationModeFactory, WorthQueryOperationProgress,
+    WorthQuerySettledFixedOperation, WorthQuerySourceDeliveryMode,
+    WorthQuerySourceOperationAdmission, WorthQueryTerminalFixedOperation,
 };
 mod programs;
 mod query;

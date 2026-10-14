@@ -1,8 +1,8 @@
 //! Lawful close retries native cleanup without discarding refused custody.
 use super::*;
-use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure as Failure;
 
 #[derive(Debug)]
+/// Explains why lawful close could not discharge the retained native cleanup obligations.
 pub enum WorthQueryOperationCloseDenial {
     FreshRequestMismatch,
     CleanupCapacity,
@@ -20,6 +20,11 @@ impl WorthQueryClosedOperation {
     pub(super) fn without_native_obligations() -> Self {
         Self {
             retired_component_count: 0,
+        }
+    }
+    pub(super) fn from_cleanup(retired_component_count: usize) -> Self {
+        Self {
+            retired_component_count,
         }
     }
     pub const fn retired_component_count(&self) -> usize {
@@ -52,74 +57,19 @@ where
         }
         let runtime = self.runtime.runtime();
         let outcome = runtime.with_application_advancement(request.scope, |phase| {
-            // Reserve before removing a refused native cleanup from its owner.
+            if let Some(performed) = self.recovered.as_mut() {
+                self.cleanup.absorb_recovered(performed)?;
+            }
             self.cleanup
-                .try_reserve(1)
-                .map_err(|_| WorthQueryOperationCloseDenial::CleanupCapacity)?;
-            if let Some(performed) = self.recovered.as_mut() {
-                if let Some(failure) = performed.take_prior_cleanup_failure(
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                ) {
-                    self.cleanup.push(failure);
-                }
-            }
-            if let Some(performed) = self.recovered.as_mut() {
-                if let Some(record) = performed.take_pending_cleanup(
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                ) {
-                    match runtime
-                        .release_product_publication_recovery_in_advancement(&phase, record, 0)
-                    {
-                        Ok(receipt) => {
-                            self.retired_component_count += receipt.retired_component_count()
-                        }
-                        Err(failure) => {
-                            let denial = cleanup_denial(&failure);
-                            self.cleanup.push(failure);
-                            return Err(denial);
-                        }
-                    }
-                }
-            }
-            while let Some(failure) = self.cleanup.pop() {
-                let outcome = match failure {
-                    Failure::Recovery(failure) => runtime
-                        .release_product_publication_recovery_in_advancement(
-                            &phase,
-                            failure.into_recovery(),
-                            0,
-                        ),
-                    Failure::OwnerCleanup(failure) => failure
-                        .into_cleanup()
-                        .retry_in_advancement(&phase)
-                        .map_err(Failure::OwnerCleanup),
-                };
-                match outcome {
-                    Ok(receipt) => {
-                        self.retired_component_count += receipt.retired_component_count()
-                    }
-                    Err(failure) => {
-                        let denial = cleanup_denial(&failure);
-                        self.cleanup.push(failure);
-                        return Err(denial);
-                    }
-                }
-            }
-            Ok(WorthQueryClosedOperation {
-                retired_component_count: self.retired_component_count,
-            })
+                .close_in_advancement(&phase, runtime)
+                .map(|receipt| {
+                    WorthQueryClosedOperation::from_cleanup(receipt.retired_component_count())
+                })
         });
         match outcome {
             Ok(Ok(closed)) => Ok(closed),
             Ok(Err(denial)) => Err((self, denial)),
             Err(denial) => Err((self, WorthQueryOperationCloseDenial::Execution(denial))),
         }
-    }
-}
-
-fn cleanup_denial(failure: &Failure) -> WorthQueryOperationCloseDenial {
-    match failure {
-        Failure::Recovery(failure) => WorthQueryOperationCloseDenial::Recovery(failure.denial()),
-        Failure::OwnerCleanup(failure) => WorthQueryOperationCloseDenial::Owner(failure.denial()),
     }
 }

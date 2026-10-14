@@ -15,8 +15,8 @@ mod program_output_settlement;
 mod program_output_work;
 mod recovery;
 pub(in crate::application_entry) mod request;
-mod retained;
-mod selected_program;
+pub(in crate::application_entry) mod retained;
+pub(in crate::application_entry) mod selected_program;
 mod staged;
 
 pub use attempt::WorthQueryApplicationMutationAttemptReport;

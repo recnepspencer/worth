@@ -637,13 +637,32 @@ A conventional unguarded fixed source action declares its root and read through
 `ApplicationActionReference` includes the composition instance and feature;
 matching only a mutation binding does not select an occurrence.
 
+Source completion uses ordinary native publication and returns receipt-only
+success. Retained commit uses the native observation-retaining publication path.
+Both borrow fresh authority and use the supplied phase's checked allocation
+policy. The description shares immutable encoded input custody across initial,
+recovery and keyed attempts without copying domain input on each attempt.
+
 The prepared mutation's `idempotency_owned(key)` returns an immutable operation
-description. `retain_fixed::<Program, Action>(&program)` resolves actual installed
+description. `retain_operation::<Program, Action>(&program)` resolves actual installed
 delivery meaning and its concrete selector implementation, returning that description
 on refusal. A different delivery type with copied metadata does not resolve. `advance(&fresh_request)`
 opens one native phase and borrows the original intent, key, conditions and
 source proof. The branch-selected installed owner checks the cached original
 action meaning in the actual source execution and recovery paths.
+
+The same constructor resolves explicit no-output completion or retained-commit
+meaning. Its native SourceOnly handoff borrows original request meaning for
+binding-selected conventional or capability admission, unpublished recovery and
+keyed resolution. The actual output-source inventory can refuse that lane even
+when a caller supplies no-output metadata. No root or query stands in for source
+completion. SourceOnly's owning lifecycle and consumer cutover are not yet
+complete.
+
+Shared funded cleanup owns pending record release and native cleanup failures.
+Its receipt proves that collection was released; it does not discharge a retained
+source carrier, blocked attempt or active output handle. Each lane keeps those
+obligations until its native close contract succeeds.
 
 After native settlement, `read_current` validates all output lineages and queries
 at one fresh retained observation. Delivery refusal keeps the settled owner;

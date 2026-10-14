@@ -12,9 +12,9 @@ use worth_query_host::facade::{
 };
 use worth_query_topology_entry::{ConsumerPrincipalBinding, TopologyConfiguration};
 
-pub(super) struct ConsumerWorld {
+pub(super) struct ConsumerWorld<Program = ConsumerProgram> {
     pub(super) application:
-        installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, ConsumerProgram>,
+        installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, Program>,
     pub(super) invariant_calls: Arc<AtomicUsize>,
     pub(super) invariant_probe: Arc<AtomicUsize>,
     pub(super) producer_authorization_denials: Arc<AtomicUsize>,
@@ -277,6 +277,24 @@ pub(super) fn install_with_roster(
     query_bytes: usize,
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
 ) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
+    install_selected_program(
+        foreign,
+        candidate_bytes,
+        query_bytes,
+        roster,
+        crate::application_program::validated_program()
+            .expect("the application program is complete"),
+    )
+}
+
+pub(super) fn install_selected_program<Program>(
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, candidate_bytes: u64, query_bytes: usize,
+    roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
+    program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
+) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
+where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
+    Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions,
+Outputs = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Outputs>{
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -292,20 +310,9 @@ pub(super) fn install_with_roster(
         },
         Arc::clone(&parameter_calls),
     );
-    let limits = WorthQueryInMemoryApplicationLimits::new(
-        resources::world_resources(),
-        runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
-            4096,
-            candidate_bytes,
-        )
-        .unwrap(),
-        runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, query_bytes, 4096, 32)
-            .unwrap(),
-        primary_graph::SignalConditionalEvaluationBudget::development(),
-    );
-    let application = installation::in_memory_rostered_program::<ConsumerSchema, ConsumerProgram>(
-        crate::application_program::validated_program()
-            .expect("the application program is complete"),
+    let limits = resources::application_limits(candidate_bytes, query_bytes);
+    let application = installation::in_memory_rostered_program::<ConsumerSchema, Program>(
+        program,
         roster,
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,

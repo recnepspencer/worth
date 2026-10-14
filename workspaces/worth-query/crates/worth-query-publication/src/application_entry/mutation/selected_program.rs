@@ -184,7 +184,7 @@ where
     }
 }
 
-pub(super) fn map_selected_program_owner_denial(
+pub(in crate::application_entry) fn map_selected_program_owner_denial(
     denial: WorthQuerySelectedProgramOwnerDenial,
 ) -> WorthQueryApplicationRequestMutationDenial {
     match denial {

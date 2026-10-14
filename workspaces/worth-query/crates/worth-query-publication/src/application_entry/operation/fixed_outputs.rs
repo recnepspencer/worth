@@ -101,7 +101,6 @@ where
                         initial_cause: self.initial_cause,
                         recovered: self.recovered,
                         result: self.result,
-                        retired_component_count: 0,
                         cleanup: self.cleanup,
                         action: self.action,
                     });

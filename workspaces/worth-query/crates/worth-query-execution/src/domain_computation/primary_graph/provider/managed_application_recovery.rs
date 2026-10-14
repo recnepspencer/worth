@@ -24,6 +24,7 @@ use crate::domain_computation::{
 enum RecoveredPublicationDelivery {
     Ordinary,
     ProgramSource,
+    OwningSource,
 }
 
 /// A performed World successor has been handed to the normal Query pending
@@ -188,6 +189,31 @@ where
         )
     }
 
+    /// Owning no-output recovery retains cleanup without constructing an output carrier.
+    pub fn recover_admitted_unpublished_source_operation<Operation, Input, Scope>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        recovery: &WorthQueryProductUnpublishedRecovery,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        WorthQueryManagedApplicationRecoveryOutcome,
+        WorthQueryManagedApplicationRecoveryDenial,
+    >
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        self.recover_admitted_unpublished_application_delivery(
+            phase,
+            recovery,
+            admission,
+            idempotency,
+            RecoveredPublicationDelivery::OwningSource,
+        )
+        .map(|(outcome, _)| outcome)
+    }
+
     fn recover_admitted_unpublished_application_delivery<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
@@ -316,7 +342,8 @@ where
                 Ok(PublicationOutcome::Performed(publication)) => {
                     let session = guard.take_attempt().complete(publication, None);
                     let source = match delivery {
-                        RecoveredPublicationDelivery::Ordinary => None,
+                        RecoveredPublicationDelivery::Ordinary
+                        | RecoveredPublicationDelivery::OwningSource => None,
                         RecoveredPublicationDelivery::ProgramSource => {
                             Some(session.take_recovered_output_source())
                         }
@@ -334,7 +361,8 @@ where
                             .err(),
                             None,
                         ),
-                        RecoveredPublicationDelivery::ProgramSource => {
+                        RecoveredPublicationDelivery::ProgramSource
+                        | RecoveredPublicationDelivery::OwningSource => {
                             (None, Some(recovery.clone()))
                         }
                     };

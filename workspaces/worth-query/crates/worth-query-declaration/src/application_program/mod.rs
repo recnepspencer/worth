@@ -27,6 +27,11 @@ mod workflow;
 mod program_tests;
 
 pub use action::{
+    ApplicationAction, ApplicationActionDelivery, ApplicationActionDeliveryMode,
+    ApplicationFixedActionDeliveryDeclaration, ApplicationFixedDeliveryMode,
+    ApplicationRetainedCommit, ApplicationSourceCompletion,
+};
+pub use action::{
     ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration,
     ApplicationActionDeliveryDeclaration, ApplicationActionReference, ApplicationFixedAction,
     ApplicationFixedActionDelivery,

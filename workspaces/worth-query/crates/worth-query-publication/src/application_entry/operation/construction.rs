@@ -4,9 +4,11 @@ use super::fixed::FixedState;
 use super::*;
 
 #[derive(Debug)]
+/// Explains construction refusal; the caller receives its original operation description.
 pub enum WorthQueryOperationConstructionDenial {
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     UndeclaredRoot,
+    RequiredOutputSource,
     ForeignRuntime,
     Query(worth_query_installation::facade::WorthQueryApplicationQueryInstallationDenial),
 }
@@ -24,9 +26,17 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
     pub fn idempotency_owned(
         self,
         key: <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
-    ) -> WorthQueryOperationDescription<Schema, Intent> {
+    ) -> WorthQueryOperationDescription<Schema, Intent>
+    where
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone,
+    {
+        let encoded_input =
+            worth_query_declaration::facade::application_operation::ApplicationEncodedInput::encode(
+                self.intent.input().clone(),
+            );
         WorthQueryOperationDescription {
             intent: self.intent,
+            encoded_input,
             key,
             preconditions: self.preconditions,
             source: self.source,
@@ -38,7 +48,7 @@ impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
 impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Schema>>
     WorthQueryOperationDescription<Schema, Intent>
 {
-    pub fn retain_fixed<'runtime, Program, Action>(
+    pub(super) fn retain_fixed_native<'runtime, Program, Action>(
         self,
         program: &'runtime WorthQueryProgramApplicationRuntime<Schema, Program>,
     ) -> Result<
@@ -102,7 +112,7 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
             initial_cause: None,
             recovered: None,
             result: None,
-            cleanup: Vec::new(),
+            cleanup: WorthQueryOperationCleanup::default(),
             action: std::marker::PhantomData,
         })
     }

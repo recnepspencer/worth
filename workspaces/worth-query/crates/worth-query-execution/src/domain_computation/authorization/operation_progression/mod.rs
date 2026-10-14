@@ -44,14 +44,14 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         Operation,
         Input,
     >,
-    preconditions: worth_query_declaration::facade::application_schema::TypedMutationPreconditions<
+    preconditions: impl std::borrow::Borrow<worth_query_declaration::facade::application_schema::TypedMutationPreconditions<
         Schema,
         Operation,
         <Input as worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
             Schema,
             Capability,
         >>::Scope,
-    >,
+    >>,
     progression: WorthQueryCapabilityOperationProgression,
 ) -> Result<
     crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<

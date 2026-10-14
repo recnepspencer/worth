@@ -7,36 +7,36 @@ use crate::domain_computation::authorization::{
 pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Input> {
     Conventional,
     Capability {
-        input: Input,
+        input: std::sync::Arc<Input>,
     },
     DelegationActivation {
-        input: Input,
+        input: std::sync::Arc<Input>,
         binding: WorthQueryDelegationActivationBinding,
     },
     CapabilityRevocation {
-        input: Input,
+        input: std::sync::Arc<Input>,
         binding: WorthQueryCapabilityRevocationBinding,
     },
     ElevationRequest {
-        input: Input,
+        input: std::sync::Arc<Input>,
         binding: WorthQueryElevationRequestBinding,
     },
     ElevationApproval {
-        input: Input,
+        input: std::sync::Arc<Input>,
         binding: WorthQueryElevationApprovalBinding,
     },
     ElevationClose {
-        input: Input,
+        input: std::sync::Arc<Input>,
         binding: WorthQueryElevationCloseBinding,
     },
     MandatoryReview {
-        input: Input,
+        input: std::sync::Arc<Input>,
         binding: WorthQueryMandatoryReviewBinding,
     },
 }
 
 impl<Input> WorthQueryOperationAuthorizationBasis<Input> {
-    pub(super) const fn capability_input(&self) -> Option<&Input> {
+    pub(super) fn capability_input(&self) -> Option<&Input> {
         match self {
             Self::Conventional => None,
             Self::Capability { input }
@@ -45,7 +45,7 @@ impl<Input> WorthQueryOperationAuthorizationBasis<Input> {
             | Self::ElevationRequest { input, .. }
             | Self::ElevationApproval { input, .. }
             | Self::ElevationClose { input, .. }
-            | Self::MandatoryReview { input, .. } => Some(input),
+            | Self::MandatoryReview { input, .. } => Some(input.as_ref()),
         }
     }
 
