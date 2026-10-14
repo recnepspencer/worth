@@ -26,6 +26,26 @@ where
     pub(super) action: std::marker::PhantomData<Action>,
 }
 
+impl<'runtime, Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+    Program: ApplicationProgramDefinition<Schema>,
+    Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+    Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Binding<Schema, Intent>:
+        WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
+    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Delivery<Schema, Intent, Action>:
+        ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
+{
+    /// The original owner-issued branch selector; this grants no authority.
+    pub fn branch(&self) -> worth_query_execution::facade::product::WorthQueryProductBranch {
+        self.description.branch
+    }
+}
+
 pub(super) enum FixedState<Schema, Intent, Program, Root>
 where
     Schema: ApplicationSchema,
