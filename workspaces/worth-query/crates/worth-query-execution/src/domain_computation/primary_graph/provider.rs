@@ -35,6 +35,11 @@ mod installation;
 mod invariant_execution;
 pub(in crate::domain_computation::primary_graph) mod invariant_execution_failure;
 mod managed_application_recovery;
+pub(in crate::domain_computation::primary_graph) mod recovered_program_source_delivery;
+pub use recovered_program_source_delivery::{
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest,
+};
 mod mutation_work;
 pub use managed_application_recovery::{
     WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,

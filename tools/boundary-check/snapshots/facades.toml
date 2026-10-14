@@ -793,6 +793,8 @@ exports = [
     "WorthQueryPublicTemporalOperationAuthorization",
     "WorthQueryPublicTemporalQueryAuthorization",
     "WorthQueryReconstructedOutputEntity",
+    "WorthQueryRecoveredProgramSourceDeliveryDenialForTest",
+    "WorthQueryRecoveredProgramSourceDeliveryForTest",
     "WorthQueryRecoveryClaimStatus",
     "WorthQueryRecoveryCompensateAdmission",
     "WorthQueryRecoveryCurrentDecision",
