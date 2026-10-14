@@ -4,8 +4,7 @@ use bank_domain::{
 };
 use fixture::{ordinary_read_world_with_two_approvers, OWNER, STRANGER};
 use worth_query_host::facade::application_entry::{
-    WorkflowApprovalDecision, WorthQueryApplicationMutationOutcome,
-    WorthQueryWorkflowAdvancePreparationDenial,
+    WorkflowApprovalDecision, WorthQueryWorkflowAdvancePreparationDenial,
 };
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind;
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
@@ -72,7 +71,9 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
         fixture.world.runtime.current_branch(),
         "the payment workflow runs on the Bank production branch"
     );
-    let revoked = fixture
+    let revoked_scope = crate::support::request_scope();
+    let revoked_request = fixture.world.runtime.request(&owner, &revoked_scope);
+    let source_operation = fixture
         .world
         .runtime
         .mutate(bank_server::mutations::revoke_account_access(
@@ -86,12 +87,21 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
             scope.clone(),
             key("approved-payment:handoff:revoke-starter"),
         ))
-        .execute()
-        .expect("the Bank owner revokes the starter's account authorization");
-    assert!(matches!(
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ) = source_operation.advance(&revoked_request)
+    else {
+        panic!("fresh source completion")
+    };
+    assert!(matches!(
+        revoked.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    revoked
+        .close(&revoked_request)
+        .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
     let denied = starter_workflow.advance(
         instance.clone(),
         starter_authority.clone(),

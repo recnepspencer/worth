@@ -178,7 +178,9 @@ fn revocation_before_resume_denies_fresh_page_admission() {
     let (_, continuation) = first.into_parts();
     let continuation = continuation.expect("first page must continue");
 
-    let revoked = fixture
+    let revoked_scope = crate::support::request_scope();
+    let revoked_request = fixture.world.runtime.request(&owner, &revoked_scope);
+    let operation = fixture
         .world
         .runtime
         .mutate(mutations::revoke_account_access(
@@ -192,11 +194,21 @@ fn revocation_before_resume_denies_fresh_page_admission() {
             request_scope(),
             BankIdempotencyKey::new("revoke-continuation-viewer").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ) = operation.advance(&revoked_request)
+    else {
+        panic!("fresh source completion")
+    };
+    assert!(matches!(
+        revoked.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    revoked
+        .close(&revoked_request)
+        .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
 
     let resume_request = request_scope();
     let resumed = fixture

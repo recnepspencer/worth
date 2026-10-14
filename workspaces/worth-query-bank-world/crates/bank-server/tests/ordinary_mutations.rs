@@ -242,3 +242,6 @@ fn send_for(fixture: &fixture::OrdinaryReadFixture) -> SendMoney {
 
 #[path = "ordinary_mutations/posting_lease.rs"]
 mod posting_lease;
+
+#[path = "ordinary_mutations/owning_accounts.rs"]
+mod owning_accounts;

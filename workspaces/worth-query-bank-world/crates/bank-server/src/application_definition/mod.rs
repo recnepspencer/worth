@@ -1,6 +1,8 @@
+mod account_actions;
 mod composition;
 mod governance_actions;
 mod money_actions;
+mod payment_actions;
 mod posting_integrity;
 mod providers;
 mod workflows;
@@ -14,3 +16,6 @@ pub use workflows::{
     approved_business_payment_definition, ApprovedBusinessPaymentDefinitionDenial, APPROVAL_LIMIT,
     APPROVAL_LIMIT_OPERAND,
 };
+
+pub use account_actions::*;
+pub use payment_actions::*;

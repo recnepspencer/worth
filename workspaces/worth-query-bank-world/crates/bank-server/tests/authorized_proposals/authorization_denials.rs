@@ -44,7 +44,7 @@ fn program_entry_denies_unauthorized_account_mutations() {
     let source = snapshot
         .primary_account(id(BankPrincipalId::new, 1))
         .unwrap();
-    let creation_denial = world
+    let operation = world
         .runtime
         .mutate(mutations::create_personal_account(CreatePersonalAccount {
             institution: id(InstitutionId::new, 1),
@@ -56,14 +56,20 @@ fn program_entry_denies_unauthorized_account_mutations() {
             request.clone(),
             key("customer-cannot-open"),
         ))
-        .execute()
-        .expect_err("customer role cannot substitute teller authority");
-    assert!(matches!(
-        creation_denial.kind(),
-        WorthQueryApplicationRequestMutationDenialKind::Authorization(
-            worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied)
-        )
-    ));
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared creation: {cause:?}"));
+    let fresh = world.runtime.request(&owner_actor, &request);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
+        operation: _operation,
+        denial:
+            worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(
+                creation_denial,
+            ),
+    } = operation.advance(&fresh)
+    else {
+        panic!("customer cannot substitute teller")
+    };
+    assert!(matches!(creation_denial.kind(), WorthQueryApplicationRequestMutationDenialKind::Authorization(worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied))));
     let send_denial = world
         .runtime
         .mutate(mutations::send_money(SendMoney {
