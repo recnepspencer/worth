@@ -2053,13 +2053,18 @@ are prefixed with the occurrence name (`checks/structural`). See
 `ApplicationWorkflowValidationDenial`. Kinds include `MissingStart`,
 `UnreachableNode`, `MissingControlOutcome`, `AmbiguousControlOutcome`,
 `ControlCycle`, `MissingTerminal`, `MissingWorkflowAuthority`,
-`UnexpectedWorkflowAuthority`, `IncompleteApproval`, and
+`UnexpectedWorkflowAuthority`, `MissingOperationInput`, `IncompleteApproval`, and
 `MissingInboundDeadline`. `MissingWorkflowAuthority` means a guarded operation
 has the wrong number of `approval_authority` edges for its installed
 requirement: more than one, or not exactly one when the requirement asks for
 an approval (including the legacy default). `UnexpectedWorkflowAuthority`
 means an unguarded operation carries an approval edge or an execution
 requirement. See [Who may run a guarded operation](#65-who-may-run-a-guarded-operation).
+`MissingOperationInput` means a guarded operation has zero or more than one
+`operation_input` source. It needs exactly one compatible source, including when
+its installed requirement needs no approval. Unguarded proposal slots have no
+input-cardinality requirement. Unsupported stored definitions are refused before
+executable readmission; their original bytes are preserved.
 A validated definition carries no branch, publication status, or authority to
 start anything.
 

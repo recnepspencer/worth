@@ -137,6 +137,7 @@ pub(super) fn reconstruct_cold_definition(
         )?;
         member_facts.clear();
     }
+    super::operation_input::admit(&compiled_nodes, &compiled_connections)?;
     Ok((
         ColdCompiledWorkflowDefinition {
             lineage,

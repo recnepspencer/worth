@@ -300,6 +300,7 @@ fn data_cannot_cross_a_mutually_exclusive_control_arm() -> Result<(), Box<dyn st
         .proposal_for_approval(&propose, &approval)
         .joined_evidence(&evidence, &approval)
         .approval_authority(&approval, &approved)
+        .operation_input(&propose, &approved)
         .operation_input(&approved, &rejected);
     let denial = match builder.finish()?.validate() {
         Ok(_) => panic!("one conditional arm cannot feed another"),

@@ -344,7 +344,7 @@ Connection methods return `&mut Self` and chain:
 | `assessment_evidence(&assessment, &join)` | Feeds evidence into a join. |
 | `joined_evidence(&join, &approval)` | The approver sees the joined evidence. |
 | `approval_authority(&approval, &operation)` | The approval is required evidence for that guarded operation. It is not permission: ordinary operation permission still applies (see [Three independent checks](#three-independent-checks)). |
-| `operation_input(&operation, &operation)` | The guarded operation's input must be the proposed input. The platform binds the proposal's input-identity digest; the caller supplies the same value to `for_workflow_operation`. The two input types must be equal (`IncompatibleOperationInput`). |
+| `operation_input(&operation, &operation)` | Every guarded operation needs exactly one source (`MissingOperationInput`), including operations requiring no approval. Its input must be the proposed input. The platform binds the proposal's input-identity digest; the caller supplies the same value to `for_workflow_operation`. The two input types must be equal (`IncompatibleOperationInput`). Unguarded proposal slots have no input-cardinality requirement. |
 
 `validate()` enforces these minimums (`ApplicationWorkflowValidationDenialKind`):
 
@@ -352,6 +352,7 @@ Connection methods return `&mut Self` and chain:
 - Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
 - Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
 - A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `workflow_requirements` omitted, or `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and declares no `workflow_requirements` (`UnexpectedWorkflowAuthority`).
+- After the authority check, each guarded operation has exactly one `operation_input` source (`MissingOperationInput` for zero or multiple sources). Publication and imported drafts use this validation. Native reconstruction refuses unsupported stored definitions before executable readmission without rewriting their original bytes.
 
 `finish()` returns `Result<AuthoredWorkflowDefinition<Spec>,
 ApplicationWorkflowAuthoringDenial>`. `validate()` checks the whole graph and
@@ -1000,7 +1001,7 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). Version 4 retains the exact optional operation evidence contract. Version 3 added `await_inbound`; readers retain v1–3 drafts, with absent operation evidence, but reject a wait tag under v1/v2.
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). It retains the exact optional operation evidence contract and inbound wait meaning. Only the current version is supported; predecessor versions are refused before body decoding, without migration or rewriting their bytes.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
 - `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. Operation evidence must exactly match the installed binding: an old absent contract cannot silently acquire an explicit-empty or explicit-required floor. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.

@@ -24,6 +24,7 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 mod cold;
 mod connection;
 mod node;
+mod operation_input;
 mod publication_header;
 use cold::reconstruct_cold_definition;
 use publication_header::{observe_publication_header, observe_publication_revisions};
