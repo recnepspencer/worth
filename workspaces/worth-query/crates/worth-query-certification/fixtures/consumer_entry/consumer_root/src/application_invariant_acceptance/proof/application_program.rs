@@ -18,7 +18,11 @@ mod dependent_recovery;
 mod descriptor_result_set;
 mod discovered;
 #[cfg(test)]
+mod fixed_action_instances;
+#[cfg(test)]
 mod fixed_batch;
+#[cfg(test)]
+mod fixed_branch_affinity;
 #[cfg(test)]
 mod fixed_delivery;
 pub(super) mod lifecycle;

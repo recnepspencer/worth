@@ -78,6 +78,11 @@ where
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
+    /// The original owner-issued branch selector for fresh delivery and close context.
+    pub fn branch(&self) -> worth_query_execution::facade::product::WorthQueryProductBranch {
+        self.description.branch
+    }
+
     pub fn declared_action(
         &self,
     ) -> &worth_query_declaration::facade::application_program::ApplicationActionDeclaration {
