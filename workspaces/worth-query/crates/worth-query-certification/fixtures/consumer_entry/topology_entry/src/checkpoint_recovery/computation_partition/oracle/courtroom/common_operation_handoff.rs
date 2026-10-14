@@ -6,10 +6,8 @@ use worth_query_decl::facade::application_schema::{
     ApplicationEncodedScalarValue, TypedMutationPreconditions,
 };
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedMutationOutcome,
-    WorthQueryOperationCleanup,
+    WorthQueryApplicationRequestExt, WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
 };
-use worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryOutcome;
 
 // The original owning intent has no Clone implementation.
 struct OriginalCorrection(EntryCorrection);
@@ -74,18 +72,9 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
         .unwrap_or_else(|(_, denial)| {
             panic!("wrong fact is a native admission question: {denial:?}")
         });
-    let refused = application
-        .with_application_advancement(&scope, |phase| {
-            wrong.execute_in_advancement(&phase, &request)
-        })
-        .unwrap();
+    let refused = wrong.advance(&request);
     assert!(
-        !matches!(
-            refused,
-            Ok(WorthQueryApplicationRetainedMutationOutcome::Other(
-                WorthQueryApplicationMutationOutcome::Committed { .. }
-            ))
-        ),
+        !matches!(refused, WorthQuerySourceOnlyAdvance::Completed(_)),
         "dropping borrowed original preconditions would falsely commit"
     );
     application
@@ -97,37 +86,30 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
             )
         })
         .unwrap();
-    let outcome = application
-        .with_application_advancement(&scope, |phase| {
-            operation.execute_in_advancement(&phase, &request)
-        })
-        .unwrap()
-        .unwrap();
-    let WorthQueryApplicationRetainedMutationOutcome::Other(
-        WorthQueryApplicationMutationOutcome::Commit(uncommitted),
-    ) = outcome
-    else {
+    let WorthQuerySourceOnlyAdvance::Progress(operation) = operation.advance(&request) else {
         panic!("the real fault leaves unpublished source custody");
     };
-    let worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(unpublished) = uncommitted else { panic!("native partial publication"); };
-    let recovery = unpublished.into_recovery();
+    assert_eq!(operation.posture(), worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::ProductUnpublished);
     drop(request);
     drop(principal);
     drop(scope);
     let (fresh_scope, fresh_principal) = authenticate(&application);
     let fresh = application.request(&fresh_principal, &fresh_scope);
-    let mut performed = match application
-        .with_application_advancement(&fresh_scope, |phase| {
-            operation.recover_in_advancement(&phase, &fresh, &recovery)
-        })
-        .unwrap()
-        .unwrap()
-    {
-        WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) => performed,
+    let operation = match operation.advance(&fresh) {
+        WorthQuerySourceOnlyAdvance::Progress(operation) => operation,
         _ => panic!("capability-bound recovery publishes the original source"),
     };
-    let mut cleanup = WorthQueryOperationCleanup::default();
-    cleanup.absorb_recovered(&mut performed).unwrap();
+    let completed = match operation.advance(&fresh) {
+        WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
+        _ => panic!("the original keyed read proves source completion"),
+    };
+    assert!(matches!(
+        completed.evidence(),
+        WorthQuerySourceCompletion::Recovered {
+            publication: Some(_),
+            ..
+        }
+    ));
     let catalog = application
         .product_publication_recovery_page(None, std::num::NonZeroUsize::new(8).unwrap())
         .unwrap();
@@ -136,33 +118,20 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
         .readmit_product_publication_recovery(catalog.rows()[0].handle())
         .unwrap();
     let held = inspector.inspect().unwrap();
-    let denial = application
-        .with_application_advancement(&fresh_scope, |phase| {
-            cleanup.close_in_advancement(&phase, application.runtime())
-        })
-        .unwrap()
+    let (completed, denial) = completed
+        .close(&fresh)
         .err()
         .expect("real caller capability refuses record release");
     assert!(matches!(denial, worth_query_host::facade::application_entry::WorthQueryOperationCloseDenial::Recovery(worth_query_host::facade::product::WorthQueryProductUnpublishedRecoveryReleaseDenial::World(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial::CallerCapabilityLive))));
     drop(held);
-    application
-        .with_application_advancement(&fresh_scope, |phase| {
-            cleanup.close_in_advancement(&phase, application.runtime())
-        })
-        .unwrap()
-        .unwrap();
+    completed
+        .close(&fresh)
+        .unwrap_or_else(|(_, denial)| panic!("native close retry: {denial:?}"));
     assert!(application
         .product_publication_recovery_page(None, std::num::NonZeroUsize::new(8).unwrap())
         .unwrap()
         .rows()
         .is_empty());
-    let read = application
-        .with_application_advancement(&fresh_scope, |phase| {
-            operation.resolve_keyed_in_advancement(&phase, &fresh)
-        })
-        .unwrap()
-        .unwrap();
-    assert!(matches!(read.into_resolution(), worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)));
     // Recovery and keyed reads must preserve the one XOR effect. The expected host
     // comes from independent authored model truth, never the tested host's records.
     let expected = installation::install(|graph| case.after.seed(graph));
@@ -204,21 +173,21 @@ fn common_operation_handoff_retains_actual_commit_observation() {
             &application,
         )
         .unwrap_or_else(|(_, denial)| panic!("retained commit constructor: {denial:?}"));
-    let outcome = application
-        .with_application_advancement(&scope, |phase| {
-            operation.execute_in_advancement(&phase, &request)
-        })
-        .unwrap()
-        .unwrap();
-    let WorthQueryApplicationRetainedMutationOutcome::Committed {
-        retained, receipt, ..
-    } = outcome
+    let WorthQuerySourceOnlyAdvance::Completed(completed) = operation.advance(&request) else {
+        panic!("the actual commit retains an observation");
+    };
+    let WorthQuerySourceCompletion::Fresh {
+        retained: Some(retained),
+        ..
+    } = completed.evidence()
     else {
         panic!("the actual commit retains an observation");
     };
     let current = request.retain_current_read().unwrap();
     assert_eq!(retained.selected_commit(), current.selected_commit());
-    drop(receipt);
+    completed
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("fresh retained close: {denial:?}"));
 }
 
 #[test]
@@ -263,55 +232,35 @@ fn common_operation_handoff_completes_source_without_retained_observation() {
         }
     }
     let _placement = Restore(place(Placement::Leased(std::num::NonZeroUsize::MIN)));
-    let refused = application
-        .with_application_advancement(&scope, |phase| {
-            let execution = phase
-                .checked_execution_request_for(application.product_runtime())
-                .unwrap();
-            let worth_query_host::facade::runtime::ExecutionAllocationPolicy::Execution(lease) =
-                execution.allocation_policy()
-            else {
-                panic!("the admitted phase must preserve leased allocation authority");
-            };
-            let _held = lease
-                .reserve_memory(lease.available_memory_bytes())
-                .unwrap();
-            operation.execute_in_advancement(&phase, &request)
-        })
-        .unwrap();
-    assert!(!matches!(
-        refused,
-        Ok(WorthQueryApplicationRetainedMutationOutcome::Other(
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ))
-    ));
-    let read = application
-        .with_application_advancement(&scope, |phase| {
-            operation.resolve_keyed_in_advancement(&phase, &request)
-        })
-        .unwrap()
-        .unwrap();
-    assert!(!matches!(read.into_resolution(), worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)));
-    let outcome = application
-        .with_application_advancement(&scope, |phase| {
-            operation.execute_in_advancement(&phase, &request)
-        })
-        .unwrap()
-        .unwrap();
+    use worth_query_host::facade::primary_graph::bound_advancement_requests_on_this_thread_for_test as bound;
+    struct RestoreBudget(Option<worth_foundational::ExecutionBudget>);
+    impl Drop for RestoreBudget {
+        fn drop(&mut self) {
+            bound(self.0);
+        }
+    }
+    let budget = RestoreBudget(bound(Some(worth_foundational::ExecutionBudget::new(
+        std::num::NonZeroUsize::MIN,
+        1,
+        u64::MAX,
+    ))));
+    let refused = operation.advance(&request);
+    drop(budget);
+    let operation = match refused {
+        WorthQuerySourceOnlyAdvance::Refused { operation, denial } => {
+            assert!(!matches!(denial, worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Execution(worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::NestedOpening)), "memory pressure is not a nested opening");
+            operation
+        }
+        _ => panic!("the native leased memory bound must refuse"),
+    };
+    let completed = match operation.advance(&request) {
+        WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
+        _ => panic!("the original operation succeeds after native capacity is released"),
+    };
     assert!(matches!(
-        outcome,
-        WorthQueryApplicationRetainedMutationOutcome::Other(
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        )
+        completed.evidence(),
+        WorthQuerySourceCompletion::Fresh { retained: None, .. }
     ));
-    assert!(outcome.retained_read().is_none());
-    let replay = application
-        .with_application_advancement(&scope, |phase| {
-            operation.resolve_keyed_in_advancement(&phase, &request)
-        })
-        .unwrap()
-        .unwrap();
-    assert!(matches!(replay.into_resolution(), worth_query_host::facade::primary_graph::WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)));
     let expected = installation::install(|graph| case.after.seed(graph));
     let (expected_scope, expected_principal) = authenticate(&expected);
     let (_, expected_runs) = demand(
@@ -323,4 +272,7 @@ fn common_operation_handoff_completes_source_without_retained_observation() {
         actual_runs.last().unwrap().outcome,
         expected_runs.last().unwrap().outcome
     );
+    completed
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("ordinary source close: {denial:?}"));
 }

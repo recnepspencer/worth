@@ -95,7 +95,7 @@ macro_rules! source_factory {
             I::Binding: 'r,
         {
             type Operation =
-                super::source_admission::WorthQuerySourceOperationAdmission<'r, S, I, P, A, $mode>;
+                super::source_only::WorthQuerySourceOnlyOperation<'r, S, I, P, A, $mode>;
             fn construct(
                 description: WorthQueryOperationDescription<S, I>,
                 runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
@@ -106,10 +106,7 @@ macro_rules! source_factory {
                     WorthQueryOperationConstructionDenial,
                 ),
             > {
-                super::source_admission::WorthQuerySourceOperationAdmission::construct(
-                    description,
-                    runtime,
-                )
+                super::source_only::WorthQuerySourceOnlyOperation::construct(description, runtime)
             }
         }
     };

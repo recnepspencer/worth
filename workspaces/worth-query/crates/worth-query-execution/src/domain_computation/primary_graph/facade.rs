@@ -1,4 +1,7 @@
 //! Public primary-graph contract aggregation. Semantic owners remain in their modules.
+pub use super::provider::publication_fault_control::{
+    WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial,
+};
 
 pub use super::application_attempt::{
     PerformedWorkflowApproval, PerformedWorkflowAssessmentEvidence,

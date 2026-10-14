@@ -19,6 +19,16 @@ pub struct WorthQueryOperationCleanup {
     retired_component_count: usize,
 }
 impl WorthQueryOperationCleanup {
+    pub(super) fn reserve_release_failure(&mut self) -> Result<(), WorthQueryOperationCloseDenial> {
+        self.failures
+            .try_reserve(1)
+            .map_err(|_| WorthQueryOperationCloseDenial::CleanupCapacity)
+    }
+    pub(super) fn absorb_release_failure(&mut self, failure: Option<Failure>) {
+        if let Some(failure) = failure {
+            self.failures.push(failure);
+        }
+    }
     pub(super) fn from_failures(failures: Vec<Failure>) -> Self {
         Self {
             failures,
