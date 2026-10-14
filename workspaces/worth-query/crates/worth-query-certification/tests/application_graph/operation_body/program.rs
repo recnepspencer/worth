@@ -42,16 +42,28 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
         } else {
             body.assign(DocumentRetentionField::reference(), DESTINATION)
                 .unwrap()
-        }
-        .finish()
-        .unwrap();
+        };
+        let body = if matches!(DESTINATION, 20 | 21) {
+            body.create_in_scope(Audit::reference(), "audit")
+                .unwrap()
+                .initialize_input(AuditIdentityField::reference(), "identity")
+                .unwrap()
+                .initialize(AuditRetentionField::reference(), DESTINATION)
+                .unwrap()
+                .finish()
+                .unwrap()
+        } else {
+            body.finish().unwrap()
+        };
         schema
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())
             .entity(Document::reference())
+            .entity(Audit::reference())
             .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
             .aspect(Principal::reference(), PrincipalFacts::reference())
             .aspect(Document::reference(), DocumentFacts::reference())
+            .aspect(Audit::reference(), AuditFacts::reference())
             .field(
                 ExternalMapping::reference(),
                 ExternalIdentityField::reference(),
@@ -63,6 +75,8 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .field(Principal::reference(), PrincipalIdentityField::reference())
             .field(Document::reference(), DocumentIdentityField::reference())
             .field(Document::reference(), DocumentRetentionField::reference())
+            .field(Audit::reference(), AuditIdentityField::reference())
+            .field(Audit::reference(), AuditRetentionField::reference())
             .relation(
                 MappingTarget::reference(),
                 ExternalMapping::reference(),
@@ -86,6 +100,8 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .application_mutation_binding::<BodyBinding<DESTINATION>>()
             .application_query(document_retention_query_definition::<DESTINATION>())
             .application_query_binding::<DocumentRetentionQueryBinding<DESTINATION>>()
+            .application_query(super::audit_query::audit_query_definition::<DESTINATION>())
+            .application_query_binding::<super::audit_query::AuditQueryBinding<DESTINATION>>()
     }
 }
 

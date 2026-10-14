@@ -7,8 +7,9 @@ mod registration;
 pub(crate) use body::validate_operation_bodies;
 pub use body::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
-    ApplicationOperationBodyBuilder, ApplicationOperationBodyProgram,
-    ApplicationOperationBodyScopeField,
+    ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
+    ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
+    ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
 };
 pub(crate) use builder::AftermathAssociationAuthority;
 pub use builder::ApplicationOperationDefinitionBuilder;

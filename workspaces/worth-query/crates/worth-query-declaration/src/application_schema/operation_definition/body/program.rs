@@ -91,6 +91,92 @@ impl ApplicationOperationBodyScopeField {
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationOperationBodyProgram {
     pub(super) scope_fields: Vec<ApplicationOperationBodyScopeField>,
+    pub(super) creation: Option<ApplicationOperationBodyCreation>,
+}
+
+/// One typed, candidate-local creation site in the admitted scope's context.
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct ApplicationOperationBodyCreation {
+    pub(super) entity: String,
+    pub(super) key: String,
+    pub(super) fields: Vec<ApplicationOperationBodyCreatedField>,
+}
+
+impl ApplicationOperationBodyCreation {
+    pub fn from_untrusted(
+        entity: String,
+        key: String,
+        fields: Vec<ApplicationOperationBodyCreatedField>,
+    ) -> Self {
+        Self {
+            entity,
+            key,
+            fields,
+        }
+    }
+    pub fn entity(&self) -> &str {
+        &self.entity
+    }
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+    pub fn fields(&self) -> &[ApplicationOperationBodyCreatedField] {
+        &self.fields
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationOperationBodyCreatedField {
+    Literal {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        value: AspectValue,
+    },
+    Input {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        member: String,
+    },
+}
+
+impl ApplicationOperationBodyCreatedField {
+    pub fn field(&self) -> &ApplicationFieldBindingLocus {
+        match self {
+            Self::Literal { field, .. } | Self::Input { field, .. } => field,
+        }
+    }
+    pub fn binding(&self) -> &WorthQueryPortableTypeIdentity {
+        match self {
+            Self::Literal { binding, .. } | Self::Input { binding, .. } => binding,
+        }
+    }
+    pub fn literal_value(&self) -> Option<&AspectValue> {
+        match self {
+            Self::Literal { value, .. } => Some(value),
+            Self::Input { .. } => None,
+        }
+    }
+    pub fn scalar_family(&self) -> ScalarAspectType {
+        match self {
+            Self::Literal { value, .. } => value.value_family(),
+            Self::Input { scalar_family, .. } => *scalar_family,
+        }
+    }
+    pub fn input_member(&self) -> Option<&str> {
+        match self {
+            Self::Literal { .. } => None,
+            Self::Input { member, .. } => Some(member),
+        }
+    }
+    pub fn write_target(&self) -> ApplicationOperationProgramTarget {
+        let field = self.field();
+        ApplicationOperationProgramTarget::Write {
+            entity: field.entity().to_owned(),
+            aspect: field.aspect().to_owned(),
+            field: field.field().to_owned(),
+        }
+    }
 }
 
 impl ApplicationOperationBodyProgram {
@@ -98,10 +184,25 @@ impl ApplicationOperationBodyProgram {
     pub fn from_untrusted_scope_fields(
         scope_fields: Vec<ApplicationOperationBodyScopeField>,
     ) -> Self {
-        Self { scope_fields }
+        Self {
+            scope_fields,
+            creation: None,
+        }
+    }
+    pub fn from_untrusted_with_creation(
+        scope_fields: Vec<ApplicationOperationBodyScopeField>,
+        creation: Option<ApplicationOperationBodyCreation>,
+    ) -> Self {
+        Self {
+            scope_fields,
+            creation,
+        }
     }
     pub fn scope_fields(&self) -> &[ApplicationOperationBodyScopeField] {
         &self.scope_fields
+    }
+    pub fn creation(&self) -> Option<&ApplicationOperationBodyCreation> {
+        self.creation.as_ref()
     }
 
     pub fn scope_entity(&self) -> Option<&str> {

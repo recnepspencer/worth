@@ -61,12 +61,28 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
     };
     let prepared = execution.decision_stage(|context| {
         let mut values = Vec::with_capacity(bindings.len());
-        for (step, binding) in body
+        let scope_inputs = body
             .scope_fields()
             .iter()
             .filter(|step| step.input_member().is_some())
-            .zip(bindings)
-        {
+            .map(|step| {
+                (
+                    step.input_member().expect("input assignment"),
+                    step.scalar_family(),
+                )
+            });
+        let created_inputs = body
+            .creation()
+            .into_iter()
+            .flat_map(|creation| creation.fields())
+            .filter(|step| step.input_member().is_some())
+            .map(|step| {
+                (
+                    step.input_member().expect("input initializer"),
+                    step.scalar_family(),
+                )
+            });
+        for ((member, family), binding) in scope_inputs.chain(created_inputs).zip(bindings) {
             context
                 .checkpoint(u64::try_from(bytes).unwrap_or(u64::MAX))
                 .map_err(|cause| {
@@ -74,8 +90,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                         worth_execution::WorkCeilingDenial::Stopped(cause),
                     )
                 })?;
-            let member = step.input_member().expect("input field");
-            let selected = match captured.scalar_member(member, step.scalar_family()) {
+            let selected = match captured.scalar_member(member, family) {
                 Ok(value) => value,
                 Err(_) => {
                     return Ok(Err(WorthQueryOperationBodyDenial::InputMismatch {

@@ -43,6 +43,20 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                     target,
                 });
             }
+            if let Some(creation) = body.creation() {
+                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                    operation: operation.clone(),
+                    target: super::super::ApplicationOperationProgramTarget::Create {
+                        entity: creation.entity().to_owned(),
+                    },
+                });
+                for field in creation.fields() {
+                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                        operation: operation.clone(),
+                        target: field.write_target(),
+                    });
+                }
+            }
             self.push_member_in_place(ApplicationSchemaMember::OperationBody {
                 operation: operation.clone(),
                 body,

@@ -51,6 +51,18 @@ pub(super) fn validate_member_identifiers(
                         validate_simple_identifier(identifier)?;
                     }
                 }
+                if let Some(creation) = body.creation() {
+                    validate_simple_identifier(creation.entity())?;
+                    for step in creation.fields() {
+                        for identifier in [
+                            step.field().entity(),
+                            step.field().aspect(),
+                            step.field().field(),
+                        ] {
+                            validate_simple_identifier(identifier)?;
+                        }
+                    }
+                }
             }
             ApplicationSchemaMember::ApplicationMutation { description } => {
                 super::mutation_description_validation::validate_identifiers(description)?;

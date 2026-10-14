@@ -15,7 +15,8 @@ use crate::{
 };
 use worth_query_declaration::facade::{
     application_schema::{
-        ApplicationFieldBindingLocus, ApplicationOperationBodyProgram,
+        ApplicationFieldBindingLocus, ApplicationOperationBodyCreatedField,
+        ApplicationOperationBodyCreation, ApplicationOperationBodyProgram,
         ApplicationOperationBodyScopeField,
     },
     portable_identity::WorthQueryPortableTypeIdentity,
@@ -25,17 +26,17 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
-    output.u16(
-        if body
-            .scope_fields()
-            .iter()
-            .any(|step| step.input_member().is_some())
-        {
-            2
-        } else {
-            1
-        },
-    )?;
+    output.u16(if body.creation().is_some() {
+        3
+    } else if body
+        .scope_fields()
+        .iter()
+        .any(|step| step.input_member().is_some())
+    {
+        2
+    } else {
+        1
+    })?;
     write_sequence(output, body.scope_fields(), |output, step| {
         output.u16(match step {
             ApplicationOperationBodyScopeField::Expect { .. } => 1,
@@ -52,7 +53,25 @@ pub(super) fn write(
             super::foundational_aspect::write_scalar_type(output, step.scalar_family())?;
             output.text(step.input_member().expect("input assignment"))
         }
-    })
+    })?;
+    if let Some(creation) = body.creation() {
+        output.text(creation.entity())?;
+        output.text(creation.key())?;
+        write_sequence(output, creation.fields(), |output, step| {
+            output.u16(if step.input_member().is_some() { 2 } else { 1 })?;
+            output.text(step.field().entity())?;
+            output.text(step.field().aspect())?;
+            output.text(step.field().field())?;
+            output.text(step.binding().as_str())?;
+            if let Some(value) = step.literal_value() {
+                super::foundational_value::write_aspect_value(output, value)
+            } else {
+                super::foundational_aspect::write_scalar_type(output, step.scalar_family())?;
+                output.text(step.input_member().expect("input initializer"))
+            }
+        })?;
+    }
+    Ok(())
 }
 
 pub(super) fn decode(
@@ -60,12 +79,12 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1 | 2) {
+    if !matches!(version, 1..=3) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let steps = decode_sequence(input, budget, 20, |input, _| {
         let tag = input.u16()?;
-        if !matches!(tag, 1 | 2) && !(version == 2 && tag == 3) {
+        if !matches!(tag, 1 | 2) && !(version >= 2 && tag == 3) {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
         let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
@@ -93,5 +112,37 @@ pub(super) fn decode(
             _ => unreachable!("tag admitted before operands"),
         })
     })?;
-    Ok(ApplicationOperationBodyProgram::from_untrusted_scope_fields(steps))
+    let creation = if version == 3 {
+        let entity = input.text()?.to_owned();
+        let key = input.text()?.to_owned();
+        let fields = decode_sequence(input, budget, 20, |input, _| {
+            let tag = input.u16()?;
+            if !matches!(tag, 1 | 2) {
+                return Err(Denial::new(Kind::UnsupportedRecordVariant));
+            }
+            let field =
+                ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
+            let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
+            Ok(if tag == 1 {
+                ApplicationOperationBodyCreatedField::Literal {
+                    field,
+                    binding,
+                    value: super::foundational_value::decode_aspect_value(input)?,
+                }
+            } else {
+                ApplicationOperationBodyCreatedField::Input {
+                    field,
+                    binding,
+                    scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
+                    member: input.text()?.to_owned(),
+                }
+            })
+        })?;
+        Some(ApplicationOperationBodyCreation::from_untrusted(
+            entity, key, fields,
+        ))
+    } else {
+        None
+    };
+    Ok(ApplicationOperationBodyProgram::from_untrusted_with_creation(steps, creation))
 }

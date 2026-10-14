@@ -10,7 +10,16 @@ pub(super) fn append_body(
     body: &crate::application_schema::ApplicationOperationBodyProgram,
 ) {
     use crate::application_schema::ApplicationOperationBodyScopeField;
-    append_operation_header(basis, prefix, "operation-body-v1", operation);
+    append_operation_header(
+        basis,
+        prefix,
+        if body.creation().is_some() {
+            "operation-body-v2"
+        } else {
+            "operation-body-v1"
+        },
+        operation,
+    );
     basis.usize(format!("{prefix}.steps"), body.scope_fields().len());
     for (index, step) in body.scope_fields().iter().enumerate() {
         let prefix = format!("{prefix}.step[{index}]");
@@ -40,6 +49,41 @@ pub(super) fn append_body(
                 format!("{prefix}.input-family"),
                 step.scalar_family().canonical_name(),
             );
+        }
+    }
+    if let Some(creation) = body.creation() {
+        basis.text(format!("{prefix}.created.entity"), creation.entity());
+        basis.text(format!("{prefix}.created.key"), creation.key());
+        basis.usize(format!("{prefix}.created.fields"), creation.fields().len());
+        for (index, step) in creation.fields().iter().enumerate() {
+            let field = format!("{prefix}.created.field[{index}]");
+            basis.text(
+                format!("{field}.kind"),
+                if step.input_member().is_some() {
+                    "input"
+                } else {
+                    "literal"
+                },
+            );
+            basis.text(format!("{field}.entity"), step.field().entity());
+            basis.text(format!("{field}.aspect"), step.field().aspect());
+            basis.text(format!("{field}.field"), step.field().field());
+            basis.text(format!("{field}.binding"), step.binding().as_str());
+            if let Some(value) = step.literal_value() {
+                basis.value(
+                    format!("{field}.value"),
+                    worth_foundational::facade::canonical_basis_value_for_aspect_value(value),
+                );
+            } else {
+                basis.text(
+                    format!("{field}.input-member"),
+                    step.input_member().expect("input initializer"),
+                );
+                basis.text(
+                    format!("{field}.input-family"),
+                    step.scalar_family().canonical_name(),
+                );
+            }
         }
     }
 }

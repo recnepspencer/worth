@@ -25,4 +25,24 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.write_body_field(target, field, value)
     }
+
+    pub(in crate::domain_computation::primary_graph) fn body_create_in_scope<Entity>(
+        &mut self,
+        scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        entity: &str,
+        key: &str,
+    ) -> Result<WorthQueryApplicationEffectEntity<Schema, ()>, WorthQueryApplicationAttemptDenial>
+    {
+        self.candidate
+            .create_body_entity_in_context(scope, entity, key)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn body_initialize_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.initialize_body_field(target, field, value)
+    }
 }

@@ -201,6 +201,32 @@ impl<Schema, Operation, Input, Scope>
                 field.field(),
             )
         })?;
+        self.initialize_encoded_field(
+            target,
+            &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                field.entity(),
+                field.aspect(),
+                field.field(),
+            ),
+            std::borrow::Cow::Owned(value),
+        )
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn initialize_body_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.initialize_encoded_field(target, field, value)
+    }
+
+    fn initialize_encoded_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, worth_foundational::facade::AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
             entity: field.entity().to_string(),
@@ -238,7 +264,7 @@ impl<Schema, Operation, Input, Scope>
         else {
             unreachable!("validated created effect changed before field retention");
         };
-        fields.insert(locator, value);
+        fields.insert(locator, value.into_owned());
         Ok(())
     }
 

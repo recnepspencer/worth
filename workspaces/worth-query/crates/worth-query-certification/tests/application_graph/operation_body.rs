@@ -1,10 +1,14 @@
 //! Native literal-body execution. Static fixture resources are not NCR create acceptance.
 #[path = "operation_body/advanced_commit.rs"]
 mod advanced_commit;
+#[path = "operation_body/audit_query.rs"]
+mod audit_query;
 #[path = "operation_body/binding.rs"]
 mod binding;
 #[path = "operation_body/body_only.rs"]
 mod body_only;
+#[path = "operation_body/creation.rs"]
+mod creation;
 #[path = "operation_body/input.rs"]
 mod input;
 #[path = "operation_body/input_selection.rs"]

@@ -120,6 +120,29 @@ where
                 }
             }
         }
+        if let Some(creation) = self.body.creation() {
+            let created =
+                match writer.body_create_in_scope(&target, creation.entity(), creation.key()) {
+                    Ok(created) => created,
+                    Err(cause) => {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+                    }
+                };
+            for step in creation.fields() {
+                let value = match step.literal_value() {
+                    Some(value) => std::borrow::Cow::Borrowed(value),
+                    None => std::borrow::Cow::Owned(
+                        input_values
+                            .as_mut()
+                            .and_then(Iterator::next)
+                            .expect("one prepared value per installed input initializer"),
+                    ),
+                };
+                if let Err(cause) = writer.body_initialize_field(&created, step.field(), value) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
+        }
         HandlerResult::Completed(())
     }
 }

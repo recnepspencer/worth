@@ -97,6 +97,24 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                     work.observe_fixed(2);
                 }
             }
+            if let Some(creation) = body.creation() {
+                work.observe_text(creation.entity());
+                work.observe_text(creation.key());
+                for step in creation.fields() {
+                    work.observe_text(step.field().entity());
+                    work.observe_text(step.field().aspect());
+                    work.observe_text(step.field().field());
+                    work.observe_text(step.binding().as_str());
+                    if let Some(value) = step.literal_value() {
+                        work.observe_fixed(
+                            u64::try_from(value.semantic_byte_width()).unwrap_or(u64::MAX),
+                        );
+                    } else {
+                        work.observe_text(step.input_member().expect("input initializer"));
+                        work.observe_fixed(2);
+                    }
+                }
+            }
         }
         work
     }

@@ -31,6 +31,22 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
             return Err(denied());
         }
+        let required_writes = body
+            .scope_fields()
+            .iter()
+            .filter(|step| step.write_target().is_some())
+            .count()
+            .checked_add(
+                body.creation()
+                    .map_or(0, |creation| creation.fields().len()),
+            )
+            .ok_or_else(denied)?;
+        let cardinality = Binding::CANDIDATES.cardinality();
+        if cardinality.maximum_writes() < required_writes
+            || cardinality.maximum_creates() < usize::from(body.creation().is_some())
+        {
+            return Err(denied());
+        }
         let mut input_bindings = Vec::new();
         for step in body.scope_fields() {
             let locus = step.field();
@@ -54,6 +70,37 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                     return Err(denied());
                 }
                 input_bindings.push(binding.clone());
+            }
+        }
+        if let Some(creation) = body.creation() {
+            super::super::WorthQueryApplicationEntityKey::<Schema, ()>::new(creation.key())
+                .map_err(|_| denied())?;
+            for step in creation.fields() {
+                let locus = step.field();
+                if locus.entity() != creation.entity() {
+                    return Err(denied());
+                }
+                let binding = schema
+                    .value_bindings()
+                    .field(locus.entity(), locus.aspect(), locus.field())
+                    .ok_or_else(denied)?;
+                if binding.identity() != step.binding()
+                    || binding.scalar_family() != step.scalar_family()
+                    || step
+                        .literal_value()
+                        .is_some_and(|value| binding.validate_encoded(value).is_err())
+                {
+                    return Err(denied());
+                }
+                if step.input_member().is_some() {
+                    if !Binding::InputBinding::RETAIN_CANONICAL_INPUT
+                        || !binding.is_readable()
+                        || !binding.admits_native_input()
+                    {
+                        return Err(denied());
+                    }
+                    input_bindings.push(binding.clone());
+                }
             }
         }
         Ok(Self {

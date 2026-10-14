@@ -3,10 +3,11 @@
 ## What This Feature Is
 
 A scope-field body declares the source expectations and scalar writes of one
-operation. Writes can use authored literals or named members of the operation's
-once encoded input. Query installs and executes those values; the host does not choose
-a handler that independently restates them. This is currently a deliberately
-bounded body form, not a general expression, creation or workflow-command API.
+operation. It can also declare one typed entity creation in the admitted scope's
+context. Writes and created-field initializers can use authored literals or named
+members of the operation's once encoded input. Query installs and executes those
+values; the host does not choose a handler that independently restates them.
+This remains a bounded body form, not a general expression or workflow-command API.
 
 ## Why You Use It
 
@@ -23,6 +24,8 @@ them or supply missing joins between them.
 Declare through `worth_query_decl::facade::application_schema`:
 
 - `Operation::reference().body().expect(...).assign(...).assign_input(...).finish()`;
+- `body.create_in_scope(Entity::reference(), "candidate-slot")` followed by
+  `.initialize(...)` or `.initialize_input(...)` and `.finish()`;
 - a completed operation definition's `with_body(body)`;
 - `ApplicationProgramAuthoring::begin().with_schema(&schema).validated_program()`.
 
@@ -38,8 +41,8 @@ through `worth_query_host::facade::primary_graph`.
 The completed schema owns the body. Body construction validates literals through
 their fields' declared codecs and captures an input assignment's exact target
 codec and scalar family. Registration derives the body's installed field
-reads and writes; do not repeat these with `operation_read_field` or
-`operation_write`. Normal type-level capability declarations and binding scope
+reads, writes and creation membership; do not repeat these with
+`operation_read_field`, `operation_write` or `operation_create`. Normal type-level capability declarations and binding scope
 resolution still apply. A scope identity lookup may need its own declared read.
 
 `with_schema` captures this meaning in each matching program action before its
@@ -78,6 +81,16 @@ wrong-family members. This selector does not reinterpret JSON or serialize the
 input again. It reserves selected values and the installed decoder's declared
 peak allocation on the same request, charges declared work, validates through
 the exact installed codec, then moves the prepared values into the candidate.
+
+The optional creation recipe uses an entity marker with
+`OperationCreates<Operation>` and field markers with `OperationWrites<Operation>`.
+Initialization may set read-only fields because those fields are being created,
+not edited later. The fixed key names a candidate-local symbolic creation slot;
+it is neither a business identity nor an idempotency key. Query creates the row
+in the existing admitted scope's context, checks that all required created
+fields are initialized, and charges creation and initializers to the same
+candidate. An operation's candidate ceiling must admit that creation and its
+writes. Source before-images are not available to created fields yet.
 
 Publication uses ordinary currentness, authorization, invariant and commit
 machinery. A changed dependency can stale an already prepared candidate. A failed
@@ -178,18 +191,19 @@ native body entry; ordinary admission is not permission to replace its values.
 Do not install a host handler beside a body, restate its destinations in React,
 use handler identity strings as executable meaning, or omit `with_schema` and
 expect installation to fill in missing program semantics. Do not turn an
-unsupported audit, input expression or signature consequence into a hidden host
+unsupported before-image, expression or signature consequence into a hidden host
 callback while claiming the body owns it. Advanced handler-backed operations
 remain a different supported surface, not an equivalent declarative body.
 
 ## Current Limits
 
 This form supports literal equality expectations, literal assignments and flat
-input member assignments on one
-admitted scope's required scalar fields. It requires at least one assignment and
-unit results. Optional-field writes, clear operations, input/source expressions,
-entity creation, links, audit construction, body-bound requirement guidance,
-signature consequences and command continuation are not implemented here.
+input member assignments on one admitted scope's required scalar fields, plus
+one in-context created entity with literal or flat-input initializers. It requires
+at least one scope assignment and unit results. Optional-field writes, clear
+operations, input/source expressions, multiple creations, links, source-derived
+audit fields, body-bound requirement guidance, signature consequences and command
+continuation are not implemented here.
 `ApplicationOperationBodyScopeField` describes only this field family; it is not
 a universal effect instruction or authority carrier.
 

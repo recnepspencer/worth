@@ -94,6 +94,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         Ok(ApplicationOperationBody {
             program: ApplicationOperationBodyProgram {
                 scope_fields: self.steps,
+                creation: None,
             },
             marker: PhantomData,
         })

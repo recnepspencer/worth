@@ -1,11 +1,16 @@
 //! Typed values in an operation body, distinct from its derived effect ceiling.
 
 mod builder;
+mod creation;
 mod program;
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;
-pub use program::{ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField};
+pub use creation::ApplicationOperationBodyCreationBuilder;
+pub use program::{
+    ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
+    ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
+};
 pub(crate) use validation::validate_operation_bodies;
 
 use std::marker::PhantomData;
@@ -27,6 +32,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     DuplicateAssignment,
     DuplicateAttachment,
     InvalidInputMember,
+    InvalidCreationKey,
 }
 
 impl std::fmt::Display for ApplicationOperationBodyAuthoringDenial {
