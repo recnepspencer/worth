@@ -17,9 +17,7 @@ mod output_currentness;
 mod program_outputs;
 pub use branch_set::WorthQueryApplicationBranchSetRequest;
 pub use current_read::WorthQueryApplicationReadObservationDenial;
-pub use output_currentness::{
-    WorthQueryOutputCurrentnessDenial, WorthQueryProgramOutputCurrentnessDenial,
-};
+pub use output_currentness::WorthQueryOutputCurrentnessDenial;
 
 /// Borrowed ordinary-request context. Construction selects no World state and
 /// resolves no application principal.

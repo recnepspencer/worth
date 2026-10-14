@@ -1,17 +1,20 @@
 use std::collections::HashSet;
 use std::marker::PhantomData;
 
+mod action_resolution;
 mod adoption;
 mod correspondence;
 mod derived_artifact;
 mod evaluated_requirement;
 mod external_input;
+mod installed_meaning;
 mod scoped_action;
 mod support;
 mod workflow;
 
 #[cfg(test)]
 mod program_support_fixture;
+pub use action_resolution::{WorthQueryActionResolutionDenial, WorthQueryInstalledActionInventory};
 pub use adoption::{
     WorthQueryProgramAddedRule, WorthQueryProgramAdoptionRequirements,
     WorthQueryProgramAdoptionRequirementsDenial, WorthQueryProgramCustodyInventoryKind,
@@ -28,6 +31,7 @@ pub use external_input::{
     WorthQueryAdmittedExternalInput, WorthQueryCapturedExternalInput,
     WorthQueryInstalledExternalInputProvider,
 };
+pub use installed_meaning::WorthQueryErasedInstalledProgramMeaning;
 pub use scoped_action::WorthQueryInstalledScopedAction;
 pub use support::{
     WorthQueryProgramRuleKey, WorthQueryProgramSupportAdmission, WorthQueryProgramSupportDenial,

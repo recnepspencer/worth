@@ -36,13 +36,13 @@ pub(in crate::domain_computation) struct WorthQueryBoundMutationPreconditions {
 }
 
 pub(in crate::domain_computation) fn bind_mutation_preconditions<Schema, Operation, Scope>(
-    requested: TypedMutationPreconditions<Schema, Operation, Scope>,
+    requested: impl std::borrow::Borrow<TypedMutationPreconditions<Schema, Operation, Scope>>,
     contracts: &WorthQueryCompiledApplicationOperationContracts,
     scope_entity_name: &str,
     scope_entity_id: EntityId,
     layout: &WorthQueryPrimaryGraphLayout,
 ) -> Result<WorthQueryBoundMutationPreconditions, ()> {
-    let mut entries = requested.into_entries();
+    let mut entries = requested.borrow().entries().iter().collect::<Vec<_>>();
     if entries.is_empty() {
         return Ok(empty_bound_preconditions());
     }

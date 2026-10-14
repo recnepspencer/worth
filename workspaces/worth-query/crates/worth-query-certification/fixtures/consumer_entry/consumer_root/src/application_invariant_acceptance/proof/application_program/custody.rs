@@ -223,7 +223,7 @@ type ProgramApplication =
 
 type Prepared = worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
     ConsumerSchema,
-    PlanarSourceAdjustment,
+    worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
 >;
@@ -271,7 +271,7 @@ fn controls() -> WorthQueryOutputDemandControls {
 fn settle<'a>(
     application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, crate::ConsumerProgram>,
     performed: &mut worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<ConsumerSchema,
-        PlanarSourceAdjustment,
+        worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
         crate::ConsumerProgram,
         crate::ConsumerProgramRoot,
     >,

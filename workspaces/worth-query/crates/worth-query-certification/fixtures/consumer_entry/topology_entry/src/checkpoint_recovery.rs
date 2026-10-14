@@ -13,7 +13,7 @@ use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_entry::{
         WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
-        WorthQueryOutputDemandControls, WorthQueryProgramOutputCurrentnessDenial,
+        WorthQueryOutputCurrentnessDenial, WorthQueryOutputDemandControls,
     },
     application_installation::{self, WorthQueryInMemoryApplicationLimits},
     primary_graph::{self, WorthQueryOutputDemandDenialKind},

@@ -206,6 +206,20 @@ where
         self
     }
 
+    /// Declares an exact source action whose fixed outputs and read own delivery.
+    pub fn fixed_output_action<Binding, Delivery>(mut self) -> Self
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Delivery: crate::application_program::ApplicationFixedActionDelivery<Schema, Binding>,
+    {
+        let mut action =
+            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
+        action.mark_required_output_source();
+        action.attach_fixed_delivery::<Schema, Binding, Delivery>();
+        self.actions.push(action);
+        self
+    }
+
     pub fn conditional_operation<Operation>(mut self) -> Self
     where
         Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,

@@ -1,6 +1,6 @@
 //! Move-only custody for a required source whose World effects need recovery.
 
-use worth_query_declaration::facade::application_operation::ApplicationMutationIntent;
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition, ApplicationRequiredOutputRoot,
 };
@@ -22,14 +22,14 @@ pub(super) use crate::application_entry::mutation::performed_source::recovery::{
 
 /// Original required-root preparation and exact native partial. Recovery
 /// never reruns the handler. Promotion consumes this move-only owner.
-pub struct WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>
+pub struct WorthQueryUnpublishedRequiredApplicationMutation<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
+    Binding:
         worth_query_execution::facade::primary_graph::WorthQueryApplicationRequiredOutputSource<
             Schema,
             RootConnection<Schema, Root>,
@@ -40,18 +40,18 @@ where
     pub(super) phase: ProgramSourceRecoveryPhase,
     pub(super) prior_cleanup: Vec<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
     pub(super) initial_cause: ProductUnpublishedCause,
-    pub(super) program: std::marker::PhantomData<fn() -> (Schema, Intent, Program, Root)>,
+    pub(super) program: std::marker::PhantomData<fn() -> (Schema, Binding, Program, Root)>,
 }
 
-impl<Schema, Intent, Program, Root>
-    WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>
+impl<Schema, Binding, Program, Root>
+    WorthQueryUnpublishedRequiredApplicationMutation<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
+    Binding:
         worth_query_execution::facade::primary_graph::WorthQueryApplicationRequiredOutputSource<
             Schema,
             RootConnection<Schema, Root>,
@@ -82,6 +82,20 @@ where
         match &self.phase {
             ProgramSourceRecoveryPhase::Performed { outcome, .. } => Some(outcome),
             ProgramSourceRecoveryPhase::Unpublished(_) => None,
+        }
+    }
+
+    pub fn recovery_posture(&self) -> super::WorthQueryRequiredOutputRecoveryPosture {
+        match &self.phase {
+            ProgramSourceRecoveryPhase::Performed {
+                carrier: RecoveredCarrier::Unavailable,
+                ..
+            } => super::WorthQueryRequiredOutputRecoveryPosture::Terminal,
+            ProgramSourceRecoveryPhase::Unpublished(_)
+            | ProgramSourceRecoveryPhase::Performed {
+                carrier: RecoveredCarrier::Retained(_),
+                ..
+            } => super::WorthQueryRequiredOutputRecoveryPosture::Retryable,
         }
     }
 

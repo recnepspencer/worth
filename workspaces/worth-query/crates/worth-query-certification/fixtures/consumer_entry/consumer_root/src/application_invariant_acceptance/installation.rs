@@ -263,6 +263,20 @@ fn install_with_resource_bytes(
     candidate_bytes: u64,
     query_bytes: usize,
 ) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
+    install_with_roster(
+        foreign,
+        candidate_bytes,
+        query_bytes,
+        installation::WorthQueryApplicationProgramRoster::new(),
+    )
+}
+
+pub(super) fn install_with_roster(
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
+    candidate_bytes: u64,
+    query_bytes: usize,
+    roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
+) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -289,9 +303,10 @@ fn install_with_resource_bytes(
             .unwrap(),
         primary_graph::SignalConditionalEvaluationBudget::development(),
     );
-    let application = installation::in_memory_program::<ConsumerSchema, ConsumerProgram>(
+    let application = installation::in_memory_rostered_program::<ConsumerSchema, ConsumerProgram>(
         crate::application_program::validated_program()
             .expect("the application program is complete"),
+        roster,
         ConsumerSchema::declaration().expect("the contributed declaration is valid"),
         configuration,
         limits,

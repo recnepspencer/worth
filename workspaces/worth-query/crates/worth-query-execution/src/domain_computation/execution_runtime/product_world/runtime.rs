@@ -89,6 +89,10 @@ impl WorthQueryProductRuntime {
         }
     }
 
+    pub fn owns_branch_selector(&self, branch: crate::basis::WorthQueryProductBranch) -> bool {
+        branch.occurrence().owner_identity() == self.owner.owner_identity()
+    }
+
     /// Query token for the installed root product occurrence.
     pub fn root_product_branch(&self) -> crate::basis::WorthQueryProductBranch {
         crate::basis::WorthQueryProductBranch::from_occurrence(self.default_occurrence)

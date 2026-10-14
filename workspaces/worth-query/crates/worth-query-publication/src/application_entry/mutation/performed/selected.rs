@@ -41,7 +41,7 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent>
     >
 where
     Schema: ApplicationSchema + 'static,
-    Intent: ApplicationMutationIntent<Schema> + Clone + Send + Sync,
+    Intent: ApplicationMutationIntent<Schema>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -68,7 +68,7 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>,
+        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent::Binding, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >
     where
@@ -101,7 +101,7 @@ where
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> crate::application_entry::mutation::WorthQueryApplicationMutationAttemptReport<Result<
-        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>,
+        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent::Binding, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >>
     where
@@ -138,14 +138,14 @@ where
         ))
     }
 
-    fn execute_performed_with_work<Program, Root>(
+    pub(in crate::application_entry) fn execute_performed_with_work<Program, Root>(
         self,
         phase: &AdvancementPhase<'_>,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         decision_work: &mut worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
-        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>,
+        WorthQueryApplicationPerformedMutationOutcome<Schema, Intent::Binding, Program, Root>,
         WorthQueryPerformedMutationExecutionDenial,
     >
     where
@@ -181,6 +181,11 @@ where
                 crate::application_entry::mutation::selected_program::map_selected_program_owner_denial(denial),
             )
         })?;
+        if let Some(declared) = self.compiled_action {
+            owner
+                .resolve_declared_action::<Intent::Binding>(declared)
+                .map_err(WorthQueryPerformedMutationExecutionDenial::Action)?;
+        }
         let demand = <Intent::Binding as WorthQueryApplicationRequiredOutputSource<
             Schema,
             RootConnection<Schema, Root>,

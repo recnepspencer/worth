@@ -19,7 +19,7 @@ pub(super) fn discovered(
 pub(super) fn required(
     outcome: &RequiredOutcome<
         CheckpointSchema,
-        PlanarSourceAdjustment,
+        crate::PlanarSourceAdjustmentBinding<CheckpointSchema>,
         CheckpointProgram,
         CheckpointRoot,
     >,

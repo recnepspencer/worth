@@ -245,7 +245,7 @@ pub(super) fn performed_source_settles_required_output(
             &original_settlement,
             NonZeroUsize::new(1).unwrap(),
         ),
-        Err(worth_query_host::facade::application_entry::WorthQueryProgramOutputCurrentnessDenial::Output(denial))
+        Err(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind()
                 == worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
     ));

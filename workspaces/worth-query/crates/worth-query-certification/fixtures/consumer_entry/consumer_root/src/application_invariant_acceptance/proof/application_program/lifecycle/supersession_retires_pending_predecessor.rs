@@ -85,7 +85,7 @@ pub(in super::super) fn supersession_retires_pending_predecessor(
             &settled,
             NonZeroUsize::new(4_096).unwrap(),
         ),
-        Err(WorthQueryProgramOutputCurrentnessDenial::Output(denial))
+        Err(WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     request

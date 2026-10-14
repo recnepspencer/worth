@@ -4,7 +4,7 @@ mod aggregate_projection;
 pub(crate) mod application_attempt;
 mod application_branch;
 mod application_checkpoint;
-mod application_contribution;
+pub(in crate::domain_computation) mod application_contribution;
 pub(in crate::domain_computation) use application_contribution::{
     ComputationPrior, SealedComputationRetention,
 };

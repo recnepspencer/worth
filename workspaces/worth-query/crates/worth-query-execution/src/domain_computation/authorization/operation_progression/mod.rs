@@ -110,10 +110,12 @@ pub(in crate::domain_computation) fn progress_conventional_operation<
         Operation,
         Input,
     >,
-    preconditions: worth_query_declaration::facade::application_schema::TypedMutationPreconditions<
-        Schema,
-        Operation,
-        Scope,
+    preconditions: impl std::borrow::Borrow<
+        worth_query_declaration::facade::application_schema::TypedMutationPreconditions<
+            Schema,
+            Operation,
+            Scope,
+        >,
     >,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<

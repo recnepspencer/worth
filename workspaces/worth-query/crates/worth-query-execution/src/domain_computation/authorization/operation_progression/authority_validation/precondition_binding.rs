@@ -69,7 +69,7 @@ pub(in crate::domain_computation::authorization::operation_progression) fn bind_
         Input,
         Scope,
     >,
-    preconditions: TypedMutationPreconditions<Schema, Operation, Scope>,
+    preconditions: impl std::borrow::Borrow<TypedMutationPreconditions<Schema, Operation, Scope>>,
 ) -> Result<
     PreconditionBoundConventionalOperation<
         '_,

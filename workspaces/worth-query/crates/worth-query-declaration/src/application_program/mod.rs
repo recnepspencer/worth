@@ -26,7 +26,11 @@ mod workflow;
 #[cfg(test)]
 mod program_tests;
 
-pub use action::{ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration};
+pub use action::{
+    ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration,
+    ApplicationActionDeliveryDeclaration, ApplicationActionReference, ApplicationFixedAction,
+    ApplicationFixedActionDelivery,
+};
 pub use action_correspondence::{
     ApplicationOptionalMemberEdit, ApplicationRepeatedOptionalMemberCorrespondence,
 };

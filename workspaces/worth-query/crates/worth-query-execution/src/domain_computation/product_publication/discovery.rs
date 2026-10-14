@@ -50,6 +50,67 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryProductUnpublishedRecoveryReleaseFailure,
     >{
+        self.prepare_product_publication_recovery_release(recovery, minimum_age_ticks)?
+            .retry()
+            .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
+    }
+
+    pub fn release_product_publication_recovery_in_advancement(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        recovery: WorthQueryProductUnpublishedRecovery,
+        minimum_age_ticks: u64,
+    ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
+        use crate::domain_computation::primary_graph::application_contribution::execution_denial;
+        let execution = match phase.checked_execution_request_for(&self.product_runtime) {
+            Ok(execution) => execution,
+            Err(denial) => {
+                return Err(recovery_failure(
+                    recovery,
+                    WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(denial),
+                ))
+            }
+        };
+        let mut retained = Some(recovery);
+        let outcome = execution.in_scope(|lease| {
+            worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
+                .run_with_checkpoint(lease, None, |context| {
+                    // One native recovery-record release; its subsequent owner cleanup
+                    // admits history and component retirement separately before effects.
+                    if let Err(stop) = context.checkpoint(1) {
+                        return Err(recovery_failure(
+                            retained
+                                .take()
+                                .expect("admitted release retains its original record"),
+                            WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(
+                                execution_denial::advancement_checkpoint_stop(stop),
+                            ),
+                        ));
+                    }
+                    self.prepare_product_publication_recovery_release(
+                        retained.take().expect("one admitted record release"),
+                        minimum_age_ticks,
+                    )?
+                    .retry_in_advancement(phase)
+                    .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
+                })
+        });
+        match outcome {
+            Ok(Ok((outcome, _))) => outcome,
+            Ok(Err(denial)) | Err(denial) => Err(recovery_failure(
+                retained.expect("refused release scope keeps record custody"),
+                WorthQueryProductUnpublishedRecoveryReleaseDenial::Execution(
+                    execution_denial::advancement_scope_stop(denial),
+                ),
+            )),
+        }
+    }
+
+    fn prepare_product_publication_recovery_release(
+        &self,
+        recovery: WorthQueryProductUnpublishedRecovery,
+        minimum_age_ticks: u64,
+    ) -> Result<crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup, WorthQueryProductUnpublishedRecoveryReleaseFailure>{
         let handle = recovery.record_handle().clone();
         let provider_release = match self
             .primary_provider
@@ -102,11 +163,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             provider_release.finish();
         }
         let cleanup_identity = reservation.install_unpublished(cleanup);
-        crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(
+        Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::new(
             self.product_runtime.clone(),
             cleanup_identity,
-        )
-        .retry()
-        .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
+        ))
     }
 }

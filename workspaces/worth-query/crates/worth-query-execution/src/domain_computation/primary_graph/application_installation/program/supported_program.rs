@@ -6,7 +6,7 @@
 //! without the host keeping a mutable table of who may act.
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
-use std::any::Any;
+use worth_query_installation::facade::WorthQueryErasedInstalledProgramMeaning;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramRevision,
@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgr
     revision: ApplicationProgramRevision,
     /// The typed installed program, so owners that install against program
     /// vocabulary (such as a workflow spec) can name it by its authoring type.
-    installed: Box<dyn Any + Send + Sync>,
+    pub(super) installed: Box<dyn WorthQueryErasedInstalledProgramMeaning>,
     pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) output_source_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) root_graph_types: Box<[TypeId]>,
@@ -65,7 +65,7 @@ impl WorthQuerySupportedProgramRecord {
         Schema: 'static,
         Program: 'static,
     {
-        self.installed.downcast_ref()
+        self.installed.as_any().downcast_ref()
     }
 
     pub(in crate::domain_computation::primary_graph) fn answers_to(&self, program: TypeId) -> bool {

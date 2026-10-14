@@ -19,9 +19,6 @@ pub enum WorthQueryOutputCurrentnessDenial {
     Output(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
 }
 
-/// Compatibility name for the earlier program-only currentness surface.
-pub type WorthQueryProgramOutputCurrentnessDenial = WorthQueryOutputCurrentnessDenial;
-
 impl<'application, 'principal, 'scope, Schema>
     WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>
 where
@@ -35,7 +32,7 @@ where
             RootQuery,
         >,
         maximum_work: NonZeroUsize,
-    ) -> Result<(), WorthQueryProgramOutputCurrentnessDenial> {
+    ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.require_current_output_settlements(settlement.retained_settlements(), maximum_work)
     }
 
@@ -57,17 +54,33 @@ where
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
-                let selected = self
-                    .application
-                    .select_application_read_observation(&phase, &self.observation)
-                    .map_err(WorthQueryOutputCurrentnessDenial::Observation)?;
-                if selected.product().product_branch() != self.branch {
-                    return Err(WorthQueryOutputCurrentnessDenial::ForeignBranch);
-                }
-                selected
-                    .require_current_output_settlements(&phase, settlements, maximum_work)
-                    .map_err(WorthQueryOutputCurrentnessDenial::Output)
+                self.require_current_output_settlements_in_advancement(
+                    &phase,
+                    settlements,
+                    maximum_work,
+                )
             })
             .map_err(WorthQueryOutputCurrentnessDenial::ExecutionRequest)?
+    }
+    pub(in crate::application_entry) fn require_current_output_settlements_in_advancement<
+        'settlement,
+    >(
+        &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        settlements: impl IntoIterator<Item = &'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
+        maximum_work: NonZeroUsize,
+    ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
+        let selected = self
+            .application
+            .select_application_read_observation(phase, &self.observation)
+            .map_err(WorthQueryOutputCurrentnessDenial::Observation)?;
+        if selected.product().product_branch() != self.branch {
+            return Err(WorthQueryOutputCurrentnessDenial::ForeignBranch);
+        }
+        selected
+            .require_current_output_settlements(phase, settlements, maximum_work)
+            .map_err(WorthQueryOutputCurrentnessDenial::Output)
     }
 }

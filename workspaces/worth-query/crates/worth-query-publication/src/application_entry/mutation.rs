@@ -14,7 +14,7 @@ pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
 mod program_output_work;
 mod recovery;
-mod request;
+pub(in crate::application_entry) mod request;
 mod retained;
 mod selected_program;
 mod staged;

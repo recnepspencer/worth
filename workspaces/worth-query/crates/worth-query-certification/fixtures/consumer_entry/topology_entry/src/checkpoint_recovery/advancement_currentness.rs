@@ -59,7 +59,7 @@ fn retained_currentness_refuses_before_its_admitted_validation_reader() {
                 },
             )));
             let before = reads();
-            let WorthQueryProgramOutputCurrentnessDenial::ExecutionRequest(cause) = current
+            let WorthQueryOutputCurrentnessDenial::ExecutionRequest(cause) = current
                 .require_current_program_output(&settlement, maximum_work)
                 .unwrap_err()
             else {

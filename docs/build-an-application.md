@@ -1619,38 +1619,78 @@ cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certi
 
 ### 5.4 Mutations with required outputs
 
-When a mutation's source feeds the program's output graph, execute it as a
-*performed* mutation and settle its required outputs. Shape, with
-illustrative names; the compiled counterpart is
-`.../fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/settlement.rs`:
+For a fixed required-output action, declare its exact composition occurrence,
+output root and read binding. `ApplicationFixedActionDelivery<Schema, Binding>`
+names `Root`, `Read`, a stable `IDENTITY`, and `read_input(&Binding::Input)`.
+The installed declaration binds the concrete `Delivery` implementation. Another
+type cannot substitute its selector by copying the delivery identity, root, and
+read metadata. The identity still supplies stable canonical meaning; runtime type
+stamps are not persisted.
+
+Author that source with `fixed_output_action::<Binding, Delivery>()`; use an
+`ApplicationActionReference<Schema, Instance, Feature, Binding, Delivery>` to
+select it. Program validation requires the delivery root to belong to that
+program and to start at the action's actual source occurrence.
+
+The owning entrance retains the original intent, key, typed preconditions,
+row or result-set expectation, and branch. Construction admits installed meaning
+without performing an effect. A refused constructor returns the original
+`WorthQueryOperationDescription`, so it can be retained or lawfully constructed
+against the correct declaration. It retains no authenticated principal or grant.
+
+Shape, with illustrative names; the executable counterpart is
+[`required_unpublished.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs):
 
 ```rust
 // Shape. Illustrative names.
-let outcome = request
+let description = request
     .mutate(AdjustDraft { /* ... */ })
-    .expect_source(source)                 // or .without_source()
-    .idempotency(&key)
-    .execute_performed::<MyProgram, MyOutputRoot>(&runtime, allocation_policy)?;
-let WorthQueryApplicationPerformedMutationOutcome::Performed(performed) = outcome else {
-    /* Retain ProductUnpublished, RequiredOutputDenied(..), and Blocked
-       custody; handle NotPerformed(..) according to its native outcome. */
-};
-let mut performed = performed.start_required_outputs(&runtime, &request, controls)?;
-performed.required_output_mut().advance(&runtime, &request)?; // Pending, later Settled(..)
+    .expect_source(source)                 // or expect_result_set(result_set)
+    .preconditions(original_conditions)
+    .idempotency_owned(key);
+let operation = description.retain_fixed::<MyProgram, AdjustDraftAction>(&runtime);
+// On construction refusal, retain the returned (description, denial).
+let operation = retain_or_handle_construction(operation);
+
+match operation.advance(&fresh_request) {
+    WorthQueryOperationAdvance::Progress { operation, progress } =>
+        retain_for_next_request(operation, progress),
+    WorthQueryOperationAdvance::Refused { operation, denial } =>
+        retain_refused_operation(operation, denial),
+    WorthQueryOperationAdvance::Terminal { operation, denial } =>
+        retain_terminal_native_custody(operation, denial),
+    WorthQueryOperationAdvance::Settled(settled) => {
+        consume_or_retry_delivery(settled.read_current(&fresh_request));
+        retain_or_finish_close(settled.close(&fresh_request));
+    }
+}
 ```
 
-`controls` is `WorthQueryOutputDemandControls::new(NonZeroUsize, NonZeroUsize)`.
-Output progress is `WorthQueryApplicationProgramOutputProgress::{Pending, Settled}`.
-The owned continuation can outlive the starting request. Each advance supplies
-the original installed runtime and a freshly authenticated request. An unpublished
-source retains its original preparation and native partial; recovery continues
-it under fresh authorization and never prepares a candidate or invokes the
-original handler again. Once recovery has performed,
-`promote_recovered_required_outputs` transfers that original source into its
-required-output handle once, also without invoking the handler; a refusal
-returns the recovery owner intact.
+Each advance receives fresh request authority for the same runtime and branch.
+Query borrows the original description into its existing native admission and
+execution owners. A real unpublished source continues its original partial;
+recovery and promotion never invoke the source handler again. Genuine native
+handoffs are reported as progress. Native output `Pending` is reported only
+when the existing output owner reports it.
 
-One `advance` can process the caller's dependency chain and other queued
+Settlement does not invent a recovered handler reply: `handler_result()` and
+`recovered_progress()` remain distinct. `read_current` retains one fresh
+observation, requires every settled output's native lineage at that observation,
+and executes the declared read there. Refusal retains settlement and original
+meaning for a later read; it does not perform the source or outputs again.
+
+`close` funds native recovery-record release and owner cleanup. A refusal returns
+the settled owner with the exact remaining cleanup. Holding a real World caller
+capability can lawfully refuse record release; dropping that capability and
+supplying a fresh request permits retry. A closed result reports discharged
+cleanup, rather than treating a failed release as success.
+
+The fixed owning entrance currently composes conventional unguarded source
+actions. Other native entrances remain available while their owning adapters
+are completed; this entrance does not reinterpret a capability or workflow
+denial as ordinary permission.
+
+When the owner reaches output traversal, one native `advance` can process the caller's dependency chain and other queued
 required outputs in several waves. The required-set owner admits a wave only
 against a basis where its consumed upstream outputs have committed. Compute
 steps of independent members can overlap; completion, commits, and publications

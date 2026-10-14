@@ -268,6 +268,14 @@ fn append_actions(
 ) {
     for action in actions {
         let subject = action.semantic_subject();
+        if let Some(delivery) = action.delivery() {
+            facts.push(fact(
+                ApplicationSemanticFamily::Operations,
+                format!("delivery:{subject}"),
+                delivery.canonical_meaning(),
+            ));
+        }
+
         let mut fields = vec![
             (
                 "input",

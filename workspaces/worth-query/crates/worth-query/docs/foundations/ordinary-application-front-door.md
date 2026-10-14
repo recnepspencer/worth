@@ -629,6 +629,39 @@ The host submits observations. Signal decides whether a derived wake is
 eligible. Query then freshly admits and invokes the installed application
 operation. See the conditional-operation guide for the complete contract.
 
+## Owning Fixed-Output Actions
+
+A conventional unguarded fixed source action declares its root and read through
+`ApplicationFixedActionDelivery` and
+`fixed_output_action::<Binding, Delivery>()`. An exact typed
+`ApplicationActionReference` includes the composition instance and feature;
+matching only a mutation binding does not select an occurrence.
+
+The prepared mutation's `idempotency_owned(key)` returns an immutable operation
+description. `retain_fixed::<Program, Action>(&program)` resolves actual installed
+delivery meaning and its concrete selector implementation, returning that description
+on refusal. A different delivery type with copied metadata does not resolve. `advance(&fresh_request)`
+opens one native phase and borrows the original intent, key, conditions and
+source proof. The branch-selected installed owner checks the cached original
+action meaning in the actual source execution and recovery paths.
+
+After native settlement, `read_current` validates all output lineages and queries
+at one fresh retained observation. Delivery refusal keeps the settled owner;
+retry uses fresh authority and does not publish the source again. The recovered
+native progress and a fresh handler reply have separate accessors.
+
+`close` retains an undisposed native recovery record and every refused owner
+cleanup until a funded retry can discharge them. It returns the complete settled
+owner on refusal. A real post-recovery caller capability can block release, so
+observation custody and cleanup custody remain independent.
+
+The executable
+[`fixed partial-publication journey`](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs)
+uses the actual append fault, fresh recovery, all four dependent settlements,
+World observation-capacity refusal and World caller-capability cleanup refusal.
+Source-only and the remaining native adapter lanes retain their existing
+entrances until their owning replacement is complete.
+
 ## How It Relates To Other Features
 
 - Use installed application queries for current, historical, continuation,

@@ -1,6 +1,4 @@
-use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent,
-};
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
@@ -21,10 +19,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryApplicationMutationOutcome;
 
-type MutationResult<Schema, Intent> =
-    <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<
-        Schema,
-    >>::Result;
+type MutationResult<Schema, Binding> = <Binding as ApplicationMutationBinding<Schema>>::Result;
 type RootConnectionRef<Schema, Root> =
     <Root as ApplicationOutputGraphShape<Schema>>::RootConnection;
 type RootConnection<Schema, Root> =
@@ -38,70 +33,75 @@ type DemandSource<Schema, Root> =
 
 /// Result of a source publication whose required output custody is retained by
 /// its installed program.
-pub enum WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>
+pub enum WorthQueryApplicationPerformedMutationOutcome<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
-    Performed(WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>),
+    Performed(WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root>),
     /// Original required-root preparation and native partial remain owned.
     ProductUnpublished(
-        WorthQueryUnpublishedRequiredApplicationMutation<Schema, Intent, Program, Root>,
+        WorthQueryUnpublishedRequiredApplicationMutation<Schema, Binding, Program, Root>,
     ),
     /// The source publication committed before required-output custody could
     /// be prepared. The caller still receives the exact receipt and result.
-    RequiredOutputDenied(WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>),
+    RequiredOutputDenied(WorthQueryRequiredOutputRetentionFailure<Schema, Binding, Program, Root>),
     /// Performed or unresolved native outcome whose recovery is not supported here.
     Blocked(
         super::performed_source::WorthQueryBlockedProgramSource<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-            MutationResult<Schema, Intent>,
+            <Binding as ApplicationMutationBinding<Schema>>::Denial,
+            MutationResult<Schema, Binding>,
             ProgramDemand<Schema, Root>,
         >,
     ),
     NotPerformed(
         WorthQueryApplicationMutationOutcome<
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-            MutationResult<Schema, Intent>,
+            <Binding as ApplicationMutationBinding<Schema>>::Denial,
+            MutationResult<Schema, Binding>,
         >,
     ),
 }
 
 /// Fresh source result that can start its installed required outputs exactly once.
-pub struct WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>
+pub struct WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
-    result: MutationResult<Schema, Intent>,
-    source:
-        preparation::WorthQueryRequiredOutputPreparation<Schema, Program, Root, Intent::Binding>,
+    result: MutationResult<Schema, Binding>,
+    source: preparation::WorthQueryRequiredOutputPreparation<Schema, Program, Root, Binding>,
 }
 
-impl<Schema, Intent, Program, Root>
-    WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>
+impl<Schema, Binding, Program, Root>
+    WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
+    pub(in crate::application_entry) fn into_preparation(
+        self,
+    ) -> (
+        MutationResult<Schema, Binding>,
+        preparation::WorthQueryRequiredOutputPreparation<Schema, Program, Root, Binding>,
+    ) {
+        (self.result, self.source)
+    }
+
     /// Exact committed source evidence required to re-enter owner-held output custody.
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.source.receipt
@@ -109,39 +109,38 @@ where
 }
 
 /// A performed source whose required output demand has been admitted.
-pub struct WorthQueryStartedRequiredOutputs<Schema, Intent, Program, Root>
+pub struct WorthQueryStartedRequiredOutputs<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     receipt: WorthQueryApplicationCommitReceipt,
-    result: MutationResult<Schema, Intent>,
+    result: MutationResult<Schema, Binding>,
     required_output:
         crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>,
 }
 
-impl<Schema, Intent, Program, Root> WorthQueryStartedRequiredOutputs<Schema, Intent, Program, Root>
+impl<Schema, Binding, Program, Root>
+    WorthQueryStartedRequiredOutputs<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
     }
 
-    pub const fn result(&self) -> &MutationResult<Schema, Intent> {
+    pub const fn result(&self) -> &MutationResult<Schema, Binding> {
         &self.result
     }
 
@@ -150,7 +149,7 @@ where
         self,
     ) -> (
         WorthQueryApplicationCommitReceipt,
-        MutationResult<Schema, Intent>,
+        MutationResult<Schema, Binding>,
         crate::application_entry::WorthQueryApplicationProgramOutputHandle<Schema, Program, Root>,
     ) {
         (self.receipt, self.result, self.required_output)
@@ -169,32 +168,30 @@ where
 
 /// A landed mutation whose required outputs could not start. `into_performed` returns the
 /// landed mutation; `into_parts` also returns the denial.
-pub struct WorthQueryRequiredOutputStartFailure<Schema, Intent, Program, Root>
+pub struct WorthQueryRequiredOutputStartFailure<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
-    performed: WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>,
+    performed: WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root>,
     denial: WorthQueryRequiredOutputPreparationDenial,
 }
 
-impl<Schema, Intent, Program, Root>
-    WorthQueryRequiredOutputStartFailure<Schema, Intent, Program, Root>
+impl<Schema, Binding, Program, Root>
+    WorthQueryRequiredOutputStartFailure<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     pub const fn denial(&self) -> &WorthQueryRequiredOutputPreparationDenial {
         &self.denial
@@ -204,20 +201,20 @@ where
         &self.performed.source.receipt
     }
 
-    pub const fn result(&self) -> &MutationResult<Schema, Intent> {
+    pub const fn result(&self) -> &MutationResult<Schema, Binding> {
         &self.performed.result
     }
 
     pub fn into_performed(
         self,
-    ) -> WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root> {
+    ) -> WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root> {
         self.performed
     }
 
     pub fn into_parts(
         self,
     ) -> (
-        WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>,
+        WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root>,
         WorthQueryRequiredOutputPreparationDenial,
     ) {
         (self.performed, self.denial)
@@ -226,23 +223,22 @@ where
 
 /// Settles a performed source's commit into its public outcome: not
 /// performed, committed without output custody, or performed with custody.
-fn performed_outcome<Schema, Intent, Program, Root>(
+fn performed_outcome<Schema, Binding, Program, Root>(
     demand: ProgramDemand<Schema, Root>,
     outcome: WorthQueryApplicationMutationOutcome<
-        <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-        MutationResult<Schema, Intent>,
+        <Binding as ApplicationMutationBinding<Schema>>::Denial,
+        MutationResult<Schema, Binding>,
     >,
     source: super::performed_source::PerformedSourceCommit,
-) -> WorthQueryApplicationPerformedMutationOutcome<Schema, Intent, Program, Root>
+) -> WorthQueryApplicationPerformedMutationOutcome<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     let outcome = match outcome {
         WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {

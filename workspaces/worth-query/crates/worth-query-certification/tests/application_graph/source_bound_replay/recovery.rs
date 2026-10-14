@@ -186,7 +186,11 @@ fn recover_original_source(
     let WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = outcome else {
         panic!("original source must recover its retained performed effects");
     };
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    let (read, publication_failure, cleanup_failure, pending_cleanup) = performed.into_parts();
+    assert!(
+        pending_cleanup.is_none(),
+        "ordinary raw recovery already attempted native cleanup"
+    );
     assert!(publication_failure.is_none());
     assert!(cleanup_failure.is_none());
     let Resolution::AlreadyCommitted(receipt) = read.unwrap().into_resolution() else {

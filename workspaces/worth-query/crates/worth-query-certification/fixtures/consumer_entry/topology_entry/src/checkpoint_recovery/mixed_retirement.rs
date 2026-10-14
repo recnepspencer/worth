@@ -157,7 +157,7 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
             crate::checkpoint_recovery::support::retain_read(&application, &request).unwrap();
         assert!(
             matches!(request.at(&changed).require_current_program_output(&settled, NonZeroUsize::new(4096).unwrap()),
-            Err(WorthQueryProgramOutputCurrentnessDenial::Output(denial)) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded)
+            Err(WorthQueryOutputCurrentnessDenial::Output(denial)) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded)
         );
     }
     request

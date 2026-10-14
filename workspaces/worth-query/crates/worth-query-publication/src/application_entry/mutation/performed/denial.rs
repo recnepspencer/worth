@@ -1,6 +1,7 @@
 /// Why a mutation with required program outputs was refused before its commit.
 #[derive(Debug)]
 pub enum WorthQueryPerformedMutationExecutionDenial {
+    Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     ForeignProgram,
     UndeclaredOutputRoot,
     MissingConnection,

@@ -169,7 +169,7 @@ where
 }
 
 /// Domain input whose operation and scope association are owned by an entry binding.
-pub trait ApplicationMutationIntent<Schema>: Sized + 'static
+pub trait ApplicationMutationIntent<Schema>: Sized
 where
     Schema: ApplicationSchema,
 {
@@ -188,4 +188,16 @@ where
     fn input(&self) -> &<Self::Binding as ApplicationMutationBinding<Schema>>::Input;
 
     fn scope_binding(&self) -> <Self::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding;
+}
+
+impl<Schema: ApplicationSchema, Intent: ApplicationMutationIntent<Schema>>
+    ApplicationMutationIntent<Schema> for &Intent
+{
+    type Binding = Intent::Binding;
+    fn input(&self) -> &<Self::Binding as ApplicationMutationBinding<Schema>>::Input {
+        <Intent as ApplicationMutationIntent<Schema>>::input(*self)
+    }
+    fn scope_binding(&self) -> <Self::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding {
+        <Intent as ApplicationMutationIntent<Schema>>::scope_binding(*self)
+    }
 }
