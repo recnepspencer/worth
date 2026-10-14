@@ -4,6 +4,8 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 mod admitted_selection;
+mod prepared_publication;
+pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
 pub(crate) use admitted_selection::ExactLookupInputs;
 mod generation_catalog;

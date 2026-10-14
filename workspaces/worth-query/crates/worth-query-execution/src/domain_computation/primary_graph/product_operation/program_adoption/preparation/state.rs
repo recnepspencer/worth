@@ -162,7 +162,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     );
     let target_rendering = program_revision_rendering(target);
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
-    let candidate = graph.with_runtime_mut(execution, |runtime| {
+    let mut candidate = graph.with_runtime_mut(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
@@ -208,6 +208,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             .prepare_branch_transaction(execution, transaction)
             .map_err(map_relational_preparation_denial)
     })?;
+    super::selector_indexes::prepare(execution, selected, &mut candidate)?;
     let successor_observation_requested = false;
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected

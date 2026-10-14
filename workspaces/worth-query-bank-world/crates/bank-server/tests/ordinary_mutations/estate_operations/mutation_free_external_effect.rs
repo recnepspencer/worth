@@ -28,8 +28,8 @@ use bank_domain::schema::AccountStatus;
 use bank_external_rail::test_control::FaultScript;
 use bank_external_rail::RailProcessHandle;
 use bank_server::{
-    queries, BankCommitReceipt, BankEmployeeAssignmentSeed, BankMutationCommitOutcome,
-    BankPrincipalSeed, BankReadControls, BankWorldSeed,
+    queries, BankCommitReceipt, BankEmployeeAssignmentSeed, BankPrincipalSeed, BankReadControls,
+    BankWorldSeed,
 };
 use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedExternalEffectFailure;
 
@@ -106,10 +106,11 @@ fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
     world
         .transport
         .after_next_dispatch(move || armed.store(true, Ordering::Release));
-    let retry = world.retransmit(binding);
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
-        panic!("lost-response retry must resolve by idempotency: {retry:?}");
-    };
+    let (recovered, fresh) = world.retransmit(binding);
+    assert!(
+        !fresh,
+        "native recovered evidence, no original handler result"
+    );
     super::external_effect_dispatch::publication_assertions::assert_recovered_commit_axes(
         receipt, &recovered,
     );
@@ -130,10 +131,11 @@ fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
     );
 
     world.transport.under(FaultScript::Succeed, PATIENT);
-    assert!(matches!(
-        world.retransmit(idempotency(62)),
-        BankMutationCommitOutcome::Committed(_)
-    ));
+    let (_receipt, fresh) = world.retransmit(idempotency(62));
+    assert!(
+        fresh,
+        "new retransmission completes through the native source owner"
+    );
     assert!(dispatched.load(Ordering::Acquire));
     assert_eq!(world.transport.attempts().len(), 2);
     assert_eq!(
@@ -144,27 +146,58 @@ fn assert_equivalent_retry_skips_rail_and_unseen_request_consumes_sentinel(
 
 impl MutationFreeWorld {
     fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
-        let outcome = self.retransmit(binding);
-        let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-            panic!("mutation-free retransmit must commit: {outcome:?}");
-        };
+        let (receipt, fresh) = self.retransmit(binding);
+        assert!(fresh, "native fresh completion");
         receipt
     }
 
-    fn retransmit(&self, binding: BankIdempotencyKey) -> BankMutationCommitOutcome {
-        self.world
-            .runtime
-            .retransmit_estate_death_notice_with_key(
-                &self.authenticate_specialist(),
+    fn retransmit(&self, binding: BankIdempotencyKey) -> (BankCommitReceipt, bool) {
+        {
+            let source_actor = &self.authenticate_specialist();
+            let source_scope = &request_scope();
+            let source_key = &binding;
+            let source_intent = bank_domain::schema::RetransmitEstateDeathNotice::try_from(
                 EstateAction::RetransmitDeathNotice {
                     estate: self.estate,
                     notice: self.notice,
                     subject: self.deceased,
                 },
-                &binding,
-                &request_scope(),
             )
-            .expect("lawful retransmit should reach commit")
+            .expect("typed estate command preserves the exact variant");
+            let source_request = self.world.runtime.request(source_actor, source_scope);
+            let source_operation = self
+                .world
+                .runtime
+                .mutate(bank_server::mutations::retransmit_estate_death_notice(
+                    source_intent,
+                ))
+                .as_principal(source_actor)
+                .controls(bank_server::BankMutationControls::new(
+                    (*source_scope).clone(),
+                    (*source_key).clone(),
+                ))
+                .retain_operation()
+                .unwrap_or_else(|(_, cause)| {
+                    panic!("exact declared estate construction: {cause:?}")
+                });
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+                source_completed,
+            ) = source_operation.advance(&source_request)
+            else {
+                panic!("native source completion required")
+            };
+            let fresh = matches!(
+                source_completed.evidence(),
+                worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+            );
+            let closed_source = source_completed
+                .close_with_evidence(&source_request)
+                .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+            (
+                bank_server::BankCommitReceipt::from_closed_source(closed_source),
+                fresh,
+            )
+        }
     }
 
     fn authenticate_specialist(&self) -> bank_server::BankAuthenticatedPrincipal {

@@ -1,4 +1,5 @@
 //! Static capability admission and graph-work preparation.
+mod selector_indexes;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::{

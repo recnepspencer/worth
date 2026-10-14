@@ -1,6 +1,7 @@
 mod dispositions;
 mod migration;
 mod selection;
+mod selector_indexes;
 mod state;
 mod workflow;
 
@@ -132,6 +133,10 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     TransactionAdmission(
         worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
     ),
+    /// The exact predecessor snapshot could not be retained for selector maintenance.
+    SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
+    /// Selected installed selector generations could not be maintained on the candidate.
+    SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     /// The adoption's changes could not be staged in the branch transaction.
     TransactionStaging(worth_relational::facade::mvcc::RelationalTransactionStagingDenial),
     /// A custom invariant of the target program rejected the prepared adoption;

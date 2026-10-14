@@ -133,3 +133,27 @@ impl ApplicationMutationIntent<BankSchema> for RetransmitEstateDeathNotice {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
     }
 }
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for RetransmitEstateDeathNoticeMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            RetransmitDeathNoticeEstateCapability,
+        >;
+}
+
+impl TryFrom<EstateAction> for RetransmitEstateDeathNotice {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::RetransmitDeathNotice {
+                estate,
+                notice,
+                subject,
+            } => Ok(Self::new(estate, notice, subject)),
+            original => Err(original),
+        }
+    }
+}

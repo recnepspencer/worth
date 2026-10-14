@@ -19,6 +19,12 @@ pub(super) struct MaintenancePreparation<T> {
     _memory: ExecutionMemoryReservation,
 }
 
+impl<T> MaintenancePreparation<T> {
+    pub(super) fn into_funded_parts(self) -> (T, ExecutionMemoryReservation) {
+        (self.value, self._memory)
+    }
+}
+
 pub(super) fn run<T>(
     execution: &ExecutionRequest<'_, '_>,
     budget: DerivedIndexMaintenanceBudget,

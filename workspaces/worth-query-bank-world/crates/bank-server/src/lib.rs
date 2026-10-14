@@ -148,3 +148,12 @@ pub use application_definition::{
     PaymentRejectionAction, PaymentRejectionDelivery, PersonalAccountCreationAction,
     PersonalAccountCreationDelivery,
 };
+
+pub use application_definition::{
+    DeathNoticeRetransmissionAction, DeathNoticeRetransmissionDelivery, DeathNotificationAction,
+    DeathNotificationDelivery, EstateAccountFreezeAction, EstateAccountFreezeDelivery,
+    EstateCaseOpeningAction, EstateCaseOpeningDelivery, EstateDisbursementAction,
+    EstateDisbursementDelivery, EstateReleaseAction, EstateReleaseDelivery,
+    ExecutorRecognitionAction, ExecutorRecognitionDelivery, ProgramDeploymentRevocationAction,
+    ProgramDeploymentRevocationDelivery,
+};

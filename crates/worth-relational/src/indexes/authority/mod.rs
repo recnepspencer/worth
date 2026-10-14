@@ -2,8 +2,7 @@ mod build_projection;
 use build_projection::IndexBuildProjection;
 mod generation_publication;
 use generation_publication::{
-    prepared_generation, publish_index_generations, publish_prepared_generation,
-    IndexGenerationPublicationBasis,
+    prepared_generation, publish_index_generations, IndexGenerationPublicationBasis,
 };
 mod basis_build;
 mod build_execution;

@@ -50,6 +50,8 @@ worth_query_operation!(pub ReleaseEstateOperation for BankSchema, input EstateAc
 worth_query_operation!(pub DisburseEstateOperation for BankSchema, input EstateActionInputBinding);
 worth_query_operation!(pub ViewRestrictedEstateOperation for BankSchema, input EstateActionInputBinding);
 
+worth_query_operation_reads!(ViewRestrictedEstateOperation => [EstateCaseIdentityField]);
+
 worth_query_operation_reads!(FreezeEstateAccountOperation => [AccountIdentity, Status, EstateAccount]);
 worth_query_operation_writes!(FreezeEstateAccountOperation => [Status]);
 worth_query_operation_reads!(NotifyDeathEstateOperation => [DeathNoticeIdentityField, DeathNoticeStatusField, PrincipalIdentityField, EstateDeathNotice, DeathNoticeSubject, EstateDeceased]);
@@ -61,22 +63,22 @@ worth_query_operation_reads!(OpenEstateCaseOperation => [EstateCaseIdentityField
 worth_query_operation_writes!(OpenEstateCaseOperation => [EstateCaseStatusField]);
 worth_query_operation_reads!(RecognizeEstateExecutorOperation => [EstateCaseIdentityField, LegalAuthorityIdentityField, LegalAuthorityRecognizedField, PrincipalIdentityField, LegalAuthorityEstate, LegalAuthorityHolder, EstateExecutor]);
 worth_query_operation_links!(RecognizeEstateExecutorOperation => [EstateExecutor]);
-worth_query_operation_reads!(DelegateEstateCapabilityOperation => [AccountIdentity, InstitutionIdentityField, BranchIdentityField, CapabilityGrantIdentityField, EstateBranch, BranchInstitution, EstateAccount]);
-worth_query_operation_reads!(RevokeEstateCapabilityOperation => [CapabilityGrantIdentityField, CapabilityGrantStatusField, CapabilityEstate]);
+worth_query_operation_reads!(DelegateEstateCapabilityOperation => [EstateCaseIdentityField, AccountIdentity, InstitutionIdentityField, BranchIdentityField, CapabilityGrantIdentityField, EstateBranch, BranchInstitution, EstateAccount]);
+worth_query_operation_reads!(RevokeEstateCapabilityOperation => [EstateCaseIdentityField, CapabilityGrantIdentityField, CapabilityGrantStatusField, CapabilityEstate]);
 worth_query_operation_writes!(RevokeEstateCapabilityOperation => [CapabilityGrantStatusField]);
 worth_query_operation_reads!(RequestEstateEmergencyAccessOperation => [EstateCaseIdentityField]);
 worth_query_operation_creates!(RequestEstateEmergencyAccessOperation => [EmergencyAccess, MandatoryReview]);
 worth_query_operation_writes!(RequestEstateEmergencyAccessOperation => [EmergencyAccessIdentityField, EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyAccessIssuedAtField, EmergencyAccessExpiresAtField, MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField]);
 worth_query_operation_links!(RequestEstateEmergencyAccessOperation => [EmergencyRequester, EmergencyGrant, EmergencyEstate, EmergencyReview, ReviewEstate]);
 worth_query_operation_emits!(RequestEstateEmergencyAccessOperation => [EstateEmergencyAccessActivityEffect]);
-worth_query_operation_reads!(ApproveEstateEmergencyAccessOperation => [EmergencyAccessIdentityField, EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyAccessIssuedAtField, EmergencyAccessExpiresAtField, MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField, EmergencyRequester, EmergencyApprover, EmergencyGrant, EmergencyEstate, EmergencyReview, ReviewEstate, ReviewPrincipal]);
+worth_query_operation_reads!(ApproveEstateEmergencyAccessOperation => [EstateCaseIdentityField, EmergencyAccessIdentityField, EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyAccessIssuedAtField, EmergencyAccessExpiresAtField, MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField, EmergencyRequester, EmergencyApprover, EmergencyGrant, EmergencyEstate, EmergencyReview, ReviewEstate, ReviewPrincipal]);
 worth_query_operation_writes!(ApproveEstateEmergencyAccessOperation => [EmergencyAccessStatusField]);
 worth_query_operation_links!(ApproveEstateEmergencyAccessOperation => [EmergencyApprover]);
 worth_query_operation_emits!(ApproveEstateEmergencyAccessOperation => [EstateEmergencyAccessActivityEffect]);
-worth_query_operation_reads!(RevokeEstateEmergencyAccessOperation => [EmergencyAccessIdentityField, EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyAccessIssuedAtField, EmergencyAccessExpiresAtField, EmergencyAccessClosedAtField, MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField, EmergencyRequester, EmergencyApprover, EmergencyGrant, EmergencyEstate, EmergencyReview, ReviewEstate, ReviewPrincipal]);
+worth_query_operation_reads!(RevokeEstateEmergencyAccessOperation => [EstateCaseIdentityField, EmergencyAccessIdentityField, EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyAccessIssuedAtField, EmergencyAccessExpiresAtField, EmergencyAccessClosedAtField, MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField, EmergencyRequester, EmergencyApprover, EmergencyGrant, EmergencyEstate, EmergencyReview, ReviewEstate, ReviewPrincipal]);
 worth_query_operation_writes!(RevokeEstateEmergencyAccessOperation => [EmergencyAccessStatusField, EmergencyAccessClosedAtField]);
 worth_query_operation_emits!(RevokeEstateEmergencyAccessOperation => [EstateEmergencyAccessActivityEffect]);
-worth_query_operation_reads!(CompleteEstateMandatoryReviewOperation => [EmergencyAccessIdentityField, EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyAccessIssuedAtField, EmergencyAccessExpiresAtField, MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField, MandatoryReviewReviewedAtField, EmergencyRequester, EmergencyApprover, EmergencyGrant, EmergencyEstate, EmergencyReview, ReviewEstate, ReviewPrincipal]);
+worth_query_operation_reads!(CompleteEstateMandatoryReviewOperation => [EstateCaseIdentityField, EmergencyAccessIdentityField, EmergencyAccessReasonField, EmergencyAccessStatusField, EmergencyAccessIssuedAtField, EmergencyAccessExpiresAtField, MandatoryReviewIdentityField, MandatoryReviewKindField, MandatoryReviewStatusField, MandatoryReviewReviewedAtField, EmergencyRequester, EmergencyApprover, EmergencyGrant, EmergencyEstate, EmergencyReview, ReviewEstate, ReviewPrincipal]);
 worth_query_operation_writes!(CompleteEstateMandatoryReviewOperation => [MandatoryReviewStatusField, MandatoryReviewReviewedAtField]);
 worth_query_operation_links!(CompleteEstateMandatoryReviewOperation => [ReviewPrincipal]);
 worth_query_operation_emits!(CompleteEstateMandatoryReviewOperation => [EstateEmergencyAccessActivityEffect]);

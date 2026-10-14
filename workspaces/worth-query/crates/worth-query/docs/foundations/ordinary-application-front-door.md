@@ -698,6 +698,15 @@ provider owns the commit. Deferred and indeterminate commit outcomes retain the
 only legal follow-up posture for that exact attempt; any live recovery handle
 derived from them remains server-side rather than becoming serialized authority.
 
+Bank estate notifications and disbursements use their typed mutation builders'
+`retain_operation()` entrance. Preserve the returned SourceOnly owner and supply
+fresh authority to each `advance` and refused-close retry. After completion,
+`close_with_evidence(&fresh_request)` releases native cleanup before transferring
+the original completion and its receipt for the installed publication handoff.
+A recovered completion supplies native receipt evidence rather than a handler
+result. See the [Bank source and publication handoff](../../../../../worth-query-bank-world/docs/public-consumer-contract.md#own-estate-sources-funding-reversal-and-deployment-revocation)
+for the concrete builders and fresh- versus recovered-evidence handling.
+
 For time-driven operations, the host performs installation rather than calling
 the operation directly:
 

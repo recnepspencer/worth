@@ -17,14 +17,14 @@ impl<'work, 'payer, 'run, 'lease> ComparisonPayment<'work, 'payer, 'run, 'lease>
         // before receipts. Its conservative bound funds every comparison.
         let units = super::super::preparation::lookup_work(rows, 1)?;
         work.prepare(units as u64, 0)?;
-        let prepaid = work.has_preparation().then_some(units);
+        let prepaid = work.search_is_prepared().then_some(units);
         Ok(Self { work, prepaid })
     }
 
     pub(in crate::indexes::authority::maintenance) fn comparison(&mut self) -> Result<(), Denial> {
         match &mut self.prepaid {
             Some(credit) => {
-                if *credit == 0 || self.work.remaining() == 0 {
+                if *credit == 0 || self.work.native_remaining() == 0 {
                     return Err(Denial::WorkBudgetExceeded);
                 }
                 *credit -= 1;
