@@ -65,7 +65,7 @@ check, not by review alone.
 
 | Forbidden implementation | Why it is wrong | Required evidence that it is absent |
 | --- | --- | --- |
-| A workflow status field, status table, history log, event stream or instance registry, kernel-side or host-side | A second copy of truth (Principle 1). Status already exists as transitions; history already exists as commits. | Topology review of every new file; no new platform kind or aspect except the optional actor fields in Phase 3; destroying every derived index and rebuilding it yields identical observations. |
+| A workflow status field, status table, history log, event stream or instance registry, kernel-side or host-side | A second copy of truth (Principle 1). Status already exists as transitions; history already exists as commits. | Topology review of every new file; no new platform kind or aspect except the required actor fields in Phase 3; destroying every derived index and rebuilding it yields identical observations. |
 | An observation, or any value derived from it, accepted by `advance`, `approve`, `for_workflow_operation` or any execution entrance in place of `RequiredWorkflowOperation`, `RequiredWorkflowApproval` or transition admission | Observation would become authority (Principle 10). `PublishedWorkflowInstanceRef` / `PublishedWorkflowProposalRef` stay what they are today: non-authoritative locators that advance, approval, migration and fork continuation already accept and re-verify against truth. | Compile-fail examples: no observation type converts into or substitutes for `RequiredWorkflowOperation`, `RequiredWorkflowApproval` or transition admission. Advance continues to re-derive state through `select_current_transition`; approval keeps re-binding a proposal ref to the latest proposal transition and refusing a changed one. |
 | `Serialize`, `Deserialize`, `from_parts` or any public constructor on `PublishedWorkflowInstanceRef` / `PublishedWorkflowProposalRef` | A forged or stale locator. Re-acquisition must re-resolve against truth. | Facade snapshot shows no constructor; compile-fail on construction; the only sources are a landed receipt or governed discovery at an exact observation. |
 | An observation without an exact basis ("latest status") | Reports must name the truth they describe. | Every observation result carries the `WorthQueryApplicationReadObservation` it was read at; no entrance reads an implicit current world. |
@@ -73,7 +73,7 @@ check, not by review alone.
 | Discovery by scanning unrelated population | Cost grows with unrelated truth; violates hot-path honesty. | Discovery uses indexes made current for the basis (the `discover_workflow_definition` pattern); cost courts hold with unrelated instance population increased 1x/10x/100x. |
 | Ungated disclosure of instance existence, actors or approvers | Self-description grants no disclosure authority (Principle 10). | Every read goes through Query's disclosure contract; courts deny an undeclared reader; approver/actor identities need a separately declared audit read. |
 | Recording an actor from business input, `StrategyCallerProvenance` or the settling caller | Caller-asserted identity is forgeable; it is the pattern Principles 3 and 4 forbid. | The actor is taken only from the admitted operation's `operation_scope_binding().principal()`; a court submits a mismatched actor field in input and proves it is ignored. |
-| Treating a missing legacy actor as "a different actor" | Fails open on separation of duty. | Legacy-absent actor is "unknown"; a separation-of-duty rule over unknown denies. Court over a carried pre-milestone instance. |
+| Any legacy or compatibility path: optional actor fields, an "unknown actor" state, an old-format decoder, a migration or conversion of predecessor records, a compatibility flag, or an alias kept for old callers | Clean cutover is the product decision (as in 9.17.6.4). A legacy path is a second contract, and an absent actor would fail open on separation of duty. | Actor fields are required. A predecessor checkpoint, installation or record without them is refused with a typed unsupported-contract outcome before readmission, original bytes preserved. Court over a pre-milestone checkpoint; enforcement turns red if a fallback is reintroduced. |
 | A new rule evaluator, a second authorization path or a workflow-specific permission check for separation of duty | A second way to express policy. | Separation of duty uses the existing capability composition rules over Query-authored actor relations; no new rule clause kind. |
 | Exposing `WorkflowInstanceProgressRetention`, a progress basis, or any cached projection as truth | Derived state promoted to truth (Principle 2). | No facade export; observations are read from kernel truth through the observation readers. |
 | Exposing a fork's copied instance as a live, advanceable ref | Forks hold history, not callable authority (9.17.6). | Discovery on a fork returns copied instances as historical; advancing them is refused; court on a forked branch. |
@@ -93,13 +93,28 @@ Paths are relative to `workspaces/worth-query/crates/`; `primary_graph/` means
 | `primary_graph/workflow/instance/adoption_inventory.rs` (`read_live_instances`) | Bounded enumeration of live instances for adoption. | It is a scan, not an index, and its public entrance is ungated (below). Enumeration for consumers needs an index. |
 | `worth-query-publication/src/application_entry/programs/request.rs`, `programs/preparation.rs` (`workflow_inventory`) | Lists live instance ids on a branch for adoption. | **Disclosure defect:** the request stores `_principal` and never uses it (as does `programs/branch_set.rs`), so the inventory is not gated by any capability. The same inventory also leaks through `prepare`'s `WorkflowDispositionRequired { inventory }` / `WorkflowInventoryChanged { inventory }` denials, and through the public `WorthQuerySelectedProductOperation::workflow_adoption_inventory`, which a consumer reaches with no principal via `with_host_advancement` and `on_branch(..).select(..)` (`worth_query_host::facade::primary_graph`). Fixed in Phase 1 for every one of these routes. |
 | `primary_graph/workflow/schema/approval.rs`, `primary_graph/application_attempt/workflow_transition_program/approval_decision/identity.rs` | Approvals retain the approver as a partition/slot/generation triple plus an authorization snapshot, failing closed when absent. | The pattern for recording proposal and transition actors. |
-| `primary_graph/workflow/schema/proposal.rs`, `transition.rs` | Proposal and transition truth, no actor. | Optional actor fields (Phase 3). |
+| `primary_graph/workflow/schema/proposal.rs`, `transition.rs` | Proposal and transition truth, no actor. | Required actor fields (Phase 3), clean cutover. |
 | `primary_graph/application_attempt/workflow_proposal_program.rs` | Proposal replay matches operation, input and source only. | **Replay defect:** a different principal submitting identical input replays the first principal's proposal. Fixed in Phase 3. |
 | `primary_graph/application_attempt/elevation_lifecycle_facts.rs`; `worth-query-declaration/src/application_capability/composition.rs` | Query authors requester/approver relations from the admitted principal into relation kinds the application declares and binds (`ApplicationCapabilityElevationDefinition::requester()` / `approver()`); `separation_of_duty` and `distinct_actor` rules are prohibition paths from the principal that traverse them. | The precedent for workflow actor relations. |
 | `primary_graph/workflow/instance/transition/admission/selection.rs` | An advance at a proposal slot returns `PreparationDenied(WorkflowTransitionNodeUnsupported)` with only a node path. | A typed awaiting-proposal outcome (Phase 2). |
 | `primary_graph/application_installation/program/checkpoint.rs` (`in_memory_rostered_program_from_checkpoint`) | Workflow facts survive restore as relational truth. | No caller can resume a restored instance; no court proves it. |
 
 ## Product Decision Lock
+
+### Clean Cutover
+
+This milestone follows the clean-cutover decision recorded in
+[9.17.6.4](./milestone-9.17.6.4.md): no legacy support and no backward
+compatibility. Breaking changes are permitted. Every consumer, fixture, example
+and document moves to the current contract in the phase that changes it, and the
+displaced implementation is deleted in that phase. No deprecated alias, forwarding
+wrapper, optional-field-for-old-records, old-format decoder, version fallback,
+automatic conversion, "unknown" placeholder, compatibility flag or grace period.
+A predecessor definition, installation, archive or checkpoint that the new
+contract cannot read is refused with a typed unsupported-contract outcome before
+effects or readmission, with its original bytes preserved. Current-contract
+recovery, idempotency, exact observation and custody remain required; they are
+runtime truth, not compatibility.
 
 ### Observation Is Derived, Exact And Authorizes Nothing
 
@@ -207,26 +222,31 @@ inventory routes it does not cover.
 A refused read is decided from the principal and the caller-supplied scope before
 any instance is read, and is the same typed refusal whether or not the instance
 exists. Declaring the observation capability is optional on the workflow spec:
-absent, no principal may observe or discover its instances, and a spec that does
-not declare it keeps its installed identity unchanged.
+absent, no principal may observe or discover its instances. There is no default
+that admits every principal.
 
 ### Actors Are Admitted, Recorded And Never Asserted
 
-Proposal and transition records gain optional actor fields: the admitted principal
+Proposal and transition records gain required actor fields: the admitted principal
 of the operation that wrote them, as the partition/slot/generation triple used by
 approvals, taken from `operation_scope_binding().principal()`. Deferred owner
 settlement records the actor carried in the admitted operation's settlement basis,
 not the caller that settles it.
 
-Compatibility follows the 76e1890143 pattern: optional fields, no workflow protocol
-version bump, no new kind inside the full reserved workflow kind block, no change
-to existing proposal or transition identity digests (the actor is stored beside
-them). Legacy records have no actor; an absent actor means unknown. Unknown never
-satisfies a distinct-actor or separation-of-duty rule.
+This is a clean cutover. The actor fields are part of the current workflow
+contract, not optional additions for old records. Bump the workflow contract
+version so predecessor instances, checkpoints and installations are recognised and
+refused with a typed unsupported-contract outcome before readmission, with their
+original bytes preserved; they are never decoded under a fallback, defaulted to an
+"unknown" actor, migrated or converted. Do not add a new kind inside the full
+reserved workflow kind block; extend the existing proposal and transition aspects.
+Proposal and transition identity digests may include the actor where that is the
+honest identity.
 
-Once proposers are recorded, proposal replay matches the principal as well:
-identical input from another principal is refused with a typed denial rather than
-replaying the first principal's proposal.
+Proposal replay matches the principal: identical input from another principal is
+refused with a typed denial rather than replaying the first principal's proposal.
+Including the proposer in the proposal's identity is an acceptable way to make
+that structural.
 
 ### Separation Of Duty Uses Existing Rules
 
@@ -249,12 +269,14 @@ before it writes code:
   admitted principal. Either the relation is the record (the elevation precedent
   keeps no separate field) or both are written by the same owner in the same
   commit from the same principal, and a court proves they never disagree.
-- **Unknown fails closed through existing rules.** `separation_of_duty` and
+- **Absence must be impossible, not permissive.** `separation_of_duty` and
   `distinct_actor` are prohibitions: a matched path refuses, and a missing
-  relation matches nothing, so a legacy record with no actor would pass them. The
-  denial for unknown must come from the existing composition (for example an
-  allow requirement that the recorded actor relation exists). If the existing
-  vocabulary cannot express it, stop and surface the conflict rather than add an
+  relation matches nothing, so a missing actor relation would pass them. Every
+  current-contract occurrence therefore has its actor relation, written in the
+  same commit as the fact it describes, and a court proves no current-contract
+  path can commit an occurrence without one. Predecessor records never reach
+  these rules because clean cutover refuses them. If the existing vocabulary
+  cannot express a needed rule, stop and surface the conflict rather than add an
   evaluator or a workflow-only check.
 
 ### Awaiting A Proposal Is A Named State
@@ -280,10 +302,13 @@ place where a careful consumer can still build a second way.
 
 1. **Explicit workflow requirements.** Omitting `workflow_requirements` on a
    guarded binding currently means "exactly one approval", the opposite of what a
-   reader expects. Make omission a compile error for guarded bindings. Keep the
-   legacy meaning expressible through an explicit named form whose installed
-   encoding is byte-identical to today's absent value, so installed releases,
-   archives and definition identities are unchanged.
+   reader expects. Make omission a compile error for guarded bindings and remove
+   the implicit default and its encoding (clean cutover). A guarded binding
+   declares `new()` or `requiring_approval::<Cap>()`; if a "one approval whose
+   capability the definition chooses" meaning is still needed, it gets its own
+   explicit named constructor. Predecessor installed contracts and archives that
+   carry the implicit default are refused with a typed unsupported-contract
+   outcome, never reinterpreted.
 2. **One retry style for capability lifecycle commands.**
    `execute_capability_delegation_in_program` and its revocation sibling retry by
    re-issuing and matching `AlreadyCommitted`
@@ -340,7 +365,8 @@ court runs through the public facade.
 | Disclosure | A principal without the declared observation capability attempts discovery (for an existing and an absent instance), enumeration, observation, the adoption inventory, adoption `prepare` without dispositions, and the selected-operation inventory route; a principal with observation but not audit reads actors. | The same typed refusal for the first in every case, existing or absent; no route yields an instance id; actor and approver identities withheld and the withholding stated for the second; incomplete custody still visible. |
 | Fork isolation | Fork a branch with a live instance; discover on both branches. | The fork reports a historical copy, not an advanceable ref; the source branch is unaffected. |
 | Actor attribution | Propose as A with an input field naming B; advance as C; approve as D; execute as E. | Recorded proposer A, advancer C, approver D, executor E; the input field is ignored for attribution. |
-| Separation of duty | Declare a distinct-actor rule between proposer and approver; approve as the proposer; then as another principal; then on a carried legacy instance with no recorded proposer. | Denied, allowed, denied (unknown actor). |
+| Separation of duty | Declare a distinct-actor rule between proposer and approver; approve as the proposer; then as another principal. | Denied, then allowed. No current-contract path commits an occurrence without its actor relation. |
+| Clean cutover | Restore a pre-milestone checkpoint and import a pre-milestone archive whose workflow records lack actors or whose guarded bindings use the implicit approval default. | Typed unsupported-contract refusal before readmission or effects; original bytes preserved; no fallback decode, default actor, migration or conversion. Current-contract restore and import succeed. |
 | Cross-principal replay | Principal B submits A's exact proposal input and key shape. | Typed refusal; A's proposal is not returned to B. |
 | Awaiting proposal | Advance at a proposal slot. | Typed awaiting-proposal outcome naming operation and input type; no denial. |
 | Cost | Increase unrelated instances 1x/10x/100x and one instance's history length; run an ordinary non-workflow request beside them. | Exact discovery cost independent of unrelated population; enumeration and reported-history cost bounded by the page size requested; state derivation bounded by the existing history reconstruction budget; the ordinary request's index-currency cost does not grow with workflow population. |
@@ -348,7 +374,8 @@ court runs through the public facade.
 
 Mutation probes must turn these courts red when: discovery skips index currency;
 observation reads an implicit current world; a ref gains a public constructor;
-the actor is read from input; unknown actor passes a distinct-actor rule; replay
+the actor is read from input; an occurrence commits without its actor relation; a
+predecessor record is readmitted instead of refused; replay
 ignores the principal; the disclosure gate is bypassed on any inventory route; a
 refusal differs for an existing and an absent instance; an observation at an
 older basis updates the progress projection.
@@ -376,14 +403,16 @@ not authority, exact basis, disclosure, cost and rebuildability.
 ### Phase 3: Admitted Actor Attribution
 
 First settle the three separation-of-duty constraints (endpoints, one fact,
-unknown fails closed) against the existing rule vocabulary, or stop and surface
-the conflict. Record optional proposer, advancer and executor actors from admitted
-principals, including deferred owner settlement. Make proposal replay
+absence impossible) against the existing rule vocabulary, or stop and surface
+the conflict. Record required proposer, advancer and executor actors from admitted
+principals, including deferred owner settlement, and bump the workflow contract
+version. Make proposal replay
 principal-aware. Author
 workflow actor relations so existing separation-of-duty rules apply. Report actors
-through the audit read. Prove attribution, separation of duty including legacy
-unknown, cross-principal replay and checkpoint/adoption compatibility of legacy
-records.
+through the audit read. Prove attribution, separation of duty, cross-principal
+replay, and typed refusal of every predecessor checkpoint, installation and
+archive. Update every fixture, example and consumer to the current contract in
+this phase and delete what it displaces; no legacy path remains.
 
 ### Phase 4: Consumer Guidance Hardening And Closure
 
@@ -415,7 +444,8 @@ documents. Marker-checked or doctested examples only, per 9.17.6.4 Phase 0.
 - A consumer can observe an instance's state, awaited need and history at an exact
   basis, under declared disclosure, and nothing it observes can authorize anything.
 - Proposals and transitions record admitted actors; separation of duty over
-  workflow actors uses the existing rules; unknown never passes.
+  workflow actors uses the existing rules; no occurrence lacks its actor, and no
+  legacy decoder, default or migration path exists for predecessor records.
 - The adoption-inventory disclosure defect and the cross-principal proposal replay
   defect are closed with courts.
 - Every forbidden implementation above is absent, each by its stated evidence.
