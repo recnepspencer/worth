@@ -224,7 +224,11 @@ fn pending_decision_crosses_adoption_only_through_fresh_p1_admission() {
         )
         .expect("Bank P1 adoption prepares through its production root");
     assert!(matches!(
-        prepared.publish(),
+        runtime
+            .request(&approver, &adoption_scope)
+            .on_branch(branch)
+            .programs()
+            .publish(prepared),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
     let adopted = fixture

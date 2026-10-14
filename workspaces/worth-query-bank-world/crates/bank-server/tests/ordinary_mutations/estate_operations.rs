@@ -44,3 +44,6 @@ mod recognize_executor;
 mod release_estate;
 #[path = "estate_operations/undeclared_external_effect.rs"]
 mod undeclared_external_effect;
+
+#[path = "estate_operations/program_adoption_authorization.rs"]
+mod program_adoption_authorization;

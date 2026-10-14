@@ -38,6 +38,13 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledProgr
     renderings: Box<[AspectValue]>,
     activation: WorthQueryProgramActivationCell,
     lifecycle: support_lifecycle::WorthQueryProgramSupportLifecycle,
+    pub(in crate::domain_computation::primary_graph) adoption_admissions:
+        std::collections::BTreeMap<
+            ApplicationProgramRevision,
+            super::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<
+                Schema,
+            >,
+        >,
 }
 
 impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
@@ -52,10 +59,38 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .collect();
         Self {
             lifecycle: support_lifecycle::WorthQueryProgramSupportLifecycle::installed(&roster),
+            adoption_admissions: std::collections::BTreeMap::new(),
             roster,
             renderings,
             activation,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn adoption_authorization_matches(
+        &self,
+        revision: &ApplicationProgramRevision,
+        meaning: &str,
+    ) -> bool {
+        self.roster
+            .entries()
+            .iter()
+            .find(|entry| entry.revision() == revision)
+            .is_some_and(|entry| {
+                entry.semantic_description().facts().iter().any(|fact| {
+                    fact.subject() == "program-adoption-authorization"
+                        && fact.canonical_meaning() == meaning
+                })
+            })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn adoption_admission(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> Option<
+        super::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>,
+    > {
+        self.present(revision)?;
+        self.adoption_admissions.get(revision).copied()
     }
 
     pub(in crate::domain_computation::primary_graph) const fn activation(

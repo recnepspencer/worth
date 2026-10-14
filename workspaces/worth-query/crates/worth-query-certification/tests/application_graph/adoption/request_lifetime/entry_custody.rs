@@ -44,11 +44,18 @@ fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
                     2 => {
                         programs()
                             .adopt(&requirements)
+                            .expect("declared adoption capability admits")
                             .workflow_inventory(64)
                             .unwrap();
                     }
                     3 => {
-                        drop(programs().adopt(&requirements).prepare(64).unwrap());
+                        drop(
+                            programs()
+                                .adopt(&requirements)
+                                .expect("declared adoption capability admits")
+                                .prepare(64)
+                                .unwrap(),
+                        );
                     }
                     _ => unreachable!(),
                 }
@@ -56,6 +63,15 @@ fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
                     reads() > before,
                     "admitted entry {entry} must contact its reader"
                 );
+                let mut admitted_adoption = if entry >= 2 {
+                    Some(
+                        programs()
+                            .adopt(&requirements)
+                            .expect("adoption itself is admitted before the constrained phase"),
+                    )
+                } else {
+                    None
+                };
                 bound(Some(worth_foundational::ExecutionBudget::new(
                     NonZeroUsize::MIN,
                     if zero_memory { 0 } else { 64 * 1024 * 1024 },
@@ -69,14 +85,15 @@ fn program_entries_refuse_before_the_reader_used_by_their_admitted_control() {
                         other => panic!("inspection must refuse at open: {other:?}"),
                     },
                     2 => preparation_cause(
-                        programs()
-                            .adopt(&requirements)
+                        admitted_adoption
+                            .take()
+                            .unwrap()
                             .workflow_inventory(64)
                             .err()
                             .unwrap(),
                     ),
                     3 => preparation_cause(
-                        programs().adopt(&requirements).prepare(64).err().unwrap(),
+                        admitted_adoption.take().unwrap().prepare(64).err().unwrap(),
                     ),
                     _ => unreachable!(),
                 };

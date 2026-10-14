@@ -14,6 +14,9 @@ pub use worth_query_execution::facade::primary_graph::{
 /// Why a program adoption did not prepare.
 #[derive(Debug)]
 pub enum WorthQueryApplicationProgramAdoptionPreparationDenial {
+    Authorization(
+        worth_query_execution::facade::primary_graph::WorthQueryProgramAdoptionAuthorizationDenial,
+    ),
     ProductSelection(
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     ),
@@ -120,18 +123,19 @@ where
         let runtime = self.programs.application;
         runtime.with_application_advancement(&request_scope, |phase| {
 
-        self.programs
+        let selected = self.programs
             .application
             .on_branch(self.programs.branch)
             .select(&phase, )
-            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?
-            .prepare_branch_adoption_in_advancement(
+            .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::ProductSelection)?;
+        selected.prepare_branch_adoption_in_advancement(
                 &phase,
                 self.requirements.target(),
                 self.requirements,
                 self.migration,
                 self.workflow,
                 maximum_selection_work,
+                self.programs.principal,
                 self.programs.scope,
             )
             .map_err(WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption)

@@ -59,7 +59,21 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     let roster = worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new()
         .support(ApplicationProgramAuthoring::<ConsumerSchema, UnchangedFixed>::begin().validated_program().unwrap())
         .support(ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin().validated_program().unwrap());
-    let world = installation::install_with_roster(foreign, 8192, 4096, roster).unwrap();
+    let grants = [
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<crate::ConsumerProgram>(
+            "model-owner",
+            "model-owner",
+        ),
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<UnchangedFixed>(
+            "model-owner",
+            "model-owner",
+        ),
+        crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<RemovedFixed>(
+            "model-owner",
+            "model-owner",
+        ),
+    ];
+    let world = installation::install_with_roster(foreign, 8192, 4096, roster, &grants).unwrap();
     let adapter = authentication::admit(world.application.installed_schema());
     let contact_identity = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
@@ -295,6 +309,11 @@ fn adopt(
 ) {
     let programs = request.programs();
     let requirements = programs.compare(&revision).unwrap();
-    assert!(matches!(programs.adopt(&requirements).prepare(4096).unwrap().publish(),
+    let prepared = programs
+        .adopt(&requirements)
+        .unwrap()
+        .prepare(4096)
+        .unwrap();
+    assert!(matches!(request.programs().publish(prepared),
         worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)));
 }

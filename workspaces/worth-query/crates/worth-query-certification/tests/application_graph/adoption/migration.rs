@@ -101,11 +101,18 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
     let requirements = programs.compare(&target).expect("comparison must succeed");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .migration(migration)
         .prepare(64)
         .expect("migration and target validation must prepare atomically");
     assert!(prepared.migration().is_some());
-    let performed = match prepared.publish() {
+    let performed = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -184,6 +191,7 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
         .on_branch(branch)
         .programs()
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .migration(migration)
         .prepare(64)
         .err()
@@ -256,13 +264,20 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .migration(migration)
         .prepare(64)
         .expect("migration adoption prepares");
 
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let unpublished = match prepared.publish() {
+    let unpublished = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }

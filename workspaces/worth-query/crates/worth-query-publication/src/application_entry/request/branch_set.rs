@@ -55,7 +55,7 @@ where
         worth_query_execution::facade::primary_graph::WorthQueryBranchSetAdoptionRecoveryFailure,
     > {
         self.application
-            .recover_branch_set_adoption(phase, recovery, self.scope)
+            .recover_branch_set_adoption(phase, recovery, self.principal, self.scope)
     }
 
     /// Releases exact unpublished custody and cancels only the untouched

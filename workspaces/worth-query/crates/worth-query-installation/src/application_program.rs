@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 
 mod action_resolution;
 mod adoption;
+mod adoption_authorization;
 mod correspondence;
 mod derived_artifact;
 mod evaluated_requirement;
@@ -115,6 +116,9 @@ impl From<WorthQueryProgramSupportDenial> for WorthQueryApplicationProgramInstal
 /// installation subject here rather than inherit a catch-all rendering.
 fn support_denial_subject(denial: &WorthQueryProgramSupportDenial) -> String {
     match denial {
+        WorthQueryProgramSupportDenial::UnsupportedAdoptionAuthorization { subject, .. } => {
+            subject.clone()
+        }
         WorthQueryProgramSupportDenial::EmptyProgram { program } => program.as_str().to_owned(),
         WorthQueryProgramSupportDenial::UnsupportedRuleContract { rule, .. } => {
             rule.identity().to_owned()

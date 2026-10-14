@@ -288,10 +288,11 @@ fn adopt_second_program(application: &DocumentWorkflowRuntime, branch: WorthQuer
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("an idle workflow host adopts P1");
     assert!(matches!(
-        prepared.publish(),
+        prepared.publish(runtime, &principal, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
 }

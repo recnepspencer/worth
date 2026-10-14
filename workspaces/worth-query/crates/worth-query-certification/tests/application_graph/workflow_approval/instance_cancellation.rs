@@ -158,11 +158,14 @@ fn a_cancellation_replays_exactly_after_its_branch_adopts_a_new_program() {
     let done = cancelled(cancel_instance(&application, instance.clone(), 88_410));
     support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
 
     let replay = cancelled(cancel_instance(&application, instance.clone(), 88_410));
     assert!(
@@ -194,11 +197,14 @@ fn a_cancellation_replays_after_adoption_leaves_its_retired_definition_behind() 
     // carry it, so the adopted program cannot run the definition.
     support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
 
     let replay = cancelled(cancel_instance(&application, instance.clone(), 88_513));
     assert!(replay.replayed(), "the key replays from recorded history");

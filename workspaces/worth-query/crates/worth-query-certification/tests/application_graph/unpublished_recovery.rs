@@ -204,7 +204,12 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         .programs();
     let comparison = programs.compare(&target).unwrap();
     assert!(matches!(
-        programs.adopt(&comparison).prepare(64).unwrap().publish(),
+        programs
+            .adopt(&comparison)
+            .unwrap()
+            .prepare(64)
+            .unwrap()
+            .publish(runtime, &principal, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
     let before = observe_head(runtime, branch).selected_commit().clone();

@@ -84,6 +84,7 @@ impl WorthQueryBranchAdoptionRecovery {
 /// published, and the recovery is handed back to continue again.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionRecoveryDenial {
+    Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The recovery call was refused before inspecting its owners.
     ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The recovery expects a different product than the one selected.
@@ -145,9 +146,51 @@ pub enum WorthQueryBranchAdoptionRecoveryOutcome {
 }
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
+    pub(in crate::domain_computation::primary_graph) fn recover_branch_adoption_authorized_in_advancement(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        recovery: WorthQueryBranchAdoptionRecovery,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
+    {
+        let _execution =
+            match phase.checked_execution_request_for(&self.application().product_runtime) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    return Err(failure(
+                        WorthQueryBranchAdoptionRecoveryDenial::ExecutionDenied(cause),
+                        recovery,
+                    ))
+                }
+            };
+        use super::super::authorization::{AdoptionEffect, AdoptionEffectOutcome};
+        let target = *recovery.target();
+        match self.with_program_adoption(
+            phase,
+            principal,
+            request,
+            &target,
+            AdoptionEffect::Recover(recovery),
+        ) {
+            Ok(AdoptionEffectOutcome::Recovered(outcome)) => outcome,
+            Err(refusal) => {
+                let AdoptionEffect::Recover(recovery) = refusal.effect else {
+                    unreachable!("recovery refusal retains the requested native custody")
+                };
+                Err(failure(
+                    WorthQueryBranchAdoptionRecoveryDenial::Authorization(refusal.cause),
+                    recovery,
+                ))
+            }
+            Ok(_) => unreachable!("recovery dispatch preserves the requested effect"),
+        }
+    }
+
     pub fn recover_branch_adoption(
         &self,
         recovery: WorthQueryBranchAdoptionRecovery,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
@@ -155,9 +198,10 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let result = self
             .application()
             .with_application_advancement(request, |phase| {
-                self.recover_branch_adoption_in_advancement(
+                self.recover_branch_adoption_authorized_in_advancement(
                     &phase,
                     retained.take().expect("one admitted recovery"),
+                    principal,
                     request,
                 )
             });
@@ -178,6 +222,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 
         branch: crate::basis::WorthQueryProductBranch,
         recovery: WorthQueryBranchAdoptionRecovery,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<
         Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>,
@@ -213,7 +258,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(selected) => selected,
                 Err(denial) => return Err((denial, recovery)),
             };
-            Ok(selected.recover_branch_adoption_in_advancement(&phase, recovery, request))
+            Ok(selected.recover_branch_adoption_authorized_in_advancement(
+                &phase, recovery, principal, request,
+            ))
         })
         .unwrap_or_else(|cause| {
             Ok(Err(failure(

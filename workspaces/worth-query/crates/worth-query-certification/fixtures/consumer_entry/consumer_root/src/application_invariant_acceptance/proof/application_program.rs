@@ -308,3 +308,6 @@ fn required_source_cleanup_consumers_complete() {
     discovered::unpublished::original_partial_recovers_discovered_outputs(&installed);
     discovered::initial_unpublished::initial_partial_recovers_discovered_outputs(&installed);
 }
+
+#[cfg(test)]
+mod deployment_authorization;

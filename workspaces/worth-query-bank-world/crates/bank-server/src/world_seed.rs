@@ -4,7 +4,7 @@ use bank_domain::model::{
 };
 use bank_domain::proposals::BankSnapshot;
 
-use crate::BankPrincipalSeed;
+use crate::{BankPrincipalSeed, BankProgramDeploymentGrantSeed};
 
 pub struct BankBusinessOwnerSeed {
     business: BusinessId,
@@ -73,6 +73,7 @@ pub struct BankWorldSeed {
     business_owners: Vec<BankBusinessOwnerSeed>,
     employees: Vec<BankEmployeeAssignmentSeed>,
     estate: Option<BankEstateWorld>,
+    deployment_grants: Vec<BankProgramDeploymentGrantSeed>,
 }
 
 impl BankWorldSeed {
@@ -83,7 +84,14 @@ impl BankWorldSeed {
             business_owners: Vec::new(),
             employees: Vec::new(),
             estate: None,
+            deployment_grants: Vec::new(),
         }
+    }
+
+    /// Issues only the explicitly supplied deployment permission at bootstrap.
+    pub fn program_deployment_grant(mut self, grant: BankProgramDeploymentGrantSeed) -> Self {
+        self.deployment_grants.push(grant);
+        self
     }
 
     pub fn principal(mut self, principal: BankPrincipalSeed) -> Self {
@@ -114,6 +122,7 @@ impl BankWorldSeed {
         Vec<BankBusinessOwnerSeed>,
         Vec<BankEmployeeAssignmentSeed>,
         Option<BankEstateWorld>,
+        Vec<BankProgramDeploymentGrantSeed>,
     ) {
         (
             self.snapshot,
@@ -121,6 +130,7 @@ impl BankWorldSeed {
             self.business_owners,
             self.employees,
             self.estate,
+            self.deployment_grants,
         )
     }
 }

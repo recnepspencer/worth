@@ -12,6 +12,9 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Adopted {
     type Rules = CheckpointRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("courtroom-adopted-program");
+    fn adoption_authorization<Visitor: worth_query_decl::facade::application_program::ApplicationProgramAdoptionAuthorizationVisitor<CheckpointSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::super::super::entry_correction::program_adoption::ProgramAdoptionBinding<CheckpointSchema>>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         OracleProgram::<false>::feature_specs()
     }
@@ -24,6 +27,9 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Unowned {
     type Rules = CheckpointRules;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("courtroom-program-without-correction");
+    fn adoption_authorization<Visitor: worth_query_decl::facade::application_program::ApplicationProgramAdoptionAuthorizationVisitor<CheckpointSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::super::super::entry_correction::program_adoption::ProgramAdoptionBinding<CheckpointSchema>>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         demand_policy::feature_specs_with_final_output(
             required_chain::output_feature_spec(),
@@ -114,11 +120,16 @@ fn program_adoption_carries_retained_state_and_reuses_only_unchanged_partitions(
             let target = *app.supported_program::<Adopted>().unwrap().owned_revision();
             let programs = app.runtime().request(&principal, &scope).programs();
             let requirements = programs.compare(&target).unwrap();
-            let performed = programs
+            let prepared = programs
                 .adopt(&requirements)
-                .prepare(4096)
                 .unwrap()
-                .publish();
+                .prepare(4096)
+                .unwrap();
+            let performed = app
+                .runtime()
+                .request(&principal, &scope)
+                .programs()
+                .publish(prepared);
             assert!(matches!(performed, worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)), "adoption must publish");
             let prior = model.clone();
             let step = model.step(Kind::Value, &mut rng);
@@ -146,11 +157,16 @@ fn program_adoption_carries_retained_state_and_reuses_only_unchanged_partitions(
             let initial = *app.installed_program().revision();
             let programs = app.runtime().request(&principal, &scope).programs();
             let requirements = programs.compare(&initial).unwrap();
-            let performed = programs
+            let prepared = programs
                 .adopt(&requirements)
-                .prepare(4096)
                 .unwrap()
-                .publish();
+                .prepare(4096)
+                .unwrap();
+            let performed = app
+                .runtime()
+                .request(&principal, &scope)
+                .programs()
+                .publish(prepared);
             assert!(matches!(performed, worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionPublicationOutcome::Performed(_)), "adoption must publish");
             let (contacts, runs) = active(&app);
             assert_eq!((contacts, runs.len()), (1, 1));

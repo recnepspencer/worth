@@ -46,8 +46,14 @@ fn map_relational_preparation_denial(
     WorthQueryBranchAdoptionPreparationDenial::RelationalPreparation(denial)
 }
 
-pub(super) fn prepare<Schema: ApplicationSchema>(
+pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
     _phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
@@ -57,6 +63,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     maximum_selection_work: usize,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
+    admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
     let (source, requirements) = requirements(selected, target)?;
     if &requirements != expected_requirements {
         return Err(WorthQueryBranchAdoptionPreparationDenial::RequirementsChanged);
@@ -154,6 +161,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             .map_or(0, WorthQueryWorkflowAdoptionInventory::work_units),
     );
     let target_rendering = program_revision_rendering(target);
+    admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
     let candidate = graph.with_runtime_mut(execution, |runtime| {
         let mut batch =
             WorkerIntentBatch::new("application-program-adoption").push(MutationIntent::Entity(
@@ -206,6 +214,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
         .application()
         .primary_provider
         .unpublished_idempotency_disposition();
+    admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
     let publication = selected
         .product()
         .publication_binding()
@@ -219,24 +228,12 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
             }
         })?;
     Ok(WorthQueryPreparedBranchAdoption {
-        owner: std::sync::Arc::downgrade(&selected.application().product_runtime.owner),
+        branch: selected.product().product_branch(),
         owner_identity: selected
             .application()
             .product_runtime
             .owner
             .owner_identity(),
-        host_request: request.clone(),
-        host_policy: match selected
-            .application()
-            .product_runtime
-            .owner
-            .execution_placement()
-        {
-            worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy)
-            | worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Leased {
-                policy, ..
-            } => policy,
-        },
         source,
         target: *target,
         requirements,

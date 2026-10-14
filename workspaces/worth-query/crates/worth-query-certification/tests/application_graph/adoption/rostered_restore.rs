@@ -31,9 +31,10 @@ fn a_restored_host_keeps_each_branch_on_the_program_it_adopted() {
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     match programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the seed satisfies P1")
-        .publish()
+        .publish(host.runtime(), &principal, &scope)
     {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_) => {}
         _ => panic!("main adopts P1"),

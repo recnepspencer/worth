@@ -11,6 +11,7 @@ macro_rules! successor {
                 <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Outputs;
             type Rules = <ConsumerProgram as ApplicationProgramDefinition<ConsumerSchema>>::Rules;
             const IDENTITY: ApplicationProgramIdentity = ApplicationProgramIdentity::new($id);
+            fn adoption_authorization<Visitor: worth_query_decl::facade::application_program::ApplicationProgramAdoptionAuthorizationVisitor<ConsumerSchema>>(visitor: Visitor) -> Visitor::Output { visitor.capability::<crate::program_deployment::ConsumerProgramDeploymentBinding>() }
             fn feature_specs() -> Vec<ApplicationFeatureSpec> {
                 features::$specs()
             }

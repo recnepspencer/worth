@@ -29,6 +29,7 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the initial target set preflights");
     let d = fork(&host, a);
@@ -37,11 +38,11 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
         RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
     let stopped = adoption
@@ -80,7 +81,7 @@ fn stale_suffix_resumes_only_after_exact_fresh_coverage_and_preflight() {
     assert_eq!(resumed.progress().len(), 1);
     for expected in [b, c] {
         assert!(matches!(
-            resumed.advance().unwrap().unwrap(),
+            resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
             WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == expected
         ));
     }
@@ -123,6 +124,7 @@ fn exhausted_preflight_releases_reservations_and_cancel_before_effect_is_exact()
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(0)
         .err()
         .expect("zero selection work must deny before effects");
@@ -141,6 +143,7 @@ fn exhausted_preflight_releases_reservations_and_cancel_before_effect_is_exact()
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("failed preflight must release every temporary reservation");
     let cancelled = prepared
@@ -179,6 +182,7 @@ fn cancellation_after_fresh_resume_counts_each_unperformed_branch_once() {
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the initial target set preflights");
     assert_eq!(
@@ -186,11 +190,11 @@ fn cancellation_after_fresh_resume_counts_each_unperformed_branch_once() {
         RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
     let stopped = adoption
@@ -228,6 +232,7 @@ fn historical_no_effect_cannot_stop_a_freshly_resumed_suffix_again() {
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the initial target set preflights");
     assert_eq!(
@@ -235,11 +240,11 @@ fn historical_no_effect_cannot_stop_a_freshly_resumed_suffix_again() {
         RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
     let stopped = adoption
@@ -260,11 +265,11 @@ fn historical_no_effect_cannot_stop_a_freshly_resumed_suffix_again() {
     };
     assert_eq!(resumed.pending_branches().collect::<Vec<_>>(), [b, c]);
     assert!(matches!(
-        resumed.advance().unwrap().unwrap(),
+        resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == b
     ));
     assert!(matches!(
-        resumed.advance().unwrap().unwrap(),
+        resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == c
     ));
     let closed = resumed
@@ -289,6 +294,7 @@ fn repeated_staleness_replaces_superseded_no_effect_history() {
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the initial target set preflights");
     let initial_work = adoption.total_selection_work_units();
@@ -298,11 +304,11 @@ fn repeated_staleness_replaces_superseded_no_effect_history() {
         RetentionVerdict::Performed(SEED_RETENTION + 1)
     );
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
 
@@ -327,7 +333,7 @@ fn repeated_staleness_replaces_superseded_no_effect_history() {
         RetentionVerdict::Performed(SEED_RETENTION + 2)
     );
     assert!(matches!(
-        resumed.advance().unwrap().unwrap(),
+        resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::NoEffect { branch, .. } if *branch == b
     ));
     let stopped = resumed.begin_resume().unwrap_or_else(|_| {
@@ -347,7 +353,7 @@ fn repeated_staleness_replaces_superseded_no_effect_history() {
 
     for expected in [b, c] {
         assert!(matches!(
-            resumed.advance().unwrap().unwrap(),
+            resumed.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
             WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == expected
         ));
     }
