@@ -703,6 +703,22 @@ recovery receipt. Unresolved publication postures remain owned. Commit-time
 public race coverage, moved-membership result-set coverage and ordinary consumer
 cutover remain separate work.
 
+An unpinned SourceOnly operation can return `Progress` with
+`RetryableNoEffect` after native sealed-read staleness or an exact
+`ProductBasisStale` invariant refusal. `native_retry_outcome()` borrows the
+actual completed native refusal. The next explicit `advance` selects the
+original branch again and admits the same input, key, declared action and typed
+preconditions under fresh request authority. It never replaces a caller's
+expected fact with current state, and it performs only one attempt per call.
+The [unpinned stale courts](../../../worth-query-certification/tests/application_graph/source_only/stale_retry.rs)
+exercise that path with a genuine competing ordinary operation.
+
+Live `close` accepts only this proven retryable no-effect custody and delegates
+the same fresh-request cleanup owner. Refusal returns that evidence and original
+descriptor. It does not dispose an unpublished partial or resolve an uncertain
+business effect. Generic `Denied`, `NoEffect` and `Unseen` do not authorize a
+rerun; indeterminate outcomes keep the existing keyed recovery path.
+
 Shared funded cleanup owns pending record release and native cleanup failures.
 Its receipt proves that collection was released; it does not discharge a retained
 source carrier, blocked attempt or active output handle. Each lane keeps those

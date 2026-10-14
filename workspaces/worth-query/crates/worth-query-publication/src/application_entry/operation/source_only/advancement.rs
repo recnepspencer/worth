@@ -55,7 +55,7 @@ where
             },
             Err(denial) => {
                 if matches!(denial, worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Panicked)
-                    && matches!(self.state, SourceState::Initial)
+                    && matches!(self.state, SourceState::Initial | SourceState::RetryableNoEffect(_))
                 {
                     self.state = SourceState::UnresolvedAdvancement(denial);
                 }
@@ -77,7 +77,7 @@ where
         WorthQuerySourceOnlyDenial,
     > {
         match &mut self.state {
-            SourceState::Initial => {
+            SourceState::Initial | SourceState::RetryableNoEffect(_) => {
                 let outcome = match self.admission.execute_in_advancement(phase, request) {
                     Ok(outcome) => outcome,
                     Err(denial) if native_posture::pinned_source_moved(&denial) => {
@@ -214,6 +214,13 @@ where
                 | WorthQueryApplicationUncommitted::Indeterminate(_)),
             ) => {
                 self.state = SourceState::Keyed(posture);
+                Ok(Step::Progress)
+            }
+            other
+                if self.admission.description.source.is_none()
+                    && native_posture::fresh_retry_eligible::<S, I>(&other) =>
+            {
+                self.state = SourceState::RetryableNoEffect(other);
                 Ok(Step::Progress)
             }
             other => {

@@ -116,6 +116,25 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
+    /// Closes only proven retryable no-effect custody; native recovery obligations remain owned.
+    pub fn close(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
+        if !matches!(self.state, SourceState::RetryableNoEffect(_))
+            || !native_posture::can_close(&self.state)
+        {
+            return Err((
+                self,
+                WorthQueryOperationCloseDenial::NativeObligationRetained,
+            ));
+        }
+        match self.close_cleanup(request) {
+            Ok(closed) => Ok(closed),
+            Err(denial) => Err((self, denial)),
+        }
+    }
+
     fn close_cleanup(
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,

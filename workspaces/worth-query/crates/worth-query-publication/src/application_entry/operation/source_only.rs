@@ -43,6 +43,7 @@ enum SourceState<S: ApplicationSchema, I: ApplicationMutationIntent<S>> {
     UnresolvedAdvancement(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
+    RetryableNoEffect(NativeOutcome<S, I>),
     Stopped(NativeOutcome<S, I>),
     AdmissionStopped(WorthQueryApplicationRequestMutationDenial),
     RetainedPending(
@@ -97,6 +98,7 @@ pub enum WorthQuerySourceOnlyPosture {
     RecoveryPerformed,
     RetainedDeliveryPending,
     ProvedAborted,
+    RetryableNoEffect,
     Indeterminate,
     Terminal,
 }
@@ -108,9 +110,17 @@ impl<
         M,
     > WorthQuerySourceOnlyOperation<'_, S, I, P, A, M>
 {
+    /// Exact completed native no-effect evidence retained for a fresh admitted attempt.
+    pub fn native_retry_outcome(&self) -> Option<&NativeOutcome<S, I>> {
+        match &self.state {
+            SourceState::RetryableNoEffect(outcome) => Some(outcome),
+            _ => None,
+        }
+    }
     pub fn posture(&self) -> WorthQuerySourceOnlyPosture {
         match self.state {
             SourceState::Initial => WorthQuerySourceOnlyPosture::Initial,
+            SourceState::RetryableNoEffect(_) => WorthQuerySourceOnlyPosture::RetryableNoEffect,
             SourceState::Unpublished(_) => WorthQuerySourceOnlyPosture::ProductUnpublished,
             SourceState::Performed(_) => WorthQuerySourceOnlyPosture::RecoveryPerformed,
             SourceState::Keyed(WorthQueryApplicationUncommitted::Aborted) => {
