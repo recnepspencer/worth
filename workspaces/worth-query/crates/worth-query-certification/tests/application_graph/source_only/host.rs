@@ -9,14 +9,14 @@ use worth_query_host::facade::{
     application_contribution::*, application_installation::*, declaration::application_program::*,
     primary_graph::*,
 };
-pub struct Host {
-    runtime:
-        WorthQueryProgramApplicationRuntime<SourceOnlyRetentionSchema, SourceOnlyRetentionProgram>,
+pub struct Host<
+    P: ApplicationProgramDefinition<SourceOnlyRetentionSchema> = SourceOnlyRetentionProgram,
+> {
+    runtime: WorthQueryProgramApplicationRuntime<SourceOnlyRetentionSchema, P>,
     pub contacts: Arc<Contacts>,
 }
-impl std::ops::Deref for Host {
-    type Target =
-        WorthQueryProgramApplicationRuntime<SourceOnlyRetentionSchema, SourceOnlyRetentionProgram>;
+impl<P: ApplicationProgramDefinition<SourceOnlyRetentionSchema>> std::ops::Deref for Host<P> {
+    type Target = WorthQueryProgramApplicationRuntime<SourceOnlyRetentionSchema, P>;
     fn deref(&self) -> &Self::Target {
         &self.runtime
     }
@@ -33,9 +33,19 @@ impl WorthQueryApplicationContribution<SourceOnlyRetentionSchema>
     }
 }
 pub fn install() -> Host {
+    install_program::<SourceOnlyRetentionProgram>()
+}
+pub fn install_program<P>() -> Host<P>
+where
+    P: ApplicationProgramDefinition<
+        SourceOnlyRetentionSchema,
+        Contributions = (SourceOnlyRetentionContribution,),
+        Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>,
+    >,
+{
     let contacts = Arc::new(Contacts::default());
     let runtime = in_memory_rostered_program(
-        ApplicationProgramAuthoring::<SourceOnlyRetentionSchema, SourceOnlyRetentionProgram>::begin().validated_program().unwrap(),
+        ApplicationProgramAuthoring::<SourceOnlyRetentionSchema, P>::begin().validated_program().unwrap(),
         WorthQueryApplicationProgramRoster::new(),
         SourceOnlyRetentionSchema::declaration().unwrap(),
         (contacts.clone(),),

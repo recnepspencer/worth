@@ -87,36 +87,25 @@ where
             _ => None,
         }
     }
-    /// Retained delivery was unavailable; this is receipt evidence, never a World observation.
-    pub fn unavailable_retained_delivery(
-        &self,
-    ) -> Option<&WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>>
-    {
-        match &self.operation.state {
-            SourceState::RetainedUnavailable(evidence) => Some(evidence),
-            _ => None,
-        }
-    }
     pub fn close(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
         if !matches!(
             self.operation.state,
-            SourceState::RetainedUnavailable(_)
-                | SourceState::Stopped(
-                    WorthQueryApplicationMutationOutcome::DomainDenied(_)
-                        | WorthQueryApplicationMutationOutcome::Cancelled
-                        | WorthQueryApplicationMutationOutcome::DeadlineExceeded
-                        | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
-                        | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
-                        | WorthQueryApplicationMutationOutcome::Commit(
-                            WorthQueryApplicationUncommitted::Denied(_)
-                                | WorthQueryApplicationUncommitted::Cancelled
-                                | WorthQueryApplicationUncommitted::TimedOut
-                                | WorthQueryApplicationUncommitted::Stale(_)
-                        )
-                )
+            SourceState::Stopped(
+                WorthQueryApplicationMutationOutcome::DomainDenied(_)
+                    | WorthQueryApplicationMutationOutcome::Cancelled
+                    | WorthQueryApplicationMutationOutcome::DeadlineExceeded
+                    | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+                    | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+                    | WorthQueryApplicationMutationOutcome::Commit(
+                        WorthQueryApplicationUncommitted::Denied(_)
+                            | WorthQueryApplicationUncommitted::Cancelled
+                            | WorthQueryApplicationUncommitted::TimedOut
+                            | WorthQueryApplicationUncommitted::Stale(_)
+                    )
+            )
         ) {
             return Err((
                 self,

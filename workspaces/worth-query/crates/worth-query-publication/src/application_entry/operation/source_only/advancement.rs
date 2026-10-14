@@ -6,7 +6,7 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryManagedApplicationRecoveryOutcome as Recovery,
 };
 
-type Advance<'r, S, I, P, A, M> = WorthQuerySourceOnlyAdvance<
+pub(super) type Advance<'r, S, I, P, A, M> = WorthQuerySourceOnlyAdvance<
     WorthQuerySourceOnlyOperation<'r, S, I, P, A, M>,
     WorthQueryCompletedSourceOperation<'r, S, I, P, A, M>,
     WorthQueryTerminalSourceOperation<'r, S, I, P, A, M>,
@@ -28,14 +28,15 @@ where
         <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity,
     >,
 {
-    pub fn advance(
+    pub(super) fn advance_with_history(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Advance<'r, S, I, P, A, M> {
         let runtime = self.admission.runtime.runtime();
-        match runtime
-            .with_application_advancement(request.scope, |phase| self.step(&phase, request))
-        {
+        match runtime.with_application_advancement(request.scope, |phase| {
+            self.step(&phase, request, maximum_history_work)
+        }) {
             Ok(Ok(Step::Progress)) => WorthQuerySourceOnlyAdvance::Progress(self),
             Ok(Ok(Step::Completed(evidence))) => {
                 WorthQuerySourceOnlyAdvance::Completed(WorthQueryCompletedSourceOperation {
@@ -70,6 +71,7 @@ where
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Result<
         Step<<I::Binding as ApplicationMutationBinding<S>>::Result>,
         WorthQuerySourceOnlyDenial,
@@ -138,7 +140,29 @@ where
                     .into_resolution();
                 self.accept_keyed(resolution)
             }
-            SourceState::Stopped(_) | SourceState::RetainedUnavailable(_) => Ok(Step::Terminal),
+            SourceState::RetainedPending(_) => {
+                match self
+                    .admission
+                    .resolve_keyed_in_advancement(phase, request)
+                    .map_err(WorthQuerySourceOnlyDenial::Recovery)?
+                    .into_resolution()
+                {
+                    Resolution::AlreadyCommitted(_) => {}
+                    Resolution::Unseen => return Ok(Step::Progress),
+                    resolution @ Resolution::IntentDrift => {
+                        self.keyed_terminal = Some(resolution);
+                        return Ok(Step::Terminal);
+                    }
+                }
+                self.deliver_retained(
+                    phase,
+                    request,
+                    maximum_history_work
+                        .expect("retained mode requires a per-attempt history bound"),
+                )
+                .map(Step::Completed)
+            }
+            SourceState::Stopped(_) => Ok(Step::Terminal),
         }
     }
 
@@ -159,17 +183,18 @@ where
                 }))
             }
             O::AlreadyCommitted(receipt) if M::RETAIN_COMMIT => {
-                self.state =
-                    SourceState::RetainedUnavailable(WorthQuerySourceCompletion::Recovered {
-                        receipt,
-                        publication: None,
-                        initial_posture: None,
-                        initial_advancement_failure: None,
-                    });
-                Ok(Step::Terminal)
+                self.state = SourceState::RetainedPending(WorthQuerySourceCompletion::Recovered {
+                    retained: None,
+                    receipt,
+                    publication: None,
+                    initial_posture: None,
+                    initial_advancement_failure: None,
+                });
+                Ok(Step::Progress)
             }
             O::AlreadyCommitted(receipt) => {
                 Ok(Step::Completed(WorthQuerySourceCompletion::Recovered {
+                    retained: None,
                     receipt,
                     publication: None,
                     initial_posture: None,
@@ -213,14 +238,15 @@ where
                     ),
                 };
                 let evidence = WorthQuerySourceCompletion::Recovered {
+                    retained: None,
                     receipt,
                     publication,
                     initial_posture,
                     initial_advancement_failure,
                 };
                 if M::RETAIN_COMMIT {
-                    self.state = SourceState::RetainedUnavailable(evidence);
-                    Ok(Step::Terminal)
+                    self.state = SourceState::RetainedPending(evidence);
+                    Ok(Step::Progress)
                 } else {
                     Ok(Step::Completed(evidence))
                 }

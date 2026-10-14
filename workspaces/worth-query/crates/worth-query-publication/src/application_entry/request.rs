@@ -260,6 +260,12 @@ impl<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
+    pub(in crate::application_entry) fn retained_observation(
+        &self,
+    ) -> super::WorthQueryApplicationReadObservation {
+        super::WorthQueryApplicationReadObservation::new(std::sync::Arc::clone(&self.observation))
+    }
+
     /// Reads independently scoped intents at this same observation, publishing
     /// only a complete ordered batch. Duplicate scopes are independently billed.
     pub fn query_batch<Intent>(

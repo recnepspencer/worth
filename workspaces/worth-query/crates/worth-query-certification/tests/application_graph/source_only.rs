@@ -13,3 +13,6 @@ mod readback;
 mod schema;
 #[path = "source_only/unpublished.rs"]
 mod unpublished;
+
+#[path = "source_only/retained.rs"]
+mod retained;

@@ -13,7 +13,7 @@ impl ApplicationFeature<SourceOnlyRetentionSchema> for DocumentRetentionFeature 
 }
 // The original domain intent is deliberately move-only.
 pub struct OriginalRetention {
-    input: SetRetentionInput,
+    pub(super) input: SetRetentionInput,
 }
 impl ApplicationMutationIntent<SourceOnlyRetentionSchema> for OriginalRetention {
     type Binding = SetRetentionBinding;

@@ -173,7 +173,9 @@ fn common_operation_handoff_retains_actual_commit_observation() {
             &application,
         )
         .unwrap_or_else(|(_, denial)| panic!("retained commit constructor: {denial:?}"));
-    let WorthQuerySourceOnlyAdvance::Completed(completed) = operation.advance(&request) else {
+    let WorthQuerySourceOnlyAdvance::Completed(completed) =
+        operation.advance(&request, std::num::NonZeroUsize::new(8).unwrap())
+    else {
         panic!("the actual commit retains an observation");
     };
     let WorthQuerySourceCompletion::Fresh {
