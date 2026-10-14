@@ -34,6 +34,7 @@ worth_query_structured_value_binding!(pub PlanarSourceAdjustmentDenialBinding fo
 worth_query_operation!(pub AdjustPlanarSource for Schema: TopologySchemaBinding, input PlanarSourceAdjustmentInputBinding);
 worth_query_operation_reads!(AdjustPlanarSource => [Body, BodyKey, PositionY]);
 worth_query_operation_writes!(AdjustPlanarSource => [PositionY]);
+worth_query_decl::facade::worth_query_operation_expects_fact!(AdjustPlanarSource => [BodyKey]);
 
 pub struct PlanarSourceAdjustmentBinding<Schema>(PhantomData<fn() -> Schema>);
 
@@ -177,6 +178,7 @@ pub(crate) fn declare_planar_source_adjustment<Schema: TopologySchemaBinding>(
         .operation_read_entity(operation, Body::reference())
         .operation_read_field(operation, BodyKey::reference())
         .operation_read_field(operation, PositionY::reference())
+        .operation_expected_fact(operation, BodyKey::reference())
         .operation_write(operation, PositionY::reference())
         .application_mutation_binding::<PlanarSourceAdjustmentBinding<Schema>>()
 }

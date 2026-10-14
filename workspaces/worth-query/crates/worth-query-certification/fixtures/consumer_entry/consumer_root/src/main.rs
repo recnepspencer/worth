@@ -58,8 +58,8 @@ fn installed_schema() -> WorthQueryInstalledApplicationSchema<ConsumerSchema> {
         .expect("the root-owned contributions form one closed schema declaration");
 
     assert_eq!(declaration.contributions().len(), 3);
-    // Native deployment contributes 23 declarations beyond the 129-member source schema.
-    assert_eq!(declaration.erased().members().len(), 152);
+    // Native deployment contributes 23 declarations beyond the 130-member source schema.
+    assert_eq!(declaration.erased().members().len(), 153);
     assert_ne!(
         TopologyLengthBinding::IDENTITY,
         ParameterCountBinding::IDENTITY
