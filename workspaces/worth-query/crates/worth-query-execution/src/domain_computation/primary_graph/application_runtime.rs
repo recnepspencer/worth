@@ -121,6 +121,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(crate) bridge: super::managed_bridge::WorthQueryInstalledApplicationBridge,
     pub(crate) product_runtime:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
+    pub(super) recovered_program_source_delivery:
+        super::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration,
     pub(super) basis_leases:
         super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
     pub(super) granular_invalidation: super::WorthQueryGranularInvalidationInstallation,

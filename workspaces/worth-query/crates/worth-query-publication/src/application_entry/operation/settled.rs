@@ -58,7 +58,86 @@ pub enum WorthQueryOperationDeliveryDenial {
     Program(worth_query_execution::facade::application_installation::WorthQuerySelectedProgramOwnerDenial),
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     Currentness(WorthQueryOutputCurrentnessDenial),
+    /// Native consumed-source movement makes current delivery stale; history remains owned.
+    Stale(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
     Query(WorthQueryApplicationRequestQueryDenial),
+}
+
+impl<'runtime, Schema, Intent, Program, Root, Action>
+    WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+where
+    Schema: ApplicationSchema + 'static,
+    Intent: ApplicationMutationIntent<Schema>,
+    Program: ApplicationProgramDefinition<Schema>,
+    Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+    Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+    Binding<Schema, Intent>:
+        WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
+    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Delivery<Schema, Intent, Action>:
+        ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
+{
+    pub fn declared_action(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationActionDeclaration {
+        self.installed_action
+    }
+    pub fn initial_cause(
+        &self,
+    ) -> Option<worth_query_execution::facade::runtime::ProductUnpublishedCause> {
+        self.initial_cause
+    }
+    pub fn settlement(
+        &self,
+    ) -> &WorthQueryApplicationProgramOutputSettlement<RootQuery<Schema, Root>> {
+        &self.settlement
+    }
+    pub fn handler_result(
+        &self,
+    ) -> Option<&<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result> {
+        self.result.as_ref()
+    }
+    pub fn recovered_progress(&self) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryPerformed>{
+        self.recovered.as_ref()
+    }
+
+    pub(super) fn current_observation(
+        &self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        policy: WorthQueryOperationDeliveryPolicy,
+    ) -> Result<WorthQueryApplicationReadObservation, WorthQueryOperationDeliveryDenial> {
+        use WorthQueryOperationDeliveryDenial as Denial;
+        if !std::ptr::eq(self.runtime.runtime(), request.application)
+            || self.description.branch != request.branch
+        {
+            return Err(Denial::FreshRequestMismatch);
+        }
+        let observation = request.retain_read(phase).map_err(Denial::Observation)?;
+        let selected = observation
+            .select_on(phase, request.application)
+            .map_err(Denial::Observation)?;
+        let owner = self
+            .runtime
+            .selected_program_owner(&selected)
+            .map_err(Denial::Program)?;
+        owner
+            .resolve_declared_action::<Binding<Schema, Intent>>(self.installed_action)
+            .map_err(Denial::Action)?;
+        let installed = self
+            .runtime
+            .runtime()
+            .output_demand_resource_profile()
+            .limits()
+            .source_currentness_work();
+        let work = std::num::NonZeroUsize::new(policy.currentness_work.get().min(installed))
+            .expect("installed finite positive currentness policy");
+        request.at(&observation).require_current_output_settlements_in_advancement(phase, self.settlement.retained_settlements(), work).map_err(|denial| match denial {
+            WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => Denial::Stale(output),
+            other => Denial::Currentness(other),
+        })?;
+        Ok(observation)
+    }
 }
 
 impl<'runtime, Schema, Intent, Program, Root, Action> WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
@@ -70,31 +149,37 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>: WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
     Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
-    Delivery<Schema, Intent, Action>: ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
+    Delivery<Schema, Intent, Action>: ApplicationFixedQueryDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
     <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = Read<Schema, Intent, Action>>,
     <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query> + Clone,
 {
-    pub fn declared_action(&self) -> &worth_query_declaration::facade::application_program::ApplicationActionDeclaration { self.installed_action }
-    pub fn initial_cause(&self) -> Option<worth_query_execution::facade::runtime::ProductUnpublishedCause> { self.initial_cause }
-    pub fn settlement(&self) -> &WorthQueryApplicationProgramOutputSettlement<RootQuery<Schema, Root>> { &self.settlement }
-    pub fn handler_result(&self) -> Option<&<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result> { self.result.as_ref() }
-    pub fn recovered_progress(&self) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryPerformed> { self.recovered.as_ref() }
-
     pub fn read_current(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<crate::domain_computation::WorthQueryPublishedApplicationResult<<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query, <<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial> {
+        self.read_current_with_policy(request, WorthQueryOperationDeliveryPolicy::currentness(
+            std::num::NonZeroUsize::new(self.runtime.runtime().output_demand_resource_profile().limits().source_currentness_work()).expect("installed finite positive currentness policy")))
+    }
+
+    /// Attempts delivery under fresh authority and narrower finite native ceilings.
+    /// Refusal leaves this settled owner and its cleanup custody unchanged.
+    pub fn read_current_with_policy(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<crate::domain_computation::WorthQueryPublishedApplicationResult<<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query, <<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application) || self.description.branch != request.branch { return Err(Denial::FreshRequestMismatch); }
         self.runtime.runtime().with_application_advancement(request.scope, |phase| {
-            let observation = request.retain_read(&phase).map_err(Denial::Observation)?;
-            let selected = observation.select_on(&phase, request.application).map_err(Denial::Observation)?;
-            let owner = self.runtime.selected_program_owner(&selected)
-                .map_err(Denial::Program)?;
-            owner.resolve_declared_action::<Binding<Schema, Intent>>(self.installed_action)
-                .map_err(Denial::Action)?;
+            let observation = self.current_observation(request, &phase, policy)?;
             let retained = request.at(&observation);
-            let maximum_work = std::num::NonZeroUsize::new(self.runtime.runtime().output_demand_resource_profile().limits().source_currentness_work()).expect("installed finite positive currentness policy");
-            retained.require_current_output_settlements_in_advancement(&phase, self.settlement.retained_settlements(), maximum_work).map_err(Denial::Currentness)?;
-            retained.query(Delivery::<Schema, Intent, Action>::read_input(self.description.intent.input())).execute_in_advancement(&phase).map_err(Denial::Query)
+            let query = retained.query(Delivery::<Schema, Intent, Action>::read_input(self.description.intent.input()));
+            let query = match policy.query_limits { Some((results, work)) => query.limits(results, work), None => query };
+            query.execute_in_advancement(&phase).map_err(Denial::Query)
         }).map_err(Denial::Execution)?
     }
+    /// Reads the original declared projection at its retained settlement basis with fresh authority.
+    /// This does not advance outputs or claim that their consumed facts are current.
+    pub fn read_historical(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<crate::domain_computation::WorthQueryPublishedApplicationResult<<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query, <<Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial> {
+        use WorthQueryOperationDeliveryDenial as Denial;
+        if !std::ptr::eq(self.runtime.runtime(), request.application) || self.description.branch != request.branch { return Err(Denial::FreshRequestMismatch); }
+        self.runtime.runtime().with_application_advancement(request.scope, |phase| {
+            request.at(self.settlement.observation()).query(Delivery::<Schema, Intent, Action>::read_input(self.description.intent.input())).execute_in_advancement(&phase).map_err(Denial::Query)
+        }).map_err(Denial::Execution)?
+    }
+
 }

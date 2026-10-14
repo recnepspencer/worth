@@ -12,14 +12,16 @@ mod mutation;
 mod operation;
 pub use operation::{
     WorthQueryClosedOperation, WorthQueryCompletedSourceOperation, WorthQueryFixedOperation,
-    WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
+    WorthQueryFixedProjectionInstallation, WorthQueryOperationAdvance,
+    WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
     WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
-    WorthQueryOperationDescription, WorthQueryOperationModeFactory, WorthQueryOperationProgress,
-    WorthQuerySettledFixedOperation, WorthQuerySourceCompletion, WorthQuerySourceDeliveryMode,
-    WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation,
-    WorthQuerySourceOnlyPosture, WorthQuerySourceOperationAdmission,
-    WorthQueryTerminalFixedOperation, WorthQueryTerminalSourceOperation,
+    WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
+    WorthQueryOperationModeFactory, WorthQueryOperationProgress, WorthQuerySettledFixedOperation,
+    WorthQuerySourceCompletion, WorthQuerySourceDeliveryMode, WorthQuerySourceOnlyAdvance,
+    WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,
+    WorthQuerySourceOperationAdmission, WorthQueryTerminalFixedOperation,
+    WorthQueryTerminalSourceOperation,
 };
 mod programs;
 mod query;

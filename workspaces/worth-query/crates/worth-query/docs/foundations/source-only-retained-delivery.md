@@ -83,4 +83,3 @@ Native history selection reports a bounded unavailable result without proving wh
 - [Build an application](../../../../../../docs/build-an-application.md)
 - [Executable retained courts](../../../worth-query-certification/tests/application_graph/source_only/retained.rs)
 - [Executable capability recovery court](../../../worth-query-certification/tests/application_graph/source_only/capability/recovery.rs)
-

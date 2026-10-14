@@ -22,14 +22,20 @@ where
             }
             continue;
         };
-        require_identity(delivery.read().identity())?;
+        if let Some(read) = delivery.read() {
+            require_identity(read.identity())?;
+        }
         let connection = delivery.root_connection();
         if !action.required_output_source()
             || !roots.contains(&delivery.root_type())
             || connection.source_instance() != action.composition_instance()
             || connection.source_feature() != action.feature()
-            || delivery.read().limits().maximum_results() == 0
-            || delivery.read().limits().maximum_work() == Some(0)
+            || delivery
+                .read()
+                .is_some_and(|read| read.limits().maximum_results() == 0)
+            || delivery
+                .read()
+                .is_some_and(|read| read.limits().maximum_work() == Some(0))
         {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::InvalidActionDelivery,

@@ -345,6 +345,10 @@ where
                         RecoveredPublicationDelivery::Ordinary
                         | RecoveredPublicationDelivery::OwningSource => None,
                         RecoveredPublicationDelivery::ProgramSource => {
+                            super::recovered_program_source_delivery::consume_first_if_armed(
+                                self,
+                                || session.take_recovered_output_source(),
+                            );
                             Some(session.take_recovered_output_source())
                         }
                     };

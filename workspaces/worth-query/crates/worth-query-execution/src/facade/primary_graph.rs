@@ -341,3 +341,8 @@ pub use worth_runtime_bridge::facade::{
 pub use crate::domain_computation::primary_graph::principal_target_reads_on_this_thread_for_test;
 
 pub use crate::domain_computation::primary_graph::conditional_intent_read_is_active_for_test;
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest,
+};

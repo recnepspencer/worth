@@ -77,6 +77,10 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
         Delivery<Schema, Intent, Action>:
             ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>>,
+        <Delivery<Schema, Intent, Action> as ApplicationFixedActionDelivery<
+            Schema,
+            Binding<Schema, Intent>,
+        >>::Projection: WorthQueryFixedProjectionInstallation<Schema>,
     {
         if !program
             .runtime()
@@ -94,10 +98,11 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
                 return Err((self, WorthQueryOperationConstructionDenial::Action(denial)))
             }
         };
-        if let Err(denial) = program
-            .runtime()
-            .installed_schema()
-            .installed_query_binding::<Read<Schema, Intent, Action>>()
+        if let Err(denial) =
+            <Delivery<Schema, Intent, Action> as ApplicationFixedActionDelivery<
+                Schema,
+                Binding<Schema, Intent>,
+            >>::Projection::require_installed(program.runtime().installed_schema())
         {
             return Err((self, WorthQueryOperationConstructionDenial::Query(denial)));
         }

@@ -1620,10 +1620,13 @@ cargo run --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-certi
 ### 5.4 Mutations with required outputs
 
 For a fixed required-output action, declare its exact composition occurrence,
-output root and read binding. `ApplicationFixedActionDelivery<Schema, Binding>`
-names `Root`, `Read`, and `read_input(&Binding::Input)`. Its
+output root and projection. `ApplicationFixedActionDelivery<Schema, Binding>`
+names `Root` and `Projection`. For a query, choose `ApplicationQueryProjection<Read>`
+and implement `ApplicationFixedQueryDelivery` with `Read` and
+`read_input(&Binding::Input)`. For required outputs without a projected read,
+choose `ApplicationNoProjection`; it has no query binding or selector. The
 `ApplicationActionDelivery` contract supplies the single stable `IDENTITY` and
-`ApplicationFixedDeliveryMode<Root, Read>`.
+`ApplicationFixedDeliveryMode<Root, Projection>`.
 The installed declaration binds the concrete `Delivery` implementation. Another
 type cannot substitute its selector by copying the delivery identity, root, and
 read metadata. The identity still supplies stable canonical meaning; runtime type
@@ -1729,6 +1732,58 @@ Settlement does not invent a recovered handler reply: `handler_result()` and
 observation, requires every settled output's native lineage at that observation,
 and executes the declared read there. Refusal retains settlement and original
 meaning for a later read; it does not perform the source or outputs again.
+`read_current_with_policy` accepts `WorthQueryOperationDeliveryPolicy` for one
+attempt: currentness work is capped by installed native policy, and query result
+and work ceilings must narrow the declared native query limits. Retry uses fresh
+request authority on the same settled owner. Native consumed-fact movement
+returns `Stale`; unrelated progress does not itself make settlement stale.
+`read_historical` reads the original declared projection at the retained settlement
+basis with fresh query authorization. Neither history nor close advances outputs.
+For `ApplicationNoProjection`, `deliver_current` checks every settlement at one
+authentic observation and returns that observation without issuing a query.
+
+Start with a small finite attempt. This shape uses application-specific names;
+the real compiled consumer counterpart is
+[`fixed_delivery.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_delivery.rs).
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+use std::num::NonZeroUsize;
+use worth_query_host::facade::application_entry::WorthQueryOperationDeliveryPolicy;
+
+let policy = WorthQueryOperationDeliveryPolicy::currentness(
+    NonZeroUsize::new(64).unwrap(),
+).query(NonZeroUsize::new(1).unwrap(), NonZeroUsize::new(32).unwrap());
+let delivery = settled.read_current_with_policy(&fresh_request, policy);
+// Keep settled on refusal; a later fresh request may use another finite policy.
+```
+
+For a realistic retained-output journey, settle the original action once, then
+handle delivery separately. A currentness work refusal or query work refusal
+leaves that same settled owner available for retry. A `Stale` result instead
+means native consumed-source facts moved: read the original declared projection
+with `settled.read_historical(&fresh_request)` when historical data is useful,
+then close the owner. Historical reads still require fresh query authorization;
+an installed-action mismatch on current delivery is not permission to execute a
+replacement selector. `close` can refuse and return the owner with its remaining
+cleanup, so retain it for lawful retry.
+
+When no projected rows are needed, declare `ApplicationNoProjection` and use
+`settled.deliver_current(&fresh_request, policy)`. This still settles and validates
+the real required outputs. It returns an authentic observation, not query
+permission or rows. The compiled public API example and negative counterpart are
+on [`deliver_current`](../workspaces/worth-query/crates/worth-query-publication/src/application_entry/operation/current_delivery.rs).
+`ApplicationFixedProjection` and `WorthQueryFixedProjectionInstallation` are
+sealed composition contracts; applications choose the provided projection shape
+rather than implementing another installation or authorization policy.
+
+Do not rerun the source or rebuild the descriptor to retry delivery. A caller
+cannot enlarge installed ceilings, replace the declared selector, or refresh
+closed output owners by asking for a current read. Declared bounded batches are
+not supplied by this single-query fixed delivery surface; use its one declared
+query or explicit no-projection shape.
+
 
 `close` funds native recovery-record release and owner cleanup. A refusal returns
 the settled owner with the exact remaining cleanup. Holding a real World caller
@@ -1736,10 +1791,11 @@ capability can lawfully refuse record release; dropping that capability and
 supplying a fresh request permits retry. A closed result reports discharged
 cleanup, rather than treating a failed release as success.
 
-The fixed owning entrance currently composes conventional unguarded source
-actions. Other native entrances remain available while their owning adapters
-are completed; this entrance does not reinterpret a capability or workflow
-denial as ordinary permission.
+The fixed owning entrance selects conventional or capability admission from the
+declared mutation binding and checks fresh request authority through the existing
+native owner. It does not reinterpret a capability or workflow denial as ordinary
+permission. Other lifecycle entrances retain their own native custody and support
+boundaries.
 
 When the owner reaches output traversal, one native `advance` can process the caller's dependency chain and other queued
 required outputs in several waves. The required-set owner admits a wave only

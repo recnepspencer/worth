@@ -16,7 +16,7 @@ pub trait ApplicationActionDelivery<S: ApplicationSchema, B: ApplicationMutation
 mod sealed {
     pub trait Mode {}
 }
-/// Selects fixed-output settlement with its declared root and read selector.
+/// Selects fixed-output settlement with its declared root and projection shape.
 pub struct ApplicationFixedDeliveryMode<R, Q>(PhantomData<fn() -> (R, Q)>);
 /// Declares receipt-only completion for a source with no required output obligation.
 pub struct ApplicationSourceCompletion;
@@ -38,7 +38,7 @@ impl<S, B, D, R, Q> ApplicationActionDeliveryMode<S, B, D> for ApplicationFixedD
 where
     S: ApplicationSchema,
     B: ApplicationMutationBinding<S>,
-    D: ApplicationFixedActionDelivery<S, B, Root = R, Read = Q>,
+    D: ApplicationFixedActionDelivery<S, B, Root = R, Projection = Q>,
     R: 'static,
     Q: 'static,
 {
