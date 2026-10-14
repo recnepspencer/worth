@@ -71,6 +71,13 @@ where
             _ => None,
         }
     }
+    /// Exact native preparation refusal retained without a manufactured commit outcome.
+    pub fn native_admission_denial(&self) -> Option<&WorthQueryApplicationRequestMutationDenial> {
+        match &self.operation.state {
+            SourceState::AdmissionStopped(denial) => Some(denial),
+            _ => None,
+        }
+    }
     pub fn native_keyed_resolution(
         &self,
     ) -> Option<
@@ -91,22 +98,7 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
-        if !matches!(
-            self.operation.state,
-            SourceState::Stopped(
-                WorthQueryApplicationMutationOutcome::DomainDenied(_)
-                    | WorthQueryApplicationMutationOutcome::Cancelled
-                    | WorthQueryApplicationMutationOutcome::DeadlineExceeded
-                    | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
-                    | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
-                    | WorthQueryApplicationMutationOutcome::Commit(
-                        WorthQueryApplicationUncommitted::Denied(_)
-                            | WorthQueryApplicationUncommitted::Cancelled
-                            | WorthQueryApplicationUncommitted::TimedOut
-                            | WorthQueryApplicationUncommitted::Stale(_)
-                    )
-            )
-        ) {
+        if !native_posture::can_close(&self.operation.state) {
             return Err((
                 self,
                 WorthQueryOperationCloseDenial::NativeObligationRetained,

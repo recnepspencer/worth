@@ -8,8 +8,8 @@ pub(in crate::application_invariant_acceptance) fn install_selected_program<Prog
     program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
 ) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
 where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
-    Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions,
-Outputs = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Outputs>{
+    Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
+Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));

@@ -78,10 +78,14 @@ where
     > {
         match &mut self.state {
             SourceState::Initial => {
-                let outcome = self
-                    .admission
-                    .execute_in_advancement(phase, request)
-                    .map_err(WorthQuerySourceOnlyDenial::Mutation)?;
+                let outcome = match self.admission.execute_in_advancement(phase, request) {
+                    Ok(outcome) => outcome,
+                    Err(denial) if native_posture::pinned_source_moved(&denial) => {
+                        self.state = SourceState::AdmissionStopped(denial);
+                        return Ok(Step::Terminal);
+                    }
+                    Err(denial) => return Err(WorthQuerySourceOnlyDenial::Mutation(denial)),
+                };
                 match outcome {
                     WorthQueryApplicationRetainedMutationOutcome::Committed {
                         receipt,
@@ -162,7 +166,7 @@ where
                 )
                 .map(Step::Completed)
             }
-            SourceState::Stopped(_) => Ok(Step::Terminal),
+            SourceState::Stopped(_) | SourceState::AdmissionStopped(_) => Ok(Step::Terminal),
         }
     }
 

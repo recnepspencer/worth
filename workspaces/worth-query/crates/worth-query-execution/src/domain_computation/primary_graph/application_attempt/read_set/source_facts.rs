@@ -20,8 +20,16 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
     admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
 ) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
-    let facts = admission.take_source_facts();
-    for fact in &facts {
+    compare_source_facts(execution, admission, lease)?;
+    Ok(admission.take_source_facts())
+}
+
+fn compare_source_facts<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    lease: &WorthQueryApplicationSnapshotLease,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    for fact in admission.source_facts() {
         super::super::super::fact_verification_observation::source_admission();
         if let Some(stop) = admission.publication_request().interruption() {
             return Err(
@@ -40,7 +48,32 @@ pub(super) fn validate_source_facts<Schema, Operation, Input, Scope>(
             return Err(denial(kind, admission.operation()));
         }
     }
-    Ok(facts)
+    Ok(())
+}
+
+impl<Schema: worth_query_installation::facade::ApplicationSchema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    pub(in crate::domain_computation::primary_graph) fn validate_projected_source_facts<
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+        let lease = admission.graph_work().mutation_lease().ok_or_else(|| {
+            denial(
+                WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
+                admission.operation(),
+            )
+        })?;
+        compare_source_facts(execution, admission, lease)
+    }
 }
 
 pub(super) fn merge_source_facts(
