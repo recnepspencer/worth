@@ -47,6 +47,12 @@ where
         reader: &mut DecisionReader<'_, '_, '_, Schema, Binding>,
     ) -> HandlerResult<Binding::Decision, Binding::Denial> {
         for step in self.body.scope_fields() {
+            if matches!(
+                step,
+                ApplicationOperationBodyScopeField::RequirePresent { .. }
+            ) {
+                continue;
+            }
             let expected = match step {
                 ApplicationOperationBodyScopeField::Expect { value, .. } => {
                     BodyFieldExpectation::Equals(value)
@@ -87,6 +93,28 @@ where
                 );
             }
         }
+        let findings = match reader.body_scope_requirements(&self.body) {
+            Ok(findings) => findings,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
+        if let Some(unmet) = findings.findings().iter().find(|finding| {
+            finding.status() == super::WorthQueryOperationBodyRequirementStatus::Unmet
+        }) {
+            return HandlerResult::DomainDenied(match unmet.identity() {
+                Some(identity) => WorthQueryOperationBodyDenial::DeclaredRequirementUnmet {
+                    identity: identity.to_owned(),
+                },
+                None => {
+                    let field = unmet.field().expect("intrinsic presence targets a field");
+                    WorthQueryOperationBodyDenial::RequirementUnmet {
+                        entity: field.entity().to_owned(),
+                        aspect: field.aspect().to_owned(),
+                        field: field.field().to_owned(),
+                    }
+                }
+            });
+        }
+        drop(findings);
         let mut sources = Vec::new();
         if let Some(creation) = self.body.creation() {
             for source in creation

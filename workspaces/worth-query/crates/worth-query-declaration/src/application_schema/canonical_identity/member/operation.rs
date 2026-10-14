@@ -15,7 +15,9 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.scope_fields().iter().any(|step| {
+        if !body.requirements().is_empty() {
+            "operation-body-v5"
+        } else if body.scope_fields().iter().any(|step| {
             matches!(
                 step,
                 ApplicationOperationBodyScopeField::RequirePresent { .. }
@@ -37,6 +39,15 @@ pub(super) fn append_body(
         },
         operation,
     );
+    if !body.requirements().is_empty() {
+        basis.usize(format!("{prefix}.requirements"), body.requirements().len());
+        for (index, requirement) in body.requirements().iter().enumerate() {
+            basis.text(
+                format!("{prefix}.requirement[{index}]"),
+                &requirement.canonical_record(),
+            );
+        }
+    }
     basis.usize(format!("{prefix}.steps"), body.scope_fields().len());
     for (index, step) in body.scope_fields().iter().enumerate() {
         let prefix = format!("{prefix}.step[{index}]");

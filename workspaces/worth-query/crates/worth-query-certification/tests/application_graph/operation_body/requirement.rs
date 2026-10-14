@@ -38,7 +38,10 @@ fn guidance<const DESTINATION: u64>(
         .findings()
         .iter()
         .map(|finding| {
-            assert_eq!(finding.field().field(), "DocumentDraftNoteField");
+            assert_eq!(
+                finding.field().expect("presence target").field(),
+                "DocumentDraftNoteField"
+            );
             finding.status()
         })
         .collect()

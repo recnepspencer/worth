@@ -16,6 +16,7 @@ use super::{
 
 pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     steps: Vec<ApplicationOperationBodyScopeField>,
+    requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -25,6 +26,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
     pub fn body(self) -> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
         ApplicationOperationBodyBuilder {
             steps: Vec::new(),
+            requirements: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -88,6 +90,14 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
                 return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
             }
         }
+        if self
+            .requirements
+            .iter()
+            .flat_map(|requirement| requirement.operands())
+            .any(|operand| operand.source().scope_entity() != first.field().entity())
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
+        }
         if writes.is_empty() {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
@@ -95,9 +105,28 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             program: ApplicationOperationBodyProgram {
                 scope_fields: self.steps,
                 creation: None,
+                requirements: self.requirements,
             },
             marker: PhantomData,
         })
+    }
+
+    /// Attaches one complete precondition; its expressions own guidance and admission.
+    pub fn requirement(
+        mut self,
+        requirement: super::ApplicationOperationBodyRequirement<Schema, Operation>,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial> {
+        if self
+            .requirements
+            .iter()
+            .any(|existing| existing.identity() == requirement.program.identity())
+        {
+            return Err(
+                super::ApplicationOperationBodyRequirementDenial::DuplicateRequirement.into(),
+            );
+        }
+        self.requirements.push(requirement.program);
+        Ok(self)
     }
 
     /// Assigns a scalar from the original canonical input's serialized member.

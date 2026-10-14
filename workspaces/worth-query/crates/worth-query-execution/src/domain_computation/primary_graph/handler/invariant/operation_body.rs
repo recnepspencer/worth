@@ -94,4 +94,21 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .mutation_target(self.scope)
             .map_err(HandlerExecutionDenial::new)
     }
+
+    pub(in crate::domain_computation::primary_graph) fn body_scope_requirements(
+        &mut self,
+        body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
+    ) -> Result<
+        super::super::super::WorthQueryCurrentBodyRequirementAssessment,
+        HandlerExecutionDenial,
+    > {
+        self.checkpoint().map_err(HandlerExecutionDenial::new)?;
+        self.context_use.set(self.context_use.get().scope());
+        super::super::super::operation_body::evaluate_requirements(
+            self.reader,
+            self.scope,
+            body,
+            self.execution,
+        )
+    }
 }

@@ -21,6 +21,7 @@ pub(crate) fn validate_operation_bodies(
         let scope = body
             .scope_entity()
             .ok_or(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)?;
+        super::requirement::validate_requirements(operation, body, members)?;
         let mut writes = BTreeSet::new();
         for step in body.scope_fields() {
             if step.field().entity() != scope {

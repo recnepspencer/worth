@@ -9,7 +9,11 @@ pub use body::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
     ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
-    ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodyProgram, ApplicationOperationBodyRequirement,
+    ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
+    ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
+    ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
+    ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
 };
 pub(crate) use builder::AftermathAssociationAuthority;
 pub use builder::ApplicationOperationDefinitionBuilder;

@@ -46,7 +46,7 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     const HANDLER_IDENTITY: &'static str = "worth.query.body-court.native-body.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = if matches!(DESTINATION, 20 | 21 | 23 | 24)
+    const CANDIDATES: ApplicationCandidateRequirements = if matches!(DESTINATION, 20 | 21 | 23..=29)
     {
         ApplicationCandidateRequirements::fixed_shape(
             ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 4, 0),

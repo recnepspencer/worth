@@ -7,8 +7,7 @@ use worth_query_execution::facade::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner,
 };
 use worth_query_execution::facade::primary_graph::{
-    HandlerExecutionDenial, WorthQueryApplicationInvariantProjectionAuthority,
-    WorthQueryOperationBodyRequirementFinding, WorthQueryOperationProjectionDenial,
+    WorthQueryApplicationInvariantProjectionAuthority, WorthQueryOperationBodyAssessmentDenial,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -16,23 +15,13 @@ use super::selected_program::map_selected_program_owner_denial;
 use super::WorthQueryApplicationMutationRequest;
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 
-/// A descriptive observation, never an admission permit or retained snapshot.
-pub struct WorthQueryCurrentBodyRequirementAssessment {
-    findings: Vec<WorthQueryOperationBodyRequirementFinding>,
-}
-
-impl WorthQueryCurrentBodyRequirementAssessment {
-    pub fn findings(&self) -> &[WorthQueryOperationBodyRequirementFinding] {
-        &self.findings
-    }
-}
+pub use worth_query_execution::facade::primary_graph::WorthQueryCurrentBodyRequirementAssessment;
 
 /// A read-only assessment may fail before or during its authorized native observation.
 #[derive(Debug)]
 pub enum WorthQueryCurrentBodyRequirementAssessmentDenial {
     Request(WorthQueryApplicationRequestMutationDenial),
-    Projection(WorthQueryOperationProjectionDenial),
-    Observation(HandlerExecutionDenial),
+    Native(WorthQueryOperationBodyAssessmentDenial),
 }
 
 impl<Schema, Intent, SourcePreparation>
@@ -100,20 +89,16 @@ where
                     })?;
                 let admission = super::authorization::admit_for_assessment(&phase, &mut self)
                     .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Request)?;
-                let projected = projection
-                    .project_admitted_operation(
+                let findings = application
+                    .assess_admitted_operation_body_requirements(
                         &phase,
                         &admission,
-                        |reader, identity| reader.inspect_body_requirements(identity, &installed),
+                        &installed,
+                        projection,
                         ExecutionAllocationPolicy::SystemAllocation,
                     )
-                    .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Projection)?;
-                let (findings, snapshot, _) = projected.into_parts();
-                drop(snapshot);
-                Ok(WorthQueryCurrentBodyRequirementAssessment {
-                    findings: findings
-                        .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Observation)?,
-                })
+                    .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Native)?;
+                Ok(findings)
             })
             .map_err(|cause| {
                 WorthQueryCurrentBodyRequirementAssessmentDenial::Request(

@@ -142,7 +142,7 @@ where
             })
     }
 
-    fn admit_adjacency_list(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn admit_adjacency_list(
         &mut self,
         relation: &str,
     ) -> Result<(), WorthQueryInvariantProjectionTraversalDenial> {
@@ -153,7 +153,7 @@ where
         Ok(())
     }
 
-    fn adjacency_limit_denial(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn adjacency_limit_denial(
         &mut self,
         limit: worth_relational::facade::runtime::AdjacencyTruthReadLimitExceeded,
         relation: &str,
@@ -167,7 +167,7 @@ where
         work_budget_exceeded(relation)
     }
 
-    fn endpoint<Entity>(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn endpoint<Entity>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: worth_relational::facade::identity::EntityId,
@@ -214,7 +214,7 @@ where
 
     /// Reads the snapshot on its own branch root. A version alone would admit
     /// a sibling branch's commits made at older versions.
-    fn branch_view(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn branch_view(
         &self,
         subject: &str,
     ) -> Result<VisibilityProjectionView, WorthQueryInvariantProjectionTraversalDenial> {

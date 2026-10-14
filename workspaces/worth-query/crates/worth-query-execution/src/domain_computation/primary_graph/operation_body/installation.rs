@@ -48,6 +48,17 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             return Err(denied());
         }
         let mut input_bindings = Vec::new();
+        for source in body
+            .requirements()
+            .iter()
+            .flat_map(|requirement| requirement.operands())
+            .map(|operand| operand.source())
+        {
+            if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::Field { field, binding, scalar_family, .. } = source {
+                let installed_binding = schema.value_bindings().field(field.entity(), field.aspect(), field.field()).ok_or_else(denied)?;
+                if installed_binding.identity() != binding || installed_binding.scalar_family() != *scalar_family { return Err(denied()); }
+            }
+        }
         for step in body.scope_fields() {
             let locus = step.field();
             let binding = schema

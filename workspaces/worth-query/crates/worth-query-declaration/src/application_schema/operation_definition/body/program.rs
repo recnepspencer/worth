@@ -122,6 +122,7 @@ impl ApplicationOperationBodyScopeField {
 pub struct ApplicationOperationBodyProgram {
     pub(super) scope_fields: Vec<ApplicationOperationBodyScopeField>,
     pub(super) creation: Option<ApplicationOperationBodyCreation>,
+    pub(super) requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -243,6 +244,7 @@ impl ApplicationOperationBodyProgram {
         Self {
             scope_fields,
             creation: None,
+            requirements: Vec::new(),
         }
     }
     pub fn from_untrusted_with_creation(
@@ -252,7 +254,22 @@ impl ApplicationOperationBodyProgram {
         Self {
             scope_fields,
             creation,
+            requirements: Vec::new(),
         }
+    }
+    pub fn from_untrusted_with_requirements(
+        scope_fields: Vec<ApplicationOperationBodyScopeField>,
+        creation: Option<ApplicationOperationBodyCreation>,
+        requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
+    ) -> Self {
+        Self {
+            scope_fields,
+            creation,
+            requirements,
+        }
+    }
+    pub fn requirements(&self) -> &[super::ApplicationOperationBodyRequirementProgram] {
+        &self.requirements
     }
     pub fn scope_fields(&self) -> &[ApplicationOperationBodyScopeField] {
         &self.scope_fields

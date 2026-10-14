@@ -26,7 +26,11 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
     fn register_members(
         schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>>,
     ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>> {
-        let authored_destination = if DESTINATION == 24 { 20 } else { DESTINATION };
+        let authored_destination = if matches!(DESTINATION, 24..=29) {
+            20
+        } else {
+            DESTINATION
+        };
         let body = SetRetention::reference::<DocumentRetentionSchema<DESTINATION>>()
             .body()
             .expect(DocumentRetentionField::reference(), 7)
@@ -45,7 +49,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             body.assign(DocumentRetentionField::reference(), authored_destination)
                 .unwrap()
         };
-        let body = if matches!(DESTINATION, 20 | 21 | 23 | 24) {
+        let body = if matches!(DESTINATION, 20 | 21 | 23..=29) {
             let creation = body
                 .create_in_scope(Audit::reference(), "audit")
                 .unwrap()
@@ -104,6 +108,11 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
                 Principal::reference(),
             )
             .principal_binding(DocumentPrincipalBinding::reference())
+            .relation(
+                DocumentMembers::reference(),
+                Document::reference(),
+                Audit::reference(),
+            )
             .operation(
                 SetRetention::reference()
                     .definition()
@@ -169,11 +178,25 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
                     .with_body(require_draft_note_body::<DESTINATION>())
                     .unwrap(),
             )
+            .operation(
+                UnlinkMember::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_projection_work_budget(UnlinkMember::reference(), 32)
+            .operation_read_field(
+                UnlinkMember::reference(),
+                DocumentIdentityField::reference(),
+            )
+            .operation_read_relation(UnlinkMember::reference(), DocumentMembers::reference())
+            .operation_unlink(UnlinkMember::reference(), DocumentMembers::reference())
             .operation_projection_work_budget(SetRetention::reference(), 8)
             .operation_projection_work_budget(SetAuditSource::reference(), 8)
             .operation_projection_work_budget(SetDraftNote::reference(), 8)
             .operation_projection_work_budget(ClearDraftNote::reference(), 8)
-            .operation_projection_work_budget(RequireDraftNote::reference(), 8)
+            .operation_projection_work_budget(RequireDraftNote::reference(), 32)
             .operation_read_field(
                 SetRetention::reference(),
                 DocumentIdentityField::reference(),
@@ -199,6 +222,8 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .application_mutation_binding::<DraftBinding<DESTINATION, SetDraftNote>>()
             .application_mutation_binding::<DraftBinding<DESTINATION, ClearDraftNote>>()
             .application_mutation_binding::<DraftBinding<DESTINATION, RequireDraftNote>>()
+            .application_mutation_binding::<super::requirement_control::UnlinkBinding<DESTINATION>>(
+            )
             .application_query(document_retention_query_definition::<DESTINATION>())
             .application_query_binding::<DocumentRetentionQueryBinding<DESTINATION>>()
             .application_query(super::audit_query::audit_query_definition::<DESTINATION>())
@@ -214,7 +239,49 @@ fn require_draft_note_body<const DESTINATION: u64>() -> ApplicationOperationBody
     super::draft::DraftInput,
 > {
     let body = RequireDraftNote::reference::<DocumentRetentionSchema<DESTINATION>>().body();
-    let body = if DESTINATION == 24 {
+    let body = if matches!(DESTINATION, 25..=27 | 29) {
+        let operands = RequireDraftNote::reference::<DocumentRetentionSchema<DESTINATION>>()
+            .requirement_operands()
+            .presence("active", DocumentDraftNoteField::reference())
+            .unwrap()
+            .outgoing_item_count("members", DocumentMembers::reference())
+            .unwrap();
+        let reader = worth_foundational::expression_api::expressions()
+            .reading_within(ApplicationOperationBodyRequirementExpression::PROFILE);
+        let requirement = ApplicationOperationBodyRequirement::admit(
+            "members-minimum",
+            operands,
+            Some(reader.parse("active").unwrap()),
+            reader
+                .parse(if DESTINATION == 26 {
+                    "members >= exact_cast<UInt64>(2)"
+                } else if DESTINATION == 29 {
+                    "members / exact_cast<UInt64>(0) >= exact_cast<UInt64>(1)"
+                } else {
+                    "members >= exact_cast<UInt64>(1)"
+                })
+                .unwrap(),
+            "members",
+        )
+        .unwrap();
+        body.requirement(requirement).unwrap()
+    } else if DESTINATION == 28 {
+        let operands = RequireDraftNote::reference::<DocumentRetentionSchema<DESTINATION>>()
+            .requirement_operands()
+            .field("note", DocumentDraftNoteField::reference())
+            .unwrap();
+        let reader = worth_foundational::expression_api::expressions()
+            .reading_within(ApplicationOperationBodyRequirementExpression::PROFILE);
+        let requirement = ApplicationOperationBodyRequirement::admit(
+            "nonempty-note",
+            operands,
+            Some(reader.parse("is_some(note)").unwrap()),
+            reader.parse("length(unwrap(note)) > 0").unwrap(),
+            "note",
+        )
+        .unwrap();
+        body.requirement(requirement).unwrap()
+    } else if DESTINATION == 24 {
         body
     } else {
         body.require_present(DocumentDraftNoteField::reference())
@@ -243,6 +310,9 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
                 setup.operation_body::<DraftBinding<DESTINATION, SetDraftNote>>()?;
                 setup.operation_body::<DraftBinding<DESTINATION, ClearDraftNote>>()?;
                 setup.operation_body::<DraftBinding<DESTINATION, RequireDraftNote>>()?;
+                setup.handler::<super::requirement_control::UnlinkBinding<DESTINATION>, _>(
+                    super::requirement_control::UnlinkHandler,
+                )?;
             }
             Installation::Missing => {}
             Installation::Replacement => {
@@ -277,6 +347,7 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
                 .mutation::<DraftBinding<DESTINATION, SetDraftNote>>()
                 .mutation::<DraftBinding<DESTINATION, ClearDraftNote>>()
                 .mutation::<DraftBinding<DESTINATION, RequireDraftNote>>()
+                .mutation::<super::requirement_control::UnlinkBinding<DESTINATION>>()
                 .finish(),
         ]
     }

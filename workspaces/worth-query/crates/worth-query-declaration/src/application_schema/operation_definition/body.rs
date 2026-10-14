@@ -3,6 +3,7 @@
 mod builder;
 mod creation;
 mod program;
+mod requirement;
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;
@@ -10,6 +11,12 @@ pub use creation::ApplicationOperationBodyCreationBuilder;
 pub use program::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
     ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
+};
+pub use requirement::{
+    ApplicationOperationBodyRequirement, ApplicationOperationBodyRequirementDenial,
+    ApplicationOperationBodyRequirementDirection, ApplicationOperationBodyRequirementExpression,
+    ApplicationOperationBodyRequirementOperand, ApplicationOperationBodyRequirementOperands,
+    ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
 };
 pub(crate) use validation::validate_operation_bodies;
 
@@ -35,6 +42,20 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     InvalidCreationKey,
     IncompatibleSourceBinding,
     ForeignSourceEntity,
+    Requirement(ApplicationOperationBodyRequirementDenial),
+}
+
+impl From<ApplicationOperationBodyRequirementDenial> for ApplicationOperationBodyAuthoringDenial {
+    fn from(value: ApplicationOperationBodyRequirementDenial) -> Self {
+        Self::Requirement(value)
+    }
+}
+impl From<worth_foundational::expression_api::ExpressionDenial>
+    for ApplicationOperationBodyAuthoringDenial
+{
+    fn from(value: worth_foundational::expression_api::ExpressionDenial) -> Self {
+        Self::Requirement(ApplicationOperationBodyRequirementDenial::Expression(value))
+    }
 }
 
 impl std::fmt::Display for ApplicationOperationBodyAuthoringDenial {

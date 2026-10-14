@@ -5,13 +5,12 @@ use super::{
     WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
 };
 use crate::domain_computation::primary_graph::operation_body::{
-    BodyFieldExpectation, PreparedBodySource, WorthQueryOperationBodyRequirementFinding,
+    BodyFieldExpectation, PreparedBodySource, WorthQueryCurrentBodyRequirementAssessment,
 };
 use crate::domain_computation::primary_graph::HandlerExecutionDenial;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
-use worth_query_declaration::facade::application_schema::ApplicationOperationBodyScopeField;
 use worth_query_installation::facade::WorthQueryInstalledApplicationMutationBinding;
 
 impl<Schema: ApplicationSchema, Operation>
@@ -19,11 +18,12 @@ impl<Schema: ApplicationSchema, Operation>
 {
     /// Describes the installed operation's preconditions at this authorized
     /// observation. The projection result does not retain mutation authority.
-    pub fn inspect_body_requirements<Entity, Binding>(
+    pub(in crate::domain_computation::primary_graph) fn inspect_body_requirements<Entity, Binding>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
-    ) -> Result<Vec<WorthQueryOperationBodyRequirementFinding>, HandlerExecutionDenial>
+        execution: &crate::domain_computation::primary_graph::application_contribution::QueryRequestExecution<'_>,
+    ) -> Result<WorthQueryCurrentBodyRequirementAssessment, HandlerExecutionDenial>
     where
         Binding: ApplicationMutationBinding<Schema, Operation = Operation>,
     {
@@ -43,17 +43,9 @@ impl<Schema: ApplicationSchema, Operation>
                 Binding::IDENTITY,
             ))
         })?;
-        body.scope_fields()
-            .iter()
-            .filter_map(|step| match step {
-                ApplicationOperationBodyScopeField::RequirePresent { field, .. } => Some(field),
-                _ => None,
-            })
-            .map(|field| {
-                self.body_field(identity, field, BodyFieldExpectation::Present)
-                    .map(|met| WorthQueryOperationBodyRequirementFinding::new(field.clone(), met))
-            })
-            .collect()
+        crate::domain_computation::primary_graph::operation_body::evaluate_requirements(
+            self, identity, body, execution,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn body_field<Entity>(
@@ -81,7 +73,7 @@ impl<Schema: ApplicationSchema, Operation>
         self.reader.body_scalar_capture(identity, &locator, capture)
     }
 
-    fn tracked_body_locator<Entity>(
+    pub(super) fn tracked_body_locator<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,

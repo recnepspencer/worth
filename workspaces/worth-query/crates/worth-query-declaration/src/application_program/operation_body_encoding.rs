@@ -6,6 +6,28 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let base = operation_body_base_record(body);
+    if body.requirements().is_empty() {
+        return base;
+    }
+    framed_record(
+        "operation-body-v6",
+        [
+            ("body", base),
+            (
+                "requirements",
+                framed_record(
+                    "requirements-v1",
+                    body.requirements()
+                        .iter()
+                        .map(|requirement| ("requirement", requirement.canonical_record())),
+                ),
+            ),
+        ],
+    )
+}
+
+fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String {
     let has_requirement = body.scope_fields().iter().any(|step| {
         matches!(
             step,

@@ -151,7 +151,11 @@ pub use operation_definition::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
     ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
-    ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodyProgram, ApplicationOperationBodyRequirement,
+    ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
+    ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
+    ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
+    ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
     ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;

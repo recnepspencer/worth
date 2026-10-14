@@ -4,6 +4,7 @@ use super::{
     sequence::{decode_sequence, write_sequence},
 };
 
+mod requirements;
 #[cfg(test)]
 mod tests;
 use crate::{
@@ -26,41 +27,41 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
-    output.u16(
-        if body.scope_fields().iter().any(|step| {
-            matches!(
-                step,
-                ApplicationOperationBodyScopeField::RequirePresent { .. }
-            )
-        }) {
-            6
-        } else if body.scope_fields().iter().any(|step| {
-            matches!(
-                step,
-                ApplicationOperationBodyScopeField::SetOptionalInput { .. }
-                    | ApplicationOperationBodyScopeField::ClearOptional { .. }
-            )
-        }) {
-            5
-        } else if body.creation().is_some_and(|creation| {
-            creation
-                .fields()
-                .iter()
-                .any(|step| step.source_field().is_some())
-        }) {
-            4
-        } else if body.creation().is_some() {
-            3
-        } else if body
-            .scope_fields()
+    output.u16(if !body.requirements().is_empty() {
+        7
+    } else if body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            ApplicationOperationBodyScopeField::RequirePresent { .. }
+        )
+    }) {
+        6
+    } else if body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                | ApplicationOperationBodyScopeField::ClearOptional { .. }
+        )
+    }) {
+        5
+    } else if body.creation().is_some_and(|creation| {
+        creation
+            .fields()
             .iter()
-            .any(|step| step.input_member().is_some())
-        {
-            2
-        } else {
-            1
-        },
-    )?;
+            .any(|step| step.source_field().is_some())
+    }) {
+        4
+    } else if body.creation().is_some() {
+        3
+    } else if body
+        .scope_fields()
+        .iter()
+        .any(|step| step.input_member().is_some())
+    {
+        2
+    } else {
+        1
+    })?;
     write_sequence(output, body.scope_fields(), |output, step| {
         output.u16(match step {
             ApplicationOperationBodyScopeField::Expect { .. } => 1,
@@ -98,14 +99,16 @@ pub(super) fn write(
             }
         }
     })?;
-    if body.scope_fields().iter().any(|step| {
-        matches!(
-            step,
-            ApplicationOperationBodyScopeField::SetOptionalInput { .. }
-                | ApplicationOperationBodyScopeField::ClearOptional { .. }
-                | ApplicationOperationBodyScopeField::RequirePresent { .. }
-        )
-    }) {
+    if !body.requirements().is_empty()
+        || body.scope_fields().iter().any(|step| {
+            matches!(
+                step,
+                ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                    | ApplicationOperationBodyScopeField::ClearOptional { .. }
+                    | ApplicationOperationBodyScopeField::RequirePresent { .. }
+            )
+        })
+    {
         output.u16(u16::from(body.creation().is_some()))?;
     }
     if let Some(creation) = body.creation() {
@@ -146,6 +149,9 @@ pub(super) fn write(
             }
         })?;
     }
+    if !body.requirements().is_empty() {
+        requirements::write(output, body.requirements())?;
+    }
     Ok(())
 }
 
@@ -154,7 +160,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=6) {
+    if !matches!(version, 1..=7) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let steps = decode_sequence(input, budget, 20, |input, _| {
@@ -162,7 +168,7 @@ pub(super) fn decode(
         if !matches!(tag, 1 | 2)
             && !(version >= 2 && tag == 3)
             && !(version >= 5 && matches!(tag, 4 | 5))
-            && !(version == 6 && tag == 6)
+            && !(version >= 6 && tag == 6)
         {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
@@ -269,5 +275,16 @@ pub(super) fn decode(
     } else {
         None
     };
-    Ok(ApplicationOperationBodyProgram::from_untrusted_with_creation(steps, creation))
+    let requirements = if version == 7 {
+        requirements::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
+    Ok(
+        ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+            steps,
+            creation,
+            requirements,
+        ),
+    )
 }

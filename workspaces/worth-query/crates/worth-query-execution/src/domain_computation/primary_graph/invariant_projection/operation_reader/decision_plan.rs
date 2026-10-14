@@ -12,6 +12,7 @@ use super::WorthQueryApplicationOperationInvariantProjectionReader;
 mod indexed_selection;
 mod prepared_selection;
 pub use prepared_selection::WorthQueryPreparedEntitySelection;
+mod body_requirement;
 mod field_presence;
 mod operation_body;
 mod predecode_admission;
@@ -144,15 +145,15 @@ where
     /// returned, so no early return skips the recording. A read that failed
     /// is recorded as failed: whoever swallows the failure has an outcome its
     /// fact does not hold, and the projection seals nothing.
-    fn recorded_adjacency<Relations>(
+    fn recorded_adjacency<Relations, Cause>(
         &mut self,
         target: &ApplicationOperationDecisionReadTarget,
         anchor: EntityId,
         direction: WorthQueryApplicationAdjacencyDirection,
         read: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
-        ) -> Result<Relations, WorthQueryInvariantProjectionTraversalDenial>,
-    ) -> Result<Relations, WorthQueryInvariantProjectionTraversalDenial> {
+        ) -> Result<Relations, Cause>,
+    ) -> Result<Relations, Cause> {
         let before = self.reader.work;
         let relations = read(self.reader);
         let maximum_work_units = adjacency_recomparison_limit(before, self.reader.work);

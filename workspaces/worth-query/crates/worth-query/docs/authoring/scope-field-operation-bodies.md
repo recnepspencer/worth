@@ -9,9 +9,10 @@ members of the operation's once encoded input. A created field may also copy a
 tracked scope-field preimage from the same decision observation. Optional scalar
 fields can be set from a present input member or explicitly cleared. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
-An operation may require an optional scope field to be present before its own
-effects; the same installed body can be assessed for read-only guidance.
-This remains a bounded body form, not a general expression or workflow-command API.
+An operation may declare presence requirements or Boolean Foundation expressions
+over typed scope fields and related-item counts. The same installed requirements
+drive admission and authorized read-only guidance.
+This remains a bounded body form; it does not dispatch workflow commands.
 
 ## Why You Use It
 
@@ -31,6 +32,9 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `body.set_optional_input(optional_field, "member")` or
   `body.clear_optional(optional_field)` for distinct optional-value intentions;
 - `body.require_present(optional_field)` for an operation-specific precondition;
+- `Operation::reference().requirement_operands()` and
+  `ApplicationOperationBodyRequirement::admit(...)`, attached with
+  `body.requirement(requirement)` for conditional requirements;
 - `body.create_in_scope(Entity::reference(), "candidate-slot")` followed by
   `.initialize(...)`, `.initialize_input(...)`, or
   `.initialize_from_scope(source_field, created_field)` and `.finish()`;
@@ -60,6 +64,13 @@ Installation and reconstruction retain exact schema/program affinity; unsupporte
 or missing support is a denial, never permission to resolve an ambient latest body.
 Every declared body needs a native executable binding, even if no program action
 references it. A body without that executor cannot install as metadata.
+
+A requirement owns its stable name, typed operands, optional applicability draft,
+Boolean satisfaction draft, and guidance target. The target names a declared
+operand, so guidance refers to the same native field or collection used by the
+rule. Foundation owns expression typing, compilation and semantic identity;
+Query binds that identity and the source selectors into schema/program meaning.
+Callers do not supply an independently evaluated context or a `supplied` Boolean.
 
 ## How It Executes
 
@@ -107,8 +118,31 @@ The authorized read-only
 `request.mutate(intent).assess_current_body_requirements(program, projection)`
 uses the same installed body and reports Met or Unmet for each declared presence
 step. Native projection or authorization failure remains a denial, not Unmet.
-The assessment carries no mutation permit or retained snapshot. A later
+The assessment owns its finding bytes until it is dropped and carries no mutation
+permit or retained snapshot. A later
 submission observes afresh, and a Clear after preparation stales the candidate.
+
+For an expression requirement, Query evaluates applicability first. False reports
+NotApplicable without reading satisfaction-only operands. Otherwise the Boolean
+satisfaction result reports Met or Unmet. An unmet named rule denies submission
+with `DeclaredRequirementUnmet { identity }`. Expression, authorization, read,
+resource and request-stop failures remain typed denials; they are never invented
+findings. The assessment entry above handles both requirement forms and returns
+only descriptive findings.
+
+`field(name, field)` exposes the canonical scalar with its declared optionality;
+`presence(name, field)` exposes only presence. For example, a present false value
+is present, but its value remains false. `outgoing_item_count` and
+`incoming_item_count` count distinct live related endpoint entities. Parallel
+edges do not inflate a minimum. A dangling endpoint makes the observation
+unavailable. Query seals adjacency plus anchor/endpoint liveness, so later
+membership or lifecycle changes cannot silently reuse an earlier successful
+requirement. Fields, relations and entity reads are derived from these bindings.
+
+Native expression compilation occurs during authoring/readmission, not at each
+invocation. Evaluation borrows the phase's request owner, admits memory before
+materializing values, narrows expression work to the request's remaining budget,
+and steps with cancellation checkpoints and native cost accounting.
 
 The optional creation recipe uses an entity marker with
 `OperationCreates<Operation>` and field markers with `OperationWrites<Operation>`.
@@ -209,6 +243,37 @@ AuditPriorRetentionField::reference())` before the creation builder's `finish()`
 The audit receives the observed old value even if the same body assigns a new
 retention to the document.
 
+For a conditional collection minimum, assume an optional Boolean
+`ReviewEnabledField` and a `Validators` relation from the admitted document.
+Declare their normal `OperationReads` capabilities, then author:
+
+```rust
+use worth_foundational::expression_api::expressions;
+
+let parser = expressions()
+    .reading_within(ApplicationOperationBodyRequirementExpression::PROFILE);
+let operands = SetRetention::reference().requirement_operands()
+    .field("review", ReviewEnabledField::reference())?
+    .outgoing_item_count("validators", Validators::reference())?;
+let requirement = ApplicationOperationBodyRequirement::admit(
+    "validators-minimum",
+    operands,
+    Some(parser.parse("review == some(true)")?),
+    parser.parse("validators >= exact_cast<UInt64>(1)")?,
+    "validators",
+)?;
+let body = SetRetention::reference().body()
+    .requirement(requirement)?
+    .assign(DocumentRetentionField::reference(), 30_u64)?
+    .finish()?;
+```
+
+Propagate these errors as `ApplicationOperationBodyAuthoringDenial`. Counts are
+UInt64; the explicit cast uses Foundation's numeric rules. An absent or false
+review flag makes this authored rule NotApplicable. When it is true, the same
+body supplies guidance and refuses the write until one distinct validator exists.
+The host does not recheck the count or choose a default rule result.
+
 ## How It Relates To Other Features
 
 Program manifests and semantic descriptions include body values. Portable schema
@@ -250,14 +315,19 @@ remain a different supported surface, not an equivalent declarative body.
 
 This form supports literal equality expectations, literal assignments and flat
 input member assignments on one admitted scope's required scalar fields, optional
-Set-from-flat-input, explicit Clear, and unconditional operation-specific
-presence requirements on optional scalar fields, plus
+Set-from-flat-input, explicit Clear, operation-specific presence requirements,
+and Foundation Boolean requirements over scope scalar/presence and distinct
+incoming/outgoing related-item count operands, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage
 initializers. It requires
 at least one scope assignment and unit results. Optional literal assignments,
-general input/source expressions, conditional requirements, multiple creations,
-links, signature consequences and command
+general input/source assignments, filtered collections, governed-query operands,
+custom expression kernels, multiple creations, links, signature consequences and command
 continuation are not implemented here.
+Value operands support unitless Boolean, fixed-width integer, finite float,
+decimal and string families. Unsupported scalar interpretations and unit-bearing
+value operands are refused; presence alone does not interpret a value's family
+or physical unit. Pending output work is not synthesized from an absent field.
 `ApplicationOperationBodyScopeField` describes only this field family; it is not
 a universal effect instruction or authority carrier.
 

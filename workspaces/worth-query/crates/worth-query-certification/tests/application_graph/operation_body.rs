@@ -7,6 +7,8 @@ mod audit_query;
 mod binding;
 #[path = "operation_body/body_only.rs"]
 mod body_only;
+#[path = "operation_body/conditional_requirement.rs"]
+mod conditional_requirement;
 #[path = "operation_body/creation.rs"]
 mod creation;
 #[path = "operation_body/draft.rs"]
@@ -27,6 +29,8 @@ mod query;
 mod replacement;
 #[path = "operation_body/requirement.rs"]
 mod requirement;
+#[path = "operation_body/requirement_control.rs"]
+mod requirement_control;
 #[path = "operation_body/schema.rs"]
 mod schema;
 
@@ -44,7 +48,8 @@ use worth_query_host::facade::{
     declaration::authentication::WorthQueryPrincipalMappingStatus,
     primary_graph::{
         WorthQueryApplicationEntityKey, WorthQueryApplicationEntitySeed,
-        WorthQueryApplicationPrincipalKey, WorthQueryOperationBodyDenial,
+        WorthQueryApplicationPrincipalKey, WorthQueryApplicationRelationSeed,
+        WorthQueryOperationBodyDenial,
     },
     runtime::ExecutionAllocationPolicy,
 };
@@ -83,18 +88,41 @@ fn install_with_projection<const DESTINATION: u64>() -> (
                 operator_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
-            graph.bind_entity(
-                WorthQueryApplicationEntitySeed::new(
-                    Document::reference(),
+            let document = WorthQueryApplicationEntitySeed::new(
+                Document::reference(),
+                WorthQueryApplicationEntityKey::new("body-document").unwrap(),
+            )
+            .field(
+                DocumentIdentityField::reference(),
+                DOCUMENT_IDENTITY.to_owned(),
+            )
+            .field(DocumentRetentionField::reference(), 7)
+            .field(DocumentAuditSourceField::reference(), 7);
+            let document = if matches!(DESTINATION, 25 | 26 | 29) {
+                document.field(DocumentDraftNoteField::reference(), "active".to_owned())
+            } else if DESTINATION == 28 {
+                document.field(DocumentDraftNoteField::reference(), String::new())
+            } else {
+                document
+            };
+            graph.bind_entity(document)?;
+            if matches!(DESTINATION, 25..=27 | 29) {
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        Audit::reference(),
+                        WorthQueryApplicationEntityKey::new("body-member").unwrap(),
+                    )
+                    .field(AuditIdentityField::reference(), "member".to_owned())
+                    .field(AuditRetentionField::reference(), 7)
+                    .field(AuditPriorRetentionField::reference(), 7),
+                )?;
+                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                    DocumentMembers::reference(),
+                    "body-member-edge",
                     WorthQueryApplicationEntityKey::new("body-document").unwrap(),
-                )
-                .field(
-                    DocumentIdentityField::reference(),
-                    DOCUMENT_IDENTITY.to_owned(),
-                )
-                .field(DocumentRetentionField::reference(), 7)
-                .field(DocumentAuditSourceField::reference(), 7),
-            )?;
+                    WorthQueryApplicationEntityKey::new("body-member").unwrap(),
+                ))?;
+            }
             Ok(())
         },
     )

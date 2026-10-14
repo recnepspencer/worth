@@ -27,6 +27,12 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 .iter()
                 .map(|step| step.decision_read())
                 .collect::<std::collections::BTreeSet<_>>();
+            reads.extend(
+                body.requirements()
+                    .iter()
+                    .flat_map(|requirement| requirement.operands())
+                    .flat_map(|operand| operand.source().decision_reads()),
+            );
             if let Some(creation) = body.creation() {
                 reads.extend(
                     creation

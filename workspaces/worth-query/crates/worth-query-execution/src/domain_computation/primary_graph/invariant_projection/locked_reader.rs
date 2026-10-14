@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::{
 mod operation_body;
 #[path = "locked_reader/predecode_admission.rs"]
 mod predecode_admission;
+mod requirement_collection;
 #[path = "locked_reader/traversal_denial.rs"]
 mod traversal_denial;
 pub use traversal_denial::{

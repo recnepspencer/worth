@@ -1,6 +1,6 @@
 // Two compiled schema markers preserve native exact-declaration readmission.
 pub use super::input::{BodyInputBinding, SetRetentionInput};
-use worth_query_decl::facade::worth_query_operation_creates;
+use worth_query_decl::facade::{worth_query_operation_creates, worth_query_operation_unlinks};
 use worth_query_host::facade::{
     declaration::{application_schema::*, authentication::*},
     worth_query_aspect, worth_query_entity, worth_query_field, worth_query_operation_reads,
@@ -118,6 +118,7 @@ worth_query_operation_writes!(SetAuditSource => [DocumentAuditSourceField]);
 pub struct SetDraftNote;
 pub struct ClearDraftNote;
 pub struct RequireDraftNote;
+pub struct UnlinkMember;
 impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for SetDraftNote {
     type InputBinding = super::draft::DraftInputBinding;
     const IDENTIFIER: &'static str = "SetDraftNote";
@@ -129,6 +130,28 @@ impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for C
 impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for RequireDraftNote {
     type InputBinding = super::draft::DraftInputBinding;
     const IDENTIFIER: &'static str = "RequireDraftNote";
+}
+impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for UnlinkMember {
+    type InputBinding = super::draft::DraftInputBinding;
+    const IDENTIFIER: &'static str = "UnlinkMember";
+}
+impl UnlinkMember {
+    pub fn reference<Schema: BodySchemaBinding>(
+    ) -> ApplicationOperationRef<Schema, Self, super::draft::DraftInput> {
+        ApplicationOperationRef::from_declaration()
+    }
+}
+pub struct DocumentMembers;
+impl DocumentMembers {
+    pub fn reference<Schema: BodySchemaBinding>(
+    ) -> ApplicationRelationRef<Schema, Self, Document, Audit> {
+        ApplicationRelationRef::from_schema_identifiers(
+            "DocumentMembers",
+            "Document",
+            "Audit",
+            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        )
+    }
 }
 impl SetDraftNote {
     pub fn reference<Schema: BodySchemaBinding>(
@@ -152,5 +175,7 @@ worth_query_operation_reads!(SetDraftNote => [DocumentIdentityField, DocumentDra
 worth_query_operation_writes!(SetDraftNote => [DocumentDraftNoteField]);
 worth_query_operation_reads!(ClearDraftNote => [DocumentIdentityField, DocumentDraftNoteField]);
 worth_query_operation_writes!(ClearDraftNote => [DocumentDraftNoteField]);
-worth_query_operation_reads!(RequireDraftNote => [DocumentIdentityField, DocumentDraftNoteField, DocumentAuditSourceField]);
+worth_query_operation_reads!(RequireDraftNote => [DocumentIdentityField, DocumentDraftNoteField, DocumentAuditSourceField, DocumentMembers]);
 worth_query_operation_writes!(RequireDraftNote => [DocumentAuditSourceField]);
+worth_query_operation_reads!(UnlinkMember => [DocumentIdentityField, DocumentMembers]);
+worth_query_operation_unlinks!(UnlinkMember => [DocumentMembers]);
