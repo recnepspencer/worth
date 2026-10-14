@@ -333,6 +333,12 @@ impl<Schema, Operation, Input, Scope>
         self.source_partition_identity
     }
 
+    pub(in crate::domain_computation) fn source_facts(
+        &self,
+    ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
+        &self.source_facts
+    }
+
     pub(in crate::domain_computation) fn take_source_facts(
         &mut self,
     ) -> Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact> {

@@ -10,6 +10,7 @@ use worth_query_execution::facade::primary_graph::{
 mod advancement;
 mod completion;
 mod entrance;
+mod native_posture;
 mod retained_delivery;
 pub use completion::{WorthQueryCompletedSourceOperation, WorthQueryTerminalSourceOperation};
 
@@ -43,6 +44,7 @@ enum SourceState<S: ApplicationSchema, I: ApplicationMutationIntent<S>> {
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
     Stopped(NativeOutcome<S, I>),
+    AdmissionStopped(WorthQueryApplicationRequestMutationDenial),
     RetainedPending(
         WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
     ),
@@ -117,7 +119,9 @@ impl<
             SourceState::Keyed(_) => WorthQuerySourceOnlyPosture::Indeterminate,
             SourceState::UnresolvedAdvancement(_) => WorthQuerySourceOnlyPosture::Indeterminate,
             SourceState::RetainedPending(_) => WorthQuerySourceOnlyPosture::RetainedDeliveryPending,
-            SourceState::Stopped(_) => WorthQuerySourceOnlyPosture::Terminal,
+            SourceState::Stopped(_) | SourceState::AdmissionStopped(_) => {
+                WorthQuerySourceOnlyPosture::Terminal
+            }
         }
     }
 }

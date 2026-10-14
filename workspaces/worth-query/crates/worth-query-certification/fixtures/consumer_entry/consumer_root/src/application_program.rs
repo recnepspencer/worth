@@ -31,6 +31,8 @@ mod features;
 mod fixed_delivery;
 pub(crate) mod fixed_successors;
 pub(crate) mod no_projection;
+#[cfg(test)]
+pub(crate) mod pinned_source;
 pub use fixed_delivery::ConsumerFixedAction;
 pub(crate) use fixed_delivery::ConsumerFixedDelivery;
 mod omitted_program_binding;

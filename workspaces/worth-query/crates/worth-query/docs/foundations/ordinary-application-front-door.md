@@ -685,7 +685,22 @@ completion. Its owning retained mode requires an explicit per-attempt history
 bound and delivers the exact native original World observation after replay or
 recovery. A bounded unavailable result preserves custody for retry; it does not
 prove historical absence. See [retained delivery](source-only-retained-delivery.md).
-Capability revocation/pinned-source posture coverage and ordinary consumer
+A pinned SourceOnly row validates its consumed native facts before the decision
+handler. If they changed or a consumed entity retired, `advance` returns terminal
+custody; `native_admission_denial()` exposes the original `SourceChanged` or
+`SourceRetired` preparation denial. No commit outcome or unpublished receipt is
+invented. A result-set loan retains selection membership, so changing a projected
+value outside those membership facts does not itself make that loan stale.
+The [pinned source courts](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/source_only_pinned.rs)
+exercise both meanings through `retain_operation`.
+
+Terminal `close` still requires a fresh request on the original runtime and
+branch. A refused close returns the same evidence and owned source loan. A
+lawful close consumes the owner, releasing its observation references through
+their native lifetimes. Native `ProductStale` and `NoEffect` outcomes likewise
+retain their descriptive observations until close; they carry no unpublished
+recovery receipt. Unresolved publication postures remain owned. Commit-time
+public race coverage, moved-membership result-set coverage and ordinary consumer
 cutover remain separate work.
 
 Shared funded cleanup owns pending record release and native cleanup failures.
