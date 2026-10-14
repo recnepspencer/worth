@@ -49,6 +49,9 @@ impl<Schema, Operation, Input, Scope>
             ));
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
+        if self.layout.field_is_optional(field.entity(), &locator) {
+            return self.write_optional_value(field, entity_id, locator, Some(value));
+        }
         let position = self
             .field_write_positions
             .position(field.entity(), entity_id);

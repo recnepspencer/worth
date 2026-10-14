@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{
-    prepare_aspect_value_identity_basis, AspectFieldLocator, AspectValue,
+    prepare_aspect_value_identity_basis, AspectFieldLocator, AspectKey, AspectValue,
     CanonicalAspectValueIdentityBasis,
 };
 use worth_relational::facade::identity::{EntityId, KindId, RelationId};
@@ -18,6 +18,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_b
 > {
     facts: &'facts [WorthQueryApplicationObservedFact],
     fields: BTreeMap<EntityId, BTreeMap<AspectFieldLocator, usize>>,
+    aspects: BTreeMap<EntityId, BTreeMap<AspectKey, Option<bool>>>,
     entities: BTreeMap<EntityId, usize>,
     relations: BTreeMap<RelationId, usize>,
     selections: BTreeMap<SelectionKey, usize>,
@@ -37,12 +38,31 @@ impl<'facts> ObservedFactIndex<'facts> {
         let mut index = Self {
             facts,
             fields: BTreeMap::new(),
+            aspects: BTreeMap::new(),
             entities: BTreeMap::new(),
             relations: BTreeMap::new(),
             selections: BTreeMap::new(),
         };
         for (position, fact) in facts.iter().enumerate() {
             match fact {
+                WorthQueryApplicationObservedFact::AspectPresence {
+                    entity_id,
+                    aspect,
+                    present,
+                    ..
+                } => {
+                    index
+                        .aspects
+                        .entry(*entity_id)
+                        .or_default()
+                        .entry(aspect.clone())
+                        .and_modify(|prior| {
+                            if *prior != Some(*present) {
+                                *prior = None;
+                            }
+                        })
+                        .or_insert(Some(*present));
+                }
                 WorthQueryApplicationObservedFact::Entity { entity_id, .. } => {
                     index.entities.entry(*entity_id).or_insert(position);
                 }
@@ -52,6 +72,19 @@ impl<'facts> ObservedFactIndex<'facts> {
                 | WorthQueryApplicationObservedFact::AbsentField {
                     entity_id, locator, ..
                 } => {
+                    if matches!(fact, WorthQueryApplicationObservedFact::Field { .. }) {
+                        index
+                            .aspects
+                            .entry(*entity_id)
+                            .or_default()
+                            .entry(locator.aspect().aspect_key().clone())
+                            .and_modify(|prior| {
+                                if *prior != Some(true) {
+                                    *prior = None;
+                                }
+                            })
+                            .or_insert(Some(true));
+                    }
                     index
                         .fields
                         .entry(*entity_id)
@@ -95,6 +128,22 @@ impl<'facts> ObservedFactIndex<'facts> {
             }
         }
         index
+    }
+
+    pub(super) fn aspect_presence(
+        &self,
+        entity: EntityId,
+        aspect: &AspectKey,
+    ) -> Result<bool, WorthQueryApplicationAttemptDenial> {
+        match self
+            .aspects
+            .get(&entity)
+            .and_then(|aspects| aspects.get(aspect))
+        {
+            Some(Some(present)) => Ok(*present),
+            Some(None) => Err(progression_denial()),
+            None => Err(progression_denial()),
+        }
     }
 
     /// The entity kind the sealed fact for this field records.

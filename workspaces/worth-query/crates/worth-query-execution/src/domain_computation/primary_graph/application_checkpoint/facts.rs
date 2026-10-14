@@ -15,6 +15,7 @@ use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 mod fact_decode_denial;
 pub(in crate::domain_computation::primary_graph) use fact_decode_denial::FactDecodeDenial;
+mod aspect_presence;
 mod indexed_selection;
 
 /// Producer facts promise no consumed outputs and no known own-write staleness.
@@ -40,6 +41,10 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
     put_u32(&mut bytes, u32::try_from(facts.len()).ok()?);
     for fact in facts {
         match fact {
+            Fact::AspectPresence { .. } => {
+                bytes.push(8);
+                aspect_presence::encode(&mut bytes, fact)?;
+            }
             Fact::RetiredOutputEntity {
                 entity_id,
                 kind,
@@ -173,6 +178,7 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
             .check_live()
             .map_err(fact_decode_denial::FactDecodeDenial::Retention)?;
         let fact = match cursor.next_byte()? {
+            8 => aspect_presence::decode(&mut cursor)?,
             6 => Fact::RetiredOutputEntity {
                 entity_id: cursor.next_entity()?,
                 kind: KindId(cursor.next_u32()?),

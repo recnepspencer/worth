@@ -27,6 +27,11 @@ pub(super) fn write(
             entity_id.generation_value(),
             aspect.as_str()
         ),
+        WorthQueryApplicationObservedFact::AspectPresence { entity_id, aspect, .. } => write!(output,
+            "application-aspect-presence:{}:{}:{}:{}",
+            entity_id.partition_value(), entity_id.local_slot_value(),
+            entity_id.generation_value(), aspect.as_str()
+        ),
         WorthQueryApplicationObservedFact::SourceFieldRevision { entity_id, locator, .. } => write!(output,
             "application-source-field:{}:{}:{}:{}/{}",
             entity_id.partition_value(),

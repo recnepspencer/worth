@@ -9,6 +9,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 
 use super::super::WorthQueryApplicationObservedFact;
 
+mod aspect_presence;
 mod canonical_digest;
 mod indexed_selection;
 mod workflow_fact;
@@ -113,6 +114,11 @@ fn append_fact(
             number_u64(entries, prefix, "created-at", created_at.as_u64());
             number_u64(entries, prefix, "deleted-at", deleted_at.as_u64());
         }
+        WorthQueryApplicationObservedFact::AspectPresence {
+            kind: entity_kind,
+            present,
+            ..
+        } => aspect_presence::append(entries, prefix, *entity_kind, *present),
         WorthQueryApplicationObservedFact::SourceEntity { .. } => {
             kind(entries, prefix, "source-entity")
         }

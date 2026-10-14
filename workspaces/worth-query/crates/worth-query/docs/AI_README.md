@@ -472,8 +472,22 @@ a retained decision fact: a competing absent-to-present change makes the older
 attempt stale. Required fields cannot call `write_optional_field`; the field
 marker enforces that at compile time. Never encode absence as an empty string,
 zero, `AspectValue::Null`, or a sentinel, and never bypass the projection with a
-direct Relational patch. Query lowers the admitted effect to Relational's
-native, contract-validated field patch.
+direct Relational patch. For optional fields the admitted operation declares as
+writable, Query also retains the aspect's presence at the same decision
+observation. Read-only decisions keep their narrower value/absence dependency.
+When the aspect is absent, a first set initializes it
+through native complete-struct validation; missing required siblings still deny.
+When it is present, including present-empty, the write remains a native field
+patch. Clearing a field in an absent aspect leaves the aspect absent. The same
+rules apply when `write_field` sets a concrete value on an optional field.
+
+Do not bootstrap a dummy value or relocate a derived field merely to make its
+first write possible. A concurrent materialization of the aspect invalidates the
+captured absence even if the selected field remains absent. Native validated
+touch evidence grants exact initialization fields only from its own pre-effect
+basis; ordinary whole-aspect replacement does not acquire field-only authority.
+Presence dependencies remain explicit in native output currentness, checkpoint
+facts and durable workflow assessment evidence.
 
 ### Output correspondence and program outputs
 

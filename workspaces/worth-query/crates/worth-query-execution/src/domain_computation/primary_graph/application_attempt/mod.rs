@@ -30,6 +30,7 @@ mod mandatory_review_program;
 mod mandatory_review_replay;
 mod migration;
 mod observation;
+pub(in crate::domain_computation::primary_graph) use observation::observe_aspect_presence;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use observation::take_native_field_contacts;
 #[cfg(test)]

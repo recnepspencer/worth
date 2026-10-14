@@ -53,6 +53,11 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
         entity_id: EntityId,
         locator: AspectFieldLocator,
     },
+    AspectPresence {
+        entity: String,
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+    },
     Relation {
         relation: String,
         from: EntityId,
@@ -112,6 +117,13 @@ pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
         entity_id: EntityId,
         kind: KindId,
         locator: AspectFieldLocator,
+    },
+    /// An optional field write may initialize only an aspect whose absence was read.
+    AspectPresence {
+        entity_id: EntityId,
+        kind: KindId,
+        aspect: AspectKey,
+        present: bool,
     },
     Relation {
         relation_kind: KindId,

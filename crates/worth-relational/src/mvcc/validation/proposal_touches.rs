@@ -7,6 +7,8 @@ use worth_foundational::facade::{
 };
 
 use super::ValidatedRelationalProposal;
+#[path = "proposal_touches/initialization.rs"]
+mod initialization;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::overlay::PartitionAccess;
 use crate::transactions::data::{
@@ -139,7 +141,7 @@ fn project_intent(
 ) -> Result<(), ValidatedMutationTouchProjectionError> {
     match intent {
         MutationIntent::Create(intent) => {
-            project_create(intent, touches);
+            project_create(intent, touches, work);
             Ok(())
         }
         MutationIntent::Entity(intent) => project_entity(intent, state, touches, work),
@@ -180,7 +182,11 @@ fn project_materialization(
     Ok(())
 }
 
-fn project_create(intent: &CreateIntent, touches: &mut BTreeSet<ValidatedMutationTouch>) {
+fn project_create(
+    intent: &CreateIntent,
+    touches: &mut BTreeSet<ValidatedMutationTouch>,
+    work: &mut ValidatedMutationTouchProjectionWork,
+) {
     match intent {
         CreateIntent::Entity(spec) => {
             touches.insert(ValidatedMutationTouch::CreateEntity { kind: spec.kind_id });
@@ -188,7 +194,7 @@ fn project_create(intent: &CreateIntent, touches: &mut BTreeSet<ValidatedMutatio
         }
         CreateIntent::EntityAspects(spec) => {
             touches.insert(ValidatedMutationTouch::CreateEntity { kind: spec.kind_id });
-            project_entity_aspect_patch(spec.kind_id, &spec.aspect_patch, touches);
+            project_entity_aspect_patch(spec.kind_id, None, &spec.aspect_patch, touches, work);
         }
         CreateIntent::BulkEntities(spec) => {
             touches.insert(ValidatedMutationTouch::CreateEntity { kind: spec.kind_id });
@@ -239,9 +245,13 @@ fn project_entity(
     let kind = entity_kind(state, entity, work)?;
     match intent {
         EntityMutationIntent::UpdateFields(spec) => project_fields(kind, &spec.fields, touches),
-        EntityMutationIntent::ApplyAspectPatch(spec) => {
-            project_entity_aspect_patch(kind, &spec.aspect_patch, touches)
-        }
+        EntityMutationIntent::ApplyAspectPatch(spec) => project_entity_aspect_patch(
+            kind,
+            Some((spec.entity_id, state)),
+            &spec.aspect_patch,
+            touches,
+            work,
+        ),
         EntityMutationIntent::Replace(_) => {
             touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
         }
@@ -293,8 +303,10 @@ fn project_fields(
 
 fn project_entity_aspect_patch(
     kind: KindId,
+    basis: Option<(EntityId, &crate::storage::overlay::WorkingState)>,
     patch: &worth_foundational::facade::PortableRecordAspectPatch,
     touches: &mut BTreeSet<ValidatedMutationTouch>,
+    work: &mut ValidatedMutationTouchProjectionWork,
 ) {
     for operation in patch.operations() {
         match operation {
@@ -311,8 +323,14 @@ fn project_entity_aspect_patch(
                     ),
                 }
             })),
-            PortableAspectPatchOperation::SetWhole { .. }
-            | PortableAspectPatchOperation::ClearWhole { .. } => {
+            PortableAspectPatchOperation::SetWhole { .. } => {
+                if !basis.is_some_and(|(entity, state)| {
+                    initialization::project(entity, kind, operation, state, touches, work)
+                }) {
+                    touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
+                }
+            }
+            PortableAspectPatchOperation::ClearWhole { .. } => {
                 touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
             }
         }

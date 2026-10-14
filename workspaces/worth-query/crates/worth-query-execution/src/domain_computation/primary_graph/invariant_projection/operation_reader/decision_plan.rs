@@ -12,6 +12,7 @@ use super::WorthQueryApplicationOperationInvariantProjectionReader;
 mod indexed_selection;
 mod prepared_selection;
 pub use prepared_selection::WorthQueryPreparedEntitySelection;
+mod field_presence;
 mod predecode_admission;
 use crate::domain_computation::application_contract_admission::graph_reads_admit_target;
 use crate::domain_computation::primary_graph::{
@@ -204,6 +205,23 @@ where
                     field.field(),
                 )
             })?;
+        if self
+            .reader
+            .layout
+            .field_is_optional(field.entity(), &locator)
+            && self.admitted_contracts.is_some_and(|contract| {
+                field_presence::may_write(contract.touches(), field.entity(), &locator)
+            })
+        {
+            self.decision_facts.record(
+                WorthQueryApplicationFactKey::AspectPresence {
+                    entity: field.entity().to_string(),
+                    entity_id: identity.entity_id,
+                    locator: locator.clone(),
+                },
+                DecisionReadOutcome::Observed,
+            );
+        }
         self.decision_facts.record(
             WorthQueryApplicationFactKey::Field {
                 entity: field.entity().to_string(),
@@ -254,8 +272,8 @@ where
         target: &ApplicationOperationDecisionReadTarget,
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
         if self
-            .admitted_graph_reads
-            .is_none_or(|reads| graph_reads_admit_target(reads, target))
+            .admitted_contracts
+            .is_none_or(|contract| graph_reads_admit_target(contract.graph_reads(), target))
         {
             Ok(())
         } else {

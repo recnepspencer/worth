@@ -22,6 +22,8 @@ pub(super) fn visit_dependency_facts<Error>(
             client_key: ClientKey::raw(format!("evidence-dependency-{index}")),
         };
         let (entity, fact_kind) = match fact {
+            super::super::super::application_attempt::WorthQueryApplicationObservedFact::AspectPresence { entity_id, present, .. } =>
+                (*entity_id, if *present { WorkflowEvidenceDependencyKind::AspectPresent } else { WorkflowEvidenceDependencyKind::AspectAbsent }),
             super::super::super::application_attempt::WorthQueryApplicationObservedFact::SourceEntity {
                 entity_id,
             } => (*entity_id, WorkflowEvidenceDependencyKind::Entity),
@@ -62,6 +64,10 @@ pub(super) fn visit_dependency_facts<Error>(
             ),
         ]);
         match fact {
+            super::super::super::application_attempt::WorthQueryApplicationObservedFact::AspectPresence { kind, aspect, .. } => {
+                fields.insert(layout.evidence_dependency.native_entity_kind.clone(), AspectValue::UInt64(u64::from(kind.as_u32())));
+                fields.insert(layout.evidence_dependency.aspect.clone(), text(aspect.as_str()));
+            }
             super::super::super::application_attempt::WorthQueryApplicationObservedFact::Entity {
                 kind,
                 ..

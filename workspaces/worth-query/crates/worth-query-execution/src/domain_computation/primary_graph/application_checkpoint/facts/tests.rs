@@ -9,6 +9,14 @@ fn complete_comparable_fact_kinds_round_trip_without_losing_absence_or_sets() {
         CanonicalFieldPath::single(FieldKey::new("optional").unwrap()),
     );
     let facts = vec![
+        Fact::AspectPresence {
+            entity_id: entity, kind: KindId(14),
+            aspect: AspectKey::new("test.absent-aspect").unwrap(), present: false,
+        },
+        Fact::AspectPresence {
+            entity_id: entity, kind: KindId(14),
+            aspect: AspectKey::new("test.present-empty-aspect").unwrap(), present: true,
+        },
         Fact::SourceEntity { entity_id: entity },
         Fact::SourceAspectRevision {
             entity_id: entity,

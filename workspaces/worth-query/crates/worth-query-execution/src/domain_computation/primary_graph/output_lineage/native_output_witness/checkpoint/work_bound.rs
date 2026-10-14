@@ -20,7 +20,7 @@ impl SealedNativeOutputWitness {
             // The fixed inspection and checked arithmetic for one fact.
             admission.charge_external_work(8)?;
             let work = match fact {
-                Fact::SourceEntity { .. } | Fact::Entity { .. } => 2,
+                Fact::SourceEntity { .. } | Fact::Entity { .. } | Fact::AspectPresence { .. } => 2,
                 // Inspection, native revision probe, and a liveness probe when
                 // the native revision has no answer.
                 Fact::SourceFieldRevision { .. } | Fact::SourceAdjacencyRevision { .. } => 3,

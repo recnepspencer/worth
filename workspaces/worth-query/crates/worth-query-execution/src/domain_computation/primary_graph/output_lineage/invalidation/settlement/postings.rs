@@ -45,6 +45,7 @@ fn maximum_keys(fact: &WorthQueryApplicationObservedFact) -> Option<usize> {
     match fact {
         Fact::SourceEntity { .. } | Fact::Entity { .. } => Some(1),
         Fact::SourceAspectRevision { .. }
+        | Fact::AspectPresence { .. }
         | Fact::SourceFieldRevision { .. }
         | Fact::Field { .. }
         | Fact::AbsentField { .. } => Some(3),

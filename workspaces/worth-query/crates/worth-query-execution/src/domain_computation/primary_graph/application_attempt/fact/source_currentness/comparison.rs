@@ -51,6 +51,19 @@ impl WorthQueryApplicationObservedFact {
                     1,
                 ))
             }
+            Self::AspectPresence {
+                entity_id,
+                kind,
+                aspect,
+                present,
+            } => Ok((
+                super::super::super::observation::observe_aspect_presence(
+                    runtime, execution, snapshot, *entity_id, *kind, aspect,
+                )
+                .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
+                    == Some(*present),
+                1,
+            )),
             Self::SourceAspectRevision {
                 entity_id,
                 aspect,
