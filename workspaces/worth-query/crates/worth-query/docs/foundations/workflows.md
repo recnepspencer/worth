@@ -685,6 +685,23 @@ let committed = runtime
 - For an external effect whose owner holds custody, `accept_operation_from_owner` accepts the owner-resolved receipt and returns `WorkflowProgressOutcome`, or `WorthQueryWorkflowOperationOwnerAcceptanceDenial`. `WorthQueryWorkflowOperationOwnerPosture` reports what the owner saw.
 - Recovery of an owner operation binds only the exact performed operation. It never issues authority for a new effect. First bind the request with `for_workflow_operation_recovery(&workflow, &required)`, which returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match. Without that binding, recovery preparation is refused with `NotWorkflowBound`. `prepare_workflow_operation_recovery_from_owner` returns a `WorthQueryPreparedWorkflowOperationRecovery` or `WorthQueryWorkflowOperationRecoveryPreparationDenial`. Its `safe_retry()` returns the safe-retry admission or `WorthQueryWorkflowOperationRecoveryDenial`, which hands the prepared recovery back through `into_recovery()` when it can be tried again. `accept_recovered_operation_from_owner` then accepts the recovered receipt, with the same outcome and denial as `accept_operation_from_owner`.
 
+### Approval evidence follows its declared source history
+
+Request fresh operation authority when executing later; do not reuse a spent
+slot or mistake an unrelated branch advance for a changed signed subject.
+Native field-revision dependencies retain history, not just the displayed value.
+For example, changing a consumed retention value from `7` to `8` and back to `7`
+does not revive the old approval: a fresh operation requirement has unavailable
+authority, and `for_workflow_operation` returns `AuthorityUnavailable`. Changing
+another resource outside that approval's dependencies leaves the original
+approval usable through a fresh matching requirement.
+
+Keep the distinction between approval evidence and an application's business
+attestation. These native currentness rules do not independently declare a
+signature's business supersession event or permit signing an arbitrary future
+approval node. Reconcile changed evidence through the authored proposal/review
+path; do not manufacture a grant from restored values or a signature-shaped row.
+
 ## Navigate back
 
 `prepare_workflow_navigate_back(&workflow, instance)` returns a request whose
