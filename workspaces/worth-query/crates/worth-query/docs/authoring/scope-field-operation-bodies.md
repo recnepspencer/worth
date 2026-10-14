@@ -4,15 +4,16 @@
 
 A scope-field body declares the source expectations and scalar writes of one
 operation. It can also declare one typed entity creation in the admitted scope's
-context. Writes and created-field initializers can use authored literals or named
+context. Required writes and created-field initializers can use authored literals or named
 members of the operation's once encoded input. A created field may also copy a
-tracked scope-field preimage from the same decision observation. Query installs and executes those
+tracked scope-field preimage from the same decision observation. Optional scalar
+fields can be set from a present input member or explicitly cleared. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
 This remains a bounded body form, not a general expression or workflow-command API.
 
 ## Why You Use It
 
-Use it for an operation that changes required scalar fields on its admitted scope,
+Use it for an operation that changes scalar fields on its admitted scope,
 such as assigning a fixed status or a retention period supplied by the request.
 Changing an authored literal or input member binding
 changes canonical schema meaning and the bound program revision, even when the
@@ -25,6 +26,8 @@ them or supply missing joins between them.
 Declare through `worth_query_decl::facade::application_schema`:
 
 - `Operation::reference().body().expect(...).assign(...).assign_input(...).finish()`;
+- `body.set_optional_input(optional_field, "member")` or
+  `body.clear_optional(optional_field)` for distinct optional-value intentions;
 - `body.create_in_scope(Entity::reference(), "candidate-slot")` followed by
   `.initialize(...)`, `.initialize_input(...)`, or
   `.initialize_from_scope(source_field, created_field)` and `.finish()`;
@@ -83,6 +86,14 @@ wrong-family members. This selector does not reinterpret JSON or serialize the
 input again. It reserves selected values and the installed decoder's declared
 peak allocation on the same request, charges declared work, validates through
 the exact installed codec, then moves the prepared values into the candidate.
+
+An optional Set requires a present flat scalar input member. `""` and zero remain
+present values; they are not Clear. An authored `clear_optional` is a distinct
+body step. Omitting that field from a different operation means Unchanged. Both
+steps use Query's existing optional-field candidate and lowering owner; field
+value/absence and writable aspect presence are tracked at the decision snapshot.
+An absent aspect can be initialized without rewriting sibling fields. A direct
+request still receives ordinary authorization, currentness, and invariant checks.
 
 The optional creation recipe uses an entity marker with
 `OperationCreates<Operation>` and field markers with `OperationWrites<Operation>`.
@@ -166,6 +177,12 @@ input binding into canonical capture. This is a binding to the serialized member
 name, not a getter callback. The input shape must be a flat struct with scalar
 members; a nested document or an optional member currently denies at selection.
 
+For an optional note, author `set_optional_input(DraftNoteField::reference(),
+"note")` in the Set operation and `clear_optional(DraftNoteField::reference())`
+in the Clear operation. A governed read returns `None` for absence and
+`Some("")` for present empty text. An unrelated operation with no note step
+preserves either value.
+
 For an audit that records the old retention while assigning a new one, add
 `.create_in_scope(Audit::reference(), "audit")` and
 `.initialize_from_scope(DocumentRetentionField::reference(),
@@ -213,11 +230,12 @@ remain a different supported surface, not an equivalent declarative body.
 ## Current Limits
 
 This form supports literal equality expectations, literal assignments and flat
-input member assignments on one admitted scope's required scalar fields, plus
+input member assignments on one admitted scope's required scalar fields, optional
+Set-from-flat-input and explicit Clear on optional scalar fields, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage
 initializers. It requires
-at least one scope assignment and unit results. Optional-field writes, clear
-operations, general input/source expressions, multiple creations, links, body-bound
+at least one scope assignment and unit results. Optional literal assignments,
+general input/source expressions, multiple creations, links, body-bound
 requirement guidance, signature consequences and command
 continuation are not implemented here.
 `ApplicationOperationBodyScopeField` describes only this field family; it is not

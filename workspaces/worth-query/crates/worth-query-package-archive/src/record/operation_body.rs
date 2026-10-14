@@ -27,7 +27,15 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     output.u16(
-        if body.creation().is_some_and(|creation| {
+        if body.scope_fields().iter().any(|step| {
+            matches!(
+                step,
+                ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                    | ApplicationOperationBodyScopeField::ClearOptional { .. }
+            )
+        }) {
+            5
+        } else if body.creation().is_some_and(|creation| {
             creation
                 .fields()
                 .iter()
@@ -51,18 +59,45 @@ pub(super) fn write(
             ApplicationOperationBodyScopeField::Expect { .. } => 1,
             ApplicationOperationBodyScopeField::Assign { .. } => 2,
             ApplicationOperationBodyScopeField::AssignInput { .. } => 3,
+            ApplicationOperationBodyScopeField::SetOptionalInput { .. } => 4,
+            ApplicationOperationBodyScopeField::ClearOptional { .. } => 5,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
         output.text(step.field().field())?;
         output.text(step.binding().as_str())?;
-        if let Some(value) = step.literal_value() {
-            super::foundational_value::write_aspect_value(output, value)
-        } else {
-            super::foundational_aspect::write_scalar_type(output, step.scalar_family())?;
-            output.text(step.input_member().expect("input assignment"))
+        match step {
+            ApplicationOperationBodyScopeField::Expect { value, .. }
+            | ApplicationOperationBodyScopeField::Assign { value, .. } => {
+                super::foundational_value::write_aspect_value(output, value)
+            }
+            ApplicationOperationBodyScopeField::AssignInput {
+                member,
+                scalar_family,
+                ..
+            }
+            | ApplicationOperationBodyScopeField::SetOptionalInput {
+                member,
+                scalar_family,
+                ..
+            } => {
+                super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
+                output.text(member)
+            }
+            ApplicationOperationBodyScopeField::ClearOptional { scalar_family, .. } => {
+                super::foundational_aspect::write_scalar_type(output, *scalar_family)
+            }
         }
     })?;
+    if body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                | ApplicationOperationBodyScopeField::ClearOptional { .. }
+        )
+    }) {
+        output.u16(u16::from(body.creation().is_some()))?;
+    }
     if let Some(creation) = body.creation() {
         output.text(creation.entity())?;
         output.text(creation.key())?;
@@ -109,22 +144,43 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=4) {
+    if !matches!(version, 1..=5) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let steps = decode_sequence(input, budget, 20, |input, _| {
         let tag = input.u16()?;
-        if !matches!(tag, 1 | 2) && !(version >= 2 && tag == 3) {
+        if !matches!(tag, 1 | 2)
+            && !(version >= 2 && tag == 3)
+            && !(version == 5 && matches!(tag, 4 | 5))
+        {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
         let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
         let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
-        if tag == 3 {
-            return Ok(ApplicationOperationBodyScopeField::AssignInput {
+        if matches!(tag, 3 | 4) {
+            let scalar_family = super::foundational_aspect::decode_scalar_type(input)?;
+            let member = input.text()?.to_owned();
+            return Ok(if tag == 3 {
+                ApplicationOperationBodyScopeField::AssignInput {
+                    field,
+                    binding,
+                    scalar_family,
+                    member,
+                }
+            } else {
+                ApplicationOperationBodyScopeField::SetOptionalInput {
+                    field,
+                    binding,
+                    scalar_family,
+                    member,
+                }
+            });
+        }
+        if tag == 5 {
+            return Ok(ApplicationOperationBodyScopeField::ClearOptional {
                 field,
                 binding,
                 scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
-                member: input.text()?.to_owned(),
             });
         }
         let value = super::foundational_value::decode_aspect_value(input)?;
@@ -142,12 +198,21 @@ pub(super) fn decode(
             _ => unreachable!("tag admitted before operands"),
         })
     })?;
-    let creation = if version >= 3 {
+    let has_creation = if version == 5 {
+        match input.u16()? {
+            0 => false,
+            1 => true,
+            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+        }
+    } else {
+        version >= 3
+    };
+    let creation = if has_creation {
         let entity = input.text()?.to_owned();
         let key = input.text()?.to_owned();
         let fields = decode_sequence(input, budget, 20, |input, _| {
             let tag = input.u16()?;
-            if !matches!(tag, 1 | 2) && !(version == 4 && tag == 3) {
+            if !matches!(tag, 1 | 2) && !(version >= 4 && tag == 3) {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
             let field =

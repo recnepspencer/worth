@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 use crate::application_schema::{
     ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
     ApplicationOperationRef, ApplicationScalarValueBinding, DeclaredApplicationFieldValue,
-    OperationReads, OperationWrites, WritableCapability,
+    OperationReads, OperationWrites, OptionalApplicationFieldValue, WritableCapability,
 };
 
 use super::{
@@ -127,5 +127,57 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
                 member: member.to_owned(),
             });
         Ok(self)
+    }
+
+    /// Sets one optional scalar from a flat member of the canonical input.
+    /// The member must be present, including when its value is empty or zero.
+    pub fn set_optional_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        member: &str,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
+    where
+        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
+        Write: WritableCapability,
+        Unit: ApplicationFieldUnit,
+    {
+        if member.is_empty() || member.trim() != member {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
+        }
+        self.steps
+            .push(ApplicationOperationBodyScopeField::SetOptionalInput {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+                member: member.to_owned(),
+            });
+        Ok(self)
+    }
+
+    /// Clears one optional scalar; absence is not an empty value.
+    pub fn clear_optional<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+    ) -> Self
+    where
+        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
+        Write: WritableCapability,
+        Unit: ApplicationFieldUnit,
+    {
+        self.steps
+            .push(ApplicationOperationBodyScopeField::ClearOptional {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+            });
+        self
     }
 }

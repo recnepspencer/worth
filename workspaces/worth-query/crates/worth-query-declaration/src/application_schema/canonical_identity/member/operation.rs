@@ -15,7 +15,15 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.creation().is_some() {
+        if body.scope_fields().iter().any(|step| {
+            matches!(
+                step,
+                ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                    | ApplicationOperationBodyScopeField::ClearOptional { .. }
+            )
+        }) {
+            "operation-body-v3"
+        } else if body.creation().is_some() {
             "operation-body-v2"
         } else {
             "operation-body-v1"
@@ -31,6 +39,8 @@ pub(super) fn append_body(
                 ApplicationOperationBodyScopeField::Expect { .. } => "expect",
                 ApplicationOperationBodyScopeField::Assign { .. } => "assign",
                 ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
+                ApplicationOperationBodyScopeField::SetOptionalInput { .. } => "set-optional-input",
+                ApplicationOperationBodyScopeField::ClearOptional { .. } => "clear-optional",
             },
         );
         basis.text(format!("{prefix}.entity"), step.field().entity());
@@ -42,13 +52,15 @@ pub(super) fn append_body(
                 format!("{prefix}.value"),
                 worth_foundational::facade::canonical_basis_value_for_aspect_value(value),
             );
-        } else {
-            basis.text(
-                format!("{prefix}.input-member"),
-                step.input_member().expect("input assignment"),
-            );
+        } else if let Some(member) = step.input_member() {
+            basis.text(format!("{prefix}.input-member"), member);
             basis.text(
                 format!("{prefix}.input-family"),
+                step.scalar_family().canonical_name(),
+            );
+        } else {
+            basis.text(
+                format!("{prefix}.clear-family"),
                 step.scalar_family().canonical_name(),
             );
         }

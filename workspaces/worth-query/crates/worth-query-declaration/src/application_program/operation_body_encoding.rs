@@ -6,30 +6,51 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let has_optional = body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                | ApplicationOperationBodyScopeField::ClearOptional { .. }
+        )
+    });
     let steps = body.scope_fields().iter().enumerate().map(|(index, step)| {
-        let (source_name, source) = match step.literal_value() {
-            Some(value) => (
+        let (source_name, source) = match step {
+            ApplicationOperationBodyScopeField::Expect { value, .. }
+            | ApplicationOperationBodyScopeField::Assign { value, .. } => (
                 "literal",
                 worth_foundational::facade::prepare_aspect_value_identity_basis(value)
                     .as_str()
                     .to_owned(),
             ),
-            None => (
+            ApplicationOperationBodyScopeField::AssignInput {
+                member,
+                scalar_family,
+                ..
+            }
+            | ApplicationOperationBodyScopeField::SetOptionalInput {
+                member,
+                scalar_family,
+                ..
+            } => (
                 "input",
                 framed_record(
                     "input-member-v1",
                     [
-                        (
-                            "member",
-                            step.input_member().expect("input assignment").to_owned(),
-                        ),
-                        ("family", step.scalar_family().canonical_name().to_owned()),
+                        ("member", member.to_owned()),
+                        ("family", scalar_family.canonical_name().to_owned()),
                     ],
                 ),
             ),
+            ApplicationOperationBodyScopeField::ClearOptional { scalar_family, .. } => {
+                ("clear", scalar_family.canonical_name().to_owned())
+            }
         };
         framed_record(
-            "operation-body-step-v1",
+            if has_optional {
+                "operation-body-step-v2"
+            } else {
+                "operation-body-step-v1"
+            },
             [
                 ("index", index.to_string()),
                 (
@@ -38,6 +59,12 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
                         ApplicationOperationBodyScopeField::Expect { .. } => "expect",
                         ApplicationOperationBodyScopeField::Assign { .. } => "assign",
                         ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
+                        ApplicationOperationBodyScopeField::SetOptionalInput { .. } => {
+                            "set-optional-input"
+                        }
+                        ApplicationOperationBodyScopeField::ClearOptional { .. } => {
+                            "clear-optional"
+                        }
                     }
                     .to_owned(),
                 ),
@@ -49,7 +76,14 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
             ],
         )
     });
-    let scope = framed_record("operation-body-v1", steps.map(|step| ("step", step)));
+    let scope = framed_record(
+        if has_optional {
+            "operation-body-v2"
+        } else {
+            "operation-body-v1"
+        },
+        steps.map(|step| ("step", step)),
+    );
     let Some(creation) = body.creation() else {
         return scope;
     };
@@ -128,7 +162,9 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         ],
     );
     framed_record(
-        if has_scope_source {
+        if has_optional {
+            "operation-body-v4"
+        } else if has_scope_source {
             "operation-body-v3"
         } else {
             "operation-body-v2"

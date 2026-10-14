@@ -92,8 +92,11 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                     work.observe_fixed(
                         u64::try_from(value.semantic_byte_width()).unwrap_or(u64::MAX),
                     );
+                } else if let Some(member) = step.input_member() {
+                    work.observe_text(member);
+                    work.observe_fixed(2);
                 } else {
-                    work.observe_text(step.input_member().expect("input assignment"));
+                    // Explicit optional Clear retains its family, not an input.
                     work.observe_fixed(2);
                 }
             }
@@ -122,6 +125,47 @@ impl WorthQueryPortableApplicationOperationContractRecord {
             }
         }
         work
+    }
+}
+
+#[cfg(test)]
+mod optional_body_tests {
+    use super::*;
+    use worth_foundational::facade::ScalarAspectType;
+    use worth_query_declaration::facade::{
+        application_schema::{
+            ApplicationFieldBindingLocus, ApplicationOperationBodyProgram,
+            ApplicationOperationBodyScopeField,
+        },
+        portable_identity::WorthQueryPortableTypeIdentity,
+    };
+
+    #[test]
+    fn clear_optional_portable_operation_reconstruction_accounts_without_input() {
+        let record = WorthQueryPortableApplicationOperationContractRecord::new(
+            "Schema".to_owned(),
+            "Clear".to_owned(),
+            WorthQueryPortableTypeIdentity::from_untrusted("Input".to_owned()),
+            vec![],
+            vec![],
+            vec![],
+            None,
+            None,
+        )
+        .with_body(Some(
+            ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
+                ApplicationOperationBodyScopeField::ClearOptional {
+                    field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
+                    binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                        "worth.rust.string".to_owned(),
+                    ),
+                    scalar_family: ScalarAspectType::String,
+                },
+            ]),
+        ));
+        let work = record.reconstruction_work();
+        assert!(work.logical_bytes > 0);
+        assert!(work.nested_entries >= 7);
     }
 }
 

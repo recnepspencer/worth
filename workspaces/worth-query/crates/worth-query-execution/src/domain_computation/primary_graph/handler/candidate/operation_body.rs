@@ -45,4 +45,14 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.initialize_body_field(target, field, value)
     }
+
+    pub(in crate::domain_computation::primary_graph) fn body_optional_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: Option<AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate
+            .write_body_optional_field(target, field, value)
+    }
 }

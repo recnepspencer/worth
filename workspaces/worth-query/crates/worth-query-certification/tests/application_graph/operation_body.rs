@@ -9,6 +9,10 @@ mod binding;
 mod body_only;
 #[path = "operation_body/creation.rs"]
 mod creation;
+#[path = "operation_body/draft.rs"]
+mod draft;
+#[path = "operation_body/draft_query.rs"]
+mod draft_query;
 #[path = "operation_body/input.rs"]
 mod input;
 #[path = "operation_body/input_selection.rs"]

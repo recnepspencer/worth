@@ -1,5 +1,6 @@
 // Authoring differs only in the literal destination, never in the host handler.
 use super::binding::{BodyBinding, SourceBinding};
+use super::draft::DraftBinding;
 use super::query::{document_retention_query_definition, DocumentRetentionQueryBinding};
 use super::schema::*;
 use worth_query_host::facade::{
@@ -78,6 +79,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
             .aspect(Principal::reference(), PrincipalFacts::reference())
             .aspect(Document::reference(), DocumentFacts::reference())
+            .aspect(Document::reference(), DocumentDraftFacts::reference())
             .aspect(Audit::reference(), AuditFacts::reference())
             .field(
                 ExternalMapping::reference(),
@@ -91,6 +93,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .field(Document::reference(), DocumentIdentityField::reference())
             .field(Document::reference(), DocumentRetentionField::reference())
             .field(Document::reference(), DocumentAuditSourceField::reference())
+            .field(Document::reference(), DocumentDraftNoteField::reference())
             .field(Audit::reference(), AuditIdentityField::reference())
             .field(Audit::reference(), AuditRetentionField::reference())
             .field(Audit::reference(), AuditPriorRetentionField::reference())
@@ -125,8 +128,41 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
                     )
                     .unwrap(),
             )
+            .operation(
+                SetDraftNote::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(
+                        SetDraftNote::reference()
+                            .body()
+                            .set_optional_input(DocumentDraftNoteField::reference(), "note")
+                            .unwrap()
+                            .finish()
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
+            .operation(
+                ClearDraftNote::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(
+                        ClearDraftNote::reference()
+                            .body()
+                            .clear_optional(DocumentDraftNoteField::reference())
+                            .finish()
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
             .operation_projection_work_budget(SetRetention::reference(), 8)
             .operation_projection_work_budget(SetAuditSource::reference(), 8)
+            .operation_projection_work_budget(SetDraftNote::reference(), 8)
+            .operation_projection_work_budget(ClearDraftNote::reference(), 8)
             .operation_read_field(
                 SetRetention::reference(),
                 DocumentIdentityField::reference(),
@@ -135,12 +171,24 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
                 SetAuditSource::reference(),
                 DocumentIdentityField::reference(),
             )
+            .operation_read_field(
+                SetDraftNote::reference(),
+                DocumentIdentityField::reference(),
+            )
+            .operation_read_field(
+                ClearDraftNote::reference(),
+                DocumentIdentityField::reference(),
+            )
             .application_mutation_binding::<BodyBinding<DESTINATION>>()
             .application_mutation_binding::<SourceBinding<DESTINATION>>()
+            .application_mutation_binding::<DraftBinding<DESTINATION, SetDraftNote>>()
+            .application_mutation_binding::<DraftBinding<DESTINATION, ClearDraftNote>>()
             .application_query(document_retention_query_definition::<DESTINATION>())
             .application_query_binding::<DocumentRetentionQueryBinding<DESTINATION>>()
             .application_query(super::audit_query::audit_query_definition::<DESTINATION>())
             .application_query_binding::<super::audit_query::AuditQueryBinding<DESTINATION>>()
+            .application_query(super::draft_query::draft_query_definition::<DESTINATION>())
+            .application_query_binding::<super::draft_query::DraftQueryBinding<DESTINATION>>()
     }
 }
 
@@ -159,6 +207,8 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
             Installation::Native => {
                 setup.operation_body::<BodyBinding<DESTINATION>>()?;
                 setup.operation_body::<SourceBinding<DESTINATION>>()?;
+                setup.operation_body::<DraftBinding<DESTINATION, SetDraftNote>>()?;
+                setup.operation_body::<DraftBinding<DESTINATION, ClearDraftNote>>()?;
             }
             Installation::Missing => {}
             Installation::Replacement => {
@@ -190,6 +240,8 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
             ApplicationFeatureSpec::root::<DocumentRetentionSchema<DESTINATION>, BodyFeature>()
                 .mutation::<BodyBinding<DESTINATION>>()
                 .mutation::<SourceBinding<DESTINATION>>()
+                .mutation::<DraftBinding<DESTINATION, SetDraftNote>>()
+                .mutation::<DraftBinding<DESTINATION, ClearDraftNote>>()
                 .finish(),
         ]
     }

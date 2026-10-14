@@ -35,6 +35,7 @@ worth_query_entity!(pub Audit for Schema: BodySchemaBinding);
 worth_query_aspect!(pub ExternalIdentity for Schema: BodySchemaBinding, ExternalMapping; identity = AspectIdentity(0x9175B001), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub PrincipalFacts for Schema: BodySchemaBinding, Principal; identity = AspectIdentity(0x9175B002), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub DocumentFacts for Schema: BodySchemaBinding, Document; identity = AspectIdentity(0x9175B003), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub DocumentDraftFacts for Schema: BodySchemaBinding, Document; identity = AspectIdentity(0x9175B005), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub AuditFacts for Schema: BodySchemaBinding, Audit; identity = AspectIdentity(0x9175B004), revision = AspectContractRevision(1),);
 worth_query_field!(pub ExternalIdentityField for Schema: BodySchemaBinding, ExternalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
 worth_query_field!(pub MappingStatusField for Schema: BodySchemaBinding, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
@@ -42,6 +43,7 @@ worth_query_field!(pub PrincipalIdentityField for Schema: BodySchemaBinding, Pri
 worth_query_field!(pub DocumentIdentityField for Schema: BodySchemaBinding, Document, DocumentFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub DocumentRetentionField for Schema: BodySchemaBinding, Document, DocumentFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_field!(pub DocumentAuditSourceField for Schema: BodySchemaBinding, Document, DocumentFacts: u64 => U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub DocumentDraftNoteField for Schema: BodySchemaBinding, Document, DocumentDraftFacts: optional String => StringApplicationValueBinding, read_write, no_equality);
 worth_query_field!(pub AuditIdentityField for Schema: BodySchemaBinding, Audit, AuditFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub AuditRetentionField for Schema: BodySchemaBinding, Audit, AuditFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_field!(pub AuditPriorRetentionField for Schema: BodySchemaBinding, Audit, AuditFacts: u64 => U64ApplicationValueBinding, read_only, equality);
@@ -113,3 +115,29 @@ worth_query_operation_writes!(SetRetention => [DocumentRetentionField, AuditIden
 worth_query_operation_creates!(SetRetention => [Audit]);
 worth_query_operation_reads!(SetAuditSource => [DocumentIdentityField, DocumentAuditSourceField]);
 worth_query_operation_writes!(SetAuditSource => [DocumentAuditSourceField]);
+pub struct SetDraftNote;
+pub struct ClearDraftNote;
+impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for SetDraftNote {
+    type InputBinding = super::draft::DraftInputBinding;
+    const IDENTIFIER: &'static str = "SetDraftNote";
+}
+impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for ClearDraftNote {
+    type InputBinding = super::draft::DraftInputBinding;
+    const IDENTIFIER: &'static str = "ClearDraftNote";
+}
+impl SetDraftNote {
+    pub fn reference<Schema: BodySchemaBinding>(
+    ) -> ApplicationOperationRef<Schema, Self, super::draft::DraftInput> {
+        ApplicationOperationRef::from_declaration()
+    }
+}
+impl ClearDraftNote {
+    pub fn reference<Schema: BodySchemaBinding>(
+    ) -> ApplicationOperationRef<Schema, Self, super::draft::DraftInput> {
+        ApplicationOperationRef::from_declaration()
+    }
+}
+worth_query_operation_reads!(SetDraftNote => [DocumentIdentityField, DocumentDraftNoteField]);
+worth_query_operation_writes!(SetDraftNote => [DocumentDraftNoteField]);
+worth_query_operation_reads!(ClearDraftNote => [DocumentIdentityField, DocumentDraftNoteField]);
+worth_query_operation_writes!(ClearDraftNote => [DocumentDraftNoteField]);

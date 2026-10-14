@@ -206,17 +206,24 @@ where
                     field.field(),
                 )
             })?;
-        if self
-            .reader
-            .layout
-            .field_is_optional(field.entity(), &locator)
+        self.record_field_dependency(identity, field.entity(), locator);
+        Ok(())
+    }
+
+    fn record_field_dependency<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        entity: &str,
+        locator: worth_foundational::facade::AspectFieldLocator,
+    ) {
+        if self.reader.layout.field_is_optional(entity, &locator)
             && self.admitted_contracts.is_some_and(|contract| {
-                field_presence::may_write(contract.touches(), field.entity(), &locator)
+                field_presence::may_write(contract.touches(), entity, &locator)
             })
         {
             self.decision_facts.record(
                 WorthQueryApplicationFactKey::AspectPresence {
-                    entity: field.entity().to_string(),
+                    entity: entity.to_owned(),
                     entity_id: identity.entity_id,
                     locator: locator.clone(),
                 },
@@ -225,13 +232,12 @@ where
         }
         self.decision_facts.record(
             WorthQueryApplicationFactKey::Field {
-                entity: field.entity().to_string(),
+                entity: entity.to_owned(),
                 entity_id: identity.entity_id,
                 locator,
             },
             DecisionReadOutcome::Observed,
         );
-        Ok(())
     }
 
     pub fn require_decision_relation<Relation, From, To>(

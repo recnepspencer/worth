@@ -3,8 +3,8 @@
 use std::collections::BTreeSet;
 
 use crate::application_schema::{
-    ApplicationFieldPresence, ApplicationOperationProgramTarget,
-    ApplicationSchemaDeclarationDenial, ApplicationSchemaMember,
+    ApplicationFieldPresence, ApplicationOperationBodyScopeField,
+    ApplicationOperationProgramTarget, ApplicationSchemaDeclarationDenial, ApplicationSchemaMember,
 };
 
 pub(crate) fn validate_operation_bodies(
@@ -143,6 +143,15 @@ pub(crate) fn validate_operation_bodies(
         }
         for step in body.scope_fields() {
             let locus = step.field();
+            let expected_presence = if matches!(
+                step,
+                ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                    | ApplicationOperationBodyScopeField::ClearOptional { .. }
+            ) {
+                ApplicationFieldPresence::Optional
+            } else {
+                ApplicationFieldPresence::Required
+            };
             if step
                 .input_member()
                 .is_some_and(|member| member.is_empty() || member.trim() != member)
@@ -155,7 +164,7 @@ pub(crate) fn validate_operation_bodies(
                 } if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()
                     && value_type == step.binding().as_str()
                     && *scalar_family == step.scalar_family()
-                    && *presence == ApplicationFieldPresence::Required
+                    && *presence == expected_presence
                     && (step.write_target().is_none() || *writable))
             });
             if !found {
@@ -284,5 +293,57 @@ mod tests {
             validate_operation_bodies(&members),
             Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency),
         );
+    }
+
+    #[test]
+    fn portable_optional_clear_refuses_a_required_field() {
+        let field = ApplicationFieldBindingLocus::new("Item", "Facts", "Note");
+        let step = ApplicationOperationBodyScopeField::ClearOptional {
+            field: field.clone(),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            scalar_family: ScalarAspectType::String,
+        };
+        let mut members = vec![
+            ApplicationSchemaMember::Operation {
+                operation: "Clear".to_owned(),
+                input_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                    "worth.rust.unit".to_owned(),
+                ),
+            },
+            ApplicationSchemaMember::Field {
+                entity: "Item".to_owned(),
+                aspect: "Facts".to_owned(),
+                field: "Note".to_owned(),
+                presence: ApplicationFieldPresence::Required,
+                scalar_family: ScalarAspectType::String,
+                value_type: "worth.rust.string".to_owned(),
+                unit: None,
+                frame: None,
+                writable: true,
+                equality_queryable: false,
+                unique: false,
+            },
+            ApplicationSchemaMember::OperationDecisionRead {
+                operation: "Clear".to_owned(),
+                target: step.decision_read(),
+            },
+            ApplicationSchemaMember::OperationProgram {
+                operation: "Clear".to_owned(),
+                target: step.write_target().unwrap(),
+            },
+            ApplicationSchemaMember::OperationBody {
+                operation: "Clear".to_owned(),
+                body: ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![step]),
+            },
+        ];
+        assert_eq!(
+            validate_operation_bodies(&members),
+            Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency),
+        );
+        let ApplicationSchemaMember::Field { presence, .. } = &mut members[1] else {
+            unreachable!()
+        };
+        *presence = ApplicationFieldPresence::Optional;
+        assert_eq!(validate_operation_bodies(&members), Ok(()));
     }
 }

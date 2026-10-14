@@ -26,7 +26,125 @@ fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {
     .unwrap();
     assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
     assert!(input.is_finished());
-    bytes[..2].copy_from_slice(&5_u16.to_be_bytes());
+    bytes[..2].copy_from_slice(&6_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    assert_eq!(
+        decode(&mut BinaryInput::new(&bytes), &mut budget)
+            .unwrap_err()
+            .kind(),
+        Kind::UnsupportedRecordVariant
+    );
+}
+
+#[test]
+fn optional_set_and_clear_use_version_five_without_reinterpreting_v1_to_v4() {
+    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
+        ApplicationOperationBodyScopeField::SetOptionalInput {
+            field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            scalar_family: ScalarAspectType::String,
+            member: "note".to_owned(),
+        },
+    ]);
+    let mut output = BinaryOutput::with_capacity(128);
+    write(&mut output, &body).unwrap();
+    let mut bytes = output.into_bytes();
+    assert_eq!(&bytes[..2], &5_u16.to_be_bytes());
+    let mut input = BinaryInput::new(&bytes);
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
+    assert!(input.is_finished());
+    bytes[..2].copy_from_slice(&4_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    assert_eq!(
+        decode(&mut BinaryInput::new(&bytes), &mut budget)
+            .unwrap_err()
+            .kind(),
+        Kind::UnsupportedRecordVariant
+    );
+
+    let clear = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
+        ApplicationOperationBodyScopeField::ClearOptional {
+            field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            scalar_family: ScalarAspectType::String,
+        },
+    ]);
+    let mut output = BinaryOutput::with_capacity(128);
+    write(&mut output, &clear).unwrap();
+    let bytes = output.into_bytes();
+    assert_eq!(&bytes[..2], &5_u16.to_be_bytes());
+    let mut input = BinaryInput::new(&bytes);
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    assert_eq!(decode(&mut input, &mut budget).unwrap(), clear);
+}
+
+#[test]
+fn version_five_creation_flag_preserves_recipe_and_rejects_an_invalid_flag() {
+    let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(
+        vec![ApplicationOperationBodyScopeField::ClearOptional {
+            field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            scalar_family: ScalarAspectType::String,
+        }],
+        Some(ApplicationOperationBodyCreation::from_untrusted(
+            "Audit".to_owned(),
+            "audit".to_owned(),
+            vec![ApplicationOperationBodyCreatedField::Literal {
+                field: ApplicationFieldBindingLocus::new("Audit", "Facts", "Ready"),
+                binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                    "worth.rust.bool".to_owned(),
+                ),
+                value: AspectValue::Bool(true),
+            }],
+        )),
+    );
+    let mut output = BinaryOutput::with_capacity(256);
+    write(&mut output, &body).unwrap();
+    let mut bytes = output.into_bytes();
+    assert_eq!(&bytes[..2], &5_u16.to_be_bytes());
+    let mut input = BinaryInput::new(&bytes);
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
+    assert!(input.is_finished());
+
+    // Locate the framing flag by parsing the one optional scope step.
+    let mut prefix = BinaryInput::new(&bytes);
+    assert_eq!(prefix.u16().unwrap(), 5);
+    assert_eq!(prefix.u32().unwrap(), 1);
+    assert_eq!(prefix.u16().unwrap(), 5);
+    for _ in 0..4 {
+        prefix.text().unwrap();
+    }
+    assert_eq!(prefix.u16().unwrap(), 16);
+    let flag = bytes.len() - prefix.remaining_len();
+    assert_eq!(&bytes[flag..flag + 2], &1_u16.to_be_bytes());
+    bytes[flag..flag + 2].copy_from_slice(&2_u16.to_be_bytes());
     let mut budget = RecordDecodeAttempt::begin(
         Default::default(),
         bytes.len() as u64,

@@ -50,7 +50,9 @@ where
             let expected = match step {
                 ApplicationOperationBodyScopeField::Expect { value, .. } => Some(value),
                 ApplicationOperationBodyScopeField::Assign { .. }
-                | ApplicationOperationBodyScopeField::AssignInput { .. } => None,
+                | ApplicationOperationBodyScopeField::AssignInput { .. }
+                | ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                | ApplicationOperationBodyScopeField::ClearOptional { .. } => None,
             };
             let matches = match reader.body_scope_field(step.field(), expected) {
                 Ok(value) => value,
@@ -142,6 +144,20 @@ where
                     .and_then(Iterator::next)
                     .expect("one prepared value per installed input assignment");
                 if let Err(cause) = writer.body_input_field(&target, field, value) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
+            if let ApplicationOperationBodyScopeField::SetOptionalInput { field, .. } = step {
+                let value = input_values
+                    .as_mut()
+                    .and_then(Iterator::next)
+                    .expect("one prepared value per installed optional set");
+                if let Err(cause) = writer.body_optional_field(&target, field, Some(value)) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
+            if let ApplicationOperationBodyScopeField::ClearOptional { field, .. } = step {
+                if let Err(cause) = writer.body_optional_field(&target, field, None) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
             }

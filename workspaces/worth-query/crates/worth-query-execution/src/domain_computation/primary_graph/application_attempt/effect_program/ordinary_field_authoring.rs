@@ -50,7 +50,12 @@ impl<Schema, Operation, Input, Scope>
         };
         let locator = self.field_locator(field.entity(), field.aspect(), field.field())?;
         if self.layout.field_is_optional(field.entity(), &locator) {
-            return self.write_optional_value(field, entity_id, locator, Some(value));
+            return self.write_optional_value(
+                &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(
+                    field.entity(), field.aspect(), field.field(),
+                ),
+                entity_id, locator, Some(value),
+            );
         }
         self.write_required_value(
             &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus::new(

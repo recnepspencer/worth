@@ -26,6 +26,17 @@ pub enum ApplicationOperationBodyScopeField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    SetOptionalInput {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        member: String,
+    },
+    ClearOptional {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+    },
 }
 
 impl ApplicationOperationBodyScopeField {
@@ -33,7 +44,9 @@ impl ApplicationOperationBodyScopeField {
         match self {
             Self::Expect { field, .. }
             | Self::Assign { field, .. }
-            | Self::AssignInput { field, .. } => field,
+            | Self::AssignInput { field, .. }
+            | Self::SetOptionalInput { field, .. }
+            | Self::ClearOptional { field, .. } => field,
         }
     }
 
@@ -41,26 +54,34 @@ impl ApplicationOperationBodyScopeField {
         match self {
             Self::Expect { binding, .. }
             | Self::Assign { binding, .. }
-            | Self::AssignInput { binding, .. } => binding,
+            | Self::AssignInput { binding, .. }
+            | Self::SetOptionalInput { binding, .. }
+            | Self::ClearOptional { binding, .. } => binding,
         }
     }
 
     pub fn literal_value(&self) -> Option<&AspectValue> {
         match self {
             Self::Expect { value, .. } | Self::Assign { value, .. } => Some(value),
-            Self::AssignInput { .. } => None,
+            Self::AssignInput { .. }
+            | Self::SetOptionalInput { .. }
+            | Self::ClearOptional { .. } => None,
         }
     }
 
     pub fn scalar_family(&self) -> ScalarAspectType {
         match self {
             Self::Expect { value, .. } | Self::Assign { value, .. } => value.value_family(),
-            Self::AssignInput { scalar_family, .. } => *scalar_family,
+            Self::AssignInput { scalar_family, .. }
+            | Self::SetOptionalInput { scalar_family, .. }
+            | Self::ClearOptional { scalar_family, .. } => *scalar_family,
         }
     }
     pub fn input_member(&self) -> Option<&str> {
         match self {
-            Self::AssignInput { member, .. } => Some(member),
+            Self::AssignInput { member, .. } | Self::SetOptionalInput { member, .. } => {
+                Some(member)
+            }
             _ => None,
         }
     }

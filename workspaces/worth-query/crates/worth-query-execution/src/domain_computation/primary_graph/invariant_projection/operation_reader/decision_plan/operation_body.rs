@@ -1,9 +1,8 @@
 //! Installed body reads use the ordinary tracked field-decision boundary.
 use super::{
-    ApplicationOperationDecisionReadTarget, ApplicationSchema, DecisionReadOutcome,
-    WorthQueryApplicationFactKey, WorthQueryApplicationOperationInvariantProjectionReader,
-    WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
-    WorthQueryInvariantEntityIdentity,
+    ApplicationOperationDecisionReadTarget, ApplicationSchema,
+    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
+    WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
 };
 use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
 use crate::domain_computation::primary_graph::HandlerExecutionDenial;
@@ -65,14 +64,7 @@ impl<Schema: ApplicationSchema, Operation>
                     field.field(),
                 )
             })?;
-        self.decision_facts.record(
-            WorthQueryApplicationFactKey::Field {
-                entity: field.entity().to_owned(),
-                entity_id: identity.entity_id,
-                locator: locator.clone(),
-            },
-            DecisionReadOutcome::Observed,
-        );
+        self.record_field_dependency(identity, field.entity(), locator.clone());
         Ok(locator)
     }
 }
