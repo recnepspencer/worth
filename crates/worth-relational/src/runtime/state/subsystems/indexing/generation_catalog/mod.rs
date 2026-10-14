@@ -2,6 +2,7 @@
 mod admitted_publication;
 mod admitted_selection;
 mod discard;
+mod insertion_quote;
 mod scope;
 mod selection_work;
 pub(in crate::runtime::state::subsystems::indexing) use admitted_selection::navigation_work;
