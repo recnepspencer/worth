@@ -104,6 +104,7 @@ then apply the following hostile sequences through the ordinary public entrance.
 | Source and workflow distinctions | Execute a lawful source-only save and independent assessment; exercise a workflow operation recovery with its original required transition authority. | Source-only completion cannot stand in for required output completion. Assessment cannot authorize workflow business progression. Generic mutation recovery cannot erase `WorkflowUnsupported`. |
 | Source-only lane, one retry style | Run a plain (no-output) program action and a capability-bound one through the owning operation. Interrupt each at the real append fault after the source effect; lose a reply after a genuine commit; hold a pinned source that moves before retry. | Unpublished partials recover internally without a second source effect, capability-bound recovery goes through capability admission, a lost reply resolves through native idempotency, and the moved pinned source is terminal. No step requires the caller to rebuild a key, intent, preconditions or source, and the ordinary builder offers no method that would let it. |
 | Approval revoked before first advance | Bind a workflow operation owner to issued authority whose installed requirement or authored `approval_authority` edge needs an approval. Revoke the approver's real grant after the owner is created and before its first effectful advance. | The first advance is denied by the existing approval recheck before any business effect or node settlement. The owner neither reissues nor clones the slot, and the retained descriptor cannot restore it. Continuing requires fresh approval and a fresh workflow advance through existing owners. Product history independently shows no effect. |
+| Clean cutover | Compile a consumer against a retired entry/type, try an obsolete export through `advanced()`, and reconstruct a definition or checkpoint whose affected contract is unsupported. Exercise current-contract counterparts. | Retired APIs do not compile on any public surface. Unsupported contracts receive typed refusal before effects or executable readmission, with original bytes preserved. Current-contract execution and recovery succeed without a legacy decoder, shim, conversion or fallback. |
 
 Choose the smallest real fixtures that expose each boundary, then increase actual
 discovered fan-out and unrelated retained population independently. Under the same
@@ -134,6 +135,46 @@ not promise that a live continuation can be serialized or survives process loss.
 
 ## Product Decision Lock
 
+### Clean Cutover: No Legacy Or Backward Compatibility
+
+The product decision for this milestone is **no legacy support and no backward
+compatibility**. The supported window for affected APIs, declarations, installed
+meaning and persisted contracts is the current contract only. This explicit
+decision governs this milestone over generic compatibility or deprecation
+guidance; it does not expand the task into unrelated formats or subsystems.
+
+- Breaking changes are permitted. Update all covered consumers, fixtures,
+  examples and documentation to the destination contract in the phase that
+  replaces their lane, and delete the displaced implementation and exports.
+- Do not retain deprecated aliases, forwarding wrappers, compatibility overloads,
+  legacy modules, dual implementations, old-format decoders, version fallback,
+  automatic conversion, compatibility flags or a deprecation grace period.
+  Keeping an old name or path working is not an acceptance requirement.
+- `advanced()` exposes deliberate current native control. It cannot shelter
+  retired APIs, reproduce the old ordinary lifecycle as a compatibility facade,
+  or re-export an obsolete wrapper. Each retained advanced entrance must have a
+  present native responsibility and current-contract evidence independent of
+  preserving old callers.
+- An incompatible predecessor definition, installation or checkpoint is refused
+  through a typed validation or unsupported-contract outcome before effects or
+  executable readmission. Preserve its original bytes and truth; never silently
+  reinterpret, erase, reinitialize, downgrade or migrate it. No cross-version
+  restore, legacy-definition coexistence or historical format support is
+  promised by this milestone.
+- Current-contract recovery, idempotency, historical evidence, exact observation,
+  native custody and cleanup remain required. They describe lawful runtime truth
+  and failure handling within the supported contract, not backward compatibility.
+- Phase ordering permits a lane's existing implementation only until its owning
+  replacement lands. That phase performs the consumer cutover and deletion;
+  phase and milestone closure cannot leave both generations supported.
+
+Enforce the decision through a scoped deletion inventory, facade/topology checks,
+compile-fail cases for retired imports and methods on ordinary and advanced
+surfaces, and real unsupported-contract refusal with current-contract recovery
+counterparts. Reintroducing a retired alias or fallback must make the relevant
+enforcement fail. No compatibility branch earns an exemption by passing an old
+test; update or remove the obsolete test instead.
+
 ### One Original Description; Fresh Authority On Every Advance
 
 Query constructs an immutable owning descriptor from the typed initiating entry:
@@ -154,7 +195,8 @@ that needs original typed fields is constructed there by Query. This adds no
 stored authority grant or admission registry. Existing native admission validates liveness, identity,
 program/source/branch affinity and authority. Descriptor mismatch refuses before
 effects; refusal preserves custody. An installed-program change follows the
-existing evolution/compatibility and fresh admission rules, never a caller-selected
+current program revision/adoption and fresh admission rules, with unsupported
+contracts refused under the clean-cutover decision, never a caller-selected
 substitute action with the same label.
 
 The descriptor's branch is fixed. A fresh request on another branch produces a
@@ -242,11 +284,12 @@ or duplicated schema. A delivery declaration grants no authority.
 An action binds one delivery contract in its canonical meaning; callers cannot
 swap the root or query contract at runtime. An action which promises settlement
 without a returned projection has an explicit typed no-projection delivery mode,
-not a dummy query. Existing actions without delivery meaning remain valid on
-their explicit advanced surfaces during cutover; they cannot claim the new
-ordinary delivered-result contract. Changed delivery meaning follows the existing
-program revision/adoption contract, with old installed occurrences retaining
-their original interpretation. No ambient latest-delivery lookup is permitted.
+not a dummy query. Covered actions adopt the current delivery declaration in
+their cutover phase; no legacy default or advanced compatibility path supplies
+missing delivery meaning. Changed delivery meaning follows the current program
+revision/adoption contract. Unsupported predecessor meaning is refused rather
+than translated; retained historical evidence is never reinterpreted using the
+new delivery contract. No ambient latest-delivery lookup is permitted.
 
 The owning constructor selects a typed canonical action reference containing
 composition instance, feature and binding. Installation resolves that complete
@@ -498,9 +541,11 @@ adds domain declarations and consumer adapters without relocating these owners.
 
 Delete ordinary consumer request-rebuilding, source/prepared/started/settled status
 coordination, settlement polling and receipt-based guesses once the corresponding
-lane cuts over. Delete obsolete ordinary wrappers/exports where no lawful
-advanced use remains. Preserve explicit advanced native controls and negative
-certification courts; they must not become an alternative ordinary default.
+lane cuts over. Delete displaced ordinary wrappers/exports. Preserve genuine
+current advanced native controls with an independent native responsibility and
+negative certification courts; do not preserve an obsolete wrapper merely by
+moving it behind `advanced()`. These controls must not become an alternative
+ordinary default.
 Keep domain preflight, algorithms, view mapping and business decisions in their
 domain. No production engine, workflow controller or managed run is deleted
 merely because the operation facade can delegate it.
@@ -516,7 +561,8 @@ program lanes, `execute_performed`, non-output and output unpublished recovery,
 idempotency resolution, two-phase prepare, fixed/discovered registered receipt
 recovery, retention retry and manual output start/settlement.
 Native owner methods needed by legitimate advanced consumers remain on those
-advanced types. No transparent legacy aliases remain on the ordinary builder.
+advanced types. No legacy aliases or compatibility wrappers remain on either
+the ordinary builder or the advanced surface.
 The ordinary/advanced type split is established in Phase A. Each lane's manual
 calls move behind `advanced()` in the phase that lands its owner: fixed and
 source-only in Phase A, discovered in Phase B, workflow in Phase C. Lanes with no
@@ -622,15 +668,19 @@ advance into the node fails with `WorkflowTransitionAffinityMismatch`
 time. Add `ApplicationWorkflowValidationDenialKind::MissingOperationInput`, raised
 in the Operation arm after the authority check when a guarded node has zero or
 more than one `operation_input`. Unguarded proposal slots are unconstrained.
-Validation runs at authoring, ordinary publication and archive draft import only;
-installed definitions are decoded, not re-validated, so they still reconstruct
-and their content identity is unchanged. Update
+Validate at authoring, ordinary publication and archive draft import, and enforce
+the current contract at installed-definition reconstruction/readmission. Decoding
+an older definition cannot bypass the newly required input shape. Definitions
+that satisfy the current contract reconstruct with their authentic identity;
+unsupported predecessor definitions are refused without conversion or rewriting
+their stored bytes. Update
 `worth-query-declaration/src/application_program/workflow/tests/validation.rs`
 (`data_cannot_cross_a_mutually_exclusive_control_arm` adds the missing input),
 the validation kinds in `docs/build-an-application.md` §6.3, the validation
 minimums and `operation_input` row in Query `docs/foundations/workflows.md`.
 Prove zero and two inputs are denied, every shipped guarded example still
-validates, and previously published definitions still reconstruct.
+validates, current-contract definitions reconstruct, and an authentic predecessor
+missing the required input is refused before executable readmission.
 
 **0.3 Documentation examples are compiled or visibly illustrative.** Of 125 Rust
 fences in consumer documents, 4 are checked by CI (the `<!-- compiled -->` blocks of
@@ -699,7 +749,8 @@ program without authority. Close it by composition:
   and the capability index in the same slice.
 
 Phase 0 closes when the court and its probes pass, the new validation kind and its
-compatibility proof pass, the checker and doctest job are green in CI with zero
+current-contract reconstruction and unsupported-predecessor refusal proofs pass,
+the checker and doctest job are green in CI with zero
 broken links, every consumer document is listed in the checker configuration, and
 (before Phase B begins) program adoption is authorized with its courts passing.
 
@@ -759,13 +810,15 @@ may appear. The same slice updates the workflow operation sections of Query
 `docs/AI_README.md` and `docs/foundations/workflows.md`, per the workflow
 coordination below. Ordinary consumers can now select every supported semantic lane.
 
-### Phase D: Consumer Deletion, Cost And Compatibility Closure
+### Phase D: Consumer Deletion, Cost And Clean-Cutover Closure
 
 Cut over the real neutral public consumers and compiled documentation examples.
 Record and complete a scoped deletion inventory of their lifecycle coordination
 and false ordinary wrappers. Complete the shared cancellation/resource/cleanup
 courts at all effect-bearing seams, the actual native unresolved postures and
-existing checkpoint recovery compatibility. Prove bounded descriptor retention,
+current-contract checkpoint recovery and unsupported-contract refusal. Complete
+the deletion inventory on ordinary and advanced surfaces; no legacy support or
+backward-compatibility path survives. Prove bounded descriptor retention,
 no unrelated-population scan and equivalent native work under the same policy.
 Run facade/topology enforcement and the appropriate Query gate suites, including
 the existing public invariant, recovery, workflow and output courts affected by
@@ -842,6 +895,11 @@ Completion requires all of the following, not only new types or compile evidence
 
 - The ordinary public facade owns the immutable descriptor and every live native
   obligation for all supported lanes; fresh authority is required at every effect.
+- The clean-cutover decision holds: covered consumers use the current contract,
+  displaced APIs and implementations are deleted, and no aliases, shims, legacy
+  decoders or compatibility paths survive on ordinary or advanced surfaces.
+  Unsupported predecessor contracts refuse before effects/readmission without
+  rewriting original bytes; current-contract recovery remains proven.
 - Discovered committed-retention retry promotes original custody and returns it
   intact on refusal. Native registered receipt recovery remains distinct.
 - Required delivery proves the complete actual required set and queries at one
@@ -854,8 +912,8 @@ Completion requires all of the following, not only new types or compile evidence
   domain algorithms and mappings remain domain-owned. The default documentation
   and facade cannot quietly steer callers back to the fragile ordinary path.
 - The courts and mutation probes above pass through real native owners, with
-  independent product observations. Existing exact invalidation, native parallel
-  execution, finite admission and evolution/checkpoint guarantees stay green.
+  independent product observations. Exact invalidation, native parallel execution,
+  finite admission and current-contract evolution/checkpoint guarantees stay green.
 - Every document in the Documentation Deliverables table, including the front
   door, workflows guide, API map and capability index, teaches the owning entry
   as the ordinary path for every lane the recorded decisions place under it.
@@ -869,7 +927,8 @@ Completion requires all of the following, not only new types or compile evidence
   `advanced()`. The workflow operation adapter is documented as ordinary and the
   native funnel as its advanced substrate.
 - Phase 0 holds: the unauthorized-executor court and its probes pass,
-  `MissingOperationInput` is enforced at authoring with its compatibility proof,
+  `MissingOperationInput` is enforced at authoring and reconstruction/readmission
+  with current-contract success and unsupported-predecessor refusal proofs,
   the consumer-doc checker and doctest job run in CI, and every effectful programs
   entrance admits the declared adoption capability with its courts passing.
 - Every example the documents call compiled is checked in CI by a marker-bound

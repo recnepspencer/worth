@@ -5579,11 +5579,19 @@ action-instance selection governs source execution and delivery together.
 
 Four phases establish the first real fixed owning journey, discovered retention
 and complete-set delivery, source-only/workflow adapters, then ordinary consumer
-deletion and cost/compatibility closure. Real public partial-effect and refused-read
+deletion and cost/clean-cutover closure. Real public partial-effect and refused-read
 courts, compile-time misuse denial and mutation-sensitive evidence protect the
 default API. No second engine, scheduler, aggregate quota or new durability claim
 is introduced. Private adopters consume the certified public revision and prove
 their actual domain journeys separately.
+
+This milestone supports only its current affected contracts: no legacy APIs,
+backward-compatibility shims, aliases, old-format decoders or conversion paths.
+Each replacement phase updates covered consumers and deletes its displaced
+surface. `advanced()` retains genuine current native controls, never retired API
+compatibility. Unsupported predecessor contracts are refused before effects or
+executable readmission with original bytes preserved; current-contract recovery
+and historical evidence retain their ordinary guarantees.
 
 The 2026-10-13 amendment closes the lane decision: the ordinary API has one retry
 style, every non-output lane leaves the ordinary builder, a program action with no
