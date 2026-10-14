@@ -281,3 +281,6 @@ fn unpublished_retained_recovery_preserves_evidence_and_cleanup_through_refusals
         .rows()
         .is_empty());
 }
+
+#[path = "native_postures/retained_capacity.rs"]
+mod native_postures;

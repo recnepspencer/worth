@@ -1,7 +1,9 @@
 //! Terminal native custody has no execution or delivery entrance.
 use super::fixed::FixedState;
 use super::*;
-use worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryPerformed;
+use worth_query_execution::facade::primary_graph::{
+    WorthQueryApplicationUncommitted, WorthQueryManagedApplicationRecoveryPerformed,
+};
 
 /// Terminal custody preserves native observations but cannot advance.
 /// ```compile_fail,E0599
@@ -121,7 +123,10 @@ where
             &self.operation.state,
             FixedState::Initial
                 | FixedState::NotPerformed(
-                    WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+                    WorthQueryApplicationMutationOutcome::Commit(
+                        WorthQueryApplicationUncommitted::ProductStale(_)
+                            | WorthQueryApplicationUncommitted::NoEffect(_)
+                    ) | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
                         | WorthQueryApplicationMutationOutcome::DomainDenied(_)
                         | WorthQueryApplicationMutationOutcome::Cancelled
                         | WorthQueryApplicationMutationOutcome::DeadlineExceeded

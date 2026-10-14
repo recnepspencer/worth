@@ -21,3 +21,6 @@ mod retained;
 mod capability;
 #[path = "source_only/stale_retry.rs"]
 mod stale_retry;
+
+#[path = "source_only/native_postures.rs"]
+mod native_postures;

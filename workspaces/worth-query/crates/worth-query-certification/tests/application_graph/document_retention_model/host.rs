@@ -26,7 +26,7 @@ use worth_query_host::facade::{declaration, primary_graph, runtime};
 #[path = "host/world_resources.rs"]
 mod world_resources;
 use world_resources::world_resources;
-pub use world_resources::WORKFLOW_DEFINITION_BYTES;
+pub use world_resources::{ACTIVE_WORLD_OBSERVATIONS, WORKFLOW_DEFINITION_BYTES};
 
 use super::assessment_output::{
     OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,

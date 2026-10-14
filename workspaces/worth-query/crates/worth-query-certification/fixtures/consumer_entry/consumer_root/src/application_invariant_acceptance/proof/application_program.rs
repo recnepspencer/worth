@@ -25,6 +25,8 @@ mod fixed_batch;
 mod fixed_branch_affinity;
 #[cfg(test)]
 mod fixed_delivery;
+#[cfg(test)]
+mod fixed_native_postures;
 pub(super) mod lifecycle;
 mod owner_demand_boundary;
 mod program_contract;

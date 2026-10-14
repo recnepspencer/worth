@@ -721,6 +721,22 @@ descriptor. It does not dispose an unpublished partial or resolve an uncertain
 business effect. Generic `Denied`, `NoEffect` and `Unseen` do not authorize a
 rerun; indeterminate outcomes keep the existing keyed recovery path.
 
+World pre-effect product-head loss is a terminal `ProductStale`, distinct from
+an invariant-stage `ProductBasisStale` refusal. A refusal during World
+preparation retains its expected product; its optional observed product can be
+absent. Read the competing current head independently rather than filling that
+absence with a newly observed value. Generic `NoEffect` retains its actual World
+cause. Neither posture grants an ordinary retry or reports required outputs
+complete.
+
+SourceOnly and fixed terminal owners retain these observations across close
+refusal and delegate fresh close to the existing cleanup collection. That close
+releases the terminal's native observation custody; its receipt does not certify
+external cleanup, managed cleanup that failed earlier, or crash durability.
+The [native posture courts](../../../worth-query-certification/tests/application_graph/source_only/native_postures.rs)
+exercise an actual pre-World native writer race and finite retained-observation
+capacity, with unchanged valid counterparts.
+
 Shared funded cleanup owns pending record release and native cleanup failures.
 Its receipt proves that collection was released; it does not discharge a retained
 source carrier, blocked attempt or active output handle. Each lane keeps those

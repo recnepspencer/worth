@@ -7,6 +7,8 @@ use worth_query_host::facade::runtime::{
     WorthQueryProductWorldClock, WorthQueryProductWorldResources,
 };
 
+pub(super) const ACTIVE_WORLD_OBSERVATIONS: u64 = 32;
+
 // Bounds this fixture World's serial request memory and deterministic work.
 pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
@@ -30,7 +32,7 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
                 history_metadata_bytes: 1_048_576,
             },
             observations: RuntimeWorldObservationBudgetInstallation {
-                active_observations: 32,
+                active_observations: ACTIVE_WORLD_OBSERVATIONS,
             },
             publication: RuntimeWorldPublicationBudgetInstallation {
                 active_publication_attempts: 8,
