@@ -1,14 +1,27 @@
-use bank_domain::schema::{
-    BankSchema, CreateBusinessAccountOperation, CreatePersonalAccountOperation, Institution,
-};
-use worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions;
-
+//! Construction transfers original meaning into the native owning source lane.
 use super::super::mutations;
-use crate::ordinary::mutation::{
-    BankBusinessAccountCreationExecution, BankPersonalAccountCreationExecution,
+use crate::{BankApplication, BankReadyMutation};
+use bank_domain::schema::*;
+use worth_query_host::facade::{
+    application_entry::{
+        WorthQueryOperationConstructionDenial, WorthQueryOperationDescription,
+        WorthQuerySourceOnlyOperation,
+    },
+    declaration::application_program::ApplicationSourceCompletion,
 };
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankReadyMutation};
-
+/// The retired one-shot execution entrance is unavailable.
+/// ```compile_fail,E0599
+/// fn retired(runtime: &bank_server::BankIdentityRuntime, principal: &bank_server::BankAuthenticatedPrincipal, input: bank_domain::schema::CreatePersonalAccount, controls: bank_server::BankMutationControls) {
+///     runtime.mutate(bank_server::mutations::create_personal_account(input)).as_principal(principal).controls(controls).execute();
+/// }
+/// ```
+/// Owning construction returns no borrowed runtime or principal lifetime.
+/// ```
+/// fn construct(runtime: &bank_server::BankIdentityRuntime, principal: &bank_server::BankAuthenticatedPrincipal, input: bank_domain::schema::CreatePersonalAccount, controls: bank_server::BankMutationControls) {
+///     let operation = runtime.mutate(bank_server::mutations::create_personal_account(input)).as_principal(principal).controls(controls).retain_operation();
+///     let _ = operation;
+/// }
+/// ```
 impl
     BankReadyMutation<
         '_,
@@ -18,17 +31,40 @@ impl
         Institution,
     >
 {
-    pub fn execute(self) -> BankPersonalAccountCreationExecution {
-        execute_personal(
-            self.runtime,
-            self.principal,
-            self.preconditions,
-            &self.controls,
-            self.mutation.input,
-        )
+    /// Owns the original input, conditions and key; every advance needs fresh request authority.
+    pub fn retain_operation(
+        self,
+    ) -> Result<
+        WorthQuerySourceOnlyOperation<
+            BankSchema,
+            CreatePersonalAccount,
+            BankApplication,
+            crate::PersonalAccountCreationAction,
+            ApplicationSourceCompletion,
+        >,
+        (
+            WorthQueryOperationDescription<BankSchema, CreatePersonalAccount>,
+            WorthQueryOperationConstructionDenial,
+        ),
+    > {
+        let (scope, key) = self.controls.into_parts();
+        self.runtime
+            .request(self.principal, &scope)
+            .mutate(self.mutation.input)
+            .without_source()
+            .preconditions(self.preconditions)
+            .idempotency_owned(key)
+            .retain_operation::<BankApplication, crate::PersonalAccountCreationAction>(
+                self.runtime.application_program(),
+            )
     }
 }
-
+/// The retired one-shot execution entrance is unavailable.
+/// ```compile_fail,E0599
+/// fn retired(runtime: &bank_server::BankIdentityRuntime, principal: &bank_server::BankAuthenticatedPrincipal, input: bank_domain::schema::CreateBusinessAccount, controls: bank_server::BankMutationControls) {
+///     runtime.mutate(bank_server::mutations::create_business_account(input)).as_principal(principal).controls(controls).execute();
+/// }
+/// ```
 impl
     BankReadyMutation<
         '_,
@@ -38,57 +74,31 @@ impl
         Institution,
     >
 {
-    pub fn execute(self) -> BankBusinessAccountCreationExecution {
-        execute_business(
-            self.runtime,
-            self.principal,
-            self.preconditions,
-            &self.controls,
-            self.mutation.input,
-        )
+    /// Owns the original input, conditions and key; every advance needs fresh request authority.
+    pub fn retain_operation(
+        self,
+    ) -> Result<
+        WorthQuerySourceOnlyOperation<
+            BankSchema,
+            CreateBusinessAccount,
+            BankApplication,
+            crate::BusinessAccountCreationAction,
+            ApplicationSourceCompletion,
+        >,
+        (
+            WorthQueryOperationDescription<BankSchema, CreateBusinessAccount>,
+            WorthQueryOperationConstructionDenial,
+        ),
+    > {
+        let (scope, key) = self.controls.into_parts();
+        self.runtime
+            .request(self.principal, &scope)
+            .mutate(self.mutation.input)
+            .without_source()
+            .preconditions(self.preconditions)
+            .idempotency_owned(key)
+            .retain_operation::<BankApplication, crate::BusinessAccountCreationAction>(
+                self.runtime.application_program(),
+            )
     }
-}
-
-fn execute_personal(
-    runtime: &BankIdentityRuntime,
-    principal: &BankAuthenticatedPrincipal,
-    preconditions: TypedMutationPreconditions<
-        BankSchema,
-        CreatePersonalAccountOperation,
-        Institution,
-    >,
-    controls: &crate::BankMutationControls,
-    input: bank_domain::schema::CreatePersonalAccount,
-) -> BankPersonalAccountCreationExecution {
-    runtime
-        .request(principal, controls.request())
-        .mutate(input)
-        .preconditions(preconditions)
-        .idempotency(controls.idempotency_key())
-        .execute_in_program(
-            runtime.application_program(),
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
-}
-
-fn execute_business(
-    runtime: &BankIdentityRuntime,
-    principal: &BankAuthenticatedPrincipal,
-    preconditions: TypedMutationPreconditions<
-        BankSchema,
-        CreateBusinessAccountOperation,
-        Institution,
-    >,
-    controls: &crate::BankMutationControls,
-    input: bank_domain::schema::CreateBusinessAccount,
-) -> BankBusinessAccountCreationExecution {
-    runtime
-        .request(principal, controls.request())
-        .mutate(input)
-        .preconditions(preconditions)
-        .idempotency(controls.idempotency_key())
-        .execute_in_program(
-            runtime.application_program(),
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-        )
 }

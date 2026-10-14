@@ -130,7 +130,9 @@ fn historical_read_rechecks_current_account_authorization() {
     assert!(read(&request_scope()).is_ok());
 
     let authorization = super::authorized_user_id(&fixture, &owner, VIEWER);
-    let revoked = fixture
+    let revoked_scope = crate::support::request_scope();
+    let revoked_request = fixture.world.runtime.request(&owner, &revoked_scope);
+    let operation = fixture
         .world
         .runtime
         .mutate(mutations::revoke_account_access(
@@ -144,11 +146,21 @@ fn historical_read_rechecks_current_account_authorization() {
             request_scope(),
             BankIdempotencyKey::new("historical-revoke-viewer").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ) = operation.advance(&revoked_request)
+    else {
+        panic!("fresh source completion")
+    };
+    assert!(matches!(
+        revoked.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    revoked
+        .close(&revoked_request)
+        .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
     let denied = read(&request_scope());
     assert!(matches!(
         denied,
@@ -168,7 +180,9 @@ fn newly_granted_reader_can_read_an_earlier_commit() {
     let teller = fixture.authenticate(TELLER);
     let commit = commit_deposit(&fixture, &teller, 1, "historical-before-grant");
 
-    let granted = fixture
+    let granted_scope = crate::support::request_scope();
+    let granted_request = fixture.world.runtime.request(&owner, &granted_scope);
+    let operation = fixture
         .world
         .runtime
         .mutate(mutations::grant_account_access(GrantAccountAuthorization {
@@ -181,11 +195,21 @@ fn newly_granted_reader_can_read_an_earlier_commit() {
             request_scope(),
             BankIdempotencyKey::new("historical-grant-new-viewer").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         granted,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ) = operation.advance(&granted_request)
+    else {
+        panic!("fresh source completion")
+    };
+    assert!(matches!(
+        granted.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    granted
+        .close(&granted_request)
+        .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
 
     let request = request_scope();
     let historical = fixture

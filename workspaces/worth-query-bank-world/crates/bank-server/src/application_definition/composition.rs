@@ -68,7 +68,7 @@ fn bank_feature_specs_with_optional_effects(
         .operation_action::<DepositMutationBinding, super::money_actions::DepositDelivery>()
         .operation_action::<WithdrawMutationBinding, super::money_actions::WithdrawalDelivery>()
         .operation_action::<SendMoneyMutationBinding, super::money_actions::SendMoneyDelivery>()
-        .mutation::<InitiateBusinessPaymentMutationBinding>()
+        .operation_action::<InitiateBusinessPaymentMutationBinding, super::payment_actions::PaymentInitiationDelivery>()
         .mutation::<ApprovedBusinessPaymentAuthoringBinding>()
         .mutation::<ApprovedBusinessPaymentApprovalBinding>()
         .mutation::<ApprovedBusinessPaymentInstanceStartBinding>()
@@ -82,13 +82,13 @@ fn bank_feature_specs_with_optional_effects(
     vec![
         ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
             .mutation::<ProgramDeploymentRevocationBinding>()
-            .mutation::<CreatePersonalAccountMutationBinding>()
-            .mutation::<CreateBusinessAccountMutationBinding>()
-            .mutation::<GrantAccountAccessMutationBinding>()
-            .mutation::<RevokeAccountAccessMutationBinding>()
+            .operation_action::<CreatePersonalAccountMutationBinding, super::account_actions::PersonalAccountCreationDelivery>()
+            .operation_action::<CreateBusinessAccountMutationBinding, super::account_actions::BusinessAccountCreationDelivery>()
+            .operation_action::<GrantAccountAccessMutationBinding, super::account_actions::AccountAccessGrantDelivery>()
+            .operation_action::<RevokeAccountAccessMutationBinding, super::account_actions::AccountAccessRevocationDelivery>()
             .finish(),
         payments
-            .mutation::<RejectPaymentMutationBinding>()
+            .operation_action::<RejectPaymentMutationBinding, super::payment_actions::PaymentRejectionDelivery>()
             .operation_action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>()
             .finish(),
         estate

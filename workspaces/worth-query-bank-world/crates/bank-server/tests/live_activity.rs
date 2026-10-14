@@ -28,7 +28,6 @@ use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 #[test]
@@ -99,7 +98,9 @@ fn permission_revocation_closes_before_another_payload_is_delivered() {
         .subscribe(live_controls())
         .expect("viewer should open activity lease");
 
-    let revoked = fixture
+    let revoked_scope = crate::support::request_scope();
+    let revoked_request = fixture.world.runtime.request(&owner, &revoked_scope);
+    let operation = fixture
         .world
         .runtime
         .mutate(mutations::revoke_account_access(
@@ -113,11 +114,21 @@ fn permission_revocation_closes_before_another_payload_is_delivered() {
             request_scope(),
             BankIdempotencyKey::new("revoke-live-viewer").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ) = operation.advance(&revoked_request)
+    else {
+        panic!("fresh source completion")
+    };
+    assert!(matches!(
+        revoked.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    revoked
+        .close(&revoked_request)
+        .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
     commit_deposit(
         &fixture,
         &teller,

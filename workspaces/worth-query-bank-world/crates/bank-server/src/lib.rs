@@ -113,14 +113,13 @@ pub use operation_commit::{
     BankUnresolvedCommitEvidence,
 };
 pub use ordinary::{
-    mutations, queries, BankAccountAccessExecution, BankAuthorizationDenial,
-    BankAuthorizationDenialKind, BankBusinessAccountCreationExecution, BankEntityResolutionDenial,
-    BankEntityResolutionDenialKind, BankMoneyMovementExecution, BankMutation, BankMutationControls,
-    BankMutationForPrincipal, BankOperationInstallationDenial, BankOperationInstallationDenialKind,
-    BankPaymentContinuationDenial, BankPaymentDecisionExecution, BankPaymentInitiationOutcome,
-    BankPendingPaymentContinuation, BankPersonalAccountCreationExecution,
-    BankProgramMutationExecution, BankQuery, BankQueryForPrincipal, BankReadControlDenial,
-    BankReadControls, BankReadyMutation, BankReadyQuery, BankRejectPendingPayment,
+    mutations, queries, BankAuthorizationDenial, BankAuthorizationDenialKind,
+    BankEntityResolutionDenial, BankEntityResolutionDenialKind, BankMoneyMovementExecution,
+    BankMutation, BankMutationControls, BankMutationForPrincipal, BankOperationInstallationDenial,
+    BankOperationInstallationDenialKind, BankPaymentContinuationDenial,
+    BankPendingPaymentContinuation, BankProgramMutationExecution, BankQuery, BankQueryForPrincipal,
+    BankReadControlDenial, BankReadControls, BankReadyMutation, BankReadyQuery,
+    BankRejectPendingPayment,
 };
 pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};
@@ -141,3 +140,11 @@ extern crate self as bank_server;
 )]
 #[path = "../tests/support/mod.rs"]
 mod support;
+
+pub use application_definition::{
+    AccountAccessGrantAction, AccountAccessGrantDelivery, AccountAccessRevocationAction,
+    AccountAccessRevocationDelivery, BusinessAccountCreationAction,
+    BusinessAccountCreationDelivery, PaymentInitiationAction, PaymentInitiationDelivery,
+    PaymentRejectionAction, PaymentRejectionDelivery, PersonalAccountCreationAction,
+    PersonalAccountCreationDelivery,
+};

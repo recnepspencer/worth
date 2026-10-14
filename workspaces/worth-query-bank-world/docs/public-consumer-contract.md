@@ -116,6 +116,42 @@ a fresh authenticated principal and caller-owned controls. The runtime owns
 admission, projection, provider work, and outcome construction.
 The caller cannot insert a read set, proposal, provider session, or receipt.
 
+### Own account, access and payment completion
+
+Personal and business account creation, access grant/revocation, payment initiation
+and rejection use `retain_operation()` after their existing `mutate(...).as_principal(...).controls(...)` builders.
+They return an owned native SourceCompletion operation. Construction transfers the
+original input, typed conditions and idempotency key, and retains no principal or
+request scope. Each `advance(&fresh_request)` opens one native phase; preserve the
+returned owner on progress or refusal. A completed or terminal owner must be
+closed with fresh authority, and a refused close returns its custody.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let operation = runtime
+    .mutate(mutations::create_personal_account(input))
+    .as_principal(&teller)
+    .controls(controls)
+    .retain_operation()?;
+let outcome = operation.advance(&fresh_request);
+```
+
+Fresh completion carries the actual account, authorization or payment handler
+result. Recovered completion carries the authoritative receipt and native
+recovery evidence; it does not manufacture the original domain result. Read the
+published account or payment with independently fresh query authorization.
+`BankPendingPaymentContinuation::from_summary` constructs only a descriptive
+payment identity from an authorized pending-payment read. Its rejection builder
+resolves the supplied actor into the original rejection input; every subsequent
+attempt must still pass native authorization and actor checks. Approval remains
+in the approved-payment workflow, and a continuation grants no approval authority.
+
+Receipt output correspondences describe created, preserved or retired entities.
+They do not erase required-output source inventory: installed required-output
+actions must use their declared fixed/discovered lane. These six completion
+bindings share the installed Bank application and existing role policies.
+
 ### Own a retained deposit
 
 The deposit builder also provides `retain_operation()`: call it after

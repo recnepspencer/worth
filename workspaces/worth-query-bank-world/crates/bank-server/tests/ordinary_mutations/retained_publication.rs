@@ -134,18 +134,35 @@ fn opted_in_deposit_carries_exact_read_after_and_replay_cannot_mint_it() {
         .find(|user| user.principal() == principal_id(fixture::VIEWER))
         .expect("fixture viewer must have account access")
         .authorization();
-    assert!(matches!(
-        execute!(
-            fixture,
-            owner,
-            mutations::revoke_account_access(RevokeAccountAuthorization {
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&owner, &scope);
+    let operation = fixture
+        .world
+        .runtime
+        .mutate(mutations::revoke_account_access(
+            RevokeAccountAuthorization {
                 account,
                 authorization,
-            }),
-            "retained-revoke-viewer"
-        ),
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+            },
+        ))
+        .as_principal(&owner)
+        .controls(BankMutationControls::new(
+            scope.clone(),
+            key("retained-revoke-viewer"),
+        ))
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared revoke: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(done) =
+        operation.advance(&request)
+    else {
+        panic!("fresh revoke")
+    };
+    assert!(matches!(
+        done.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    done.close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("revoke close: {cause:?}"));
     let denied = saved_view.as_principal(&viewer).retained(
         &retained,
         BankReadControls::current(request_scope(), 128, 8_192).unwrap(),

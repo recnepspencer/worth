@@ -14,8 +14,10 @@ pub(crate) fn commit_authorization_toggle(
     owner: &bank_server::BankAuthenticatedPrincipal,
     ordinal: usize,
 ) {
-    let outcome = if ordinal.is_multiple_of(2) {
-        fixture
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(owner, &scope);
+    if ordinal.is_multiple_of(2) {
+        let operation = fixture
             .world
             .runtime
             .mutate(mutations::revoke_account_access(
@@ -26,9 +28,22 @@ pub(crate) fn commit_authorization_toggle(
             ))
             .as_principal(owner)
             .controls(mutation_controls(&format!("overflow-revoke-{ordinal}")))
-            .execute()
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("declared access: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = operation.advance(&request)
+        else {
+            panic!("fresh access completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        done.close(&request)
+            .unwrap_or_else(|(_, cause)| panic!("access close: {cause:?}"));
     } else {
-        fixture
+        let operation = fixture
             .world
             .runtime
             .mutate(mutations::grant_account_access(GrantAccountAuthorization {
@@ -38,12 +53,21 @@ pub(crate) fn commit_authorization_toggle(
             }))
             .as_principal(owner)
             .controls(mutation_controls(&format!("overflow-grant-{ordinal}")))
-            .execute()
-    };
-    assert!(matches!(
-        outcome,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("declared access: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = operation.advance(&request)
+        else {
+            panic!("fresh access completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        done.close(&request)
+            .unwrap_or_else(|(_, cause)| panic!("access close: {cause:?}"));
+    }
 }
 
 pub(crate) fn authorized_user_id(

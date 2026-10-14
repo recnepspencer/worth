@@ -6,8 +6,7 @@ use bank_domain::{
 };
 use fixture::{ordinary_read_world_with_two_approvers, OWNER, STRANGER};
 use worth_query_host::facade::application_entry::{
-    WorkflowApprovalDecision, WorthQueryApplicationMutationOutcome,
-    WorthQueryApplicationRequestMutationDenial,
+    WorkflowApprovalDecision, WorthQueryApplicationRequestMutationDenial,
 };
 use worth_query_host::facade::primary_graph::{
     WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
@@ -98,7 +97,9 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
         })
         .expect("the starter has the grant being revoked");
     assert_eq!(instance.branch(), fixture.world.runtime.current_branch());
-    let revoked = fixture
+    let revoked_scope = crate::support::request_scope();
+    let revoked_request = fixture.world.runtime.request(&owner, &revoked_scope);
+    let source_operation = fixture
         .world
         .runtime
         .mutate(bank_server::mutations::revoke_account_access(
@@ -112,12 +113,21 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
             scope.clone(),
             key("approved-payment:authorization:revoke"),
         ))
-        .execute()
-        .expect("the owner revokes the starter's real grant");
-    assert!(matches!(
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ) = source_operation.advance(&revoked_request)
+    else {
+        panic!("fresh source completion")
+    };
+    assert!(matches!(
+        revoked.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    revoked
+        .close(&revoked_request)
+        .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
 
     let denied = starter_workflow.perform_apply(
         instance.clone(),
