@@ -13,6 +13,7 @@ mod fixed_advance;
 mod fixed_outputs;
 mod fixed_publication;
 mod fixed_recovery;
+mod fixed_replay;
 mod request_view;
 mod settled;
 mod terminal;

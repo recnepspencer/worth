@@ -651,6 +651,14 @@ opens one native phase and borrows the original intent, key, conditions and
 source proof. The branch-selected installed owner checks the cached original
 action meaning in the actual source execution and recovery paths.
 
+Fixed replay resolves the original key with fresh binding-selected admission.
+`SourceReplayObserved` retains the native committed receipt;
+`RegisteredOutputsRecovered` rejoins its actual registered demand without
+rerunning the source handler. No handler result is invented. A retryable refusal
+returns the original owner. Missing, retired or superseded registration produces
+terminal historical evidence, and terminal close delegates remaining native
+cleanup rather than declaring output completion.
+
 The same constructor resolves explicit no-output completion or retained-commit
 meaning. Its native SourceOnly handoff borrows original request meaning for
 binding-selected conventional or capability admission, unpublished recovery and

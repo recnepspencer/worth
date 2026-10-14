@@ -10,6 +10,8 @@ impl<'runtime, Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
@@ -81,7 +83,9 @@ where
                         Progress::SourcePromoted
                     }
                     Err((denial, partial)) => {
+                        let terminal = partial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal;
                         self.state = FixedState::Unpublished(partial);
+                        if terminal { return Advance::Terminal { operation: WorthQueryTerminalFixedOperation::new(self), denial: Denial::Recovery(denial) }; }
                         return Advance::Refused {
                             operation: self,
                             denial: Denial::Recovery(denial),
