@@ -243,6 +243,18 @@ where
                 }
                 Ok(())
             })();
+            // Native cleanup is unique custody, not a queued diagnostic. Stop
+            // ordered apply before another member can create a second owner.
+            let applied = match applied {
+                Err(mut failure) => {
+                    if let Some(cleanup) = failure.stop.take_managed_cleanup() {
+                        failure.stop = failure.stop.with_managed_cleanup(cleanup);
+                        return Err(failure);
+                    }
+                    Err(failure)
+                }
+                result => result,
+            };
             match applied {
                 Err(failure)
                     if failure.stop.kind()
@@ -310,7 +322,24 @@ where
             member.state = MemberState::Inspect;
         }
     }
-    let stopped = result.err();
+    let stopped = match result {
+        Err(mut failure) => {
+            if let Some(cleanup) = failure.stop.take_managed_cleanup() {
+                failure.stop = failure.stop.with_managed_cleanup(cleanup);
+                let (index, stop, recording) = failure.into_parts();
+                recording.record_if_needed(
+                    &runtime.output_demands,
+                    frontier.members[index].key(),
+                    &stop,
+                );
+                // Return before caller acceptance, reselection or requested
+                // dependency bookkeeping can fail and replace this owner.
+                return Err(stop);
+            }
+            Some(failure)
+        }
+        Ok(()) => None,
+    };
     Ok(WaveProgress {
         moved,
         delivery: None,

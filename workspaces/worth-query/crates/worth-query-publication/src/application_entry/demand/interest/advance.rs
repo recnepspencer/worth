@@ -113,6 +113,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::MissingApplicableProducer
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::AmbiguousApplicableProducer
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerUnavailable
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProducerDomainDenied
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequestAuthorization(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ProductSelection(_)
@@ -171,6 +172,26 @@ where
     SourceValue<Schema, Demand>:
         WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Demand>> + Clone,
 {
+    /// Borrows this demand's actual pending producer cleanup without transferring authority.
+    pub fn managed_cleanup_failure(
+        &mut self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
+    {
+        self.continuation.managed_cleanup_failure()
+    }
+    /// Discharges failed native producer cleanup without reporting output settlement.
+    pub fn release_managed_cleanup(
+        &mut self,
+        request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        Option<
+            worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+        >,
+        WorthQueryApplicationOutputDemandDenial,
+    > {
+        self.continuation
+            .release_managed_cleanup(self.application, request)
+    }
     pub fn settle(
         &mut self,
         fresh_request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,

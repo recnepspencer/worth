@@ -346,3 +346,18 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
     WorthQueryRecoveredProgramSourceDeliveryForTest,
 };
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
+};
+pub use crate::domain_computation::{
+    WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
+};
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
+};
+
+pub use crate::domain_computation::WorthQueryManagedRunCleanupFailureKind;
+
+pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;

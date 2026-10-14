@@ -72,6 +72,12 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
             panic!("native no-effect outcome: {outcome:?}")
         }
+        WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, .. } => {
+            panic!(
+                "this unarmed court met genuine managed cleanup refusal: {:?}",
+                cleanup.failure()
+            )
+        }
         WorthQueryApplicationPerformedMutationOutcome::Blocked(blocked) => {
             panic!("native blocked outcome: {:?}", blocked.outcome())
         }

@@ -43,6 +43,11 @@ where
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
+    /// The classified original source and its actual failed managed cleanup remain owned.
+    CleanupRequired {
+        cleanup: worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup,
+        outcome: Box<Self>,
+    },
     Performed(WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root>),
     /// Original required-root preparation and native partial remain owned.
     ProductUnpublished(
@@ -240,6 +245,11 @@ where
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
+    // Classify the already-produced native evidence; this invokes no handler or publication.
+    if let WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)) = outcome {
+        let (outcome, cleanup) = required.into_parts();
+        return WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(performed_outcome::<Schema, Binding, Program, Root>(demand, WorthQueryApplicationMutationOutcome::Commit(outcome), source)) };
+    }
     let outcome = match outcome {
         WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {
             if let Some(pending) = source.take_unpublished() {
@@ -252,7 +262,8 @@ where
     };
     if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::SettlementDeferred(_)
-        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_))) {
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)
+)) {
         if let Some(preparation) = source.take_unpublished() {
             return WorthQueryApplicationPerformedMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: demand, outcome });
         }

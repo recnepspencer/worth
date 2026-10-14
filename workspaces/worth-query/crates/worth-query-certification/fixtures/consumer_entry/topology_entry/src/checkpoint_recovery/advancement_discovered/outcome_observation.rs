@@ -6,6 +6,9 @@ pub(super) fn discovered(
     outcome: &Outcome<CheckpointSchema, PlanarSourceAdjustment, DiscoveredProgram, DiscoveredRoot>,
 ) -> String {
     match outcome {
+        Outcome::CleanupRequired { cleanup, .. } => {
+            format!("CleanupRequired({:?})", cleanup.failure().kind())
+        }
         Outcome::ProductUnpublished(_) => "ProductUnpublished".into(),
         Outcome::Performed(performed) => format!("Performed({:?})", performed.receipt()),
         Outcome::RequiredOutputDenied {
@@ -25,6 +28,9 @@ pub(super) fn required(
     >,
 ) -> String {
     match outcome {
+        RequiredOutcome::CleanupRequired { cleanup, .. } => {
+            format!("CleanupRequired({:?})", cleanup.failure().kind())
+        }
         RequiredOutcome::ProductUnpublished(_) => "ProductUnpublished".into(),
         RequiredOutcome::Performed(performed) => format!("Performed({:?})", performed.receipt()),
         RequiredOutcome::RequiredOutputDenied(failure) => format!(

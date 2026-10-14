@@ -45,7 +45,12 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
         world
             .faults
             .interrupt_next_aftermath_seal(cancellation, deadline);
-        let _cleanup_guard = reject_cleanup.then(|| world.faults.reject_managed_cleanup_for_test());
+        let _cleanup_guard = reject_cleanup.then(|| {
+            world
+                .application
+                .schedule_next_managed_cleanup_on_worker_for_test()
+                .unwrap()
+        });
         let outcome = world
             .application
             .with_application_advancement(&request, |phase| {
@@ -60,6 +65,7 @@ fn aftermath_sealing_interruption_reaches_commit_evidence() {
                     )
             })
             .unwrap();
+        let outcome = discharge_actual_cleanup(&world, outcome);
         let WorthQueryApplicationCommitOutcome::Indeterminate(evidence) = outcome else {
             panic!("sealing stop must retain unresolved commit evidence: {outcome:?}");
         };
@@ -134,7 +140,10 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
         let interruption = world
             .faults
             .interrupt_next_native_preparation_for_test(source, deadline);
-        let _cleanup = world.faults.reject_managed_cleanup_for_test();
+        let _cleanup = world
+            .application
+            .schedule_next_managed_cleanup_on_worker_for_test()
+            .unwrap();
         let outcome = world
             .application
             .with_application_advancement(&request, |phase| {
@@ -152,6 +161,7 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
             interruption.reached_for_test(),
             "stop occurs inside native preparation"
         );
+        let outcome = discharge_actual_cleanup(&world, outcome);
         let WorthQueryApplicationCommitOutcome::Indeterminate(evidence) = outcome else {
             panic!("stopped progression and failed cleanup retain evidence: {outcome:?}")
         };
@@ -176,4 +186,25 @@ fn native_preparation_control_stop_keeps_failed_cleanup_evidence_at_the_commit_d
                 .with_cleanup_failure()
         );
     }
+}
+
+fn discharge_actual_cleanup(
+    world: &crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld,
+    outcome: WorthQueryApplicationCommitOutcome,
+) -> WorthQueryApplicationCommitOutcome {
+    let WorthQueryApplicationCommitOutcome::CleanupRequired(required) = outcome else {
+        return outcome;
+    };
+    let (outcome, cleanup) = required.into_parts();
+    assert_eq!(cleanup.failure().kind(), crate::domain_computation::WorthQueryMutationCleanupFailureKind::Native(
+        crate::domain_computation::WorthQueryManagedRunCleanupFailureKind::BridgeFinalization(
+            worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind::SignalRuntimeThreadAffinityViolation)));
+    let scope = live_scope();
+    let receipt = world
+        .application
+        .with_application_advancement(&scope, |phase| cleanup.retry_in_advancement(&phase))
+        .unwrap()
+        .unwrap();
+    assert!(receipt.inspection().resources_released());
+    outcome.into()
 }

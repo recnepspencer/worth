@@ -179,6 +179,9 @@ where
         WorthQuerySourceOnlyDenial,
     > {
         use WorthQueryApplicationMutationOutcome as O;
+        let outcome = self
+            .cleanup
+            .absorb_native_outcome(&self.admission.runtime, outcome);
         match outcome {
             O::Committed { receipt, result } => {
                 Ok(Step::Completed(WorthQuerySourceCompletion::Fresh {
@@ -269,6 +272,11 @@ where
                     SourceState::Keyed(WorthQueryApplicationUncommitted::Aborted)
                 ) =>
             {
+                if self.cleanup.managed_failure().is_some() {
+                    return Err(WorthQuerySourceOnlyDenial::Cleanup(
+                        WorthQueryOperationCloseDenial::NativeObligationRetained,
+                    ));
+                }
                 // The native Aborted outcome proves no effect; Unseen alone never does.
                 self.state = SourceState::Initial;
                 Ok(Step::Progress)

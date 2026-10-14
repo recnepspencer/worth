@@ -113,3 +113,27 @@ where
         authoritative_reconstruction: Box::new(()),
     })
 }
+
+/// Installs the prepared binding while retaining independent native cleanup evidence.
+pub(super) fn apply_temporal_runtime_binding<B, R, E, Clock: 'static, Input: 'static>(
+    operation: &mut super::WorthQueryInstalledTemporalOperation<B, R, E, Clock, Input>,
+    prepared: WorthQueryPreparedConditionalRuntimeBinding,
+) {
+    operation.pending_invalidations = prepared.pending_invalidations;
+    operation.bootstrap_lowering = prepared.lowering;
+    operation.active_affinity = Some(prepared.affinity);
+    operation.managed_clock = Some(prepared.managed_clock);
+    operation.authoritative_commit_cursor = prepared.authoritative_commit_cursor;
+    operation.bootstrap_commit_catch_up_pending = false;
+    operation.commit_watch = prepared.commit_watch;
+    let reconstruction = *prepared
+            .authoritative_reconstruction
+            .downcast::<super::super::temporal_reconstruction::WorthQueryTemporalReconstruction<Clock, Input>>()
+            .expect("prepared temporal reconstruction retains its installed binding type");
+    operation.reconstructed_intents = reconstruction.intents;
+    operation.reconstruction_work = reconstruction.work;
+    super::super::retained_managed_cleanup::retain_cleanup_wakes(&mut operation.retained_wakes);
+    operation.inactive_bindings.retain(|_, binding| {
+        super::super::retained_managed_cleanup::has_cleanup_wakes(&binding.retained_wakes)
+    });
+}

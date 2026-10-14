@@ -42,6 +42,12 @@ where
                 delivery_branch,
                 disclosure,
             )
+            .map_err(|mut denial| {
+                if let Some(cleanup) = demand.admitted.take_managed_cleanup() {
+                    denial = denial.with_managed_cleanup(cleanup);
+                }
+                denial
+            })
             .map(|progress| match progress {
                 WorthQueryOutputDemandAdvance::Pending => WorthQueryProgramOutputAdvance::Pending,
                 WorthQueryOutputDemandAdvance::Settled(retained) => {

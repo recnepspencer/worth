@@ -1,3 +1,4 @@
+mod cleanup_custody;
 mod kind;
 pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture};
 
@@ -7,10 +8,12 @@ pub use kind::{WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryP
 /// Match on [`kind`](Self::kind) and check
 /// [`recovery_posture`](Self::recovery_posture) before retrying; the subject is
 /// for diagnostics.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Debug)]
+#[must_use = "a producer refusal can own native cleanup; retain or transfer it"]
 pub struct WorthQueryOutputDemandDenial {
     pub(super) kind: Box<WorthQueryOutputDemandDenialKind>,
     evidence: Option<Box<DemandDenialEvidence>>,
+    cleanup: Option<cleanup_custody::DemandCleanupCustody>,
     pub(super) subject: std::borrow::Cow<'static, str>,
     pub(super) domain_reason: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) readmission_failure: Option<&'static str>,
@@ -34,6 +37,44 @@ struct DemandDenialEvidence {
 }
 
 impl WorthQueryOutputDemandDenial {
+    pub(in crate::domain_computation::primary_graph) fn with_managed_cleanup(
+        mut self,
+        cleanup: Box<
+            crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired,
+        >,
+    ) -> Self {
+        self.cleanup = Some(cleanup_custody::DemandCleanupCustody::new(cleanup));
+        self
+    }
+    /// Transfers the unique native cleanup and business evidence. Diagnostic clones own none.
+    pub fn take_managed_cleanup(
+        &mut self,
+    ) -> Option<Box<crate::domain_computation::primary_graph::WorthQueryApplicationCleanupRequired>>
+    {
+        match self.cleanup.take()?.into_required() {
+            Ok(required) => Some(required),
+            Err(custody) => {
+                self.cleanup = Some(custody);
+                None
+            }
+        }
+    }
+    pub(super) fn managed_cleanup_failure(
+        &mut self,
+    ) -> Option<&crate::domain_computation::WorthQueryMutationCleanupFailure> {
+        self.cleanup.as_mut().and_then(|custody| custody.failure())
+    }
+    pub(super) fn release_managed_cleanup(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<Option<crate::domain_computation::WorthQueryDirectRunCleanupReceipt>, Self> {
+        match self.cleanup.as_mut().map(|custody| custody.release(phase)) {
+            Some(Err(denial)) => Err(denial),
+            Some(Ok(receipt)) => Ok(receipt),
+            None => Ok(None),
+        }
+    }
+
     fn evidence_mut(&mut self) -> &mut DemandDenialEvidence {
         self.evidence.get_or_insert_with(Default::default)
     }
@@ -136,6 +177,7 @@ impl WorthQueryOutputDemandDenial {
         Self {
             kind: Box::new(kind),
             evidence: None,
+            cleanup: None,
             domain_reason: None,
             readmission_failure: None,
             subject: subject.into(),
@@ -191,3 +233,29 @@ impl WorthQueryOutputDemandDenial {
         )
     }
 }
+
+// Cloning is diagnostic only. The original refusal remains the unique owner.
+impl Clone for WorthQueryOutputDemandDenial {
+    fn clone(&self) -> Self {
+        Self {
+            kind: self.kind.clone(),
+            evidence: self.evidence.clone(),
+            cleanup: None,
+            subject: self.subject.clone(),
+            domain_reason: self.domain_reason,
+            readmission_failure: self.readmission_failure,
+            recovery_posture: self.recovery_posture,
+        }
+    }
+}
+impl PartialEq for WorthQueryOutputDemandDenial {
+    fn eq(&self, other: &Self) -> bool {
+        self.kind == other.kind
+            && self.evidence == other.evidence
+            && self.subject == other.subject
+            && self.domain_reason == other.domain_reason
+            && self.readmission_failure == other.readmission_failure
+            && self.recovery_posture == other.recovery_posture
+    }
+}
+impl Eq for WorthQueryOutputDemandDenial {}

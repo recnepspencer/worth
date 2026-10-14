@@ -32,6 +32,36 @@ where
             closed: false,
         }
     }
+    /// Borrows the pending native terminal; diagnostic denial copies cannot own it.
+    pub fn managed_cleanup_failure(
+        &mut self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
+    {
+        self.admitted.managed_cleanup_failure()
+    }
+    /// Releases actual failed producer cleanup under this runtime's fresh issuer.
+    /// A release receipt is not output settlement; refusal keeps the native owner.
+    pub fn release_managed_cleanup(
+        &mut self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<
+        Option<
+            worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+        >,
+        WorthQueryApplicationOutputDemandDenial,
+    > {
+        if !std::ptr::eq(application, request.application) {
+            return Err(WorthQueryApplicationOutputDemandDenial::FreshRequestMismatch);
+        }
+        application
+            .with_application_advancement(request.scope, |phase| {
+                self.admitted
+                    .release_managed_cleanup(&phase)
+                    .map_err(WorthQueryApplicationOutputDemandDenial::Demand)
+            })
+            .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
+    }
     pub fn close(&mut self) {
         if !self.closed {
             self.admitted.close();

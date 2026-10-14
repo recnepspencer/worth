@@ -163,6 +163,20 @@ where
         WorthQueryConditionalRuntimeInspection,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        let pending = self
+            .conditional_operations
+            .get_mut()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .snapshot()
+            .pending_managed_cleanup();
+        if let Some(kind) = pending {
+            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
+                super::WorthQueryConditionalRuntimeInstallationDenialKind::ManagedCleanupRetained(
+                    kind,
+                ),
+                "conditional runtime still owns failed native cleanup",
+            ));
+        }
         let before = self.inspect_conditional_runtime();
         self.release_conditional_runtime_resources();
         Ok(before)
