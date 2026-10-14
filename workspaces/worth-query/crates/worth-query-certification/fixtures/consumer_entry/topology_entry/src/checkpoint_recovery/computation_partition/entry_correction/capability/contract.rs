@@ -3,6 +3,90 @@ use super::*;
 pub(in super::super::super) fn declare<Schema: TopologySchemaBinding>(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    let contract = grant_contract(
+        CorrectEntryCapability::<Schema>::reference(),
+        CorrectEntryValue::reference::<Schema>(),
+        1,
+        1,
+    );
+    let schema = schema
+        .entity(CorrectionGrant::reference::<Schema>())
+        .aspect(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionGrantFacts::reference::<Schema>(),
+        )
+        .field(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionAction::reference::<Schema>(),
+        )
+        .field(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionPurpose::reference::<Schema>(),
+        )
+        .field(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionStatus::reference::<Schema>(),
+        )
+        .field(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionScopeKey::reference::<Schema>(),
+        )
+        .field(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionNotBefore::reference::<Schema>(),
+        )
+        .field(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionNotAfter::reference::<Schema>(),
+        )
+        .field(
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionDepth::reference::<Schema>(),
+        )
+        .relation(
+            CorrectionResource::reference::<Schema>(),
+            CorrectionGrant::reference::<Schema>(),
+            Body::reference::<Schema>(),
+        )
+        .relation(
+            CorrectionGrantee::reference::<Schema>(),
+            Principal::reference::<Schema>(),
+            CorrectionGrant::reference::<Schema>(),
+        )
+        .relation(
+            CorrectionGrantor::reference::<Schema>(),
+            Principal::reference::<Schema>(),
+            CorrectionGrant::reference::<Schema>(),
+        )
+        .relation(
+            CorrectionParent::reference::<Schema>(),
+            CorrectionGrant::reference::<Schema>(),
+            CorrectionGrant::reference::<Schema>(),
+        )
+        .capability_context(CorrectionContext::<Schema>::reference())
+        .capability_provenance(CorrectionProvenance::<Schema>::reference())
+        .capability(contract);
+    super::super::program_adoption::declare(schema)
+}
+
+pub(in super::super::super) fn grant_contract<
+    Schema: TopologySchemaBinding,
+    Capability,
+    Operation,
+    Input,
+>(
+    capability: ApplicationCapabilityRef<Schema, Capability>,
+    operation: ApplicationOperationRef<Schema, Operation, Input>,
+    action: u64,
+    purpose: u64,
+) -> ApplicationCapabilityContract<Schema, Capability, Operation, Input>
+where
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+{
+    let encoded = |value| {
+        ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(value).unwrap()
+    };
     let scalar =
         || ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(1).unwrap();
     let path =
@@ -11,18 +95,24 @@ pub(in super::super::super) fn declare<Schema: TopologySchemaBinding>(
             .forward(CorrectionResource::reference::<Schema>())
             .allow(Body::reference::<Schema>());
     let contract = ApplicationCapabilityContractBuilder::new(
-        CorrectEntryCapability::<Schema>::reference(),
-        CorrectEntryValue::reference::<Schema>(),
+        capability,
+        operation,
         CorrectionGrant::reference::<Schema>(),
     )
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(CorrectionAction::reference::<Schema>(), scalar()),
+        ApplicationCapabilityValueBinding::new(
+            CorrectionAction::reference::<Schema>(),
+            encoded(action),
+        ),
         ApplicationCapabilityRelationBinding::from_reference(
             CorrectionResource::reference::<Schema>(),
         ),
         ApplicationCapabilityRelationDimension::not_applicable(),
         ApplicationCapabilityFieldDimension::not_applicable(),
-        ApplicationCapabilityValueBinding::new(CorrectionPurpose::reference::<Schema>(), scalar()),
+        ApplicationCapabilityValueBinding::new(
+            CorrectionPurpose::reference::<Schema>(),
+            encoded(purpose),
+        ),
     ))
     .constraints(ApplicationCapabilityConstraintDefinition::new(
         ApplicationCapabilityMagnitudeDimension::not_applicable(),
@@ -82,61 +172,5 @@ pub(in super::super::super) fn declare<Schema: TopologySchemaBinding>(
     ))
     .elevation(ApplicationCapabilityElevationRule::not_applicable())
     .build();
-    schema
-        .entity(CorrectionGrant::reference::<Schema>())
-        .aspect(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionGrantFacts::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionAction::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionPurpose::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionStatus::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionScopeKey::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionNotBefore::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionNotAfter::reference::<Schema>(),
-        )
-        .field(
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionDepth::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionResource::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-            Body::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionGrantee::reference::<Schema>(),
-            Principal::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionGrantor::reference::<Schema>(),
-            Principal::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-        )
-        .relation(
-            CorrectionParent::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-            CorrectionGrant::reference::<Schema>(),
-        )
-        .capability_context(CorrectionContext::<Schema>::reference())
-        .capability_provenance(CorrectionProvenance::<Schema>::reference())
-        .capability(contract)
+    contract
 }

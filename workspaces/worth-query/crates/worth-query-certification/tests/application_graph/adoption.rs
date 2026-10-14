@@ -50,3 +50,6 @@ mod workflow_vocabulary;
 
 #[path = "adoption/request_lifetime.rs"]
 mod request_lifetime;
+
+#[path = "adoption/authorization.rs"]
+mod authorization;

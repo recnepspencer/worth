@@ -1,3 +1,5 @@
+mod program;
+pub(super) use program::install_selected_program;
 mod external_input;
 use super::{authentication, resources, seed};
 use crate::{ConsumerProgram, ConsumerSchema};
@@ -37,6 +39,7 @@ pub(super) fn assert_program_cannot_omit_an_installed_rule() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -85,6 +88,7 @@ pub(super) fn assert_program_cannot_omit_a_required_binding() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -134,6 +138,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
         Arc::new(AtomicUsize::new(0)),
+        (),
     );
     let limits = WorthQueryInMemoryApplicationLimits::new(
         resources::world_resources(),
@@ -268,6 +273,7 @@ fn install_with_resource_bytes(
         candidate_bytes,
         query_bytes,
         installation::WorthQueryApplicationProgramRoster::new(),
+        &[],
     )
 }
 
@@ -276,83 +282,19 @@ pub(super) fn install_with_roster(
     candidate_bytes: u64,
     query_bytes: usize,
     roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
+    deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
 ) -> Result<ConsumerWorld, installation::WorthQueryInMemoryApplicationDenial> {
     install_selected_program(
         foreign,
         candidate_bytes,
         query_bytes,
         roster,
+        deployment_grants,
         crate::application_program::validated_program()
             .expect("the application program is complete"),
     )
 }
 
-pub(super) fn install_selected_program<Program>(
-    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, candidate_bytes: u64, query_bytes: usize,
-    roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
-    program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
-) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
-where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
-    Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions,
-Outputs = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Outputs>{
-    let topology_calls = Arc::new(AtomicUsize::new(0));
-    let parameter_calls = Arc::new(AtomicUsize::new(0));
-    let invariant_calls = Arc::new(AtomicUsize::new(0));
-    let invariant_probe = Arc::new(AtomicUsize::new(0));
-    let producer_authorization_denials = Arc::new(AtomicUsize::new(0));
-    let configuration = (
-        TopologyConfiguration {
-            setup_calls: Arc::clone(&topology_calls),
-            invariant_calls: Arc::clone(&invariant_calls),
-            invariant_probe: Arc::clone(&invariant_probe),
-            producer_authorization_denials: Arc::clone(&producer_authorization_denials),
-            producer_domain_denial: Arc::new(AtomicBool::new(false)),
-        },
-        Arc::clone(&parameter_calls),
-    );
-    let limits = resources::application_limits(candidate_bytes, query_bytes);
-    let application = installation::in_memory_rostered_program::<ConsumerSchema, Program>(
-        program,
-        roster,
-        ConsumerSchema::declaration().expect("the contributed declaration is valid"),
-        configuration,
-        limits,
-        |bootstrap_phase, graph, installed| {
-            reject_foreign_invariant_factory(installed, foreign);
-            let principal = installed
-                .principal_binding(ConsumerPrincipalBinding::reference::<ConsumerSchema>())
-                .expect("the contributed principal mapping is installed");
-            graph.bind_principal(
-                &principal,
-                primary_graph::WorthQueryApplicationPrincipalKey::new("model-owner").unwrap(),
-                1_u64,
-                authentication::external_identity(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            seed::seed_cycles(bootstrap_phase, graph);
-            graph.bind_principal(
-                &principal,
-                primary_graph::WorthQueryApplicationPrincipalKey::new("sibling-owner").unwrap(),
-                2_u64,
-                worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity::new(
-                    "https://consumer.invalid/local",
-                    "sibling-owner",
-                )
-                .unwrap(),
-                WorthQueryPrincipalMappingStatus::Enabled,
-            )?;
-            Ok(())
-        },
-    )?;
-    assert_eq!(topology_calls.load(Ordering::SeqCst), 1);
-    assert_eq!(parameter_calls.load(Ordering::SeqCst), 1);
-    Ok(ConsumerWorld {
-        application,
-        invariant_calls,
-        invariant_probe,
-        producer_authorization_denials,
-    })
-}
 fn reject_foreign_invariant_factory(
     installed: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,
     foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>,

@@ -287,6 +287,10 @@ type PlanarSummaryConnection = ApplicationConnectionRef<
 >;
 
 impl ApplicationProgramDefinition<ConsumerSchema> for ConsumerProgram {
+    fn adoption_authorization<Visitor: worth_query_decl::facade::application_program::ApplicationProgramAdoptionAuthorizationVisitor<ConsumerSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<crate::program_deployment::ConsumerProgramDeploymentBinding>()
+    }
+
     type Contributions = <ConsumerSchema as worth_query_decl::facade::application_schema::ApplicationSchemaComposition>::Contributions;
     type Outputs = ApplicationProgramOutputs<(
         ConsumerProgramRoot,

@@ -45,11 +45,12 @@ fn cancellation_after_settled_adoption_hands_off_next_custody_and_prior_cleanup(
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("adoption prepares");
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let unpublished = match prepared.publish() {
+    let unpublished = match prepared.publish(host.runtime(), &principal, &scope) {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
         _ => panic!("the first injected durability loss must retain exact custody"),
     };
@@ -123,11 +124,12 @@ fn unavailable_settlement_evidence_returns_the_same_recovery_for_retry() {
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("adoption prepares");
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let recovery = match prepared.publish() {
+    let recovery = match prepared.publish(host.runtime(), &principal, &scope) {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
             unpublished.into_recovery()
         }

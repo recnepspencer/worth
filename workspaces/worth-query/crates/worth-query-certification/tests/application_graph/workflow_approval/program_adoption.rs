@@ -36,11 +36,14 @@ fn a_carried_instance_refuses_evidence_collected_under_the_source_program() {
         .instance(instance.entity_id())
         .expect("the instance waiting for approval is inventoried");
     assert!(!waiting.requires_migration(), "{waiting:?}");
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
 
     let required = match advance_instance(&application, instance.clone(), 86_010)
         .expect("the carried approval requirement prepares under P1")
@@ -110,11 +113,14 @@ fn a_sibling_instance_keeps_its_program_after_its_parent_adopts() {
     };
     // The sibling waits for approval while its parent moves to P1.
     let (proposal, required, _) = approval_requirement(&application, unaffected.clone(), 86_320);
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
 
     // The carriage belongs to main's truth; the sibling's copy of the
     // definition still executes under P0, and its approved effect runs.
@@ -200,25 +206,28 @@ fn a_cancelled_instance_names_its_cancellation_to_every_request() {
         approval_journey("approved", 86_200);
     support_workflow_program::<RetentionProgramP1>(&mut application);
     let main = application.current_world();
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| {
-            let waiting = inventory
-                .instance(instance.entity_id())
-                .expect("the waiting instance is inventoried");
-            inventory
-                .dispositions()
-                .definition(
-                    &inventory.definitions()[0],
-                    WorthQueryWorkflowDefinitionDisposition::Carry,
-                )
-                .and_then(|choices| {
-                    choices.instance(waiting, WorthQueryWorkflowInstanceDisposition::Cancel)
-                })
-                .expect("an unperformed instance may be cancelled")
-        }),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| {
+                let waiting = inventory
+                    .instance(instance.entity_id())
+                    .expect("the waiting instance is inventoried");
+                inventory
+                    .dispositions()
+                    .definition(
+                        &inventory.definitions()[0],
+                        WorthQueryWorkflowDefinitionDisposition::Carry,
+                    )
+                    .and_then(|choices| {
+                        choices.instance(waiting, WorthQueryWorkflowInstanceDisposition::Cancel)
+                    })
+                    .expect("an unperformed instance may be cancelled")
+            }),
+        ),
+    );
 
     let cancelled = |denial: &WorthQueryWorkflowAdvancePreparationDenial| {
         matches!(

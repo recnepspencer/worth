@@ -6,6 +6,7 @@
 //! without the host keeping a mutable table of who may act.
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
 use worth_query_installation::facade::WorthQueryErasedInstalledProgramMeaning;
 
 use worth_query_declaration::facade::application_program::{
@@ -27,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgr
     /// The typed installed program, so owners that install against program
     /// vocabulary (such as a workflow spec) can name it by its authoring type.
     pub(super) installed: Box<dyn WorthQueryErasedInstalledProgramMeaning>,
+    adoption_admission: Box<dyn Any + Send + Sync>,
     pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) output_source_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) root_graph_types: Box<[TypeId]>,
@@ -53,8 +55,16 @@ impl WorthQuerySupportedProgramRecord {
                 .collect(),
             output_source_bindings: output_source_bindings.into(),
             root_graph_types: root_graph_types.into(),
+            adoption_admission: Box::new(crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::admit_program::<Schema, Program> as crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>),
             installed: Box::new(installed),
         }
+    }
+
+    pub(super) fn adoption_admission<Schema: 'static>(&self) -> crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>{
+        *self
+            .adoption_admission
+            .downcast_ref()
+            .expect("record admission has its installed schema type")
     }
 
     /// The typed installed program, when this record was minted for `Program`.

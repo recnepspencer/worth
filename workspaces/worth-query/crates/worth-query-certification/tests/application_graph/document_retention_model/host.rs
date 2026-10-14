@@ -287,6 +287,7 @@ fn seed_host(
     seed_operator(graph, &principal_binding);
     seed_document(graph);
     super::workflow::seed_authoring(graph);
+    super::program_adoption::seed(graph);
     Ok(())
 }
 

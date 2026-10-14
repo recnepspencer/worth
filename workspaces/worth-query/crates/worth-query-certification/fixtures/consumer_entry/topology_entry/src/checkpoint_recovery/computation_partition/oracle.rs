@@ -39,7 +39,7 @@ mod courtroom;
 mod cutoff;
 mod decision_plan;
 mod handler_absence;
-mod installation;
+pub(super) mod installation;
 mod republication;
 mod restoration;
 mod seeded_absence;

@@ -87,7 +87,7 @@ some declaration macros. `worth_query_mutation_binding!`,
 | 6 | Install the workflow vocabulary | `WorthQueryApplicationWorkflowSpecInstallation::begin(..)…finish()`, then `retain_workflow_spec(..)` | [§6.2](#62-install-the-workflow-vocabulary-once) |
 | 7 | Author and validate a workflow | `ApplicationWorkflowDefinitionBuilder::<Spec>::new(..)`, nodes, connections, `finish()?.validate()?` | [§6.3](#63-author-a-definition) |
 | 8 | Publish, start, and advance it | `bind_definition`, `prepare_workflow_publication`, `prepare_workflow_instance_start`, `prepare_workflow_advance` | [§6.6](#66-publish-discover-start-advance) |
-| 9 | Adopt a new program on one branch | `.on_branch(b).programs()`, `compare(&target)`, `adopt(&requirements)`, `prepare(max)`, `publish()` | [§7](#7-adopt-a-new-program-on-a-branch) |
+| 9 | Adopt a new program on one branch | `.on_branch(b).programs()`, `compare(&target)`, `adopt(&requirements)?`, `prepare(max)`, `programs.publish(prepared)` | [§7](#7-adopt-a-new-program-on-a-branch) |
 
 The running example is the **Bank reference application**
 (`workspaces/worth-query-bank-world`). It is the only complete application
@@ -2477,7 +2477,39 @@ earlier forks, keep their programs.
 
 ### 7.1 The call chain
 
-```rust
+The program currently activated on the branch declares its adoption permission
+through `ApplicationProgramDefinition::adoption_authorization`. Its
+`ApplicationProgramAdoptionBinding` names the installed capability, operation,
+input binding and principal binding. Declare the corresponding capability
+contract in the schema and issue real grants through your application’s grant
+owner. A program with no declaration refuses adoption with
+`WorthQueryProgramAdoptionAuthorizationDenial::CapabilityNotDeclared`.
+
+Bank uses `DeployBankProgram`, scoped to the exact currently governing source
+program revision. Its deployment grants are separate from estate and payment
+permissions. Installation issues only explicitly supplied
+`BankProgramDeploymentGrantSeed` values; it grants nothing to an actor merely
+because that actor authenticated. The recorded issuer can revoke one through
+`revoke_program_deployment_grant`. An old source-revision grant does not permit
+deployment after that branch adopts another revision.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let grant = BankProgramDeploymentGrantSeed::for_program::<BankApplication>(
+    "operator-p0-deployment", issuer, operator, valid_from, valid_through,
+)?;
+let seed = BankWorldSeed::new(snapshot).program_deployment_grant(grant);
+```
+
+`compare`, `adopt`, `prepare`, publication and recovery each admit the declared
+capability in their current request phase. The source program governs; the
+target cannot select a weaker permission for its own adoption. Grants and
+authentication must still be current at publication.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption.rs
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequestExt, WorthQueryBranchAdoptionPublicationOutcome,
@@ -2498,9 +2530,19 @@ let requirements = programs
     .expect("the host must describe P0 to P1 requirements");
 let prepared = programs
     .adopt(&requirements)
+    .expect("the source capability admits adoption")
     .prepare(64)                                   // maximum selection work
     .expect("the seed satisfies P1 and adoption must prepare");
-match prepared.publish() {
+match host.runtime().request(&principal, &scope).on_branch(main).programs().publish(prepared) {
+    WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, prepared } => {
+        /* no adoption effects; retain prepared for a fresh authorized request */
+    }
+    WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, prepared } => {
+        /* execution admission refused; retain the reservation */
+    }
+    WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
+        /* the native publication attempt stopped */
+    }
     WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => { /* branch runs P1 */ }
     WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) => { /* e.g. stale head */ }
     WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
@@ -2517,10 +2559,10 @@ The same chain in production code is
 | Target | `host.supported_program::<P>().expect(..).owned_revision()` (needs the `WorthQueryProgramOwner` import) | `&ApplicationProgramRevision` |
 | Inspect | `.on_branch(b).programs().inspect()` | `Result<WorthQuerySelectedProgramInspection, WorthQueryApplicationProgramInspectionDenial>` |
 | Compare | `.compare(&target)` | `WorthQueryProgramAdoptionRequirements` or `WorthQueryApplicationProgramAdoptionPreparationDenial` |
-| Adopt | `.adopt(&requirements)` | A preparation request |
+| Adopt | `.adopt(&requirements)` | `Result` containing a preparation request or typed authorization denial |
 | Optional | `.migration(prepared_migration)`, `.workflow(dispositions)` | The same request |
 | Prepare | `.prepare(maximum_selection_work)` | `WorthQueryPreparedBranchAdoption` (move-only, fields private) |
-| Publish | `prepared.publish()` | `WorthQueryBranchAdoptionPublicationOutcome` |
+| Publish | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | Recover | `programs().recover(unpublished.into_recovery())` | `Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryApplicationProgramAdoptionRecoveryFailure>` |
 
 `compare` comes first because the requirements are the input to `adopt`.
@@ -2533,6 +2575,7 @@ The same chain in production code is
 
 | Situation | What you get |
 |---|---|
+| Declared permission is missing, revoked or expired | Typed `Authorization(..)` refusal; publication returns the exact prepared owner in `AuthorizationDenied` |
 | Existing state satisfies the target | `prepare` is `Ok`; `selected_entity_count()` says how much was validated |
 | Existing state violates a target rule | `TargetRuleRejected { identity }` |
 | The target needs a migration | `requires_migration_assessment()`, then `MigrationAssessmentRequired(..)` if you did not supply one |
@@ -2551,7 +2594,8 @@ and `WorkflowDispositionRequired` ([§7.4](#74-workflows-and-custody-during-adop
 are variants of `WorthQueryBranchAdoptionPreparationDenial`. They arrive
 wrapped as
 `WorthQueryApplicationProgramAdoptionPreparationDenial::Adoption(..)`; its
-other variant, `ProductSelection(..)`, means the branch could not be selected.
+`Authorization(..)` variant reports the capability refusal, and
+`ProductSelection(..)` means the branch could not be selected.
 
 A writer still running under the old program after adoption lands gets a
 stale commit outcome, never a silent commit under the wrong law.
@@ -2561,7 +2605,9 @@ stale commit outcome, never a silent commit under the wrong law.
 When the target needs existing state repaired, prepare the migration as a
 candidate under the target program, then hand it to the adoption:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // tests/application_graph/adoption/migration.rs (abridged)
 let migration = match host
     .runtime()
@@ -2582,7 +2628,7 @@ let programs = host
     .programs();
 let requirements = programs.compare(&target)?;
 let prepared = programs
-    .adopt(&requirements)
+    .adopt(&requirements)?
     .migration(migration)
     .prepare(64)?;       // migration and validation prepare atomically
 ```
@@ -2595,9 +2641,11 @@ until the adoption publishes.
 Every workflow definition and instance on the branch needs a legal
 disposition. Ask for the inventory, decide each item, and pass the decisions:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 // tests/application_graph/adoption/workflow_custody.rs (abridged)
-let adoption = programs.adopt(&requirements);
+let adoption = programs.adopt(&requirements)?;
 let inventory = adoption.workflow_inventory(1_024)?;
 let decisions = inventory
     .dispositions()
@@ -2616,19 +2664,24 @@ let prepared = adoption.workflow(decisions).prepare(1_024)?;
 
 ### 7.5 Several branches
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let prepared = request
     .on_branches(coverage, &ordered_targets)?     // WorthQueryProgramAdoptionCoverageDenial
     .programs()
-    .adopt(&target)
+    .adopt(&target)?
     .prepare(maximum_selection_work_per_branch)?; // WorthQueryPreparedBranchSetAdoption
 ```
 
 This prepares adoption across a set of branches. It is **not atomic**:
 
+- Every remaining branch uses its own current source-program permission.
+  Advancement rechecks it in a fresh request and returns a refused pending
+  native owner to the set, preserving the completed prefix.
 - Preparation preflights every branch before any branch publishes. One
   incompatible branch denies the whole preparation and names that branch.
-- `prepared.advance()` publishes the next branch and returns its progress
+- `prepared.advance(runtime, &principal, &scope)` publishes the next branch and returns its progress
   (`None` when every branch is done). After a `NoEffect` or unpublished
   branch it is denied with `ResolutionRequired` until you resolve it.
 - `prepared.cancel()` stops the rest; branches already adopted stay adopted.

@@ -22,7 +22,11 @@ fn recovery_continuation_refuses_a_foreign_phase_and_retains_custody() {
         .on_branch(branch)
         .programs();
     let requirements = programs.compare(&target).unwrap();
-    let prepared = programs.adopt(&requirements).prepare(64).unwrap();
+    let prepared = programs
+        .adopt(&requirements)
+        .expect("declared adoption capability admits")
+        .prepare(64)
+        .unwrap();
     let selected = host
         .with_host_advancement(|phase| {
             let selected = host.runtime().on_branch(branch).select(&phase).unwrap();
@@ -34,7 +38,7 @@ fn recovery_continuation_refuses_a_foreign_phase_and_retains_custody() {
         })
         .unwrap();
     let WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) =
-        prepared.publish()
+        prepared.publish(host.runtime(), &principal, &scope)
     else {
         panic!("durability refusal must retain real adoption custody");
     };
@@ -45,6 +49,7 @@ fn recovery_continuation_refuses_a_foreign_phase_and_retains_custody() {
                     &selected,
                     &foreign_phase,
                     unpublished.into_recovery(),
+                    &principal,
                     &scope,
                 )
                 .err()

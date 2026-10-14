@@ -86,6 +86,7 @@ impl BankIdentityRuntime {
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
         programs
             .adopt(&requirements)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?
             .prepare(maximum_selection_work)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))
     }
@@ -110,7 +111,9 @@ impl BankIdentityRuntime {
         let requirements = programs
             .compare(&target)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
-        let adoption = programs.adopt(&requirements);
+        let adoption = programs
+            .adopt(&requirements)
+            .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;
         let inventory = adoption
             .workflow_inventory(maximum_work_units)
             .map_err(|denial| BankProgramAdoptionPreparationDenial::Query(Box::new(denial)))?;

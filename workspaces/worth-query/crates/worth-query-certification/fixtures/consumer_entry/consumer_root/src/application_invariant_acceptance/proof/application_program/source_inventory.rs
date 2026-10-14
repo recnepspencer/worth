@@ -37,6 +37,7 @@ fn common_operation_handoff_native_inventory_refuses_required_source() {
         4096,
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(
         ),
+        &[],
         ApplicationProgramAuthoring::<ConsumerSchema, RequiredSourceRequestedAsCompletion>::begin()
             .validated_program()
             .unwrap(),

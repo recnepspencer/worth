@@ -39,6 +39,7 @@ pub fn second_program_workflow_inventory(
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .workflow_inventory(1_024)
         .expect("the owner inventories the branch's workflow facts")
 }
@@ -59,7 +60,9 @@ pub fn prepare_second_program_adoption(
         .on_branch(branch)
         .programs();
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
-    let request = programs.adopt(&requirements);
+    let request = programs
+        .adopt(&requirements)
+        .expect("declared adoption capability admits");
     let request = match decide {
         Some(decide) => {
             let inventory = request
@@ -73,12 +76,19 @@ pub fn prepare_second_program_adoption(
 }
 
 pub fn publish_adoption(
+    application: &DocumentWorkflowRuntime,
     prepared: Result<
         WorthQueryPreparedBranchAdoption,
         WorthQueryApplicationProgramAdoptionPreparationDenial,
     >,
 ) {
-    match prepared.expect("decided workflow facts adopt").publish() {
+    let scope = request_scope();
+    let principal = authenticate_operator(application.runtime().installed_schema(), &scope);
+    match prepared.expect("decided workflow facts adopt").publish(
+        application.runtime(),
+        &principal,
+        &scope,
+    ) {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_) => {}
         _ => panic!("the adoption did not publish"),
     }

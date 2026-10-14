@@ -1,4 +1,5 @@
 //! Isolated repositories exercising the production consumer-document entry.
+mod ci_ownership;
 mod classification;
 mod compilation_configuration;
 mod debt;

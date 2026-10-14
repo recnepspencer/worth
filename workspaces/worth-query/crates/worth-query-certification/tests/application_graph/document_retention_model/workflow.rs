@@ -5,7 +5,7 @@ mod authentication;
 #[path = "workflow/contract.rs"]
 mod contract;
 #[path = "workflow/declaration.rs"]
-mod declaration;
+pub(super) mod declaration;
 #[path = "workflow/definition.rs"]
 mod definition;
 #[path = "workflow/grant_status.rs"]

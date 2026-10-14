@@ -1,5 +1,6 @@
 //! A value correction retains the exact value its inverse restores.
 pub(super) mod capability;
+pub(super) mod program_adoption;
 use super::{
     facts::{EntryNumber, EntryValueBits, SetEntry},
     *,

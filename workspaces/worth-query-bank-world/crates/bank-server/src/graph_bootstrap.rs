@@ -12,6 +12,10 @@ use crate::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed};
 mod estate;
 mod journal;
 mod payment;
+mod program_deployment;
+pub(crate) use program_deployment::{
+    bind_program_deployment_grants, bind_program_deployment_scopes,
+};
 
 pub(crate) fn bind_bank_world_with_estate(
     graph: &mut WorthQueryPrimaryGraphBootstrap<BankSchema>,

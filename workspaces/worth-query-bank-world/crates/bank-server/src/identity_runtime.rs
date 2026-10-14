@@ -317,12 +317,13 @@ struct BankGraphSeed {
     owners: Vec<BankBusinessOwnerSeed>,
     employees: Vec<BankEmployeeAssignmentSeed>,
     estate: Option<BankEstateWorld>,
+    deployment_grants: Vec<crate::BankProgramDeploymentGrantSeed>,
 }
 
 fn prepare_world(
     seed: BankWorldSeed,
 ) -> Result<(Vec<PreparedBankPrincipalSeed>, BankGraphSeed), BankIdentityRuntimeBuildError> {
-    let (snapshot, principals, owners, employees, estate) = seed.into_parts();
+    let (snapshot, principals, owners, employees, estate, deployment_grants) = seed.into_parts();
     let principals = prepare_seeds(principals)?;
     validate_world_principals(&snapshot, &principals)?;
     Ok((
@@ -332,6 +333,7 @@ fn prepare_world(
             owners,
             employees,
             estate,
+            deployment_grants,
         },
     ))
 }

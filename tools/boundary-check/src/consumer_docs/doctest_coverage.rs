@@ -54,7 +54,7 @@ fn require_ci_lane(root: &Path) -> Result<(), String> {
         serde_yaml_ng::from_str(&ci).map_err(|error| error.to_string())?;
     let runs_lane = workflow["jobs"].as_mapping().is_some_and(|jobs| {
         jobs.values().any(|job| {
-            if conditional_or_tolerated(job) {
+            if tolerated(job) || !guaranteed_job(job, &workflow) {
                 return false;
             }
             job["steps"].as_sequence().is_some_and(|steps| {
@@ -76,9 +76,44 @@ fn require_ci_lane(root: &Path) -> Result<(), String> {
 }
 
 fn conditional_or_tolerated(value: &serde_yaml_ng::Value) -> bool {
-    !value["if"].is_null() && value["if"].as_bool() != Some(true)
-        || !value["continue-on-error"].is_null()
-            && value["continue-on-error"].as_bool() != Some(false)
+    !value["if"].is_null() && value["if"].as_bool() != Some(true) || tolerated(value)
+}
+
+fn tolerated(value: &serde_yaml_ng::Value) -> bool {
+    !value["continue-on-error"].is_null() && value["continue-on-error"].as_bool() != Some(false)
+}
+
+fn guaranteed_job(job: &serde_yaml_ng::Value, workflow: &serde_yaml_ng::Value) -> bool {
+    if job["if"].is_null() || job["if"].as_bool() == Some(true) {
+        return true;
+    }
+    let Some(guard) = job["if"].as_str() else {
+        return false;
+    };
+    let guard = guard.trim();
+    let guard = guard
+        .strip_prefix("${{")
+        .and_then(|inner| inner.strip_suffix("}}"))
+        .unwrap_or(guard)
+        .trim();
+    if guard != "github.event_name != 'workflow_dispatch' || inputs.scope != 'checkpoint-only'" {
+        return false;
+    }
+    let events = &workflow["on"];
+    let scope = &events["workflow_dispatch"]["inputs"]["scope"];
+    events.as_mapping().is_some_and(|events| {
+        ["push", "pull_request"].iter().all(|event| {
+            events
+                .get(*event)
+                .is_some_and(|declaration| declaration.is_null() || declaration.is_mapping())
+        })
+    }) && scope["type"].as_str() == Some("choice")
+        && scope["default"].as_str() == Some("all")
+        && scope["options"].as_sequence().is_some_and(|options| {
+            let mut names: Vec<_> = options.iter().filter_map(|value| value.as_str()).collect();
+            names.sort_unstable();
+            options.len() == 3 && names == ["all", "checkpoint-only", "consumer-docs"]
+        })
 }
 
 fn require_workspace_member(workspace_manifest: &Path, name: &str) -> Result<(), String> {

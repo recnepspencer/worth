@@ -1,6 +1,12 @@
 //! Authored static application composition.
 
 mod action;
+mod adoption_authorization;
+pub use adoption_authorization::{
+    ApplicationProgramAdoptionAuthorizationDeclaration,
+    ApplicationProgramAdoptionAuthorizationVisitor, ApplicationProgramAdoptionBinding,
+    ApplicationProgramAdoptionContext,
+};
 mod action_correspondence;
 mod change_shape;
 mod connection;
