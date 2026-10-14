@@ -28,6 +28,9 @@ worth_query_operation!(pub Edit for Schema:SchemaBinding,input InputBinding);
 worth_query_operation_reads!(Edit=>[Node,NodeKey,Revision]);
 worth_query_operation_writes!(Edit=>[Revision]);
 pub struct Binding<S>(PhantomData<fn() -> S>);
+impl<S: SchemaBinding> ApplicationMutationAdmissionBinding<S> for Binding<S> {
+    type Admission = ApplicationConventionalAdmission;
+}
 pub type Scope<S> =
     ApplicationMutationFieldScope<S, Node, NodeFacts, NodeKey, String, ReadOnly, NoApplicationUnit>;
 pub struct Decision<S> {

@@ -3,9 +3,15 @@ mod cleanup;
 mod close;
 mod mode_construction;
 mod source_admission;
+mod source_only;
 pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt};
 pub use mode_construction::WorthQueryOperationModeFactory;
 pub use source_admission::{WorthQuerySourceDeliveryMode, WorthQuerySourceOperationAdmission};
+pub use source_only::{
+    WorthQueryCompletedSourceOperation, WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
+    WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,
+    WorthQueryTerminalSourceOperation,
+};
 mod construction;
 mod projection_installation;
 pub use projection_installation::WorthQueryFixedProjectionInstallation;
