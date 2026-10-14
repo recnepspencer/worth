@@ -37,6 +37,7 @@ pub(super) fn validate_member_closure(
         index.validate(member)?;
     }
     super::mutation_description_validation::validate_dependencies(members)?;
+    super::operation_definition::validate_operation_bodies(members)?;
     validate_application_query_members(members)?;
     validate_application_capability_members(members)?;
     validate_projection_work_budgets(members, &index.operations)?;

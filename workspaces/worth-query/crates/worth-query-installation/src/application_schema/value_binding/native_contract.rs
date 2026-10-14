@@ -91,4 +91,19 @@ impl WorthQueryInstalledApplicationValueBinding {
                 binding_identity: self.recipe.binding_identity().clone(),
             })
     }
+
+    /// Readmits a retained native literal through this exact installed decoder
+    /// and validator. This cold binding check does not grant mutation authority.
+    pub fn validate_encoded(
+        &self,
+        value: &AspectValue,
+    ) -> Result<(), ApplicationValueDecodeDenial> {
+        let decode = self
+            .recipe
+            .decode()
+            .ok_or(ApplicationValueDecodeDenial::CodecRejected {
+                binding_identity: self.recipe.binding_identity().clone(),
+            })?;
+        decode(value).map(|_| ())
+    }
 }

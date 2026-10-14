@@ -49,6 +49,11 @@ where
         .as_ref()
         .and_then(|binding| binding.approval_authority.clone());
     let mut admission = read_set.admission;
+    if admission.allowed_graph_contract().body().is_some() && mutation_proof.is_none() {
+        return terminal(WorthQueryApplicationCommitOutcome::Denied(
+            WorthQueryApplicationCommitDenial::operation_body_execution_required(),
+        ));
+    }
     let required_output_demand = admission.take_required_output_demand();
     let preimage_demand = installed_preimage_demand(admission.allowed_graph_contract().aftermath());
     let idempotency =

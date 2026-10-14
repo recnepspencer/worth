@@ -93,6 +93,10 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ConditionalBindingsRequired,
     /// A declared operation has no mutation handler.
     MissingMutationHandler,
+    /// A body-backed operation cannot install a host-selected replacement handler.
+    OperationBodyReplacement,
+    /// The complete installed body or one of its exact native bindings is unavailable.
+    OperationBodyUnavailable,
     /// An operation has more than one mutation handler.
     DuplicateMutationHandler,
     /// A mutation handler belongs to a different application.

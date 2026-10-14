@@ -238,7 +238,20 @@ where
                         action.operation_input_identity(),
                     ),
             };
-            if !installed {
+            let body = self
+                .installed_schema
+                .installed_declaration()
+                .members()
+                .iter()
+                .find_map(|member| match member {
+                    ApplicationSchemaMember::OperationBody { operation, body }
+                        if operation == action.operation_identifier() =>
+                    {
+                        Some(body)
+                    }
+                    _ => None,
+                });
+            if !installed || body != action.operation_body() {
                 return Err(WorthQueryProgramSupportDenial::UnsupportedAction {
                     program: program.identity().clone(),
                     binding: action.binding().to_owned(),

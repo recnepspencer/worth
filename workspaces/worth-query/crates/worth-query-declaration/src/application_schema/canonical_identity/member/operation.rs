@@ -3,6 +3,35 @@ use crate::application_schema::canonical_decision_read_identity::append_decision
 use crate::application_schema::canonical_operation_identity::append_operation_target;
 use crate::application_schema::ApplicationSchemaMember;
 
+pub(super) fn append_body(
+    basis: &mut ApplicationSchemaCanonicalBasis,
+    prefix: &str,
+    operation: &str,
+    body: &crate::application_schema::ApplicationOperationBodyProgram,
+) {
+    use crate::application_schema::ApplicationOperationBodyScopeField;
+    append_operation_header(basis, prefix, "operation-body-v1", operation);
+    basis.usize(format!("{prefix}.steps"), body.scope_fields().len());
+    for (index, step) in body.scope_fields().iter().enumerate() {
+        let prefix = format!("{prefix}.step[{index}]");
+        basis.text(
+            format!("{prefix}.kind"),
+            match step {
+                ApplicationOperationBodyScopeField::Expect { .. } => "expect",
+                ApplicationOperationBodyScopeField::Assign { .. } => "assign",
+            },
+        );
+        basis.text(format!("{prefix}.entity"), step.field().entity());
+        basis.text(format!("{prefix}.aspect"), step.field().aspect());
+        basis.text(format!("{prefix}.field"), step.field().field());
+        basis.text(format!("{prefix}.binding"), step.binding().as_str());
+        basis.value(
+            format!("{prefix}.value"),
+            worth_foundational::facade::canonical_basis_value_for_aspect_value(step.value()),
+        );
+    }
+}
+
 use super::aftermath::append_declared_aftermath;
 
 pub(super) fn append_operation_member(

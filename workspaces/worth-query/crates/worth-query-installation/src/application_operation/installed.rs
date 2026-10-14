@@ -299,6 +299,13 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
         &self.contracts
     }
 
+    pub fn body(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram>
+    {
+        self.contracts.body()
+    }
+
     /// Retains the one cold-compiled immutable contract object for an admitted
     /// operation. This does not recompile or revalidate its installed meaning.
     #[doc(hidden)]

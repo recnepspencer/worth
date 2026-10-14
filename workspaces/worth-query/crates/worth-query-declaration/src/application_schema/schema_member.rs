@@ -146,6 +146,10 @@ pub enum ApplicationSchemaMember {
         operation: String,
         target: ApplicationOperationProgramTarget,
     },
+    OperationBody {
+        operation: String,
+        body: super::ApplicationOperationBodyProgram,
+    },
     OperationDecisionRead {
         operation: String,
         target: ApplicationOperationDecisionReadTarget,

@@ -335,6 +335,13 @@ fn append_actions(
             &subject,
             framed_fields(fields),
         ));
+        if let Some(body) = action.operation_body() {
+            facts.push(fact(
+                ApplicationSemanticFamily::Operations,
+                format!("{subject}/body"),
+                crate::application_program::operation_body_encoding::operation_body_record(body),
+            ));
+        }
         if let Some(effect) = action.external_input() {
             facts.push(fact(
                 ApplicationSemanticFamily::ExternalInputs,

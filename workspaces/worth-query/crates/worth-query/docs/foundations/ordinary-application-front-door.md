@@ -63,6 +63,12 @@ The object passed to the next step carries the proof earned by the previous
 step. A copied identifier, receipt, diagnostic, cursor, or wire token describes
 work but cannot recreate that proof.
 
+For required scope-field literal writes, an
+[executable operation body](../authoring/scope-field-operation-bodies.md) owns
+source guards and assigned values. Bind it into the program and install the
+native body rather than supplying a replacement handler. Its current limits are
+explicit; it is not general command composition or a signature implementation.
+
 The main owners remain separate:
 
 - the application domain owns business vocabulary and intent;

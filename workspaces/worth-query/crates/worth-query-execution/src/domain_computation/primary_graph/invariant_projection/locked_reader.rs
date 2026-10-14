@@ -22,6 +22,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 
+#[path = "locked_reader/operation_body.rs"]
+mod operation_body;
 #[path = "locked_reader/predecode_admission.rs"]
 mod predecode_admission;
 #[path = "locked_reader/traversal_denial.rs"]

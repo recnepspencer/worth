@@ -25,6 +25,7 @@ pub(crate) enum WorthQueryPortableOperationContractSpineDenialKind {
     InvalidProjectionMask,
     AmbiguousExternalEffect,
     AmbiguousAftermath,
+    AmbiguousBody,
 }
 
 type SpineResult<T> = Result<T, WorthQueryPortableOperationContractSpineDenialKind>;
@@ -80,6 +81,17 @@ pub(crate) fn compile_portable_operation_contract_record(
     emissions.dedup();
     let external_effect = compile_external_effect(members, operation)?;
     let reconciliation = operation_reconciliation(members, operation)?;
+    let mut bodies = members.iter().filter_map(|member| match member {
+        ApplicationSchemaMember::OperationBody {
+            operation: candidate,
+            body,
+        } if candidate == operation => Some(body.clone()),
+        _ => None,
+    });
+    let body = bodies.next();
+    if bodies.next().is_some() {
+        return Err(WorthQueryPortableOperationContractSpineDenialKind::AmbiguousBody);
+    }
     Ok(WorthQueryPortableApplicationOperationContractRecord::new(
         schema.to_owned(),
         operation.to_owned(),
@@ -89,7 +101,8 @@ pub(crate) fn compile_portable_operation_contract_record(
         emissions,
         external_effect,
         reconciliation,
-    ))
+    )
+    .with_body(body))
 }
 
 fn compile_reads(

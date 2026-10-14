@@ -5,6 +5,7 @@ mod emission;
 mod entity_creation;
 mod entity_selection;
 mod model;
+mod operation_body;
 mod optional_field_authoring;
 mod ordinary_field_authoring;
 pub(super) mod output_correspondence;

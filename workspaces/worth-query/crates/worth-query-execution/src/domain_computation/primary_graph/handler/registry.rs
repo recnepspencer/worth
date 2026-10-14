@@ -3,6 +3,7 @@ use std::any::Any;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::sync::Arc;
+mod operation_body;
 
 use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
@@ -149,7 +150,7 @@ where
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn register<Binding, Handler>(
+    fn register_resolved<Binding, Handler>(
         &mut self,
         binding_identity: &ApplicationSchemaBindingIdentity,
         installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
@@ -243,6 +244,7 @@ where
                 ));
             }
         }
+        self.require_operation_body_coverage(installed_schema)?;
         Ok(InstalledMutationHandlerRegistry {
             entries: self.entries.clone(),
             computations: self.computations.clone(),

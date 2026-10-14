@@ -15,6 +15,7 @@ mod instance;
 mod locality;
 mod managed_computation;
 mod manifest;
+mod operation_body_encoding;
 mod output_graph;
 mod output_posture;
 mod program;

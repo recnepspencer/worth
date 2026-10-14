@@ -417,6 +417,15 @@ Application usage:
 and How WORTH Works
 [§9.5](../../../../../docs/how-it-works.md#95-execution).
 
+For literal guards and assignments on required scope fields, use an
+[executable scope-field body](./authoring/scope-field-operation-bodies.md), attach
+it to the completed operation definition, bind the same completed schema through
+program authoring's `with_schema`, and install with `setup.operation_body::<Binding>()`.
+Its values enter canonical schema/program meaning and drive native tracked
+execution. A replacement handler is denied. This is a bounded current form, not
+general input/expression/audit/requirement or multi-operation command support;
+do not fill those missing joins with a host substitute and call it declarative.
+
 - The three handler roles (`decide`, `candidate_requirements`,
   `build_candidate`) are bounded. Query retains and completes the decision's
   actual read dependencies, reserves the candidate's demand against the
@@ -1188,6 +1197,7 @@ Application API guides:
 
 - [`worth-query-decl` README](../../worth-query-decl/README.md) and [`worth-query-host` README](../../worth-query-host/README.md)
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md)
+- [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md)
 - [Branches And Previews](./foundations/branches-and-previews.md)
 - [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)
 - [Application Aftermath, External Effects, And Recovery](./execution/application-aftermath-and-recovery.md)

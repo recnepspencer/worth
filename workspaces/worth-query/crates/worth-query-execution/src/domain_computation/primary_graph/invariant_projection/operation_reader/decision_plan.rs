@@ -13,6 +13,7 @@ mod indexed_selection;
 mod prepared_selection;
 pub use prepared_selection::WorthQueryPreparedEntitySelection;
 mod field_presence;
+mod operation_body;
 mod predecode_admission;
 use crate::domain_computation::application_contract_admission::graph_reads_admit_target;
 use crate::domain_computation::primary_graph::{

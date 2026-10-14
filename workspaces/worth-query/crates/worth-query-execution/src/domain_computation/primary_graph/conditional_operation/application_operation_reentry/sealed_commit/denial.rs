@@ -182,6 +182,7 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
+        | Kind::OperationBodyExecutionRequired
         | Kind::ElevationTransitionRequired
         | Kind::ElevationRequestProgramMismatch
         | Kind::ElevationApprovalProgramMismatch

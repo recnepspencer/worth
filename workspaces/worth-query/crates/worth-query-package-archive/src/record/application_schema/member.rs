@@ -24,6 +24,7 @@ pub(super) fn require_nesting_depth(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
+            | ApplicationSchemaMember::OperationBody { .. }
     ) && maximum_depth < 2
     {
         return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
@@ -39,6 +40,10 @@ pub(super) fn write(
     match member {
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
+        }
+        ApplicationSchemaMember::OperationBody { operation, body } => {
+            output.text(operation)?;
+            super::super::operation_body::write(output, body)
         }
         ApplicationSchemaMember::ApplicationInvariant { .. } => invariant::write(output, member),
         ApplicationSchemaMember::Entity { .. }
@@ -84,6 +89,10 @@ pub(super) fn decode(
         27 => invariant::decode(input, budget),
         28 => mutation_description::decode(input, budget, false),
         31 => mutation_description::decode(input, budget, true),
+        32 => Ok(ApplicationSchemaMember::OperationBody {
+            operation: input.text()?.to_owned(),
+            body: super::super::operation_body::decode(input, budget)?,
+        }),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }
@@ -119,6 +128,7 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::OperationExternalEffect { .. } => 17,
         ApplicationSchemaMember::OperationInboundOccurrence { .. } => 30,
         ApplicationSchemaMember::OperationAftermath { .. } => 18,
+        ApplicationSchemaMember::OperationBody { .. } => 32,
         ApplicationSchemaMember::Policy { .. } => 19,
         ApplicationSchemaMember::Ability { .. } => 20,
         ApplicationSchemaMember::OperationAbility { .. } => 21,

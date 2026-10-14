@@ -82,6 +82,17 @@ impl WorthQueryPortableApplicationOperationContractRecord {
         if let Some(reconciliation) = &self.reconciliation {
             work.observe_text(reconciliation.procedure_slot());
         }
+        if let Some(body) = &self.body {
+            for step in body.scope_fields() {
+                work.observe_text(step.field().entity());
+                work.observe_text(step.field().aspect());
+                work.observe_text(step.field().field());
+                work.observe_text(step.binding().as_str());
+                work.observe_fixed(
+                    u64::try_from(step.value().semantic_byte_width()).unwrap_or(u64::MAX),
+                );
+            }
+        }
         work
     }
 }

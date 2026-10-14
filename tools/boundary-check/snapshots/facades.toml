@@ -709,6 +709,8 @@ exports = [
     "WorthQueryOperationAuthorizationDenialIdentity",
     "WorthQueryOperationAuthorizationDenialKind",
     "WorthQueryOperationAuthorizationRefusalKind",
+    "WorthQueryOperationBodyDecision",
+    "WorthQueryOperationBodyDenial",
     "WorthQueryOperationProjectionDenial",
     "WorthQueryOperationProjectionDenialKind",
     "WorthQueryOperationScopeBinding",

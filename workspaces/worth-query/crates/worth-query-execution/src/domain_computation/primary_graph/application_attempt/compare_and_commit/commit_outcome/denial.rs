@@ -92,6 +92,10 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// programming error in the caller, not intent drift: build the binding from
     /// the same key and input the handler ran with.
     MutationInputMismatch,
+    /// The installed operation owns an executable body, but the candidate was
+    /// not produced by its native executor. Caller-authored effects cannot
+    /// substitute another implementation, even within the declared footprint.
+    OperationBodyExecutionRequired,
     /// A sealed undo or redo handoff belongs to different admitted truth.
     RecoveryHandoffMismatch {
         kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
@@ -302,6 +306,16 @@ impl WorthQueryApplicationCommitDenial {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::MutationInputMismatch,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
+            detail: None,
+            cause: None,
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn operation_body_execution_required(
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::OperationBodyExecutionRequired,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
             cause: None,
         }

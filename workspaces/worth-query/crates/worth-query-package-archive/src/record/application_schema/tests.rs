@@ -1,6 +1,7 @@
 mod fixture;
 mod invariant;
 mod mutation_description;
+mod operation_body;
 mod retired_fact_budget;
 
 use worth_query_declaration::facade::application_schema::{

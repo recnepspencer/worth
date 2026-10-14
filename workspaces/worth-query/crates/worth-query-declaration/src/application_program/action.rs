@@ -93,6 +93,8 @@ pub struct ApplicationActionDeclaration {
     action_type: TypeId,
     mutation_binding_type: Option<TypeId>,
     operation_type: TypeId,
+    operation_identifier: &'static str,
+    operation_body: Option<crate::application_schema::ApplicationOperationBodyProgram>,
     operation_input_type: TypeId,
     operation_input_identity: WorthQueryPortableTypeIdentity,
     conditional_only: bool,
@@ -107,6 +109,22 @@ pub struct ApplicationActionDeclaration {
 }
 
 impl ApplicationActionDeclaration {
+    pub const fn operation_identifier(&self) -> &'static str {
+        self.operation_identifier
+    }
+
+    pub fn operation_body(
+        &self,
+    ) -> Option<&crate::application_schema::ApplicationOperationBodyProgram> {
+        self.operation_body.as_ref()
+    }
+
+    pub(crate) fn bind_operation_body(
+        &mut self,
+        body: crate::application_schema::ApplicationOperationBodyProgram,
+    ) {
+        self.operation_body = Some(body);
+    }
     pub fn workflow_execution_requirements(
         &self,
     ) -> Option<&crate::application_operation::ApplicationWorkflowExecutionRequirements> {
@@ -273,6 +291,8 @@ where
             mutation_binding_type: Some(TypeId::of::<Binding>()),
             workflow_execution_requirements: Binding::workflow_execution_requirements(),
             operation_type: TypeId::of::<Binding::Operation>(),
+            operation_identifier: Binding::Operation::IDENTIFIER,
+            operation_body: None,
             operation_input_type: TypeId::of::<Binding::Input>(),
             operation_input_identity:
                 <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
@@ -308,6 +328,8 @@ where
             mutation_binding_type: None,
             workflow_execution_requirements: None,
             operation_type: TypeId::of::<Operation>(),
+            operation_identifier: Operation::IDENTIFIER,
+            operation_body: None,
             operation_input_type: TypeId::of::<
                 <Operation::InputBinding as ApplicationStructuredValueBinding>::Value,
             >(),

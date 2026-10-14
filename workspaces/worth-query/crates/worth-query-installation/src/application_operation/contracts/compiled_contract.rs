@@ -1,5 +1,6 @@
 use worth_foundational::facade::CanonicalDigestWorkBudget;
 use worth_query_declaration::facade::application_operation::ApplicationCandidateRequirements;
+use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 
 use crate::application_aftermath::{
     InstalledExternalEffectContract, WorthQueryInstalledAftermathContract,
@@ -22,6 +23,7 @@ use crate::domain_operation::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCompiledApplicationOperationContracts {
+    pub(super) body: Option<ApplicationOperationBodyProgram>,
     pub(super) authorization: WorthQueryInstalledApplicationOperationAuthorization,
     pub(super) ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
     pub(super) graph_reads: WorthQueryOperationGraphReadContract,
@@ -44,6 +46,11 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
+    /// Installed executable meaning; advanced callers cannot replace this body.
+    pub const fn body(&self) -> Option<&ApplicationOperationBodyProgram> {
+        self.body.as_ref()
+    }
+
     /// The componentwise maximum declared by installed mutation bindings for
     /// this operation. Query-owned platform effects cannot exceed these kinds.
     pub const fn platform_candidate_ceiling(&self) -> Option<ApplicationCandidateRequirements> {

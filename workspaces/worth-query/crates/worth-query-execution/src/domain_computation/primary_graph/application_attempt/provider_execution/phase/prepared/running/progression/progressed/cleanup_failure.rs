@@ -68,6 +68,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::IdempotencyIntentUnverifiable
             | Kind::MutationBindingMismatch
             | Kind::MutationInputMismatch
+            | Kind::OperationBodyExecutionRequired
             | Kind::ElevationTransitionRequired
             | Kind::ElevationRequestProgramMismatch
             | Kind::ElevationApprovalProgramMismatch

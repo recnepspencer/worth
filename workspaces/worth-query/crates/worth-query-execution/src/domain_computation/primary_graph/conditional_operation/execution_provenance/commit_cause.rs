@@ -29,6 +29,7 @@ pub(super) fn application_commit_cause(
         | Kind::IdempotencyIntentUnverifiable
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
+        | Kind::OperationBodyExecutionRequired
         | Kind::ElevationTransitionRequired
         | Kind::ElevationRequestProgramMismatch
         | Kind::ElevationApprovalProgramMismatch

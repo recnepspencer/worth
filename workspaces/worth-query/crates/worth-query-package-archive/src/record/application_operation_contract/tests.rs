@@ -1,4 +1,5 @@
 mod fixture;
+mod operation_body;
 
 use worth_query_installation::facade::{
     WorthQueryPortableApplicationOperationContractRecord,

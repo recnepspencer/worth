@@ -212,6 +212,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::IdempotencyIntentUnverifiable
                 | Kind::MutationBindingMismatch
                 | Kind::MutationInputMismatch
+                | Kind::OperationBodyExecutionRequired
                 | Kind::ElevationTransitionRequired
                 | Kind::ElevationRequestProgramMismatch
                 | Kind::ElevationApprovalProgramMismatch

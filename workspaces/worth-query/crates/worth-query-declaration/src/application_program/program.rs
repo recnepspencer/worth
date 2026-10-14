@@ -11,10 +11,14 @@ use super::{
     ApplicationProgramRulesShape, ApplicationSemanticDescription,
 };
 
+mod body_binding;
 mod definition_validation;
 mod dependency_graph;
+mod identity_validation;
 use definition_validation::validate_features_and_actions;
 use dependency_graph::require_acyclic_connections;
+pub(in crate::application_program) use identity_validation::deny_canonical_revision_budget;
+use identity_validation::{denial, require_identity};
 
 /// Complete authored static program definition.
 pub trait ApplicationProgramDefinition<Schema>: Sized + 'static
@@ -40,6 +44,10 @@ where
 /// Phase 1 authoring progression. Validation is unavailable until its typed
 /// required connection has been supplied.
 pub struct ApplicationProgramAuthoring<Schema, Program> {
+    operation_bodies: Vec<(
+        String,
+        crate::application_schema::ApplicationOperationBodyProgram,
+    )>,
     marker: PhantomData<fn() -> (Schema, Program)>,
 }
 
@@ -50,6 +58,7 @@ where
 {
     pub const fn begin() -> Self {
         Self {
+            operation_bodies: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -75,7 +84,11 @@ where
         self,
     ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
     {
-        validate::<Schema, Program>(Program::Outputs::connections(), Program::Rules::rules())
+        validate::<Schema, Program>(
+            Program::Outputs::connections(),
+            Program::Rules::rules(),
+            self.operation_bodies,
+        )
     }
 }
 
@@ -175,6 +188,10 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
 fn validate<Schema, Program>(
     connections: Vec<ApplicationConnectionDeclaration>,
     rules: Vec<ApplicationProgramRuleDeclaration>,
+    operation_bodies: Vec<(
+        String,
+        crate::application_schema::ApplicationOperationBodyProgram,
+    )>,
 ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
 where
     Schema: ApplicationSchema,
@@ -329,6 +346,7 @@ where
             }
         }
     }
+    body_binding::bind(&mut actions, &operation_bodies);
     let identity = Program::IDENTITY.clone();
     let features = features.into_boxed_slice();
     let actions = actions.into_boxed_slice();
@@ -360,40 +378,4 @@ where
         semantic_description,
         marker: PhantomData,
     })
-}
-
-fn require_identity(identity: &str) -> Result<(), ApplicationProgramValidationDenial> {
-    if identity.is_empty()
-        || identity.trim() != identity
-        || identity.chars().any(char::is_whitespace)
-    {
-        Err(denial(
-            ApplicationProgramValidationDenialKind::InvalidIdentity,
-            identity,
-        ))
-    } else {
-        Ok(())
-    }
-}
-
-/// Names an exceeded canonical revision budget as program validation meaning,
-/// so a program too large to identify is denied rather than silently hashed.
-pub(in crate::application_program) fn deny_canonical_revision_budget(
-    identity: &ApplicationProgramIdentity,
-    budget: ApplicationProgramRevisionBudgetDenial,
-) -> ApplicationProgramValidationDenial {
-    denial(
-        ApplicationProgramValidationDenialKind::CanonicalRevisionBudgetExceeded,
-        format!("{}: {budget}", identity.as_str()),
-    )
-}
-
-fn denial(
-    kind: ApplicationProgramValidationDenialKind,
-    subject: impl Into<String>,
-) -> ApplicationProgramValidationDenial {
-    ApplicationProgramValidationDenial {
-        kind,
-        subject: subject.into(),
-    }
 }

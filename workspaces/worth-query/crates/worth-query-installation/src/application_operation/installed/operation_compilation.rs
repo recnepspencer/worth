@@ -10,8 +10,8 @@ use external_effect_contract::install_portable_external_effect;
 use worth_query_declaration::facade::application_aftermath::PortableApplicationAftermathContract;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationDecisionReadTarget, ApplicationSchemaBindingIdentity,
-    ApplicationSchemaMember,
+    ApplicationOperationBodyProgram, ApplicationOperationDecisionReadTarget,
+    ApplicationSchemaBindingIdentity, ApplicationSchemaMember,
 };
 
 use crate::application_aftermath::{
@@ -64,6 +64,7 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
 
 /// Opaque, whole-operation input accepted by the compiled-contract owner.
 pub(in crate::application_operation) struct WorthQuerySealedOperationContractCompilation {
+    body: Option<ApplicationOperationBodyProgram>,
     authorization: WorthQueryInstalledApplicationOperationAuthorization,
     ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
     authored_program_width: usize,
@@ -257,6 +258,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             })
             .collect();
         let sealed = WorthQuerySealedOperationContractCompilation {
+            body: self.portable_contract.body().cloned(),
             authorization,
             ability_requirements,
             authored_program_width: self.authored_program_width,
@@ -349,6 +351,7 @@ impl WorthQuerySealedOperationContractCompilation {
     pub(in crate::application_operation) fn into_parts(
         self,
     ) -> (
+        Option<ApplicationOperationBodyProgram>,
         WorthQueryInstalledApplicationOperationAuthorization,
         Vec<WorthQueryInstalledAbilityRequirement>,
         usize,
@@ -366,6 +369,7 @@ impl WorthQuerySealedOperationContractCompilation {
         Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
     ) {
         (
+            self.body,
             self.authorization,
             self.ability_requirements,
             self.authored_program_width,

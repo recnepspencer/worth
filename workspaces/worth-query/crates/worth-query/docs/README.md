@@ -35,6 +35,7 @@ Executable journeys:
 ### Declaring application meaning
 
 - [Feature Capsule Authoring](./authoring/feature-capsule-authoring.md): state one feature's installed meaning as an `ApplicationFeatureSpec`.
+- [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md): author literal source guards and field assignments once, then execute their installed meaning.
 - [Read Composition](./authoring/read-composition.md): turn a typed application-query declaration into one installed read graph.
 - [Graph Read Access Planning](./authoring/graph-read-access-planning.md): how Query proves an installed read has the access structures and bounded cost it needs.
 - [Graph Touch Obligation Authority](./authoring/graph-touch-obligation-authority.md): the graph work an installed query or operation must perform.

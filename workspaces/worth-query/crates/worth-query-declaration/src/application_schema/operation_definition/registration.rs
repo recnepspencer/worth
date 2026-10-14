@@ -21,6 +21,33 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             operation: operation.clone(),
             input_type: definition.input_type,
         });
+        if let Some(body) = definition.body {
+            let reads = body
+                .scope_fields()
+                .iter()
+                .map(|step| step.decision_read())
+                .collect::<std::collections::BTreeSet<_>>();
+            for target in reads {
+                self.push_member_in_place(ApplicationSchemaMember::OperationDecisionRead {
+                    operation: operation.clone(),
+                    target,
+                });
+            }
+            for target in body
+                .scope_fields()
+                .iter()
+                .filter_map(|step| step.write_target())
+            {
+                self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                    operation: operation.clone(),
+                    target,
+                });
+            }
+            self.push_member_in_place(ApplicationSchemaMember::OperationBody {
+                operation: operation.clone(),
+                body,
+            });
+        }
         if let Some(external_effect) = definition.external_effect {
             if let Some(inbound) = external_effect.inbound {
                 self.push_member_in_place(ApplicationSchemaMember::OperationInboundOccurrence {

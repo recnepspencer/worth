@@ -148,7 +148,10 @@ pub use mutation_precondition::{
     TypedMutationPrecondition, TypedMutationPreconditions,
 };
 pub use operation_definition::{
-    ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
+    ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
+    ApplicationOperationBodyBuilder, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyScopeField, ApplicationOperationDefinition,
+    ApplicationOperationDefinitionBuilder,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{
