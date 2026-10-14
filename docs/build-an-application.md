@@ -4,9 +4,10 @@
 > features, install the application graph, run it, author and run workflows,
 > and adopt a new program on a branch. A code block that follows a
 > `<!-- compiled: ... -->` marker is checked byte-for-byte by CI against a
-> compiled fixture. Every other block is an excerpt or a shape, maintained by
-> hand and verified against source when it was written. When a block
-> disagrees with the source or its rustdoc, the source wins.
+> compiled fixture. A `<!-- doctest: crate -->` marker binds a block to the
+> crate's rustdoc and CI doctest lane. Illustrative blocks visibly say
+> `// Illustrative: not compiled.`; remaining unclassified Rust fences are
+> tracked by a per-document debt that may only shrink.
 
 This is the centerpiece guide for building on WORTH. Other public documents
 explain *why* the platform works the way it does
@@ -2031,7 +2032,9 @@ are prefixed with the occurrence name (`checks/structural`). See
    builder, applies `?` to `new`, and returns the unvalidated `finish()`
    result:
 
-   ```rust
+   <!-- illustrative -->
+   ```rust,ignore
+   // Illustrative: not compiled.
    let authored = worth_query_workflow! {
        spec: ReviewedChange;
        identity: "reviewed-change";

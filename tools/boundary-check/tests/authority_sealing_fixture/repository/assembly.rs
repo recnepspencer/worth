@@ -49,6 +49,14 @@ publish = false
             "schema_version = 1\nreferences = []\n",
         );
         self.write_file("tools/boundary-check/config/road1.toml", config);
+        self.write_file(
+            "tools/boundary-check/config/consumer-docs.toml",
+            "documents = []\ndoctests = []\n",
+        );
+        self.write_file(
+            "tools/boundary-check/snapshots/consumer-doc-fence-debt.toml",
+            "documents = []\n",
+        );
         self.write_query_audience_leaf_facades();
         self.write_worth_proof_stub();
         self.write_entry_crate(lib_source, None);

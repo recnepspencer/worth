@@ -650,7 +650,9 @@ let runtime = in_memory_program(
   calls it once, before the first publication, with three arguments and
   expects `Ok(())` or a `WorthQueryPrimaryGraphInstallationDenial`:
 
-  ```rust
+  <!-- illustrative -->
+  ```rust,ignore
+  // Illustrative: not compiled.
   |_phase, graph, installed| {
       // _phase:    &WorthQueryBootstrapAdvancementPhase<'_>
       // graph:     &mut WorthQueryPrimaryGraphBootstrap<Schema>

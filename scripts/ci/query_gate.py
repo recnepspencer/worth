@@ -38,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -129,6 +130,18 @@ def bash():
     return str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
 
 
+def consumer_doctest_commands():
+    configuration = tomllib.loads(
+        (ROOT / "tools/boundary-check/config/consumer-docs.toml").read_text(encoding="utf-8")
+    )
+    return [
+        ("doc-" + Path(selection["manifest"]).parent.name,
+         ["cargo", "test", "--doc", "--no-fail-fast", "--jobs", "8",
+          "--manifest-path", selection["manifest"], *packages(*selection["packages"])])
+        for selection in configuration["doctests"]
+    ]
+
+
 # suite -> [(label, command)], one command at a time
 COMMAND_SUITES = {
     "fmt": [
@@ -153,12 +166,10 @@ COMMAND_SUITES = {
          clippy("--manifest-path", UI, *packages("worth-ui-query-binding"))),
     ],
     # Compiled doc examples: no other suite builds them.
-    "doc": [
+    "doc-lower": [
         ("doc-root", ["cargo", "test", "--doc", "--no-fail-fast", *packages(*LOWER)]),
-        ("doc-query",
-         ["cargo", "test", "--doc", "--no-fail-fast", "--manifest-path", QUERY,
-          *packages(*QUERY_PUBLIC, "worth-query-installation")]),
     ],
+    "doc": consumer_doctest_commands(),
     "wasm": [
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
     ],
@@ -188,7 +199,7 @@ COMMAND_SUITES = {
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
-         "fixture", "ui", "bank", "doc", "wasm", "boundary", "extra"]
+         "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
 
 
 def environment():

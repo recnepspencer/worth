@@ -106,7 +106,9 @@ The rules that follow from the separation:
 A program is a type implementing `ApplicationProgramDefinition<Schema>`.
 Validation produces the revision:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring;
 
 let orders_v1 = ApplicationProgramAuthoring::<OrderSchema, OrdersV1>::begin()
@@ -125,7 +127,9 @@ let revision_2 = *orders_v2.revision();   // ApplicationProgramRevision is Copy
 `in_memory_rostered_program` validates and installs the whole roster before
 the host serves anything:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_installation::{
     in_memory_rostered_program, WorthQueryApplicationProgramRoster,
 };
@@ -160,7 +164,9 @@ let host = in_memory_rostered_program(
 
 A mutation request never names a program revision. On the program lane:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = host
     .runtime()
     .request(&principal, &scope)
@@ -272,7 +278,9 @@ migration is refused with `MigrationAssessmentRequired(requirement)`. A
 migration is an ordinary mutation executed as a candidate under the target
 program:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_entry::WorthQueryApplicationProgramMigrationPreparationOutcome as Outcome;
 
 let migration = match runtime
@@ -305,7 +313,9 @@ workflow definition and per live workflow instance. Preparing without them is
 refused with `WorkflowDispositionRequired { inventory }`, which carries the
 inventory. You can also read it first:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let adoption = programs.adopt(&requirements);
 let inventory = adoption.workflow_inventory(1_024)?;   // WorthQueryWorkflowAdoptionInventory
 ```
@@ -333,7 +343,9 @@ Each occurrence reports:
 Build the decisions by chaining. Each call consumes the builder and returns
 `Result<WorthQueryWorkflowDispositions, WorthQueryWorkflowDispositionDenial>`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::{
     WorthQueryWorkflowDefinitionDisposition as Definition,
     WorthQueryWorkflowInstanceDisposition as Instance,
@@ -431,7 +443,9 @@ A work bound that is too small is refused with
 `expected_product()`, `next_actions()`, `relational_requires_settlement()`, and
 `into_recovery()`.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let recovery = unpublished.into_recovery();       // WorthQueryBranchAdoptionRecovery
 let outcome = runtime
     .request(&principal, &scope)
@@ -473,7 +487,9 @@ It is explicitly **non-atomic**: each branch publishes on its own.
    unchanged; `close_denial()` says why (`Pending { remaining }` or
    `ResolutionRequired { branch }`).
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 use std::num::NonZeroUsize;
 
 let coverage = runtime
@@ -525,7 +541,9 @@ After a `NoEffect` or `ProductUnpublished` step, `advance()` is refused with
 
 ## Retire program support
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let receipt = host.retire_program_support(&revision_1)?;
 // WorthQueryProgramSupportRetirementReceipt, with inventory()
 ```
@@ -647,7 +665,9 @@ moves the main branch, then each preview branch, then retires revision 1.
 **1. Install both revisions.** The host activates revision 1 and rosters
 revision 2.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let v1 = ApplicationProgramAuthoring::<OrderSchema, OrdersV1>::begin().validated_program()?;
 let v2 = ApplicationProgramAuthoring::<OrderSchema, OrdersV2>::begin().validated_program()?;
 let (revision_1, revision_2) = (*v1.revision(), *v2.revision());
@@ -662,7 +682,9 @@ let runtime = host.runtime();
 
 **2. Compare.**
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let programs = runtime.request(&principal, &scope).on_branch(main).programs();
 let requirements = programs.compare(&revision_2)?;
 assert!(requirements.requires_existing_state_validation());
@@ -672,7 +694,9 @@ assert!(requirements.requires_migration_assessment());
 **3. Prepare the migration** under revision 2, as a mutation that sets a
 status on every existing order.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let migration = match runtime
     .request(&principal, &scope)
     .on_branch(main)
@@ -689,7 +713,9 @@ let migration = match runtime
 **4. Decide workflow facts.** The definition is compatible, so `Carry` is legal.
 The instance is compatible and `Unperformed`, so `Carry` is legal too.
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let adoption = programs.adopt(&requirements).migration(migration);
 let inventory = adoption.workflow_inventory(1_024)?;
 let choices = inventory.carry_compatible()?;
@@ -697,7 +723,9 @@ let choices = inventory.carry_compatible()?;
 
 **5. Prepare and publish.**
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let prepared = adoption.workflow(choices).prepare(4_096)?;
 match prepared.publish() {
     WorthQueryBranchAdoptionPublicationOutcome::Performed(done) => assert_eq!(done.target(), &revision_2),
@@ -722,7 +750,9 @@ migration, across branches that hold no workflow facts.
 
 **7. Retire revision 1.**
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let receipt = host.retire_program_support(&revision_1)?;
 ```
 

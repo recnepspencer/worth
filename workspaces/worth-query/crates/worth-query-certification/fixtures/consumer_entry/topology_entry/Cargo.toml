@@ -12,6 +12,8 @@ worth-foundational = { path = "../../../../../../../crates/worth-foundational" }
 serde.workspace = true
 
 [dev-dependencies]
+toml = "0.8"
+pulldown-cmark = { version = "0.13", default-features = false }
 sha2 = "0.10"
 worth-query-host = { workspace = true }
 worth-execution = { path = "../../../../../../../crates/worth-execution" }

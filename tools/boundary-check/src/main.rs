@@ -5,6 +5,7 @@ mod configured_dependency_denials;
 mod configured_source_dependency_allowlists;
 mod configured_source_identifier_denials;
 mod configured_source_owner_isolations;
+mod consumer_docs;
 mod context_workspace_rules;
 mod control_seal;
 mod dependency_rules;

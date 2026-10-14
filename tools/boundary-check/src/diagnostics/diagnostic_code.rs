@@ -40,11 +40,15 @@ pub(crate) enum DiagnosticCode {
     Bc8003CrateDagSnapshotDrift,
     Bc8004FacadeDocMissing,
     Bc8005FacadeDocDebtStale,
+    Bc8006ConsumerFenceDebtExceeded,
+    Bc8007ConsumerFenceDebtStale,
+    Bc8008ConsumerDocMarker,
+    Bc8009ConsumerDocLink,
 }
 
 impl DiagnosticCode {
     #[cfg(test)]
-    pub(crate) const ALL: [Self; 37] = [
+    pub(crate) const ALL: [Self; 41] = [
         Self::Bc1001IllegalCrateName,
         Self::Bc1002UnreservedDomain,
         Self::Bc2001BandDependencyViolation,
@@ -82,6 +86,10 @@ impl DiagnosticCode {
         Self::Bc8003CrateDagSnapshotDrift,
         Self::Bc8004FacadeDocMissing,
         Self::Bc8005FacadeDocDebtStale,
+        Self::Bc8006ConsumerFenceDebtExceeded,
+        Self::Bc8007ConsumerFenceDebtStale,
+        Self::Bc8008ConsumerDocMarker,
+        Self::Bc8009ConsumerDocLink,
     ];
 
     pub(crate) fn as_str(self) -> &'static str {
@@ -123,6 +131,10 @@ impl DiagnosticCode {
             Self::Bc8003CrateDagSnapshotDrift => "BC8003_CRATE_DAG_SNAPSHOT_DRIFT",
             Self::Bc8004FacadeDocMissing => "BC8004_FACADE_DOC_MISSING",
             Self::Bc8005FacadeDocDebtStale => "BC8005_FACADE_DOC_DEBT_STALE",
+            Self::Bc8006ConsumerFenceDebtExceeded => "BC8006_CONSUMER_FENCE_DEBT_EXCEEDED",
+            Self::Bc8007ConsumerFenceDebtStale => "BC8007_CONSUMER_FENCE_DEBT_STALE",
+            Self::Bc8008ConsumerDocMarker => "BC8008_CONSUMER_DOC_MARKER",
+            Self::Bc8009ConsumerDocLink => "BC8009_CONSUMER_DOC_LINK",
         }
     }
 
@@ -154,6 +166,9 @@ impl DiagnosticCode {
             Self::Bc7014CommitRequestConsult => "tools/boundary-check/src/source_rules/analysis/commit_consults.rs; a commit consult belongs only to consult_stage_control",
             Self::Bc8001SnapshotBaseline | Self::Bc8002FacadeSnapshotDrift | Self::Bc8003CrateDagSnapshotDrift => "tools/boundary-check/snapshots/; regenerate the governed snapshot explicitly with boundary-check --update-snapshots",
             Self::Bc8004FacadeDocMissing | Self::Bc8005FacadeDocDebtStale => "tools/boundary-check/snapshots/facade-doc-debt.toml; document the named definition with a `///` comment, or delete the paid debt entry",
+            Self::Bc8006ConsumerFenceDebtExceeded | Self::Bc8007ConsumerFenceDebtStale => "tools/boundary-check/snapshots/consumer-doc-fence-debt.toml; classify new Rust fences or lower paid debt; never increase a baseline",
+            Self::Bc8008ConsumerDocMarker => "tools/boundary-check/config/consumer-docs.toml; restore exact marker grammar and genuine compilation ownership",
+            Self::Bc8009ConsumerDocLink => "tools/boundary-check/config/consumer-docs.toml; repair the relative destination or GitHub heading fragment in the named document",
         };
         LegalHome::new(pointer).expect("diagnostic code legal homes are valid")
     }

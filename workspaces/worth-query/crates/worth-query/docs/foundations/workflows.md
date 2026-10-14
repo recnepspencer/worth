@@ -116,7 +116,9 @@ read a workflow instance.
 
 A workflow spec is a marker type:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 pub struct PurchaseWorkflowSpec;
 
 impl ApplicationWorkflowSpec for PurchaseWorkflowSpec {
@@ -167,7 +169,9 @@ node. Workflow authority does not replace operation permission. See
 
 Install the spec against one installed schema and one installed program:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
     32,                  // maximum_definition_nodes
     64,                  // maximum_definition_connections
@@ -365,7 +369,9 @@ second grammar. It creates the builder, runs your block, and evaluates to the
 `Result<_, ApplicationWorkflowAuthoringDenial>`, because it applies `?` to
 `new`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let authored = worth_query_workflow! {
     spec: PurchaseWorkflowSpec;
     identity: identity;
@@ -401,13 +407,17 @@ the occurrence name.
 
 Binding checks the validated definition against the installed vocabulary:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let contract = installed.bind_definition(validated)?; // WorthQueryInstalledWorkflowDefinitionContract
 ```
 
 Publishing is a control step on one branch:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = runtime
     .request(&principal, &scope)
     .on_branch(branch)
@@ -434,7 +444,9 @@ Preparation refusals are `WorthQueryWorkflowDefinitionPublicationPreparationDeni
 
 Discovery asks one selected branch occurrence which revision is current for an identity:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // `execution` is the host's `ExecutionRequest`
 // (`worth_query_host::facade::primary_graph::ExecutionRequest`).
 let selected = runtime
@@ -476,7 +488,9 @@ preparation refusals are `WorthQueryWorkflowDefinitionRetirementPreparationDenia
 
 ## Start an instance
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let started = runtime
     .request(&principal, &scope)
     .on_branch(definition.branch())
@@ -565,7 +579,9 @@ is observation-time readiness: no transition attempt was prepared.
 
 An assessment step settles through an output demand, then records evidence:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut handle = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -605,7 +621,9 @@ let outcome = runtime
 A condition node evaluates a Bool expression in the shared expression language.
 Its operands are named, typed results of installed queries:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let condition = builder.condition(
     "review-capacity",
     "uint64(30) / days >= uint64(5) && retained",
@@ -626,7 +644,9 @@ fixed-width integers, `f32`, `f64`, `String`, `Option<T>`, and `Vec<T>` are
 provided. A domain type states its own reading; a money amount, for example,
 reads as its exact count of minor units so comparisons never round:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 impl ApplicationExpressionOperandValue for Money<USD> {
     fn expression_type() -> ExpressionType {
         ExpressionType::INT64
@@ -643,7 +663,9 @@ When the instance returns
 request on the instance's branch, then supply every published result by name to
 a fresh advance request:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = request
     .prepare_workflow_advance(&workflow, instance)?
     .condition(&required)
@@ -678,7 +700,9 @@ A true result follows `ConditionSatisfied` and a false one
 An approval is a signed control step. Each decision needs a fresh
 authentication event:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let signing = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -749,7 +773,9 @@ to execute every business operation within it.
 For a guarded operation that needs no approval (occurrence-only execution),
 declare no additional workflow evidence:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // Inside worth_query_mutation_binding!(...), alongside its other contracts:
 workflow_authority required,
 workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
@@ -758,7 +784,9 @@ workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
 For an operation requiring a particular native approval capability, use the
 immutable constructor instead:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 workflow_authority required,
 workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approval::<ReleaseReviewCapability>(),
 ```
@@ -804,7 +832,9 @@ it is not enabled by removing an approval from an old editable definition.
 When advance returns `AwaitingOperation(required)`, run the guarded effect
 through an ordinary mutation request bound to that requirement:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let committed = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -917,7 +947,9 @@ Accept the owner's receipt (see [Operations](#operations)), then retry.
 same declared inbound binding that operation installed. Bank's approved-payment
 definition uses the public authoring shape:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
 let await_completion = builder.await_inbound::<ApprovedPaymentSettlementEffect>(
     "await-inbound",
@@ -1148,7 +1180,9 @@ approval ──RetryExhausted──> declined
 
 ### Reusable checks component
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut checks = ApplicationWorkflowComponentBuilder::<PurchaseWorkflowSpec>::new("purchase-checks")?;
 let budget = checks.assessment::<BudgetAvailable>("budget")?;
 let vendor = checks.assessment::<VendorApproved>("vendor")?;
@@ -1166,7 +1200,9 @@ let checks = checks.finish()?;
 
 ### Definition
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let limits = ApplicationWorkflowDefinitionLimits::new(
     16, 32, 2,
     ApplicationWorkflowComponentLimits::new(8, 1, 16, 32, 32).unwrap(),
