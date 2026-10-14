@@ -10,6 +10,7 @@ use worth_query_execution::facade::primary_graph::{
 mod advancement;
 mod completion;
 mod entrance;
+mod native_posture;
 mod retained_delivery;
 pub use completion::{WorthQueryCompletedSourceOperation, WorthQueryTerminalSourceOperation};
 
@@ -53,7 +54,9 @@ enum SourceState<S: ApplicationSchema, I: ApplicationMutationIntent<S>> {
     UnresolvedAdvancement(
         worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ),
+    RetryableNoEffect(NativeOutcome<S, I>),
     Stopped(NativeOutcome<S, I>),
+    AdmissionStopped(WorthQueryApplicationRequestMutationDenial),
     RetainedPending(
         WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
     ),
@@ -106,6 +109,7 @@ pub enum WorthQuerySourceOnlyPosture {
     RecoveryPerformed,
     RetainedDeliveryPending,
     ProvedAborted,
+    RetryableNoEffect,
     Indeterminate,
     Terminal,
 }
@@ -128,9 +132,17 @@ impl<
         self.admission.runtime
     }
 
+    /// Exact completed native no-effect evidence retained for a fresh admitted attempt.
+    pub fn native_retry_outcome(&self) -> Option<&NativeOutcome<S, I>> {
+        match &self.state {
+            SourceState::RetryableNoEffect(outcome) => Some(outcome),
+            _ => None,
+        }
+    }
     pub fn posture(&self) -> WorthQuerySourceOnlyPosture {
         match self.state {
             SourceState::Initial => WorthQuerySourceOnlyPosture::Initial,
+            SourceState::RetryableNoEffect(_) => WorthQuerySourceOnlyPosture::RetryableNoEffect,
             SourceState::Unpublished(_) => WorthQuerySourceOnlyPosture::ProductUnpublished,
             SourceState::Performed(_) => WorthQuerySourceOnlyPosture::RecoveryPerformed,
             SourceState::Keyed(WorthQueryApplicationUncommitted::Aborted) => {
@@ -139,7 +151,9 @@ impl<
             SourceState::Keyed(_) => WorthQuerySourceOnlyPosture::Indeterminate,
             SourceState::UnresolvedAdvancement(_) => WorthQuerySourceOnlyPosture::Indeterminate,
             SourceState::RetainedPending(_) => WorthQuerySourceOnlyPosture::RetainedDeliveryPending,
-            SourceState::Stopped(_) => WorthQuerySourceOnlyPosture::Terminal,
+            SourceState::Stopped(_) | SourceState::AdmissionStopped(_) => {
+                WorthQuerySourceOnlyPosture::Terminal
+            }
         }
     }
 }

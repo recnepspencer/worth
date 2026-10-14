@@ -38,6 +38,14 @@ fn owning_source_only_unpublished_recovery_and_close() {
         &before
     );
     assert_eq!(contacts.counts(), (1, 1));
+    let (operation, denial) = operation
+        .close(&request)
+        .err()
+        .expect("live close does not discharge unpublished custody");
+    assert!(matches!(
+        denial,
+        WorthQueryOperationCloseDenial::NativeObligationRetained
+    ));
     let stop = WorthQueryCancellationSource::new();
     stop.cancel();
     let stopped_scope = WorthQueryRequestScope::new(None, stop.token());

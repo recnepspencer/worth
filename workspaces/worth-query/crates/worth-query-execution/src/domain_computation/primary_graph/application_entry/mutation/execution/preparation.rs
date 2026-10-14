@@ -83,6 +83,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 ))
             }
         };
+        if let Err(denial) = self.validate_projected_source_facts(&phase_request, &admission) {
+            return Err(WorthQueryMutationHandlerExecutionReport::new(
+                Err(MutationHandlerExecutionDenial::Attempt(denial)),
+                WorthQueryMutationHandlerWork::NotStarted,
+            ));
+        }
         let projected = {
             self.mutation_projection
                 .project_admitted_operation_with_request(

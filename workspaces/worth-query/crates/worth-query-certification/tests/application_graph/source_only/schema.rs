@@ -32,6 +32,7 @@ worth_query_application_contribution! {
                 .operation_read_field(SetRetention::reference(), DocumentRetentionField::reference())
                 .operation_write(SetRetention::reference(), DocumentRetentionField::reference())
                 .operation_expected_fact(SetRetention::reference(), DocumentIdentityField::reference())
+                .operation_expected_fact(SetRetention::reference(), DocumentRetentionField::reference())
                 .application_mutation_binding::<SetRetentionBinding>().application_query_binding::<super::readback::ReadBinding>()
                 .application_query(super::readback::definition())
         }
@@ -54,6 +55,7 @@ worth_query_operation!(pub SetRetention for SourceOnlyRetentionSchema, input Set
 worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField]);
 worth_query_operation_writes!(SetRetention => [DocumentRetentionField]);
 impl OperationExpectsFact<SetRetention> for DocumentIdentityField {}
+impl OperationExpectsFact<SetRetention> for DocumentRetentionField {}
 
 fn document_identity(input: &SetRetentionInput) -> String {
     input.identity.clone()

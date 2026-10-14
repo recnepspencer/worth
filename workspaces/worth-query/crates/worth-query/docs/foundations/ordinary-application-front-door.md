@@ -685,8 +685,41 @@ completion. Its owning retained mode requires an explicit per-attempt history
 bound and delivers the exact native original World observation after replay or
 recovery. A bounded unavailable result preserves custody for retry; it does not
 prove historical absence. See [retained delivery](source-only-retained-delivery.md).
-Capability revocation/pinned-source posture coverage and ordinary consumer
-cutover remain separate work.
+A pinned SourceOnly row validates its consumed native facts before the decision
+handler. If they changed or a consumed entity retired, `advance` returns terminal
+custody; `native_admission_denial()` exposes the original `SourceChanged` or
+`SourceRetired` preparation denial. No commit outcome or unpublished receipt is
+invented. A result-set loan retains selection membership, so changing a projected
+value outside those membership facts does not itself make that loan stale.
+The [pinned source courts](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/source_only_pinned.rs)
+exercise both meanings through `retain_operation`.
+
+Terminal `close` still requires a fresh request on the original runtime and
+branch. A refused close returns the same evidence and owned source loan. A
+lawful close consumes the owner, releasing its observation references through
+their native lifetimes. Native `ProductStale` and `NoEffect` outcomes likewise
+retain their descriptive observations until close; they carry no unpublished
+recovery receipt. Unresolved publication postures remain owned. The [commit-time pinned court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/source_only_pinned/commit_stale.rs)
+covers the exact native `ProductBasisStale` invariant refusal while retaining
+the original loan. Moved-membership result-set coverage, public World
+`ProductStale` and generic `NoEffect` cause/refusal-cleanup courts, and ordinary
+consumer cutover remain separate work.
+
+An unpinned SourceOnly operation can return `Progress` with
+`RetryableNoEffect` after native sealed-read staleness or an exact
+`ProductBasisStale` invariant refusal. `native_retry_outcome()` borrows the
+actual completed native refusal. The next explicit `advance` selects the
+original branch again and admits the same input, key, declared action and typed
+preconditions under fresh request authority. It never replaces a caller's
+expected fact with current state, and it performs only one attempt per call.
+The [unpinned stale courts](../../../worth-query-certification/tests/application_graph/source_only/stale_retry.rs)
+exercise that path with a genuine competing ordinary operation.
+
+Live `close` accepts only this proven retryable no-effect custody and delegates
+the same fresh-request cleanup owner. Refusal returns that evidence and original
+descriptor. It does not dispose an unpublished partial or resolve an uncertain
+business effect. Generic `Denied`, `NoEffect` and `Unseen` do not authorize a
+rerun; indeterminate outcomes keep the existing keyed recovery path.
 
 Shared funded cleanup owns pending record release and native cleanup failures.
 Its receipt proves that collection was released; it does not discharge a retained
