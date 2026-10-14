@@ -5,7 +5,9 @@ runtimes that install and execute Query behavior.
 
 Use:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::{admission, domain, primary_graph, publication, runtime};
 ```
 
@@ -16,7 +18,7 @@ internals.
 **Writing an application?** Start with
 [Build an Application](../../../../docs/build-an-application.md). It shows the real calls, in order: install
 the application graph (`application_installation::in_memory_program`), run
-program-owned actions (`execute_in_program`), install a workflow vocabulary
+program-owned actions (`retain_operation`, then fresh-request `advance`), install a workflow vocabulary
 and publish, start, and advance workflows, and adopt a new program on a
 branch. This README covers the host's deeper contracts.
 
@@ -37,7 +39,7 @@ The [public consumer fixture](../worth-query-certification/fixtures/consumer_ent
 checks separately compiled contributions and static program validation. The
 [ordinary product workflow](../worth-query-certification/examples/ordinary_product_workflow.rs)
 installs a validated program with `application_installation::in_memory_program`,
-commits a typed mutation through `execute_in_program`, reads the
+advances a declared source-only owning action, reads the
 successor, and closes conditional resources. Its source is the executable host
 entry example.
 
@@ -73,27 +75,47 @@ reservation precedes candidate allocation, and the candidate is checked with its
 affected untouched neighbors before atomic publication. A request does not retain
 admission or a selected World between executions.
 
-An ordinary mutation that returns `ProductUnpublished` retains actual
-owner effects without a published product successor. Keep its recovery handle
-and the original intent, idempotency key and preconditions. A freshly authenticated
-request can call `recover_unpublished_in_program(&recovery, &program)`; the current
-selected program must still own that action. Recovery reuses the retained owner
-effects rather than preparing a candidate or invoking its handler. A source-bound
-request must also supply its original checked row or result-set observation;
-a different source binding cannot replace it. The retained attempt
-owns the original source facts. Workflow and required/discovered output-source
-recovery still require their own owners and are not accepted by this entrance.
-Keep a `Performed` recovery outcome even when its receipt read, publication or
-cleanup reports a failure: the publication already took effect. A fresh
-`resolve_idempotency_in_program(&program)` request reads the original keyed outcome
-without executing a mutation. Both entrances preserve typed authorization,
-interruption, identity and owner failures.
+## Owning fixed and source-only actions
 
-> **Interim custody.** [Milestone 9.17.6.4](../../../../plans/WORTH-query/milestone-9.17.6.4.md)
-> (planned) introduces a Query-owned operation continuation; whether it covers
-> these non-output entrances is an open decision in that plan. Until that
-> decision lands, follow this section exactly, and do not build a general
-> continuation or retry framework around it.
+Install a program and declare the exact typed action occurrence and its delivery.
+`request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
+source preparation, preconditions and `idempotency_owned(key)`, followed by
+`retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
+cannot execute, prepare or recover through that builder or its borrowed-key view.
+The selected action carries composition instance, feature, binding and delivery;
+a binding label alone cannot select its contract.
+
+Capture the original meaning once. Supply a fresh authenticated ordinary request
+for every `advance`, delivery and close. Native admission checks current authority
+and the original runtime/branch/program affinity. The descriptor is not a grant.
+Recovery promotes the original native carrier; registered replay rejoins its
+original outputs without running the source handler. Recovered evidence does not
+manufacture the original handler result.
+
+A fixed settled owner borrows its complete settlement for `read_current` or a
+finite `read_current_with_policy`; the currentness check and declared query share
+one observation and one native phase. Read refusal retains the owner. Stale
+settlement supports `read_historical` and `close`, never output advancement.
+No-projection delivery uses `deliver_current` without a dummy query. Source-only
+completion is distinct from required-output settlement; retained delivery selects
+the action's authentic original commit observation.
+
+Completion and delivery retain independent cleanup. `close` returns the complete
+owner with a typed denial when cleanup refuses. Drop is abandonment, not external
+cleanup or crash durability. Only existing native checkpoint/recovery contracts
+survive process loss.
+
+The [compiled original descriptor capture](../../../../docs/build-an-application.md#capture-complete-original-meaning) is exercised by the real
+public result-set court.
+
+The real result-set court calls the compiled capture with nondefault preconditions before
+an actual post-effect append failure. It reads the resulting source and outputs
+independently after native recovery. No original intent clone is required per pump.
+
+### Discovered native entrance until Phase B
+
+The discovered owner lands in Phase B. Its current typed native entrance remains
+ordinary for that lane; do not build a consumer continuation around it.
 
 Discovered output sources have a separate move-only partial owner. A genuine
 `execute_performed_discovered` publication failure returns `ProductUnpublished`
@@ -105,6 +127,13 @@ the original performed carrier into an output handle once. Refused promotion
 returns the owner. Successful promotion also returns the raw performed recovery
 and all prior cleanup failures: starting outputs does not discharge those
 independent obligations. No original handler or candidate is executed again.
+### Advanced fixed publication and recovery
+
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed actions.
+The current native builder lives under `application_entry::advanced` and is reached
+with `request.advanced().mutate(intent)`. Manual output start and registered fixed
+recovery require `request.advanced()` as well.
+
 Fixed required roots use `execute_performed`, which now owns its original
 preparation independently of the starting request and runtime borrow. Start and
 advance it with an explicit program runtime and fresh request. A genuine
@@ -126,10 +155,8 @@ Both output-source lanes retain unsupported `SettlementDeferred` and
 `Blocked` custody. They are not no-effect outcomes or evidence that recovery
 finished. Workflow recovery remains outside these entrances.
 
-> **Interim custody.** The same planned milestone moves the discovered and
-> required output-source custody above into the Query-owned operation
-> continuation. Until it lands, keep the owners exactly as described, and do not
-> wrap these entrances in a general continuation or retry framework.
+> **Discovered Phase B handoff.** Fixed ownership is available now. Discovered
+> ownership lands in Phase B; keep its existing native custody until then.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through
@@ -459,7 +486,9 @@ and calls `read.execute(plan)` before those local borrows end. Query keeps the
 result, executes both branches on the calling thread, and holds their native
 loan claims through link/source validation and projection:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let execution_request = phase.checked_execution_request_for(runtime.product_runtime())?;
 let keys = runtime.reconstruct_managed_derived_collection_pair_dependent_in_batch(
     execution_request,
@@ -556,7 +585,9 @@ then exposes the complete contract through
 
 Application callers use the binding indirectly through its typed intent:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 
 let request = application.request(&external_principal, &request_scope);
@@ -587,7 +618,9 @@ or aggregate-memory measurement.
 
 Callers can request narrower resolved ceilings before execution:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let published = request
     .query(AccountActivityRequest::new(account_id))
     .limits(maximum_results, maximum_work)
@@ -670,7 +703,9 @@ An editor or transport host that owns an installed primary-graph application
 may inspect its current descriptive basis before presenting or submitting
 work:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let readiness = application.inspect_application_readiness()?;
 let optimistic_basis = readiness.basis_token();
 ```

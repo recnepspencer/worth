@@ -64,6 +64,7 @@ fn one_caller_advance_rebinds_chain_after_actual_upstream_publication() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(5),

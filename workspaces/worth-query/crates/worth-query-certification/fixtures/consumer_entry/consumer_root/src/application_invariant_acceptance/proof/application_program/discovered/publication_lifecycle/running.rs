@@ -64,6 +64,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn r
         .observed_sources()[0]
         .clone();
     request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "sibling-b".to_owned(),
             operation: PlanarOperation::Adjust(vec![PlanarAdjustment {

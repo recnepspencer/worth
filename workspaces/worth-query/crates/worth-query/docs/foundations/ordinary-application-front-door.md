@@ -91,7 +91,55 @@ proves refusal and fresh original-branch continuation. The
 uses one binding at two canonical instances with distinct installed delivery
 contracts; a caller cannot substitute one instance's delivery at the other.
 
+## Owning fixed and source-only actions
+
+Install a program and declare the exact typed action occurrence and its delivery.
+`request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
+source preparation, preconditions and `idempotency_owned(key)`, followed by
+`retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
+cannot execute, prepare or recover through that builder or its borrowed-key view.
+The selected action carries composition instance, feature, binding and delivery;
+a binding label alone cannot select its contract.
+
+Capture the original meaning once. Supply a fresh authenticated ordinary request
+for every `advance`, delivery and close. Native admission checks current authority
+and the original runtime/branch/program affinity. The descriptor is not a grant.
+Recovery promotes the original native carrier; registered replay rejoins its
+original outputs without running the source handler. Recovered evidence does not
+manufacture the original handler result.
+
+A fixed settled owner borrows its complete settlement for `read_current` or a
+finite `read_current_with_policy`; the currentness check and declared query share
+one observation and one native phase. Read refusal retains the owner. Stale
+settlement supports `read_historical` and `close`, never output advancement.
+No-projection delivery uses `deliver_current` without a dummy query. Source-only
+completion is distinct from required-output settlement; retained delivery selects
+the action's authentic original commit observation.
+
+Completion and delivery retain independent cleanup. `close` returns the complete
+owner with a typed denial when cleanup refuses. Drop is abandonment, not external
+cleanup or crash durability. Only existing native checkpoint/recovery contracts
+survive process loss.
+
+The [compiled original descriptor capture](../../../../../../docs/build-an-application.md#capture-complete-original-meaning) is exercised by the real
+public result-set court.
+
+The real result-set court calls the compiled capture with nondefault preconditions before
+an actual post-effect append failure. It reads the resulting source and outputs
+independently after native recovery. No original intent clone is required per pump.
+Its false-precondition twin also calls that same compiled capture. Omitting the
+supplied preconditions would permit an effect and fail the twin's native refusal
+and unchanged-product assertions. Advanced recovery courts separately refuse
+omitted conditions and substituted row/result-set identity while preserving the
+actual unpublished owner; they do not manufacture recovered handler results.
+
 ## Preparing a program action before publication
+
+### Advanced native preparation
+
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+Select `request.advanced()` before deliberate native mutation preparation.
+
 
 A keyed mutation request may call `prepare_in_program(&runtime, allocation)` when its
 installed candidate must wait before publication. Match
@@ -117,6 +165,12 @@ recovery. Those use their existing source, workflow, and publication owners.
 
 ## How It Executes
 
+### Advanced native substrate
+
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+Native request rebuilding in this section requires explicit `advanced()` selection.
+
+
 Ordinary mutation execution, preparation and publication take an explicit
 `ExecutionAllocationPolicy`. A host may choose `SystemAllocation`, or supply
 `Execution(&lease)` from its caller-owned process authority. The policy governs
@@ -129,6 +183,12 @@ caller's parent policy or shortening payload custody to the request's lifetime.
 
 ### Observing installed mutation work
 
+#### Advanced native reports
+
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+The following reports belong to the explicitly advanced native builder.
+
+
 Use `execute_in_program_report` when a caller needs the installed handler's
 decision projection evidence alongside the ordinary outcome:
 
@@ -138,7 +198,7 @@ decision projection evidence alongside the ordinary outcome:
 use worth_query_host::facade::primary_graph::WorthQueryMutationHandlerWork;
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
-let report = request.mutate(mutation_intent)
+let report = request.advanced().mutate(mutation_intent)
     .without_source().idempotency(&command_id)
     .execute_in_program_report(&application, ExecutionAllocationPolicy::SystemAllocation);
 if let WorthQueryMutationHandlerWork::Captured(capture) = report.decision_work() {
@@ -203,7 +263,7 @@ use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 let request = application.request(&external_principal, &request_scope);
 let result = request.query(query_intent).execute()?;
 let outcome = request
-    .mutate(mutation_intent)
+    .advanced().mutate(mutation_intent)
     .without_source()
     .idempotency(&command_id)
     .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)?;
@@ -346,6 +406,13 @@ phases do not resolve latest product truth again.
 
 ### Branch-resolved mutation lanes
 
+#### Advanced native branch lanes
+
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+The covered manual lanes below require `request.advanced()`; discovered and
+bound workflow native lanes remain ordinary until their adapters land.
+
+
 A mutation does not name the program that commits it. Each lane selects the
 request's exact branch, resolves the commit owner from the program that branch
 carries, and commits through that installed owner:
@@ -358,7 +425,7 @@ use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 let outcome = application
     .request(&principal, &scope)
     .on_branch(branch)
-    .mutate(intent)
+    .advanced().mutate(intent)
     .without_source()
     .idempotency(&command_id)
     .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)?;
@@ -366,7 +433,7 @@ let outcome = application
 
 | Lane | Use it for |
 |---|---|
-| `execute_in_program(&runtime, allocation)` | An ordinary mutation committed through the branch's program owner. |
+| `execute_in_program(&runtime, allocation)` | A deliberate advanced mutation committed through the branch's program owner. |
 | `execute_capability_in_program(&runtime, allocation)` | The same lane for a binding that implements `ApplicationCapabilityMutationBinding`. |
 | `execute_retained_in_program(&runtime, allocation)` | A mutation whose committed outcome also returns a retained read observation (`WorthQueryApplicationRetainedMutationOutcome`). |
 | `execute_performed::<Program, Root>(&runtime, allocation)` | A source mutation that commits and starts the required outputs declared under `Root`. |

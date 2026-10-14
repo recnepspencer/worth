@@ -36,6 +36,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(2),
@@ -81,6 +82,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
         "the finite World snapshot budget must be reached"
     );
     let denial = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &receipt,
@@ -108,6 +110,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn s
     drop(performed);
 
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &receipt,

@@ -91,6 +91,7 @@ fn scenario(direct: bool) {
         .execute()
         .unwrap();
     let changed = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: length(2),
@@ -134,6 +135,7 @@ fn scenario(direct: bool) {
     );
     drop(output);
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<program::ChainProgram, program::ChainRoot>(
             &application,
             &receipt,
@@ -153,6 +155,7 @@ fn scenario(direct: bool) {
         .execute()
         .unwrap();
     let changed = request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".into(),
             operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {

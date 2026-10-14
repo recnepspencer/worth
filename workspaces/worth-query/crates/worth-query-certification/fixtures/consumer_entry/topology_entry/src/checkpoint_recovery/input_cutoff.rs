@@ -72,6 +72,7 @@ fn exercise(
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: changed_successor.to_owned(),
             replacement_y: length(replacement_y),
@@ -157,6 +158,7 @@ fn exercise(
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: changed_successor.to_owned(),
                 replacement_y: length(replacement_y + 1),

@@ -6,6 +6,7 @@
 //! module. The optional certification package is a cold leaf over the engine.
 
 mod dependencies;
+mod ordinary_entry;
 mod surface;
 
 use crate::config::QueryAudienceContract;
@@ -19,6 +20,7 @@ pub(crate) fn validate_query_audience_facades(
     contract: &QueryAudienceContract,
 ) -> Result<Vec<Diagnostic>, String> {
     let mut diagnostics = Vec::new();
+    diagnostics.extend(ordinary_entry::validate(root, &contract.workspace)?);
     let audience_packages: Vec<&str> = contract
         .audiences
         .iter()

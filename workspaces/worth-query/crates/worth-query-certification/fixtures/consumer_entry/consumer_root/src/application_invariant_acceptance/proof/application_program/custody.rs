@@ -44,6 +44,7 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
         "caller disposal leaves exact prepared custody with the owner"
     );
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &abandoned_receipt,
@@ -244,6 +245,7 @@ fn prepare<'a>(
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: key.to_owned(),
             replacement_y: length(y),

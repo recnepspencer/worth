@@ -62,6 +62,7 @@ fn typed_migration_repairs_state_inside_the_adoption_publication() {
             host.runtime()
                 .request(&principal, &scope)
                 .on_branch(branch)
+                .advanced()
                 .mutate(SetRetentionIntent {
                     input: SetRetentionInput {
                         identity: DOCUMENT_IDENTITY.to_owned(),
@@ -153,6 +154,7 @@ fn migration_candidate_cannot_cross_the_source_product_head() {
             host.runtime()
                 .request(&principal, &scope)
                 .on_branch(branch)
+                .advanced()
                 .mutate(SetRetentionIntent {
                     input: SetRetentionInput {
                         identity: DOCUMENT_IDENTITY.to_owned(),
@@ -235,6 +237,7 @@ fn unpublished_migration_recovery_never_reruns_candidate_authoring() {
             host.runtime()
                 .request(&principal, &scope)
                 .on_branch(branch)
+                .advanced()
                 .mutate(SetRetentionIntent {
                     input: SetRetentionInput {
                         identity: DOCUMENT_IDENTITY.to_owned(),

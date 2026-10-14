@@ -98,6 +98,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
     let request = runtime.request(&principal, &scope);
     let report = request
+        .advanced()
         .mutate(SetRetentionIntent {
             input: SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.into(),
@@ -139,6 +140,7 @@ fn performed_mutation_attempt_report_preserves_source_custody() {
         std::num::NonZeroUsize::new(8192).unwrap(),
     );
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<OrdinaryAssessmentProgram, OrdinaryRoot>(
             &host,
             &receipt,

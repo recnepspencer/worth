@@ -145,6 +145,7 @@ fn one_advance_discharge_follows_real_consumed_output_edges_after_upstream_stabl
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-source-c".to_owned(),
             replacement_y: length(11),

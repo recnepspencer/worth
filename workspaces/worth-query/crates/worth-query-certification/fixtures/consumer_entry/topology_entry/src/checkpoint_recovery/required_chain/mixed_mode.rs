@@ -40,6 +40,7 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         .unwrap();
     assert_eq!(old_b.producer_contacts_in_this_demand(), 1);
     let mut outputs = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),
@@ -53,6 +54,7 @@ fn program_wave_rejoins_selected_program_required_successor_without_changing_its
         .execute()
         .unwrap();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: length(2),

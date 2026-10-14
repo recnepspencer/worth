@@ -63,6 +63,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
         host.fail_next_durable_append_for_test(request_execution);
         match host
             .request(&principal, &scope)
+            .advanced()
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
@@ -115,7 +116,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     cancellation.cancel();
     assert!(matches!(
         host.request(&principal, &stopped)
-            .mutate(intent.clone())
+            .advanced().mutate(intent.clone())
             .without_source()
             .idempotency(&key)
             .recover_unpublished_required_in_program(&mut recovery, &host),
@@ -124,6 +125,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     assert!(recovery.performed().is_none());
     assert_eq!(
         host.request(&principal, &scope)
+            .advanced()
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
@@ -133,6 +135,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     );
     let (source, initial, performed, prior) = host
         .request(&principal, &scope)
+        .advanced()
         .mutate(intent)
         .without_source()
         .idempotency(&key)

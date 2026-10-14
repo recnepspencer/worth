@@ -36,6 +36,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-c".to_owned(),
             replacement_y: length(2),
@@ -92,6 +93,7 @@ pub(super) fn caller_disposal_after_root_recovers_dependent(
     drop(started);
 
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,

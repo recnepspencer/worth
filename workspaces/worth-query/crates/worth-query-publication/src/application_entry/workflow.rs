@@ -32,9 +32,10 @@ pub use instance::{
 };
 pub use navigation::WorthQueryWorkflowNavigateBackRequest;
 pub use operation::{
-    WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationAcceptanceDenial,
-    WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
-    WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryDenial,
+    WorthQueryBoundWorkflowOperation, WorthQueryPreparedWorkflowOperationRecovery,
+    WorthQueryWorkflowOperationAcceptanceDenial, WorthQueryWorkflowOperationBindingDenial,
+    WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
+    WorthQueryWorkflowOperationRecoveryDenial,
     WorthQueryWorkflowOperationRecoveryPreparationDenial,
 };
 pub use ordinary::{

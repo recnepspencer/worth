@@ -4,6 +4,7 @@ use super::*;
 
 /// Owns the original fixed-output description and native source, output and cleanup custody.
 /// Each advancement borrows fresh request authority; refusals return the owning operation.
+#[must_use = "retain native publication/output custody until settlement or terminal handoff"]
 pub struct WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema,

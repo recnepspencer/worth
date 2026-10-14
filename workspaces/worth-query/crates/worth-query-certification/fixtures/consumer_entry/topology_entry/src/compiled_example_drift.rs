@@ -39,6 +39,7 @@ fn compiled_examples_match_consumer_documents() {
         examples,
         BTreeSet::from([
             "warehouse_inventory.rs".to_owned(),
+            "owning_entry.rs".to_owned(),
             "sensor_telemetry.rs".to_owned(),
             "checkpoint_recovery/computation_partition/demand.rs".to_owned(),
             "checkpoint_recovery/required_chain/concurrent_waves/application.rs".to_owned(),

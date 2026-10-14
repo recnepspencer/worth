@@ -27,6 +27,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
         .execute()
         .unwrap();
     let saved = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(4),
@@ -106,6 +107,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     assert_eq!(super::super::producer::provider_contacts(), 0);
 
     let mut outputs = request
+        .advanced()
         .start_program_outputs::<DemandProgram, DemandRoot>(
             &restored,
             PlanarOutputDemand::new("anchor-a"),
@@ -176,6 +178,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
         .require_current_program_output(&settled, NonZeroUsize::new(4096).unwrap())
         .unwrap();
     let mut repeated = request
+        .advanced()
         .start_program_outputs::<DemandProgram, DemandRoot>(
             &restored,
             PlanarOutputDemand::new("anchor-a"),
@@ -221,6 +224,7 @@ fn required_graph_still_refuses_source_only_save() {
         .execute()
         .unwrap();
     let denial = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(4),
@@ -260,11 +264,13 @@ fn demand_only_root_keeps_governed_source_locality_fence() {
     let request = application.request(&principal, &scope);
     let before = request.retain_current_read().unwrap();
     super::super::producer::reset_provider_contacts();
-    let refusal = match request.start_program_outputs::<UngovernedProgram, DemandRoot>(
-        &application,
-        PlanarOutputDemand::new("anchor-a"),
-        Default::default(),
-    ) {
+    let refusal = match request
+        .advanced()
+        .start_program_outputs::<UngovernedProgram, DemandRoot>(
+            &application,
+            PlanarOutputDemand::new("anchor-a"),
+            Default::default(),
+        ) {
         Err(refusal) => refusal,
         Ok(_) => panic!("explicit demand cannot bypass its governed source action"),
     };

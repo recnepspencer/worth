@@ -122,6 +122,7 @@ fn journey(result_set: bool, movement: u8) {
             .execute()
             .unwrap();
         let outcome = request
+            .advanced()
             .mutate(VertexReplacement {
                 scope_key: input.scope_key.clone(),
                 replacement: PlanarVertexReplacement {

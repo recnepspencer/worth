@@ -59,6 +59,7 @@ pub(super) fn revised_parent_publication_is_the_dependent_basis(
             .observed_sources()[0]
             .clone();
         let performed = request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-a".to_owned(),
                 replacement_y: length(replacement_y),

@@ -47,6 +47,7 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
         .execute()
         .unwrap();
     let performed = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: length(2),
@@ -137,6 +138,7 @@ fn mixed_retirement_performed_product_settles_and_checkpoint_stays_ineligible() 
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarEdit(PlanarMutation {
                 scope_key: "replacement-b".into(),
                 operation: worth_query_consumer_values::PlanarOperation::PublishDerivedOutput(

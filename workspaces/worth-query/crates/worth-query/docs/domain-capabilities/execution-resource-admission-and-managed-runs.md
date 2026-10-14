@@ -1,5 +1,13 @@
 # Execution Resource Admission And Managed Runs
 
+Ordinary fixed and source-only actions use the [owning entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions).
+Each advance accepts fresh authority and delegates one admitted native phase.
+Provider managed runs remain the resource/execution owners; application ownership
+adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
+refusal retains custody. Bound workflow execution keeps its native funnel until
+Phase C; discovered ownership lands in Phase B.
+
+
 ## What This Feature Is
 
 Execution resource admission and managed runs let Query govern domain work that
@@ -106,7 +114,9 @@ answering from partial proof.
 
 The trusted host enters repair through the runtime-issued verifier handle:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let complete = application.repair_completed_inbound_index(
     &installed_source,
     world_page,
@@ -302,7 +312,9 @@ the authority needed to retry or recover; it does not hide behind `Drop`.
 
 ## Small Example
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let resource_attempt = runtime.start_direct_resource_attempt(
     &operation,
     admitted_plan,
@@ -321,7 +333,9 @@ work.
 
 ## Real Example
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let active = running.begin_graph_execution(&graph, graph_request)?;
 
 match active.advance() {

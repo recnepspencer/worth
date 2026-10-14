@@ -236,7 +236,7 @@ where
             | PreparedWorkflowAdvance::AwaitingEvidence { .. }
             | PreparedWorkflowAdvance::AwaitingApproval { .. }
             | PreparedWorkflowAdvance::ReplayOnly { .. } => {
-                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation)
+                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation);
             }
         };
         if !same_requirement(prepared.required(), required) {
@@ -276,3 +276,8 @@ fn same_requirement(left: &RequiredWorkflowOperation, right: &RequiredWorkflowOp
         && left.input_type() == right.input_type()
         && left.input_identity() == right.input_identity()
 }
+
+mod ordinary;
+
+mod bound;
+pub use bound::WorthQueryBoundWorkflowOperation;

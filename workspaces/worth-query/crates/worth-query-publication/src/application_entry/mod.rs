@@ -1,3 +1,12 @@
+#[path = "advanced/request.rs"]
+mod advanced_request;
+/// Deliberate current native control; ordinary actions use the owning builder.
+pub mod advanced {
+    pub use super::advanced_request::WorthQueryAdvancedApplicationRequest;
+    pub use super::mutation::{
+        WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
+    };
+}
 mod capability_delegation;
 mod capability_revocation;
 mod demand;
@@ -9,6 +18,8 @@ mod inbound_occurrence;
 mod live;
 mod mandatory_review;
 mod mutation;
+mod ordinary;
+pub use ordinary::{WorthQueryOperationBuilder, WorthQueryPendingApplicationLane};
 mod operation;
 pub use operation::{
     WorthQueryClosedOperation, WorthQueryCompletedSourceOperation, WorthQueryFixedOperation,
@@ -64,9 +75,7 @@ pub use mandatory_review::{
 };
 pub use mutation::{
     WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryApplicationMutationAttemptReport,
-    WorthQueryApplicationMutationOutcome, WorthQueryApplicationMutationRequest,
-    WorthQueryApplicationMutationRequestWithIdempotency,
-    WorthQueryApplicationPerformedMutationOutcome,
+    WorthQueryApplicationMutationOutcome, WorthQueryApplicationPerformedMutationOutcome,
     WorthQueryApplicationProgramMigrationPreparationDenial,
     WorthQueryApplicationProgramMigrationPreparationOutcome,
     WorthQueryApplicationProgramMutationPreparation, WorthQueryApplicationProgramOutputHandle,
@@ -140,8 +149,8 @@ pub use workflow::{
     WorkflowInstancePreparationDenial, WorkflowInstanceStartOutcome, WorkflowProgressOutcome,
     WorkflowProposalBindingDenial, WorkflowProposalOutcome, WorkflowProposalPreparationDenial,
     WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-    WorthQueryOrdinaryWorkflowDraft, WorthQueryOrdinaryWorkflowPublication,
-    WorthQueryOrdinaryWorkflowPublicationDenial,
+    WorthQueryBoundWorkflowOperation, WorthQueryOrdinaryWorkflowDraft,
+    WorthQueryOrdinaryWorkflowPublication, WorthQueryOrdinaryWorkflowPublicationDenial,
     WorthQueryOrdinaryWorkflowPublicationWithIdempotency, WorthQueryOrdinaryWorkflowRun,
     WorthQueryOrdinaryWorkflowRunProgress, WorthQueryOrdinaryWorkflowRunStop,
     WorthQueryOrdinaryWorkflowRunWithKeys, WorthQueryOrdinaryWorkflowStart,

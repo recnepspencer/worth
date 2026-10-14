@@ -34,6 +34,7 @@ pub(in super::super) fn resource_denial_preserves_source_and_delivery(
         NonZeroUsize::new(1).unwrap(),
     );
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-c".to_owned(),
             replacement_y: length(2),

@@ -43,6 +43,7 @@ fn prove(at_preparation: bool) {
     .unwrap();
     let request = application.request(&principal, &scope);
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-b".to_owned(),
             replacement_y: length(2),

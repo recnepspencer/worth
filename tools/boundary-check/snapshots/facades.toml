@@ -197,8 +197,6 @@ exports = [
     "WorthQueryApplicationMandatoryReviewFailure",
     "WorthQueryApplicationMutationAttemptReport",
     "WorthQueryApplicationMutationOutcome",
-    "WorthQueryApplicationMutationRequest",
-    "WorthQueryApplicationMutationRequestWithIdempotency",
     "WorthQueryApplicationOutputDemandContinuation",
     "WorthQueryApplicationOutputDemandDenial",
     "WorthQueryApplicationOutputDemandHandle",
@@ -236,6 +234,7 @@ exports = [
     "WorthQueryApplicationRetainedMutationOutcome",
     "WorthQueryApplicationRetainedRequest",
     "WorthQueryBlockedProgramSource",
+    "WorthQueryBoundWorkflowOperation",
     "WorthQueryBranchAdoptionPublicationOutcome",
     "WorthQueryBranchAdoptionRecovery",
     "WorthQueryBranchAdoptionRecoveryDenial",
@@ -266,6 +265,7 @@ exports = [
     "WorthQueryMutationSourcePrepared",
     "WorthQueryOperationAdvance",
     "WorthQueryOperationAdvanceDenial",
+    "WorthQueryOperationBuilder",
     "WorthQueryOperationCleanup",
     "WorthQueryOperationCleanupReceipt",
     "WorthQueryOperationCloseDenial",
@@ -288,6 +288,7 @@ exports = [
     "WorthQueryOutputCurrentnessDenial",
     "WorthQueryOutputDemandControls",
     "WorthQueryOutputSettlementPosture",
+    "WorthQueryPendingApplicationLane",
     "WorthQueryPerformedApplicationMutation",
     "WorthQueryPerformedBranchAdoption",
     "WorthQueryPerformedDiscoveredApplicationMutation",
@@ -366,6 +367,10 @@ exports = [
     "WorthQueryWorkflowProposalPreparationDenial",
     "WorthQueryWorkflowProposalPreparationDenialKind",
     "WorthQueryWorkflowProposalRequest",
+    "advanced",
+    "advanced::WorthQueryAdvancedApplicationRequest",
+    "advanced::WorthQueryApplicationMutationRequest",
+    "advanced::WorthQueryApplicationMutationRequestWithIdempotency",
 ]
 
 [[facades]]

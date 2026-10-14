@@ -1,3 +1,4 @@
+use super::mutation::WorthQueryApplicationMutationRequest;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -6,8 +7,8 @@ use worth_query_declaration::facade::application_query::ApplicationQueryIntent;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
-    WorthQueryApplicationMutationRequest, WorthQueryApplicationOutputDemandRequest,
-    WorthQueryApplicationProgramsRequest, WorthQueryApplicationQueryRequest,
+    WorthQueryApplicationOutputDemandRequest, WorthQueryApplicationProgramsRequest,
+    WorthQueryApplicationQueryRequest, WorthQueryOperationBuilder,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -115,17 +116,38 @@ where
     pub fn mutate<Intent>(
         &self,
         intent: Intent,
-    ) -> WorthQueryApplicationMutationRequest<'application, 'principal, 'scope, Schema, Intent>
+    ) -> WorthQueryOperationBuilder<'application, 'principal, 'scope, Schema, Intent>
     where
         Intent: ApplicationMutationIntent<Schema>,
     {
-        WorthQueryApplicationMutationRequest::new(
-            self.application,
-            self.principal,
-            self.scope,
-            self.branch,
-            intent,
-        )
+        WorthQueryOperationBuilder {
+            native: WorthQueryApplicationMutationRequest::new(
+                self.application,
+                self.principal,
+                self.scope,
+                self.branch,
+                intent,
+            ),
+        }
+    }
+
+    /// Select deliberate native mutation and fixed-output control.
+    pub fn advanced(
+        &self,
+    ) -> super::advanced::WorthQueryAdvancedApplicationRequest<
+        'application,
+        'principal,
+        'scope,
+        Schema,
+    > {
+        super::advanced::WorthQueryAdvancedApplicationRequest {
+            request: Self {
+                application: self.application,
+                principal: self.principal,
+                scope: self.scope,
+                branch: self.branch,
+            },
+        }
     }
 
     pub fn demand<Demand>(

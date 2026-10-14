@@ -72,6 +72,7 @@ fn journey(add_match: bool, leave_dirty: bool) {
         });
     }
     let changed = request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-b".to_owned(),
             operation: PlanarOperation::Adjust(edits),

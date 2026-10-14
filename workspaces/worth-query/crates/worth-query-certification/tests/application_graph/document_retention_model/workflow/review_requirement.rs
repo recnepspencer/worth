@@ -281,6 +281,7 @@ pub fn link_review_requirement_on(
     runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(ReviewRequirementIntent {
             input: ReviewRequirementInput {
                 resource: DOCUMENT_IDENTITY.to_owned(),

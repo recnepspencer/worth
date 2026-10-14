@@ -139,7 +139,7 @@ fn program_adoption_carries_retained_state_and_reuses_only_unchanged_partitions(
                 };
                 let outcome = app
                     .request(&principal, &scope)
-                    .mutate(change.commanded(0x612_ad0 + round as u64))
+                    .advanced().mutate(change.commanded(0x612_ad0 + round as u64))
                     .without_source()
                     .idempotency(&(0x612_ad0_u64 + round as u64))
                     .execute_in_program::<OracleProgram>(&app, worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation);

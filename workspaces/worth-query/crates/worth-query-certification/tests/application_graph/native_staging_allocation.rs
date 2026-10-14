@@ -82,6 +82,7 @@ fn ordinary_mutation_read_set_fits_before_native_staging_refuses_the_same_lease(
             runtime
                 .request(&principal, &scope)
                 .on_branch(branch)
+                .advanced()
                 .mutate(SetRetentionIntent {
                     input: SetRetentionInput {
                         identity: DOCUMENT_IDENTITY.to_owned(),

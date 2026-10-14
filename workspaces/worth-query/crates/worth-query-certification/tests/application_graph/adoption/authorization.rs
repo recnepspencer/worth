@@ -39,6 +39,7 @@ fn change_grant_status(
         .runtime()
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent)
         .without_source()
         .idempotency(&key)

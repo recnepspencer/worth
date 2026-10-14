@@ -134,6 +134,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
     let unbound = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(ReviewedSetRetentionIntent {
             input: super::document_retention_model::schema::SetRetentionInput {
                 identity: DOCUMENT_IDENTITY.to_owned(),

@@ -28,6 +28,8 @@ mod checkpoint_recovery;
 mod compiled_example_drift;
 mod discovery_read;
 mod mutation;
+mod owning_entry;
+pub use owning_entry::capture_original;
 mod planar_edit;
 mod planar_invariant;
 mod planar_output_read;

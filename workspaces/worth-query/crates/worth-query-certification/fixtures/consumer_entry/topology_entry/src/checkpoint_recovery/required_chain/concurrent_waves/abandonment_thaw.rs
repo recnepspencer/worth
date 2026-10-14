@@ -37,6 +37,7 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
         .unwrap();
     let dirty_root = selected.observed_sources()[0].root_entity_for_test();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: dirty_name.into(),
             replacement_y: length(if dirty_name == "diamond-left" { 5 } else { 54 }),
@@ -60,6 +61,7 @@ fn case(cancel: bool, owner_name: &str, dirty_name: &str) {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: owner_name.into(),
             replacement_y: length(if owner_name == "diamond-left" { 6 } else { 55 }),
@@ -194,6 +196,7 @@ fn a_checkpoint_of_a_frozen_head_restores_truth_without_a_publication_hold() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: length(7),

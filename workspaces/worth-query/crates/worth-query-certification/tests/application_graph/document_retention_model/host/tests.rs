@@ -106,6 +106,7 @@ fn the_ordinary_lane_refuses_a_workflow_control_binding() {
     let settlement = runtime
         .request(&principal, &scope)
         .on_branch(host.current_world())
+        .advanced()
         .mutate(WorkflowAdvanceIntent {
             input: WorkflowAdvanceInput {
                 document_identity: DOCUMENT_IDENTITY.to_owned(),

@@ -31,6 +31,7 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
     // Activate the existing program through its declared source operation.
     // The equal write preserves the source value and native field revision.
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(1),
@@ -50,6 +51,7 @@ fn output_changed_before_capture_cannot_become_unverified_restored_ready() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {

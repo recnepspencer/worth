@@ -58,6 +58,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         })
         .unwrap();
     let outcome = request
+        .advanced()
         .mutate(input.clone())
         .preconditions(conditions("anchor-a"))
         .expect_result_set(original_set.clone())
@@ -95,6 +96,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
     macro_rules! original_request {
         ($conditions:expr, $key:expr) => {
             request
+                .advanced()
                 .mutate(input.clone())
                 .preconditions($conditions)
                 .expect_result_set(original_set.clone())
@@ -136,6 +138,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         "native keyed refusal: {denial:?}"
     );
     let denial = request
+        .advanced()
         .mutate(input.clone())
         .preconditions(conditions("anchor-a"))
         .expect_source(original_row)
@@ -148,6 +151,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         "native form refusal: {denial:?}"
     );
     let denial = request
+        .advanced()
         .mutate(input.clone())
         .preconditions(conditions("anchor-a"))
         .expect_result_set(substituted_set)
@@ -186,6 +190,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         .unwrap();
     assert_eq!(current.rows()[0].y, length(2));
     let (denial, retained) = request
+        .advanced()
         .mutate(input.clone())
         .preconditions(conditions("anchor-a"))
         .expect_source(current.observed_sources()[0].clone())
@@ -206,6 +211,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         .execute()
         .unwrap();
     let (denial, retained) = request
+        .advanced()
         .mutate(input.clone())
         .preconditions(conditions("anchor-a"))
         .expect_result_set(newer_other.result_set_observation().unwrap().clone())
@@ -222,6 +228,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
     drop(newer_other);
     // Newness alone is not substitution: membership is unchanged after a value edit.
     let (preparation, cause, performed, prior_cleanup) = request
+        .advanced()
         .mutate(input.clone())
         .preconditions(conditions("anchor-a"))
         .expect_result_set(current.result_set_observation().unwrap().clone())

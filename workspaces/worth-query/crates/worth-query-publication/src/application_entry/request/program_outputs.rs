@@ -40,7 +40,7 @@ where
 {
     /// Starts one explicitly selected installed output root from a retained
     /// current source observation.
-    pub fn start_program_outputs<Program, Root>(
+    pub(in crate::application_entry) fn start_program_outputs<Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         root_demand: RootDemand<Schema, Root>,
@@ -148,7 +148,7 @@ where
 
     /// Re-enters one installed program's owner-retained required-output graph
     /// with fresh request authority after caller disposal or interruption.
-    pub fn recover_required_outputs<Program, Root>(
+    pub(in crate::application_entry) fn recover_required_outputs<Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         source_receipt: &worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt,
@@ -320,3 +320,5 @@ pub(in crate::application_entry) enum WorthQueryAdmittedRequiredOutputRecoveryDe
     ),
     Outputs(crate::application_entry::WorthQueryRequiredOutputPreparationDenial),
 }
+
+mod advanced;

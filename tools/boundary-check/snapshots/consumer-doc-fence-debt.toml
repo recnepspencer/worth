@@ -2,15 +2,15 @@
 
 [[documents]]
 path = "docs/build-an-application.md"
-unclassified = 31
+unclassified = 0
 
 [[documents]]
 path = "docs/how-it-works.md"
-unclassified = 6
+unclassified = 0
 
 [[documents]]
 path = "docs/api.md"
-unclassified = 3
+unclassified = 0
 
 [[documents]]
 path = "docs/capability-index.md"
@@ -22,11 +22,11 @@ unclassified = 0
 
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query-host/README.md"
-unclassified = 5
+unclassified = 0
 
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/AI_README.md"
-unclassified = 1
+unclassified = 0
 
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md"
@@ -34,7 +34,7 @@ unclassified = 0
 
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md"
-unclassified = 10
+unclassified = 0
 
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/workflow/README.md"
@@ -42,7 +42,7 @@ unclassified = 0
 
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md"
-unclassified = 3
+unclassified = 0
 
 [[documents]]
 path = "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md"
