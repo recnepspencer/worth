@@ -111,10 +111,44 @@ let transfer = runtime
     .execute();
 ```
 
-Every ordinary call follows the same shape: choose a typed operation, supply a
-fresh authenticated principal, supply caller-owned controls, then execute. The
-runtime owns admission, projection, provider work, and outcome construction.
+Ordinary reads and the remaining native mutation callers supply a typed operation,
+a fresh authenticated principal and caller-owned controls. The runtime owns
+admission, projection, provider work, and outcome construction.
 The caller cannot insert a read set, proposal, provider session, or receipt.
+
+### Own a retained deposit
+
+The deposit builder also provides `retain_operation()`: call it after
+`mutate(mutations::deposit(input)).as_principal(&principal).controls(controls)`.
+It transfers the original input, typed preconditions and owned idempotency key
+into the installed `BankApplication` deposit action. Construction retains no
+principal or request scope. The five money actions declare distinct retained
+delivery contracts; only deposit's Bank builder is cut over to owning construction
+in this checkpoint.
+
+Advance the returned operation with `operation.advance(&fresh_request,
+maximum_history_work)`, using `runtime.request(&fresh_principal, &fresh_scope)`
+and an explicit `NonZeroUsize` history bound for that attempt. Keep the owner
+returned by `Progress` or `Refused`. Native unpublished recovery uses fresh
+authorization and adopts the original journal/posting effects without executing
+the deposit handler again. A fresh stranger cannot recover a teller's deposit.
+
+On completion, `Fresh` evidence includes the actual `MoneyMovementResult`;
+`Recovered` evidence includes native receipt/publication evidence and the original
+retained World observation, without recreating the handler result. Use that
+observation with the saved account activity request's `retained` read under fresh
+read authority. Later deposits change current activity without retargeting the
+original retained observation. Keep completed custody if `close(&fresh_request)`
+refuses and retry with lawful fresh context.
+
+The [owning deposit court](../crates/bank-server/tests/ordinary_mutations/owning_deposit.rs)
+executes the real append-partial, unauthorized recovery, authorized recovery,
+historical read and cancelled-close/fresh-close journey. It also verifies all five
+installed money deliveries and preserves the deployed program capability meaning.
+HTTP still uses its native one-shot mutation path; its pending-owner transport
+protocol and the remaining money-consumer cutover are not supplied by this deposit
+constructor. Do not hide advancement in a loop or reconstruct original meaning
+to discard returned custody.
 
 ## Workflow, history, and live target
 

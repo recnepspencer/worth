@@ -64,10 +64,10 @@ fn bank_feature_specs_with_optional_effects(
         estate
     };
     let payments = ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
-        .mutation::<ApplyOpeningFundingMutationBinding>()
-        .mutation::<DepositMutationBinding>()
-        .mutation::<WithdrawMutationBinding>()
-        .mutation::<SendMoneyMutationBinding>()
+        .operation_action::<ApplyOpeningFundingMutationBinding, super::money_actions::OpeningFundingDelivery>()
+        .operation_action::<DepositMutationBinding, super::money_actions::DepositDelivery>()
+        .operation_action::<WithdrawMutationBinding, super::money_actions::WithdrawalDelivery>()
+        .operation_action::<SendMoneyMutationBinding, super::money_actions::SendMoneyDelivery>()
         .mutation::<InitiateBusinessPaymentMutationBinding>()
         .mutation::<ApprovedBusinessPaymentAuthoringBinding>()
         .mutation::<ApprovedBusinessPaymentApprovalBinding>()
@@ -89,7 +89,7 @@ fn bank_feature_specs_with_optional_effects(
             .finish(),
         payments
             .mutation::<RejectPaymentMutationBinding>()
-            .mutation::<ReverseJournalMutationBinding>()
+            .operation_action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>()
             .finish(),
         estate
             .mutation::<FreezeEstateAccountMutationBinding>()
