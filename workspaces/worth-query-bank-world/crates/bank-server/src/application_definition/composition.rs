@@ -81,6 +81,7 @@ fn bank_feature_specs_with_optional_effects(
     };
     vec![
         ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
+            .mutation::<ProgramDeploymentRevocationBinding>()
             .mutation::<CreatePersonalAccountMutationBinding>()
             .mutation::<CreateBusinessAccountMutationBinding>()
             .mutation::<GrantAccountAccessMutationBinding>()
@@ -119,6 +120,9 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplicationP1 {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.application.p1.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<BankSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<bank_domain::schema::BankProgramDeploymentBinding>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         bank_feature_specs_with_optional_effects(false, true)
     }
@@ -136,6 +140,9 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplicationP2 {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.application.p2.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<BankSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<bank_domain::schema::BankProgramDeploymentBinding>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         bank_feature_specs_with_optional_effects(false, false)
     }
@@ -153,6 +160,9 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplication {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.application.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<BankSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<bank_domain::schema::BankProgramDeploymentBinding>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         bank_feature_specs()
     }

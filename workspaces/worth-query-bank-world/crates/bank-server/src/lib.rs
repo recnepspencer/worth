@@ -25,6 +25,8 @@ mod operation_commit;
 mod ordinary;
 mod principal_seed;
 mod program_adoption;
+mod program_deployment_grant_seed;
+mod program_deployment_revocation;
 mod world_seed;
 
 pub use application_definition::{
@@ -119,6 +121,9 @@ pub use ordinary::{
 };
 pub use principal_seed::BankPrincipalSeed;
 pub use program_adoption::{BankProgramAdoptionPreparationDenial, BankProgramInspectionDenial};
+pub use program_deployment_grant_seed::{
+    BankProgramDeploymentGrantSeed, BankProgramDeploymentGrantSeedDenial,
+};
 pub use world_seed::{BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankWorldSeed};
 mod approved_payment_workflow;
 

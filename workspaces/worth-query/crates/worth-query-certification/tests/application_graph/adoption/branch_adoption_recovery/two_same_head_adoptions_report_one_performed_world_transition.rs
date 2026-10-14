@@ -27,6 +27,7 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
             .on_branch(branch)
             .programs()
             .adopt(&requirements)
+            .expect("declared adoption capability admits")
             .prepare(64)
     };
     // A same-head publisher meeting the winner mid-flight is told to retry
@@ -36,7 +37,7 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
     let settled = (std::sync::Mutex::new(false), std::sync::Condvar::new());
     let publish = |mut attempt: WorthQueryPreparedBranchAdoption| {
         for _ in 0..SAME_HEAD_RETRIES {
-            let outcome = attempt.publish();
+            let outcome = attempt.publish(host.runtime(), &principal, &scope);
             if let WorthQueryBranchAdoptionPublicationOutcome::NoEffect(no_effect) = &outcome {
                 if winner_in_flight(no_effect.cause()) {
                     await_settled(&settled);
@@ -92,6 +93,12 @@ fn two_same_head_adoptions_report_one_performed_world_transition() {
             }
         };
         match outcome {
+            WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+                panic!("authorized adoption refused: {cause:?}")
+            }
+            WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+                panic!("execution admission refused: {cause:?}")
+            }
             WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
                 panic!("the declared host policy admits adoption: {cause:?}")
             }

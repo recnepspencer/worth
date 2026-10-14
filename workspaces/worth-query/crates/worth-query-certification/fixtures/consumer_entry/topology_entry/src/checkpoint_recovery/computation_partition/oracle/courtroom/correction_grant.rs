@@ -3,6 +3,15 @@ use super::super::super::entry_correction::capability::*;
 use super::*;
 use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap;
 pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>, scope: &str) {
+    seed_grant(graph, scope, "entry-correction-grant", 1);
+    seed_grant(graph, scope, "program-adoption-grant", 2);
+}
+fn seed_grant(
+    graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>,
+    scope: &str,
+    grant: &str,
+    action: u64,
+) {
     use worth_query_host::facade::primary_graph::{
         WorthQueryApplicationEntityKey as Key, WorthQueryApplicationEntitySeed as Seed,
         WorthQueryApplicationRelationSeed as Relation,
@@ -12,9 +21,9 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>
     }
     graph
         .bind_entity(
-            Seed::new(CorrectionGrant::reference(), key("entry-correction-grant"))
-                .field(CorrectionAction::reference(), 1)
-                .field(CorrectionPurpose::reference(), 1)
+            Seed::new(CorrectionGrant::reference(), key(grant))
+                .field(CorrectionAction::reference(), action)
+                .field(CorrectionPurpose::reference(), action)
                 .field(CorrectionStatus::reference(), 1)
                 .field(CorrectionScopeKey::reference(), scope.to_owned())
                 .field(CorrectionNotBefore::reference(), 0)
@@ -25,25 +34,25 @@ pub(super) fn seed(graph: &mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>
     graph
         .bind_relation(Relation::new(
             CorrectionResource::reference(),
-            "correction-resource",
-            key("entry-correction-grant"),
+            format!("{grant}-resource"),
+            key(grant),
             key(scope),
         ))
         .unwrap();
     graph
         .bind_relation(Relation::new(
             CorrectionGrantee::reference(),
-            "correction-grantee",
+            format!("{grant}-grantee"),
             key("model-owner"),
-            key("entry-correction-grant"),
+            key(grant),
         ))
         .unwrap();
     graph
         .bind_relation(Relation::new(
             CorrectionGrantor::reference(),
-            "correction-grantor",
+            format!("{grant}-grantor"),
             key("model-owner"),
-            key("entry-correction-grant"),
+            key(grant),
         ))
         .unwrap();
 }

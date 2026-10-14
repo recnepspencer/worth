@@ -68,11 +68,14 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
         .expect("workflow branch remains admitted")
         .expect("workflow activation facts remain readable");
     assert!(published_under.is_some() && carried.is_none());
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
     let (still_published_under, carried) = application
         .with_host_advancement(|host_phase| {
             application
@@ -116,19 +119,22 @@ fn carry_moves_a_live_instance_and_its_definition_to_the_target() {
 fn retire_and_cancel_end_the_source_workflow_on_the_branch() {
     let (application, definition, instance) = live_instance_on_first_program(85_100);
     let main = application.current_world();
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| {
-            let current = &inventory.definitions()[0];
-            let live = &inventory.instances()[0];
-            inventory
-                .dispositions()
-                .definition(current, DefinitionDisposition::Retire)
-                .and_then(|choices| choices.instance(live, InstanceDisposition::Cancel))
-                .expect("retire and cancel are legal for a compatible, unperformed instance")
-        }),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| {
+                let current = &inventory.definitions()[0];
+                let live = &inventory.instances()[0];
+                inventory
+                    .dispositions()
+                    .definition(current, DefinitionDisposition::Retire)
+                    .and_then(|choices| choices.instance(live, InstanceDisposition::Cancel))
+                    .expect("retire and cancel are legal for a compatible, unperformed instance")
+            }),
+        ),
+    );
 
     let cancelled = advance_instance(&application, instance, 85_110);
     assert!(
@@ -163,11 +169,14 @@ fn choices_made_against_a_moved_inventory_are_refused() {
         Err(other) => panic!("stale choices must name the fresh inventory: {other:?}"),
         Ok(_) => panic!("choices made before the second start must not adopt"),
     }
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
 }
 
 pub(super) fn live_instance_on_first_program(

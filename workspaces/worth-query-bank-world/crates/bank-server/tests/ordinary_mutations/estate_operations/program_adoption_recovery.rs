@@ -48,10 +48,16 @@ fn performed_effect_recovery_survives_removal_from_the_current_program() {
         .expect("removed effectful operation requires exact recovery custody");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared program adoption permission admits")
         .prepare(128)
         .expect("Bank P1 adoption prepares");
     assert!(has_exact_recovery(prepared.custody(), recovery));
-    let performed = match prepared.publish() {
+    let performed = match runtime
+        .request(&specialist, &adoption_scope)
+        .on_branch(branch)
+        .programs()
+        .publish(prepared)
+    {
         WorthQueryBranchAdoptionPublicationOutcome::Performed(performed) => performed,
         _ => panic!("Bank P1 adoption must publish"),
     };

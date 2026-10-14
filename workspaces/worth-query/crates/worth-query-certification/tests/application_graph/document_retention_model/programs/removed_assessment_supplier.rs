@@ -13,6 +13,10 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RemovedAssessment
         "worth.query.certification.document-retention.no-assessment-supplier.v1",
     );
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<DocumentRetentionSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<super::super::program_adoption::ProgramAdoptionBinding>()
+    }
+
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()

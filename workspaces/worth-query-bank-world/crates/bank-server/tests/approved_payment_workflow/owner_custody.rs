@@ -206,6 +206,7 @@ fn adoption_leaves_a_payment_the_rail_holds_with_no_disposition() {
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let inventory = programs
         .adopt(&requirements)
+        .expect("declared program adoption permission admits")
         .workflow_inventory(4_096)
         .expect("the workflow inventory reads");
     let payment = inventory

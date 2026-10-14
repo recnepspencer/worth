@@ -42,12 +42,19 @@ fn unpublished_adoption_settles_and_publishes_without_replaying_relational_work(
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("adoption prepares");
 
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let unpublished = match prepared.publish() {
+    let unpublished = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -130,11 +137,18 @@ fn sibling_branch_cannot_consume_an_unpublished_adoption_recovery() {
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("adoption prepares");
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let recovery = match prepared.publish() {
+    let recovery = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -205,11 +219,18 @@ fn performed_recovery_retains_cleanup_failure_after_the_effect() {
     let requirements = programs.compare(&target).expect("comparison succeeds");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("adoption prepares");
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let recovery = match prepared.publish() {
+    let recovery = match prepared.publish(host.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }

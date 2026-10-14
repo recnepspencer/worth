@@ -301,6 +301,7 @@ const fn encode_family(family: ApplicationSemanticFamily) -> u8 {
         ApplicationSemanticFamily::ExternalInputs => 6,
         ApplicationSemanticFamily::Outputs => 7,
         ApplicationSemanticFamily::Resources => 8,
+        ApplicationSemanticFamily::Authorization => 9,
     }
 }
 
@@ -314,6 +315,7 @@ const fn decode_family(value: u8) -> Result<ApplicationSemanticFamily, Denial> {
         6 => Ok(ApplicationSemanticFamily::ExternalInputs),
         7 => Ok(ApplicationSemanticFamily::Outputs),
         8 => Ok(ApplicationSemanticFamily::Resources),
+        9 => Ok(ApplicationSemanticFamily::Authorization),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }

@@ -31,7 +31,18 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
             .expect("the decided inventory prepares");
     let second = expect_started(start_instance(&application, definition, 85_310));
 
-    match prepared.publish() {
+    let scope = crate::document_retention_model::operator_identity::request_scope();
+    let principal = crate::document_retention_model::operator_identity::authenticate_operator(
+        application.runtime().installed_schema(),
+        &scope,
+    );
+    match prepared.publish(application.runtime(), &principal, &scope) {
+        WorthQueryBranchAdoptionPublicationOutcome::AuthorizationDenied { cause, .. } => {
+            panic!("authorized adoption refused: {cause:?}")
+        }
+        WorthQueryBranchAdoptionPublicationOutcome::AdmissionDenied { cause, .. } => {
+            panic!("execution admission refused: {cause:?}")
+        }
         WorthQueryBranchAdoptionPublicationOutcome::ExecutionDenied(cause) => {
             panic!("the declared host policy admits adoption: {cause:?}")
         }
@@ -58,11 +69,14 @@ fn a_start_between_preparation_and_publication_stales_the_adoption() {
         Ok(_) => panic!("the old choices never decide the new start"),
     }
 
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
     for (instance, key) in [(first, 85_320), (second, 85_321)] {
         assert!(
             matches!(
@@ -96,11 +110,14 @@ fn a_fork_adopts_without_deciding_the_instance_it_copied() {
         "the copied instance is history on the fork and asks for no disposition",
     );
     assert!(copied.definition(definition.entity_id()).is_some());
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        fork,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            fork,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
     match advance_instance_on(&application, fork, instance.clone(), 85_410) {
         // Adoption carries only the fork's live facts, so the copied history
         // stays another branch's incarnation: the fork refuses it by
