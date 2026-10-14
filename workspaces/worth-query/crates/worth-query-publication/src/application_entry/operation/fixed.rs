@@ -37,6 +37,7 @@ where
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
 {
     Initial,
+    Replay(worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt),
     Unpublished(
         WorthQueryUnpublishedRequiredApplicationMutation<
             Schema,
@@ -71,6 +72,10 @@ where
 pub enum WorthQueryOperationProgress {
     SourceUnpublished,
     SourcePerformed,
+    /// The original key resolved to committed evidence; no handler ran.
+    SourceReplayObserved,
+    /// Native registered required-output custody resumed.
+    RegisteredOutputsRecovered,
     SourceRetentionDenied,
     Recovery(WorthQueryProgramSourceRecoveryProgress),
     SourcePromoted,

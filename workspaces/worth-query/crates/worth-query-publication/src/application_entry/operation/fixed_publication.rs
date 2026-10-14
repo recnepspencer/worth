@@ -10,6 +10,8 @@ impl<'runtime, Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
@@ -99,6 +101,10 @@ where
                         operation: WorthQueryTerminalFixedOperation::new(self),
                         denial: Denial::NativeTerminal,
                     };
+                }
+                Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt))) => {
+                    self.state = FixedState::Replay(receipt);
+                    Progress::SourceReplayObserved
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome)) => {
                     self.state = FixedState::NotPerformed(outcome);

@@ -17,11 +17,6 @@ pub struct WorthQueryClosedOperation {
     retired_component_count: usize,
 }
 impl WorthQueryClosedOperation {
-    pub(super) fn without_native_obligations() -> Self {
-        Self {
-            retired_component_count: 0,
-        }
-    }
     pub(super) fn from_cleanup(retired_component_count: usize) -> Self {
         Self {
             retired_component_count,

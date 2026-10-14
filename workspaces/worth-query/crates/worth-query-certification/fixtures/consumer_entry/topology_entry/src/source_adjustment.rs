@@ -180,3 +180,11 @@ pub(crate) fn declare_planar_source_adjustment<Schema: TopologySchemaBinding>(
         .operation_write(operation, PositionY::reference())
         .application_mutation_binding::<PlanarSourceAdjustmentBinding<Schema>>()
 }
+
+impl<Schema: TopologySchemaBinding>
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>
+    for PlanarSourceAdjustmentBinding<Schema>
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
+}

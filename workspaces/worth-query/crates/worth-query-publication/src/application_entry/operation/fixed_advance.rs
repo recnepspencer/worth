@@ -9,6 +9,8 @@ impl<'runtime, Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
@@ -95,6 +97,7 @@ where
         }
         match &self.state {
             FixedState::Initial => self.advance_initial_in_phase(phase, request),
+            FixedState::Replay(_) => self.advance_replay_in_phase(phase, request),
             FixedState::Unpublished(_) => self.advance_partial_in_phase(phase, request),
             FixedState::Retention(_) => self.advance_retention_in_phase(phase, request),
             FixedState::Preparation(_) => self.advance_preparation_in_phase(phase, request),

@@ -313,3 +313,6 @@ fn required_source_cleanup_consumers_complete() {
 
 #[cfg(test)]
 mod deployment_authorization;
+
+#[cfg(test)]
+mod fixed_replay;
