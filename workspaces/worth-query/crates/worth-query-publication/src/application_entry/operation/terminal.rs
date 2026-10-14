@@ -1,6 +1,7 @@
 //! Terminal native custody has no execution or delivery entrance.
 use super::fixed::FixedState;
 use super::*;
+use worth_query_execution::facade::primary_graph::WorthQueryManagedApplicationRecoveryPerformed;
 
 /// Terminal custody preserves native observations but cannot advance.
 /// ```compile_fail,E0599
@@ -72,8 +73,13 @@ where
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
     pub(super) fn new(
-        operation: WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
+        mut operation: WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
     ) -> Self {
+        // Before promotion, the partial is the sole owner of its prior cleanup.
+        if let FixedState::Unpublished(partial) = &mut operation.state {
+            operation.cleanup =
+                WorthQueryOperationCleanup::from_failures(partial.take_prior_cleanup());
+        }
         Self { operation }
     }
 
@@ -93,9 +99,17 @@ where
         }
     }
 
+    /// Native recovered publication evidence, including terminal carrier refusal.
+    /// This observation does not certify required-output settlement.
+    pub fn recovered_progress(&self) -> Option<&WorthQueryManagedApplicationRecoveryPerformed> {
+        match &self.operation.state {
+            FixedState::Unpublished(partial) => partial.performed(),
+            _ => self.operation.recovered.as_ref(),
+        }
+    }
     /// A native unresolved obligation is retained, never declared discharged.
     pub fn close(
-        self,
+        mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
         if !std::ptr::eq(self.operation.runtime.runtime(), request.application)
@@ -111,18 +125,37 @@ where
                         | WorthQueryApplicationMutationOutcome::DomainDenied(_)
                         | WorthQueryApplicationMutationOutcome::Cancelled
                         | WorthQueryApplicationMutationOutcome::DeadlineExceeded
+                        | WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
                 )
         );
         let result = self
             .operation
             .runtime
             .runtime()
-            .with_application_advancement(request.scope, |_phase| {
-                if no_effect {
-                    Ok(WorthQueryClosedOperation::without_native_obligations())
-                } else {
-                    Err(WorthQueryOperationCloseDenial::NativeObligationRetained)
+            .with_application_advancement(request.scope, |phase| {
+                let terminal_carrier = match &mut self.operation.state {
+                    FixedState::Unpublished(partial)
+                        if partial.recovery_posture()
+                            == WorthQueryRequiredOutputRecoveryPosture::Terminal =>
+                    {
+                        let Some(performed) = partial.performed_mut() else {
+                            return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
+                        };
+                        self.operation.cleanup.absorb_recovered(performed)?;
+                        true
+                    }
+                    _ => false,
+                };
+                if !no_effect && !terminal_carrier {
+                    return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
                 }
+                let receipt = self
+                    .operation
+                    .cleanup
+                    .close_in_advancement(&phase, self.operation.runtime.runtime())?;
+                Ok(WorthQueryClosedOperation::from_cleanup(
+                    receipt.retired_component_count(),
+                ))
             });
         match result {
             Ok(Ok(closed)) => Ok(closed),

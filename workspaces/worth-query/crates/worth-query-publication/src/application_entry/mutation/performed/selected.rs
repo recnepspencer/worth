@@ -24,6 +24,7 @@ use super::{
     performed_outcome, DemandSource, RootConnection, WorthQueryApplicationPerformedMutationOutcome,
     WorthQueryPerformedMutationExecutionDenial,
 };
+use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
 use crate::application_entry::mutation::{
     WorthQueryApplicationMutationRequestWithIdempotency, WorthQueryMutationSourcePrepared,
 };
@@ -42,6 +43,8 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -196,7 +199,7 @@ where
         let (outcome, work) = self
             .execute_with_preparation_and_commit_report(phase,
                 move |request, identities, staged| {
-                    crate::application_entry::mutation::authorization::prepare_selected(phase,
+                    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(phase,
                         request, identities, staged, &selected,
                     )
                 },

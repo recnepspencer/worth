@@ -1656,6 +1656,20 @@ mutation bindings supply the conventional association; the macro's explicit
 unpublished-recovery and keyed-read handoffs borrow the original intent, key,
 source and full preconditions. They store no principal or request scope.
 
+For fixed delivery, an idempotent `AlreadyCommitted` source advances through
+`SourceReplayObserved` and then `RegisteredOutputsRecovered`. Each attempt uses
+fresh binding-selected admission and the exact installed action. Query resolves
+the original key and rejoins the registered native output demand from the
+original input; it never reruns the source handler or supplies a missing handler
+result. Keep the returned owner on `Refused` and retry with a fresh request.
+Missing, retired or superseded registration returns terminal historical source
+evidence instead of output settlement. Terminal `close` releases actual cleanup
+obligations; it does not mean the declared outputs completed.
+
+The executable [fixed reply-loss journey](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_replay.rs)
+checks registered recovery, real observation-pressure refusal and retry, and
+historical replay after completion through the same ordinary entrance.
+
 The shared SourceOnly admission carrier exposes phase-taking native controls
 `execute_in_advancement`, `recover_in_advancement` and
 `resolve_keyed_in_advancement` for lifecycle composition. The SourceOnly owning

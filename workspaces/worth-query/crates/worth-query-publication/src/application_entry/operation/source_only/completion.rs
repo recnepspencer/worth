@@ -2,6 +2,7 @@
 use super::*;
 
 #[must_use = "source completion does not discharge cleanup"]
+/// Completed source evidence with retained native cleanup custody; close may refuse and return this owner.
 pub struct WorthQueryCompletedSourceOperation<'r, S, I, P, A, M>
 where
     S: ApplicationSchema,

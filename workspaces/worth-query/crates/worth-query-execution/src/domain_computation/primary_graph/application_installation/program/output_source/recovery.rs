@@ -65,6 +65,11 @@ pub struct WorthQueryRecoveredProgramOutputSource {
 }
 
 impl WorthQueryRecoveredProgramOutputSource {
+    /// A source can be promoted only while both original one-shot parts remain.
+    pub fn has_original_delivery(&self) -> bool {
+        self.change.is_some() && self.observation.is_some()
+    }
+
     pub(super) fn from_committed(
         receipt: &mut crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
     ) -> Self {

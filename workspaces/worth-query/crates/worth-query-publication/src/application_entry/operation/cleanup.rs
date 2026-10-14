@@ -10,6 +10,9 @@ impl WorthQueryOperationCleanupReceipt {
         self.retired_component_count
     }
 }
+/// Owns pending recovery records and failed native releases for funded cleanup retries.
+/// Refusal retains remaining custody. Its receipt proves discharge of this collection
+/// only, not whole-operation completion or crash durability.
 #[derive(Default)]
 pub struct WorthQueryOperationCleanup {
     failures: Vec<Failure>,

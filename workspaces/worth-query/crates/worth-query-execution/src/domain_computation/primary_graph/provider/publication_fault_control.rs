@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) struct PublicationFaultControl 
     registration: Mutex<Option<Arc<Mutex<Registration>>>>,
 }
 
+/// A receiver already owns a live publication fault registration; no second arm is installed.
 #[derive(Debug, Eq, PartialEq)]
 pub enum WorthQueryPublicationFaultRegistrationDenial {
     AlreadyRegistered,

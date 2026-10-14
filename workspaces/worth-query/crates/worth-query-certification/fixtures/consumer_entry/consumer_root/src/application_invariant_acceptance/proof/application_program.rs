@@ -14,6 +14,8 @@ mod custody;
 #[cfg(test)]
 mod delivery_binding;
 mod dependent_recovery;
+#[cfg(test)]
+mod descriptor_result_set;
 mod discovered;
 pub(super) mod lifecycle;
 mod owner_demand_boundary;
@@ -313,3 +315,6 @@ fn required_source_cleanup_consumers_complete() {
 
 #[cfg(test)]
 mod deployment_authorization;
+
+#[cfg(test)]
+mod fixed_replay;

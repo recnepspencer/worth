@@ -74,6 +74,7 @@ pub enum WorthQuerySourceOnlyAdvance<Operation, Completed, Terminal> {
     Terminal(Terminal),
 }
 
+/// Native refusal returned alongside the retained operation for a fresh-authorized retry.
 #[derive(Debug)]
 pub enum WorthQuerySourceOnlyDenial {
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),

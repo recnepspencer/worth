@@ -25,6 +25,31 @@ pub(super) type SourceQuery<Schema, Intent> =
 /// The complete original description. It carries meaning and custody, never a principal or permission.
 ///
 /// Original intent replacement is unavailable after retention.
+/// Retained preconditions cannot be omitted or replaced on retry.
+/// ```compile_fail,E0616
+/// use worth_query_publication::facade::application_entry::WorthQueryOperationDescription;
+/// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent};
+/// fn replace_conditions<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(mut description: WorthQueryOperationDescription<S, I>) {
+///     description.preconditions = description.preconditions;
+/// }
+/// ```
+/// A retained result set cannot be replaced with a row or another selection.
+/// ```compile_fail,E0616
+/// use worth_query_publication::facade::application_entry::WorthQueryOperationDescription;
+/// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent};
+/// fn replace_source<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(mut description: WorthQueryOperationDescription<S, I>) {
+///     description.source = None;
+/// }
+/// ```
+/// Fresh authority cannot change the original operation key.
+/// ```compile_fail,E0616
+/// use worth_query_publication::facade::application_entry::WorthQueryOperationDescription;
+/// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent};
+/// fn replace_key<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(mut description: WorthQueryOperationDescription<S, I>) {
+///     description.key = description.key;
+/// }
+/// ```
+/// The original input is likewise private.
 /// ```compile_fail,E0616
 /// use worth_query_publication::facade::application_entry::WorthQueryOperationDescription;
 /// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent};
