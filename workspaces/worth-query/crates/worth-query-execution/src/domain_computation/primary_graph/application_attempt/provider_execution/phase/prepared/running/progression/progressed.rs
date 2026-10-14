@@ -43,8 +43,11 @@ where
         snapshot_release,
     ) {
         Ok(completion) => completion,
-        Err(()) => {
-            return cleanup_failure::cleanup_failed_outcome(outcome);
+        Err(failure) => {
+            let evidence = cleanup_failure::cleanup_failed_outcome(outcome);
+            return WorthQueryApplicationCommitOutcome::CleanupRequired(Box::new(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCleanupRequired::new(evidence, failure, application.product_runtime.clone(), application.bridge.conditional_operations()),
+            ));
         }
     };
     let committed = outcome.finish(completion).unwrap_or_else(|| {

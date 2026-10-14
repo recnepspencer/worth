@@ -202,7 +202,8 @@ fn retained_decision_evidence_mut(
 ) -> Option<&mut worth_runtime_bridge::facade::BridgeConditionalDecisionEvidence> {
     use super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as Decision;
     match decision {
-        Decision::Eligible(evidence)
+        Decision::OperationCleanupRequired(evidence, _)
+        | Decision::Eligible(evidence)
         | Decision::Suppressed(evidence)
         | Decision::Deferred(evidence)
         | Decision::OperationRetryable(evidence, _)

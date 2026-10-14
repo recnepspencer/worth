@@ -323,3 +323,6 @@ fn assert_provider_replacement(request_execution: &worth_execution::ExecutionReq
     drop(incumbent);
     assert_computed_changed(request_execution, replacement);
 }
+
+#[path = "temporal_conditional_oracle_parity/managed_cleanup.rs"]
+mod managed_cleanup;

@@ -26,6 +26,7 @@ pub enum BridgeExecutionBasisSignalTerminal {
     Superseded,
 }
 
+/// Native reason a bound Signal basis refused finalization; its failure retains the original basis for owner retry.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BridgeExecutionBasisFinalizationFailureKind {
     AtomicExecutionUnsupported,

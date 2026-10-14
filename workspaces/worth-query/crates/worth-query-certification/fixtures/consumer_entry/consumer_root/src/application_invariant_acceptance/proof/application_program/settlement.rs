@@ -86,6 +86,12 @@ pub(super) fn performed_source_settles_required_output(
         WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(partial) => {
             panic!("unpublished: {:?}", partial.initial_cause())
         }
+        WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, .. } => {
+            panic!(
+                "this unarmed court met genuine managed cleanup refusal: {:?}",
+                cleanup.failure()
+            )
+        }
         WorthQueryApplicationPerformedMutationOutcome::Blocked(blocked) => {
             panic!("blocked: {:?}", blocked.outcome())
         }

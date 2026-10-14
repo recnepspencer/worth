@@ -1695,3 +1695,11 @@ kind = "thread-spawn"
 count = 1
 category = "stream-reader"
 reason = "Test child stdout and stderr are drained independently while execution and cleanup remain bounded."
+
+[[threading_sites]]
+source = "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/provider_session/graph_obligation/mutation_progression.rs"
+item = "WorthQueryMutationRunBinding::finish"
+kind = "thread-spawn"
+count = 1
+category = "certification-harness"
+reason = "A receiver-owned compiled cleanup scheduling guard joins one foreign native cleanup actor and returns the real lower terminal failure to its Signal owner; unarmed cleanup stays on its original thread and no query computation is parallelized."

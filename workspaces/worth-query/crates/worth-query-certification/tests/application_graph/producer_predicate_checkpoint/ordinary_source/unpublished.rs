@@ -76,6 +76,12 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
             WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
                 panic!("actual append fault did not reach a required native partial: {outcome:?}")
             }
+            WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, .. } => {
+                panic!(
+                    "this unarmed court met genuine managed cleanup refusal: {:?}",
+                    cleanup.failure()
+                )
+            }
             WorthQueryApplicationPerformedMutationOutcome::Blocked(blocked) => {
                 panic!(
                     "actual append fault retained a different native posture: {:?}",

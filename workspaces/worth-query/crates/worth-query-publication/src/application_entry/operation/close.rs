@@ -5,6 +5,7 @@ use super::*;
 /// Explains why lawful close could not discharge the retained native cleanup obligations.
 pub enum WorthQueryOperationCloseDenial {
     FreshRequestMismatch,
+    ManagedCleanup(worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
     CleanupCapacity,
     NativeObligationRetained,
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),
@@ -14,13 +15,24 @@ pub enum WorthQueryOperationCloseDenial {
 
 /// No source, demand, descriptor or pending cleanup remains owned by this result.
 pub struct WorthQueryClosedOperation {
+    managed: Option<
+        worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt,
+    >,
     retired_component_count: usize,
 }
 impl WorthQueryClosedOperation {
-    pub(super) fn from_cleanup(retired_component_count: usize) -> Self {
+    pub(super) fn from_cleanup(receipt: WorthQueryOperationCleanupReceipt) -> Self {
         Self {
-            retired_component_count,
+            retired_component_count: receipt.retired_component_count(),
+            managed: receipt.into_managed_receipt(),
         }
+    }
+    /// Native release evidence can retain logical recovery requirements; closure is no settlement proof.
+    pub fn managed_cleanup_receipt(
+        &self,
+    ) -> Option<&worth_query_execution::facade::domain_computation::WorthQueryDirectRunCleanupReceipt>
+    {
+        self.managed.as_ref()
     }
     pub const fn retired_component_count(&self) -> usize {
         self.retired_component_count
@@ -57,9 +69,7 @@ where
             }
             self.cleanup
                 .close_in_advancement(&phase, runtime)
-                .map(|receipt| {
-                    WorthQueryClosedOperation::from_cleanup(receipt.retired_component_count())
-                })
+                .map(|receipt| WorthQueryClosedOperation::from_cleanup(receipt))
         });
         match outcome {
             Ok(Ok(closed)) => Ok(closed),

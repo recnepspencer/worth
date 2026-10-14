@@ -1,3 +1,5 @@
+mod cleanup_failure;
+pub use cleanup_failure::{WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind};
 use std::sync::Arc;
 
 use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotRelease;
@@ -104,18 +106,35 @@ impl WorthQueryMutationRunBinding {
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
-    ) -> Result<WorthQueryMutationGraphWorkCompletion, ()> {
-        let affinity = running.graph_work_affinity().ok_or(())?;
+        on_worker: bool,
+    ) -> Result<WorthQueryMutationGraphWorkCompletion, WorthQueryMutationCleanupFailure> {
+        let Some(affinity) = running.graph_work_affinity() else {
+            return Err(WorthQueryMutationCleanupFailure::affinity(self, running));
+        };
         if running.identity() != self.worker.as_ref()
             || affinity.session != self.session
             || affinity.managed_run != self.managed_run
         {
-            return Err(());
+            return Err(WorthQueryMutationCleanupFailure::affinity(self, running));
         }
-        let cleanup = running
-            .terminate_for_convergence(terminal)
-            .cleanup()
-            .map_err(|_| ())?;
+        let terminal_owner = running.terminate_for_convergence(terminal);
+        let outcome = if on_worker {
+            std::thread::spawn(move || terminal_owner.cleanup())
+                .join()
+                .expect("native cleanup worker must return its owner")
+        } else {
+            terminal_owner.cleanup()
+        };
+        let cleanup = match outcome {
+            Ok(cleanup) => cleanup,
+            Err(failure) => {
+                return Err(WorthQueryMutationCleanupFailure::native(
+                    self,
+                    failure,
+                    snapshot_release.custody_released(),
+                ))
+            }
+        };
         let inspection = cleanup.inspection();
         let attempt_resources_released = inspection.resources_released();
         if !(snapshot_release.custody_released()
@@ -127,7 +146,7 @@ impl WorthQueryMutationRunBinding {
             && inspection.resource_plan_identity() == self.resource_plan.as_ref()
             && inspection.released_reservation_count() == self.reservation_count)
         {
-            return Err(());
+            return Err(WorthQueryMutationCleanupFailure::completion(self, cleanup));
         }
         Ok(WorthQueryMutationGraphWorkCompletion {
             provider_session: None,
@@ -150,8 +169,15 @@ impl WorthQueryProviderSessionBoundMutationRun {
         running: crate::domain_computation::WorthQueryRunningDirectRun,
         terminal: crate::domain_computation::WorthQueryManagedRunTerminalKind,
         snapshot_release: WorthQueryApplicationSnapshotRelease,
-    ) -> Result<WorthQueryMutationGraphWorkCompletion, ()> {
-        let mut completion = self.run.finish(running, terminal, snapshot_release)?;
+        on_worker: bool,
+    ) -> Result<WorthQueryMutationGraphWorkCompletion, WorthQueryMutationCleanupFailure> {
+        let mut completion = match self
+            .run
+            .finish(running, terminal, snapshot_release, on_worker)
+        {
+            Ok(completion) => completion,
+            Err(failure) => return Err(failure.with_provider_session(self.provider_session)),
+        };
         completion.provider_session = Some(self.provider_session);
         Ok(completion)
     }

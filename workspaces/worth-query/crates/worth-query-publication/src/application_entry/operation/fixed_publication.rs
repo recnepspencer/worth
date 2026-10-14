@@ -65,7 +65,15 @@ where
                     &mut work,
                     execution.allocation_policy(),
                 );
+            let outcome = match outcome {
+                Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, outcome }) => {
+                    self.cleanup.absorb_managed(self.runtime, cleanup);
+                    Ok(*outcome)
+                }
+                other => other,
+            };
             match outcome {
+                Ok(WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { .. }) => unreachable!("the native classifier transfers a single cleanup owner"),
                 Err(denial @ WorthQueryPerformedMutationExecutionDenial::Action(_)) => {
                     return Advance::Terminal {
                         operation: WorthQueryTerminalFixedOperation::new(self),
@@ -107,7 +115,7 @@ where
                     Progress::SourceReplayObserved
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome)) => {
-                    self.state = FixedState::NotPerformed(outcome);
+                    self.state = FixedState::NotPerformed(self.cleanup.absorb_native_outcome(self.runtime, outcome));
                     return Advance::Terminal {
                         operation: WorthQueryTerminalFixedOperation::new(self),
                         denial: Denial::NativeTerminal,

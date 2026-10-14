@@ -105,7 +105,10 @@ where
                         action: self.action,
                     });
                 }
-                Err(denial) => {
+                Err(mut denial) => {
+                    if let Some(required) = denial.take_managed_cleanup() {
+                        self.cleanup.absorb_producer(self.runtime, required);
+                    }
                     let terminal = denial.recovery_posture()
                         == WorthQueryRequiredOutputRecoveryPosture::Terminal;
                     self.state = FixedState::Outputs(outputs);

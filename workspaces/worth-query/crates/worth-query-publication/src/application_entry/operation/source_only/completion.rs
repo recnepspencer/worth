@@ -65,6 +65,20 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
+    /// Exact managed-run cleanup custody retained independently of business evidence.
+    pub fn managed_cleanup_failure(
+        &self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
+    {
+        self.operation.cleanup.managed_failure()
+    }
+    /// Cleanup discharge retains this terminal and does not settle its business outcome.
+    pub fn release_cleanup(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial> {
+        self.operation.release_cleanup(request)
+    }
     pub fn native_outcome(&self) -> Option<&NativeOutcome<S, I>> {
         match &self.operation.state {
             SourceState::Stopped(outcome) => Some(outcome),
@@ -116,13 +130,15 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    /// Closes only proven retryable no-effect custody; native recovery obligations remain owned.
+    /// Closes unexecuted or proven retryable no-effect custody; native recovery obligations remain owned.
     pub fn close(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
-        if !matches!(self.state, SourceState::RetryableNoEffect(_))
-            || !native_posture::can_close(&self.state)
+        if !matches!(
+            self.state,
+            SourceState::Initial | SourceState::RetryableNoEffect(_)
+        ) || !native_posture::can_close(&self.state)
         {
             return Err((
                 self,
@@ -139,6 +155,15 @@ where
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
+        self.release_cleanup(request)
+            .map(|receipt| WorthQueryClosedOperation::from_cleanup(receipt))
+    }
+
+    /// Discharges this cleanup collection only; original business evidence stays owned.
+    pub fn release_cleanup(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial> {
         let runtime = self.admission.runtime.runtime();
         if !std::ptr::eq(runtime, request.application)
             || self.admission.description.branch != request.branch
@@ -147,11 +172,7 @@ where
         }
         runtime
             .with_application_advancement(request.scope, |phase| {
-                self.cleanup
-                    .close_in_advancement(&phase, runtime)
-                    .map(|receipt| {
-                        WorthQueryClosedOperation::from_cleanup(receipt.retired_component_count())
-                    })
+                self.cleanup.close_in_advancement(&phase, runtime)
             })
             .map_err(WorthQueryOperationCloseDenial::Execution)?
     }

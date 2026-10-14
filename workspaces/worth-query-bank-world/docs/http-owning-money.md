@@ -38,6 +38,9 @@ for the same ID route to one persistent worker. Each accepted command increments
 that record's sequence exactly once. A stale or duplicate sequence performs no
 second advancement and replays no protected query rows. Native refusal retains
 the returned owner; a sequence refused before record admission is not consumed.
+An authorization refusal before the first effect leaves native `Initial` custody.
+Use fresh close controls on the same ID to release it lawfully and return its
+capacity; partial and uncertain publication remain owned for recovery.
 
 ## How it executes
 
@@ -129,7 +132,9 @@ it performs no cleanup I/O and promises neither settlement nor native disposal.
 Native World catalog records and physical cleanup obligations are distinct.
 Independent native discovery applies only to the actual native records supported
 by that catalog while their runtime remains alive, not to every ordinary posture.
-Final runtime destruction has no added cleanup guarantee. A deliberately abandoned
+Failed managed-run cleanup belongs to its actual native cleanup collection,
+not a World catalog record. Abandonment neither discharges that collection nor
+promises catalog discovery for it. Final runtime destruction has no added cleanup guarantee. A deliberately abandoned
 ordinary descriptor cannot be recreated as equivalent operation custody.
 
 ## Related docs

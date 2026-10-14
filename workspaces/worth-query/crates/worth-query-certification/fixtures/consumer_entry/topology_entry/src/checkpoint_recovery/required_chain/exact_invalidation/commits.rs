@@ -56,6 +56,9 @@ impl Court<'_, '_, '_, '_> {
             }
             Ok(Performed::RequiredOutputDenied(failure)) => format!("{:?}", failure.denial()),
             Ok(Performed::NotPerformed(refused)) => format!("{refused:?}"),
+            Ok(Performed::CleanupRequired { cleanup, .. }) => {
+                format!("managed cleanup required: {:?}", cleanup.failure().kind())
+            }
             Ok(Performed::ProductUnpublished(partial)) => {
                 format!("unpublished: {:?}", partial.initial_cause())
             }

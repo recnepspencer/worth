@@ -65,6 +65,43 @@ fn authorized_revocation_without_partial_is_a_real_published_transition() {
     };
     assert_eq!(owner.posture(), WorthQuerySourceOnlyPosture::Initial);
     assert_eq!(host.contacts.counts(), (0, 0));
+    let before_close = host
+        .application
+        .runtime()
+        .request(&actor, &fresh_scope)
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
+    cancellation.cancel();
+    let stopped =
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
+            None,
+            cancellation.token(),
+        );
+    let (owner, cause) = owner
+        .close(&host.application.runtime().request(&actor, &stopped))
+        .err()
+        .expect("stopped close retains the unexecuted original owner");
+    assert!(matches!(
+        cause,
+        WorthQueryOperationCloseDenial::Execution(_)
+    ));
+    assert_eq!(owner.posture(), WorthQuerySourceOnlyPosture::Initial);
+    owner
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("fresh close of unexecuted source: {cause:?}"));
+    assert_eq!(host.contacts.counts(), (0, 0));
+    assert_eq!(
+        host.application
+            .runtime()
+            .request(&actor, &fresh_scope)
+            .retain_current_read()
+            .unwrap()
+            .selected_commit(),
+        &before_close
+    );
 }
 #[test]
 fn unpublished_source_refuses_revocation_before_projection_and_retains_recovery() {

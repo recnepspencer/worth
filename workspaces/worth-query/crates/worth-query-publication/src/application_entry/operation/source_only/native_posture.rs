@@ -15,6 +15,7 @@ pub(super) fn can_close<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(
     state: &SourceState<S, I>,
 ) -> bool {
     match state {
+        SourceState::Initial => true,
         SourceState::AdmissionStopped(denial) => pinned_source_moved(denial),
         SourceState::RetryableNoEffect(outcome) => fresh_retry_eligible::<S, I>(outcome),
         SourceState::Stopped(outcome) => matches!(
