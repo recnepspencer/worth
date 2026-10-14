@@ -1,4 +1,4 @@
-//! Native capability revocation interleaves with genuine source publication custody.
+//! Native capability admission and lifecycle commands preserve source publication custody.
 #[path = "capability/grant_commands.rs"]
 mod grant_commands;
 #[path = "capability/grants.rs"]
@@ -13,5 +13,7 @@ mod interleaving;
 mod program;
 #[path = "capability/readback.rs"]
 mod readback;
+#[path = "capability/recovery.rs"]
+mod recovery;
 #[path = "capability/schema.rs"]
 mod schema;

@@ -57,6 +57,14 @@ A later current query may return different domain values. This read remains expl
 
 Capability-bound actions use capability admission for initial execution, recovery and keyed resolution. Required-output actions use their fixed owning lane; declaring source-only delivery cannot erase required-output ownership. Pinned mutation sources remain original descriptor meaning, distinct from the historical observation delivered after a commit.
 
+### Recover a capability-bound partial
+
+After a real append failure returns `ProductUnpublished`, retain the operation returned by `Progress` and authenticate again for the next request. Call the same mode's `advance` entrance; the owner carries its original input, key, conditions, source and branch into fresh capability admission before native recovery. Authentication alone does not authorize recovery. A principal permitted to revoke grants can still lack the capability for this action.
+
+If that admission refuses, `Refused` returns the original operation with its partial custody intact. Retain it and retry with a freshly authenticated principal whose current capability authorizes the original action. Recovery adopts the original native owner effects and resolves their keyed outcome without invoking the source handler again. Recovered completion supplies native evidence rather than a recreated handler result.
+
+For example, a retention action can land its change to 18 days before publication completes. A fresh request from a revoke-only principal refuses recovery; the original retention principal can then recover the same operation and independently query 18 days. Retain completed custody when `close` refuses, and retry cleanup with a fresh lawful request. This applies to both source-completion and retained-commit delivery; retained mode still requires its explicit per-attempt history bound.
+
 ## Inspection And Debugging
 
 `RetainedDeliveryPending` means the owner holds recovered evidence awaiting native history selection. `History(CommitUnavailable)` means the commit was not found in branch history within the supplied bound. It does not prove historical absence. Retain the owner and fund a fresh attempt; cancellation and foreign-runtime refusals also preserve custody.
@@ -74,4 +82,5 @@ Native history selection reports a bounded unavailable result without proving wh
 - [Application front door](ordinary-application-front-door.md)
 - [Build an application](../../../../../../docs/build-an-application.md)
 - [Executable retained courts](../../../worth-query-certification/tests/application_graph/source_only/retained.rs)
+- [Executable capability recovery court](../../../worth-query-certification/tests/application_graph/source_only/capability/recovery.rs)
 
