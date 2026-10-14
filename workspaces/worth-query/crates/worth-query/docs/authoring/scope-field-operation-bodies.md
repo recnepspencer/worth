@@ -5,7 +5,8 @@
 A scope-field body declares the source expectations and scalar writes of one
 operation. It can also declare one typed entity creation in the admitted scope's
 context. Writes and created-field initializers can use authored literals or named
-members of the operation's once encoded input. Query installs and executes those
+members of the operation's once encoded input. A created field may also copy a
+tracked scope-field preimage from the same decision observation. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
 This remains a bounded body form, not a general expression or workflow-command API.
 
@@ -25,7 +26,8 @@ Declare through `worth_query_decl::facade::application_schema`:
 
 - `Operation::reference().body().expect(...).assign(...).assign_input(...).finish()`;
 - `body.create_in_scope(Entity::reference(), "candidate-slot")` followed by
-  `.initialize(...)` or `.initialize_input(...)` and `.finish()`;
+  `.initialize(...)`, `.initialize_input(...)`, or
+  `.initialize_from_scope(source_field, created_field)` and `.finish()`;
 - a completed operation definition's `with_body(body)`;
 - `ApplicationProgramAuthoring::begin().with_schema(&schema).validated_program()`.
 
@@ -90,7 +92,13 @@ it is neither a business identity nor an idempotency key. Query creates the row
 in the existing admitted scope's context, checks that all required created
 fields are initialized, and charges creation and initializers to the same
 candidate. An operation's candidate ceiling must admit that creation and its
-writes. Source before-images are not available to created fields yet.
+writes. `initialize_from_scope` requires a required scalar source field in the
+admitted scope with `OperationReads<Operation>`, a target with the same Rust value,
+unit, exact installed codec and scalar family, and an admitted tracked decision
+read. Query captures the source at the decision snapshot before any candidate
+write, reserves its retained value on the request, and holds that reservation
+through candidate initialization. Missing source or changed source dependency
+denies/stales through the ordinary owners; the host cannot supply a before-image.
 
 Publication uses ordinary currentness, authorization, invariant and commit
 machinery. A changed dependency can stale an already prepared candidate. A failed
@@ -158,6 +166,13 @@ input binding into canonical capture. This is a binding to the serialized member
 name, not a getter callback. The input shape must be a flat struct with scalar
 members; a nested document or an optional member currently denies at selection.
 
+For an audit that records the old retention while assigning a new one, add
+`.create_in_scope(Audit::reference(), "audit")` and
+`.initialize_from_scope(DocumentRetentionField::reference(),
+AuditPriorRetentionField::reference())` before the creation builder's `finish()`.
+The audit receives the observed old value even if the same body assigns a new
+retention to the document.
+
 ## How It Relates To Other Features
 
 Program manifests and semantic descriptions include body values. Portable schema
@@ -199,10 +214,11 @@ remain a different supported surface, not an equivalent declarative body.
 
 This form supports literal equality expectations, literal assignments and flat
 input member assignments on one admitted scope's required scalar fields, plus
-one in-context created entity with literal or flat-input initializers. It requires
+one in-context created entity with literal, flat-input, or tracked scope-preimage
+initializers. It requires
 at least one scope assignment and unit results. Optional-field writes, clear
-operations, input/source expressions, multiple creations, links, source-derived
-audit fields, body-bound requirement guidance, signature consequences and command
+operations, general input/source expressions, multiple creations, links, body-bound
+requirement guidance, signature consequences and command
 continuation are not implemented here.
 `ApplicationOperationBodyScopeField` describes only this field family; it is not
 a universal effect instruction or authority carrier.

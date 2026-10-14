@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::application_schema::{
     ApplicationEntityRef, ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
-    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationCreates,
+    ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationCreates, OperationReads,
     OperationWrites,
 };
 
@@ -102,6 +102,71 @@ impl<Schema, Operation, Input, Entity>
         Ok(self)
     }
 
+    /// Copies the scope's tracked preimage into one created field. Both fields
+    /// share the same value, unit and exact codec; the host supplies no value.
+    pub fn initialize_from_scope<
+        SourceEntity,
+        SourceAspect,
+        SourceField,
+        SourceWrite,
+        SourceEquality,
+        TargetAspect,
+        TargetField,
+        TargetWrite,
+        TargetEquality,
+        Value,
+        Unit,
+    >(
+        mut self,
+        source: ApplicationFieldRef<
+            Schema,
+            SourceEntity,
+            SourceAspect,
+            SourceField,
+            Value,
+            SourceWrite,
+            SourceEquality,
+            Unit,
+        >,
+        field: ApplicationFieldRef<
+            Schema,
+            Entity,
+            TargetAspect,
+            TargetField,
+            Value,
+            TargetWrite,
+            TargetEquality,
+            Unit,
+        >,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
+    where
+        SourceField: OperationReads<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        TargetField: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Unit: ApplicationFieldUnit,
+    {
+        if SourceField::Binding::IDENTITY != TargetField::Binding::IDENTITY
+            || SourceField::Binding::SCALAR_FAMILY != TargetField::Binding::SCALAR_FAMILY
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::IncompatibleSourceBinding);
+        }
+        self.fields
+            .push(ApplicationOperationBodyCreatedField::ScopeField {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: TargetField::Binding::IDENTITY,
+                scalar_family: TargetField::Binding::SCALAR_FAMILY,
+                source: ApplicationFieldBindingLocus::new(
+                    source.entity(),
+                    source.aspect(),
+                    source.field(),
+                ),
+            });
+        Ok(self)
+    }
+
     pub fn finish(
         self,
     ) -> Result<
@@ -109,10 +174,20 @@ impl<Schema, Operation, Input, Entity>
         ApplicationOperationBodyAuthoringDenial,
     > {
         let mut body = self.parent.finish()?;
+        let scope = body
+            .program
+            .scope_entity()
+            .expect("completed body has a scope");
         let mut fields = std::collections::BTreeSet::new();
         for step in &self.fields {
             if !fields.insert(step.field()) {
                 return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
+            }
+            if step
+                .source_field()
+                .is_some_and(|source| source.entity() != scope)
+            {
+                return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);
             }
         }
         body.program.creation = Some(ApplicationOperationBodyCreation {

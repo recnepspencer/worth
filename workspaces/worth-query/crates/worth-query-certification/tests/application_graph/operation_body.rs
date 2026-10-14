@@ -86,7 +86,8 @@ fn install_with_projection<const DESTINATION: u64>() -> (
                     DocumentIdentityField::reference(),
                     DOCUMENT_IDENTITY.to_owned(),
                 )
-                .field(DocumentRetentionField::reference(), 7),
+                .field(DocumentRetentionField::reference(), 7)
+                .field(DocumentAuditSourceField::reference(), 7),
             )?;
             Ok(())
         },

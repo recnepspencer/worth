@@ -59,6 +59,43 @@ pub(crate) fn validate_operation_bodies(
                         ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
                     );
                 }
+                if let Some(source) = step.source_field() {
+                    let target_unit = members.iter().find_map(|member| match member {
+                        ApplicationSchemaMember::Field {
+                            entity,
+                            aspect,
+                            field,
+                            unit,
+                            ..
+                        } if entity == locus.entity()
+                            && aspect == locus.aspect()
+                            && field == locus.field() =>
+                        {
+                            Some(unit)
+                        }
+                        _ => None,
+                    });
+                    if source.entity() != scope
+                        || target_unit.is_none()
+                        || !members.iter().any(|member| {
+                            matches!(member, ApplicationSchemaMember::Field {
+                                entity, aspect, field, scalar_family, value_type,
+                                unit, presence: ApplicationFieldPresence::Required, ..
+                            } if entity == source.entity() && aspect == source.aspect()
+                                && field == source.field()
+                                && value_type == step.binding().as_str()
+                                && *scalar_family == step.scalar_family()
+                                && target_unit == Some(unit))
+                        })
+                        || !members.iter().any(|member| {
+                            matches!(member, ApplicationSchemaMember::OperationDecisionRead {
+                                operation: candidate, target,
+                            } if candidate == operation && Some(target.clone()) == step.source_read())
+                        })
+                    {
+                        return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
+                    }
+                }
                 if !members.iter().any(|member| {
                     matches!(member, ApplicationSchemaMember::Field {
                         entity, aspect, field, scalar_family, value_type, ..
@@ -147,4 +184,105 @@ pub(crate) fn validate_operation_bodies(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::application_schema::{
+        ApplicationFieldBindingLocus, ApplicationOperationBodyCreatedField,
+        ApplicationOperationBodyCreation, ApplicationOperationBodyProgram,
+        ApplicationOperationBodyScopeField,
+    };
+    use crate::portable_identity::WorthQueryPortableTypeIdentity;
+    use worth_foundational::facade::{AspectValue, ScalarAspectType};
+
+    #[test]
+    fn portable_scope_initializer_requires_matching_declared_units() {
+        let scope = ApplicationFieldBindingLocus::new("Item", "Facts", "Current");
+        let source = ApplicationFieldBindingLocus::new("Item", "Facts", "Prior");
+        let target = ApplicationFieldBindingLocus::new("Audit", "Facts", "Prior");
+        let codec = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".to_owned());
+        let scope_step = ApplicationOperationBodyScopeField::Assign {
+            field: scope.clone(),
+            binding: codec.clone(),
+            value: AspectValue::UInt64(20),
+        };
+        let created_step = ApplicationOperationBodyCreatedField::ScopeField {
+            field: target.clone(),
+            binding: codec,
+            scalar_family: ScalarAspectType::UInt64,
+            source: source.clone(),
+        };
+        let field =
+            |locus: &ApplicationFieldBindingLocus, unit: &str| ApplicationSchemaMember::Field {
+                entity: locus.entity().to_owned(),
+                aspect: locus.aspect().to_owned(),
+                field: locus.field().to_owned(),
+                presence: ApplicationFieldPresence::Required,
+                scalar_family: ScalarAspectType::UInt64,
+                value_type: "worth.rust.u64".to_owned(),
+                unit: Some(unit.to_owned()),
+                frame: None,
+                writable: true,
+                equality_queryable: true,
+                unique: false,
+            };
+        let mut members = vec![
+            ApplicationSchemaMember::Entity {
+                entity: "Audit".to_owned(),
+            },
+            ApplicationSchemaMember::Operation {
+                operation: "Set".to_owned(),
+                input_type: WorthQueryPortableTypeIdentity::from_untrusted(
+                    "worth.rust.unit".to_owned(),
+                ),
+            },
+            field(&scope, "days"),
+            field(&source, "days"),
+            field(&target, "days"),
+            ApplicationSchemaMember::OperationDecisionRead {
+                operation: "Set".to_owned(),
+                target: scope_step.decision_read(),
+            },
+            ApplicationSchemaMember::OperationDecisionRead {
+                operation: "Set".to_owned(),
+                target: created_step.source_read().unwrap(),
+            },
+            ApplicationSchemaMember::OperationProgram {
+                operation: "Set".to_owned(),
+                target: scope_step.write_target().unwrap(),
+            },
+            ApplicationSchemaMember::OperationProgram {
+                operation: "Set".to_owned(),
+                target: ApplicationOperationProgramTarget::Create {
+                    entity: "Audit".to_owned(),
+                },
+            },
+            ApplicationSchemaMember::OperationProgram {
+                operation: "Set".to_owned(),
+                target: created_step.write_target(),
+            },
+            ApplicationSchemaMember::OperationBody {
+                operation: "Set".to_owned(),
+                body: ApplicationOperationBodyProgram::from_untrusted_with_creation(
+                    vec![scope_step],
+                    Some(ApplicationOperationBodyCreation::from_untrusted(
+                        "Audit".to_owned(),
+                        "audit".to_owned(),
+                        vec![created_step],
+                    )),
+                ),
+            },
+        ];
+        assert_eq!(validate_operation_bodies(&members), Ok(()));
+        let ApplicationSchemaMember::Field { unit, .. } = &mut members[4] else {
+            unreachable!()
+        };
+        *unit = Some("hours".to_owned());
+        assert_eq!(
+            validate_operation_bodies(&members),
+            Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency),
+        );
+    }
 }

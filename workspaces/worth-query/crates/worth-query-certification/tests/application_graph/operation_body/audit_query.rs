@@ -1,8 +1,5 @@
 //! Independent governed readback of the created audit entity.
-use super::query::{
-    DocumentQueryParameters, DocumentQueryParametersBinding, DocumentRetentionRow,
-    DocumentRetentionRowBinding,
-};
+use super::query::{DocumentQueryParameters, DocumentQueryParametersBinding};
 use super::schema::*;
 use worth_query_host::facade::{
     declaration::{application_query::*, application_schema::*},
@@ -17,17 +14,29 @@ use worth_query_host::facade::{
 pub struct AuditRead {
     pub identity: String,
 }
+#[derive(Clone, Debug)]
+pub struct AuditRow {
+    pub identity: String,
+    pub retention_days: u64,
+    pub prior_retention_days: u64,
+}
+worth_query_portable_type!(AuditRow => "worth.query.body-court.audit-row.v1");
 worth_query_structured_value_binding!(pub AuditReadBinding for AuditRead {
     identity: "worth.query.body-court.audit-read.v1"
+});
+worth_query_structured_value_binding!(pub AuditRowBinding for AuditRow {
+    identity: "worth.query.body-court.audit-row.v1"
 });
 
 pub struct AuditIdentitySlot;
 pub struct AuditRetentionSlot;
+pub struct AuditPriorRetentionSlot;
 worth_query_portable_type!(AuditIdentitySlot => "worth.query.body-court.audit-identity-slot.v1");
 worth_query_portable_type!(AuditRetentionSlot => "worth.query.body-court.audit-retention-slot.v1");
+worth_query_portable_type!(AuditPriorRetentionSlot => "worth.query.body-court.audit-prior-retention-slot.v1");
 worth_query_application_query!(pub AuditQuery for Schema: BodySchemaBinding,
     identity "AuditQuery", parameters DocumentQueryParametersBinding,
-    result DocumentRetentionRowBinding, scope Audit => "Audit", name "body_audit_read");
+    result AuditRowBinding, scope Audit => "Audit", name "body_audit_read");
 
 fn identity_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
     AuditQuery,
@@ -57,23 +66,38 @@ fn retention_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldR
 > {
     ApplicationQueryResultFieldRef::new("retention", AuditRetentionField::reference())
 }
+fn prior_retention_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
+    AuditQuery,
+    AuditPriorRetentionSlot,
+    Schema,
+    Audit,
+    AuditFacts,
+    AuditPriorRetentionField,
+    u64,
+    ReadOnly,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryResultFieldRef::new("prior_retention", AuditPriorRetentionField::reference())
+}
 
 pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
     DocumentRetentionSchema<DESTINATION>,
     AuditQuery,
     DocumentQueryParameters,
-    DocumentRetentionRow,
+    AuditRow,
     Audit,
 > {
     let shape = ApplicationQueryResultShapeBuilder::<
         DocumentRetentionSchema<DESTINATION>,
         AuditQuery,
         Audit,
-        DocumentRetentionRow,
-        DocumentRetentionRowBinding,
+        AuditRow,
+        AuditRowBinding,
     >::new(Audit::reference())
     .field(identity_result())
     .field(retention_result())
+    .field(prior_retention_result())
     .build();
     ApplicationQueryDefinitionBuilder::declare(AuditQuery::reference())
         .root(Audit::reference())
@@ -90,8 +114,7 @@ pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefin
 }
 
 impl<const DESTINATION: u64>
-    WorthQueryApplicationProjection<DocumentRetentionSchema<DESTINATION>, AuditQuery>
-    for DocumentRetentionRow
+    WorthQueryApplicationProjection<DocumentRetentionSchema<DESTINATION>, AuditQuery> for AuditRow
 {
     fn project(
         row: &WorthQueryApplicationProjectionRow<
@@ -103,6 +126,7 @@ impl<const DESTINATION: u64>
         Ok(Self {
             identity: row.field(identity_result())?,
             retention_days: row.field(retention_result())?,
+            prior_retention_days: row.field(prior_retention_result())?,
         })
     }
 }
@@ -124,7 +148,7 @@ impl<const DESTINATION: u64> ApplicationQueryBinding<DocumentRetentionSchema<DES
     type InputBinding = AuditReadBinding;
     type Query = AuditQuery;
     type ParameterBinding = DocumentQueryParametersBinding;
-    type ResultBinding = DocumentRetentionRowBinding;
+    type ResultBinding = AuditRowBinding;
     type ScopeBinding = Scope<DESTINATION>;
     type PrincipalBinding = DocumentPrincipalBinding;
     type Mapping = ExternalMapping;

@@ -138,36 +138,62 @@ pub enum ApplicationOperationBodyCreatedField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    ScopeField {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        source: ApplicationFieldBindingLocus,
+    },
 }
 
 impl ApplicationOperationBodyCreatedField {
     pub fn field(&self) -> &ApplicationFieldBindingLocus {
         match self {
-            Self::Literal { field, .. } | Self::Input { field, .. } => field,
+            Self::Literal { field, .. }
+            | Self::Input { field, .. }
+            | Self::ScopeField { field, .. } => field,
         }
     }
     pub fn binding(&self) -> &WorthQueryPortableTypeIdentity {
         match self {
-            Self::Literal { binding, .. } | Self::Input { binding, .. } => binding,
+            Self::Literal { binding, .. }
+            | Self::Input { binding, .. }
+            | Self::ScopeField { binding, .. } => binding,
         }
     }
     pub fn literal_value(&self) -> Option<&AspectValue> {
         match self {
             Self::Literal { value, .. } => Some(value),
-            Self::Input { .. } => None,
+            Self::Input { .. } | Self::ScopeField { .. } => None,
         }
     }
     pub fn scalar_family(&self) -> ScalarAspectType {
         match self {
             Self::Literal { value, .. } => value.value_family(),
-            Self::Input { scalar_family, .. } => *scalar_family,
+            Self::Input { scalar_family, .. } | Self::ScopeField { scalar_family, .. } => {
+                *scalar_family
+            }
         }
     }
     pub fn input_member(&self) -> Option<&str> {
         match self {
-            Self::Literal { .. } => None,
+            Self::Literal { .. } | Self::ScopeField { .. } => None,
             Self::Input { member, .. } => Some(member),
         }
+    }
+    pub fn source_field(&self) -> Option<&ApplicationFieldBindingLocus> {
+        match self {
+            Self::ScopeField { source, .. } => Some(source),
+            Self::Literal { .. } | Self::Input { .. } => None,
+        }
+    }
+    pub fn source_read(&self) -> Option<ApplicationOperationDecisionReadTarget> {
+        self.source_field()
+            .map(|source| ApplicationOperationDecisionReadTarget::Field {
+                entity: source.entity().to_owned(),
+                aspect: source.aspect().to_owned(),
+                field: source.field().to_owned(),
+            })
     }
     pub fn write_target(&self) -> ApplicationOperationProgramTarget {
         let field = self.field();

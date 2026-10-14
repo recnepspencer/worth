@@ -33,6 +33,8 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     DuplicateAttachment,
     InvalidInputMember,
     InvalidCreationKey,
+    IncompatibleSourceBinding,
+    ForeignSourceEntity,
 }
 
 impl std::fmt::Display for ApplicationOperationBodyAuthoringDenial {

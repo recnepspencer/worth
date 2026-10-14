@@ -2,7 +2,9 @@
 mod handler;
 mod input;
 mod installation;
+mod source;
 pub(in crate::domain_computation::primary_graph) use input::{prepare_inputs, PreparedBodyInputs};
+pub(in crate::domain_computation::primary_graph) use source::PreparedBodySource;
 
 pub(in crate::domain_computation::primary_graph) use handler::OperationBodyHandler;
 
@@ -13,6 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     target: WorthQueryInvariantMutationTarget<Schema, Scope>,
     inputs: Option<PreparedBodyInputs>,
+    sources: Vec<PreparedBodySource>,
 }
 
 /// A declared source expectation failed before any candidate effect.

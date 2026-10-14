@@ -8,7 +8,8 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodyCreatedField, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyScopeField,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -65,6 +66,28 @@ where
                 );
             }
         }
+        let mut sources = Vec::new();
+        if let Some(creation) = self.body.creation() {
+            for source in creation
+                .fields()
+                .iter()
+                .filter_map(|step| step.source_field())
+            {
+                match reader.body_scope_value(source) {
+                    Ok(Some(value)) => sources.push(value),
+                    Ok(None) => {
+                        return HandlerResult::DomainDenied(
+                            WorthQueryOperationBodyDenial::SourceMismatch {
+                                entity: source.entity().to_owned(),
+                                aspect: source.aspect().to_owned(),
+                                field: source.field().to_owned(),
+                            },
+                        )
+                    }
+                    Err(cause) => return HandlerResult::ExecutionDenied(cause),
+                }
+            }
+        }
         let inputs = match reader.body_inputs(&self.body, &self.input_bindings) {
             HandlerResult::Completed(inputs) => inputs,
             HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
@@ -73,9 +96,11 @@ where
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
         match reader.body_scope_target() {
-            Ok(target) => {
-                HandlerResult::Completed(WorthQueryOperationBodyDecision { target, inputs })
-            }
+            Ok(target) => HandlerResult::Completed(WorthQueryOperationBodyDecision {
+                target,
+                inputs,
+                sources,
+            }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
     }
@@ -104,6 +129,7 @@ where
         let mut input_values = prepared_inputs
             .as_mut()
             .map(|inputs| inputs.values.drain(..));
+        let mut source_values = decision.sources.into_iter();
         for step in self.body.scope_fields() {
             if let ApplicationOperationBodyScopeField::Assign { field, value, .. } = step {
                 if let Err(cause) = writer.body_field(&target, field, value) {
@@ -129,18 +155,30 @@ where
                     }
                 };
             for step in creation.fields() {
-                let value = match step.literal_value() {
-                    Some(value) => std::borrow::Cow::Borrowed(value),
-                    None => std::borrow::Cow::Owned(
+                let mut source_reservation = None;
+                let value = match step {
+                    ApplicationOperationBodyCreatedField::Literal { value, .. } => {
+                        std::borrow::Cow::Borrowed(value)
+                    }
+                    ApplicationOperationBodyCreatedField::Input { .. } => std::borrow::Cow::Owned(
                         input_values
                             .as_mut()
                             .and_then(Iterator::next)
                             .expect("one prepared value per installed input initializer"),
                     ),
+                    ApplicationOperationBodyCreatedField::ScopeField { .. } => {
+                        let (source, reservation) = source_values
+                            .next()
+                            .expect("one captured source per installed initializer")
+                            .into_parts();
+                        source_reservation = Some(reservation);
+                        std::borrow::Cow::Owned(source)
+                    }
                 };
                 if let Err(cause) = writer.body_initialize_field(&created, step.field(), value) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
+                drop(source_reservation);
             }
         }
         HandlerResult::Completed(())

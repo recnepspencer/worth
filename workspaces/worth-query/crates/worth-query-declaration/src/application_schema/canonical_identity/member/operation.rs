@@ -9,7 +9,9 @@ pub(super) fn append_body(
     operation: &str,
     body: &crate::application_schema::ApplicationOperationBodyProgram,
 ) {
-    use crate::application_schema::ApplicationOperationBodyScopeField;
+    use crate::application_schema::{
+        ApplicationOperationBodyCreatedField, ApplicationOperationBodyScopeField,
+    };
     append_operation_header(
         basis,
         prefix,
@@ -59,30 +61,45 @@ pub(super) fn append_body(
             let field = format!("{prefix}.created.field[{index}]");
             basis.text(
                 format!("{field}.kind"),
-                if step.input_member().is_some() {
-                    "input"
-                } else {
-                    "literal"
+                match step {
+                    ApplicationOperationBodyCreatedField::Literal { .. } => "literal",
+                    ApplicationOperationBodyCreatedField::Input { .. } => "input",
+                    ApplicationOperationBodyCreatedField::ScopeField { .. } => "scope-field",
                 },
             );
             basis.text(format!("{field}.entity"), step.field().entity());
             basis.text(format!("{field}.aspect"), step.field().aspect());
             basis.text(format!("{field}.field"), step.field().field());
             basis.text(format!("{field}.binding"), step.binding().as_str());
-            if let Some(value) = step.literal_value() {
-                basis.value(
+            match step {
+                ApplicationOperationBodyCreatedField::Literal { value, .. } => basis.value(
                     format!("{field}.value"),
                     worth_foundational::facade::canonical_basis_value_for_aspect_value(value),
-                );
-            } else {
-                basis.text(
-                    format!("{field}.input-member"),
-                    step.input_member().expect("input initializer"),
-                );
-                basis.text(
-                    format!("{field}.input-family"),
-                    step.scalar_family().canonical_name(),
-                );
+                ),
+                ApplicationOperationBodyCreatedField::Input {
+                    member,
+                    scalar_family,
+                    ..
+                } => {
+                    basis.text(format!("{field}.input-member"), member);
+                    basis.text(
+                        format!("{field}.input-family"),
+                        scalar_family.canonical_name(),
+                    );
+                }
+                ApplicationOperationBodyCreatedField::ScopeField {
+                    source,
+                    scalar_family,
+                    ..
+                } => {
+                    basis.text(format!("{field}.source.entity"), source.entity());
+                    basis.text(format!("{field}.source.aspect"), source.aspect());
+                    basis.text(format!("{field}.source.field"), source.field());
+                    basis.text(
+                        format!("{field}.source-family"),
+                        scalar_family.canonical_name(),
+                    );
+                }
             }
         }
     }

@@ -92,6 +92,21 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 {
                     return Err(denied());
                 }
+                if let Some(source) = step.source_field() {
+                    if source.entity() != Binding::scope_field().entity() {
+                        return Err(denied());
+                    }
+                    let source_binding = schema
+                        .value_bindings()
+                        .field(source.entity(), source.aspect(), source.field())
+                        .ok_or_else(denied)?;
+                    if source_binding.identity() != step.binding()
+                        || source_binding.scalar_family() != step.scalar_family()
+                        || source_binding.unit() != binding.unit()
+                    {
+                        return Err(denied());
+                    }
+                }
                 if step.input_member().is_some() {
                     if !Binding::InputBinding::RETAIN_CANONICAL_INPUT
                         || !binding.is_readable()

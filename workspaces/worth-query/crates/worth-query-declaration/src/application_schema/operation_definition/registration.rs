@@ -22,11 +22,19 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             input_type: definition.input_type,
         });
         if let Some(body) = definition.body {
-            let reads = body
+            let mut reads = body
                 .scope_fields()
                 .iter()
                 .map(|step| step.decision_read())
                 .collect::<std::collections::BTreeSet<_>>();
+            if let Some(creation) = body.creation() {
+                reads.extend(
+                    creation
+                        .fields()
+                        .iter()
+                        .filter_map(|step| step.source_read()),
+                );
+            }
             for target in reads {
                 self.push_member_in_place(ApplicationSchemaMember::OperationDecisionRead {
                     operation: operation.clone(),

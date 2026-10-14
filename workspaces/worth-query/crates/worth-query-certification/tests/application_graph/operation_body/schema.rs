@@ -41,8 +41,10 @@ worth_query_field!(pub MappingStatusField for Schema: BodySchemaBinding, Externa
 worth_query_field!(pub PrincipalIdentityField for Schema: BodySchemaBinding, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_field!(pub DocumentIdentityField for Schema: BodySchemaBinding, Document, DocumentFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub DocumentRetentionField for Schema: BodySchemaBinding, Document, DocumentFacts: u64 => U64ApplicationValueBinding, read_write, equality);
+worth_query_field!(pub DocumentAuditSourceField for Schema: BodySchemaBinding, Document, DocumentFacts: u64 => U64ApplicationValueBinding, read_write, equality);
 worth_query_field!(pub AuditIdentityField for Schema: BodySchemaBinding, Audit, AuditFacts: String => StringApplicationValueBinding, read_only, equality);
 worth_query_field!(pub AuditRetentionField for Schema: BodySchemaBinding, Audit, AuditFacts: u64 => U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub AuditPriorRetentionField for Schema: BodySchemaBinding, Audit, AuditFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 pub struct MappingTarget;
 impl MappingTarget {
     pub fn reference<Schema: BodySchemaBinding>(
@@ -95,6 +97,19 @@ impl SetRetention {
         ApplicationOperationRef::from_declaration()
     }
 }
-worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField]);
-worth_query_operation_writes!(SetRetention => [DocumentRetentionField, AuditIdentityField, AuditRetentionField]);
+pub struct SetAuditSource;
+impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for SetAuditSource {
+    type InputBinding = Schema::InputBinding;
+    const IDENTIFIER: &'static str = "SetAuditSource";
+}
+impl SetAuditSource {
+    pub fn reference<Schema: BodySchemaBinding>(
+    ) -> ApplicationOperationRef<Schema, Self, SetRetentionInput> {
+        ApplicationOperationRef::from_declaration()
+    }
+}
+worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField, DocumentAuditSourceField]);
+worth_query_operation_writes!(SetRetention => [DocumentRetentionField, AuditIdentityField, AuditRetentionField, AuditPriorRetentionField]);
 worth_query_operation_creates!(SetRetention => [Audit]);
+worth_query_operation_reads!(SetAuditSource => [DocumentIdentityField, DocumentAuditSourceField]);
+worth_query_operation_writes!(SetAuditSource => [DocumentAuditSourceField]);

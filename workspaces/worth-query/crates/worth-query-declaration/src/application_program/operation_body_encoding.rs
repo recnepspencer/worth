@@ -1,7 +1,8 @@
 //! Program projection of schema-owned executable values into canonical records.
 use super::semantic_encoding::framed_record;
 use crate::application_schema::{
-    ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodyCreatedField, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyScopeField,
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
@@ -52,30 +53,55 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
     let Some(creation) = body.creation() else {
         return scope;
     };
+    let has_scope_source = creation
+        .fields()
+        .iter()
+        .any(|step| step.source_field().is_some());
     let fields = creation.fields().iter().enumerate().map(|(index, step)| {
-        let (source_name, source) = match step.literal_value() {
-            Some(value) => (
+        let (source_name, source) = match step {
+            ApplicationOperationBodyCreatedField::Literal { value, .. } => (
                 "literal",
                 worth_foundational::facade::prepare_aspect_value_identity_basis(value)
                     .as_str()
                     .to_owned(),
             ),
-            None => (
+            ApplicationOperationBodyCreatedField::Input {
+                member,
+                scalar_family,
+                ..
+            } => (
                 "input",
                 framed_record(
                     "input-member-v1",
                     [
-                        (
-                            "member",
-                            step.input_member().expect("input initializer").to_owned(),
-                        ),
-                        ("family", step.scalar_family().canonical_name().to_owned()),
+                        ("member", member.to_owned()),
+                        ("family", scalar_family.canonical_name().to_owned()),
+                    ],
+                ),
+            ),
+            ApplicationOperationBodyCreatedField::ScopeField {
+                source,
+                scalar_family,
+                ..
+            } => (
+                "scope-field",
+                framed_record(
+                    "scope-source-v1",
+                    [
+                        ("entity", source.entity().to_owned()),
+                        ("aspect", source.aspect().to_owned()),
+                        ("field", source.field().to_owned()),
+                        ("family", scalar_family.canonical_name().to_owned()),
                     ],
                 ),
             ),
         };
         framed_record(
-            "operation-body-created-field-v1",
+            if has_scope_source {
+                "operation-body-created-field-v2"
+            } else {
+                "operation-body-created-field-v1"
+            },
             [
                 ("index", index.to_string()),
                 ("entity", step.field().entity().to_owned()),
@@ -87,7 +113,11 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         )
     });
     let created = framed_record(
-        "operation-body-creation-v1",
+        if has_scope_source {
+            "operation-body-creation-v2"
+        } else {
+            "operation-body-creation-v1"
+        },
         [
             ("entity", creation.entity().to_owned()),
             ("key", creation.key().to_owned()),
@@ -98,7 +128,11 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         ],
     );
     framed_record(
-        "operation-body-v2",
+        if has_scope_source {
+            "operation-body-v3"
+        } else {
+            "operation-body-v2"
+        },
         [("scope", scope), ("creation", created)],
     )
 }

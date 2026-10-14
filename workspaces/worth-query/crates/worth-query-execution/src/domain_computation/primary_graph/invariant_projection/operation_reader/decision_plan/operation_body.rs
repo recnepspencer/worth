@@ -5,6 +5,8 @@ use super::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
     WorthQueryInvariantEntityIdentity,
 };
+use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
+use crate::domain_computation::primary_graph::HandlerExecutionDenial;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 
@@ -17,6 +19,30 @@ impl<Schema: ApplicationSchema, Operation>
         field: &ApplicationFieldBindingLocus,
         expected: Option<&AspectValue>,
     ) -> Result<bool, WorthQueryInvariantDecisionPlanDenial> {
+        let locator = self.tracked_body_locator(identity, field)?;
+        Ok(self
+            .reader
+            .body_scalar_matches(identity, &locator, expected))
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn body_value<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        capture: impl FnOnce(&AspectValue) -> Result<PreparedBodySource, HandlerExecutionDenial>,
+    ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
+        let locator = self
+            .tracked_body_locator(identity, field)
+            .map_err(HandlerExecutionDenial::new)?;
+        self.reader.body_scalar_capture(identity, &locator, capture)
+    }
+
+    fn tracked_body_locator<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+    ) -> Result<worth_foundational::facade::AspectFieldLocator, WorthQueryInvariantDecisionPlanDenial>
+    {
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Field {
             entity: field.entity().to_owned(),
             aspect: field.aspect().to_owned(),
@@ -47,8 +73,6 @@ impl<Schema: ApplicationSchema, Operation>
             },
             DecisionReadOutcome::Observed,
         );
-        Ok(self
-            .reader
-            .body_scalar_matches(identity, &locator, expected))
+        Ok(locator)
     }
 }

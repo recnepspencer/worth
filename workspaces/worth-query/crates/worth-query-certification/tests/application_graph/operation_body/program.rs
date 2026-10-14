@@ -1,5 +1,5 @@
 // Authoring differs only in the literal destination, never in the host handler.
-use super::binding::BodyBinding;
+use super::binding::{BodyBinding, SourceBinding};
 use super::query::{document_retention_query_definition, DocumentRetentionQueryBinding};
 use super::schema::*;
 use worth_query_host::facade::{
@@ -43,15 +43,30 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             body.assign(DocumentRetentionField::reference(), DESTINATION)
                 .unwrap()
         };
-        let body = if matches!(DESTINATION, 20 | 21) {
-            body.create_in_scope(Audit::reference(), "audit")
+        let body = if matches!(DESTINATION, 20 | 21 | 23) {
+            let creation = body
+                .create_in_scope(Audit::reference(), "audit")
                 .unwrap()
                 .initialize_input(AuditIdentityField::reference(), "identity")
                 .unwrap()
                 .initialize(AuditRetentionField::reference(), DESTINATION)
-                .unwrap()
-                .finish()
-                .unwrap()
+                .unwrap();
+            let creation = if DESTINATION == 23 {
+                creation
+                    .initialize_from_scope(
+                        DocumentAuditSourceField::reference(),
+                        AuditPriorRetentionField::reference(),
+                    )
+                    .unwrap()
+            } else {
+                creation
+                    .initialize_from_scope(
+                        DocumentRetentionField::reference(),
+                        AuditPriorRetentionField::reference(),
+                    )
+                    .unwrap()
+            };
+            creation.finish().unwrap()
         } else {
             body.finish().unwrap()
         };
@@ -75,8 +90,10 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .field(Principal::reference(), PrincipalIdentityField::reference())
             .field(Document::reference(), DocumentIdentityField::reference())
             .field(Document::reference(), DocumentRetentionField::reference())
+            .field(Document::reference(), DocumentAuditSourceField::reference())
             .field(Audit::reference(), AuditIdentityField::reference())
             .field(Audit::reference(), AuditRetentionField::reference())
+            .field(Audit::reference(), AuditPriorRetentionField::reference())
             .relation(
                 MappingTarget::reference(),
                 ExternalMapping::reference(),
@@ -92,12 +109,34 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
                     .with_body(body)
                     .unwrap(),
             )
+            .operation(
+                SetAuditSource::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish()
+                    .with_body(
+                        SetAuditSource::reference()
+                            .body()
+                            .assign(DocumentAuditSourceField::reference(), 8)
+                            .unwrap()
+                            .finish()
+                            .unwrap(),
+                    )
+                    .unwrap(),
+            )
             .operation_projection_work_budget(SetRetention::reference(), 8)
+            .operation_projection_work_budget(SetAuditSource::reference(), 8)
             .operation_read_field(
                 SetRetention::reference(),
                 DocumentIdentityField::reference(),
             )
+            .operation_read_field(
+                SetAuditSource::reference(),
+                DocumentIdentityField::reference(),
+            )
             .application_mutation_binding::<BodyBinding<DESTINATION>>()
+            .application_mutation_binding::<SourceBinding<DESTINATION>>()
             .application_query(document_retention_query_definition::<DESTINATION>())
             .application_query_binding::<DocumentRetentionQueryBinding<DESTINATION>>()
             .application_query(super::audit_query::audit_query_definition::<DESTINATION>())
@@ -117,7 +156,10 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
         >,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         match install {
-            Installation::Native => setup.operation_body::<BodyBinding<DESTINATION>>()?,
+            Installation::Native => {
+                setup.operation_body::<BodyBinding<DESTINATION>>()?;
+                setup.operation_body::<SourceBinding<DESTINATION>>()?;
+            }
             Installation::Missing => {}
             Installation::Replacement => {
                 setup.handler::<BodyBinding<DESTINATION>, _>(super::replacement::Replacement)?
@@ -147,6 +189,7 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
         vec![
             ApplicationFeatureSpec::root::<DocumentRetentionSchema<DESTINATION>, BodyFeature>()
                 .mutation::<BodyBinding<DESTINATION>>()
+                .mutation::<SourceBinding<DESTINATION>>()
                 .finish(),
         ]
     }

@@ -26,17 +26,26 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
-    output.u16(if body.creation().is_some() {
-        3
-    } else if body
-        .scope_fields()
-        .iter()
-        .any(|step| step.input_member().is_some())
-    {
-        2
-    } else {
-        1
-    })?;
+    output.u16(
+        if body.creation().is_some_and(|creation| {
+            creation
+                .fields()
+                .iter()
+                .any(|step| step.source_field().is_some())
+        }) {
+            4
+        } else if body.creation().is_some() {
+            3
+        } else if body
+            .scope_fields()
+            .iter()
+            .any(|step| step.input_member().is_some())
+        {
+            2
+        } else {
+            1
+        },
+    )?;
     write_sequence(output, body.scope_fields(), |output, step| {
         output.u16(match step {
             ApplicationOperationBodyScopeField::Expect { .. } => 1,
@@ -58,16 +67,37 @@ pub(super) fn write(
         output.text(creation.entity())?;
         output.text(creation.key())?;
         write_sequence(output, creation.fields(), |output, step| {
-            output.u16(if step.input_member().is_some() { 2 } else { 1 })?;
+            output.u16(match step {
+                ApplicationOperationBodyCreatedField::Literal { .. } => 1,
+                ApplicationOperationBodyCreatedField::Input { .. } => 2,
+                ApplicationOperationBodyCreatedField::ScopeField { .. } => 3,
+            })?;
             output.text(step.field().entity())?;
             output.text(step.field().aspect())?;
             output.text(step.field().field())?;
             output.text(step.binding().as_str())?;
-            if let Some(value) = step.literal_value() {
-                super::foundational_value::write_aspect_value(output, value)
-            } else {
-                super::foundational_aspect::write_scalar_type(output, step.scalar_family())?;
-                output.text(step.input_member().expect("input initializer"))
+            match step {
+                ApplicationOperationBodyCreatedField::Literal { value, .. } => {
+                    super::foundational_value::write_aspect_value(output, value)
+                }
+                ApplicationOperationBodyCreatedField::Input {
+                    member,
+                    scalar_family,
+                    ..
+                } => {
+                    super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
+                    output.text(member)
+                }
+                ApplicationOperationBodyCreatedField::ScopeField {
+                    source,
+                    scalar_family,
+                    ..
+                } => {
+                    super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
+                    output.text(source.entity())?;
+                    output.text(source.aspect())?;
+                    output.text(source.field())
+                }
             }
         })?;
     }
@@ -79,7 +109,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=3) {
+    if !matches!(version, 1..=4) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let steps = decode_sequence(input, budget, 20, |input, _| {
@@ -112,30 +142,40 @@ pub(super) fn decode(
             _ => unreachable!("tag admitted before operands"),
         })
     })?;
-    let creation = if version == 3 {
+    let creation = if version >= 3 {
         let entity = input.text()?.to_owned();
         let key = input.text()?.to_owned();
         let fields = decode_sequence(input, budget, 20, |input, _| {
             let tag = input.u16()?;
-            if !matches!(tag, 1 | 2) {
+            if !matches!(tag, 1 | 2) && !(version == 4 && tag == 3) {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
             let field =
                 ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
             let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
-            Ok(if tag == 1 {
-                ApplicationOperationBodyCreatedField::Literal {
+            Ok(match tag {
+                1 => ApplicationOperationBodyCreatedField::Literal {
                     field,
                     binding,
                     value: super::foundational_value::decode_aspect_value(input)?,
-                }
-            } else {
-                ApplicationOperationBodyCreatedField::Input {
+                },
+                2 => ApplicationOperationBodyCreatedField::Input {
                     field,
                     binding,
                     scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
                     member: input.text()?.to_owned(),
-                }
+                },
+                3 => ApplicationOperationBodyCreatedField::ScopeField {
+                    field,
+                    binding,
+                    scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
+                    source: ApplicationFieldBindingLocus::new(
+                        input.text()?,
+                        input.text()?,
+                        input.text()?,
+                    ),
+                },
+                _ => unreachable!("creation opcode admitted before operands"),
             })
         })?;
         Some(ApplicationOperationBodyCreation::from_untrusted(

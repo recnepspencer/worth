@@ -61,6 +61,11 @@ pub(super) fn validate_member_identifiers(
                         ] {
                             validate_simple_identifier(identifier)?;
                         }
+                        if let Some(source) = step.source_field() {
+                            for identifier in [source.entity(), source.aspect(), source.field()] {
+                                validate_simple_identifier(identifier)?;
+                            }
+                        }
                     }
                 }
             }
