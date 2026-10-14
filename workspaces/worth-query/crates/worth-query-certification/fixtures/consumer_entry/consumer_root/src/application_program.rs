@@ -23,6 +23,8 @@ use worth_query_topology_entry::{
 };
 
 use crate::ConsumerSchema;
+#[cfg(test)]
+pub(crate) mod action_instances;
 pub(crate) mod correspondence;
 pub(crate) mod external_input;
 mod features;

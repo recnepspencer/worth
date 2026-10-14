@@ -74,6 +74,23 @@ The main owners remain separate:
 - Query owns application installation, admission, progression, and publication;
 - the host supplies adapters and resources but does not reinterpret decisions.
 
+### Keep the original branch across a host default switch
+
+A fixed owner exposes its original issued selector through `branch()`. If the host
+changes its selected default branch, create fresh ordinary context with
+`application.request(&principal, &scope).on_branch(owner.branch())` before calling
+`advance`. After settlement, select `settled.branch()` for `read_current` and
+`close`. The selector carries identity, not permission; each call still admits
+fresh authority. Query's installed root from `current_world()` remains immutable.
+
+Context on another branch returns typed `FreshRequestMismatch` and preserves the
+owner without source effects, producer work or delivery queries on that branch.
+The [executable branch court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_branch_affinity.rs)
+proves refusal and fresh original-branch continuation. The
+[two-instance court](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_action_instances.rs)
+uses one binding at two canonical instances with distinct installed delivery
+contracts; a caller cannot substitute one instance's delivery at the other.
+
 ## Preparing a program action before publication
 
 A keyed mutation request may call `prepare_in_program(&runtime, allocation)` when its
