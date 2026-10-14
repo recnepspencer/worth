@@ -129,6 +129,10 @@ pub(super) fn retained_decision_counts(
     for wake in wakes {
         let _intent_revision = wake.due.revision();
         match &wake.decision {
+            WorthQueryRetainedConditionalDecision::OperationCleanupRequired(evidence, cleanup) => {
+                let _ = (evidence, cleanup);
+                counts.failed += 1;
+            }
             WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, stale) => {
                 let _decision = evidence.signal().class();
                 let _expected_product = stale.expected_product();

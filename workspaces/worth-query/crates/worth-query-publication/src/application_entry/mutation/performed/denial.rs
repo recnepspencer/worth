@@ -60,3 +60,19 @@ impl WorthQueryRequiredOutputPreparationDenial {
         )
     }
 }
+
+impl WorthQueryRequiredOutputPreparationDenial {
+    pub(in crate::application_entry) fn take_managed_cleanup(
+        &mut self,
+    ) -> Option<
+        Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationCleanupRequired>,
+    > {
+        match self {
+            Self::DemandExecution(denial) => denial.take_managed_cleanup(),
+            Self::Demand(
+                crate::application_entry::WorthQueryApplicationOutputDemandDenial::Demand(denial),
+            ) => denial.take_managed_cleanup(),
+            _ => None,
+        }
+    }
+}

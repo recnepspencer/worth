@@ -22,7 +22,7 @@ The descriptor owns the original input, conditions, source, key and branch. It c
 
 A SourceOnly owner keeps the exact installed program runtime alive. It can leave the frame that borrowed the runtime during construction; cloning the program runtime retains that same allocation and does not install another program or copy admission authority. Each subsequent advance and historical read still takes a fresh request. Conditional runtime close refuses with `RuntimeKeepaliveRetained` while another owning handle remains; after dependent handles are released, close uses the existing native release path.
 
-Keep the returned operation, completed owner, or terminal owner reachable across transport response loss. Dropping a listener does not authorize cleanup. Calling `into_runtime_for_cleanup()` on an active SourceOnly owner explicitly abandons the ordinary descriptor and returns its exact installed-runtime handle. It performs no publication, settlement, or release, and the ordinary operation cannot subsequently be resumed. Use the returned runtime's native recovery catalog and independent cleanup inventory to discover retained obligations. A refused native release returns its actual recovery or physical-cleanup owner; retain that owner for a freshly funded attempt.
+Keep the returned operation, completed owner, or terminal owner reachable across transport response loss. Dropping a listener does not authorize cleanup. Calling `into_runtime_for_cleanup()` on an active SourceOnly owner explicitly abandons the ordinary descriptor and returns its exact installed-runtime handle together with its owned cleanup collection. It performs no publication, settlement, or release, and the ordinary operation cannot subsequently be resumed. Keep both returned values. The collection carries actual failed managed-run cleanup that has no publication recovery record; use its funded `close_in_advancement` entrance with the returned runtime. Use the runtime's native recovery catalog and independent physical-cleanup inventory for their respective retained obligations. A refused native release returns its actual recovery or physical-cleanup owner; retain that owner for a freshly funded attempt.
 
 Dropping the last ordinary wrapper does not remove native recovery records while an independent runtime handle remains live. This is separate from completion and from physical retirement: a lawful release may retire zero components when other observations retain roots. Neither this handoff nor ordinary Drop promises cleanup after final runtime destruction or crash-durable transport custody. Drop never creates request authority or performs cleanup I/O.
 
@@ -75,6 +75,20 @@ For example, a retention action can land its change to 18 days before publicatio
 
 ## Inspection And Debugging
 
+A World `ProductStale` or `NoEffect` terminal can also retain a genuine managed-run
+cleanup failure. `managed_cleanup_failure()` inspects that distinct custody.
+`close(&fresh_request)` retries native cleanup and returns the original owner on
+refusal. `release_cleanup(&fresh_request)` releases only that collection while
+retaining business evidence; an indeterminate operation stays indeterminate until
+native keyed recovery resolves it. For example, a retention write may be visible
+at 19 days while Signal finalization still requires cleanup. Discharging that
+cleanup does not recreate a handler result or authorize another retention write.
+Collection and closed results retain the actual `managed_cleanup_receipt()`;
+inspect its disposition and provider recovery evidence separately from resource
+release. `RecoveryRequired` evidence is not erased or converted to a new retry
+owner after the lower owner has already released its resources.
+
+
 `RetainedDeliveryPending` means the owner holds recovered evidence awaiting native history selection. `History(CommitUnavailable)` means the commit was not found in branch history within the supplied bound. It does not prove historical absence. Retain the owner and fund a fresh attempt; cancellation and foreign-runtime refusals also preserve custody.
 
 ## Anti-Patterns
@@ -91,3 +105,8 @@ Native history selection reports a bounded unavailable result without proving wh
 - [Build an application](../../../../../../docs/build-an-application.md)
 - [Executable retained courts](../../../worth-query-certification/tests/application_graph/source_only/retained.rs)
 - [Executable capability recovery court](../../../worth-query-certification/tests/application_graph/source_only/capability/recovery.rs)
+
+An `Initial` source owner has not entered its commit callback. After a refused
+first admission, `close(&fresh_request)` can release that unexecuted custody. It
+still checks the original runtime and branch and a live request; refusal returns
+the same owner. This does not make unresolved advancement closable.

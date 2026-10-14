@@ -105,6 +105,7 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         | Kind::ForeignSource
         | Kind::MissingApplicableProducer
         | Kind::AmbiguousApplicableProducer
+        | Kind::ManagedCleanupRequired(_)
         | Kind::ProducerUnavailable
         | Kind::ProducerDomainDenied
         | Kind::SchedulingRejected

@@ -124,14 +124,27 @@ impl<
     /// Abandons ordinary retry meaning while keeping the exact native cleanup authority alive.
     ///
     /// This performs no release, settlement, publication, or request admission. Native recovery
-    /// records and physical cleanup obligations remain discoverable on the returned runtime.
+    /// records remain discoverable on the returned runtime; the returned cleanup collection
+    /// retains actual failed managed-run custody that has no publication recovery record.
     /// The original ordinary operation cannot be resumed after this explicit handoff. Refused
     /// native cleanup retains its own recovery/cleanup handle. Final runtime destruction and
     /// crash durability are not guaranteed by this handoff.
-    pub fn into_runtime_for_cleanup(self) -> WorthQueryProgramApplicationRuntime<S, P> {
-        self.admission.runtime
+    pub fn into_runtime_for_cleanup(
+        self,
+    ) -> (
+        WorthQueryProgramApplicationRuntime<S, P>,
+        WorthQueryOperationCleanup,
+    ) {
+        (self.admission.runtime, self.cleanup)
     }
 
+    /// Exact managed-run cleanup custody retained independently of business evidence.
+    pub fn managed_cleanup_failure(
+        &self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
+    {
+        self.cleanup.managed_failure()
+    }
     /// Exact completed native no-effect evidence retained for a fresh admitted attempt.
     pub fn native_retry_outcome(&self) -> Option<&NativeOutcome<S, I>> {
         match &self.state {

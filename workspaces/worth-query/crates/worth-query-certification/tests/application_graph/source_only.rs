@@ -24,3 +24,6 @@ mod stale_retry;
 
 #[path = "source_only/native_postures.rs"]
 mod native_postures;
+
+#[path = "source_only/managed_cleanup.rs"]
+mod managed_cleanup;

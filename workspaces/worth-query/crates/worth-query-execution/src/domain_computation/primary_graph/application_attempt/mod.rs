@@ -80,11 +80,12 @@ pub use commit_terminal::{
     WorthQueryApplicationCommitTerminalEvidence, WorthQueryApplicationCommitTerminalKind,
 };
 pub use compare_and_commit::{
-    WorthQueryApplicationCommitDeferred, WorthQueryApplicationCommitDeferredKind,
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
-    WorthQueryApplicationCommitDenialStage, WorthQueryApplicationCommitOutcome,
-    WorthQueryApplicationCommitPublicationSource, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationCommitRecoveryKind, WorthQueryApplicationCommittedChanges,
+    WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitDeferred,
+    WorthQueryApplicationCommitDeferredKind, WorthQueryApplicationCommitDenial,
+    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitDenialStage,
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationCommitPublicationSource,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationCommitRecoveryKind,
+    WorthQueryApplicationCommittedChanges, WorthQueryApplicationManagedCleanup,
     WorthQueryApplicationManagedCleanupFailure, WorthQueryApplicationNoEffect,
     WorthQueryApplicationNoEffectCause, WorthQueryApplicationSettlementDeferred,
     WorthQueryApplicationSettlementNextAction, WorthQueryApplicationStaleAttempt,

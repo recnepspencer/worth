@@ -238,7 +238,7 @@ fn explicit_partial_abandonment_keeps_unsettled_native_record() {
         operation.posture(),
         WorthQuerySourceOnlyPosture::ProductUnpublished
     );
-    let runtime = operation.into_runtime_for_cleanup();
+    let (runtime, _cleanup) = operation.into_runtime_for_cleanup();
     drop(request);
     drop(principal);
     drop(scope);

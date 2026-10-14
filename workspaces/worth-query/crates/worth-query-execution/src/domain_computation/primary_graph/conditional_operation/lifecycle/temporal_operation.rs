@@ -104,6 +104,11 @@ where
         self.definition.binding_identity.support_identity()
     }
 
+    fn pending_managed_cleanup(&self) -> Option<crate::domain_computation::WorthQueryMutationCleanupFailureKind> {
+        super::super::retained_managed_cleanup::pending_kind(self.retained_wakes.iter()
+            .chain(self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter())))
+    }
+
     fn installation_canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkEvidence {
@@ -166,6 +171,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         WorthQueryPreparedConditionalRuntimeBinding,
         super::super::installation::WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        super::super::retained_managed_cleanup::admit_reinstallation(
+            self.pending_managed_cleanup(), self.definition.binding_identity.support_identity())?;
         let mut prepared = runtime_rebinding::prepare_temporal_runtime_binding(
             &self.definition.binding,
             bridge,
@@ -199,22 +206,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         &mut self,
         prepared: WorthQueryPreparedConditionalRuntimeBinding,
     ) {
-        self.pending_invalidations = prepared.pending_invalidations;
-        self.bootstrap_lowering = prepared.lowering;
-        self.active_affinity = Some(prepared.affinity);
-        self.managed_clock = Some(prepared.managed_clock);
-        self.authoritative_commit_cursor = prepared.authoritative_commit_cursor;
-        self.bootstrap_commit_catch_up_pending = false;
-        self.commit_watch = prepared.commit_watch;
-        let reconstruction = *prepared
-            .authoritative_reconstruction
-            .downcast::<super::super::temporal_reconstruction::WorthQueryTemporalReconstruction<Clock, Input>>()
-            .expect("prepared temporal reconstruction retains its installed binding type");
-        self.reconstructed_intents = reconstruction.intents;
-        self.reconstruction_work = reconstruction.work;
-        self.retained_wakes.clear();
-        self.inactive_bindings.clear();
-        self.next_evaluation_binding_ordinal = 1;
+        runtime_rebinding::apply_temporal_runtime_binding(self, prepared);
     }
 
     #[rustfmt::skip]
@@ -241,6 +233,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                 detail: "foreign conditional advancement phase".to_string(),
             },
         };
+        super::super::retained_managed_cleanup::retry_wakes(self.retained_wakes.iter_mut()
+            .chain(self.inactive_bindings.values_mut().flat_map(|binding| binding.retained_wakes.iter_mut())), phase);
         let observation = match isolate_clock_source(|| self.definition.binding.observe_clock_for_runtime()) {
             Ok(observation) => observation,
             Err(outcome) => return outcome,
@@ -368,14 +362,17 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                     std::mem::take(&mut released.deliveries),
                     &mut self.retained_wakes,
                 );
-            due_wake_retention::complete_clock_receipt(
+            let mut receipt = due_wake_retention::complete_clock_receipt(
                 receipt,
                 counts,
                 authoritative,
                 released,
                 &mut self.retained_wakes,
                 &mut self.operation_totals,
-            )
+            );
+            super::super::retained_managed_cleanup::include_retained_cleanup(&mut receipt,
+                self.inactive_bindings.values().flat_map(|binding| binding.retained_wakes.iter()));
+            receipt
         };
         bridge_clock_outcome::map_bridge_clock_outcome(outcome, retain_and_reenter)
     }

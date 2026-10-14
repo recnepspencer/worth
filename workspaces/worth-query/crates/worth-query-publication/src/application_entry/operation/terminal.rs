@@ -85,6 +85,34 @@ where
         Self { operation }
     }
 
+    /// Original output-producer evidence is not replaced by its cleanup receipt.
+    pub fn producer_native_outcome(&self) -> Option<&WorthQueryApplicationUncommitted> {
+        self.operation.cleanup.producer_native_outcome()
+    }
+    /// Exact managed-run cleanup custody retained independently of business evidence.
+    pub fn managed_cleanup_failure(
+        &self,
+    ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailure>
+    {
+        self.operation.cleanup.managed_failure()
+    }
+    /// Discharge of this collection retains terminal business evidence and required-output obligations.
+    pub fn release_cleanup(
+        &mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
+    ) -> Result<WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial> {
+        let runtime = self.operation.runtime.runtime();
+        if !std::ptr::eq(runtime, request.application)
+            || self.operation.description.branch != request.branch
+        {
+            return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
+        }
+        runtime
+            .with_application_advancement(request.scope, |phase| {
+                self.operation.cleanup.close_in_advancement(&phase, runtime)
+            })
+            .map_err(WorthQueryOperationCloseDenial::Execution)?
+    }
     /// Exact native source outcome, including every retained unresolved posture.
     pub fn native_outcome(
         &self,
@@ -158,9 +186,7 @@ where
                     .operation
                     .cleanup
                     .close_in_advancement(&phase, self.operation.runtime.runtime())?;
-                Ok(WorthQueryClosedOperation::from_cleanup(
-                    receipt.retired_component_count(),
-                ))
+                Ok(WorthQueryClosedOperation::from_cleanup(receipt))
             });
         match result {
             Ok(Ok(closed)) => Ok(closed),

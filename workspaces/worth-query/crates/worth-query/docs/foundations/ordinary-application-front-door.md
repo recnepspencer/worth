@@ -798,8 +798,17 @@ complete.
 
 SourceOnly and fixed terminal owners retain these observations across close
 refusal and delegate fresh close to the existing cleanup collection. That close
-releases the terminal's native observation custody; its receipt does not certify
-external cleanup, managed cleanup that failed earlier, or crash durability.
+releases the terminal's native observation custody and retries its actual failed
+managed-run cleanup. A failed lower release remains owned across refusal; a
+World no-effect outcome alone never proves managed cleanup succeeded. Inspect
+`managed_cleanup_failure()` for that separate native custody. `release_cleanup`
+discharges only the cleanup collection while retaining the operation or terminal
+and its business evidence. It cannot resolve an uncertain commit or complete
+required outputs. Close remains subject to each lane's native terminal contract;
+its receipt does not certify external cleanup or crash durability. Collection and
+closed results retain `managed_cleanup_receipt()` when a failed managed run was
+released. Inspect its actual disposition and provider recovery evidence: released
+resource reservations can coexist with logical `RecoveryRequired` evidence.
 The [native posture courts](../../../worth-query-certification/tests/application_graph/source_only/native_postures.rs)
 exercise an actual pre-World native writer race and finite retained-observation
 capacity, with unchanged valid counterparts.
@@ -968,3 +977,18 @@ Arc headers, native preparation and evidence indexes remain separate owners.
 - [Application Aftermath, External Effects, And Recovery](../execution/application-aftermath-and-recovery.md)
 - [Support Matrix And Admission](./support-matrix-and-admission.md)
 - [Typed Stops And Remediation Guidance](../domain-capabilities/typed-stops-and-remediation-guidance.md)
+
+Failed producer cleanup belongs to the admitted demand, not to cloned denial
+diagnostics. Fixed owning progression transfers it into the existing operation
+cleanup collection before returning terminal custody. A diagnostic copy grants
+no cleanup authority. Conditional reinstallation and explicit runtime stop refuse while native release
+is pending. Fresh clock progression can discharge only that release; reinstallation
+then preserves the wake's original unresolved business evidence.
+
+A failure in independently queued required work can return cleanup custody even
+when the current caller's output is already current. The retained demand owns
+that original queued producer terminal; cloned diagnostics cannot extract it.
+Native cleanup release preserves its original business outcome and does not
+re-execute either producer. Conditional lag reconstruction follows the same
+rule as reinstallation: pending native release refuses replacement, and released
+cleanup evidence remains retained without restoring business eligibility.

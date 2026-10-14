@@ -178,6 +178,14 @@ impl<Schema> WorthQueryConditionalOperationRegistry<Schema> {
             .cloned()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn pending_managed_cleanup(
+        &self,
+    ) -> Option<crate::domain_computation::WorthQueryMutationCleanupFailureKind> {
+        self.installed
+            .values()
+            .find_map(|cell| cell.lock_operation().pending_managed_cleanup())
+    }
+
     pub(in crate::domain_computation::primary_graph) fn reconstruct_all(
         &mut self,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<

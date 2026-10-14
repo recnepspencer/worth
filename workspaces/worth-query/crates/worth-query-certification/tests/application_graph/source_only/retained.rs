@@ -5,22 +5,22 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::{
     application_entry::*, declaration::application_program::*, declaration::application_schema::*,
 };
-struct RetainedProgram;
-struct RetainedDelivery;
+pub(super) struct RetainedProgram;
+pub(super) struct RetainedDelivery;
 impl ApplicationActionDelivery<SourceOnlyRetentionSchema, SetRetentionBinding>
     for RetainedDelivery
 {
     type Mode = ApplicationRetainedCommit;
     const IDENTITY: &'static str = "source-only-retention.retained-delivery.v1";
 }
-type Action = ApplicationActionReference<
+pub(super) type Action = ApplicationActionReference<
     SourceOnlyRetentionSchema,
     ApplicationRootComposition,
     DocumentRetentionFeature,
     SetRetentionBinding,
     RetainedDelivery,
 >;
-type Operation = WorthQuerySourceOnlyOperation<
+pub(super) type Operation = WorthQuerySourceOnlyOperation<
     SourceOnlyRetentionSchema,
     OriginalRetention,
     RetainedProgram,
@@ -41,7 +41,7 @@ impl ApplicationProgramDefinition<SourceOnlyRetentionSchema> for RetainedProgram
         ]
     }
 }
-fn operation<'a>(
+pub(super) fn operation<'a>(
     host: &'a host::Host<RetainedProgram>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, SourceOnlyRetentionSchema>,
     days: u64,
@@ -63,7 +63,7 @@ fn operation<'a>(
         .retain_operation::<RetainedProgram, Action>(host)
         .unwrap_or_else(|(_, denial)| panic!("retained declaration: {denial:?}"))
 }
-fn bound() -> NonZeroUsize {
+pub(super) fn bound() -> NonZeroUsize {
     NonZeroUsize::new(32).unwrap()
 }
 fn observation(

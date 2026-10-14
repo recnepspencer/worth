@@ -120,6 +120,7 @@ fn principal_staleness_and_request_stop_keep_their_distinct_answers() {
                         running,
                         crate::domain_computation::WorthQueryManagedRunTerminalKind::Failed,
                         lease.release_custody(),
+                        false,
                     )
                     .unwrap();
             },
