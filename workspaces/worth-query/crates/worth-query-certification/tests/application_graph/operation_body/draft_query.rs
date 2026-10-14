@@ -19,6 +19,7 @@ pub struct DraftRead {
 pub struct DraftRow {
     pub identity: String,
     pub note: Option<String>,
+    pub audit_source: u64,
 }
 worth_query_portable_type!(DraftRow => "worth.query.body-court.draft-row.v1");
 worth_query_structured_value_binding!(pub DraftReadBinding for DraftRead {
@@ -29,8 +30,10 @@ worth_query_structured_value_binding!(pub DraftRowBinding for DraftRow {
 });
 pub struct IdentitySlot;
 pub struct NoteSlot;
+pub struct AuditSourceSlot;
 worth_query_portable_type!(IdentitySlot => "worth.query.body-court.draft-identity-slot.v1");
 worth_query_portable_type!(NoteSlot => "worth.query.body-court.draft-note-slot.v1");
+worth_query_portable_type!(AuditSourceSlot => "worth.query.body-court.draft-audit-source-slot.v1");
 worth_query_application_query!(pub DraftQuery for Schema: BodySchemaBinding,
     identity "DraftQuery", parameters DocumentQueryParametersBinding,
     result DraftRowBinding, scope Document => "Document", name "body_draft_read");
@@ -63,6 +66,20 @@ fn note<Schema: BodySchemaBinding>() -> ApplicationQueryOptionalResultFieldRef<
 > {
     ApplicationQueryOptionalResultFieldRef::new("note", DocumentDraftNoteField::reference())
 }
+fn audit_source<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
+    DraftQuery,
+    AuditSourceSlot,
+    Schema,
+    Document,
+    DocumentFacts,
+    DocumentAuditSourceField,
+    u64,
+    ReadWrite,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryResultFieldRef::new("audit_source", DocumentAuditSourceField::reference())
+}
 
 pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
     DocumentRetentionSchema<DESTINATION>,
@@ -80,6 +97,7 @@ pub fn draft_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefin
     >::new(Document::reference())
     .field(identity())
     .optional_field(note())
+    .field(audit_source())
     .build();
     ApplicationQueryDefinitionBuilder::declare(DraftQuery::reference())
         .root(Document::reference())
@@ -107,6 +125,7 @@ impl<const DESTINATION: u64>
         Ok(Self {
             identity: row.field(identity())?,
             note: row.optional_field(note())?,
+            audit_source: row.field(audit_source())?,
         })
     }
 }
@@ -177,6 +196,24 @@ pub fn read_note<const DESTINATION: u64>(
         super::program::BodyProgram<DESTINATION>,
     >,
 ) -> Option<String> {
+    read_row(app).note
+}
+
+pub fn read_audit_source<const DESTINATION: u64>(
+    app: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        DocumentRetentionSchema<DESTINATION>,
+        super::program::BodyProgram<DESTINATION>,
+    >,
+) -> u64 {
+    read_row(app).audit_source
+}
+
+fn read_row<const DESTINATION: u64>(
+    app: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        DocumentRetentionSchema<DESTINATION>,
+        super::program::BodyProgram<DESTINATION>,
+    >,
+) -> DraftRow {
     let scope = super::request_scope();
     let principal = super::authenticate_operator(app.runtime().installed_schema(), &scope);
     let result = app
@@ -188,5 +225,5 @@ pub fn read_note<const DESTINATION: u64>(
         .unwrap();
     let row = &result.rows()[0];
     assert_eq!(row.identity, super::DOCUMENT_IDENTITY);
-    row.note.clone()
+    row.clone()
 }

@@ -25,6 +25,8 @@ mod program;
 mod query;
 #[path = "operation_body/replacement.rs"]
 mod replacement;
+#[path = "operation_body/requirement.rs"]
+mod requirement;
 #[path = "operation_body/schema.rs"]
 mod schema;
 

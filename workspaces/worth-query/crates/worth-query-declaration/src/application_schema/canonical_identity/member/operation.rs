@@ -18,6 +18,13 @@ pub(super) fn append_body(
         if body.scope_fields().iter().any(|step| {
             matches!(
                 step,
+                ApplicationOperationBodyScopeField::RequirePresent { .. }
+            )
+        }) {
+            "operation-body-v4"
+        } else if body.scope_fields().iter().any(|step| {
+            matches!(
+                step,
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. }
                     | ApplicationOperationBodyScopeField::ClearOptional { .. }
             )
@@ -41,6 +48,7 @@ pub(super) fn append_body(
                 ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. } => "set-optional-input",
                 ApplicationOperationBodyScopeField::ClearOptional { .. } => "clear-optional",
+                ApplicationOperationBodyScopeField::RequirePresent { .. } => "require-present",
             },
         );
         basis.text(format!("{prefix}.entity"), step.field().entity());
@@ -56,6 +64,14 @@ pub(super) fn append_body(
             basis.text(format!("{prefix}.input-member"), member);
             basis.text(
                 format!("{prefix}.input-family"),
+                step.scalar_family().canonical_name(),
+            );
+        } else if matches!(
+            step,
+            ApplicationOperationBodyScopeField::RequirePresent { .. }
+        ) {
+            basis.text(
+                format!("{prefix}.require-family"),
                 step.scalar_family().canonical_name(),
             );
         } else {

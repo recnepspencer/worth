@@ -2,7 +2,7 @@
 use super::super::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerResult, OperationHandler,
 };
-use super::{WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
+use super::{BodyFieldExpectation, WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_operation::{
     ApplicationCandidateRequirements, ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -48,22 +48,41 @@ where
     ) -> HandlerResult<Binding::Decision, Binding::Denial> {
         for step in self.body.scope_fields() {
             let expected = match step {
-                ApplicationOperationBodyScopeField::Expect { value, .. } => Some(value),
+                ApplicationOperationBodyScopeField::Expect { value, .. } => {
+                    BodyFieldExpectation::Equals(value)
+                }
+                ApplicationOperationBodyScopeField::RequirePresent { .. } => {
+                    BodyFieldExpectation::Present
+                }
                 ApplicationOperationBodyScopeField::Assign { .. }
                 | ApplicationOperationBodyScopeField::AssignInput { .. }
                 | ApplicationOperationBodyScopeField::SetOptionalInput { .. }
-                | ApplicationOperationBodyScopeField::ClearOptional { .. } => None,
+                | ApplicationOperationBodyScopeField::ClearOptional { .. } => {
+                    BodyFieldExpectation::Any
+                }
             };
             let matches = match reader.body_scope_field(step.field(), expected) {
                 Ok(value) => value,
                 Err(cause) => return HandlerResult::ExecutionDenied(cause),
             };
             if !matches {
+                let field = step.field();
                 return HandlerResult::DomainDenied(
-                    WorthQueryOperationBodyDenial::SourceMismatch {
-                        entity: step.field().entity().to_owned(),
-                        aspect: step.field().aspect().to_owned(),
-                        field: step.field().field().to_owned(),
+                    if matches!(
+                        step,
+                        ApplicationOperationBodyScopeField::RequirePresent { .. }
+                    ) {
+                        WorthQueryOperationBodyDenial::RequirementUnmet {
+                            entity: field.entity().to_owned(),
+                            aspect: field.aspect().to_owned(),
+                            field: field.field().to_owned(),
+                        }
+                    } else {
+                        WorthQueryOperationBodyDenial::SourceMismatch {
+                            entity: field.entity().to_owned(),
+                            aspect: field.aspect().to_owned(),
+                            field: field.field().to_owned(),
+                        }
                     },
                 );
             }

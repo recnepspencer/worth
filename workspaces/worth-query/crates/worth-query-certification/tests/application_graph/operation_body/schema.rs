@@ -117,6 +117,7 @@ worth_query_operation_reads!(SetAuditSource => [DocumentIdentityField, DocumentA
 worth_query_operation_writes!(SetAuditSource => [DocumentAuditSourceField]);
 pub struct SetDraftNote;
 pub struct ClearDraftNote;
+pub struct RequireDraftNote;
 impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for SetDraftNote {
     type InputBinding = super::draft::DraftInputBinding;
     const IDENTIFIER: &'static str = "SetDraftNote";
@@ -124,6 +125,10 @@ impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for S
 impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for ClearDraftNote {
     type InputBinding = super::draft::DraftInputBinding;
     const IDENTIFIER: &'static str = "ClearDraftNote";
+}
+impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for RequireDraftNote {
+    type InputBinding = super::draft::DraftInputBinding;
+    const IDENTIFIER: &'static str = "RequireDraftNote";
 }
 impl SetDraftNote {
     pub fn reference<Schema: BodySchemaBinding>(
@@ -137,7 +142,15 @@ impl ClearDraftNote {
         ApplicationOperationRef::from_declaration()
     }
 }
+impl RequireDraftNote {
+    pub fn reference<Schema: BodySchemaBinding>(
+    ) -> ApplicationOperationRef<Schema, Self, super::draft::DraftInput> {
+        ApplicationOperationRef::from_declaration()
+    }
+}
 worth_query_operation_reads!(SetDraftNote => [DocumentIdentityField, DocumentDraftNoteField]);
 worth_query_operation_writes!(SetDraftNote => [DocumentDraftNoteField]);
 worth_query_operation_reads!(ClearDraftNote => [DocumentIdentityField, DocumentDraftNoteField]);
 worth_query_operation_writes!(ClearDraftNote => [DocumentDraftNoteField]);
+worth_query_operation_reads!(RequireDraftNote => [DocumentIdentityField, DocumentDraftNoteField, DocumentAuditSourceField]);
+worth_query_operation_writes!(RequireDraftNote => [DocumentAuditSourceField]);

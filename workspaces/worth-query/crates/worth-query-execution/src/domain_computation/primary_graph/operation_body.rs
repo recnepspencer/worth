@@ -1,12 +1,18 @@
 //! Execution of a complete installed body, never a caller-selected replacement.
+mod field_expectation;
 mod handler;
 mod input;
 mod installation;
+mod requirement;
 mod source;
 pub(in crate::domain_computation::primary_graph) use input::{prepare_inputs, PreparedBodyInputs};
 pub(in crate::domain_computation::primary_graph) use source::PreparedBodySource;
 
+pub(in crate::domain_computation::primary_graph) use field_expectation::BodyFieldExpectation;
 pub(in crate::domain_computation::primary_graph) use handler::OperationBodyHandler;
+pub use requirement::{
+    WorthQueryOperationBodyRequirementFinding, WorthQueryOperationBodyRequirementStatus,
+};
 
 use super::WorthQueryInvariantMutationTarget;
 use serde::{Deserialize, Serialize};
@@ -28,5 +34,10 @@ pub enum WorthQueryOperationBodyDenial {
     },
     InputMismatch {
         member: String,
+    },
+    RequirementUnmet {
+        entity: String,
+        aspect: String,
+        field: String,
     },
 }

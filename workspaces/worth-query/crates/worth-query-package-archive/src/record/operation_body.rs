@@ -30,6 +30,13 @@ pub(super) fn write(
         if body.scope_fields().iter().any(|step| {
             matches!(
                 step,
+                ApplicationOperationBodyScopeField::RequirePresent { .. }
+            )
+        }) {
+            6
+        } else if body.scope_fields().iter().any(|step| {
+            matches!(
+                step,
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. }
                     | ApplicationOperationBodyScopeField::ClearOptional { .. }
             )
@@ -61,6 +68,7 @@ pub(super) fn write(
             ApplicationOperationBodyScopeField::AssignInput { .. } => 3,
             ApplicationOperationBodyScopeField::SetOptionalInput { .. } => 4,
             ApplicationOperationBodyScopeField::ClearOptional { .. } => 5,
+            ApplicationOperationBodyScopeField::RequirePresent { .. } => 6,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
@@ -84,7 +92,8 @@ pub(super) fn write(
                 super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
                 output.text(member)
             }
-            ApplicationOperationBodyScopeField::ClearOptional { scalar_family, .. } => {
+            ApplicationOperationBodyScopeField::ClearOptional { scalar_family, .. }
+            | ApplicationOperationBodyScopeField::RequirePresent { scalar_family, .. } => {
                 super::foundational_aspect::write_scalar_type(output, *scalar_family)
             }
         }
@@ -94,6 +103,7 @@ pub(super) fn write(
             step,
             ApplicationOperationBodyScopeField::SetOptionalInput { .. }
                 | ApplicationOperationBodyScopeField::ClearOptional { .. }
+                | ApplicationOperationBodyScopeField::RequirePresent { .. }
         )
     }) {
         output.u16(u16::from(body.creation().is_some()))?;
@@ -144,14 +154,15 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=5) {
+    if !matches!(version, 1..=6) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let steps = decode_sequence(input, budget, 20, |input, _| {
         let tag = input.u16()?;
         if !matches!(tag, 1 | 2)
             && !(version >= 2 && tag == 3)
-            && !(version == 5 && matches!(tag, 4 | 5))
+            && !(version >= 5 && matches!(tag, 4 | 5))
+            && !(version == 6 && tag == 6)
         {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
@@ -176,11 +187,20 @@ pub(super) fn decode(
                 }
             });
         }
-        if tag == 5 {
-            return Ok(ApplicationOperationBodyScopeField::ClearOptional {
-                field,
-                binding,
-                scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
+        if matches!(tag, 5 | 6) {
+            let scalar_family = super::foundational_aspect::decode_scalar_type(input)?;
+            return Ok(if tag == 5 {
+                ApplicationOperationBodyScopeField::ClearOptional {
+                    field,
+                    binding,
+                    scalar_family,
+                }
+            } else {
+                ApplicationOperationBodyScopeField::RequirePresent {
+                    field,
+                    binding,
+                    scalar_family,
+                }
             });
         }
         let value = super::foundational_value::decode_aspect_value(input)?;
@@ -198,7 +218,7 @@ pub(super) fn decode(
             _ => unreachable!("tag admitted before operands"),
         })
     })?;
-    let has_creation = if version == 5 {
+    let has_creation = if version >= 5 {
         match input.u16()? {
             0 => false,
             1 => true,

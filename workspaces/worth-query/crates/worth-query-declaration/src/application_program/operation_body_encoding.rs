@@ -6,6 +6,12 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let has_requirement = body.scope_fields().iter().any(|step| {
+        matches!(
+            step,
+            ApplicationOperationBodyScopeField::RequirePresent { .. }
+        )
+    });
     let has_optional = body.scope_fields().iter().any(|step| {
         matches!(
             step,
@@ -44,9 +50,14 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
             ApplicationOperationBodyScopeField::ClearOptional { scalar_family, .. } => {
                 ("clear", scalar_family.canonical_name().to_owned())
             }
+            ApplicationOperationBodyScopeField::RequirePresent { scalar_family, .. } => {
+                ("require-present", scalar_family.canonical_name().to_owned())
+            }
         };
         framed_record(
-            if has_optional {
+            if has_requirement {
+                "operation-body-step-v3"
+            } else if has_optional {
                 "operation-body-step-v2"
             } else {
                 "operation-body-step-v1"
@@ -65,6 +76,9 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
                         ApplicationOperationBodyScopeField::ClearOptional { .. } => {
                             "clear-optional"
                         }
+                        ApplicationOperationBodyScopeField::RequirePresent { .. } => {
+                            "require-present"
+                        }
                     }
                     .to_owned(),
                 ),
@@ -77,7 +91,9 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         )
     });
     let scope = framed_record(
-        if has_optional {
+        if has_requirement {
+            "operation-body-v3"
+        } else if has_optional {
             "operation-body-v2"
         } else {
             "operation-body-v1"
@@ -162,7 +178,9 @@ pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> S
         ],
     );
     framed_record(
-        if has_optional {
+        if has_requirement {
+            "operation-body-v5"
+        } else if has_optional {
             "operation-body-v4"
         } else if has_scope_source {
             "operation-body-v3"

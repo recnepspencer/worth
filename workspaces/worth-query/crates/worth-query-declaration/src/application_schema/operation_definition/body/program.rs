@@ -37,6 +37,11 @@ pub enum ApplicationOperationBodyScopeField {
         binding: WorthQueryPortableTypeIdentity,
         scalar_family: ScalarAspectType,
     },
+    RequirePresent {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+    },
 }
 
 impl ApplicationOperationBodyScopeField {
@@ -46,7 +51,8 @@ impl ApplicationOperationBodyScopeField {
             | Self::Assign { field, .. }
             | Self::AssignInput { field, .. }
             | Self::SetOptionalInput { field, .. }
-            | Self::ClearOptional { field, .. } => field,
+            | Self::ClearOptional { field, .. }
+            | Self::RequirePresent { field, .. } => field,
         }
     }
 
@@ -56,7 +62,8 @@ impl ApplicationOperationBodyScopeField {
             | Self::Assign { binding, .. }
             | Self::AssignInput { binding, .. }
             | Self::SetOptionalInput { binding, .. }
-            | Self::ClearOptional { binding, .. } => binding,
+            | Self::ClearOptional { binding, .. }
+            | Self::RequirePresent { binding, .. } => binding,
         }
     }
 
@@ -65,7 +72,8 @@ impl ApplicationOperationBodyScopeField {
             Self::Expect { value, .. } | Self::Assign { value, .. } => Some(value),
             Self::AssignInput { .. }
             | Self::SetOptionalInput { .. }
-            | Self::ClearOptional { .. } => None,
+            | Self::ClearOptional { .. }
+            | Self::RequirePresent { .. } => None,
         }
     }
 
@@ -74,7 +82,8 @@ impl ApplicationOperationBodyScopeField {
             Self::Expect { value, .. } | Self::Assign { value, .. } => value.value_family(),
             Self::AssignInput { scalar_family, .. }
             | Self::SetOptionalInput { scalar_family, .. }
-            | Self::ClearOptional { scalar_family, .. } => *scalar_family,
+            | Self::ClearOptional { scalar_family, .. }
+            | Self::RequirePresent { scalar_family, .. } => *scalar_family,
         }
     }
     pub fn input_member(&self) -> Option<&str> {
@@ -96,7 +105,7 @@ impl ApplicationOperationBodyScopeField {
     }
 
     pub fn write_target(&self) -> Option<ApplicationOperationProgramTarget> {
-        if matches!(self, Self::Expect { .. }) {
+        if matches!(self, Self::Expect { .. } | Self::RequirePresent { .. }) {
             return None;
         }
         let field = self.field();

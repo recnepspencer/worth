@@ -26,7 +26,44 @@ fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {
     .unwrap();
     assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
     assert!(input.is_finished());
-    bytes[..2].copy_from_slice(&6_u16.to_be_bytes());
+    bytes[..2].copy_from_slice(&7_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    assert_eq!(
+        decode(&mut BinaryInput::new(&bytes), &mut budget)
+            .unwrap_err()
+            .kind(),
+        Kind::UnsupportedRecordVariant
+    );
+}
+
+#[test]
+fn required_presence_uses_version_six_and_old_reader_refuses_the_opcode() {
+    let body = ApplicationOperationBodyProgram::from_untrusted_scope_fields(vec![
+        ApplicationOperationBodyScopeField::RequirePresent {
+            field: ApplicationFieldBindingLocus::new("Item", "Draft", "Note"),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.string".to_owned()),
+            scalar_family: ScalarAspectType::String,
+        },
+    ]);
+    let mut output = BinaryOutput::with_capacity(128);
+    write(&mut output, &body).unwrap();
+    let mut bytes = output.into_bytes();
+    assert_eq!(&bytes[..2], &6_u16.to_be_bytes());
+    let mut input = BinaryInput::new(&bytes);
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
+    assert!(input.is_finished());
+    bytes[..2].copy_from_slice(&5_u16.to_be_bytes());
     let mut budget = RecordDecodeAttempt::begin(
         Default::default(),
         bytes.len() as u64,

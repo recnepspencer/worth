@@ -1,5 +1,5 @@
 //! Execution-only body read; no raw-field API enters the application facade.
-use super::super::super::operation_body::PreparedBodySource;
+use super::super::super::operation_body::{BodyFieldExpectation, PreparedBodySource};
 use super::super::super::{
     application_contribution::advancement_denial, HandlerExecutionDenial,
     WorthQueryAdvancementDenial, WorthQueryManagedComputationResourceDenial,
@@ -31,13 +31,11 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     pub(in crate::domain_computation::primary_graph) fn body_scope_field(
         &mut self,
         field: &ApplicationFieldBindingLocus,
-        expected: Option<&AspectValue>,
+        expected: BodyFieldExpectation<'_>,
     ) -> Result<bool, HandlerExecutionDenial> {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
         self.context_use.set(self.context_use.get().scope());
-        self.reader
-            .body_field(self.scope, field, expected)
-            .map_err(HandlerExecutionDenial::new)
+        self.reader.body_field(self.scope, field, expected)
     }
 
     pub(in crate::domain_computation::primary_graph) fn body_scope_value(

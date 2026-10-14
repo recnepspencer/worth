@@ -3,10 +3,11 @@ use super::{
     ApplicationSchema, WorthQueryApplicationInvariantProjectionReader,
     WorthQueryInvariantEntityIdentity,
 };
+use crate::domain_computation::primary_graph::operation_body::BodyFieldExpectation;
 use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
 use crate::domain_computation::primary_graph::{
     HandlerExecutionDenial, WorthQueryAdvancementDenial, WorthQueryApplicationAttemptDenial,
-    WorthQueryManagedComputationResourceDenial,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryManagedComputationResourceDenial,
 };
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
@@ -17,22 +18,32 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         locator: &AspectFieldLocator,
-        expected: Option<&AspectValue>,
-    ) -> bool {
+        expected: BodyFieldExpectation<'_>,
+    ) -> Result<bool, HandlerExecutionDenial> {
         if !self.work_budget.can_afford(1) {
-            return false;
+            return Err(HandlerExecutionDenial::new(
+                WorthQueryAdvancementDenial::Resource(
+                    WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                ),
+            ));
         }
         self.work_budget.consume(1);
         self.realized_scope.record(identity.entity_id);
         self.work.record_field();
         match crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
             self.runtime, self.execution, self.snapshot, identity.entity_id, identity.kind,
-            locator, |value| expected.is_none_or(|expected| value == Some(expected)),
+            locator, |value| expected.matches(value),
         ) {
-            Ok(value) => value.unwrap_or(false),
+            Ok(Some(value)) => Ok(value),
+            Ok(None) => Err(HandlerExecutionDenial::new(
+                WorthQueryApplicationAttemptDenial::new(
+                    WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
+                    "operation body field",
+                ),
+            )),
             Err(cause) => {
                 self.native_read_stop.get_or_insert(cause);
-                false
+                Err(HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::from(cause)))
             }
         }
     }

@@ -386,5 +386,8 @@ pub use crate::domain_computation::primary_graph::application_query::{
 };
 pub use worth_execution::ExecutionRequest;
 
-pub use super::operation_body::{WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial};
+pub use super::operation_body::{
+    WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
+    WorthQueryOperationBodyRequirementFinding, WorthQueryOperationBodyRequirementStatus,
+};
 pub use super::output_lineage::invalidation::carried_read_basis_custody_for_test;

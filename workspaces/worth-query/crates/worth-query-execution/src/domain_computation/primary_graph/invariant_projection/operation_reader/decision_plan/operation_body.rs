@@ -4,24 +4,69 @@ use super::{
     WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
     WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
 };
-use crate::domain_computation::primary_graph::operation_body::PreparedBodySource;
+use crate::domain_computation::primary_graph::operation_body::{
+    BodyFieldExpectation, PreparedBodySource, WorthQueryOperationBodyRequirementFinding,
+};
 use crate::domain_computation::primary_graph::HandlerExecutionDenial;
 use worth_foundational::facade::AspectValue;
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
+use worth_query_declaration::facade::application_schema::ApplicationOperationBodyScopeField;
+use worth_query_installation::facade::WorthQueryInstalledApplicationMutationBinding;
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    /// Describes the installed operation's preconditions at this authorized
+    /// observation. The projection result does not retain mutation authority.
+    pub fn inspect_body_requirements<Entity, Binding>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
+    ) -> Result<Vec<WorthQueryOperationBodyRequirementFinding>, HandlerExecutionDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema, Operation = Operation>,
+    {
+        if self.admission_identity.is_none()
+            || installed.operation().binding_identity() != self.binding_identity
+        {
+            return Err(HandlerExecutionDenial::new(
+                WorthQueryInvariantDecisionPlanDenial::new(
+                    WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
+                    Binding::IDENTITY,
+                ),
+            ));
+        }
+        let body = installed.operation().body().ok_or_else(|| {
+            HandlerExecutionDenial::new(WorthQueryInvariantDecisionPlanDenial::new(
+                WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget,
+                Binding::IDENTITY,
+            ))
+        })?;
+        body.scope_fields()
+            .iter()
+            .filter_map(|step| match step {
+                ApplicationOperationBodyScopeField::RequirePresent { field, .. } => Some(field),
+                _ => None,
+            })
+            .map(|field| {
+                self.body_field(identity, field, BodyFieldExpectation::Present)
+                    .map(|met| WorthQueryOperationBodyRequirementFinding::new(field.clone(), met))
+            })
+            .collect()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn body_field<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
-        expected: Option<&AspectValue>,
-    ) -> Result<bool, WorthQueryInvariantDecisionPlanDenial> {
-        let locator = self.tracked_body_locator(identity, field)?;
-        Ok(self
-            .reader
-            .body_scalar_matches(identity, &locator, expected))
+        expected: BodyFieldExpectation<'_>,
+    ) -> Result<bool, HandlerExecutionDenial> {
+        let locator = self
+            .tracked_body_locator(identity, field)
+            .map_err(HandlerExecutionDenial::new)?;
+        self.reader
+            .body_scalar_matches(identity, &locator, expected)
     }
 
     pub(in crate::domain_computation::primary_graph) fn body_value<Entity>(

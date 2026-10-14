@@ -180,4 +180,27 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             });
         self
     }
+
+    /// Requires a present optional scalar when this operation is admitted.
+    /// An absent draft may still be saved by another operation.
+    pub fn require_present<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+    ) -> Self
+    where
+        Field: OperationReads<Operation> + OptionalApplicationFieldValue<Value = Value>,
+        Unit: ApplicationFieldUnit,
+    {
+        self.steps
+            .push(ApplicationOperationBodyScopeField::RequirePresent {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+            });
+        self
+    }
 }

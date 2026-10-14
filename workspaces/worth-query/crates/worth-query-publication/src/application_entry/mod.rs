@@ -60,6 +60,7 @@ pub use mutation::{
     WorthQueryApplicationProgramOutputUnavailable, WorthQueryApplicationProgramWork,
     WorthQueryApplicationRecoveryRequestDenial, WorthQueryApplicationRetainedMutationOutcome,
     WorthQueryBlockedProgramSource, WorthQueryCurrentAuthorizationAssessment,
+    WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentBodyRequirementAssessmentDenial,
     WorthQueryDiscoveredOutputStartFailure, WorthQueryDiscoveredProgramOutputHandle,
     WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
     WorthQueryDiscoveredRecoveryProgress, WorthQueryMutationSourcePrepared,

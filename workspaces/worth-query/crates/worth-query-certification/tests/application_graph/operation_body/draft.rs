@@ -43,6 +43,11 @@ impl<Schema: BodySchemaBinding> DraftOperation<Schema> for ClearDraftNote {
     const HANDLER_IDENTITY: &'static str = "worth.query.body-court.clear-draft-body.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.clear-draft-command.v1";
 }
+impl<Schema: BodySchemaBinding> DraftOperation<Schema> for RequireDraftNote {
+    const BINDING_IDENTITY: &'static str = "worth.query.body-court.require-draft.v1";
+    const HANDLER_IDENTITY: &'static str = "worth.query.body-court.require-draft-body.v1";
+    const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.require-draft-command.v1";
+}
 
 pub struct DraftBinding<const DESTINATION: u64, Operation>(PhantomData<Operation>);
 impl<const DESTINATION: u64, Operation>

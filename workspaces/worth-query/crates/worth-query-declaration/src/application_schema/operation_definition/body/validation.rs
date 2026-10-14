@@ -147,6 +147,7 @@ pub(crate) fn validate_operation_bodies(
                 step,
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. }
                     | ApplicationOperationBodyScopeField::ClearOptional { .. }
+                    | ApplicationOperationBodyScopeField::RequirePresent { .. }
             ) {
                 ApplicationFieldPresence::Optional
             } else {
