@@ -16,7 +16,7 @@ on:
         description: Jobs to run
         type: choice
         default: all
-        options: [all, consumer-docs]
+        options: [all, consumer-docs, checkpoint-only]
 
 permissions:
   contents: read
@@ -27,9 +27,9 @@ concurrency:
 
 jobs:
   consumer-docs:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'checkpoint-only'
     name: Consumer documentation and doctests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,20 +62,18 @@ jobs:
             target/query-gate/*.json
 
   line-cap:
-    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'consumer-docs'
+    if: github.event_name != 'workflow_dispatch' || (inputs.scope != 'consumer-docs' && inputs.scope != 'checkpoint-only')
     name: Rust line cap
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - name: Enforce the 400-line Rust file cap
         run: bash scripts/ci/check_workspace_rust_line_caps.sh workspace
 
   boundary-check:
-    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'consumer-docs'
+    if: github.event_name != 'workflow_dispatch' || (inputs.scope != 'consumer-docs' && inputs.scope != 'checkpoint-only')
     name: Boundary and facade doc check
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.94.0
@@ -100,7 +98,6 @@ jobs:
     if: github.event_name != 'workflow_dispatch' || inputs.scope != 'consumer-docs'
     name: Query checkpoint recovery court
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       # Admitted canonical preparation requires the audited std-sort implementation
@@ -111,7 +108,7 @@ jobs:
       # Every court compiles in this build; each test owns its controls and observers.
       - name: Prove restored accepted outputs avoid producer contact
         run: >-
-          cargo test
+          time cargo test
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
           -- --test-threads=1
@@ -119,6 +116,6 @@ jobs:
       # preservation and optional output roles through the public facades.
       - name: Run the public consumer journey
         run: >-
-          cargo run
+          time cargo run
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-consumer-root

@@ -887,6 +887,7 @@ dependencies = [
 name = "worth-query-topology-entry"
 version = "0.0.0"
 dependencies = [
+ "memchr",
  "pulldown-cmark",
  "serde",
  "sha2",
