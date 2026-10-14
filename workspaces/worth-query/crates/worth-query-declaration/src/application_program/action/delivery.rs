@@ -14,13 +14,27 @@ pub trait ApplicationFixedActionDelivery<Schema, Binding>:
     super::ApplicationActionDelivery<
     Schema,
     Binding,
-    Mode = super::ApplicationFixedDeliveryMode<Self::Root, Self::Read>,
+    Mode = super::ApplicationFixedDeliveryMode<Self::Root, Self::Projection>,
 >
 where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
     type Root: ApplicationOutputGraphShape<Schema> + ApplicationFixedOutputRoot;
+    type Projection: super::ApplicationFixedProjection<Schema>;
+}
+
+/// A projected fixed delivery binds one concrete query and its original-input selector.
+pub trait ApplicationFixedQueryDelivery<Schema, Binding>:
+    ApplicationFixedActionDelivery<
+    Schema,
+    Binding,
+    Projection = super::ApplicationQueryProjection<Self::Read>,
+>
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+{
     type Read: ApplicationQueryBinding<Schema>;
     fn read_input(input: &Binding::Input)
         -> <Self::Read as ApplicationQueryBinding<Schema>>::Input;
@@ -34,7 +48,7 @@ pub struct ApplicationFixedActionDeliveryDeclaration {
     root: TypeId,
     root_connection: super::super::ApplicationConnectionDeclaration,
     root_connections: Box<[super::super::ApplicationConnectionDeclaration]>,
-    read: crate::application_query::ApplicationQueryBindingDescriptor,
+    read: Option<crate::application_query::ApplicationQueryBindingDescriptor>,
 }
 impl ApplicationFixedActionDeliveryDeclaration {
     pub fn fixed<Schema, Binding, Delivery>() -> Self
@@ -53,7 +67,7 @@ impl ApplicationFixedActionDeliveryDeclaration {
             root_connection:
                 <Delivery::Root as ApplicationOutputGraphShape<Schema>>::RootConnection::declaration(
                 ),
-            read: Delivery::Read::descriptor(),
+            read: <Delivery::Projection as super::ApplicationFixedProjection<Schema>>::descriptor(),
         }
     }
     pub const fn identity(&self) -> &'static str {
@@ -62,8 +76,8 @@ impl ApplicationFixedActionDeliveryDeclaration {
     pub const fn root_type(&self) -> TypeId {
         self.root
     }
-    pub fn read(&self) -> &crate::application_query::ApplicationQueryBindingDescriptor {
-        &self.read
+    pub fn read(&self) -> Option<&crate::application_query::ApplicationQueryBindingDescriptor> {
+        self.read.as_ref()
     }
     pub fn root_connection(&self) -> &super::super::ApplicationConnectionDeclaration {
         &self.root_connection
@@ -88,9 +102,22 @@ impl ApplicationFixedActionDeliveryDeclaration {
         let graph = super::super::semantic_encoding::framed_parts(
             &graph.iter().map(String::as_str).collect::<Vec<_>>(),
         );
-        let result_limit = self.read.limits().maximum_results().to_string();
-        let work_limit = self
-            .read
+        let Some(read) = &self.read else {
+            return super::super::semantic_encoding::framed_parts(&[
+                self.identity,
+                &graph,
+                "fixed-no-projection",
+                self.root_connection.identity(),
+                self.root_connection.source_instance(),
+                self.root_connection.source_feature(),
+                self.root_connection.source_port(),
+                self.root_connection.target_instance(),
+                self.root_connection.target_feature(),
+                self.root_connection.target_port(),
+            ]);
+        };
+        let result_limit = read.limits().maximum_results().to_string();
+        let work_limit = read
             .limits()
             .maximum_work()
             .map_or_else(|| "host-policy".to_owned(), |limit| limit.to_string());
@@ -106,12 +133,12 @@ impl ApplicationFixedActionDeliveryDeclaration {
             self.root_connection.target_instance(),
             self.root_connection.target_feature(),
             self.root_connection.target_port(),
-            self.read.identity(),
-            self.read.input_identity().as_str(),
-            self.read.query_identity().as_str(),
-            self.read.parameter_identity().as_str(),
-            self.read.result_identity().as_str(),
-            self.read.scope_identity().as_str(),
+            read.identity(),
+            read.input_identity().as_str(),
+            read.query_identity().as_str(),
+            read.parameter_identity().as_str(),
+            read.result_identity().as_str(),
+            read.scope_identity().as_str(),
         ])
     }
 }

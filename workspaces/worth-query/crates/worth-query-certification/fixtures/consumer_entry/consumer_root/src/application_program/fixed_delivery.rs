@@ -12,6 +12,16 @@ impl ApplicationFixedActionDelivery<ConsumerSchema, PlanarSourceAdjustmentBindin
     for ConsumerFixedDelivery
 {
     type Root = ConsumerProgramRoot;
+    type Projection = worth_query_decl::facade::application_program::ApplicationQueryProjection<
+        PlanarOutputReadBinding<ConsumerSchema>,
+    >;
+}
+impl
+    worth_query_decl::facade::application_program::ApplicationFixedQueryDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    > for ConsumerFixedDelivery
+{
     type Read = PlanarOutputReadBinding<ConsumerSchema>;
 
     fn read_input(input: &PlanarSourceAdjustment) -> PlanarOutputRead {
@@ -37,7 +47,9 @@ impl
 {
     type Mode = worth_query_decl::facade::application_program::ApplicationFixedDeliveryMode<
         ConsumerProgramRoot,
-        PlanarOutputReadBinding<ConsumerSchema>,
+        worth_query_decl::facade::application_program::ApplicationQueryProjection<
+            PlanarOutputReadBinding<ConsumerSchema>,
+        >,
     >;
     const IDENTITY: &'static str = "worth.query.certification.fixed-source-current-read.v1";
 }

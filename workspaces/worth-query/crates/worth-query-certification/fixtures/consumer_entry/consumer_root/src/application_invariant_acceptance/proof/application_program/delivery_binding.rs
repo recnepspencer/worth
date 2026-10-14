@@ -3,7 +3,7 @@ use super::*;
 use crate::application_program::{ConsumerFixedAction, ConsumerFixedDelivery, ConsumerProgramRoot};
 use worth_query_decl::facade::application_program::{
     ApplicationActionDeliveryDeclaration, ApplicationActionReference,
-    ApplicationFixedActionDelivery, ApplicationRootComposition,
+    ApplicationFixedActionDelivery, ApplicationFixedQueryDelivery, ApplicationRootComposition,
 };
 use worth_query_host::facade::application_entry::WorthQueryOperationConstructionDenial;
 use worth_query_topology_entry::{
@@ -16,6 +16,16 @@ impl ApplicationFixedActionDelivery<ConsumerSchema, PlanarSourceAdjustmentBindin
     for CounterfeitDelivery
 {
     type Root = ConsumerProgramRoot;
+    type Projection = worth_query_decl::facade::application_program::ApplicationQueryProjection<
+        PlanarOutputReadBinding<ConsumerSchema>,
+    >;
+}
+impl
+    worth_query_decl::facade::application_program::ApplicationFixedQueryDelivery<
+        ConsumerSchema,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+    > for CounterfeitDelivery
+{
     type Read = PlanarOutputReadBinding<ConsumerSchema>;
 
     fn read_input(_: &PlanarSourceAdjustment) -> PlanarOutputRead {
@@ -108,7 +118,9 @@ impl
 {
     type Mode = worth_query_decl::facade::application_program::ApplicationFixedDeliveryMode<
         ConsumerProgramRoot,
-        PlanarOutputReadBinding<ConsumerSchema>,
+        worth_query_decl::facade::application_program::ApplicationQueryProjection<
+            PlanarOutputReadBinding<ConsumerSchema>,
+        >,
     >;
     const IDENTITY: &'static str = <ConsumerFixedDelivery as worth_query_decl::facade::application_program::ApplicationActionDelivery<
         ConsumerSchema,

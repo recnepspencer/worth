@@ -17,6 +17,8 @@ mod dependent_recovery;
 #[cfg(test)]
 mod descriptor_result_set;
 mod discovered;
+#[cfg(test)]
+mod fixed_delivery;
 pub(super) mod lifecycle;
 mod owner_demand_boundary;
 mod program_contract;

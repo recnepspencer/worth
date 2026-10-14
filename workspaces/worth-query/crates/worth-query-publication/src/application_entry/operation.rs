@@ -7,6 +7,10 @@ pub use cleanup::{WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt}
 pub use mode_construction::WorthQueryOperationModeFactory;
 pub use source_admission::{WorthQuerySourceDeliveryMode, WorthQuerySourceOperationAdmission};
 mod construction;
+mod projection_installation;
+pub use projection_installation::WorthQueryFixedProjectionInstallation;
+mod current_delivery;
+mod delivery_policy;
 mod descriptor;
 mod fixed;
 mod fixed_advance;
@@ -16,6 +20,7 @@ mod fixed_recovery;
 mod fixed_replay;
 mod request_view;
 mod settled;
+pub use delivery_policy::WorthQueryOperationDeliveryPolicy;
 mod terminal;
 pub use close::{WorthQueryClosedOperation, WorthQueryOperationCloseDenial};
 pub use construction::WorthQueryOperationConstructionDenial;
@@ -33,8 +38,8 @@ use worth_query_declaration::facade::application_operation::{
 };
 use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationFixedAction, ApplicationFixedActionDelivery,
-    ApplicationOutputGraphShape, ApplicationProgramDefinition, ApplicationProgramOutputsShape,
-    ApplicationRequiredOutputRoot,
+    ApplicationFixedQueryDelivery, ApplicationOutputGraphShape, ApplicationProgramDefinition,
+    ApplicationProgramOutputsShape, ApplicationRequiredOutputRoot,
 };
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
@@ -62,7 +67,7 @@ type RootQuery<Schema, Root> = <Source<Schema, Root> as ApplicationQueryBinding<
 type Delivery<Schema, Intent, Action> =
     <Action as ApplicationFixedAction<Schema, Binding<Schema, Intent>>>::Delivery;
 type Read<Schema, Intent, Action> =
-    <Delivery<Schema, Intent, Action> as ApplicationFixedActionDelivery<
+    <Delivery<Schema, Intent, Action> as ApplicationFixedQueryDelivery<
         Schema,
         Binding<Schema, Intent>,
     >>::Read;

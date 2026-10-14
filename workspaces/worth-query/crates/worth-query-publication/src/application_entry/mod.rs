@@ -11,13 +11,14 @@ mod mandatory_review;
 mod mutation;
 mod operation;
 pub use operation::{
-    WorthQueryClosedOperation, WorthQueryFixedOperation, WorthQueryOperationAdvance,
-    WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
+    WorthQueryClosedOperation, WorthQueryFixedOperation, WorthQueryFixedProjectionInstallation,
+    WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
     WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
-    WorthQueryOperationDescription, WorthQueryOperationModeFactory, WorthQueryOperationProgress,
-    WorthQuerySettledFixedOperation, WorthQuerySourceDeliveryMode,
-    WorthQuerySourceOperationAdmission, WorthQueryTerminalFixedOperation,
+    WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
+    WorthQueryOperationModeFactory, WorthQueryOperationProgress, WorthQuerySettledFixedOperation,
+    WorthQuerySourceDeliveryMode, WorthQuerySourceOperationAdmission,
+    WorthQueryTerminalFixedOperation,
 };
 mod programs;
 mod query;

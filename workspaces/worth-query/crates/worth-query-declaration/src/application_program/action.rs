@@ -1,8 +1,15 @@
 mod delivery;
+mod projection;
+pub use projection::{
+    ApplicationFixedProjection, ApplicationNoProjection, ApplicationQueryProjection,
+};
 mod delivery_attachment;
 mod delivery_contract;
 mod reference;
-pub use delivery::{ApplicationFixedActionDelivery, ApplicationFixedActionDeliveryDeclaration};
+pub use delivery::{
+    ApplicationFixedActionDelivery, ApplicationFixedActionDeliveryDeclaration,
+    ApplicationFixedQueryDelivery,
+};
 pub use delivery_contract::*;
 pub use reference::{ApplicationAction, ApplicationActionReference, ApplicationFixedAction};
 use std::any::TypeId;

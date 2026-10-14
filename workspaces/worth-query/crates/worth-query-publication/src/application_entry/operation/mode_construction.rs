@@ -45,7 +45,8 @@ where
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
     I::Binding: WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
     <A as ApplicationFixedAction<S, I::Binding>>::Delivery:
-        ApplicationFixedActionDelivery<S, I::Binding, Root = R, Read = Q>,
+        ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = Q>,
+    Q: WorthQueryFixedProjectionInstallation<S>,
 {
 }
 impl<'r, S, I, P, A, R, Q> WorthQueryOperationModeFactory<'r, S, I, P, A>
@@ -59,7 +60,8 @@ where
     Connection<S, R>: WorthQueryApplicationRequiredOutputConnection<S>,
     I::Binding: WorthQueryApplicationRequiredOutputSource<S, Connection<S, R>>,
     <A as ApplicationFixedAction<S, I::Binding>>::Delivery:
-        ApplicationFixedActionDelivery<S, I::Binding, Root = R, Read = Q>,
+        ApplicationFixedActionDelivery<S, I::Binding, Root = R, Projection = Q>,
+    Q: WorthQueryFixedProjectionInstallation<S>,
 {
     type Operation = WorthQueryFixedOperation<'r, S, I, P, R, A>;
     fn construct(

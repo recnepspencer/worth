@@ -226,6 +226,21 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         Err(WorthQueryOperationDeliveryDenial::Observation(_))
     ));
     drop(observations);
+    use worth_query_host::facade::application_entry::WorthQueryOperationDeliveryPolicy;
+    let one = NonZeroUsize::new(1).unwrap();
+    assert!(
+        matches!(settled.read_current_with_policy(&request, WorthQueryOperationDeliveryPolicy::currentness(one)),
+        Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
+        if matches!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
+    );
+    assert!(matches!(
+        settled.read_current_with_policy(
+            &request,
+            WorthQueryOperationDeliveryPolicy::currentness(NonZeroUsize::new(4096).unwrap())
+                .query(one, one)
+        ),
+        Err(WorthQueryOperationDeliveryDenial::Query(_))
+    ));
     let delivered = settled
         .read_current(&request)
         .expect("current delivery retries the same settlement");
