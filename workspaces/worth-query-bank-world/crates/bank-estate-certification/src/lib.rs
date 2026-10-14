@@ -7,10 +7,15 @@
 
 mod estate_commands;
 mod estate_queries;
+mod estate_source_commands;
+mod estate_source_outcome;
+pub use estate_source_outcome::{
+    EstateSourceAdvance, EstateSourceCommandOutcome, EstateSourceOperation,
+};
 
 pub use estate_commands::{
     exercise_estate_commands, exercise_estate_lifecycle, EstateCommandCertificationDenial,
-    EstateCommandInputs, EstateCommandStoppedOutcome, EstateLifecycleInputs,
+    EstateCommandInputs, EstateCommandOutcomes, EstateCommandStoppedOutcome, EstateLifecycleInputs,
     EstateLifecyclePrincipals, EstateLifecycleProgressionOutcome,
 };
 pub use estate_queries::{
