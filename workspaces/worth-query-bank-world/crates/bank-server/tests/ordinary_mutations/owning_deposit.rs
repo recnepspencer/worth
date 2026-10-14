@@ -136,19 +136,27 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
         account_activity(&fixture, &reader, fixture.personal_account).len(),
         before + 1
     );
-    assert!(matches!(
-        execute!(
-            fixture,
-            teller,
-            mutations::deposit(Deposit {
-                institution: fixture.institution,
-                account: fixture.personal_account,
-                amount: Money::from_minor(19).unwrap(),
-            }),
-            "owning-deposit-later"
-        ),
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+    let later = fixture
+        .world
+        .runtime
+        .mutate(mutations::deposit(Deposit {
+            institution: fixture.institution,
+            account: fixture.personal_account,
+            amount: Money::from_minor(19).unwrap(),
+        }))
+        .as_principal(&teller)
+        .controls(BankMutationControls::new(
+            scope.clone(),
+            key("owning-deposit-later"),
+        ))
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("later deposit construction: {cause:?}"));
+    let Advance::Completed(later) =
+        later.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("later deposit")
+    };
+    assert!(later.close(&request).is_ok());
     let original = fixture
         .world
         .runtime

@@ -10,6 +10,18 @@ use worth_query_host::facade::{
     declaration::application_program::ApplicationRetainedCommit,
 };
 
+/// One-shot money execution is retired.
+/// ```compile_fail,E0599
+/// fn retired(runtime: &bank_server::BankIdentityRuntime, principal: &bank_server::BankAuthenticatedPrincipal, input: bank_domain::schema::Deposit, controls: bank_server::BankMutationControls) {
+///     runtime.mutate(bank_server::mutations::deposit(input)).as_principal(principal).controls(controls).execute();
+/// }
+/// ```
+/// Owning construction keeps original input, key and typed conditions.
+/// ```
+/// fn construct(runtime: &bank_server::BankIdentityRuntime, principal: &bank_server::BankAuthenticatedPrincipal, input: bank_domain::schema::Deposit, controls: bank_server::BankMutationControls) {
+///     let _operation = runtime.mutate(bank_server::mutations::deposit(input)).as_principal(principal).controls(controls).retain_operation();
+/// }
+/// ```
 impl<'runtime>
     BankReadyMutation<'runtime, '_, mutations::DepositMutation, DepositOperation, Institution>
 {

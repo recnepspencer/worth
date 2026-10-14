@@ -82,8 +82,20 @@ fn program_entry_denies_unauthorized_account_mutations() {
             request.clone(),
             key("non-owner-cannot-send"),
         ))
-        .execute()
-        .expect_err("non-owner must be denied");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+    let fresh = world.runtime.request(&other_actor, &request);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
+        operation,
+        denial:
+            worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(
+                send_denial,
+            ),
+    } = send_denial.advance(&fresh, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native non-owner refusal")
+    };
+    let _runtime = operation.into_runtime_for_cleanup();
     assert!(matches!(
         send_denial.kind(),
         WorthQueryApplicationRequestMutationDenialKind::Authorization(

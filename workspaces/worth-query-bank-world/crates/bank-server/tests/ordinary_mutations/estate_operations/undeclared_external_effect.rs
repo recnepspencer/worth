@@ -11,7 +11,6 @@ use bank_domain::model::Money;
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::SendMoney;
 use bank_server::{mutations, BankMutationControls};
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
 use crate::fixture::{ordinary_read_world, principal_id, OWNER, RECIPIENT};
@@ -46,9 +45,23 @@ fn an_undeclared_external_effect_costs_no_outbox_and_no_dispatch() {
             request_scope(),
             BankIdempotencyKey::new("undeclared-effect-send").unwrap(),
         ))
-        .execute();
-    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = &outcome else {
-        panic!("the lawful transfer must commit: {outcome:?}");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&owner, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        outcome,
+    ) = outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("fresh retained send completion")
+    };
+
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt,
+        ..
+    } = outcome.evidence()
+    else {
+        panic!("fresh native evidence")
     };
 
     assert!(
@@ -69,4 +82,5 @@ fn an_undeclared_external_effect_costs_no_outbox_and_no_dispatch() {
         transport.attempts().is_empty(),
         "the installed rail must never hear from an undeclared effect"
     );
+    assert!(outcome.close(&request).is_ok());
 }

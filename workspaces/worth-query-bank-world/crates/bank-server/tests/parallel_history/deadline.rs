@@ -5,10 +5,7 @@ use worth_query_host::facade::{
         WorthQueryAdvancementDenial as Admission,
         WorthQueryManagedComputationInterruption as Interruption,
     },
-    application_entry::{
-        WorthQueryApplicationOutputDemandDenial as DemandDenial,
-        WorthQueryApplicationRequestMutationDenial as MutationDenial,
-    },
+    application_entry::WorthQueryApplicationOutputDemandDenial as DemandDenial,
     primary_graph::{
         advancement_observations_on_this_thread_for_test as observations,
         place_managed_computations_on_this_thread_for_test as place,
@@ -93,18 +90,19 @@ fn present_deadlines_run_in_both_bank_histories() {
             ))
             .as_principal(&actor)
             .controls(bank_server::BankMutationControls::new(
-                expired,
+                expired.clone(),
                 super::seeded_world::key(900),
             ))
-            .execute();
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("deadline construction: {cause:?}"));
+        let request = world.world.runtime.request(&actor, &expired);
+        let outcome = outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap());
         assert!(
             matches!(
                 outcome,
-                Err(MutationDenial::ExecutionRequest(Admission::Interrupted(
-                    Interruption::DeadlineExceeded
-                )))
+                worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Execution(Admission::Interrupted(Interruption::DeadlineExceeded)), .. }
             ),
-            "transfer deadline kind is asserted by value: {outcome:?}"
+            "transfer deadline kind is asserted by value"
         );
         zero_bill();
         println!("BANK_DEADLINE:transfer:width={width}:work=0:span=0:commits=0:DeadlineExceeded");

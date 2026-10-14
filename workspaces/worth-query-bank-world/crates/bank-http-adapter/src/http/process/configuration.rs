@@ -19,9 +19,16 @@ pub struct BankHttpProcessConfiguration {
     pub oidc: BankHttpProcessOidcConfiguration,
     pub world: BankHttpProcessWorld,
     #[serde(default)]
-    pub cold_certification: bool,
+    pub cold_certification: Option<BankHttpProcessColdCertification>,
     #[serde(default)]
     pub external_rail: Option<SocketAddr>,
+}
+
+/// Named, process-local certificate trust; ordinary installation keeps system TLS roots.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BankHttpProcessColdCertification {
+    pub trusted_root_pem: String,
 }
 
 #[derive(Deserialize)]
@@ -89,11 +96,11 @@ impl BankHttpProcessOidcConfiguration {
 async fn install_identity(
     oidc: AuthentikOidcConfiguration,
     world: bank_server::BankWorldSeed,
-    cold_certification_requested: bool,
+    cold_certification: Option<BankHttpProcessColdCertification>,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    if cold_certification_requested {
-        return install_cold_identity(oidc, world, scope).await;
+    if let Some(cold) = cold_certification {
+        return install_cold_identity(oidc, world, &cold.trusted_root_pem, scope).await;
     }
     AuthentikBankIdentity::install_world(oidc, world, scope)
         .await
@@ -103,11 +110,17 @@ async fn install_identity(
 async fn install_cold_identity(
     oidc: AuthentikOidcConfiguration,
     world: bank_server::BankWorldSeed,
+    trusted_root_pem: &str,
     scope: &WorthQueryRequestScope,
 ) -> Result<AuthentikBankIdentity, BankHttpProcessConfigurationError> {
-    crate::cold_certification_for_test::install_world_for_test(oidc, world, scope)
-        .await
-        .map_err(BankHttpProcessConfigurationError::Identity)
+    crate::cold_certification_for_test::install_world_for_test(
+        oidc,
+        world,
+        Some(trusted_root_pem.as_bytes()),
+        scope,
+    )
+    .await
+    .map_err(BankHttpProcessConfigurationError::Identity)
 }
 
 impl std::fmt::Display for BankHttpProcessConfigurationError {

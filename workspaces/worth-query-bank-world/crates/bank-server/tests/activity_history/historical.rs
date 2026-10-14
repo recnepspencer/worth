@@ -7,7 +7,6 @@ use bank_server::{
     mutations, BankApplicationQueryAdmissionDenialKind, BankApplicationQueryDenial,
     BankMutationControls,
 };
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::fixture::{ordinary_read_world, OrdinaryReadFixture, OWNER, STRANGER, TELLER, VIEWER};
 use super::support::request_scope;
@@ -100,10 +99,26 @@ fn commit_deposit(
             request_scope(),
             BankIdempotencyKey::new(idempotency_key).unwrap(),
         ))
-        .execute();
-    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = outcome else {
-        panic!("deposit must commit, got {outcome:?}");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(teller, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        completed,
+    ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native retained deposit completion")
     };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt,
+        ..
+    } = completed.evidence()
+    else {
+        panic!("fresh deposit evidence")
+    };
+    let receipt = receipt.clone();
+    assert!(completed.close(&request).is_ok());
+
     receipt
 }
 

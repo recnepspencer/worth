@@ -28,13 +28,16 @@ async fn valid_signature_on_unsupported_version_denies_before_owner_custody() {
         0,
     )
     .unwrap();
-    let server = super::super::bind_application_to_listener(
-        application,
-        listener,
-        BankHttpServerConfiguration::local_ephemeral(),
-        Some(installation),
-    )
-    .unwrap();
+    let (server, _mutation_continuation) =
+        super::super::installation::bind_application_to_listener(
+            application,
+            listener,
+            BankHttpServerConfiguration::local_ephemeral(),
+            Some(installation),
+        )
+        .unwrap()
+        .into_parts();
+    let server = server.activate();
     let mut envelope = include_str!("../../protocol/inbound_completion_v1.hex")
         .trim()
         .as_bytes()
@@ -179,5 +182,6 @@ async fn valid_signature_on_unsupported_version_denies_before_owner_custody() {
         "the callback extractor enforces the 4 KiB limit"
     );
     let close = server.shutdown().await.unwrap();
+    assert!(_mutation_continuation.finish().await.is_ok());
     assert!(close.rail_completion().is_some());
 }

@@ -16,6 +16,7 @@ mod elevation_request_replay;
 mod fixture;
 mod historical_cancellation;
 mod mutation;
+mod mutation_transport;
 mod protocol;
 mod rail_audience_facade;
 mod rail_protocol;
@@ -36,19 +37,21 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
     ));
     assert_live_fixture_admits(application.as_ref(), account).await;
     let retained_application = Arc::clone(&application);
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         application,
         BankHttpServerConfiguration::local_ephemeral()
             .with_maximum_live_streams(std::num::NonZeroUsize::new(1).unwrap()),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let endpoint = format!("http://{}/v1/live/account-activity", server.local_address());
     let client = reqwest::Client::new();
     let mut response = client
         .post(endpoint)
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": "activity-stream-1",
             "credential": {
                 "id_token": "test-only",
@@ -94,21 +97,21 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
     .expect("SSE open should arrive promptly");
     let mutation = client
         .post(format!("http://{}/v1/mutations", server.local_address()))
-        .json(&serde_json::json!({
-            "protocol": "v3",
-            "request_id": "live-publication-deposit",
-            "credential": credential_json(),
-            "controls": { "deadline_milliseconds": 5_000 },
-            "idempotency_key": "live-publication-deposit-key",
-            "operation": "deposit",
-            "institution": "fixture:1",
-            "account": account.canonical_text(),
-            "amount_minor_units": 1
-        }))
+        .json(&mutation::create("live-publication-deposit", 1))
         .send()
         .await
         .expect("live-triggering mutation should complete");
     assert_eq!(mutation.status(), reqwest::StatusCode::OK);
+    assert!(matches!(
+        _mutation_continuation
+            .execute(mutation::decode(mutation::command(
+                "live-publication-deposit",
+                "close",
+                2
+            )))
+            .await,
+        super::super::protocol::BankHttpMutationOutcome::Closed { .. }
+    ));
     tokio::time::timeout(
         Duration::from_secs(2),
         read_sse_until(&mut response, &mut transcript, "\"event\":\"update\""),
@@ -162,6 +165,7 @@ async fn account_activity_sse_preserves_open_and_deadline_postures() {
         .await
         .expect("server shutdown must close an active stream promptly")
         .expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
     assert_eq!(
         retained_application
             .runtime
@@ -200,9 +204,12 @@ async fn read_sse_until(response: &mut reqwest::Response, transcript: &mut Strin
 async fn opaque_continuation_replays_lost_responses_without_reusing_query_authority() {
     let account = AccountId::new(100).unwrap();
     let application = Arc::new(application(account));
-    let server = bind_application(application, BankHttpServerConfiguration::local_ephemeral())
-        .await
-        .expect("HTTP server should bind");
+    let (server, _mutation_continuation) =
+        bind_application(application, BankHttpServerConfiguration::local_ephemeral())
+            .await
+            .expect("HTTP server should bind")
+            .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let page_endpoint = format!(
         "http://{}/v1/queries/account-activity/page",
@@ -228,7 +235,7 @@ async fn opaque_continuation_replays_lost_responses_without_reusing_query_author
     assert_eq!(replayed, first, "initial response loss must not advance");
 
     let resume_request = serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": "activity-resume-1",
         "credential": credential_json(),
         "controls": controls_json(1),
@@ -255,7 +262,7 @@ async fn opaque_continuation_replays_lost_responses_without_reusing_query_author
     );
 
     let crossed_request = serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": "activity-resume-crossed",
         "credential": credential_json(),
         "controls": controls_json(1),
@@ -269,6 +276,7 @@ async fn opaque_continuation_replays_lost_responses_without_reusing_query_author
             if denial.kind == BankHttpDenialKind::Stale
     ));
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 async fn assert_live_fixture_admits(application: &CausalHttpApplication, account: AccountId) {
@@ -300,7 +308,7 @@ async fn assert_live_fixture_admits(application: &CausalHttpApplication, account
 
 fn page_request(account: AccountId, request_id: &str) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": controls_json(1),
@@ -330,7 +338,7 @@ fn live_request(
     deadline_milliseconds: u64,
 ) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": {

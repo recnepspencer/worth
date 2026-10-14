@@ -108,7 +108,10 @@ let transfer = runtime
     .mutate(mutations::send_money(input))
     .as_principal(&principal)
     .controls(BankMutationControls::new(mutation_request, idempotency_key))
-    .execute();
+    .retain_operation()?;
+let advancement = transfer.advance(
+    &runtime.request(&fresh_principal, &fresh_scope), maximum_history_work,
+);
 ```
 
 Ordinary reads and the remaining native mutation callers supply a typed operation,
@@ -159,8 +162,8 @@ The deposit builder also provides `retain_operation()`: call it after
 It transfers the original input, typed preconditions and owned idempotency key
 into the installed `BankApplication` deposit action. Construction retains no
 principal or request scope. The five money actions declare distinct retained
-delivery contracts; only deposit's Bank builder is cut over to owning construction
-in this checkpoint.
+delivery contracts. Deposit, withdrawal and send-money builders expose owning
+construction; opening funding and reversal consumer cutovers remain separate.
 
 Advance the returned operation with `operation.advance(&fresh_request,
 maximum_history_work)`, using `runtime.request(&fresh_principal, &fresh_scope)`
@@ -181,10 +184,11 @@ The [owning deposit court](../crates/bank-server/tests/ordinary_mutations/owning
 executes the real append-partial, unauthorized recovery, authorized recovery,
 historical read and cancelled-close/fresh-close journey. It also verifies all five
 installed money deliveries and preserves the deployed program capability meaning.
-HTTP still uses its native one-shot mutation path; its pending-owner transport
-protocol and the remaining money-consumer cutover are not supplied by this deposit
-constructor. Do not hide advancement in a loop or reconstruct original meaning
-to discard returned custody.
+HTTP stores these actual owning money operations in finite transport custody.
+Use the [owning HTTP money contract](http-owning-money.md) for create, resume,
+historical read, close and independent listener-loss continuation. Remaining
+Bank consumers still require their owning cutovers. Do not hide advancement in a
+loop or reconstruct original meaning to discard returned custody.
 
 ## Workflow, history, and live target
 
@@ -342,13 +346,11 @@ available at a user node without a credential field; that process supplies its
 own authenticated session. Linear undo/redo routes remain provisional
 Milestone 9.18 experiments rather than a Bank Phase 5 product contract.
 
-Every Bank server request body declares `"protocol": "v3"`. The server admits
-that one version and refuses any other as `unsupported_protocol`. Version 3
-adds the mutation `previously_committed` outcome. It names the original commit
-and asks the caller to refresh current state, carrying no live receipt or
-invented commit counters. Version 1 and 2 decoders cannot read this outcome,
-so those requests are refused before effects. Route paths keep their `/v1/`
-prefix; the body field is the negotiated version.
+Every Bank server request body declares `"protocol": "v4"`. The server admits
+that one version and refuses earlier versions before effects. Money commands
+retain actual native custody and distinguish pending, refusal, completion,
+terminal custody and a queued command with unknown outcome. A timeout cannot
+assert that a mutation did not land. Route paths retain their `/v1/` prefix.
 
 The estate `notify-death` and approved-payment responses establish authorized
 dispatch commits. The rail can report `Completed` synchronously, or send the

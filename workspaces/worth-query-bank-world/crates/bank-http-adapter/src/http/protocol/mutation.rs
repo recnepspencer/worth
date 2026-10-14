@@ -1,24 +1,61 @@
+//! Current owning money command wire; custody identifiers carry no permission.
+use super::{
+    BankHttpAccountActivity, BankHttpCredential, BankHttpDenial, BankHttpProtocolVersion,
+    BankHttpQueryPublication,
+};
 use serde::{Deserialize, Serialize};
 
-use super::{BankHttpCredential, BankHttpDenial, BankHttpProtocolVersion};
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct BankHttpMutationControls {
     pub deadline_milliseconds: u64,
+    pub maximum_history_work: usize,
 }
-
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct BankHttpMutationReadControls {
+    pub deadline_milliseconds: u64,
+    pub maximum_results: usize,
+    pub maximum_work: usize,
+}
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct BankHttpMutationRequest {
-    pub protocol: BankHttpProtocolVersion,
-    pub request_id: String,
-    pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
-    pub idempotency_key: String,
-    #[serde(flatten)]
-    pub operation: BankHttpMutationOperation,
+#[serde(deny_unknown_fields, tag = "command", rename_all = "snake_case")]
+pub enum BankHttpMutationRequest {
+    Create {
+        protocol: BankHttpProtocolVersion,
+        request_id: String,
+        credential: BankHttpCredential,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpMutationControls,
+        idempotency_key: String,
+        operation: BankHttpMutationOperation,
+    },
+    Resume {
+        protocol: BankHttpProtocolVersion,
+        request_id: String,
+        credential: BankHttpCredential,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpMutationControls,
+    },
+    Read {
+        protocol: BankHttpProtocolVersion,
+        request_id: String,
+        credential: BankHttpCredential,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpMutationReadControls,
+    },
+    Close {
+        protocol: BankHttpProtocolVersion,
+        request_id: String,
+        credential: BankHttpCredential,
+        custody_id: String,
+        sequence: u64,
+        controls: super::BankHttpEffectControls,
+    },
 }
-
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields, tag = "operation", rename_all = "snake_case")]
 pub enum BankHttpMutationOperation {
@@ -36,16 +73,16 @@ pub enum BankHttpMutationOperation {
         from: String,
         recipient: String,
         amount_minor_units: i64,
+        expected_accounting_revision: Option<u64>,
+        expected_status: Option<BankHttpExpectedAccountStatus>,
     },
 }
-
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BankHttpCommitDisposition {
     Committed,
     AlreadyCommitted,
 }
-
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct BankHttpCommitDescription {
     pub changed_record_count: usize,
@@ -55,127 +92,101 @@ pub struct BankHttpCommitDescription {
     pub provider_work_units: Option<usize>,
     pub invariant_work_units: Option<usize>,
 }
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum BankHttpMutationFailureKind {
-    ProductStale,
-    ProductUnpublished,
-    NoEffect,
-    Stale,
-    Cancelled,
-    TimedOut,
-    DeadlineExceeded,
-    InvariantViolated,
-    Aborted,
-    Deferred,
-    SettlementDeferred,
-    Indeterminate,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum BankHttpProviderRecoveryKind {
-    CommitRecoveryRequired,
-    AbortRecoveryRequired,
-}
-
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum BankHttpMutationOutcome {
-    Applied {
+    Rejected {
+        request_id: Option<String>,
+        denial: BankHttpDenial,
+    },
+    OutcomeUnknown {
         request_id: String,
-        disposition: BankHttpCommitDisposition,
+        custody_id: String,
+    },
+    Pending {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        posture: BankHttpMutationPosture,
+    },
+    Refused {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        denial: BankHttpDenial,
+        accepted_sequence: Option<u64>,
+    },
+    Completed {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        recovered: bool,
         commit: BankHttpCommitDescription,
     },
-    /// The request's earlier commit is proven, but its live receipt is absent.
-    /// Refresh current state before continuing with further operations.
-    PreviouslyCommitted {
+    Terminal {
         request_id: String,
-        commit_id: u64,
-        next_action: super::BankHttpNextAction,
+        custody_id: String,
+        sequence: u64,
     },
-    NotApplied {
-        request_id: Option<String>,
-        failure: BankHttpMutationFailureKind,
-        stale_fact_count: Option<usize>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        provider_recovery: Option<BankHttpProviderRecoveryKind>,
-        denial: BankHttpDenial,
+    Delivered {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        activity: BankHttpAccountActivity,
+        publication: BankHttpQueryPublication,
+    },
+    Closed {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
     },
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::http::protocol::{BankHttpDenialKind, BankHttpNextAction};
-
-    #[test]
-    fn historical_commit_wire_preserves_landing_without_inventing_receipt_counts() {
-        let wire = serde_json::json!({
-            "outcome": "previously_committed",
-            "request_id": "restored-retry",
-            "commit_id": 17,
-            "next_action": "refresh"
-        });
-        let decoded = serde_json::from_value::<BankHttpMutationOutcome>(wire.clone()).unwrap();
-        assert_eq!(
-            decoded,
-            BankHttpMutationOutcome::PreviouslyCommitted {
-                request_id: "restored-retry".to_owned(),
-                commit_id: 17,
-                next_action: BankHttpNextAction::Refresh,
-            }
-        );
-        assert_eq!(serde_json::to_value(decoded).unwrap(), wire);
-        assert!(wire.get("commit").is_none());
-    }
-
-    #[test]
-    fn provider_recovery_kind_survives_the_http_wire() {
-        for kind in [
-            BankHttpProviderRecoveryKind::CommitRecoveryRequired,
-            BankHttpProviderRecoveryKind::AbortRecoveryRequired,
-        ] {
-            let outcome = BankHttpMutationOutcome::NotApplied {
-                request_id: Some("uncertain-commit".into()),
-                failure: BankHttpMutationFailureKind::Indeterminate,
-                stale_fact_count: None,
-                provider_recovery: Some(kind),
-                denial: BankHttpDenial::new(
-                    BankHttpDenialKind::Unavailable,
-                    BankHttpNextAction::ContactOperator,
-                ),
-            };
-            let wire = serde_json::to_value(&outcome).unwrap();
-            assert_eq!(
-                wire["provider_recovery"],
-                match kind {
-                    BankHttpProviderRecoveryKind::CommitRecoveryRequired => {
-                        "commit_recovery_required"
-                    }
-                    BankHttpProviderRecoveryKind::AbortRecoveryRequired =>
-                        "abort_recovery_required",
-                }
-            );
-            assert_eq!(
-                serde_json::from_value::<BankHttpMutationOutcome>(wire).unwrap(),
-                outcome
-            );
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BankHttpExpectedAccountStatus {
+    Open,
+    Frozen,
+    Closed,
+}
+impl From<BankHttpExpectedAccountStatus> for bank_domain::schema::AccountStatus {
+    fn from(value: BankHttpExpectedAccountStatus) -> Self {
+        match value {
+            BankHttpExpectedAccountStatus::Open => Self::Open,
+            BankHttpExpectedAccountStatus::Frozen => Self::Frozen,
+            BankHttpExpectedAccountStatus::Closed => Self::Closed,
         }
+    }
+}
 
-        let ordinary = BankHttpMutationOutcome::NotApplied {
-            request_id: Some("stale".into()),
-            failure: BankHttpMutationFailureKind::ProductStale,
-            stale_fact_count: None,
-            provider_recovery: None,
-            denial: BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
-        };
-        let wire = serde_json::to_value(&ordinary).unwrap();
-        assert!(wire.get("provider_recovery").is_none());
-        assert_eq!(
-            serde_json::from_value::<BankHttpMutationOutcome>(wire).unwrap(),
-            ordinary
-        );
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BankHttpMutationPosture {
+    Initial,
+    ProductUnpublished,
+    RecoveryPerformed,
+    RetainedDeliveryPending,
+    ProvedAborted,
+    RetryableNoEffect,
+    Indeterminate,
+    Terminal,
+}
+impl From<worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture>
+    for BankHttpMutationPosture
+{
+    fn from(
+        value: worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture,
+    ) -> Self {
+        use worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture as Native;
+        match value {
+            Native::Initial => Self::Initial,
+            Native::ProductUnpublished => Self::ProductUnpublished,
+            Native::RecoveryPerformed => Self::RecoveryPerformed,
+            Native::RetainedDeliveryPending => Self::RetainedDeliveryPending,
+            Native::ProvedAborted => Self::ProvedAborted,
+            Native::RetryableNoEffect => Self::RetryableNoEffect,
+            Native::Indeterminate => Self::Indeterminate,
+            Native::Terminal => Self::Terminal,
+        }
     }
 }

@@ -53,7 +53,11 @@ pub(super) fn adopt_p2_after_completed_payment(
         )
         .expect("settled payment operation permits program adoption");
     assert!(matches!(
-        prepared.publish(),
+        runtime
+            .request(approver, scope)
+            .on_branch(branch)
+            .programs()
+            .publish(prepared),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
     assert_eq!(

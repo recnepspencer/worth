@@ -20,6 +20,7 @@ pub async fn prove_rotation_revocation_and_expiration(world: &InstalledIdentityW
     let administration = AuthentikAdministration::new(
         world.endpoints.authentik_origin(),
         world.fixture.bootstrap_token().to_string(),
+        world.endpoints.trusted_root_pem().as_bytes(),
     )
     .expect("real Authentik administration should configure");
     prove_unknown_key_retry_ceiling(world, &administration).await;
@@ -117,6 +118,7 @@ async fn install_identity(
             BankPrincipalId::new(principal_id).expect("certification principal id should admit"),
             external,
         )],
+        Some(world.endpoints.trusted_root_pem().as_bytes()),
         &world.scope,
     )
     .await

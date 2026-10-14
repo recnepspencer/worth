@@ -1,7 +1,4 @@
-use bank_domain::schema::{
-    Account, ApplyOpeningFundingOperation, DepositOperation, Institution, ReverseJournalOperation,
-    SendMoneyOperation, WithdrawOperation,
-};
+use bank_domain::schema::{ApplyOpeningFundingOperation, Institution, ReverseJournalOperation};
 
 use super::super::mutations;
 use crate::ordinary::mutation::{BankMoneyMovementExecution, BankMoneyMovementRetainedExecution};
@@ -36,13 +33,6 @@ execute_program_mutation!(
     ApplyOpeningFundingOperation,
     Institution
 );
-execute_program_mutation!(mutations::DepositMutation, DepositOperation, Institution);
-execute_program_mutation!(
-    mutations::WithdrawalMutation,
-    WithdrawOperation,
-    Institution
-);
-execute_program_mutation!(mutations::SendMoneyMutation, SendMoneyOperation, Account);
 execute_program_mutation!(
     mutations::ReverseJournalMutation,
     ReverseJournalOperation,

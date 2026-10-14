@@ -12,6 +12,7 @@ pub struct BankHttpServerClose {
 pub struct BankHttpServerCloseFailure {
     error: io::Error,
     close: BankHttpServerClose,
+    server: Option<Box<super::BankHttpServer>>,
 }
 
 impl BankHttpServerClose {
@@ -30,15 +31,38 @@ impl BankHttpServerClose {
 
 impl BankHttpServerCloseFailure {
     pub(super) fn new(error: io::Error, close: BankHttpServerClose) -> Self {
-        Self { error, close }
+        Self {
+            error,
+            close,
+            server: None,
+        }
     }
 
+    pub(super) fn retained(error: io::Error, server: super::BankHttpServer) -> Self {
+        Self {
+            error,
+            close: BankHttpServerClose::new(None),
+            server: Some(Box::new(server)),
+        }
+    }
+    /// A refused shutdown returns the still-live listener and its resume routes.
+    pub fn into_server(self) -> Result<super::BankHttpServer, Self> {
+        if self.server.is_none() {
+            return Err(self);
+        }
+        let mut failure = self;
+        Ok(*failure.server.take().expect("retained server checked"))
+    }
     pub fn error(&self) -> &io::Error {
         &self.error
     }
 
-    pub fn into_close(self) -> BankHttpServerClose {
-        self.close
+    /// Closed-worker errors retain rail close custody; refused shutdown must retain its server.
+    pub fn into_close(self) -> Result<BankHttpServerClose, Self> {
+        if self.server.is_some() {
+            return Err(self);
+        }
+        Ok(self.close)
     }
 }
 

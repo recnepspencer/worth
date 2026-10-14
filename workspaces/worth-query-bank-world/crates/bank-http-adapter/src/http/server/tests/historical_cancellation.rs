@@ -9,7 +9,9 @@ use bank_server::{mutations, BankMutationControls};
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::application_entry::{
+    WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
+};
 
 use super::super::super::protocol::{BankHttpDenialKind, BankHttpNextAction};
 use super::fixture::application;
@@ -36,11 +38,19 @@ async fn historical_account_activity_cancellation_preserves_http_class_and_remed
             scope.clone(),
             BankIdempotencyKey::new("historical-http-cancellation").unwrap(),
         ))
-        .execute()
-        .unwrap();
-    let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = committed else {
-        panic!("fixture deposit must commit: {committed:?}");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+    let request = application.runtime.request(&principal, &scope);
+    let WorthQuerySourceOnlyAdvance::Completed(committed) =
+        committed.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("fresh deposit")
     };
+    let WorthQuerySourceCompletion::Fresh { receipt, .. } = committed.evidence() else {
+        panic!("fresh receipt")
+    };
+    let receipt = receipt.clone();
+    assert!(committed.close(&request).is_ok());
     let read = || {
         application
             .runtime

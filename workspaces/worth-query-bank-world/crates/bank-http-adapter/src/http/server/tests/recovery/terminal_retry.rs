@@ -32,14 +32,16 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
             0,
         ))))
         .expect("rail port should install once");
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application),
         BankHttpServerConfiguration::local_ephemeral()
             .with_opaque_handle_capacity(NonZeroUsize::new(1).unwrap())
             .with_opaque_handle_lifetime(Duration::ZERO),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let first_action = recovery_action();
     let first = notify_with_key(
@@ -132,4 +134,5 @@ async fn terminal_retry_replay_survives_until_eviction_then_commit_replay_report
         "unexpected post-eviction replay: {old_replay:?}"
     );
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }

@@ -32,6 +32,7 @@ use crate::http::protocol::inbound_completion::MAXIMUM_COMPLETION_BYTES;
 #[derive(Clone)]
 pub(super) struct BankHttpRouteState {
     pub(super) queue: BankHttpExecutionQueue,
+    pub(super) mutations: super::mutation_executor::BankHttpMutationContinuation,
     pub(super) live: BankHttpLiveExecutor,
     pub(super) continuations: BankHttpContinuationExecutor,
     pub(super) recovery: BankHttpRecoveryExecutor,
@@ -43,8 +44,9 @@ pub(super) struct BankHttpRouteState {
 }
 
 impl BankHttpRouteState {
-    pub(super) const fn new(
+    pub(super) fn new(
         queue: BankHttpExecutionQueue,
+        mutations: super::mutation_executor::BankHttpMutationContinuation,
         live: BankHttpLiveExecutor,
         continuations: BankHttpContinuationExecutor,
         recovery: BankHttpRecoveryExecutor,
@@ -56,6 +58,7 @@ impl BankHttpRouteState {
     ) -> Self {
         Self {
             queue,
+            mutations,
             live,
             continuations,
             recovery,
@@ -99,7 +102,7 @@ pub(super) fn router(state: BankHttpRouteState, maximum_body_bytes: usize) -> Ro
 }
 
 async fn readiness() -> Json<serde_json::Value> {
-    Json(serde_json::json!({ "status": "ready", "protocol": "v3" }))
+    Json(serde_json::json!({ "status": "ready", "protocol": "v4" }))
 }
 
 async fn account_summary(

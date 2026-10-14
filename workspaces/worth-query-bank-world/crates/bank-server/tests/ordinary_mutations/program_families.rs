@@ -126,50 +126,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
         ),
         true,
     );
-    assert_program_committed(
-        execute!(
-            fixture,
-            teller,
-            mutations::deposit(Deposit {
-                institution: fixture.institution,
-                account: fixture.recipient_account,
-                amount: Money::from_minor(500).unwrap(),
-            }),
-            "deposit",
-        ),
-        true,
-    );
-    assert_program_committed(
-        execute!(
-            fixture,
-            teller,
-            mutations::withdraw(Withdraw {
-                institution: fixture.institution,
-                account: fixture.recipient_account,
-                amount: Money::from_minor(100).unwrap(),
-            }),
-            "withdraw",
-        ),
-        true,
-    );
-    let send = SendMoney {
-        from: fixture.personal_account,
-        recipient: principal_id(RECIPIENT),
-        amount: Money::from_minor(250).unwrap(),
-    };
-    assert_program_committed(
-        execute!(fixture, owner, mutations::send_money(send.clone()), "send",),
-        true,
-    );
-    let retry = execute!(fixture, owner, mutations::send_money(send), "send");
-    let Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) = retry else {
-        panic!("equivalent public retry must recover the commit: {retry:?}");
-    };
-    assert_eq!(
-        receipt.terminal().kind(),
-        WorthQueryApplicationCommitTerminalKind::Recovered
-    );
-    assert_eq!(receipt.terminal().attempt_resources_released(), None);
+    super::money_families::exercise(&fixture);
 
     let initiation = {
         let scope = request_scope();

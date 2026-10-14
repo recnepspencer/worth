@@ -13,19 +13,21 @@ use super::fixture::application;
 
 #[tokio::test]
 async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay() {
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let origin = format!("http://{}", server.local_address());
     let client = reqwest::Client::new();
 
     let requested = client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": "elevation-request-1",
             "credential": credential("test-only"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -63,7 +65,7 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
     let raw_axis = client
         .post(format!("{origin}/v1/estate/elevation/approve"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": "raw-axis-approval",
             "credential": credential("approver"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -86,7 +88,7 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
     let wrong_phase = client
         .post(format!("{origin}/v1/estate/elevation/revoke"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": "revoke-requested-phase",
             "credential": credential("approver"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -125,7 +127,7 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
     let closed = client
         .post(format!("{origin}/v1/estate/elevation/revoke"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": "elevation-revoke-1",
             "credential": credential("approver"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -170,23 +172,26 @@ async fn multi_actor_elevation_retains_exact_phase_across_wrong_actor_and_replay
         }
     ));
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn expired_elevation_token_opens_no_approval_phase() {
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral()
             .with_opaque_handle_lifetime(std::time::Duration::from_millis(1)),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let origin = format!("http://{}", server.local_address());
     let client = reqwest::Client::new();
     let requested = client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": "expiring-elevation",
             "credential": credential("test-only"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -216,25 +221,28 @@ async fn expired_elevation_token_opens_no_approval_phase() {
             if denial.kind == BankHttpDenialKind::Stale
     ));
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn lost_approval_response_replays_the_committed_transition() {
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let address = server.local_address();
     let origin = format!("http://{address}");
     let client = reqwest::Client::new();
     let requested = client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": "approval-response-loss-request",
             "credential": credential("test-only"),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -258,7 +266,7 @@ async fn lost_approval_response_replays_the_committed_transition() {
     };
 
     let body = serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": "approval-response-loss",
         "credential": credential("approver"),
         "controls": { "deadline_milliseconds": 5_000 },
@@ -317,6 +325,7 @@ async fn lost_approval_response_replays_the_committed_transition() {
         "the lost response must not execute approval again: {replay:?}"
     );
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 async fn approve(
@@ -329,7 +338,7 @@ async fn approve(
     client
         .post(format!("{origin}/v1/estate/elevation/approve"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": format!("approve-{key}"),
             "credential": credential(actor),
             "controls": { "deadline_milliseconds": 5_000 },
@@ -354,7 +363,7 @@ async fn complete_review(
     client
         .post(format!("{origin}/v1/estate/elevation/review"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": format!("review-{key}"),
             "credential": credential(actor),
             "controls": { "deadline_milliseconds": 5_000 },

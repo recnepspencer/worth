@@ -17,12 +17,14 @@ mod transport;
 
 #[tokio::test]
 async fn authority_remains_behind_one_opaque_transport_handle() {
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let action = recovery_action();
     let notified = post_typed::<BankHttpEstateNotificationOutcome>(
@@ -40,16 +42,19 @@ async fn authority_remains_behind_one_opaque_transport_handle() {
     };
     assert_recovery_inspects(&client, server.local_address(), &action, &recovery).await;
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn lost_notification_response_replays_the_exact_opaque_handle() {
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let action = recovery_action();
     let first = notify(&client, server.local_address(), &action, "notification-a").await;
@@ -59,16 +64,19 @@ async fn lost_notification_response_replays_the_exact_opaque_handle() {
     assert_eq!(replay_commit, first_commit);
     assert_eq!(replay_recovery, first_recovery);
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn local_token_lifetime_cannot_discard_live_query_recovery() {
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral().with_opaque_handle_lifetime(Duration::ZERO),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let action = recovery_action();
     let notified = notify(
@@ -90,18 +98,21 @@ async fn local_token_lifetime_cannot_discard_live_query_recovery() {
     let (_, replay_recovery) = applied_notification(replay);
     assert_eq!(replay_recovery, recovery);
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn saturated_recovery_registry_rejects_before_the_domain_effect() {
     let application = Arc::new(application(AccountId::new(100).unwrap()));
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::clone(&application),
         BankHttpServerConfiguration::local_ephemeral()
             .with_opaque_handle_capacity(NonZeroUsize::new(1).unwrap()),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let first = recovery_action();
     applied_notification(notify(&client, server.local_address(), &first, "fill-registry").await);
@@ -130,6 +141,7 @@ async fn saturated_recovery_registry_rejects_before_the_domain_effect() {
         DeathNoticeStatus::Reported
     );
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 async fn assert_recovery_inspects(
@@ -184,7 +196,7 @@ fn notification_request_with_key(
     idempotency_key: &str,
 ) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": { "deadline_milliseconds": 5_000 },
@@ -249,7 +261,7 @@ fn recovery_request(
     recovery: &str,
 ) -> serde_json::Value {
     serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": request_id,
         "credential": credential_json(),
         "controls": { "deadline_milliseconds": 5_000 },

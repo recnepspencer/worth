@@ -2,8 +2,8 @@ use bank_domain::model::{CustomerRole, Money};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{Deposit, GrantAccountAuthorization, RevokeAccountAuthorization};
 use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
+use std::num::NonZeroUsize;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationLiveControls;
 
 use crate::fixture::{self, VIEWER};
@@ -129,10 +129,26 @@ pub(crate) fn commit_deposit(
             request_scope(),
             BankIdempotencyKey::new(key).unwrap(),
         ))
-        .execute();
-    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = outcome else {
-        panic!("deposit must commit: {outcome:?}");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(teller, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        completed,
+    ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native retained deposit completion")
     };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt,
+        ..
+    } = completed.evidence()
+    else {
+        panic!("fresh deposit evidence")
+    };
+    let receipt = receipt.clone();
+    assert!(completed.close(&request).is_ok());
+
     receipt
 }
 

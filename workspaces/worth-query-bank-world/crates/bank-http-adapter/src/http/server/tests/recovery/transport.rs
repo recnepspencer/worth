@@ -53,12 +53,14 @@ async fn unresolved_http_retry_keeps_the_same_token_until_completion() {
         .runtime
         .install_external_effect_transport(transport.clone())
         .expect("rail port should install once");
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let action = recovery_action();
     let (_, token) = applied_notification(
@@ -114,6 +116,7 @@ async fn unresolved_http_retry_keeps_the_same_token_until_completion() {
     ));
     assert_eq!(transport.0.load(Ordering::SeqCst), 3);
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
@@ -125,12 +128,14 @@ async fn expired_query_recovery_replay_reports_operator_required() {
         .runtime
         .install_external_effect_transport(Arc::new(TwiceUnresolvedTransport(AtomicUsize::new(0))))
         .expect("rail port should install once");
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application),
         BankHttpServerConfiguration::local_ephemeral().with_opaque_handle_lifetime(Duration::ZERO),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let action = recovery_action();
     let (_, token) = applied_notification(
@@ -153,4 +158,5 @@ async fn expired_query_recovery_replay_reports_operator_required() {
         BankHttpRecoveryInspectionOutcome::Denied { .. }
     ));
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }

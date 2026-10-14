@@ -89,7 +89,7 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
             .expect("Bank identity installation should finish within its 300-second scope"),
     );
     eprintln!("rail completion court: Bank identity installed");
-    let bank = bank_binding
+    let (bank, _mutation_continuation) = bank_binding
         .install_shared_with_rail_completion(
             Arc::clone(&identity),
             BankRailCompletionServerInstallation::new(
@@ -102,7 +102,9 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
             )
             .expect("fixed rail verifier and Bank ACK signer should install"),
         )
-        .expect("real Bank HTTP callback should start");
+        .expect("real Bank HTTP callback should start")
+        .into_parts();
+    let bank = bank.activate();
     eprintln!("rail completion court: Bank callback bound");
     let mut proxy = CallbackProxy::start(bank_address).await;
     eprintln!("rail completion court: callback proxy bound; installing rail sender");

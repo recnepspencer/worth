@@ -7,7 +7,9 @@ use bank_server::{
     mutations, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls,
 };
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::application_entry::{
+    WorthQuerySourceCompletion, WorthQuerySourceOnlyAdvance,
+};
 use worth_query_host::facade::product::WorthQueryProductBranch;
 
 use super::key;
@@ -34,7 +36,13 @@ pub(super) fn revoke_approver(
         .iter()
         .find(|user| user.principal() == approver && user.role() == CustomerRole::Approver)
         .expect("payment approver has the live account grant");
-    let revoked = runtime
+    assert_eq!(
+        branch,
+        runtime.current_branch(),
+        "this court retains its original current branch"
+    );
+    let request = runtime.request(owner, scope).on_branch(branch);
+    let operation = runtime
         .mutate(mutations::revoke_account_access(
             RevokeAccountAuthorization {
                 account,
@@ -46,12 +54,16 @@ pub(super) fn revoke_approver(
             scope.clone(),
             key("payment-court:revoke-approver"),
         ))
-        .execute()
-        .expect("owner revokes approval authority before callback delivery");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("revocation construction: {cause:?}"));
+    let WorthQuerySourceOnlyAdvance::Completed(revoked) = operation.advance(&request) else {
+        panic!("owner revokes before callback")
+    };
     assert!(matches!(
-        revoked,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
+        revoked.evidence(),
+        WorthQuerySourceCompletion::Fresh { .. }
     ));
+    assert!(revoked.close(&request).is_ok());
 }
 
 pub(super) fn restore_approver(
@@ -72,10 +84,15 @@ pub(super) fn restore_approver(
             scope.clone(),
             key("payment-court:restore-approver"),
         ))
-        .execute()
-        .expect("owner restores current approval authority");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("grant construction: {cause:?}"));
+    let request = runtime.request(owner, scope);
+    let WorthQuerySourceOnlyAdvance::Completed(granted) = granted.advance(&request) else {
+        panic!("owner restores current approval")
+    };
     assert!(matches!(
-        granted,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
+        granted.evidence(),
+        WorthQuerySourceCompletion::Fresh { .. }
     ));
+    assert!(granted.close(&request).is_ok());
 }

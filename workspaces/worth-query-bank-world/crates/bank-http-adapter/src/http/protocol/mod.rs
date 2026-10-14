@@ -21,7 +21,7 @@ pub use account_summary::{
     BankHttpAccountSummaryOutcome, BankHttpAccountSummaryRequest,
 };
 pub use aftermath::{BankHttpEstateDisbursementOutcome, BankHttpEstateDisbursementRequest};
-pub use controls::{BankHttpProtocolVersion, BankHttpRequestControls};
+pub use controls::{BankHttpEffectControls, BankHttpProtocolVersion, BankHttpRequestControls};
 pub use credential::BankHttpCredential;
 pub use denial::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
 pub use elevation::{
@@ -32,9 +32,9 @@ pub use elevation::{
     BankHttpRestrictedBankField,
 };
 pub use mutation::{
-    BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpMutationControls,
-    BankHttpMutationFailureKind, BankHttpMutationOperation, BankHttpMutationOutcome,
-    BankHttpMutationRequest, BankHttpProviderRecoveryKind,
+    BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpExpectedAccountStatus,
+    BankHttpMutationControls, BankHttpMutationOperation, BankHttpMutationOutcome,
+    BankHttpMutationPosture, BankHttpMutationReadControls, BankHttpMutationRequest,
 };
 pub use query_publication::{
     BankHttpQueryBasis, BankHttpQueryBasisPosture, BankHttpQueryCapabilityPurpose,

@@ -12,6 +12,9 @@ use super::*;
 fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
     let fixture = ordinary_read_world("ordinary-preconditions", 0);
     let owner = fixture.authenticate(OWNER);
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&owner, &scope);
+    let history = std::num::NonZeroUsize::new(20_000).unwrap();
     let before = account_summary(&fixture, &owner, fixture.personal_account);
     let send = SendMoney {
         from: fixture.personal_account,
@@ -35,16 +38,25 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             request_scope(),
             key("typed-mismatch"),
         ))
-        .execute();
-    assert!(
-        matches!(
-            mismatch,
-            Err(WorthQueryApplicationRequestMutationDenial::Handler(
-                MutationHandlerExecutionDenial::Attempt(ref denial)
-            )) if denial.kind() == WorthQueryApplicationAttemptDenialKind::MutationPreconditionMismatch
-        ),
-        "unexpected mismatch outcome: {mismatch:?}"
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
+        operation,
+        denial:
+            worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(
+                WorthQueryApplicationRequestMutationDenial::Handler(
+                    MutationHandlerExecutionDenial::Attempt(denial),
+                ),
+            ),
+    } = mismatch.advance(&request, history)
+    else {
+        panic!("native typed mismatch")
+    };
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationAttemptDenialKind::MutationPreconditionMismatch
     );
+    let _runtime = operation.into_runtime_for_cleanup();
     assert_eq!(
         account_summary(&fixture, &owner, fixture.personal_account)
             .current_balance()
@@ -68,10 +80,23 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             request_scope(),
             key("typed-send"),
         ))
-        .execute();
-    let Ok(WorthQueryApplicationMutationOutcome::Committed { receipt, .. }) = &committed else {
-        panic!("typed send must commit: {committed:?}");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        committed,
+    ) = committed.advance(&request, history)
+    else {
+        panic!("typed fresh commit")
     };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt,
+        ..
+    } = committed.evidence()
+    else {
+        panic!("fresh evidence")
+    };
+    let receipt = receipt.clone();
+    assert!(committed.close(&request).is_ok());
     assert_eq!(
         receipt.precondition_comparison().expected_version_count(),
         1
@@ -95,13 +120,30 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             request_scope(),
             key("typed-send"),
         ))
-        .execute();
-    let Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(recovered)) = &retried else {
-        panic!("lost-response retry must recover the commit: {retried:?}");
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Progress(retried) =
+        retried.advance(&request, history)
+    else {
+        panic!("native replay requires retained delivery")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        retried,
+    ) = retried.advance(&request, history)
+    else {
+        panic!("native original retained delivery")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered {
+        receipt: recovered,
+        ..
+    } = retried.evidence()
+    else {
+        panic!("replay has no invented fresh result")
     };
     assert_eq!(recovered.canonical_work(), receipt.canonical_work());
     assert_warm_canonical_work_is_zero(recovered.canonical_work());
 
+    assert!(retried.close(&request).is_ok());
     let after = account_summary(&fixture, &owner, fixture.personal_account);
     assert_eq!(
         after.current_balance().minor_units(),
@@ -124,14 +166,19 @@ fn ordinary_send_money_carries_typed_preconditions_through_retry_receipts() {
             request_scope(),
             key("typed-send"),
         ))
-        .execute();
-    assert!(
-        matches!(
-            intent_drift,
-            Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
-        ),
-        "changed precondition outcome: {intent_drift:?}"
-    );
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("typed construction: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
+        intent_drift,
+    ) = intent_drift.advance(&request, history)
+    else {
+        panic!("changed typed conditions are intent drift")
+    };
+    assert!(matches!(
+        intent_drift.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
+    ));
+    assert!(intent_drift.close(&request).is_ok());
     assert_eq!(
         account_summary(&fixture, &owner, fixture.personal_account)
             .current_balance()

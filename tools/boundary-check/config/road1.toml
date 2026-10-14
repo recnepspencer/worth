@@ -1440,7 +1440,7 @@ category = "async-runtime"
 reason = "Bank process and HTTP transport own this Tokio or dedicated process executor thread."
 
 [[threading_sites]]
-source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/mod.rs"
+source = "workspaces/worth-query-bank-world/crates/bank-http-adapter/src/http/server/lifecycle.rs"
 item = "BankHttpServer::shutdown"
 kind = "async-blocking"
 count = 1

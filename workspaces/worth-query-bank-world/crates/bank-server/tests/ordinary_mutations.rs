@@ -57,6 +57,8 @@ macro_rules! execute {
     };
 }
 
+#[path = "ordinary_mutations/money_families.rs"]
+mod money_families;
 #[path = "ordinary_mutations/owning_deposit.rs"]
 mod owning_deposit;
 #[path = "ordinary_mutations/program_families.rs"]
@@ -68,106 +70,116 @@ mod transfer_posting_oracle;
 
 #[test]
 fn public_mutation_controls_preserve_interruptions_permissions_and_intent_drift() {
+    use worth_query_host::facade::application_entry::{
+        WorthQuerySourceCompletion as Completion, WorthQuerySourceOnlyAdvance as Advance,
+        WorthQuerySourceOnlyDenial as Denial,
+    };
     let fixture = ordinary_read_world("ordinary-mutation-controls", 0);
     let owner = fixture.authenticate(OWNER);
     let stranger = fixture.authenticate(STRANGER);
-    let send = SendMoney {
-        from: fixture.personal_account,
-        recipient: principal_id(RECIPIENT),
-        amount: Money::from_minor(25).unwrap(),
+    let send = send_for(&fixture);
+    for cancelled in [true, false] {
+        let cancellation = WorthQueryCancellationSource::new();
+        if cancelled {
+            cancellation.cancel();
+        }
+        let scope = WorthQueryRequestScope::new(
+            Some(if cancelled {
+                Instant::now() + Duration::from_secs(60)
+            } else {
+                Instant::now() - Duration::from_secs(1)
+            }),
+            cancellation.token(),
+        );
+        let operation = fixture
+            .world
+            .runtime
+            .mutate(mutations::send_money(send.clone()))
+            .as_principal(&owner)
+            .controls(BankMutationControls::new(
+                scope.clone(),
+                key(if cancelled { "cancelled" } else { "expired" }),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+        let request = fixture.world.runtime.request(&owner, &scope);
+        let Advance::Refused {
+            operation,
+            denial: Denial::Execution(WorthQueryAdvancementDenial::Interrupted(interruption)),
+        } = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+        else {
+            panic!("exact request interruption")
+        };
+        assert_eq!(
+            interruption,
+            if cancelled {
+                WorthQueryManagedComputationInterruption::Cancelled
+            } else {
+                WorthQueryManagedComputationInterruption::DeadlineExceeded
+            }
+        );
+        let _runtime = operation.into_runtime_for_cleanup();
+    }
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&stranger, &scope);
+    let operation = fixture
+        .world
+        .runtime
+        .mutate(mutations::send_money(send.clone()))
+        .as_principal(&stranger)
+        .controls(BankMutationControls::new(scope.clone(), key("denied")))
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+    let Advance::Refused {
+        operation,
+        denial: Denial::Mutation(denial),
+    } = operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native permission refusal")
     };
-
-    let cancellation = WorthQueryCancellationSource::new();
-    cancellation.cancel();
-    let cancelled = fixture
+    assert!(matches!(denial.kind(), worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied))));
+    let _runtime = operation.into_runtime_for_cleanup();
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&owner, &scope);
+    let operation = fixture
         .world
         .runtime
         .mutate(mutations::send_money(send.clone()))
         .as_principal(&owner)
-        .controls(BankMutationControls::new(
-            WorthQueryRequestScope::new(
-                Some(Instant::now() + Duration::from_secs(60)),
-                cancellation.token(),
-            ),
-            key("cancelled"),
-        ))
-        .execute();
-    assert!(
-        matches!(
-            cancelled,
-            Err(
-                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
-                    WorthQueryAdvancementDenial::Interrupted(
-                        WorthQueryManagedComputationInterruption::Cancelled
-                    )
-                )
-            )
-        ),
-        "unexpected cancelled outcome: {cancelled:?}"
-    );
-
-    let deadline = WorthQueryCancellationSource::new();
-    let expired = fixture
+        .controls(BankMutationControls::new(scope.clone(), key("drift")))
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+    let Advance::Completed(completed) =
+        operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("fresh send")
+    };
+    let Completion::Fresh { receipt, .. } = completed.evidence() else {
+        panic!("fresh evidence")
+    };
+    assert!(receipt.emitted_effect_count() > 0);
+    assert!(completed.close(&request).is_ok());
+    let operation = fixture
         .world
         .runtime
-        .mutate(mutations::send_money(send.clone()))
-        .as_principal(&owner)
-        .controls(BankMutationControls::new(
-            WorthQueryRequestScope::new(
-                Some(Instant::now() - Duration::from_secs(1)),
-                deadline.token(),
-            ),
-            key("expired"),
-        ))
-        .execute();
-    assert!(
-        matches!(
-            expired,
-            Err(
-                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(
-                    WorthQueryAdvancementDenial::Interrupted(
-                        WorthQueryManagedComputationInterruption::DeadlineExceeded
-                    )
-                )
-            )
-        ),
-        "unexpected deadline outcome: {expired:?}"
-    );
-
-    let denied = execute!(
-        fixture,
-        stranger,
-        mutations::send_money(send.clone()),
-        "denied",
-    );
-    assert!(matches!(
-        denied,
-        Err(ref denial)
-            if matches!(
-                denial.kind(),
-                worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind::Authorization(
-                    worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::PermissionDenied)
-                )
-            )
-    ));
-
-    assert_program_committed(
-        execute!(fixture, owner, mutations::send_money(send), "drift"),
-        true,
-    );
-    let drift = execute!(
-        fixture,
-        owner,
-        mutations::send_money(SendMoney {
+        .mutate(mutations::send_money(SendMoney {
             amount: Money::from_minor(26).unwrap(),
-            ..send_for(&fixture)
-        }),
-        "drift",
-    );
+            ..send
+        }))
+        .as_principal(&owner)
+        .controls(BankMutationControls::new(scope.clone(), key("drift")))
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+    let Advance::Terminal(terminal) =
+        operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("intent drift terminal")
+    };
     assert!(matches!(
-        drift,
-        Ok(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
     ));
+    assert!(terminal.close(&request).is_ok());
 }
 
 fn pending_payments(

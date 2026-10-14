@@ -137,12 +137,14 @@ async fn settling_completion_asks_to_retry_later_then_answers_already_completed(
         .runtime
         .install_external_effect_transport(transport.clone())
         .expect("rail port should install once");
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::clone(&application),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let address = server.local_address();
     let action = recovery_action();
@@ -226,4 +228,5 @@ async fn settling_completion_asks_to_retry_later_then_answers_already_completed(
         "the commit replay reports the completed recovery: {commit_replay:?}"
     );
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }

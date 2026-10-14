@@ -20,7 +20,6 @@ use bank_server::{
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
 use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryResumeControls;
 
 #[test]
@@ -58,11 +57,25 @@ fn activity_pages_keep_one_exact_basis_across_a_new_commit() {
             request_scope(),
             BankIdempotencyKey::new("activity-page-version-change").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
-        mutation,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+        .retain_operation()
+        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&teller, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        completed,
+    ) = mutation.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native retained deposit completion")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt,
+        ..
+    } = completed.evidence()
+    else {
+        panic!("fresh deposit evidence")
+    };
+    assert!(receipt.emitted_effect_count() > 0);
+    assert!(completed.close(&request).is_ok());
 
     let next_request = request_scope();
     let second = fixture
@@ -289,11 +302,25 @@ fn activity_order_follows_committed_account_sequence_not_derived_identity() {
                 request_scope(),
                 BankIdempotencyKey::new(key).unwrap(),
             ))
-            .execute();
-        assert!(matches!(
-            outcome,
-            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-        ));
+            .retain_operation()
+            .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+        let scope = request_scope();
+        let request = fixture.world.runtime.request(&teller, &scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            completed,
+        ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+        else {
+            panic!("native retained deposit completion")
+        };
+        let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+            receipt,
+            ..
+        } = completed.evidence()
+        else {
+            panic!("fresh deposit evidence")
+        };
+        assert!(receipt.emitted_effect_count() > 0);
+        assert!(completed.close(&request).is_ok());
     }
 
     let request = request_scope();

@@ -77,7 +77,7 @@ pub(super) fn commit_denial(outcome: BankMutationCommitOutcome) -> BankHttpDenia
                 }
                 Err(Control::TimedOut) => deadline_exceeded(),
                 Ok(bank_server::BankProviderFailureKind::ExecutionResource { denial, .. }) => {
-                    super::super::mutation_application::execution_resource(denial).1
+                    super::super::mutation_application::execution_resource(denial)
                 }
                 Ok(_) => BankHttpDenial::new(
                     BankHttpDenialKind::Unavailable,

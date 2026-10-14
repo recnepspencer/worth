@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpCredential, BankHttpDenial,
-    BankHttpMutationControls, BankHttpProtocolVersion,
+    BankHttpEffectControls, BankHttpProtocolVersion,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -11,7 +11,7 @@ pub struct BankHttpEstateNotificationRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub estate: String,
     pub notice: String,
@@ -40,7 +40,7 @@ pub struct BankHttpRecoveryRequest {
     pub protocol: BankHttpProtocolVersion,
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub recovery: String,
 }
 

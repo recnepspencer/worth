@@ -1,209 +1,243 @@
-use std::sync::Arc;
-
-use bank_domain::model::{AccountId, InstitutionId};
-
+//! Actual native custody survives HTTP reply/listener loss and fresh commands.
 use super::super::super::protocol::{
-    BankHttpAccountActivityItem, BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome,
-    BankHttpCommitDescription, BankHttpCommitDisposition, BankHttpDenialKind,
-    BankHttpMutationOutcome, BankHttpMutationRequest, BankHttpPostingPurpose,
+    BankHttpDenialKind, BankHttpMutationOutcome as Outcome, BankHttpMutationRequest,
 };
 use super::fixture::application;
-use super::{bind_application, controls_json, credential_json, BankHttpServerConfiguration};
+use super::{bind_application, credential_json, BankHttpServerConfiguration};
+use bank_domain::model::AccountId;
+use std::sync::Arc;
 
+pub(super) fn create(id: &str, amount: i64) -> serde_json::Value {
+    serde_json::json!({ "protocol": "v4", "request_id": id, "credential": credential_json(),
+        "command": "create", "custody_id": id, "sequence": 1,
+        "controls": { "deadline_milliseconds": 5000, "maximum_history_work": 128 },
+        "idempotency_key": format!("key-{id}"),
+        "operation": { "operation": "deposit", "institution": "fixture:1", "account": "fixture:100", "amount_minor_units": amount } })
+}
+pub(super) fn command(id: &str, kind: &str, sequence: u64) -> serde_json::Value {
+    let controls = if kind == "resume" {
+        serde_json::json!({ "deadline_milliseconds": 5000, "maximum_history_work": 128 })
+    } else if kind == "read" {
+        serde_json::json!({ "deadline_milliseconds": 5000, "maximum_results": 16, "maximum_work": 20000 })
+    } else {
+        serde_json::json!({ "deadline_milliseconds": 5000 })
+    };
+    serde_json::json!({ "protocol": "v4", "request_id": format!("{id}-{sequence}"), "credential": credential_json(),
+        "command": kind, "custody_id": id, "sequence": sequence, "controls": controls })
+}
+pub(super) fn decode(value: serde_json::Value) -> BankHttpMutationRequest {
+    serde_json::from_value(value).unwrap()
+}
+async fn post(client: &reqwest::Client, endpoint: &str, value: &serde_json::Value) -> Outcome {
+    client
+        .post(endpoint)
+        .json(value)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap()
+}
 #[tokio::test]
-async fn malformed_json_returns_a_typed_denial() {
-    let server = bind_application(
+async fn owning_deposit_partial_lost_reply_fresh_recovery_history_and_close() {
+    let application = Arc::new(application(AccountId::new(100).unwrap()));
+    let (server, continuation) = bind_application(
+        Arc::clone(&application),
+        BankHttpServerConfiguration::local_ephemeral(),
+    )
+    .await
+    .unwrap()
+    .into_parts();
+    let server = server.activate();
+    let endpoint = format!("http://{}/v1/mutations", server.local_address());
+    let client = reqwest::Client::new();
+    application.runtime.fail_next_durable_append_for_test();
+    let lost = client
+        .post(&endpoint)
+        .json(&create("partial17", 17))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(lost.status(), reqwest::StatusCode::ACCEPTED);
+    drop(lost);
+    // Actual native close refuses unsettled publication and returns the same owning record.
+    assert!(
+        matches!(post(&client, &endpoint, &command("partial17", "close", 2)).await,
+        Outcome::Refused { denial, accepted_sequence: Some(2), .. } if denial.kind == BankHttpDenialKind::Unavailable)
+    );
+    let failure = server
+        .shutdown()
+        .await
+        .err()
+        .expect("native custody refuses shutdown");
+    let server = failure.into_server().unwrap();
+    let mut wrong = command("partial17", "resume", 3);
+    wrong["credential"]["access_token"] = serde_json::json!("beneficiary");
+    assert!(
+        matches!(post(&client, &endpoint, &wrong).await, Outcome::Refused { denial, .. } if denial.kind == BankHttpDenialKind::PermissionDenied)
+    );
+    // Dropping listener and its error wrapper cannot remove this independent resume entrance.
+    drop(server);
+    assert!(
+        matches!(continuation.execute(decode(command("partial17", "resume", 3))).await, Outcome::Pending { posture, .. } if posture == super::super::super::protocol::BankHttpMutationPosture::RecoveryPerformed)
+    );
+    assert!(
+        matches!(continuation.execute(decode(command("partial17", "resume", 4))).await, Outcome::Pending { posture, .. } if posture == super::super::super::protocol::BankHttpMutationPosture::RetainedDeliveryPending)
+    );
+    assert!(
+        matches!(continuation.execute(decode(command("partial17", "resume", 5))).await, Outcome::Completed { recovered: true, commit, .. } if commit.changed_record_count > 0)
+    );
+    // A genuinely later publication changes current truth; the retained read stays at deposit17.
+    let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
+    let scope =
+        worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
+            None,
+            cancellation.token(),
+        );
+    let principal = application.authenticate(&scope).await;
+    let completed = application
+        .runtime
+        .mutate(bank_server::mutations::deposit(
+            bank_domain::schema::Deposit {
+                institution: bank_domain::model::InstitutionId::new(1).unwrap(),
+                account: AccountId::new(100).unwrap(),
+                amount: bank_domain::model::Money::from_minor(19).unwrap(),
+            },
+        ))
+        .as_principal(&principal)
+        .controls(bank_server::BankMutationControls::new(
+            scope.clone(),
+            bank_domain::proposals::BankIdempotencyKey::new("later19").unwrap(),
+        ))
+        .retain_operation()
+        .unwrap_or_else(|(_, denial)| panic!("later declaration: {denial:?}"));
+    let request = application.runtime.request(&principal, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        completed,
+    ) = completed.advance(&request, std::num::NonZeroUsize::new(128).unwrap())
+    else {
+        panic!("later publication")
+    };
+    completed
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("later cleanup: {denial:?}"));
+    let read = continuation
+        .execute(decode(command("partial17", "read", 6)))
+        .await;
+    let Outcome::Delivered { activity, .. } = read else {
+        panic!("original retained read: {read:?}")
+    };
+    assert_eq!(
+        activity
+            .entries
+            .iter()
+            .filter(|entry| entry.amount_minor == 17)
+            .count(),
+        1
+    );
+    assert_eq!(
+        activity.entries.len(),
+        3,
+        "two fixture publications plus exactly one deposit"
+    );
+    let mut denied_close = command("partial17", "close", 7);
+    denied_close["credential"]["access_token"] = serde_json::json!("beneficiary");
+    assert!(
+        matches!(continuation.execute(decode(denied_close)).await, Outcome::Refused { denial, accepted_sequence: None, .. } if denial.kind == BankHttpDenialKind::PermissionDenied)
+    );
+    assert!(matches!(
+        continuation
+            .execute(decode(command("partial17", "close", 7)))
+            .await,
+        Outcome::Closed { .. }
+    ));
+    assert!(continuation.finish().await.is_ok());
+}
+#[tokio::test]
+async fn owning_money_family_uses_current_declarations_and_lawful_close() {
+    let (server, continuation) = bind_application(
         Arc::new(application(AccountId::new(100).unwrap())),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
-    let outcome = post_mutation(
-        &reqwest::Client::new(),
-        &format!("http://{}/v1/mutations", server.local_address()),
-        &serde_json::json!({ "protocol": "v3", "request_id": 42 }),
-    )
-    .await;
-    assert!(matches!(
-        outcome,
-        BankHttpMutationOutcome::NotApplied { denial, .. }
-            if denial.kind == BankHttpDenialKind::MalformedRequest
-    ));
-    server.shutdown().await.expect("server should shut down");
+    .unwrap()
+    .into_parts();
+    let server = server.activate();
+    for (id, operation) in [
+        (
+            "deposit",
+            serde_json::json!({ "operation":"deposit", "institution":"fixture:1", "account":"fixture:100", "amount_minor_units":17 }),
+        ),
+        (
+            "withdraw",
+            serde_json::json!({ "operation":"withdraw", "institution":"fixture:1", "account":"fixture:100", "amount_minor_units":17 }),
+        ),
+        (
+            "send",
+            serde_json::json!({ "operation":"send_money", "from":"fixture:100", "recipient":"fixture:3", "amount_minor_units":17, "expected_accounting_revision":4, "expected_status":"open" }),
+        ),
+    ] {
+        let mut value = create(id, 17);
+        value["operation"] = operation;
+        let Outcome::Completed {
+            recovered: false,
+            commit,
+            ..
+        } = continuation.execute(decode(value)).await
+        else {
+            panic!("real money completion: {id}")
+        };
+        assert_eq!(commit.expected_version_count, usize::from(id == "send"));
+        assert_eq!(commit.expected_fact_count, usize::from(id == "send"));
+        assert!(matches!(
+            continuation.execute(decode(command(id, "close", 2))).await,
+            Outcome::Closed { .. }
+        ));
+    }
+    server.shutdown().await.unwrap();
 }
-
 #[tokio::test]
-async fn response_loss_reuses_domain_idempotency_without_duplicate_effect() {
-    let account = AccountId::new(100).unwrap();
-    let institution = InstitutionId::new(1).unwrap();
-    let server = bind_application(
-        Arc::new(application(account)),
-        BankHttpServerConfiguration::local_ephemeral(),
+async fn owning_transport_capacity_duplicates_and_strict_wire_refuse_before_effect() {
+    let (server, continuation) = bind_application(
+        Arc::new(application(AccountId::new(100).unwrap())),
+        BankHttpServerConfiguration::local_ephemeral()
+            .with_opaque_handle_capacity(std::num::NonZeroUsize::new(1).unwrap()),
     )
     .await
-    .expect("HTTP server should bind");
-    let client = reqwest::Client::new();
-    let endpoint = format!("http://{}/v1/mutations", server.local_address());
-    let request = deposit_request(institution, account);
-    serde_json::from_value::<BankHttpMutationRequest>(request.clone())
-        .expect("mutation specimen must match the wire contract");
-    let before =
-        account_activity(&client, server.local_address(), account, "activity-before").await;
-    let lost_response = client
-        .post(&endpoint)
-        .json(&request)
-        .send()
-        .await
-        .expect("the first deposit should reach the HTTP server");
-    assert!(lost_response.status().is_success());
-    drop(lost_response);
-    let after = account_activity(&client, server.local_address(), account, "activity-after").await;
-    assert_eq!(after.len(), before.len() + 1);
-    assert_eq!(
-        after
-            .iter()
-            .filter(|entry| {
-                entry.purpose == BankHttpPostingPurpose::Deposit && entry.amount_minor == 10
-            })
-            .count(),
-        1,
-        "the first publication must expose the deposit exactly once"
-    );
-    let replayed_wire = client
-        .post(&endpoint)
-        .json(&request)
-        .send()
-        .await
-        .expect("the idempotent retry should reach the HTTP server")
-        .json::<serde_json::Value>()
-        .await
-        .expect("the retry response should be valid JSON");
-    let commit_wire = &replayed_wire["commit"];
-    assert!(commit_wire.get("provider_work_units").is_some());
-    assert!(commit_wire["provider_work_units"].is_null());
-    assert!(commit_wire["invariant_work_units"].as_u64().is_some());
-    let replayed: BankHttpMutationOutcome = serde_json::from_value(replayed_wire)
-        .expect("the v1 retry response should match the public mutation contract");
-    let replayed_description =
-        commit_description(&replayed, BankHttpCommitDisposition::AlreadyCommitted);
-    assert_eq!(replayed_description.provider_work_units, None);
-    assert!(replayed_description.invariant_work_units.is_some());
-    assert_eq!(
-        account_activity(
-            &client,
-            server.local_address(),
-            account,
-            "activity-after-retry"
-        )
-        .await,
-        after,
-        "retrying a lost response must not publish another activity entry"
-    );
-    assert_summary_balance(&client, server.local_address(), account, 310).await;
-    server.shutdown().await.expect("server should shut down");
-}
-
-fn deposit_request(institution: InstitutionId, account: AccountId) -> serde_json::Value {
-    serde_json::json!({
-        "protocol": "v3",
-        "request_id": "deposit-response-loss",
-        "credential": credential_json(),
-        "controls": { "deadline_milliseconds": 5_000 },
-        "idempotency_key": "deposit-response-loss-key",
-        "operation": "deposit",
-        "institution": institution.canonical_text(),
-        "account": account.canonical_text(),
-        "amount_minor_units": 10
-    })
-}
-
-fn commit_description(
-    outcome: &BankHttpMutationOutcome,
-    expected: BankHttpCommitDisposition,
-) -> BankHttpCommitDescription {
-    let BankHttpMutationOutcome::Applied {
-        disposition,
-        commit,
-        ..
-    } = outcome
-    else {
-        panic!("unexpected mutation outcome: {outcome:?}");
-    };
-    assert_eq!(*disposition, expected);
-    *commit
-}
-
-async fn account_activity(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    account: AccountId,
-    request_id: &str,
-) -> Vec<BankHttpAccountActivityItem> {
-    let outcome = client
-        .post(format!("http://{address}/v1/queries/account-activity/page"))
-        .json(&serde_json::json!({
-            "protocol": "v3",
-            "request_id": request_id,
-            "credential": credential_json(),
-            "controls": controls_json(16),
-            "account": account.canonical_text()
-        }))
-        .send()
-        .await
-        .expect("activity request should reach the HTTP server")
-        .json::<BankHttpAccountActivityPageOutcome>()
-        .await
-        .expect("activity response should be typed");
-    match outcome {
-        BankHttpAccountActivityPageOutcome::Delivered {
-            activity,
-            continuation: None,
-            ..
-        } => activity.entries,
-        other => panic!("activity page should be complete: {other:?}"),
-    }
-}
-
-async fn assert_summary_balance(
-    client: &reqwest::Client,
-    address: std::net::SocketAddr,
-    account: AccountId,
-    expected: i64,
-) {
-    let summary = client
-        .post(format!("http://{address}/v1/queries/account-summary"))
-        .json(&serde_json::json!({
-            "protocol": "v3",
-            "request_id": "summary-after-deposit",
-            "credential": credential_json(),
-            "controls": controls_json(1),
-            "account": account.canonical_text()
-        }))
-        .send()
-        .await
-        .unwrap()
-        .json::<BankHttpAccountSummaryOutcome>()
-        .await
-        .unwrap();
+    .unwrap()
+    .into_parts();
+    let server = server.activate();
     assert!(matches!(
-        summary,
-        BankHttpAccountSummaryOutcome::Delivered { summary, .. }
-            if summary.current_balance_minor == expected
+        continuation.execute(decode(create("first", 17))).await,
+        Outcome::Completed { .. }
     ));
-}
-
-async fn post_mutation(
-    client: &reqwest::Client,
-    endpoint: &str,
-    request: &serde_json::Value,
-) -> BankHttpMutationOutcome {
-    client
-        .post(endpoint)
-        .json(request)
-        .send()
-        .await
-        .expect("mutation request should complete")
-        .json()
-        .await
-        .expect("mutation response should be typed")
+    assert!(
+        matches!(continuation.execute(decode(create("first",99))).await, Outcome::Rejected { denial, .. } if denial.kind == BankHttpDenialKind::Stale)
+    );
+    assert!(
+        matches!(continuation.execute(decode(create("second",99))).await, Outcome::Rejected { denial, .. } if denial.kind == BankHttpDenialKind::Saturated)
+    );
+    let read = continuation
+        .execute(decode(command("first", "read", 2)))
+        .await;
+    assert!(matches!(read, Outcome::Delivered { activity, .. } if activity.entries.len() == 3));
+    assert!(
+        matches!(continuation.execute(decode(command("first","read",2))).await, Outcome::Refused { denial, .. } if denial.kind == BankHttpDenialKind::Stale)
+    );
+    let mut old = create("old", 17);
+    old["protocol"] = serde_json::json!("v3");
+    assert!(
+        matches!(continuation.execute(decode(old)).await, Outcome::Rejected { denial, .. } if denial.kind == BankHttpDenialKind::UnsupportedProtocol)
+    );
+    let mut substituted = command("first", "resume", 3);
+    substituted["idempotency_key"] = serde_json::json!("other");
+    assert!(serde_json::from_value::<BankHttpMutationRequest>(substituted).is_err());
+    assert!(matches!(
+        continuation
+            .execute(decode(command("first", "close", 3)))
+            .await,
+        Outcome::Closed { .. }
+    ));
+    server.shutdown().await.unwrap();
 }
