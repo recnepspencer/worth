@@ -6,8 +6,6 @@ use crate::application_schema::{
     ApplicationFieldPresence, ApplicationSchemaDeclarationDenial, ApplicationSchemaMember,
 };
 
-use super::ApplicationOperationBodyScopeField;
-
 pub(crate) fn validate_operation_bodies(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
@@ -27,10 +25,8 @@ pub(crate) fn validate_operation_bodies(
             if step.field().entity() != scope {
                 return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
             }
-            if let ApplicationOperationBodyScopeField::Assign { field, .. } = step {
-                if !writes.insert(field) {
-                    return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
-                }
+            if step.write_target().is_some() && !writes.insert(step.field()) {
+                return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
             }
         }
         if writes.is_empty() {
@@ -44,14 +40,20 @@ pub(crate) fn validate_operation_bodies(
         }
         for step in body.scope_fields() {
             let locus = step.field();
+            if step
+                .input_member()
+                .is_some_and(|member| member.is_empty() || member.trim() != member)
+            {
+                return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+            }
             let found = members.iter().any(|member| {
                 matches!(member, ApplicationSchemaMember::Field {
                     entity, aspect, field, scalar_family, value_type, presence, writable, ..
                 } if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()
                     && value_type == step.binding().as_str()
-                    && *scalar_family == step.value().value_family()
+                    && *scalar_family == step.scalar_family()
                     && *presence == ApplicationFieldPresence::Required
-                    && (!matches!(step, ApplicationOperationBodyScopeField::Assign { .. }) || *writable))
+                    && (step.write_target().is_none() || *writable))
             });
             if !found {
                 return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);

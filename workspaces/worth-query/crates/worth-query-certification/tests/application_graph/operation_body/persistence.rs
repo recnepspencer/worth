@@ -1,5 +1,5 @@
 //! Retained-body reconstruction and authority-free portable readmission.
-use super::{host_limits, install, invoke, program, read_retention, Outcome};
+use super::{host_limits, install, invoke, invoke_input, program, read_retention, Outcome};
 use worth_query_host::facade::{
     application_installation::{
         in_memory_program_from_checkpoint, WorthQueryCheckpointCapturePolicy,
@@ -72,4 +72,49 @@ fn authored_body_portable_readmission_preserves_values_and_rejects_incomplete_re
         .unwrap_err(),
         ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency
     );
+}
+
+#[test]
+fn authored_body_input_survives_checkpoint_and_fresh_portable_readmission() {
+    let old = install::<100>();
+    let revision = *old.installed_program().revision();
+    let checkpoint = old
+        .with_host_advancement(|phase| {
+            old.runtime()
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    drop(old);
+    let schema = program::schema::<100>();
+    let portable = WorthQueryPortableApplicationSchemaRecord::project(schema.erased());
+    assert_eq!(
+        validate_portable_application_schema_freshly(portable).unwrap(),
+        *schema.erased()
+    );
+    let restored = in_memory_program_from_checkpoint(
+        program::validated::<100>(&schema),
+        schema,
+        (program::Installation::Native,),
+        host_limits(),
+        checkpoint,
+    )
+    .unwrap();
+    assert_eq!(*restored.installed_program().revision(), revision);
+    assert!(matches!(
+        invoke_input(
+            &restored,
+            1005,
+            super::input::SetRetentionInput {
+                identity: super::DOCUMENT_IDENTITY.to_owned(),
+                retention_days: 42,
+                ..Default::default()
+            }
+        ),
+        Outcome::Committed { .. }
+    ));
+    assert_eq!(read_retention(&restored), 42);
 }

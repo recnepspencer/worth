@@ -14,6 +14,7 @@ where
     key_identity: [u8; 32],
     input_identity: [u8; 32],
     work: ApplicationCanonicalWork,
+    capture: Option<ApplicationCanonicalInput>,
     marker: PhantomData<fn() -> Schema>,
 }
 
@@ -37,12 +38,14 @@ where
         let key_identity = encoded.key_identity;
         let input_identity = encoded.input_identity;
         let work = encoded.work;
+        let capture = encoded.capture;
         Ok(Self {
             key,
             input,
             key_identity,
             input_identity,
             work,
+            capture,
             marker: PhantomData,
         })
     }
@@ -54,6 +57,7 @@ where
             key_identity,
             input_identity,
             work,
+            capture,
             marker: PhantomData,
         } = self;
         ApplicationMutationIdentities {
@@ -62,6 +66,7 @@ where
             key_identity: *key_identity,
             input_identity: *input_identity,
             work: *work,
+            capture: capture.clone(),
             marker: PhantomData,
         }
     }

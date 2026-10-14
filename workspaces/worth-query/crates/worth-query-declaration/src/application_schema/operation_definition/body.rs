@@ -26,6 +26,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     MultipleScopeEntities,
     DuplicateAssignment,
     DuplicateAttachment,
+    InvalidInputMember,
 }
 
 impl std::fmt::Display for ApplicationOperationBodyAuthoringDenial {

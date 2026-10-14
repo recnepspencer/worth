@@ -4,7 +4,7 @@ use serde::ser::{self, Serialize};
 
 use super::{compound::Compound, CanonicalEncodeError, Sink};
 
-mod tag {
+pub(in crate::application_operation::binding::identity) mod tag {
     pub const BOOL: u8 = 1;
     pub const SIGNED: u8 = 2;
     pub const UNSIGNED: u8 = 3;

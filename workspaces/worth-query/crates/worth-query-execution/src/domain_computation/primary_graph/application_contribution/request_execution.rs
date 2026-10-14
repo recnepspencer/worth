@@ -35,6 +35,7 @@ pub use test_authority::query_test_execution_authority_for_test;
 
 type Resource = WorthQueryManagedComputationResourceDenial;
 
+mod decision_stage;
 mod descendants;
 mod tree_charge;
 pub(in crate::domain_computation::primary_graph) use descendants::MemberRequestExecution;
@@ -140,7 +141,10 @@ impl<'a> QueryRequestExecution<'a> {
     }
 
     /// Holds `bytes` on the request's memory until the reservation drops.
-    pub(super) fn reserve(&self, bytes: u64) -> Result<QueryMemoryReservation, Resource> {
+    pub(in crate::domain_computation::primary_graph) fn reserve(
+        &self,
+        bytes: u64,
+    ) -> Result<QueryMemoryReservation, Resource> {
         let held = match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease
                 .as_ref()
@@ -176,7 +180,7 @@ impl<'a> QueryRequestExecution<'a> {
 }
 
 /// Bytes held against the request's lease lineage until the reservation drops.
-pub(super) struct QueryMemoryReservation {
+pub(in crate::domain_computation::primary_graph) struct QueryMemoryReservation {
     held: Option<ExecutionMemoryReservation>,
     bytes: u64,
 }

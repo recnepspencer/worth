@@ -21,10 +21,79 @@ pub trait ApplicationScalarValueBinding: 'static {
     const SCALAR_FAMILY: ScalarAspectType;
     const UNIT: Option<ApplicationUnitIdentity> = None;
     const FRAME: Option<ApplicationFrameIdentity> = None;
+    /// Explicit admission for using this decoder in a native operation body.
+    /// Native code computes this data-only bound before calling the decoder.
+    /// It must cover decoding, validation, boxing and temporary allocation.
+    const NATIVE_INPUT_ADMISSION: Option<ApplicationNativeInputDecodeProfile> = None;
 
     fn validate(value: &Self::Value) -> Result<(), ApplicationValueValidationDenial>;
 
     fn encode(value: &Self::Value) -> Result<AspectValue, ApplicationValueEncodeDenial>;
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationNativeInputDecodeResources {
+    work_units: u64,
+    peak_memory_bytes: u64,
+}
+
+/// Conservative cost of decoding a native scalar, expressed without a callback.
+/// Each per-byte term applies to the scalar's owned allocation capacity.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ApplicationNativeInputDecodeProfile {
+    work_base: u64,
+    work_per_byte: u64,
+    peak_memory_base: u64,
+    peak_memory_per_byte: u64,
+}
+
+impl ApplicationNativeInputDecodeProfile {
+    pub const fn new(
+        work_base: u64,
+        work_per_byte: u64,
+        peak_memory_base: u64,
+        peak_memory_per_byte: u64,
+    ) -> Self {
+        Self {
+            work_base,
+            work_per_byte,
+            peak_memory_base,
+            peak_memory_per_byte,
+        }
+    }
+
+    pub fn requirements(self, bytes: u64) -> Option<ApplicationNativeInputDecodeResources> {
+        Some(ApplicationNativeInputDecodeResources::new(
+            self.work_per_byte
+                .checked_mul(bytes)?
+                .checked_add(self.work_base)?,
+            self.peak_memory_per_byte
+                .checked_mul(bytes)?
+                .checked_add(self.peak_memory_base)?,
+        ))
+    }
+}
+
+impl ApplicationNativeInputDecodeResources {
+    pub const fn new(work_units: u64, peak_memory_bytes: u64) -> Self {
+        Self {
+            work_units,
+            peak_memory_bytes,
+        }
+    }
+
+    pub const fn work_units(self) -> u64 {
+        self.work_units
+    }
+    pub const fn peak_memory_bytes(self) -> u64 {
+        self.peak_memory_bytes
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ApplicationNativeInputAdmissionDenial {
+    InvalidValue,
+    CapacityOverflow,
 }
 
 /// Scalar binding that can reconstruct its exact domain value.
@@ -112,5 +181,19 @@ where
             Binding::validate(&value)?;
             Ok(Box::new(value) as Box<dyn Any>)
         })
+    }
+}
+
+#[cfg(test)]
+mod native_input_admission_tests {
+    use super::ApplicationNativeInputDecodeProfile;
+
+    #[test]
+    fn static_decoder_profile_bounds_and_overflow() {
+        let profile = ApplicationNativeInputDecodeProfile::new(3, 2, 8, 4);
+        let quoted = profile.requirements(5).unwrap();
+        assert_eq!(quoted.work_units(), 13);
+        assert_eq!(quoted.peak_memory_bytes(), 28);
+        assert!(profile.requirements(u64::MAX).is_none());
     }
 }

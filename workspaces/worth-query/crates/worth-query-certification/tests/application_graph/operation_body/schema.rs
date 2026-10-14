@@ -1,14 +1,18 @@
 // Two compiled schema markers preserve native exact-declaration readmission.
-pub use crate::document_retention_model::schema::{SetRetentionInput, SetRetentionInputBinding};
+pub use super::input::{BodyInputBinding, SetRetentionInput};
 use worth_query_host::facade::{
     declaration::{application_schema::*, authentication::*},
-    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_operation,
-    worth_query_operation_reads, worth_query_operation_writes,
+    worth_query_aspect, worth_query_entity, worth_query_field, worth_query_operation_reads,
+    worth_query_operation_writes,
 };
 
-pub trait BodySchemaBinding: ApplicationSchema {}
+pub trait BodySchemaBinding: ApplicationSchema {
+    type InputBinding: ApplicationStructuredValueBinding<Value = SetRetentionInput>;
+}
 pub struct DocumentRetentionSchema<const DESTINATION: u64>;
-impl<const DESTINATION: u64> BodySchemaBinding for DocumentRetentionSchema<DESTINATION> {}
+impl<const DESTINATION: u64> BodySchemaBinding for DocumentRetentionSchema<DESTINATION> {
+    type InputBinding = BodyInputBinding<DESTINATION>;
+}
 impl<const DESTINATION: u64> ApplicationSchema for DocumentRetentionSchema<DESTINATION> {
     const OWNER: &'static str = "worth.query.body-court";
     const NAME: &'static str = "BodySchema";
@@ -75,6 +79,16 @@ impl DocumentPrincipalBinding {
         )
     }
 }
-worth_query_operation!(pub SetRetention for Schema: BodySchemaBinding, input SetRetentionInputBinding);
+pub struct SetRetention;
+impl<Schema: BodySchemaBinding> ApplicationOperationMarkerIdentity<Schema> for SetRetention {
+    type InputBinding = Schema::InputBinding;
+    const IDENTIFIER: &'static str = "SetRetention";
+}
+impl SetRetention {
+    pub fn reference<Schema: BodySchemaBinding>(
+    ) -> ApplicationOperationRef<Schema, Self, SetRetentionInput> {
+        ApplicationOperationRef::from_declaration()
+    }
+}
 worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField]);
 worth_query_operation_writes!(SetRetention => [DocumentRetentionField]);

@@ -1,4 +1,4 @@
-//! Literal authoring uses the field's declared value binding, never raw values.
+//! Body authoring derives each target's binding from its typed field.
 
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
@@ -84,10 +84,8 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             if step.field().entity() != first.field().entity() {
                 return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
             }
-            if let ApplicationOperationBodyScopeField::Assign { field, .. } = step {
-                if !writes.insert(field.clone()) {
-                    return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
-                }
+            if step.write_target().is_some() && !writes.insert(step.field().clone()) {
+                return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
             }
         }
         if writes.is_empty() {
@@ -99,5 +97,34 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             },
             marker: PhantomData,
         })
+    }
+
+    /// Assigns a scalar from the original canonical input's serialized member.
+    /// Selection and destination validation are native; no getter is installed.
+    pub fn assign_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        member: &str,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
+    where
+        Field: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = Value>,
+        Write: WritableCapability,
+        Unit: ApplicationFieldUnit,
+    {
+        if member.is_empty() || member.trim() != member {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
+        }
+        self.steps
+            .push(ApplicationOperationBodyScopeField::AssignInput {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+                member: member.to_owned(),
+            });
+        Ok(self)
     }
 }

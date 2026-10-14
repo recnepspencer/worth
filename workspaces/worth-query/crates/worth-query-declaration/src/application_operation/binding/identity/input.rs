@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 
-use super::{input_identity, ApplicationCanonicalWork};
+use super::{input_identity, ApplicationCanonicalInput, ApplicationCanonicalWork};
 use crate::application_schema::{ApplicationStructuredValueBinding, ApplicationValueEncodeDenial};
 
 /// An operation input and its canonical identity, scoped to `InputBinding`.
@@ -27,6 +27,7 @@ where
     input: InputBinding::Value,
     identity: [u8; 32],
     work: ApplicationCanonicalWork,
+    capture: Option<ApplicationCanonicalInput>,
 }
 
 impl<InputBinding> ApplicationEncodedInput<InputBinding>
@@ -47,6 +48,7 @@ where
             input,
             identity: derived.identity(),
             work: derived.work(),
+            capture: derived.capture,
         })
     }
 }
@@ -55,11 +57,16 @@ impl<InputBinding> ApplicationEncodedInput<InputBinding>
 where
     InputBinding: ApplicationStructuredValueBinding,
 {
-    pub(super) const fn reported_elsewhere(input: InputBinding::Value, identity: [u8; 32]) -> Self {
+    pub(super) const fn reported_elsewhere(
+        input: InputBinding::Value,
+        identity: [u8; 32],
+        capture: Option<ApplicationCanonicalInput>,
+    ) -> Self {
         Self {
             input,
             identity,
             work: ApplicationCanonicalWork::none(),
+            capture,
         }
     }
 
@@ -71,6 +78,10 @@ where
     /// Identity of the input, scoped to its input type.
     pub const fn identity(&self) -> &[u8; 32] {
         &self.identity
+    }
+
+    pub const fn canonical_input(&self) -> Option<&ApplicationCanonicalInput> {
+        self.capture.as_ref()
     }
 
     /// The derivation work this carrier still has to report.
@@ -94,6 +105,7 @@ where
             input: self.input.clone(),
             identity: self.identity,
             work: self.work,
+            capture: self.capture.clone(),
         }
     }
 }

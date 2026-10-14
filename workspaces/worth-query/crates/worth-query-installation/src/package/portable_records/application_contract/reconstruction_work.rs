@@ -88,9 +88,14 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                 work.observe_text(step.field().aspect());
                 work.observe_text(step.field().field());
                 work.observe_text(step.binding().as_str());
-                work.observe_fixed(
-                    u64::try_from(step.value().semantic_byte_width()).unwrap_or(u64::MAX),
-                );
+                if let Some(value) = step.literal_value() {
+                    work.observe_fixed(
+                        u64::try_from(value.semantic_byte_width()).unwrap_or(u64::MAX),
+                    );
+                } else {
+                    work.observe_text(step.input_member().expect("input assignment"));
+                    work.observe_fixed(2);
+                }
             }
         }
         work

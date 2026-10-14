@@ -9,6 +9,21 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_inputs(
+        &self,
+        body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
+        bindings: &[worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding],
+    ) -> super::super::super::HandlerResult<
+        Option<super::super::super::operation_body::PreparedBodyInputs>,
+        super::super::super::WorthQueryOperationBodyDenial,
+    > {
+        super::super::super::operation_body::prepare_inputs(
+            self.execution,
+            self.identities.canonical_input(),
+            body,
+            bindings,
+        )
+    }
     pub(in crate::domain_computation::primary_graph) fn body_scope_field(
         &mut self,
         field: &ApplicationFieldBindingLocus,

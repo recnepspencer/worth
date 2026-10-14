@@ -10,11 +10,28 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
+    pub(in crate::domain_computation::primary_graph) fn write_body_input_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: AspectValue,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.write_body_value(target, field, std::borrow::Cow::Owned(value))
+    }
     pub(in crate::domain_computation::primary_graph) fn write_body_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
         value: &AspectValue,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.write_body_value(target, field, std::borrow::Cow::Borrowed(value))
+    }
+
+    fn write_body_value<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_target(target, field.entity())?;
         self.admit_program_target(&ApplicationOperationProgramTarget::Write {
@@ -35,6 +52,6 @@ impl<Schema, Operation, Input, Scope>
                 field.field(),
             ));
         }
-        self.write_required_value(field, entity_id, locator, std::borrow::Cow::Borrowed(value))
+        self.write_required_value(field, entity_id, locator, value)
     }
 }

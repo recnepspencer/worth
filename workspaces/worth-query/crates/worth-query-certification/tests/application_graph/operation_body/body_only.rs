@@ -12,7 +12,9 @@ use worth_query_host::facade::{
 };
 
 struct BodyOnlySchema;
-impl BodySchemaBinding for BodyOnlySchema {}
+impl BodySchemaBinding for BodyOnlySchema {
+    type InputBinding = BodyInputBinding<0>;
+}
 impl ApplicationSchema for BodyOnlySchema {
     const OWNER: &'static str = "worth.query.body-only-court";
     const NAME: &'static str = "BodyOnlySchema";

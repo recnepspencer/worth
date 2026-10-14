@@ -16,6 +16,7 @@ mod compound;
 mod serializer;
 mod sink;
 
+pub(super) use serializer::tag;
 use serializer::Encoder;
 pub use sink::CanonicalEncodingCharge;
 pub(super) use sink::{

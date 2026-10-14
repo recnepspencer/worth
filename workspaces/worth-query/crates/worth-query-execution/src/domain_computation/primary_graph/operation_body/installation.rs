@@ -5,6 +5,7 @@ use super::super::{
 use super::OperationBodyHandler;
 use std::marker::PhantomData;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationMutationBinding,
     WorthQueryInstalledApplicationSchema,
@@ -30,6 +31,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         if body.scope_entity() != Some(Binding::scope_field().entity()) {
             return Err(denied());
         }
+        let mut input_bindings = Vec::new();
         for step in body.scope_fields() {
             let locus = step.field();
             let binding = schema
@@ -37,14 +39,27 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 .field(locus.entity(), locus.aspect(), locus.field())
                 .ok_or_else(denied)?;
             if binding.identity() != step.binding()
-                || binding.validate_encoded(step.value()).is_err()
+                || binding.scalar_family() != step.scalar_family()
+                || step
+                    .literal_value()
+                    .is_some_and(|value| binding.validate_encoded(value).is_err())
             {
                 return Err(denied());
+            }
+            if step.input_member().is_some() {
+                if !Binding::InputBinding::RETAIN_CANONICAL_INPUT
+                    || !binding.is_readable()
+                    || !binding.admits_native_input()
+                {
+                    return Err(denied());
+                }
+                input_bindings.push(binding.clone());
             }
         }
         Ok(Self {
             body: body.clone(),
             marker: PhantomData,
+            input_bindings,
         })
     }
 }

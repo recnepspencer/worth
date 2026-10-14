@@ -18,7 +18,7 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     for BodyBinding<DESTINATION>
 {
     type Input = SetRetentionInput;
-    type InputBinding = SetRetentionInputBinding;
+    type InputBinding = BodyInputBinding<DESTINATION>;
     type Result = ();
     type ResultBinding = BodyResultBinding;
     type IdempotencyKey = u64;

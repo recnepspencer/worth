@@ -5,6 +5,10 @@ mod advanced_commit;
 mod binding;
 #[path = "operation_body/body_only.rs"]
 mod body_only;
+#[path = "operation_body/input.rs"]
+mod input;
+#[path = "operation_body/input_selection.rs"]
+mod input_selection;
 #[path = "operation_body/persistence.rs"]
 mod persistence;
 #[path = "operation_body/program.rs"]
@@ -94,13 +98,29 @@ fn invoke<const DESTINATION: u64>(
     >,
     key: u64,
 ) -> Outcome<WorthQueryOperationBodyDenial, ()> {
+    invoke_input(
+        app,
+        key,
+        SetRetentionInput {
+            identity: DOCUMENT_IDENTITY.to_owned(),
+            retention_days: 99,
+            ..Default::default()
+        },
+    )
+}
+
+fn invoke_input<const DESTINATION: u64>(
+    app: &WorthQueryProgramApplicationRuntime<
+        DocumentRetentionSchema<DESTINATION>,
+        program::BodyProgram<DESTINATION>,
+    >,
+    key: u64,
+    input: SetRetentionInput,
+) -> Outcome<WorthQueryOperationBodyDenial, ()> {
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     app.request(&principal, &scope)
-        .mutate(binding::BodyIntent(SetRetentionInput {
-            identity: DOCUMENT_IDENTITY.to_owned(),
-            retention_days: 99,
-        }))
+        .mutate(binding::BodyIntent(input))
         .without_source()
         .idempotency(&key)
         .execute_in_program(app, ExecutionAllocationPolicy::SystemAllocation)
@@ -205,6 +225,7 @@ fn authored_body_captured_dependency_stales_before_publication() {
         .mutate(binding::BodyIntent(SetRetentionInput {
             identity: DOCUMENT_IDENTITY.to_owned(),
             retention_days: 99,
+            ..Default::default()
         }))
         .without_source()
         .idempotency(&key);

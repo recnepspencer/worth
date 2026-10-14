@@ -28,11 +28,23 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
         let body = SetRetention::reference::<DocumentRetentionSchema<DESTINATION>>()
             .body()
             .expect(DocumentRetentionField::reference(), 7)
-            .unwrap()
-            .assign(DocumentRetentionField::reference(), DESTINATION)
-            .unwrap()
-            .finish()
             .unwrap();
+        let body = if DESTINATION >= 100 {
+            body.assign_input(
+                DocumentRetentionField::reference(),
+                match DESTINATION {
+                    101 => "identity",
+                    102 => "missing",
+                    _ => "retention_days",
+                },
+            )
+            .unwrap()
+        } else {
+            body.assign(DocumentRetentionField::reference(), DESTINATION)
+                .unwrap()
+        }
+        .finish()
+        .unwrap();
         schema
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())

@@ -103,6 +103,7 @@ fn authored_body_advanced_effects_cannot_replace_native_execution() {
     let input = SetRetentionInput {
         identity: super::DOCUMENT_IDENTITY.to_owned(),
         retention_days: 99,
+        ..Default::default()
     };
     let key = 87_u64;
     let identities =

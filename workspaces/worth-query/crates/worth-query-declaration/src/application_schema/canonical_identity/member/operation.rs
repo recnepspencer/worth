@@ -19,16 +19,28 @@ pub(super) fn append_body(
             match step {
                 ApplicationOperationBodyScopeField::Expect { .. } => "expect",
                 ApplicationOperationBodyScopeField::Assign { .. } => "assign",
+                ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
             },
         );
         basis.text(format!("{prefix}.entity"), step.field().entity());
         basis.text(format!("{prefix}.aspect"), step.field().aspect());
         basis.text(format!("{prefix}.field"), step.field().field());
         basis.text(format!("{prefix}.binding"), step.binding().as_str());
-        basis.value(
-            format!("{prefix}.value"),
-            worth_foundational::facade::canonical_basis_value_for_aspect_value(step.value()),
-        );
+        if let Some(value) = step.literal_value() {
+            basis.value(
+                format!("{prefix}.value"),
+                worth_foundational::facade::canonical_basis_value_for_aspect_value(value),
+            );
+        } else {
+            basis.text(
+                format!("{prefix}.input-member"),
+                step.input_member().expect("input assignment"),
+            );
+            basis.text(
+                format!("{prefix}.input-family"),
+                step.scalar_family().canonical_name(),
+            );
+        }
     }
 }
 
