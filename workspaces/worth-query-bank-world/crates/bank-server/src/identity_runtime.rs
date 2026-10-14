@@ -278,7 +278,7 @@ impl BankIdentityRuntime {
             .map_err(BankApplicationQueryDenial::ExecutionRequest)?
     }
 
-    pub(crate) const fn application_runtime(
+    pub(crate) fn application_runtime(
         &self,
     ) -> &WorthQueryPrimaryGraphApplicationRuntime<BankSchema> {
         self.runtime.program_runtime().runtime()

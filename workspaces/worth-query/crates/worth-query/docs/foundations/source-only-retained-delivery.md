@@ -18,6 +18,14 @@ Retained mode requires `advance(&fresh_request, maximum_history_work)`, where th
 
 The descriptor owns the original input, conditions, source, key and branch. It carries no principal or permission. Each attempt borrows a fresh request and uses the existing binding-selected authorization owner. World history supplies the committed observation; the receipt identifies which occurrence to select.
 
+## Transfer and native cleanup custody
+
+A SourceOnly owner keeps the exact installed program runtime alive. It can leave the frame that borrowed the runtime during construction; cloning the program runtime retains that same allocation and does not install another program or copy admission authority. Each subsequent advance and historical read still takes a fresh request. Conditional runtime close refuses with `RuntimeKeepaliveRetained` while another owning handle remains; after dependent handles are released, close uses the existing native release path.
+
+Keep the returned operation, completed owner, or terminal owner reachable across transport response loss. Dropping a listener does not authorize cleanup. Calling `into_runtime_for_cleanup()` on an active SourceOnly owner explicitly abandons the ordinary descriptor and returns its exact installed-runtime handle. It performs no publication, settlement, or release, and the ordinary operation cannot subsequently be resumed. Use the returned runtime's native recovery catalog and independent cleanup inventory to discover retained obligations. A refused native release returns its actual recovery or physical-cleanup owner; retain that owner for a freshly funded attempt.
+
+Dropping the last ordinary wrapper does not remove native recovery records while an independent runtime handle remains live. This is separate from completion and from physical retirement: a lawful release may retire zero components when other observations retain roots. Neither this handoff nor ordinary Drop promises cleanup after final runtime destruction or crash-durable transport custody. Drop never creates request authority or performs cleanup I/O.
+
 ## How It Executes
 
 Fresh retained execution already holds the exact native observation. Replay and recovery first retain actual recovered evidence, then advance to select that evidence's original commit through native `at_commit`. A refused delivery returns the same operation. A completed owner retains any cleanup obligations until `close` succeeds.

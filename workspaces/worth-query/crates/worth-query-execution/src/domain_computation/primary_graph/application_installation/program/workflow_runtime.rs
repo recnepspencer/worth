@@ -47,16 +47,19 @@ where
     where
         Spec: ApplicationWorkflowSpec<Schema = Schema>,
     {
-        if workflow.schema_binding() != &self.runtime.installed_schema().binding_identity() {
+        if workflow.schema_binding() != &self.backing.runtime.installed_schema().binding_identity()
+        {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
         }
         if authentication.binding_identity() != workflow.schema_binding() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignAuthenticationOwner);
         }
-        if workflow.program_revision() != self.program.revision() {
+        if workflow.program_revision() != self.backing.program.revision() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
-        self.runtime
+        std::sync::Arc::get_mut(&mut self.backing)
+            .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
+            .runtime
             .workflow_coverage
             .register(workflow.adoption_coverage())
             .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
@@ -90,7 +93,7 @@ where
     /// the one installed for the program its branch runs.
     pub fn vocabulary(&self) -> WorthQueryWorkflowVocabulary<'_, Schema, Spec> {
         WorthQueryWorkflowVocabulary::new(
-            &self.runtime.runtime,
+            &self.runtime.backing.runtime,
             &self.workflow,
             &self.supported,
             &self.authentication,
@@ -118,6 +121,8 @@ where
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
     ForeignSchema,
+    /// Installed runtime meaning cannot grow while dependent handles retain it.
+    RuntimeKeepaliveRetained,
     ForeignProgram,
     ForeignAuthenticationOwner,
     /// The program already has a vocabulary on this runtime.

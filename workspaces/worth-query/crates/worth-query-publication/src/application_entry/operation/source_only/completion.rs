@@ -3,13 +3,13 @@ use super::*;
 
 #[must_use = "source completion does not discharge cleanup"]
 /// Completed source evidence with retained native cleanup custody; close may refuse and return this owner.
-pub struct WorthQueryCompletedSourceOperation<'r, S, I, P, A, M>
+pub struct WorthQueryCompletedSourceOperation<S, I, P, A, M>
 where
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(super) operation: WorthQuerySourceOnlyOperation<'r, S, I, P, A, M>,
+    pub(super) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
     pub(super) evidence:
         WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
 }
@@ -18,7 +18,7 @@ where
 /// ```compile_fail,E0599
 /// use worth_query_publication::facade::application_entry::*;
 /// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent, application_program::ApplicationProgramDefinition};
-/// fn cannot_advance<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>, A, M>(terminal: WorthQueryTerminalSourceOperation<'_, S, I, P, A, M>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>) {
+/// fn cannot_advance<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>, A, M>(terminal: WorthQueryTerminalSourceOperation<S, I, P, A, M>, request: &WorthQueryApplicationRequest<'_, '_, '_, S>) {
 ///     terminal.advance(request);
 /// }
 /// ```
@@ -26,19 +26,19 @@ where
 /// ```
 /// use worth_query_publication::facade::application_entry::*;
 /// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent, application_program::ApplicationProgramDefinition};
-/// fn observe<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>, A, M>(terminal: WorthQueryTerminalSourceOperation<'_, S, I, P, A, M>) {
+/// fn observe<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, P: ApplicationProgramDefinition<S>, A, M>(terminal: WorthQueryTerminalSourceOperation<S, I, P, A, M>) {
 ///     let _ = terminal.native_outcome();
 /// }
 /// ```
-pub struct WorthQueryTerminalSourceOperation<'r, S, I, P, A, M>
+pub struct WorthQueryTerminalSourceOperation<S, I, P, A, M>
 where
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(super) operation: WorthQuerySourceOnlyOperation<'r, S, I, P, A, M>,
+    pub(super) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
 }
-impl<'r, S, I, P, A, M> WorthQueryCompletedSourceOperation<'r, S, I, P, A, M>
+impl<S, I, P, A, M> WorthQueryCompletedSourceOperation<S, I, P, A, M>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
@@ -59,7 +59,7 @@ where
         }
     }
 }
-impl<'r, S, I, P, A, M> WorthQueryTerminalSourceOperation<'r, S, I, P, A, M>
+impl<S, I, P, A, M> WorthQueryTerminalSourceOperation<S, I, P, A, M>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
@@ -118,7 +118,7 @@ where
         }
     }
 }
-impl<'r, S, I, P, A, M> WorthQuerySourceOnlyOperation<'r, S, I, P, A, M>
+impl<S, I, P, A, M> WorthQuerySourceOnlyOperation<S, I, P, A, M>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,

@@ -20,8 +20,7 @@ type Action = ApplicationActionReference<
     SetRetentionBinding,
     RetainedDelivery,
 >;
-type Operation<'a> = WorthQuerySourceOnlyOperation<
-    'a,
+type Operation = WorthQuerySourceOnlyOperation<
     SourceOnlyRetentionSchema,
     OriginalRetention,
     RetainedProgram,
@@ -47,7 +46,7 @@ fn operation<'a>(
     request: &WorthQueryApplicationRequest<'_, '_, '_, SourceOnlyRetentionSchema>,
     days: u64,
     key: u64,
-) -> Operation<'a> {
+) -> Operation {
     request
         .mutate(OriginalRetention {
             input: SetRetentionInput {

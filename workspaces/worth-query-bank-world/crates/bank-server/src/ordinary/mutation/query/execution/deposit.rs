@@ -18,7 +18,6 @@ impl<'runtime>
         self,
     ) -> Result<
         WorthQuerySourceOnlyOperation<
-            'runtime,
             BankSchema,
             Deposit,
             BankApplication,

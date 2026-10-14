@@ -1,6 +1,6 @@
 //! Exact World history selection retains native recovered evidence on refusal.
 use super::*;
-impl<'r, S, I, P, A, M> WorthQuerySourceOnlyOperation<'r, S, I, P, A, M>
+impl<S, I, P, A, M> WorthQuerySourceOnlyOperation<S, I, P, A, M>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,

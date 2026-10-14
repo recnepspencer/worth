@@ -96,8 +96,7 @@ macro_rules! source_factory {
             A: ApplicationAction<S, I::Binding>,
             I::Binding: 'r,
         {
-            type Operation =
-                super::source_only::WorthQuerySourceOnlyOperation<'r, S, I, P, A, $mode>;
+            type Operation = super::source_only::WorthQuerySourceOnlyOperation<S, I, P, A, $mode>;
             fn construct(
                 description: WorthQueryOperationDescription<S, I>,
                 runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,

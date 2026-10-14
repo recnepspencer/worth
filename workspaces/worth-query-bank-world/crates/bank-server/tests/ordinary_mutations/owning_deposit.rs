@@ -44,6 +44,20 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
     drop(request);
     drop(teller);
     drop(scope);
+    // The real native owner crosses the transport worker's suspended receive frame.
+    let worker_runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let operation = worker_runtime.block_on(async move {
+        let (sender, mut receiver) = tokio::sync::mpsc::channel::<()>(1);
+        let worker = tokio::spawn(async move {
+            receiver.recv().await.expect("fresh transport command");
+            operation
+        });
+        tokio::task::yield_now().await;
+        sender.send(()).await.unwrap();
+        worker.await.unwrap()
+    });
     let stranger = fixture.authenticate(STRANGER);
     let refused_scope = request_scope();
     let refused = fixture.world.runtime.request(&stranger, &refused_scope);

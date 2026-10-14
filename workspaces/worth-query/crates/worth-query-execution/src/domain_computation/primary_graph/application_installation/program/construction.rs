@@ -263,19 +263,21 @@ where
         .program_required_bindings
         .extend(output_source_bindings.iter().copied());
     Ok(WorthQueryProgramApplicationRuntime {
-        runtime,
-        program: installed,
-        connection_types: Program::Outputs::connection_types()
-            .into_iter()
-            .map(TypeId::from)
-            .collect(),
-        root_graph_types: Program::Outputs::root_graph_types()
-            .into_iter()
-            .map(TypeId::from)
-            .collect(),
-        output_source_bindings: output_source_bindings.into_boxed_slice(),
-        action_bindings: action_bindings.into_iter().collect(),
-        supported: supported.into_boxed_slice(),
+        backing: std::sync::Arc::new(super::program_runtime::WorthQueryProgramRuntimeBacking {
+            runtime,
+            program: installed,
+            connection_types: Program::Outputs::connection_types()
+                .into_iter()
+                .map(TypeId::from)
+                .collect(),
+            root_graph_types: Program::Outputs::root_graph_types()
+                .into_iter()
+                .map(TypeId::from)
+                .collect(),
+            output_source_bindings: output_source_bindings.into_boxed_slice(),
+            action_bindings: action_bindings.into_iter().collect(),
+            supported: supported.into_boxed_slice(),
+        }),
     })
 }
 

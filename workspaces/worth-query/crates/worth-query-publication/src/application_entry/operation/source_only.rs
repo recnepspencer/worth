@@ -18,15 +18,26 @@ type NativeOutcome<S, I> = WorthQueryApplicationMutationOutcome<
     <Binding<S, I> as ApplicationMutationBinding<S>>::Result,
 >;
 
-/// Move-only custody; every advancement borrows fresh request authority.
+/// Move-only custody with an owning keepalive to the exact installed runtime.
+/// Every advancement borrows fresh request authority; no request or actor grant is retained.
+/// Construction can leave the initiating runtime borrow's frame.
+/// ```
+/// use worth_query_publication::facade::application_entry::*;
+/// use worth_query_declaration::facade::{application_schema::ApplicationSchema, application_operation::ApplicationMutationIntent, application_program::*};
+/// use worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime;
+/// fn transfer<S, I, P, A>(description: WorthQueryOperationDescription<S, I>, runtime: &WorthQueryProgramApplicationRuntime<S, P>) -> Result<WorthQuerySourceOnlyOperation<S, I, P, A, ApplicationSourceCompletion>, (WorthQueryOperationDescription<S, I>, WorthQueryOperationConstructionDenial)>
+/// where S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>, I::Binding: 'static, P: ApplicationProgramDefinition<S>, A: ApplicationAction<S, I::Binding>, A::Delivery: ApplicationActionDelivery<S, I::Binding, Mode = ApplicationSourceCompletion> {
+///     description.retain_operation::<P, A>(runtime)
+/// }
+/// ```
 #[must_use = "retain publication custody until completion or lawful close"]
-pub struct WorthQuerySourceOnlyOperation<'r, S, I, P, A, Mode>
+pub struct WorthQuerySourceOnlyOperation<S, I, P, A, Mode>
 where
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    admission: WorthQuerySourceOperationAdmission<'r, S, I, P, A, Mode>,
+    admission: WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
     cleanup: WorthQueryOperationCleanup,
     state: SourceState<S, I>,
     keyed_terminal: Option<
@@ -104,8 +115,19 @@ impl<
         P: ApplicationProgramDefinition<S>,
         A,
         M,
-    > WorthQuerySourceOnlyOperation<'_, S, I, P, A, M>
+    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
 {
+    /// Abandons ordinary retry meaning while keeping the exact native cleanup authority alive.
+    ///
+    /// This performs no release, settlement, publication, or request admission. Native recovery
+    /// records and physical cleanup obligations remain discoverable on the returned runtime.
+    /// The original ordinary operation cannot be resumed after this explicit handoff. Refused
+    /// native cleanup retains its own recovery/cleanup handle. Final runtime destruction and
+    /// crash durability are not guaranteed by this handoff.
+    pub fn into_runtime_for_cleanup(self) -> WorthQueryProgramApplicationRuntime<S, P> {
+        self.admission.runtime
+    }
+
     pub fn posture(&self) -> WorthQuerySourceOnlyPosture {
         match self.state {
             SourceState::Initial => WorthQuerySourceOnlyPosture::Initial,
@@ -122,7 +144,7 @@ impl<
     }
 }
 
-impl<'r, S, I, P, A, Mode> WorthQuerySourceOnlyOperation<'r, S, I, P, A, Mode>
+impl<S, I, P, A, Mode> WorthQuerySourceOnlyOperation<S, I, P, A, Mode>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
@@ -132,7 +154,7 @@ where
 {
     pub(super) fn construct(
         description: WorthQueryOperationDescription<S, I>,
-        runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
     ) -> Result<
         Self,
         (

@@ -6,13 +6,13 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryManagedApplicationRecoveryOutcome as Recovery,
 };
 
-pub(super) type Advance<'r, S, I, P, A, M> = WorthQuerySourceOnlyAdvance<
-    WorthQuerySourceOnlyOperation<'r, S, I, P, A, M>,
-    WorthQueryCompletedSourceOperation<'r, S, I, P, A, M>,
-    WorthQueryTerminalSourceOperation<'r, S, I, P, A, M>,
+pub(super) type Advance<S, I, P, A, M> = WorthQuerySourceOnlyAdvance<
+    WorthQuerySourceOnlyOperation<S, I, P, A, M>,
+    WorthQueryCompletedSourceOperation<S, I, P, A, M>,
+    WorthQueryTerminalSourceOperation<S, I, P, A, M>,
 >;
 
-impl<'r, S, I, P, A, M> WorthQuerySourceOnlyOperation<'r, S, I, P, A, M>
+impl<S, I, P, A, M> WorthQuerySourceOnlyOperation<S, I, P, A, M>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
@@ -32,8 +32,9 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         maximum_history_work: Option<std::num::NonZeroUsize>,
-    ) -> Advance<'r, S, I, P, A, M> {
-        let runtime = self.admission.runtime.runtime();
+    ) -> Advance<S, I, P, A, M> {
+        let phase_keepalive = self.admission.runtime.clone();
+        let runtime = phase_keepalive.runtime();
         match runtime.with_application_advancement(request.scope, |phase| {
             self.step(&phase, request, maximum_history_work)
         }) {

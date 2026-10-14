@@ -29,7 +29,7 @@ impl WorthQuerySourceDeliveryMode for ApplicationRetainedCommit {
 /// use worth_query_publication::facade::application_entry::WorthQuerySourceOperationAdmission;
 /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime, primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource}};
-/// fn cannot_erase_required_output<'r, S, I, P, R, A>(fixed: worth_query_publication::facade::application_entry::WorthQueryFixedOperation<'r, S, I, P, R, A>) -> WorthQuerySourceOperationAdmission<'r, S, I, P, A, worth_query_declaration::facade::application_program::ApplicationSourceCompletion>
+/// fn cannot_erase_required_output<'r, S, I, P, R, A>(fixed: worth_query_publication::facade::application_entry::WorthQueryFixedOperation<'r, S, I, P, R, A>) -> WorthQuerySourceOperationAdmission<S, I, P, A, worth_query_declaration::facade::application_program::ApplicationSourceCompletion>
 /// where
 ///     S: ApplicationSchema,
 ///     I: ApplicationMutationIntent<S>,
@@ -62,19 +62,19 @@ impl WorthQuerySourceDeliveryMode for ApplicationRetainedCommit {
 ///     fixed
 /// }
 /// ```
-pub struct WorthQuerySourceOperationAdmission<'r, S, I, P, A, Mode>
+pub struct WorthQuerySourceOperationAdmission<S, I, P, A, Mode>
 where
     S: ApplicationSchema,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(in crate::application_entry) runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
+    pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
     pub(in crate::application_entry) description: WorthQueryOperationDescription<S, I>,
     pub(in crate::application_entry) installed_action:
-        &'r worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
+        worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
 }
-impl<'r, S, I, P, A, Mode> WorthQuerySourceOperationAdmission<'r, S, I, P, A, Mode>
+impl<S, I, P, A, Mode> WorthQuerySourceOperationAdmission<S, I, P, A, Mode>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
@@ -84,7 +84,7 @@ where
 {
     pub(super) fn construct(
         description: WorthQueryOperationDescription<S, I>,
-        runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
     ) -> Result<
         Self,
         (
@@ -123,20 +123,23 @@ where
             ));
         }
         Ok(Self {
-            runtime,
+            runtime: runtime.clone(),
             description,
-            installed_action,
+            installed_action: installed_action.clone(),
             marker: std::marker::PhantomData,
         })
     }
-    fn select<'phase>(
-        &self,
+    fn select<'runtime>(
+        &'runtime self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<
         (
-            worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<'r, S>,
-            WorthQuerySelectedProgramOwner<'r, S>,
+            worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation<
+                'runtime,
+                S,
+            >,
+            WorthQuerySelectedProgramOwner<'runtime, S>,
         ),
         WorthQueryApplicationRequestMutationDenial,
     > {
@@ -156,7 +159,7 @@ where
             .selected_program_owner(&selected)
             .map_err(super::super::mutation::selected_program::map_selected_program_owner_denial)?;
         owner
-            .resolve_declared_action::<I::Binding>(self.installed_action)
+            .resolve_declared_action::<I::Binding>(&self.installed_action)
             .map_err(|_| WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired)?;
         if owner.owns_output_source(std::any::TypeId::of::<I::Binding>()) {
             return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
@@ -164,7 +167,7 @@ where
         Ok((selected, owner))
     }
 }
-impl<'r, S, I, P, A, Mode> WorthQuerySourceOperationAdmission<'r, S, I, P, A, Mode>
+impl<S, I, P, A, Mode> WorthQuerySourceOperationAdmission<S, I, P, A, Mode>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
@@ -191,7 +194,7 @@ where
         let (selected, owner) = self.select(phase, request)?;
         let native = self
             .description
-            .request_view(request, self.installed_action);
+            .request_view(request, &self.installed_action);
         let execution = phase
             .checked_execution_request_for(self.runtime.runtime().product_runtime())
             .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?;
@@ -243,8 +246,8 @@ where
         self.select(phase, request)?;
         let mut native = self
             .description
-            .request_view(request, self.installed_action);
-        let prepared = native.authorize_owning_recovery(phase, self.runtime)?;
+            .request_view(request, &self.installed_action);
+        let prepared = native.authorize_owning_recovery(phase, &self.runtime)?;
         self.runtime
             .runtime()
             .recover_admitted_unpublished_source_operation(
@@ -267,8 +270,8 @@ where
         self.select(phase, request)?;
         let mut native = self
             .description
-            .request_view(request, self.installed_action);
-        let prepared = native.authorize_owning_recovery(phase, self.runtime)?;
+            .request_view(request, &self.installed_action);
+        let prepared = native.authorize_owning_recovery(phase, &self.runtime)?;
         native.read_recovery_idempotency(phase, &prepared)
     }
 }

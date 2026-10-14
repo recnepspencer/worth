@@ -41,16 +41,14 @@ pub type RetentionAction = ApplicationActionReference<
     SetRetentionBinding,
     RetentionCompletion,
 >;
-pub type Operation<'a> = WorthQuerySourceOnlyOperation<
-    'a,
+pub type Operation = WorthQuerySourceOnlyOperation<
     SourceOnlyRetentionSchema,
     OriginalRetention,
     SourceOnlyRetentionProgram,
     RetentionAction,
     ApplicationSourceCompletion,
 >;
-pub type Completed<'a> = WorthQueryCompletedSourceOperation<
-    'a,
+pub type Completed = WorthQueryCompletedSourceOperation<
     SourceOnlyRetentionSchema,
     OriginalRetention,
     SourceOnlyRetentionProgram,
@@ -75,21 +73,21 @@ impl ApplicationProgramDefinition<SourceOnlyRetentionSchema> for SourceOnlyReten
 pub fn install() -> host::Host {
     host::install()
 }
-pub fn operation<'a>(
-    host: &'a host::Host,
+pub fn operation(
+    host: &host::Host,
     request: &WorthQueryApplicationRequest<'_, '_, '_, SourceOnlyRetentionSchema>,
     days: u64,
     key: u64,
-) -> Operation<'a> {
+) -> Operation {
     operation_with_expected(host, request, days, key, DOCUMENT_IDENTITY)
 }
-pub fn operation_with_expected<'a>(
-    host: &'a host::Host,
+pub fn operation_with_expected(
+    host: &host::Host,
     request: &WorthQueryApplicationRequest<'_, '_, '_, SourceOnlyRetentionSchema>,
     days: u64,
     key: u64,
     expected: &str,
-) -> Operation<'a> {
+) -> Operation {
     let conditions = TypedMutationPreconditions::new().expect_fact(
         DocumentIdentityField::reference(),
         ApplicationEncodedScalarValue::try_new(expected.to_owned()).unwrap(),
@@ -107,10 +105,10 @@ pub fn operation_with_expected<'a>(
         .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(host)
         .unwrap_or_else(|(_, denial)| panic!("the exact no-output action constructs: {denial:?}"))
 }
-pub fn progress<'a>(
-    operation: Operation<'a>,
+pub fn progress(
+    operation: Operation,
     request: &WorthQueryApplicationRequest<'_, '_, '_, SourceOnlyRetentionSchema>,
-) -> Operation<'a> {
+) -> Operation {
     match operation.advance(request) {
         WorthQuerySourceOnlyAdvance::Progress(operation) => operation,
         WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
@@ -123,10 +121,10 @@ pub fn progress<'a>(
         _ => panic!("expected retained native progress"),
     }
 }
-pub fn completed<'a>(
-    operation: Operation<'a>,
+pub fn completed(
+    operation: Operation,
     request: &WorthQueryApplicationRequest<'_, '_, '_, SourceOnlyRetentionSchema>,
-) -> Completed<'a> {
+) -> Completed {
     match operation.advance(request) {
         WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
         WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
