@@ -15,6 +15,8 @@ mod creation;
 mod draft;
 #[path = "operation_body/draft_query.rs"]
 mod draft_query;
+#[path = "operation_body/genesis.rs"]
+mod genesis;
 #[path = "operation_body/input.rs"]
 mod input;
 #[path = "operation_body/input_selection.rs"]
@@ -88,6 +90,16 @@ fn install_with_projection<const DESTINATION: u64>() -> (
                 operator_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
+            if DESTINATION == 30 {
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(
+                        genesis::declaration::Tenant::reference(),
+                        WorthQueryApplicationEntityKey::new("static-tenant").unwrap(),
+                    )
+                    .field(genesis::declaration::TenantIdentity::reference(), 1),
+                )?;
+                return Ok(());
+            }
             let document = WorthQueryApplicationEntitySeed::new(
                 Document::reference(),
                 WorthQueryApplicationEntityKey::new("body-document").unwrap(),

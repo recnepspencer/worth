@@ -82,6 +82,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
 
     pub(in crate::domain_computation::primary_graph) fn body_scope_target(
         &mut self,
+        body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
     ) -> Result<
         super::super::super::WorthQueryInvariantMutationTarget<
             Schema,
@@ -90,6 +91,12 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         HandlerExecutionDenial,
     > {
         self.context_use.set(self.context_use.get().scope());
+        if body.scope_fields().is_empty() {
+            self.checkpoint().map_err(HandlerExecutionDenial::new)?;
+            self.reader
+                .body_scope_entity(self.scope)
+                .map_err(HandlerExecutionDenial::new)?;
+        }
         self.reader
             .mutation_target(self.scope)
             .map_err(HandlerExecutionDenial::new)

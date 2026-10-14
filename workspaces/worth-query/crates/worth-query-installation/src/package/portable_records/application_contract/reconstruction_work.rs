@@ -83,6 +83,9 @@ impl WorthQueryPortableApplicationOperationContractRecord {
             work.observe_text(reconciliation.procedure_slot());
         }
         if let Some(body) = &self.body {
+            if let Some(scope) = body.explicit_scope_entity() {
+                work.observe_text(scope);
+            }
             for requirement in body.requirements() {
                 work.observe_text(requirement.identity());
                 work.observe_text(requirement.target_name());

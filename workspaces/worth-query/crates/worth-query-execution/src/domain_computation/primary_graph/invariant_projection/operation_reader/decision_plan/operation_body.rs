@@ -16,6 +16,15 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationMutationBind
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    /// The installed Entity-read contract admits this dynamic body selector.
+    /// Completed decision capture, not the target token, observes its liveness.
+    pub(in crate::domain_computation::primary_graph) fn body_scope_entity<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+    ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
+        self.require_named_decision_entity(identity, identity.entity_name())
+    }
+
     /// Describes the installed operation's preconditions at this authorized
     /// observation. The projection result does not retain mutation authority.
     pub(in crate::domain_computation::primary_graph) fn inspect_body_requirements<Entity, Binding>(

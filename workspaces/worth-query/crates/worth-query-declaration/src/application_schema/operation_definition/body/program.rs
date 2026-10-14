@@ -120,6 +120,7 @@ impl ApplicationOperationBodyScopeField {
 /// Schema-owned operation meaning, not an executable permit or caller payload.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationOperationBodyProgram {
+    pub(super) explicit_scope: Option<String>,
     pub(super) scope_fields: Vec<ApplicationOperationBodyScopeField>,
     pub(super) creation: Option<ApplicationOperationBodyCreation>,
     pub(super) requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
@@ -242,6 +243,7 @@ impl ApplicationOperationBodyProgram {
         scope_fields: Vec<ApplicationOperationBodyScopeField>,
     ) -> Self {
         Self {
+            explicit_scope: None,
             scope_fields,
             creation: None,
             requirements: Vec::new(),
@@ -252,6 +254,7 @@ impl ApplicationOperationBodyProgram {
         creation: Option<ApplicationOperationBodyCreation>,
     ) -> Self {
         Self {
+            explicit_scope: None,
             scope_fields,
             creation,
             requirements: Vec::new(),
@@ -263,10 +266,40 @@ impl ApplicationOperationBodyProgram {
         requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     ) -> Self {
         Self {
+            explicit_scope: None,
             scope_fields,
             creation,
             requirements,
         }
+    }
+    /// Authority-free scope-bound description. Fresh readmission checks the scope
+    /// and its exact decision membership. Redundant field-derived scope normalizes.
+    pub fn from_untrusted_in_scope(
+        scope: String,
+        scope_fields: Vec<ApplicationOperationBodyScopeField>,
+        creation: Option<ApplicationOperationBodyCreation>,
+        requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
+    ) -> Self {
+        let explicit_scope = (scope_fields.first().map(|step| step.field().entity())
+            != Some(scope.as_str()))
+        .then_some(scope);
+        Self {
+            explicit_scope,
+            scope_fields,
+            creation,
+            requirements,
+        }
+    }
+    pub fn explicit_scope_entity(&self) -> Option<&str> {
+        self.explicit_scope.as_deref()
+    }
+    /// Creation changes no existing scope field; guards and requirements may read it.
+    pub fn is_creation_only(&self) -> bool {
+        self.creation.is_some()
+            && self
+                .scope_fields
+                .iter()
+                .all(|step| step.write_target().is_none())
     }
     pub fn requirements(&self) -> &[super::ApplicationOperationBodyRequirementProgram] {
         &self.requirements
@@ -279,6 +312,8 @@ impl ApplicationOperationBodyProgram {
     }
 
     pub fn scope_entity(&self) -> Option<&str> {
-        self.scope_fields.first().map(|step| step.field().entity())
+        self.explicit_scope
+            .as_deref()
+            .or_else(|| self.scope_fields.first().map(|step| step.field().entity()))
     }
 }

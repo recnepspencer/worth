@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use std::marker::PhantomData;
 
 use crate::application_schema::{
-    ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationEntityRef, ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
     ApplicationOperationRef, ApplicationScalarValueBinding, DeclaredApplicationFieldValue,
     OperationReads, OperationWrites, OptionalApplicationFieldValue, WritableCapability,
 };
@@ -15,6 +15,7 @@ use super::{
 };
 
 pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
+    scope: Option<String>,
     steps: Vec<ApplicationOperationBodyScopeField>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
@@ -25,6 +26,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
     /// derived when the completed body is attached to this operation definition.
     pub fn body(self) -> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
         ApplicationOperationBodyBuilder {
+            scope: None,
             steps: Vec::new(),
             requirements: Vec::new(),
             marker: PhantomData,
@@ -33,6 +35,26 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
 }
 
 impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation, Input> {
+    /// Selects the existing admitted scope without requiring a write to it.
+    /// This declaration grants no scope authority; installation binds it exactly.
+    pub fn in_scope<Entity>(
+        mut self,
+        entity: ApplicationEntityRef<Schema, Entity>,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
+    where
+        Entity: OperationReads<Operation>,
+    {
+        if self
+            .scope
+            .as_deref()
+            .is_some_and(|scope| scope != entity.name())
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
+        }
+        self.scope = Some(entity.name().to_owned());
+        Ok(self)
+    }
+
     pub fn expect<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         mut self,
         field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
@@ -78,12 +100,26 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         ApplicationOperationBody<Schema, Operation, Input>,
         ApplicationOperationBodyAuthoringDenial,
     > {
-        let Some(first) = self.steps.first() else {
+        self.finish_with_creation(None)
+    }
+
+    pub(super) fn finish_with_creation(
+        self,
+        creation: Option<super::ApplicationOperationBodyCreation>,
+    ) -> Result<
+        ApplicationOperationBody<Schema, Operation, Input>,
+        ApplicationOperationBodyAuthoringDenial,
+    > {
+        let scope = self
+            .scope
+            .as_deref()
+            .or_else(|| self.steps.first().map(|step| step.field().entity()));
+        let Some(scope) = scope else {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         };
         let mut writes = BTreeSet::new();
         for step in &self.steps {
-            if step.field().entity() != first.field().entity() {
+            if step.field().entity() != scope {
                 return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
             }
             if step.write_target().is_some() && !writes.insert(step.field().clone()) {
@@ -94,19 +130,20 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             .requirements
             .iter()
             .flat_map(|requirement| requirement.operands())
-            .any(|operand| operand.source().scope_entity() != first.field().entity())
+            .any(|operand| operand.source().scope_entity() != scope)
         {
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
-        if writes.is_empty() {
+        if writes.is_empty() && creation.is_none() {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
         Ok(ApplicationOperationBody {
-            program: ApplicationOperationBodyProgram {
-                scope_fields: self.steps,
-                creation: None,
-                requirements: self.requirements,
-            },
+            program: ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                scope.to_owned(),
+                self.steps,
+                creation,
+                self.requirements,
+            ),
             marker: PhantomData,
         })
     }

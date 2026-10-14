@@ -15,7 +15,9 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if !body.requirements().is_empty() {
+        if body.explicit_scope_entity().is_some() || body.is_creation_only() {
+            "operation-body-v6"
+        } else if !body.requirements().is_empty() {
             "operation-body-v5"
         } else if body.scope_fields().iter().any(|step| {
             matches!(
@@ -39,6 +41,12 @@ pub(super) fn append_body(
         },
         operation,
     );
+    if body.explicit_scope_entity().is_some() || body.is_creation_only() {
+        basis.text(
+            format!("{prefix}.scope-entity"),
+            body.scope_entity().unwrap_or_default(),
+        );
+    }
     if !body.requirements().is_empty() {
         basis.usize(format!("{prefix}.requirements"), body.requirements().len());
         for (index, requirement) in body.requirements().iter().enumerate() {

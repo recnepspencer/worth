@@ -110,7 +110,7 @@ impl SetAuditSource {
         ApplicationOperationRef::from_declaration()
     }
 }
-worth_query_operation_reads!(SetRetention => [DocumentIdentityField, DocumentRetentionField, DocumentAuditSourceField]);
+worth_query_operation_reads!(SetRetention => [Document, DocumentIdentityField, DocumentRetentionField, DocumentAuditSourceField]);
 worth_query_operation_writes!(SetRetention => [DocumentRetentionField, AuditIdentityField, AuditRetentionField, AuditPriorRetentionField]);
 worth_query_operation_creates!(SetRetention => [Audit]);
 worth_query_operation_reads!(SetAuditSource => [DocumentIdentityField, DocumentAuditSourceField]);

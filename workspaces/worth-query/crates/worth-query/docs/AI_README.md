@@ -417,14 +417,19 @@ Application usage:
 and How WORTH Works
 [§9.5](../../../../../docs/how-it-works.md#95-execution).
 
-For literal guards and assignments on required scope fields, use an
-[executable scope-field body](./authoring/scope-field-operation-bodies.md), attach
+For authored scalar edits and one in-scope creation, use an
+[executable scope-bound body](./authoring/scope-field-operation-bodies.md), attach
 it to the completed operation definition, bind the same completed schema through
 program authoring's `with_schema`, and install with `setup.operation_body::<Binding>()`.
-Its values enter canonical schema/program meaning and drive native tracked
-execution. A replacement handler is denied. This is a bounded current form, not
-general input/expression/audit/requirement or multi-operation command support;
-do not fill those missing joins with a host substitute and call it declarative.
+Its literals, flat canonical-input assignments, optional Set/Clear, tracked
+preimage initializers and field/count expression requirements enter canonical
+schema/program meaning and drive native tracked execution. A replacement handler
+is denied. A creation-only body declares `in_scope(Entity::reference())`; it does
+not need a dummy scope write or bootstrapped business entity. Guidance and native
+submission share the installed requirements. General assignment expressions,
+multiple creations, links, signature consequences and multi-operation commands
+remain unsupported here; do not fill those missing joins with a host substitute
+and call it declarative.
 
 - The three handler roles (`decide`, `candidate_requirements`,
   `build_candidate`) are bounded. Query retains and completes the decision's

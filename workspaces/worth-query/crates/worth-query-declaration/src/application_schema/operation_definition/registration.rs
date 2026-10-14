@@ -27,6 +27,16 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 .iter()
                 .map(|step| step.decision_read())
                 .collect::<std::collections::BTreeSet<_>>();
+            if let Some(scope) = body
+                .explicit_scope_entity()
+                .filter(|_| body.scope_fields().is_empty())
+            {
+                reads.insert(
+                    super::super::ApplicationOperationDecisionReadTarget::Entity {
+                        entity: scope.to_owned(),
+                    },
+                );
+            }
             reads.extend(
                 body.requirements()
                     .iter()

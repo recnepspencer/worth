@@ -144,7 +144,7 @@ where
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
-        match reader.body_scope_target() {
+        match reader.body_scope_target(&self.body) {
             Ok(target) => HandlerResult::Completed(WorthQueryOperationBodyDecision {
                 target,
                 inputs,

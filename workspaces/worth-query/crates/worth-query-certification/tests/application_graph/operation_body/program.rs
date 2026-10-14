@@ -35,6 +35,11 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .body()
             .expect(DocumentRetentionField::reference(), 7)
             .unwrap();
+        let body = if DESTINATION == 30 {
+            body.in_scope(Document::reference()).unwrap()
+        } else {
+            body
+        };
         let body = if DESTINATION >= 100 {
             body.assign_input(
                 DocumentRetentionField::reference(),
@@ -76,7 +81,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
         } else {
             body.finish().unwrap()
         };
-        schema
+        let schema = schema
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())
             .entity(Document::reference())
@@ -229,7 +234,8 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .application_query(super::audit_query::audit_query_definition::<DESTINATION>())
             .application_query_binding::<super::audit_query::AuditQueryBinding<DESTINATION>>()
             .application_query(super::draft_query::draft_query_definition::<DESTINATION>())
-            .application_query_binding::<super::draft_query::DraftQueryBinding<DESTINATION>>()
+            .application_query_binding::<super::draft_query::DraftQueryBinding<DESTINATION>>();
+        super::genesis::declaration::declare::<DESTINATION>(schema)
     }
 }
 
@@ -305,6 +311,10 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         match install {
             Installation::Native => {
+                if DESTINATION == 30 {
+                    setup
+                        .operation_body::<super::genesis::binding::CreateBinding<DESTINATION>>()?;
+                }
                 setup.operation_body::<BodyBinding<DESTINATION>>()?;
                 setup.operation_body::<SourceBinding<DESTINATION>>()?;
                 setup.operation_body::<DraftBinding<DESTINATION, SetDraftNote>>()?;
@@ -340,16 +350,20 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.body-court.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
+        let feature =
             ApplicationFeatureSpec::root::<DocumentRetentionSchema<DESTINATION>, BodyFeature>()
                 .mutation::<BodyBinding<DESTINATION>>()
                 .mutation::<SourceBinding<DESTINATION>>()
                 .mutation::<DraftBinding<DESTINATION, SetDraftNote>>()
                 .mutation::<DraftBinding<DESTINATION, ClearDraftNote>>()
                 .mutation::<DraftBinding<DESTINATION, RequireDraftNote>>()
-                .mutation::<super::requirement_control::UnlinkBinding<DESTINATION>>()
-                .finish(),
-        ]
+                .mutation::<super::requirement_control::UnlinkBinding<DESTINATION>>();
+        let feature = if DESTINATION == 30 {
+            feature.mutation::<super::genesis::binding::CreateBinding<DESTINATION>>()
+        } else {
+            feature
+        };
+        vec![feature.finish()]
     }
 }
 

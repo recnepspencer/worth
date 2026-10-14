@@ -2,6 +2,8 @@
 use super::*;
 use crate::{binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits};
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
+#[path = "tests/genesis.rs"]
+mod genesis;
 #[path = "tests/requirements.rs"]
 mod requirements;
 
@@ -28,7 +30,7 @@ fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {
     .unwrap();
     assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
     assert!(input.is_finished());
-    bytes[..2].copy_from_slice(&8_u16.to_be_bytes());
+    bytes[..2].copy_from_slice(&9_u16.to_be_bytes());
     let mut budget = RecordDecodeAttempt::begin(
         Default::default(),
         bytes.len() as u64,
@@ -201,7 +203,11 @@ fn version_five_creation_flag_preserves_recipe_and_rejects_an_invalid_flag() {
 #[test]
 fn created_scope_field_uses_version_four_and_old_record_refuses_its_opcode() {
     let body = ApplicationOperationBodyProgram::from_untrusted_with_creation(
-        vec![],
+        vec![ApplicationOperationBodyScopeField::Assign {
+            field: ApplicationFieldBindingLocus::new("Item", "Facts", "Ready"),
+            binding: WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.bool".to_owned()),
+            value: AspectValue::Bool(true),
+        }],
         Some(ApplicationOperationBodyCreation::from_untrusted(
             "Audit".to_owned(),
             "audit-slot".to_owned(),

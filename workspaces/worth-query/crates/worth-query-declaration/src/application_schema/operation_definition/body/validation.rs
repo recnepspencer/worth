@@ -21,6 +21,15 @@ pub(crate) fn validate_operation_bodies(
         let scope = body
             .scope_entity()
             .ok_or(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency)?;
+        if !members.iter().any(|member| matches!(member,
+            ApplicationSchemaMember::Entity { entity } if entity == scope
+        )) || (body.scope_fields().is_empty() && !members.iter().any(|member| matches!(member,
+            ApplicationSchemaMember::OperationDecisionRead { operation: candidate, target:
+                crate::application_schema::ApplicationOperationDecisionReadTarget::Entity { entity } }
+                if candidate == operation && entity == scope
+        ))) {
+            return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
+        }
         super::requirement::validate_requirements(operation, body, members)?;
         let mut writes = BTreeSet::new();
         for step in body.scope_fields() {
@@ -133,7 +142,7 @@ pub(crate) fn validate_operation_bodies(
                 }
             }
         }
-        if writes.is_empty() {
+        if writes.is_empty() && body.creation().is_none() {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }
         if !members.iter().any(|member| {

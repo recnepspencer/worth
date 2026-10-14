@@ -173,13 +173,24 @@ impl<Schema, Operation, Input, Entity>
         ApplicationOperationBody<Schema, Operation, Input>,
         ApplicationOperationBodyAuthoringDenial,
     > {
-        let mut body = self.parent.finish()?;
+        let body = self
+            .parent
+            .finish_with_creation(Some(ApplicationOperationBodyCreation {
+                entity: self.entity,
+                key: self.key,
+                fields: self.fields,
+            }))?;
         let scope = body
             .program
             .scope_entity()
             .expect("completed body has a scope");
         let mut fields = std::collections::BTreeSet::new();
-        for step in &self.fields {
+        for step in body
+            .program
+            .creation()
+            .expect("creation attached before finishing")
+            .fields()
+        {
             if !fields.insert(step.field()) {
                 return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
             }
@@ -190,11 +201,6 @@ impl<Schema, Operation, Input, Entity>
                 return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);
             }
         }
-        body.program.creation = Some(ApplicationOperationBodyCreation {
-            entity: self.entity,
-            key: self.key,
-            fields: self.fields,
-        });
         Ok(body)
     }
 }

@@ -56,19 +56,27 @@ where
     where
         Entity: OperationReads<Operation>,
     {
+        self.require_named_decision_entity(identity, entity.name())
+    }
+
+    fn require_named_decision_entity<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        entity: &str,
+    ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
         let target = ApplicationOperationDecisionReadTarget::Entity {
-            entity: entity.name().to_string(),
+            entity: entity.to_string(),
         };
         self.admit_decision_target(&target)?;
-        if !self.reader.identity_is_local(identity, entity.name()) {
+        if !self.reader.identity_is_local(identity, entity) {
             return Err(WorthQueryInvariantDecisionPlanDenial::new(
                 WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
-                entity.name(),
+                entity,
             ));
         }
         self.decision_facts.record(
             WorthQueryApplicationFactKey::Entity {
-                entity: entity.name().to_string(),
+                entity: entity.to_string(),
                 entity_id: identity.entity_id,
             },
             DecisionReadOutcome::Observed,

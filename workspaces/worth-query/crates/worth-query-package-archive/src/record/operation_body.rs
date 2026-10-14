@@ -27,7 +27,10 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
-    output.u16(if !body.requirements().is_empty() {
+    let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
+    output.u16(if scoped {
+        8
+    } else if !body.requirements().is_empty() {
         7
     } else if body.scope_fields().iter().any(|step| {
         matches!(
@@ -62,6 +65,12 @@ pub(super) fn write(
     } else {
         1
     })?;
+    if scoped {
+        output.text(
+            body.scope_entity()
+                .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
+        )?;
+    }
     write_sequence(output, body.scope_fields(), |output, step| {
         output.u16(match step {
             ApplicationOperationBodyScopeField::Expect { .. } => 1,
@@ -99,7 +108,8 @@ pub(super) fn write(
             }
         }
     })?;
-    if !body.requirements().is_empty()
+    if scoped
+        || !body.requirements().is_empty()
         || body.scope_fields().iter().any(|step| {
             matches!(
                 step,
@@ -149,7 +159,7 @@ pub(super) fn write(
             }
         })?;
     }
-    if !body.requirements().is_empty() {
+    if scoped || !body.requirements().is_empty() {
         requirements::write(output, body.requirements())?;
     }
     Ok(())
@@ -160,9 +170,14 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=7) {
+    if !matches!(version, 1..=8) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
+    let scope = if version == 8 {
+        Some(input.text()?.to_owned())
+    } else {
+        None
+    };
     let steps = decode_sequence(input, budget, 20, |input, _| {
         let tag = input.u16()?;
         if !matches!(tag, 1 | 2)
@@ -275,16 +290,27 @@ pub(super) fn decode(
     } else {
         None
     };
-    let requirements = if version == 7 {
+    let requirements = if version >= 7 {
         requirements::decode(input, budget)?
     } else {
         Vec::new()
     };
-    Ok(
-        ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+    if let Some(scope) = scope {
+        Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
+            scope,
             steps,
             creation,
             requirements,
-        ),
-    )
+        ))
+    } else {
+        let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+            steps,
+            creation,
+            requirements,
+        );
+        if body.is_creation_only() {
+            return Err(Denial::new(Kind::UnsupportedRecordVariant));
+        }
+        Ok(body)
+    }
 }

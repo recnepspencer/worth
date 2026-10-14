@@ -6,6 +6,23 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let record = operation_body_requirements_record(body);
+    if body.explicit_scope_entity().is_some() || body.is_creation_only() {
+        return framed_record(
+            "operation-body-v7",
+            [
+                (
+                    "scope-entity",
+                    body.scope_entity().unwrap_or_default().to_owned(),
+                ),
+                ("body", record),
+            ],
+        );
+    }
+    record
+}
+
+fn operation_body_requirements_record(body: &ApplicationOperationBodyProgram) -> String {
     let base = operation_body_base_record(body);
     if body.requirements().is_empty() {
         return base;

@@ -1,10 +1,10 @@
-# Executable Scope-Field Operation Bodies
+# Executable Scope-Bound Operation Bodies
 
 ## What This Feature Is
 
 A scope-field body declares the source expectations and scalar writes of one
 operation. It can also declare one typed entity creation in the admitted scope's
-context. Required writes and created-field initializers can use authored literals or named
+context, without writing an existing scope field. Required writes and created-field initializers can use authored literals or named
 members of the operation's once encoded input. A created field may also copy a
 tracked scope-field preimage from the same decision observation. Optional scalar
 fields can be set from a present input member or explicitly cleared. Query installs and executes those
@@ -18,6 +18,9 @@ This remains a bounded body form; it does not dispatch workflow commands.
 
 Use it for an operation that changes scalar fields on its admitted scope,
 such as assigning a fixed status or a retention period supplied by the request.
+Use a creation-only body to create a business entity under an existing admitted
+scope, such as a tenant, without bootstrapping business records or inventing a
+scope counter write.
 Changing an authored literal or input member binding
 changes canonical schema meaning and the bound program revision, even when the
 read/write footprint is unchanged. Use other supported native owners for queries,
@@ -29,6 +32,7 @@ them or supply missing joins between them.
 Declare through `worth_query_decl::facade::application_schema`:
 
 - `Operation::reference().body().expect(...).assign(...).assign_input(...).finish()`;
+- `body.in_scope(Tenant::reference())` when creation does not touch an existing field;
 - `body.set_optional_input(optional_field, "member")` or
   `body.clear_optional(optional_field)` for distinct optional-value intentions;
 - `body.require_present(optional_field)` for an operation-specific precondition;
@@ -56,6 +60,11 @@ codec and scalar family. Registration derives the body's installed field
 reads, writes and creation membership; do not repeat these with
 `operation_read_field`, `operation_write` or `operation_create`. Normal type-level capability declarations and binding scope
 resolution still apply. A scope identity lookup may need its own declared read.
+For a creation-only body, `in_scope` names a declared entity with
+`OperationReads<Operation>`; registration derives its Entity read. Installation
+still requires this scope to match the binding's actual scope field. It is not
+a caller-selected context or a permission grant. An explicit scope matching
+existing scope fields normalizes to their original meaning; a mismatch denies.
 
 `with_schema` captures this meaning in each matching program action before its
 revision is minted. Pass that same completed schema to installation. An unbound
@@ -152,7 +161,9 @@ it is neither a business identity nor an idempotency key. Query creates the row
 in the existing admitted scope's context, checks that all required created
 fields are initialized, and charges creation and initializers to the same
 candidate. An operation's candidate ceiling must admit that creation and its
-writes. `initialize_from_scope` requires a required scalar source field in the
+writes. Creation is attached before the complete body is validated: a bare scope,
+expectations, or requirements without a creation or scope assignment cannot
+finish. `initialize_from_scope` requires a required scalar source field in the
 admitted scope with `OperationReads<Operation>`, a target with the same Rust value,
 unit, exact installed codec and scalar family, and an admitted tracked decision
 read. Query captures the source at the decision snapshot before any candidate
@@ -166,6 +177,9 @@ expectation returns `DomainDenied(SourceMismatch { entity, aspect, field })` bef
 effects. Replay still returns the native original-commit outcome rather than
 running a now-failing source guard again. Deferred or unresolved publication keeps
 its native recovery outcome; a body introduces no retry or receipt-copy shortcut.
+After checkpoint restoration, `PreviouslyCommitted` can identify the original
+commit without recreating its old live receipt; read current state through a
+fresh governed query.
 An invalid input member returns `DomainDenied(InputMismatch { member })` before
 effects. Work or memory refusal remains an execution denial.
 
@@ -243,6 +257,31 @@ AuditPriorRetentionField::reference())` before the creation builder's `finish()`
 The audit receives the observed old value even if the same body assigns a new
 retention to the document.
 
+To create the document itself under an existing tenant, declare
+`OperationReads<CreateDocument>` on the tenant marker and the binding's scope
+identity field, plus Create/initializer Write capabilities on the document.
+The authored operation then needs no mutation of the tenant:
+
+```rust
+let body = CreateDocument::reference().body()
+    .in_scope(Tenant::reference())?
+    .create_in_scope(Document::reference(), "document")?
+    .initialize_input(DocumentIdentityField::reference(), "identity")?
+    .initialize_input(DocumentRetentionField::reference(), "retention_days")?
+    .initialize(DocumentAuditSourceField::reference(), 7_u64)?
+    .finish()?;
+```
+
+Attach and install it through the same definition/program/contribution funnel
+above. The binding admits one creation and three initializer writes, uses the
+existing tenant identity as its scope, opts into canonical input capture, and
+returns unit. Query resolves that
+scope, checks its current liveness, and initializes all required document fields.
+Use the request's business identity in a governed query to read the committed
+document; the candidate-local `"document"` key is not its durable identifier.
+This example does not establish tenant-isolation policy or a uniqueness rule
+for the business identity; declare those contracts separately.
+
 For a conditional collection minimum, assume an optional Boolean
 `ReviewEnabledField` and a `Validators` relation from the admitted document.
 Declare their normal `OperationReads` capabilities, then author:
@@ -282,6 +321,9 @@ records remain authority-free until fresh native readmission. Old body-free
 record encodings are unchanged. Product branches and pinned programs keep their
 existing native owners. Checkpoint restoration is not a claim of Store-backed
 process-crash durability.
+Creation-only bodies use scope-bearing portable body record v8. Valid v1–v7
+carriage keeps its previous bytes; an older record cannot silently acquire the
+new creation-only semantics.
 
 Workflow occurrence authority and approval evidence remain separate. A source
 expectation is not an approval, signature or general evaluated requirement, and
@@ -320,7 +362,7 @@ and Foundation Boolean requirements over scope scalar/presence and distinct
 incoming/outgoing related-item count operands, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage
 initializers. It requires
-at least one scope assignment and unit results. Optional literal assignments,
+at least one real creation or scope assignment and unit results. Optional literal assignments,
 general input/source assignments, filtered collections, governed-query operands,
 custom expression kernels, multiple creations, links, signature consequences and command
 continuation are not implemented here.
