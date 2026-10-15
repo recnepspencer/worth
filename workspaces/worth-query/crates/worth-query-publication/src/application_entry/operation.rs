@@ -47,6 +47,9 @@ mod discovered_delivery_handoff_contract;
     reason = "Compiler-only bodies certify move-only intake and recovery handoffs"
 )]
 mod discovered_handoff_contract;
+#[cfg(test)]
+#[expect(dead_code, reason = "Compiler bodies prove retained construction without cloning native custody")]
+mod retained_runtime_contract;
 mod fixed;
 mod fixed_advance;
 mod fixed_close;
@@ -73,7 +76,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
 };
 use worth_query_declaration::facade::application_program::{
-    ApplicationConnectionShape, ApplicationFixedAction, ApplicationFixedActionDelivery,
+    ApplicationConnectionShape, ApplicationAction, ApplicationFixedActionDelivery,
     ApplicationFixedQueryDelivery, ApplicationOutputGraphShape, ApplicationProgramDefinition,
     ApplicationProgramOutputsShape, ApplicationRequiredOutputRoot,
 };
@@ -101,7 +104,7 @@ type Demand<Schema, Root> =
 type Source<Schema, Root> = <<Demand<Schema, Root> as WorthQueryApplicationOutputDemand<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
 type RootQuery<Schema, Root> = <Source<Schema, Root> as ApplicationQueryBinding<Schema>>::Query;
 type Delivery<Schema, Intent, Action> =
-    <Action as ApplicationFixedAction<Schema, Binding<Schema, Intent>>>::Delivery;
+    <Action as ApplicationAction<Schema, Binding<Schema, Intent>>>::Delivery;
 type Read<Schema, Intent, Action> =
     <Delivery<Schema, Intent, Action> as ApplicationFixedQueryDelivery<
         Schema,
@@ -126,10 +129,10 @@ type SourceScope<Schema, Root> =
 type SourcePrincipal<Schema, Root> =
     <Source<Schema, Root> as ApplicationQueryBinding<Schema>>::PrincipalIdentity;
 type SourceValue<Schema, Root> = <<Source<Schema, Root> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
-type FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> = WorthQueryOperationAdvance<
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
-    WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
-    WorthQueryTerminalFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
+type FixedAdvance<Schema, Intent, Program, Root, Action> = WorthQueryOperationAdvance<
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
+    WorthQuerySettledFixedOperation<Schema, Intent, Program, Root, Action>,
+    WorthQueryTerminalFixedOperation<Schema, Intent, Program, Root, Action>,
 >;
 
 pub use worth_query_execution::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial;

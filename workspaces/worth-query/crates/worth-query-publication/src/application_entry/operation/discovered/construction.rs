@@ -1,18 +1,18 @@
 //! Effect-free discovered construction resolves real installed action, root and projection.
 use super::*;
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
     pub(in crate::application_entry::operation) fn construct(
         description: WorthQueryOperationDescription<S, I>,
-        runtime: &'r WorthQueryProgramApplicationRuntime<S, P>,
+        runtime: &WorthQueryProgramApplicationRuntime<S, P>,
     ) -> Result<
         Self,
         (
@@ -34,11 +34,18 @@ where
         }
         let installed_action = match runtime
             .installed_program()
-            .resolve_discovered_action::<I::Binding, A>()
+            .resolve_action::<I::Binding, A>()
         {
             Ok(action) => action,
             Err(denial) => return Err((description, Denial::Action(denial))),
         };
+        if !installed_action.required_output_source()
+            || installed_action.delivery().and_then(|delivery| delivery.discovered_output()).is_none()
+        {
+            return Err((description, Denial::Action(
+                worth_query_installation::facade::WorthQueryActionResolutionDenial::DeliveryMismatch,
+            )));
+        }
         if !runtime.contains_output_root::<R>() {
             return Err((description, Denial::UndeclaredRoot));
         }
@@ -58,8 +65,8 @@ where
             return Err((description, Denial::Query(denial)));
         }
         Ok(Self {
-            runtime,
-            installed_action,
+            runtime: runtime.clone(),
+            installed_action: installed_action.clone(),
             description,
             state: State::Initial,
             initial_cause: None,

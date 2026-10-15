@@ -7,7 +7,7 @@ use super::*;
 /// use worth_query_publication::facade::application_entry::WorthQuerySettledFixedOperation;
 /// use worth_query_declaration::facade::{application_operation::*, application_program::*, application_schema::ApplicationSchema};
 /// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime, primary_graph::{WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource}};
-/// fn counterfeit<'r, S, I, P, R, A>(runtime: &'r WorthQueryProgramApplicationRuntime<S, P>) -> WorthQuerySettledFixedOperation<'r, S, I, P, R, A>
+/// fn counterfeit<S, I, P, R, A>(runtime: WorthQueryProgramApplicationRuntime<S, P>) -> WorthQuerySettledFixedOperation<S, I, P, R, A>
 /// where
 ///     S: ApplicationSchema,
 ///     I: ApplicationMutationIntent<S>,
@@ -15,7 +15,7 @@ use super::*;
 ///     R: ApplicationOutputGraphShape<S> + ApplicationRequiredOutputRoot,
 ///     <R::RootConnection as ApplicationConnectionShape<S>>::Binding: WorthQueryApplicationRequiredOutputConnection<S>,
 ///     I::Binding: WorthQueryApplicationRequiredOutputSource<S, <R::RootConnection as ApplicationConnectionShape<S>>::Binding>,
-///     A: ApplicationFixedAction<S, I::Binding>,
+///     A: ApplicationAction<S, I::Binding>,
 ///     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R>,
 /// {
 ///     WorthQuerySettledFixedOperation {
@@ -26,7 +26,7 @@ use super::*;
 /// }
 /// ```
 #[must_use = "delivery does not discharge cleanup; retain this settled owner until lawful close"]
-pub struct WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+pub struct WorthQuerySettledFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -34,11 +34,10 @@ where
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>: WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>: ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
-    pub(super) installed_action: &'runtime worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
-    pub(super) runtime: &'runtime WorthQueryProgramApplicationRuntime<Schema, Program>,
+    pub(super) installed_action: worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
     pub(super) description: WorthQueryOperationDescription<Schema, Intent>,
     pub(super) settlement: WorthQueryApplicationProgramOutputSettlement<RootQuery<Schema, Root>>,
     pub(super) initial_cause: Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
@@ -46,6 +45,8 @@ where
     pub(super) result: Option<<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result>,
     pub(super) cleanup: WorthQueryOperationCleanup,
     pub(super) action: std::marker::PhantomData<Action>,
+    // Native carriers above release while the authentic allocation remains retained.
+    pub(super) runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
 }
 
 #[derive(Debug)]
@@ -65,8 +66,8 @@ pub enum WorthQueryOperationDeliveryDenial {
     Batch(super::super::WorthQueryApplicationQueryBatchDenial),
 }
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQuerySettledFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -75,7 +76,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
@@ -87,7 +88,7 @@ where
     pub fn declared_action(
         &self,
     ) -> &worth_query_declaration::facade::application_program::ApplicationActionDeclaration {
-        self.installed_action
+        &self.installed_action
     }
     pub fn initial_cause(
         &self,
@@ -129,7 +130,7 @@ where
             .selected_program_owner(&selected)
             .map_err(Denial::Program)?;
         owner
-            .resolve_declared_action::<Binding<Schema, Intent>>(self.installed_action)
+            .resolve_declared_action::<Binding<Schema, Intent>>(&self.installed_action)
             .map_err(Denial::Action)?;
         let installed = self
             .runtime
@@ -147,7 +148,7 @@ where
     }
 }
 
-impl<'runtime, Schema, Intent, Program, Root, Action> WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action> WorthQuerySettledFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -155,7 +156,7 @@ where
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>: WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>: ApplicationFixedQueryDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
     <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = Read<Schema, Intent, Action>>,
     <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <Read<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
@@ -171,7 +172,7 @@ where
     pub fn read_current_with_policy(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<DeliveredProjection<Schema, Read<Schema, Intent, Action>>, WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application) || self.description.branch != request.branch { return Err(Denial::FreshRequestMismatch); }
-        self.runtime.runtime().with_application_advancement(request.scope, |phase| {
+        request.application.with_application_advancement(request.scope, |phase| {
             let observation = self.current_observation(request, &phase, policy)?;
             let retained = request.at(&observation);
             let query = retained.query(Delivery::<Schema, Intent, Action>::read_input(self.description.intent.input()));
@@ -184,7 +185,7 @@ where
     pub fn read_historical(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<DeliveredProjection<Schema, Read<Schema, Intent, Action>>, WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application) || self.description.branch != request.branch { return Err(Denial::FreshRequestMismatch); }
-        self.runtime.runtime().with_application_advancement(request.scope, |phase| {
+        request.application.with_application_advancement(request.scope, |phase| {
             request.at(self.settlement.observation()).query(Delivery::<Schema, Intent, Action>::read_input(self.description.intent.input())).execute_in_advancement(&phase).map_err(Denial::Query)
         }).map_err(Denial::Execution)?
     }

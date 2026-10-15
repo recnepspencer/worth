@@ -10,7 +10,7 @@ use crate::application_entry::mutation::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding;
 use worth_query_declaration::facade::application_program::{
-    ApplicationAction, ApplicationActionDeclaration, ApplicationDiscoveredAction,
+    ApplicationAction, ApplicationActionDeclaration,
     ApplicationDiscoveredActionDelivery, ApplicationDiscoveredOutputRoot,
 };
 use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure;
@@ -52,10 +52,10 @@ type NativeOutcome<S, I> = WorthQueryApplicationMutationOutcome<
     <Binding<S, I> as ApplicationMutationBinding<S>>::Denial,
     <Binding<S, I> as ApplicationMutationBinding<S>>::Result,
 >;
-type DiscoveredAdvance<'r, S, I, P, R, A> = WorthQueryOperationAdvance<
-    WorthQueryDiscoveredOperation<'r, S, I, P, R, A>,
-    WorthQuerySettledDiscoveredOperation<'r, S, I, P, R, A>,
-    WorthQueryTerminalDiscoveredOperation<'r, S, I, P, R, A>,
+type DiscoveredAdvance<S, I, P, R, A> = WorthQueryOperationAdvance<
+    WorthQueryDiscoveredOperation<S, I, P, R, A>,
+    WorthQuerySettledDiscoveredOperation<S, I, P, R, A>,
+    WorthQueryTerminalDiscoveredOperation<S, I, P, R, A>,
 >;
 
 type Admission<S, I> = <Binding<S, I> as ApplicationMutationAdmissionBinding<S>>::Admission;

@@ -3,14 +3,14 @@ use super::*;
 use WorthQueryOperationAdvance as Advance;
 use WorthQueryOperationAdvanceDenial as Denial;
 use WorthQueryOperationProgress as Progress;
-impl<'r, S, I, P, R, A> WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
+impl<S, I, P, R, A> WorthQueryDiscoveredOperation<S, I, P, R, A>
 where
     S: ApplicationSchema + 'static,
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
     R: ApplicationOutputGraphShape<S> + ApplicationDiscoveredOutputRoot,
     Connection<S, R>: WorthQueryApplicationDiscoveredOutputConnection<S, Source = I::Binding>,
-    A: ApplicationDiscoveredAction<S, I::Binding>,
+    A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
     I::Binding: ApplicationMutationAdmissionBinding<S>,
     Admission<S, I>: WorthQueryBindingAdmission<S, I::Binding>,
@@ -28,11 +28,11 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         let admission = self
             .description
-            .request_view(request, self.installed_action)
-            .authorize_discovered_source::<P, R>(phase, self.runtime, None);
+            .request_view(request, &self.installed_action)
+            .authorize_discovered_source::<P, R>(phase, &self.runtime, None);
         let _admission = match admission {
             Ok(admission) => admission,
             Err(denial) => {
@@ -47,7 +47,7 @@ where
         };
         match performed.start_required_outputs_in_advancement(
             phase,
-            self.runtime,
+            &self.runtime,
             request,
             WorthQueryOutputDemandControls::host_policy(),
         ) {
@@ -80,11 +80,11 @@ where
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-    ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+    ) -> DiscoveredAdvance<S, I, P, R, A> {
         let admission = self
             .description
-            .request_view(request, self.installed_action)
-            .authorize_discovered_source::<P, R>(phase, self.runtime, None);
+            .request_view(request, &self.installed_action)
+            .authorize_discovered_source::<P, R>(phase, &self.runtime, None);
         let _admission = match admission {
             Ok(admission) => admission,
             Err(denial) => {
@@ -97,7 +97,7 @@ where
         let State::Outputs(mut outputs) = self.state else {
             unreachable!("dispatch owns native output continuation")
         };
-        match outputs.advance_in_advancement(phase, self.runtime, request) {
+        match outputs.advance_in_advancement(phase, &self.runtime, request) {
             Ok(WorthQueryDiscoveredProgramOutputProgress::Pending) => {
                 self.state = State::Outputs(outputs);
                 Advance::Progress {
@@ -121,7 +121,7 @@ where
             }
             Err(mut denial) => {
                 if let Some(required) = denial.take_managed_cleanup() {
-                    self.cleanup.absorb_producer(self.runtime, required);
+                    self.cleanup.absorb_producer(&self.runtime, required);
                 }
                 let terminal =
                     denial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal;

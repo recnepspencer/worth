@@ -64,8 +64,8 @@ impl WorthQueryClosedOperation {
     }
 }
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQuerySettledFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema + 'static,
     Intent: ApplicationMutationIntent<Schema>,
@@ -74,7 +74,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
@@ -87,7 +87,7 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        let runtime = self.runtime.runtime();
+        let runtime = request.application;
         let outcome = runtime.with_application_advancement(request.scope, |phase| {
             if let Some(performed) = self.recovered.as_mut() {
                 self.cleanup.absorb_recovered(performed)?;

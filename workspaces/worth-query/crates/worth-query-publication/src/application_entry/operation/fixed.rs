@@ -3,9 +3,10 @@ use super::descriptor::WorthQueryOperationDescription;
 use super::*;
 
 /// Owns the original fixed-output description and native source, output and cleanup custody.
+/// Construction retains the authentic runtime allocation and complete installed action.
 /// Each advancement borrows fresh request authority; refusals return the owning operation.
 #[must_use = "retain native publication/output custody until settlement or terminal handoff"]
-pub struct WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+pub struct WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -13,11 +14,10 @@ where
     Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>: WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>: ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
-    pub(super) installed_action: &'runtime worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
-    pub(super) runtime: &'runtime WorthQueryProgramApplicationRuntime<Schema, Program>,
+    pub(super) installed_action: worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
     pub(super) description: WorthQueryOperationDescription<Schema, Intent>,
     pub(super) state: FixedState<Schema, Intent, Program, Root>,
     pub(super) initial_cause: Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
@@ -25,10 +25,12 @@ where
     pub(super) result: Option<<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result>,
     pub(super) cleanup: WorthQueryOperationCleanup,
     pub(super) action: std::marker::PhantomData<Action>,
+    // Native carriers above release while the authentic allocation remains retained.
+    pub(super) runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
 }
 
-impl<'runtime, Schema, Intent, Program, Root, Action>
-    WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
+impl<Schema, Intent, Program, Root, Action>
+    WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
@@ -37,7 +39,7 @@ where
     Connection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     Binding<Schema, Intent>:
         WorthQueryApplicationRequiredOutputSource<Schema, Connection<Schema, Root>>,
-    Action: ApplicationFixedAction<Schema, Binding<Schema, Intent>>,
+    Action: ApplicationAction<Schema, Binding<Schema, Intent>>,
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
