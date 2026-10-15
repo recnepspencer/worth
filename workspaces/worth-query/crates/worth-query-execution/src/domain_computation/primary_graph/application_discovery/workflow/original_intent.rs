@@ -40,6 +40,16 @@ pub(super) struct OriginalWorkflowCandidate<'data, 'runtime, Schema> {
     pub(super) subject: EntityId,
 }
 
+type AdmittedOriginalWorkflowCandidate<'data, 'runtime, Schema, B> = (
+    OriginalWorkflowCandidate<'data, 'runtime, Schema>,
+    crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
+        Schema,
+        <B as ApplicationWorkflowReadBinding<Schema>>::Capability,
+        <B as ApplicationWorkflowReadBinding<Schema>>::Operation,
+        <B as ApplicationWorkflowReadBinding<Schema>>::Input,
+    >,
+);
+
 pub(super) fn lookup<'data, 'runtime, Schema, Spec, B>(
     current: &WorthQuerySelectedProductOperation<'_, Schema>,
     data: &'data WorthQuerySelectedProductOperation<'runtime, Schema>,
@@ -50,18 +60,7 @@ pub(super) fn lookup<'data, 'runtime, Schema, Spec, B>(
     request: &WorthQueryRequestScope,
     original: &WorthQueryWorkflowInstanceDiscoveryIntent<Schema>,
     admission: &mut InvalidationEditAdmission,
-) -> Result<
-    Option<(
-        OriginalWorkflowCandidate<'data, 'runtime, Schema>,
-        crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
-            Schema,
-            B::Capability,
-            B::Operation,
-            B::Input,
-        >,
-    )>,
-    Denial,
->
+) -> Result<Option<AdmittedOriginalWorkflowCandidate<'data, 'runtime, Schema, B>>, Denial>
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,

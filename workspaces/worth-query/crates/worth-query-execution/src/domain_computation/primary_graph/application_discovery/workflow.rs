@@ -4,9 +4,7 @@
 //! against its own branch's truth.
 
 mod admission;
-pub(in crate::domain_computation::primary_graph) use admission::{
-    admit as admit_workflow_read, WorthQueryWorkflowReadDenial as WorkflowReadAdmissionDenial,
-};
+
 mod audit;
 mod definition;
 mod enumeration;

@@ -134,18 +134,17 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         } else {
             None
         };
-        if let Some(prior) = after {
-            if prior.target.identity() != target.identity()
+        if let Some(prior) = after
+            && (prior.target.identity() != target.identity()
                 || prior.extent != extent
                 || prior.subject != subject
                 || prior.resource_scope != resource_scope
                 || prior.width != width
                 || prior.basis.selected_commit() != data.product().selected_commit()
                 || prior.basis.branch_identity() != data.product().branch_identity()
-                || prior.continuation().is_none()
-            {
-                return Err(Denial::ContinuationMismatch);
-            }
+                || prior.continuation().is_none())
+        {
+            return Err(Denial::ContinuationMismatch);
         }
         let execution = phase
             .execution_request_for(&self.application().product_runtime)

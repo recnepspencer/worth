@@ -130,9 +130,9 @@ pub(super) use elevation_request_program::validate_elevation_request_program;
 pub use elevation_request_program::WorthQueryElevationRequestProgram;
 pub(in crate::domain_computation) use fact::WorthQueryApplicationObservedFact;
 pub(in crate::domain_computation::primary_graph) use fact::{
-    observe_adjacency, observe_indexed_candidates, observe_indexed_entity_selection,
-    reobserve_indexed_entity_selection, FactMovement, IndexedSelectionReobserveDenial, Movement,
-    ObservedRetained, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
+    observe_adjacency, observe_indexed_candidates, reobserve_indexed_entity_selection,
+    FactMovement, IndexedSelectionReobserveDenial, Movement, ObservedRetained,
+    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
     WorthQueryApplicationObservedRelation, WorthQueryIndexedSelectionRefusal,
     WorthQuerySourceCurrentnessFailure,
 };
@@ -208,5 +208,5 @@ pub use retained_decision_facts::endpoints::AdmittedAdjacencyEndpoints as WorthQ
 #[cfg(test)]
 pub(in crate::domain_computation) use fact::consult_observation;
 
-mod workflow_observation;
-pub(in crate::domain_computation::primary_graph) use workflow_observation::observe_governed_instance_history;
+#[cfg(test)]
+pub(in crate::domain_computation::primary_graph) use fact::observe_indexed_entity_selection;

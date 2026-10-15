@@ -2,6 +2,7 @@
 use super::WorthQueryWorkflowInstanceDiscoveryIntent;
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_program::PerformedWorkflowInstanceStart;
 use crate::domain_computation::primary_graph::schema_layout::planned_field_locator;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::publication::RecordStructuralChange;
 
@@ -12,7 +13,7 @@ impl<Schema> WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
     pub fn matches_performed_start_for_test(
         &self,
         performed: &PerformedWorkflowInstanceStart,
-    ) -> Result<bool, ()> {
+    ) -> Result<bool, WorthQueryPrimaryGraphInstallationDenial> {
         let receipt = performed.receipt();
         let changes = receipt.committed_changes();
         let entity = performed.instance().entity_id();
@@ -29,12 +30,7 @@ impl<Schema> WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
         ]
         .map(|field| planned_field_locator("workflow-instance", field));
         let [identity, partition, slot, generation] = fields;
-        let fields = [
-            identity.map_err(|_| ())?,
-            partition.map_err(|_| ())?,
-            slot.map_err(|_| ())?,
-            generation.map_err(|_| ())?,
-        ];
+        let fields = [identity?, partition?, slot?, generation?];
         let values = changes.committed_field_values(entity, &fields.each_ref());
         let subject = self.subject_entity_id();
         let expected = vec![

@@ -163,7 +163,7 @@ impl WorthQueryWorkflowReadTarget {
                     .read_truth()
                     .pin_read_capability(snapshot, &[], &execution)
                     .map_err(Denial::PinnedRead)?;
-                if super::text::inspect(
+                if !super::text::inspect(
                     runtime,
                     &execution,
                     &pin,
@@ -171,8 +171,7 @@ impl WorthQueryWorkflowReadTarget {
                     layout.lineage.entity_kind,
                     &layout.lineage.spec,
                     |text| text == Some(W::IDENTITY.as_str()),
-                )? != true
-                {
+                )? {
                     return Err(Denial::PolicyMismatch);
                 }
                 Ok(())
