@@ -93,11 +93,11 @@ pub use estate_progression::{
     BankEstateProgressionDenial, BankEstateReleaseProjectionDenial,
     BankExecutorRecognitionProjectionDenial, BankInvariantDecisionPlanDenial,
     BankInvariantProjectionTraversalDenial, BankRecoveryClaimStatus, BankRecoveryDenial,
-    BankRecoveryDenialKind, BankRecoveryDurability, BankRecoveryExpiryDecision,
-    BankRecoveryExpiryEvaluation, BankRecoveryIdempotencyResolution, BankRecoveryInspection,
-    BankRecoveryPosture, BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt,
-    BankRecoverySupportTruth, BankRecoveryTransitionReceipt, BankRequestedEstateElevation,
-    BankReviewedEstateElevation,
+    BankRecoveryDenialKind, BankRecoveryDisposalDenial, BankRecoveryDisposalReceipt,
+    BankRecoveryDurability, BankRecoveryExpiryDecision, BankRecoveryExpiryEvaluation,
+    BankRecoveryIdempotencyResolution, BankRecoveryInspection, BankRecoveryPosture,
+    BankRecoverySafeRetryDenial, BankRecoverySafeRetryReceipt, BankRecoverySupportTruth,
+    BankRecoveryTransitionReceipt, BankRequestedEstateElevation, BankReviewedEstateElevation,
 };
 pub use external_effect_transport::BankExternalEffectTransportDenial;
 pub use identity_runtime::{BankAuthenticationConfiguration, BankIdentityRuntime};
