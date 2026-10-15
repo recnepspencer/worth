@@ -27,11 +27,13 @@ pub struct WorthQueryWorkflowActorContext {
 }
 #[derive(Clone, Debug)]
 pub(super) struct OriginalActorSources {
+    pub(super) parent_instance: worth_relational::facade::identity::EntityId,
     pub(super) proposal: worth_relational::facade::identity::EntityId,
     pub(super) proposal_identity: String,
     pub(super) transition:
         crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator,
     pub(super) transition_identity: String,
+    pub(super) approval_parent: Option<worth_relational::facade::identity::EntityId>,
     pub(super) approval: Option<
         crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator,
     >,
@@ -169,7 +171,10 @@ impl WorthQueryWorkflowActorContext {
         capability: &str,
         capability_type: &str,
     ) -> bool {
-        self.runtime == runtime && self.instance.branch() == branch && self.operation == operation
-            && self.capability == capability && self.capability_type == capability_type
+        self.runtime == runtime
+            && self.instance.branch() == branch
+            && self.operation == operation
+            && self.capability == capability
+            && self.capability_type == capability_type
     }
 }

@@ -23,7 +23,9 @@ pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
 /// Producer facts promise no consumed outputs and no known own-write staleness.
 /// Version 8 exports did not exclude own-write-stale computations; neither
 /// their checkpoint format nor their fact payload is admitted as version 9.
-pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 9;
+/// Version 10 additionally carries exact native Field/AbsentField evidence;
+/// these are not relabelled as query source revisions.
+pub(in crate::domain_computation::primary_graph) const WIRE_VERSION: u16 = 10;
 pub(super) const MAXIMUM_FACT_BYTES: usize = 16 * 1024 * 1024;
 // SourceEntity is the smallest current fact: one tag and a 16-byte EntityId.
 const MINIMUM_FACT_WIRE_BYTES: usize = 17;
@@ -119,6 +121,33 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
             Fact::IndexedEntitySelection { .. } => {
                 bytes.push(7);
                 indexed_selection::encode(&mut bytes, fact)?;
+            }
+            Fact::Field {
+                entity_id,
+                kind,
+                locator,
+                value,
+            } => {
+                bytes.push(8);
+                put_entity(&mut bytes, *entity_id);
+                put_u32(&mut bytes, kind.as_u32());
+                put_locator(&mut bytes, locator)?;
+                let encoded = serde_json::to_vec(value).ok()?;
+                if encoded.is_empty() || encoded.len() > MAXIMUM_FACT_BYTES {
+                    return None;
+                }
+                put_u32(&mut bytes, u32::try_from(encoded.len()).ok()?);
+                bytes.extend_from_slice(&encoded);
+            }
+            Fact::AbsentField {
+                entity_id,
+                kind,
+                locator,
+            } => {
+                bytes.push(9);
+                put_entity(&mut bytes, *entity_id);
+                put_u32(&mut bytes, kind.as_u32());
+                put_locator(&mut bytes, locator)?;
             }
             _ => return None,
         }

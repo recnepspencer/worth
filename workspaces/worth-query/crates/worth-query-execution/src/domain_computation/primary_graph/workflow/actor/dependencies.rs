@@ -98,6 +98,12 @@ impl WorkflowActorDependencies {
         while let Some(fact) = decoder.next_fact().map_err(decode_denial)? {
             if let Fact::SourceFieldRevision {
                 entity_id, locator, ..
+            }
+            | Fact::Field {
+                entity_id, locator, ..
+            }
+            | Fact::AbsentField {
+                entity_id, locator, ..
             } = fact
             {
                 if entity_id == entity
@@ -147,9 +153,10 @@ impl WorkflowActorDependencies {
                     comparison_work_limit: 1,
                     ..
                 } if endpoints.len() == 0 => counts[1] += 1,
-                Fact::SourceFieldRevision { .. } | Fact::SourceAspectRevision { .. } => {
-                    counts[2] += 1
-                }
+                Fact::SourceFieldRevision { .. }
+                | Fact::SourceAspectRevision { .. }
+                | Fact::Field { .. }
+                | Fact::AbsentField { .. } => counts[2] += 1,
                 _ => return Err(invalid("unexpected workflow actor dependency")),
             }
         }

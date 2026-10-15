@@ -79,7 +79,7 @@ pub(super) fn decode(
                     comparison_work_limit,
                     endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::preserve(
                         &endpoints,
-                        crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::control,
+                        control,
                     ).map_err(fact_decode_denial::FactDecodeDenial::Retention)?,
                 }
         }
@@ -88,6 +88,32 @@ pub(super) fn decode(
             kind: KindId(cursor.next_u32()?),
         },
         7 => indexed_selection::decode(cursor)?,
+        tag @ (8 | 9) => {
+            let entity_id = cursor.next_entity()?;
+            let kind = KindId(cursor.next_u32()?);
+            let locator = next_locator(cursor)?;
+            if tag == 9 {
+                Fact::AbsentField {
+                    entity_id,
+                    kind,
+                    locator,
+                }
+            } else {
+                let length = usize::try_from(cursor.next_u32()?)
+                    .map_err(|_| "checkpoint field value exceeds host".to_owned())?;
+                if length == 0 || length > MAXIMUM_FACT_BYTES {
+                    return Err("checkpoint field value length is invalid".to_owned().into());
+                }
+                let value = serde_json::from_slice(cursor.next_bytes(length)?)
+                    .map_err(|_| "checkpoint field value is invalid".to_owned())?;
+                Fact::Field {
+                    entity_id,
+                    kind,
+                    locator,
+                    value,
+                }
+            }
+        }
         _ => {
             return Err("checkpoint producer fact kind is unsupported"
                 .to_owned()

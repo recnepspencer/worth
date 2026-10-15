@@ -1,3 +1,7 @@
+mod recorded_actor;
+pub(in crate::domain_computation::primary_graph::application_attempt) use recorded_actor::{
+    original_parent, original_scope, original_transition, recorded_approval,
+};
 mod actors;
 mod retained_history;
 use worth_foundational::facade::AspectValue;
@@ -19,7 +23,7 @@ mod history;
 pub(super) use history::observe_ended_history;
 pub(in crate::domain_computation::primary_graph::application_attempt) mod instance_binding;
 mod progression;
-mod settlement;
+pub(in crate::domain_computation::primary_graph::application_attempt) mod settlement;
 mod step_budget;
 use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
 #[cfg(test)]

@@ -146,15 +146,42 @@ where
             self.admission.publication_request(),
             self.admission.operation(),
         )?;
+        let parent_instance = self.lease.handle().with_runtime(execution, |runtime| {
+            super::super::workflow_instance_observation::original_parent(
+                execution,
+                runtime,
+                self.lease.snapshot(),
+                layout,
+                source_transition.entity(),
+                &mut facts,
+            )
+        })?;
+        let original_approval = compiled
+            .approval_authority_sources(selected.node())
+            .next()
+            .and_then(|source| progress.latest_transition(source.entity()));
+        let approval_parent = original_approval
+            .map(|approval| {
+                self.lease.handle().with_runtime(execution, |runtime| {
+                    super::super::workflow_instance_observation::original_parent(
+                        execution,
+                        runtime,
+                        self.lease.snapshot(),
+                        layout,
+                        approval.entity(),
+                        &mut facts,
+                    )
+                })
+            })
+            .transpose()?;
         let original_sources = super::actor_context::OriginalActorSources {
+            parent_instance,
             proposal: input_observation.proposal,
             proposal_identity: input_observation.proposal_identity,
             transition: source_transition,
             transition_identity: source_identity.to_owned(),
-            approval: compiled
-                .approval_authority_sources(selected.node())
-                .next()
-                .and_then(|source| progress.latest_transition(source.entity())),
+            approval_parent,
+            approval: original_approval,
         };
         authority_facts.extend_from_slice(&facts[handoff_start..]);
         self.append_completed_facts(

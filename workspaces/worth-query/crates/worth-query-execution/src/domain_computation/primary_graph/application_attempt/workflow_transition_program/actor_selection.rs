@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
     workflow::{
         actor::{record::WorkflowActorFields, WorkflowActorDependencies},
         definition::{CompiledWorkflowDefinition, CompiledWorkflowNode},
-        instance::{WorkflowInstanceProgress, WorkflowTransitionLocator},
+        instance::WorkflowTransitionLocator,
     },
     WorthQueryPrimaryGraphIntegrationHandle, WorthQueryPrimaryGraphLayout,
 };
@@ -91,7 +91,7 @@ impl WorthQueryWorkflowActorContext {
             self.instance.definition_entity_id(),
             self.instance.definition_content_identity().clone(),
         );
-        let (mut compiled, mut facts) = reconstruct_compiled_definition(
+        let (compiled, mut facts) = reconstruct_compiled_definition(
             execution,
             handle,
             snapshot,
@@ -104,21 +104,28 @@ impl WorthQueryWorkflowActorContext {
             usize::from(self.resources.maximum_definition_connections()),
             WorkflowDefinitionCompilationPosture::Retained,
         )?;
-        let mut observed = handle.with_runtime(execution, |runtime| {
-            super::super::workflow_instance_observation::observe_workflow_instance(
-                execution, handle, runtime, snapshot, layout, &self.instance, resource,
-                compiled.lineage(), &mut compiled,
-                usize::try_from(self.resources.maximum_retained_transitions_per_instance()).unwrap_or(usize::MAX),
-                self.resources.history_reconstruction_budget(),
-                super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance)
+        handle.with_runtime(execution, |runtime| {
+            super::super::workflow_instance_observation::original_scope(
+                execution,
+                runtime,
+                snapshot,
+                layout,
+                &self.instance,
+                resource,
+                compiled.lineage(),
+                &mut facts,
+            )
         })?;
-        // Eligibility/head facts belong to the existing workflow command read
-        // set. Retaining them as actor truth would stale a successful approval
-        // on its own transition write. Actor evidence retains the exact
-        // immutable original record and canonical source pairing below.
         let (proposal, transition, approval) = self.select_original_sources(
-            execution, handle, snapshot, layout, &compiled, &mut observed,
-            requirement, request, &mut facts)?;
+            execution,
+            handle,
+            snapshot,
+            layout,
+            &compiled,
+            requirement,
+            request,
+            &mut facts,
+        )?;
         let mut record = match requirement.source() {
             Source::BoundProposal => proposal,
             Source::BoundTransition => transition.map(|transition| transition.entity()),
@@ -186,7 +193,20 @@ impl WorthQueryWorkflowActorContext {
                     layout,
                     approval,
                     proposal,
-                    self.instance.entity_id(),
+                    match &self.command {
+                        Command::Operation { required } => {
+                            match (approval, required.original_sources.approval_parent) {
+                                (Some(_), Some(parent)) => parent,
+                                (None, None) => self.instance.entity_id(), // no record is read
+                                _ => {
+                                    return Err(affinity(
+                                        "original approval parent pairing is incomplete",
+                                    ))
+                                }
+                            }
+                        }
+                        Command::Approval { .. } => self.instance.entity_id(),
+                    },
                     &mut facts,
                 )?;
                 record = entity;
@@ -234,5 +254,10 @@ fn currentness_denial(
             return Err(stop.into());
         }
     }
-    Ok(false)
+    use worth_relational::facade::transactions::RelationalExecutionDenialCause as Native;
+    match cause.kind() {
+        WorthQueryApplicationAttemptDenialKind::Cancelled => Err(Native::Cancelled),
+        WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => Err(Native::DeadlineElapsed),
+        _ => Ok(false),
+    }
 }

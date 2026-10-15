@@ -30,24 +30,7 @@ pub(super) fn capture(
         return Err(invalid());
     }
     Ok(match fact {
-        Fact::Field {
-            entity_id, locator, ..
-        }
-        | Fact::AbsentField {
-            entity_id, locator, ..
-        } => {
-            let revision = runtime
-                .read_truth()
-                .project_snapshot(snapshot)
-                .ok_or_else(invalid)?
-                .entity_field_revision(execution, *entity_id, locator)?
-                .ok_or_else(invalid)?;
-            Fact::SourceFieldRevision {
-                entity_id: *entity_id,
-                locator: locator.clone(),
-                native_revision: Some(revision),
-            }
-        }
+        Fact::Field { .. } | Fact::AbsentField { .. } => fact.clone(),
         Fact::Relation {
             relation_kind,
             from,

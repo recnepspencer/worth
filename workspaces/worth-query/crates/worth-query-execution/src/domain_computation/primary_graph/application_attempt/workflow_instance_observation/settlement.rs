@@ -32,7 +32,7 @@ use value::{
     observed_bool, observed_optional_text, observed_text, observed_u64, optional_identity,
 };
 
-pub(super) fn observe_settled_transition(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_settled_transition(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

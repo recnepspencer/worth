@@ -59,22 +59,27 @@ where
             let is_operation = self.operations.iter().any(|operation| {
                 operation.identifier == entry.operation()
                     && operation.binding_identity == entry.binding()
-                    && operation.capability.as_ref().is_some_and(|(name, identity)|
-                        (*name, identity.as_str()) == entry.capability())
+                    && operation
+                        .capability
+                        .as_ref()
+                        .is_some_and(|(name, identity)| {
+                            (*name, identity.as_str()) == entry.capability()
+                        })
             });
-            let is_approval = self
-                .approvals
-                .iter()
-                .any(|approval| approval.binding.operation_identifier == entry.operation()
+            let is_approval = self.approvals.iter().any(|approval| {
+                approval.binding.operation_identifier == entry.operation()
                     && approval.binding.identifier == entry.capability().0
-                    && approval.binding.capability_type.as_str() == entry.capability().1);
+                    && approval.binding.capability_type.as_str() == entry.capability().1
+            });
             if !is_operation && !is_approval {
                 return Err(invalid());
             }
             let mut requirements = capabilities()
-                .filter(|contract| contract.operation() == entry.operation()
-                    && contract.name() == entry.capability().0
-                    && contract.capability_type() == entry.capability().1)
+                .filter(|contract| {
+                    contract.operation() == entry.operation()
+                        && contract.name() == entry.capability().0
+                        && contract.capability_type() == entry.capability().1
+                })
                 .filter_map(|contract| {
                     contract
                         .composition()
@@ -103,22 +108,25 @@ where
                 .requirement()
                 .is_some()
         }) {
-            let used = self
-                .operations
-                .iter()
-                .any(|operation| operation.identifier == contract.operation()
-                    && operation.capability.as_ref().is_some_and(|(name, identity)|
-                        *name == contract.name() && identity.as_str() == contract.capability_type()))
-                || self
-                    .approvals
-                    .iter()
-                    .any(|approval| approval.binding.identifier == contract.name());
+            let used = self.operations.iter().any(|operation| {
+                operation.identifier == contract.operation()
+                    && operation
+                        .capability
+                        .as_ref()
+                        .is_some_and(|(name, identity)| {
+                            *name == contract.name()
+                                && identity.as_str() == contract.capability_type()
+                        })
+            }) || self.approvals.iter().any(|approval| {
+                approval.binding.identifier == contract.name()
+                    && approval.binding.capability_type.as_str() == contract.capability_type()
+                    && approval.binding.operation_identifier == contract.operation()
+            });
             if used
-                && !actors
-                    .bindings()
-                    .iter()
-                    .any(|entry| entry.operation() == contract.operation()
-                        && entry.capability() == (contract.name(), contract.capability_type()))
+                && !actors.bindings().iter().any(|entry| {
+                    entry.operation() == contract.operation()
+                        && entry.capability() == (contract.name(), contract.capability_type())
+                })
             {
                 return Err(invalid());
             }

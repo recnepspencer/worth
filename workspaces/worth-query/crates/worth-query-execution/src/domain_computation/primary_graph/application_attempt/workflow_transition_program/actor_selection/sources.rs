@@ -1,5 +1,6 @@
-//! Exact original recorded sources; eligibility remains in the workflow owner.
+//! Exact original recorded sources; current command eligibility stays in its owner.
 use super::*;
+use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation as native;
 impl WorthQueryWorkflowActorContext {
     pub(super) fn select_original_sources(
         &self,
@@ -8,13 +9,18 @@ impl WorthQueryWorkflowActorContext {
         snapshot: &SnapshotHandle,
         layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
         compiled: &CompiledWorkflowDefinition,
-        observed: &mut super::super::super::workflow_instance_observation::ObservedWorkflowInstance,
         requirement: Requirement,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         facts: &mut Vec<WorthQueryApplicationObservedFact>,
-    ) -> Result<(Option<EntityId>, Option<WorkflowTransitionLocator>, Option<WorkflowTransitionLocator>), WorthQueryApplicationAttemptDenial> {
-        let progress = observed.progress_basis.progress();
-        let selected = match &self.command {
+    ) -> Result<
+        (
+            Option<EntityId>,
+            Option<WorkflowTransitionLocator>,
+            Option<WorkflowTransitionLocator>,
+        ),
+        WorthQueryApplicationAttemptDenial,
+    > {
+        match &self.command {
             Command::Approval { required, proposal } => {
                 if required.instance() != self.instance.entity_id()
                     || required.operation() != self.operation
@@ -24,52 +30,72 @@ impl WorthQueryWorkflowActorContext {
                 {
                     return Err(affinity("workflow approval actor context changed"));
                 }
-                let node = super::approval_decision::actor_approval_node(&compiled, required)?;
+                let node =
+                    super::super::approval_decision::actor_approval_node(compiled, required)?;
                 let source = unique(compiled.approval_proposal_sources(node))?;
-                let transition = progress.latest_transition(source.entity());
-                let proposal_entity = match transition {
-                    Some(transition) => {
-                        let (entity, identity, source_facts) = handle.with_runtime(execution, |runtime|
-                            super::super::workflow_instance_observation::observe_retained_workflow_proposal_identity(
-                                execution, runtime, snapshot, layout, transition, request))?;
-                        facts.extend(source_facts);
-                        let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Operation { operation, input_type, .. } = source.kind()
-                            else { return Err(affinity("workflow proposal source is not an operation")); };
-                        let source_identity = progress.latest_transition_identity(source.entity())
-                            .ok_or_else(|| affinity("workflow proposal transition identity absent"))?;
-                        let input = handle.with_runtime(execution, |runtime|
-                            crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_operation_input(
-                                execution, runtime, snapshot, layout, transition.entity(), source_identity,
-                                operation, input_type, source.path(), request))?;
-                        if input.proposal != entity || input.proposal_identity != identity
-                            || &input.input_identity != proposal.input_identity() {
-                            return Err(affinity("workflow proposal canonical pairing changed"));
-                        }
-                        facts.extend(input.facts);
-                        if proposal.node_path() != source.path()
-                            || entity != proposal.entity_id()
-                            || identity != proposal.identity()
-                        {
-                            return Err(affinity(
-                                "workflow actor proposal is not the consumed occurrence",
-                            ));
-                        }
-                        Some(entity)
-                    }
-                    None => None,
-                };
-                let latest = progress.latest_transition(node);
-                let mut approval = latest.filter(|entry| entry.settlement().occurrence() == required.occurrence());
-                if approval.is_none() && requirement.source() == Source::BoundApproval
-                    && latest.is_some_and(|entry| entry.settlement().occurrence() > required.occurrence()) {
-                    handle.with_runtime(execution, |runtime| observed.ensure_history(
-                        execution, handle, runtime, snapshot, layout, self.instance.entity_id(),
-                        usize::try_from(self.resources.maximum_retained_transitions_per_instance()).unwrap_or(usize::MAX), compiled))?;
-                    approval = observed.transitions.iter().find(|entry|
-                        entry.settlement.node() == node && entry.settlement.occurrence() == required.occurrence())
-                        .map(|entry| WorkflowTransitionLocator::new(entry.entity, entry.settlement));
+                let (transition, identity, parent) = handle.with_runtime(execution, |runtime| {
+                    let (transition, identity) = native::original_transition(
+                        execution,
+                        runtime,
+                        snapshot,
+                        layout,
+                        proposal.entity_id(),
+                        facts,
+                    )?;
+                    let parent = native::original_parent(
+                        execution,
+                        runtime,
+                        snapshot,
+                        layout,
+                        transition.entity(),
+                        facts,
+                    )?;
+                    Ok::<_, WorthQueryApplicationAttemptDenial>((transition, identity, parent))
+                })?;
+                if parent != self.instance.entity_id()
+                    || transition.settlement().node() != source.entity()
+                    || proposal.node_path() != source.path()
+                {
+                    return Err(affinity("proposal is not the original typed source"));
                 }
-                (proposal_entity, transition, approval)
+                self.validate_proposal(
+                    execution,
+                    handle,
+                    snapshot,
+                    layout,
+                    source,
+                    transition,
+                    &identity,
+                    proposal.entity_id(),
+                    proposal.identity(),
+                    proposal.input_identity(),
+                    request,
+                    facts,
+                )?;
+                let approval = if requirement.source() == Source::BoundApproval {
+                    handle.with_runtime(execution, |runtime| {
+                        native::recorded_approval(
+                            execution,
+                            runtime,
+                            snapshot,
+                            layout,
+                            self.instance.entity_id(),
+                            required.transition_identity(),
+                            node,
+                            required.occurrence(),
+                            usize::try_from(
+                                self.resources.maximum_retained_transitions_per_instance(),
+                            )
+                            .unwrap_or(usize::MAX),
+                            self.resources.history_reconstruction_budget(),
+                            compiled,
+                            facts,
+                        )
+                    })?
+                } else {
+                    None
+                };
+                Ok((Some(proposal.entity_id()), Some(transition), approval))
             }
             Command::Operation { required } => {
                 if required.instance != self.instance.entity_id()
@@ -79,59 +105,96 @@ impl WorthQueryWorkflowActorContext {
                 {
                     return Err(affinity("workflow operation actor context changed"));
                 }
-                let mut nodes = compiled.nodes_with_path(&required.node_path).iter();
-                let (Some(node), None) = (nodes.next(), nodes.next()) else {
-                    return Err(affinity("workflow operation node changed"));
-                };
+                let node = unique(compiled.nodes_with_path(&required.node_path).iter())?;
                 let source = unique(compiled.operation_input_sources(node.entity()))?;
                 let originals = &required.original_sources;
-                let transition = progress.latest_transition(source.entity());
-                if transition != Some(originals.transition)
-                    || progress.latest_transition_identity(source.entity())
-                        != Some(originals.transition_identity.as_str())
+                let (transition, identity, parent) = handle.with_runtime(execution, |runtime| {
+                    let (transition, identity) = native::original_transition(
+                        execution,
+                        runtime,
+                        snapshot,
+                        layout,
+                        originals.proposal,
+                        facts,
+                    )?;
+                    let parent = native::original_parent(
+                        execution,
+                        runtime,
+                        snapshot,
+                        layout,
+                        transition.entity(),
+                        facts,
+                    )?;
+                    Ok::<_, WorthQueryApplicationAttemptDenial>((transition, identity, parent))
+                })?;
+                if transition != originals.transition
+                    || identity != originals.transition_identity
+                    || parent != originals.parent_instance
+                    || transition.settlement().node() != source.entity()
                 {
-                    return Err(affinity(
-                        "original workflow input occurrence is no longer consumed",
-                    ));
+                    return Err(affinity("original workflow source pairing changed"));
                 }
-                let proposal = match transition {
-                    Some(transition) => {
-                        let (entity, proposal_identity, source_facts) = handle.with_runtime(execution, |runtime|
-                            super::super::workflow_instance_observation::observe_retained_workflow_proposal_identity(
-                                execution, runtime, snapshot, layout, transition, request))?;
-                        if entity != originals.proposal
-                            || proposal_identity != originals.proposal_identity
-                        {
-                            return Err(affinity("original workflow actor proposal changed"));
-                        }
-                        facts.extend(source_facts);
-                        let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Operation { operation, input_type, .. } = source.kind()
-                            else { return Err(affinity("workflow operation input source changed")); };
-                        let input = handle.with_runtime(execution, |runtime|
-                            crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_operation_input(
-                                execution, runtime, snapshot, layout, transition.entity(),
-                                progress.latest_transition_identity(source.entity()).ok_or_else(|| affinity("workflow input identity absent"))?,
-                                operation, input_type, source.path(), request))?;
-                        if &input.input_identity != &required.input_identity {
-                            return Err(affinity("workflow actor input changed"));
-                        }
-                        facts.extend(input.facts);
-                        Some(entity)
-                    }
-                    None => None,
-                };
+                self.validate_proposal(
+                    execution,
+                    handle,
+                    snapshot,
+                    layout,
+                    source,
+                    transition,
+                    &identity,
+                    originals.proposal,
+                    &originals.proposal_identity,
+                    &required.input_identity,
+                    request,
+                    facts,
+                )?;
                 let mut approvals = compiled.approval_authority_sources(node.entity());
-                let approval = match (approvals.next(), approvals.next()) {
-                    (None, None) => None,
-                    (Some(source), None) => progress.latest_transition(source.entity()),
-                    _ => return Err(affinity("workflow approval source is not singular")),
-                };
-                if approval != originals.approval {
-                    return Err(affinity("original workflow approval occurrence changed"));
+                match (approvals.next(), approvals.next(), originals.approval) {
+                    (None, None, None) => {}
+                    (Some(source), None, Some(approval))
+                        if approval.settlement().node() == source.entity() => {}
+                    _ => {
+                        return Err(affinity(
+                            "original approval source differs from typed binding",
+                        ))
+                    }
                 }
-                (proposal, transition, approval)
+                Ok((
+                    Some(originals.proposal),
+                    Some(transition),
+                    originals.approval,
+                ))
             }
-        };
-        Ok(selected)
+        }
+    }
+    fn validate_proposal(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        handle: &WorthQueryPrimaryGraphIntegrationHandle,
+        snapshot: &SnapshotHandle,
+        layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+        source: &CompiledWorkflowNode,
+        transition: WorkflowTransitionLocator,
+        transition_identity: &str,
+        proposal: EntityId,
+        identity: &str,
+        input_identity: &[u8; 32],
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        facts: &mut Vec<WorthQueryApplicationObservedFact>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowNodeKind::Operation { operation, input_type, .. } = source.kind()
+            else { return Err(affinity("proposal source is not an operation")); };
+        let input = handle.with_runtime(execution, |runtime|
+            crate::domain_computation::primary_graph::workflow::proposal::observe_workflow_operation_input(
+                execution, runtime, snapshot, layout, transition.entity(), transition_identity,
+                operation, input_type, source.path(), request))?;
+        if input.proposal != proposal
+            || input.proposal_identity != identity
+            || &input.input_identity != input_identity
+        {
+            return Err(affinity("original proposal canonical pairing changed"));
+        }
+        facts.extend(input.facts);
+        Ok(())
     }
 }
