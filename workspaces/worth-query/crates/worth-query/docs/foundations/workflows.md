@@ -1585,7 +1585,7 @@ not grant authority or replace the lifecycle explanations above.
 
 | Variant | Shape |
 | --- | --- |
-| `AwaitingProposal` | tuple (RequiredWorkflowProposal); joined M9.17.6.5 source, qualification pending |
+| `AwaitingProposal` | tuple (RequiredWorkflowProposal) |
 | `AwaitingActor` | tuple (RequiredWorkflowActor) |
 | `AwaitingAssessment` | tuple (RequiredWorkflowAssessment) |
 | `AwaitingCondition` | tuple (RequiredWorkflowCondition) |
