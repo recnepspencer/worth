@@ -28,7 +28,9 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    output.u16(if scoped {
+    let version = if body.has_optional_inputs() {
+        9
+    } else if scoped {
         8
     } else if !body.requirements().is_empty() {
         7
@@ -64,8 +66,9 @@ pub(super) fn write(
         2
     } else {
         1
-    })?;
-    if scoped {
+    };
+    output.u16(version)?;
+    if version >= 8 {
         output.text(
             body.scope_entity()
                 .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
@@ -79,6 +82,7 @@ pub(super) fn write(
             ApplicationOperationBodyScopeField::SetOptionalInput { .. } => 4,
             ApplicationOperationBodyScopeField::ClearOptional { .. } => 5,
             ApplicationOperationBodyScopeField::RequirePresent { .. } => 6,
+            ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => 7,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
@@ -98,6 +102,11 @@ pub(super) fn write(
                 member,
                 scalar_family,
                 ..
+            }
+            | ApplicationOperationBodyScopeField::AssignOptionalInput {
+                member,
+                scalar_family,
+                ..
             } => {
                 super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
                 output.text(member)
@@ -108,17 +117,7 @@ pub(super) fn write(
             }
         }
     })?;
-    if scoped
-        || !body.requirements().is_empty()
-        || body.scope_fields().iter().any(|step| {
-            matches!(
-                step,
-                ApplicationOperationBodyScopeField::SetOptionalInput { .. }
-                    | ApplicationOperationBodyScopeField::ClearOptional { .. }
-                    | ApplicationOperationBodyScopeField::RequirePresent { .. }
-            )
-        })
-    {
+    if version >= 5 {
         output.u16(u16::from(body.creation().is_some()))?;
     }
     if let Some(creation) = body.creation() {
@@ -129,6 +128,7 @@ pub(super) fn write(
                 ApplicationOperationBodyCreatedField::Literal { .. } => 1,
                 ApplicationOperationBodyCreatedField::Input { .. } => 2,
                 ApplicationOperationBodyCreatedField::ScopeField { .. } => 3,
+                ApplicationOperationBodyCreatedField::OptionalInput { .. } => 4,
             })?;
             output.text(step.field().entity())?;
             output.text(step.field().aspect())?;
@@ -139,6 +139,11 @@ pub(super) fn write(
                     super::foundational_value::write_aspect_value(output, value)
                 }
                 ApplicationOperationBodyCreatedField::Input {
+                    member,
+                    scalar_family,
+                    ..
+                }
+                | ApplicationOperationBodyCreatedField::OptionalInput {
                     member,
                     scalar_family,
                     ..
@@ -159,7 +164,7 @@ pub(super) fn write(
             }
         })?;
     }
-    if scoped || !body.requirements().is_empty() {
+    if version >= 7 {
         requirements::write(output, body.requirements())?;
     }
     Ok(())
@@ -170,10 +175,10 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=8) {
+    if !matches!(version, 1..=9) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
-    let scope = if version == 8 {
+    let scope = if version >= 8 {
         Some(input.text()?.to_owned())
     } else {
         None
@@ -184,12 +189,13 @@ pub(super) fn decode(
             && !(version >= 2 && tag == 3)
             && !(version >= 5 && matches!(tag, 4 | 5))
             && !(version >= 6 && tag == 6)
+            && !(version >= 9 && tag == 7)
         {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         }
         let field = ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
         let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
-        if matches!(tag, 3 | 4) {
+        if matches!(tag, 3 | 4 | 7) {
             let scalar_family = super::foundational_aspect::decode_scalar_type(input)?;
             let member = input.text()?.to_owned();
             return Ok(if tag == 3 {
@@ -199,8 +205,15 @@ pub(super) fn decode(
                     scalar_family,
                     member,
                 }
-            } else {
+            } else if tag == 4 {
                 ApplicationOperationBodyScopeField::SetOptionalInput {
+                    field,
+                    binding,
+                    scalar_family,
+                    member,
+                }
+            } else {
+                ApplicationOperationBodyScopeField::AssignOptionalInput {
                     field,
                     binding,
                     scalar_family,
@@ -253,7 +266,7 @@ pub(super) fn decode(
         let key = input.text()?.to_owned();
         let fields = decode_sequence(input, budget, 20, |input, _| {
             let tag = input.u16()?;
-            if !matches!(tag, 1 | 2) && !(version >= 4 && tag == 3) {
+            if !matches!(tag, 1 | 2) && !(version >= 4 && tag == 3) && !(version >= 9 && tag == 4) {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
             let field =
@@ -280,6 +293,12 @@ pub(super) fn decode(
                         input.text()?,
                         input.text()?,
                     ),
+                },
+                4 => ApplicationOperationBodyCreatedField::OptionalInput {
+                    field,
+                    binding,
+                    scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
+                    member: input.text()?.to_owned(),
                 },
                 _ => unreachable!("creation opcode admitted before operands"),
             })

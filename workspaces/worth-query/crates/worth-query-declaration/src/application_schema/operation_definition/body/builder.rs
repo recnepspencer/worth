@@ -224,6 +224,35 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         Ok(self)
     }
 
+    /// Replaces an optional scalar from a present Option-valued input member.
+    /// Some sets (including empty text); None clears. A missing member denies.
+    pub fn assign_optional_input<Entity, Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        member: &str,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
+    where
+        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
+        Write: WritableCapability,
+        Unit: ApplicationFieldUnit,
+    {
+        if member.is_empty() || member.trim() != member {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
+        }
+        self.steps
+            .push(ApplicationOperationBodyScopeField::AssignOptionalInput {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+                member: member.to_owned(),
+            });
+        Ok(self)
+    }
+
     /// Clears one optional scalar; absence is not an empty value.
     pub fn clear_optional<Entity, Aspect, Field, Value, Write, Equality, Unit>(
         mut self,

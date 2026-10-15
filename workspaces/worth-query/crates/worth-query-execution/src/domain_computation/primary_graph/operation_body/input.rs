@@ -13,7 +13,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding;
 
 pub(in crate::domain_computation::primary_graph) struct PreparedBodyInputs {
-    pub(in crate::domain_computation::primary_graph) values: Vec<AspectValue>,
+    pub(in crate::domain_computation::primary_graph) values: Vec<Option<AspectValue>>,
     _reservation: QueryMemoryReservation,
 }
 
@@ -39,7 +39,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
         .and_then(|bytes| {
             bindings
                 .len()
-                .checked_mul(size_of::<AspectValue>())
+                .checked_mul(size_of::<Option<AspectValue>>())
                 .and_then(|slots| slots.checked_mul(2))
                 .and_then(|slots| bytes.checked_add(slots))
         })
@@ -69,6 +69,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                 (
                     step.input_member().expect("input assignment"),
                     step.scalar_family(),
+                    step.input_is_optional(),
                 )
             });
         let created_inputs = body
@@ -80,9 +81,12 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                 (
                     step.input_member().expect("input initializer"),
                     step.scalar_family(),
+                    step.input_is_optional(),
                 )
             });
-        for ((member, family), binding) in scope_inputs.chain(created_inputs).zip(bindings) {
+        for ((member, family, optional), binding) in
+            scope_inputs.chain(created_inputs).zip(bindings)
+        {
             context
                 .checkpoint(u64::try_from(bytes).unwrap_or(u64::MAX))
                 .map_err(|cause| {
@@ -90,13 +94,21 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                         worth_execution::WorkCeilingDenial::Stopped(cause),
                     )
                 })?;
-            let selected = match captured.scalar_member(member, family) {
+            let selected = match if optional {
+                captured.optional_scalar_member(member, family)
+            } else {
+                captured.scalar_member(member, family).map(Some)
+            } {
                 Ok(value) => value,
                 Err(_) => {
                     return Ok(Err(WorthQueryOperationBodyDenial::InputMismatch {
                         member: member.to_owned(),
                     }))
                 }
+            };
+            let Some(selected) = selected else {
+                values.push(None);
+                continue;
             };
             let materialization_work = selected
                 .owned_allocation_capacity_bytes()
@@ -131,7 +143,7 @@ pub(in crate::domain_computation::primary_graph) fn prepare_inputs(
                     member: member.to_owned(),
                 }));
             }
-            values.push(value);
+            values.push(Some(value));
         }
         Ok(Ok(values))
     });

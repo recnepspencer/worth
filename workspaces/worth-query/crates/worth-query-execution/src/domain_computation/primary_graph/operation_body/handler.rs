@@ -63,6 +63,7 @@ where
                 ApplicationOperationBodyScopeField::Assign { .. }
                 | ApplicationOperationBodyScopeField::AssignInput { .. }
                 | ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                | ApplicationOperationBodyScopeField::AssignOptionalInput { .. }
                 | ApplicationOperationBodyScopeField::ClearOptional { .. } => {
                     BodyFieldExpectation::Any
                 }
@@ -189,7 +190,8 @@ where
                 let value = input_values
                     .as_mut()
                     .and_then(Iterator::next)
-                    .expect("one prepared value per installed input assignment");
+                    .expect("one prepared value per installed input assignment")
+                    .expect("required input assignment is present");
                 if let Err(cause) = writer.body_input_field(&target, field, value) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
@@ -198,8 +200,18 @@ where
                 let value = input_values
                     .as_mut()
                     .and_then(Iterator::next)
-                    .expect("one prepared value per installed optional set");
+                    .expect("one prepared value per installed optional set")
+                    .expect("flat optional Set input is present");
                 if let Err(cause) = writer.body_optional_field(&target, field, Some(value)) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
+            if let ApplicationOperationBodyScopeField::AssignOptionalInput { field, .. } = step {
+                let value = input_values
+                    .as_mut()
+                    .and_then(Iterator::next)
+                    .expect("one prepared option per installed optional assignment");
+                if let Err(cause) = writer.body_optional_field(&target, field, value) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
             }
@@ -227,8 +239,19 @@ where
                         input_values
                             .as_mut()
                             .and_then(Iterator::next)
-                            .expect("one prepared value per installed input initializer"),
+                            .expect("one prepared value per installed input initializer")
+                            .expect("required initializer input is present"),
                     ),
+                    ApplicationOperationBodyCreatedField::OptionalInput { .. } => {
+                        let Some(value) = input_values
+                            .as_mut()
+                            .and_then(Iterator::next)
+                            .expect("one prepared option per installed optional initializer")
+                        else {
+                            continue;
+                        };
+                        std::borrow::Cow::Owned(value)
+                    }
                     ApplicationOperationBodyCreatedField::ScopeField { .. } => {
                         let (source, reservation) = source_values
                             .next()

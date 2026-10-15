@@ -14,7 +14,7 @@ worth_query_field!(pub TenantIdentity for Schema: BodySchemaBinding, Tenant, Ten
 worth_query_operation!(pub CreateDocument for Schema: BodySchemaBinding, input super::binding::CreateInputBinding);
 worth_query_operation_reads!(CreateDocument => [Tenant, TenantIdentity]);
 worth_query_operation_creates!(CreateDocument => [Document]);
-worth_query_operation_writes!(CreateDocument => [DocumentIdentityField, DocumentRetentionField, DocumentAuditSourceField]);
+worth_query_operation_writes!(CreateDocument => [DocumentIdentityField, DocumentRetentionField, DocumentAuditSourceField, DocumentDraftNoteField]);
 
 pub(in super::super) fn declare<const MODE: u64>(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<MODE>>,
@@ -27,6 +27,8 @@ pub(in super::super) fn declare<const MODE: u64>(
         .in_scope(Tenant::reference())
         .unwrap()
         .create_in_scope(Document::reference(), "document")
+        .unwrap()
+        .initialize_optional_input(DocumentDraftNoteField::reference(), "note")
         .unwrap()
         .initialize_input(DocumentIdentityField::reference(), "identity")
         .unwrap()

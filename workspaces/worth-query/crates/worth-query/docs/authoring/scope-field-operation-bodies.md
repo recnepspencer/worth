@@ -7,7 +7,8 @@ operation. It can also declare one typed entity creation in the admitted scope's
 context, without writing an existing scope field. Required writes and created-field initializers can use authored literals or named
 members of the operation's once encoded input. A created field may also copy a
 tracked scope-field preimage from the same decision observation. Optional scalar
-fields can be set from a present input member or explicitly cleared. Query installs and executes those
+fields can be set from a present scalar input, explicitly cleared, or replaced
+and initialized from one-level Option-valued input. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
 An operation may declare presence requirements or Boolean Foundation expressions
 over typed scope fields and related-item counts. The same installed requirements
@@ -35,6 +36,8 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `body.in_scope(Tenant::reference())` when creation does not touch an existing field;
 - `body.set_optional_input(optional_field, "member")` or
   `body.clear_optional(optional_field)` for distinct optional-value intentions;
+- `body.assign_optional_input(optional_field, "member")` for complete replacement
+  from a serialized Option: Some sets and None clears;
 - `body.require_present(optional_field)` for an operation-specific precondition;
 - `Operation::reference().requirement_operands()` and
   `ApplicationOperationBodyRequirement::admit(...)`, attached with
@@ -42,6 +45,8 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `body.create_in_scope(Entity::reference(), "candidate-slot")` followed by
   `.initialize(...)`, `.initialize_input(...)`, or
   `.initialize_from_scope(source_field, created_field)` and `.finish()`;
+- `creation.initialize_optional_input(optional_field, "member")` to initialize
+  the new field for Some and leave it absent for None;
 - a completed operation definition's `with_body(body)`;
 - `ApplicationProgramAuthoring::begin().with_schema(&schema).validated_program()`.
 
@@ -93,6 +98,9 @@ these bounds from the native scalar's owned capacity with checked arithmetic,
 before it calls supplier code. Installation refuses an input body without both
 contracts. The supplier remains responsible for the accuracy of a custom
 decoder's declared profile.
+The structured binding's validator runs at the shared input-identity boundary
+before input serialization, for both ordinary and preencoded operation inputs.
+Its Validation denial remains typed; a host-side precheck is not a substitute.
 
 After normal request authorization and scope resolution, Query reads the body's
 fields at the native decision observation. All expectations concern that source
@@ -117,6 +125,20 @@ steps use Query's existing optional-field candidate and lowering owner; field
 value/absence and writable aspect presence are tracked at the decision snapshot.
 An absent aspect can be initialized without rewriting sibling fields. A direct
 request still receives ordinary authorization, currentness, and invariant checks.
+
+`assign_optional_input` requires a present serialized Option member. Some(value)
+sets the scalar through its installed codec; None invokes native Clear.
+`initialize_optional_input` uses the same selector on an optional created field:
+Some initializes it; None leaves it absent. Required destinations cannot use
+either form. Each None consumes its own prepared input slot, so it cannot shift
+later initializers. Decoder/profile admission remains mandatory at installation
+even when this particular input is None.
+
+Missing members, duplicate selected members (including a duplicate after None),
+nested Options and wrong scalar families deny before effects. Do not use
+`skip_serializing_if` to omit a selected None: omission is not Clear. Omitting
+the field's body step remains Unchanged. Complete optional replacement does not
+implement a three-way sparse-patch contract.
 
 `require_present` is an operation precondition, not a global field requirement:
 draft-save operations without it may persist an incomplete item. Its native
@@ -237,14 +259,28 @@ publication; it grants neither an unpublished result nor a fresh retry permit.
 For a caller supplied scalar, use `assign_input(DocumentRetentionField::reference(),
 "retention_days")` in place of `assign(...)`, and opt the operation's structured
 input binding into canonical capture. This is a binding to the serialized member
-name, not a getter callback. The input shape must be a flat struct with scalar
-members; a nested document or an optional member currently denies at selection.
+name, not a getter callback. The input shape must be a flat struct with scalar or
+one-level optional-scalar members. Required selectors reject an Option wrapper;
+use the optional selector for that member. Nested shapes still deny.
 
 For an optional note, author `set_optional_input(DraftNoteField::reference(),
 "note")` in the Set operation and `clear_optional(DraftNoteField::reference())`
 in the Clear operation. A governed read returns `None` for absence and
 `Some("")` for present empty text. An unrelated operation with no note step
 preserves either value.
+
+For complete replacement carried as `description: Option<String>`, keep one
+operation rather than dispatching Set or Clear from the host:
+
+```rust
+let body = SaveDraft::reference().body()
+    .assign_optional_input(Description::reference(), "description")?
+    .finish()?;
+```
+
+The input binding retains canonical input. A source-bound save keeps its existing
+`ApplicationQueryMutationSource` contract; native source currentness and exact
+replay still apply. The host forwards the caller's Option unchanged.
 
 For an operation that may run only after that note is selected, add
 `require_present(DraftNoteField::reference())` to its body. This does not
@@ -281,6 +317,9 @@ Use the request's business identity in a governed query to read the committed
 document; the candidate-local `"document"` key is not its durable identifier.
 This example does not establish tenant-isolation policy or a uniqueness rule
 for the business identity; declare those contracts separately.
+For an optional description on that new document, add
+`.initialize_optional_input(Description::reference(), "description")` before
+`finish()`. No dummy empty value needs to be initialized first.
 
 For a conditional collection minimum, assume an optional Boolean
 `ReviewEnabledField` and a `Validators` relation from the admitted document.
@@ -324,6 +363,8 @@ process-crash durability.
 Creation-only bodies use scope-bearing portable body record v8. Valid v1–v7
 carriage keeps its previous bytes; an older record cannot silently acquire the
 new creation-only semantics.
+Optional-input assignment and initialization use portable body record v9.
+Older versions reject those opcodes rather than reinterpret their intent.
 
 Workflow occurrence authority and approval evidence remain separate. A source
 expectation is not an approval, signature or general evaluated requirement, and
@@ -357,7 +398,8 @@ remain a different supported surface, not an equivalent declarative body.
 
 This form supports literal equality expectations, literal assignments and flat
 input member assignments on one admitted scope's required scalar fields, optional
-Set-from-flat-input, explicit Clear, operation-specific presence requirements,
+Set-from-flat-input, explicit Clear, one-level Option-valued replacement and
+initialization, operation-specific presence requirements,
 and Foundation Boolean requirements over scope scalar/presence and distinct
 incoming/outgoing related-item count operands, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage

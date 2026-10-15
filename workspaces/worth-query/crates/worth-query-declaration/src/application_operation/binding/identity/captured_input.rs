@@ -1,4 +1,7 @@
 //! The exact serialization that derived an input identity, not a second encoding.
+#[cfg(test)]
+#[path = "captured_input/optional_tests.rs"]
+mod optional_tests;
 mod scalar_record;
 
 use super::{ApplicationCanonicalIdentity, ApplicationCanonicalWork};
@@ -163,5 +166,15 @@ impl ApplicationCanonicalInput {
         family: ScalarAspectType,
     ) -> Result<ApplicationCanonicalInputScalar<'_>, ApplicationCanonicalInputDenial> {
         scalar_record::select(&self.bytes[self.value_offset..], member, family)
+    }
+
+    /// Selects one serialized Option of a scalar. None is absence, not a missing
+    /// record member; nested options and bare scalar members are refused.
+    pub fn optional_scalar_member(
+        &self,
+        member: &str,
+        family: ScalarAspectType,
+    ) -> Result<Option<ApplicationCanonicalInputScalar<'_>>, ApplicationCanonicalInputDenial> {
+        scalar_record::select_optional(&self.bytes[self.value_offset..], member, family)
     }
 }

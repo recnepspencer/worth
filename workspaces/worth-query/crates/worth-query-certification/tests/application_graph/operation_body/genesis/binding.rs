@@ -14,6 +14,7 @@ pub struct CreateInput {
     pub tenant: u64,
     pub identity: String,
     pub retention_days: u64,
+    pub note: Option<String>,
 }
 pub struct CreateInputBinding;
 impl ApplicationStructuredValueBinding for CreateInputBinding {
@@ -59,7 +60,7 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 3, 0),
+            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 4, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
         );
     fn scope_field() -> ApplicationFieldRef<

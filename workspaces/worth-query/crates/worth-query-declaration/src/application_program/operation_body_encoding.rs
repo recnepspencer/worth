@@ -6,6 +6,15 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let record = operation_body_scope_record(body);
+    if body.has_optional_inputs() {
+        framed_record("operation-body-v8", [("body", record)])
+    } else {
+        record
+    }
+}
+
+fn operation_body_scope_record(body: &ApplicationOperationBodyProgram) -> String {
     let record = operation_body_requirements_record(body);
     if body.explicit_scope_entity().is_some() || body.is_creation_only() {
         return framed_record(
@@ -76,8 +85,17 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
                 member,
                 scalar_family,
                 ..
+            }
+            | ApplicationOperationBodyScopeField::AssignOptionalInput {
+                member,
+                scalar_family,
+                ..
             } => (
-                "input",
+                if step.input_is_optional() {
+                    "optional-input"
+                } else {
+                    "input"
+                },
                 framed_record(
                     "input-member-v1",
                     [
@@ -111,6 +129,9 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
                         ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
                         ApplicationOperationBodyScopeField::SetOptionalInput { .. } => {
                             "set-optional-input"
+                        }
+                        ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => {
+                            "assign-optional-input"
                         }
                         ApplicationOperationBodyScopeField::ClearOptional { .. } => {
                             "clear-optional"
@@ -158,8 +179,17 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
                 member,
                 scalar_family,
                 ..
+            }
+            | ApplicationOperationBodyCreatedField::OptionalInput {
+                member,
+                scalar_family,
+                ..
             } => (
-                "input",
+                if step.input_is_optional() {
+                    "optional-input"
+                } else {
+                    "input"
+                },
                 framed_record(
                     "input-member-v1",
                     [

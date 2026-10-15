@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use crate::application_schema::{
     ApplicationEntityRef, ApplicationFieldBindingLocus, ApplicationFieldRef, ApplicationFieldUnit,
     ApplicationScalarValueBinding, DeclaredApplicationFieldValue, OperationCreates, OperationReads,
-    OperationWrites,
+    OperationWrites, OptionalApplicationFieldValue,
 };
 
 use super::{
@@ -90,6 +90,34 @@ impl<Schema, Operation, Input, Entity>
         }
         self.fields
             .push(ApplicationOperationBodyCreatedField::Input {
+                field: ApplicationFieldBindingLocus::new(
+                    field.entity(),
+                    field.aspect(),
+                    field.field(),
+                ),
+                binding: Field::Binding::IDENTITY,
+                scalar_family: Field::Binding::SCALAR_FAMILY,
+                member: member.to_owned(),
+            });
+        Ok(self)
+    }
+
+    /// Initializes an optional created field from a serialized Option. None
+    /// leaves it absent; Some initializes it through the installed scalar codec.
+    pub fn initialize_optional_input<Aspect, Field, Value, Write, Equality, Unit>(
+        mut self,
+        field: ApplicationFieldRef<Schema, Entity, Aspect, Field, Value, Write, Equality, Unit>,
+        member: &str,
+    ) -> Result<Self, ApplicationOperationBodyAuthoringDenial>
+    where
+        Field: OperationWrites<Operation> + OptionalApplicationFieldValue<Value = Value>,
+        Unit: ApplicationFieldUnit,
+    {
+        if member.is_empty() || member.trim() != member {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidInputMember);
+        }
+        self.fields
+            .push(ApplicationOperationBodyCreatedField::OptionalInput {
                 field: ApplicationFieldBindingLocus::new(
                     field.entity(),
                     field.aspect(),

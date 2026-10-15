@@ -8,6 +8,23 @@ pub(super) fn select<'a>(
     member: &str,
     family: ScalarAspectType,
 ) -> Result<ApplicationCanonicalInputScalar<'a>, Denial> {
+    Cursor(select_member(bytes, member)?).scalar(family)
+}
+
+pub(super) fn select_optional<'a>(
+    bytes: &'a [u8],
+    member: &str,
+    family: ScalarAspectType,
+) -> Result<Option<ApplicationCanonicalInputScalar<'a>>, Denial> {
+    let mut selected = Cursor(select_member(bytes, member)?);
+    match selected.byte()? {
+        tag::NONE => Ok(None),
+        tag::SOME => selected.scalar(family).map(Some),
+        _ => Err(Denial::InvalidScalar),
+    }
+}
+
+fn select_member<'a>(bytes: &'a [u8], member: &str) -> Result<&'a [u8], Denial> {
     let mut input = Cursor(bytes);
     if input.byte()? != tag::STRUCT {
         return Err(Denial::UnsupportedShape);
@@ -33,7 +50,7 @@ pub(super) fn select<'a>(
     if !input.0.is_empty() {
         return Err(Denial::UnsupportedShape);
     }
-    Cursor(selected.ok_or(Denial::MissingMember)?).scalar(family)
+    selected.ok_or(Denial::MissingMember)
 }
 
 struct Cursor<'a>(&'a [u8]);
@@ -68,7 +85,20 @@ impl<'a> Cursor<'a> {
         std::str::from_utf8(self.take(length)?).map_err(|_| Denial::InvalidScalar)
     }
     fn skip_scalar(&mut self) -> Result<(), Denial> {
-        match self.byte()? {
+        let tag = self.byte()?;
+        let tag = if tag == tag::SOME {
+            let inner = self.byte()?;
+            if matches!(inner, tag::NONE | tag::SOME | tag::UNIT) {
+                return Err(Denial::UnsupportedShape);
+            }
+            inner
+        } else {
+            tag
+        };
+        self.skip_scalar_tag(tag)
+    }
+    fn skip_scalar_tag(&mut self, scalar_tag: u8) -> Result<(), Denial> {
+        match scalar_tag {
             tag::BOOL => {
                 self.take(1)?;
             }

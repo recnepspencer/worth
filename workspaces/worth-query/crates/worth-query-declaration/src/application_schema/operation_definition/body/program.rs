@@ -32,6 +32,12 @@ pub enum ApplicationOperationBodyScopeField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    AssignOptionalInput {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        member: String,
+    },
     ClearOptional {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -51,6 +57,7 @@ impl ApplicationOperationBodyScopeField {
             | Self::Assign { field, .. }
             | Self::AssignInput { field, .. }
             | Self::SetOptionalInput { field, .. }
+            | Self::AssignOptionalInput { field, .. }
             | Self::ClearOptional { field, .. }
             | Self::RequirePresent { field, .. } => field,
         }
@@ -62,6 +69,7 @@ impl ApplicationOperationBodyScopeField {
             | Self::Assign { binding, .. }
             | Self::AssignInput { binding, .. }
             | Self::SetOptionalInput { binding, .. }
+            | Self::AssignOptionalInput { binding, .. }
             | Self::ClearOptional { binding, .. }
             | Self::RequirePresent { binding, .. } => binding,
         }
@@ -72,6 +80,7 @@ impl ApplicationOperationBodyScopeField {
             Self::Expect { value, .. } | Self::Assign { value, .. } => Some(value),
             Self::AssignInput { .. }
             | Self::SetOptionalInput { .. }
+            | Self::AssignOptionalInput { .. }
             | Self::ClearOptional { .. }
             | Self::RequirePresent { .. } => None,
         }
@@ -82,17 +91,21 @@ impl ApplicationOperationBodyScopeField {
             Self::Expect { value, .. } | Self::Assign { value, .. } => value.value_family(),
             Self::AssignInput { scalar_family, .. }
             | Self::SetOptionalInput { scalar_family, .. }
+            | Self::AssignOptionalInput { scalar_family, .. }
             | Self::ClearOptional { scalar_family, .. }
             | Self::RequirePresent { scalar_family, .. } => *scalar_family,
         }
     }
     pub fn input_member(&self) -> Option<&str> {
         match self {
-            Self::AssignInput { member, .. } | Self::SetOptionalInput { member, .. } => {
-                Some(member)
-            }
+            Self::AssignInput { member, .. }
+            | Self::SetOptionalInput { member, .. }
+            | Self::AssignOptionalInput { member, .. } => Some(member),
             _ => None,
         }
+    }
+    pub fn input_is_optional(&self) -> bool {
+        matches!(self, Self::AssignOptionalInput { .. })
     }
 
     pub fn decision_read(&self) -> ApplicationOperationDecisionReadTarget {
@@ -170,6 +183,12 @@ pub enum ApplicationOperationBodyCreatedField {
         scalar_family: ScalarAspectType,
         member: String,
     },
+    OptionalInput {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        member: String,
+    },
     ScopeField {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -183,6 +202,7 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { field, .. }
             | Self::Input { field, .. }
+            | Self::OptionalInput { field, .. }
             | Self::ScopeField { field, .. } => field,
         }
     }
@@ -190,34 +210,38 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::Literal { binding, .. }
             | Self::Input { binding, .. }
+            | Self::OptionalInput { binding, .. }
             | Self::ScopeField { binding, .. } => binding,
         }
     }
     pub fn literal_value(&self) -> Option<&AspectValue> {
         match self {
             Self::Literal { value, .. } => Some(value),
-            Self::Input { .. } | Self::ScopeField { .. } => None,
+            Self::Input { .. } | Self::OptionalInput { .. } | Self::ScopeField { .. } => None,
         }
     }
     pub fn scalar_family(&self) -> ScalarAspectType {
         match self {
             Self::Literal { value, .. } => value.value_family(),
-            Self::Input { scalar_family, .. } | Self::ScopeField { scalar_family, .. } => {
-                *scalar_family
-            }
+            Self::Input { scalar_family, .. }
+            | Self::OptionalInput { scalar_family, .. }
+            | Self::ScopeField { scalar_family, .. } => *scalar_family,
         }
     }
     pub fn input_member(&self) -> Option<&str> {
         match self {
             Self::Literal { .. } | Self::ScopeField { .. } => None,
-            Self::Input { member, .. } => Some(member),
+            Self::Input { member, .. } | Self::OptionalInput { member, .. } => Some(member),
         }
     }
     pub fn source_field(&self) -> Option<&ApplicationFieldBindingLocus> {
         match self {
             Self::ScopeField { source, .. } => Some(source),
-            Self::Literal { .. } | Self::Input { .. } => None,
+            Self::Literal { .. } | Self::Input { .. } | Self::OptionalInput { .. } => None,
         }
+    }
+    pub fn input_is_optional(&self) -> bool {
+        matches!(self, Self::OptionalInput { .. })
     }
     pub fn source_read(&self) -> Option<ApplicationOperationDecisionReadTarget> {
         self.source_field()
@@ -303,6 +327,16 @@ impl ApplicationOperationBodyProgram {
     }
     pub fn requirements(&self) -> &[super::ApplicationOperationBodyRequirementProgram] {
         &self.requirements
+    }
+    pub fn has_optional_inputs(&self) -> bool {
+        self.scope_fields
+            .iter()
+            .any(ApplicationOperationBodyScopeField::input_is_optional)
+            || self
+                .creation
+                .iter()
+                .flat_map(|creation| creation.fields())
+                .any(ApplicationOperationBodyCreatedField::input_is_optional)
     }
     pub fn scope_fields(&self) -> &[ApplicationOperationBodyScopeField] {
         &self.scope_fields

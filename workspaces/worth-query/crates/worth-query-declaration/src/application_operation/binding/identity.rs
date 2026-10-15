@@ -45,6 +45,9 @@
 mod captured_input;
 mod encoder;
 mod input;
+#[cfg(test)]
+#[path = "identity/input_validation_tests.rs"]
+mod input_validation_tests;
 mod partition;
 mod request;
 mod work;
@@ -148,6 +151,7 @@ where
     InputBinding: ApplicationStructuredValueBinding,
     InputBinding::Value: Serialize,
 {
+    InputBinding::validate(input).map_err(ApplicationValueEncodeDenial::from)?;
     let input_type = InputBinding::IDENTITY;
     canonical_identity_with_capture(
         INPUT_DOMAIN,
@@ -161,13 +165,16 @@ where
 fn input_identity_admitted<InputBinding, F, E>(
     input: &InputBinding::Value,
     admission: &mut F,
-) -> Result<captured_input::EncodedInputIdentity, encoder::CanonicalEncodeError<E>>
+) -> Result<captured_input::EncodedInputIdentity, ApplicationMutationIdentityAdmittedDenial<E>>
 where
     InputBinding: ApplicationStructuredValueBinding,
     InputBinding::Value: Serialize,
     F: FnMut(CanonicalEncodingCharge) -> Result<(), E>,
     E: std::fmt::Debug,
 {
+    InputBinding::validate(input).map_err(|cause| {
+        ApplicationMutationIdentityAdmittedDenial::Input(ApplicationValueEncodeDenial::from(cause))
+    })?;
     canonical_identity_with_capture(
         INPUT_DOMAIN,
         InputBinding::IDENTITY.as_str(),
@@ -175,6 +182,7 @@ where
         encoder::HashingSink::with_admission(encoder::CallbackAdmission::new(admission))
             .capturing(InputBinding::RETAIN_CANONICAL_INPUT),
     )
+    .map_err(|cause| request::admitted_denial(cause, rejected(InputBinding::IDENTITY), false))
 }
 
 /// Identity of one client idempotency key, scoped to the binding's key namespace.

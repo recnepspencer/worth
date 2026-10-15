@@ -36,7 +36,7 @@ pub enum ApplicationMutationIdentityAdmittedDenial<E: Debug> {
     Allocation,
 }
 
-fn admitted_denial<E: Debug>(
+pub(super) fn admitted_denial<E: Debug>(
     error: CanonicalEncodeError<E>,
     serialization: ApplicationValueEncodeDenial,
     key: bool,
@@ -185,14 +185,7 @@ where
                     )
                 })?;
         let input_identity =
-            input_identity_admitted::<Binding::InputBinding, _, _>(input, admission)
-                .map_err(|error| {
-                    admitted_denial(
-                        error,
-                        super::rejected(<Binding::InputBinding as crate::application_schema::ApplicationStructuredValueBinding>::IDENTITY),
-                        false,
-                    )
-                })?;
+            input_identity_admitted::<Binding::InputBinding, _, _>(input, admission)?;
         Ok(Self {
             key,
             input,

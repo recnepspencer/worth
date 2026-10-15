@@ -21,6 +21,8 @@ mod genesis;
 mod input;
 #[path = "operation_body/input_selection.rs"]
 mod input_selection;
+#[path = "operation_body/optional_input.rs"]
+mod optional_input;
 #[path = "operation_body/persistence.rs"]
 mod persistence;
 #[path = "operation_body/program.rs"]

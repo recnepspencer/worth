@@ -421,7 +421,8 @@ For authored scalar edits and one in-scope creation, use an
 [executable scope-bound body](./authoring/scope-field-operation-bodies.md), attach
 it to the completed operation definition, bind the same completed schema through
 program authoring's `with_schema`, and install with `setup.operation_body::<Binding>()`.
-Its literals, flat canonical-input assignments, optional Set/Clear, tracked
+Its literals, flat canonical-input assignments, optional Set/Clear and one-level
+Option-valued replacement/initialization, tracked
 preimage initializers and field/count expression requirements enter canonical
 schema/program meaning and drive native tracked execution. A replacement handler
 is denied. A creation-only body declares `in_scope(Entity::reference())`; it does
@@ -430,6 +431,11 @@ submission share the installed requirements. General assignment expressions,
 multiple creations, links, signature consequences and multi-operation commands
 remain unsupported here; do not fill those missing joins with a host substitute
 and call it declarative.
+
+Operation input identity minting validates the structured binding before input
+serialization, through both ordinary and admitted producers. Preencoded handoffs
+carry that validated input rather than recreating or revalidating it. A binding's
+validator is not optional host guidance.
 
 - The three handler roles (`decide`, `candidate_requirements`,
   `build_candidate`) are bounded. Query retains and completes the decision's

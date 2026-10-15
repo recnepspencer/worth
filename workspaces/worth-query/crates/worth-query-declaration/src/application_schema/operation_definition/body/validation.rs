@@ -58,6 +58,12 @@ pub(crate) fn validate_operation_bodies(
             let mut initialized = BTreeSet::new();
             for step in creation.fields() {
                 let locus = step.field();
+                if step.input_is_optional() && !members.iter().any(|member| matches!(member,
+                    ApplicationSchemaMember::Field { entity, aspect, field, presence: ApplicationFieldPresence::Optional, .. }
+                    if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()
+                )) {
+                    return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+                }
                 if locus.entity() != creation.entity() || !initialized.insert(locus.clone()) {
                     return Err(ApplicationSchemaDeclarationDenial::DuplicateMember);
                 }
@@ -156,6 +162,7 @@ pub(crate) fn validate_operation_bodies(
             let expected_presence = if matches!(
                 step,
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. }
+                    | ApplicationOperationBodyScopeField::AssignOptionalInput { .. }
                     | ApplicationOperationBodyScopeField::ClearOptional { .. }
                     | ApplicationOperationBodyScopeField::RequirePresent { .. }
             ) {

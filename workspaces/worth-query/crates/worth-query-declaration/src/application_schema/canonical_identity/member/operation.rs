@@ -15,7 +15,9 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.explicit_scope_entity().is_some() || body.is_creation_only() {
+        if body.has_optional_inputs() {
+            "operation-body-v7"
+        } else if body.explicit_scope_entity().is_some() || body.is_creation_only() {
             "operation-body-v6"
         } else if !body.requirements().is_empty() {
             "operation-body-v5"
@@ -66,6 +68,9 @@ pub(super) fn append_body(
                 ApplicationOperationBodyScopeField::Assign { .. } => "assign",
                 ApplicationOperationBodyScopeField::AssignInput { .. } => "assign-input",
                 ApplicationOperationBodyScopeField::SetOptionalInput { .. } => "set-optional-input",
+                ApplicationOperationBodyScopeField::AssignOptionalInput { .. } => {
+                    "assign-optional-input"
+                }
                 ApplicationOperationBodyScopeField::ClearOptional { .. } => "clear-optional",
                 ApplicationOperationBodyScopeField::RequirePresent { .. } => "require-present",
             },
@@ -111,6 +116,7 @@ pub(super) fn append_body(
                 match step {
                     ApplicationOperationBodyCreatedField::Literal { .. } => "literal",
                     ApplicationOperationBodyCreatedField::Input { .. } => "input",
+                    ApplicationOperationBodyCreatedField::OptionalInput { .. } => "optional-input",
                     ApplicationOperationBodyCreatedField::ScopeField { .. } => "scope-field",
                 },
             );
@@ -124,6 +130,11 @@ pub(super) fn append_body(
                     worth_foundational::facade::canonical_basis_value_for_aspect_value(value),
                 ),
                 ApplicationOperationBodyCreatedField::Input {
+                    member,
+                    scalar_family,
+                    ..
+                }
+                | ApplicationOperationBodyCreatedField::OptionalInput {
                     member,
                     scalar_family,
                     ..

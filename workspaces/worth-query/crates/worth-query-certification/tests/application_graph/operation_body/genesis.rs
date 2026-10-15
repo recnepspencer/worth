@@ -15,6 +15,7 @@ fn input(tenant: u64) -> CreateInput {
         tenant,
         identity: DOCUMENT_IDENTITY.to_owned(),
         retention_days: 7,
+        note: None,
     }
 }
 fn create(
@@ -85,4 +86,19 @@ fn missing_tenant_is_a_typed_refusal_before_creation() {
         Outcome::Committed { .. }
     ));
     assert_eq!(read_retention(&app), 7);
+}
+
+#[test]
+fn optional_initializer_consumes_its_none_slot_before_later_required_inputs() {
+    for note in [None, Some(""), Some("details")] {
+        let app = install::<30>();
+        let mut command = input(1);
+        command.note = note.map(str::to_owned);
+        assert!(matches!(
+            create(&app, 307, command).unwrap(),
+            Outcome::Committed { .. }
+        ));
+        assert_eq!(read_retention(&app), 7);
+        assert_eq!(draft_query::read_note(&app), note.map(str::to_owned));
+    }
 }
