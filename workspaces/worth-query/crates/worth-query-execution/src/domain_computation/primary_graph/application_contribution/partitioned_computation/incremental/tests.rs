@@ -177,13 +177,13 @@ impl WorthQueryPartitionedComputationOwner<Schema, Feature, Computation> for Own
             );
         }
         let work = self.work.lock().unwrap()[usize::from(partition.key().0 == 0)];
-        if let Some(steps) = &*self.steps.lock().unwrap() {
+        match &*self.steps.lock().unwrap() { Some(steps) => {
             for step in &steps[usize::from(partition.key().0 == 0)] {
                 checkpoint.advance(*step)?;
             }
-        } else {
+        } _ => {
             checkpoint.advance(work)?;
-        }
+        }}
         Ok(*partition.gathered())
     }
 

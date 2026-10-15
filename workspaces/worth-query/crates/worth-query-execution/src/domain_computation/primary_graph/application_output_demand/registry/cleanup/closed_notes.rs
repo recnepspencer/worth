@@ -149,11 +149,11 @@ impl ClosedOrder {
         }
         links.queued = true;
         links.previous = self.last.clone();
-        if let Some(last) = self.last.upgrade() {
+        match self.last.upgrade() { Some(last) => {
             last.closed_note.lock().unwrap().next = Some(Arc::clone(&node));
-        } else {
+        } _ => {
             self.first = Some(Arc::clone(&node));
-        }
+        }}
         self.last = Arc::downgrade(&node);
         self.len += 1;
     }
@@ -163,11 +163,11 @@ impl ClosedOrder {
         let previous = std::mem::take(&mut links.previous);
         let next = links.next.take();
         links.queued = false;
-        if let Some(prior) = previous.upgrade() {
+        match previous.upgrade() { Some(prior) => {
             prior.closed_note.lock().unwrap().next = next.clone();
-        } else {
+        } _ => {
             self.first = next.clone();
-        }
+        }}
         if let Some(next) = next {
             next.closed_note.lock().unwrap().previous = previous;
         } else {

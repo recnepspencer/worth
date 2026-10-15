@@ -28,6 +28,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Enforce the 400-line Rust file cap
         run: bash scripts/ci/check_workspace_rust_line_caps.sh workspace
+      - name: Keep every lockfile on the same dependency versions
+        run: python3 scripts/ci/check_lockfile_alignment.py
 
   boundary-check:
     name: Boundary and facade doc check

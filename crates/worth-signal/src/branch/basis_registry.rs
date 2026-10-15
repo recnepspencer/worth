@@ -250,7 +250,7 @@ impl Drop for AcquisitionClaimGuard {
         if !self.armed {
             return;
         }
-        if let Some(state) = self.state.upgrade() {
+        match self.state.upgrade() { Some(state) => {
             finish_denied(
                 &state,
                 &self.key,
@@ -258,11 +258,11 @@ impl Drop for AcquisitionClaimGuard {
                 &self.completion,
                 SignalBranchRetentionAcquisitionDenial::OwnerOperationPanicked,
             );
-        } else {
+        } _ => {
             self.completion.finish(Err(
                 SignalBranchRetentionAcquisitionDenial::OwnerOperationPanicked,
             ));
-        }
+        }}
     }
 }
 

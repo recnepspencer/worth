@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-io-scheduler"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 2 S.6 hardware-aware I/O, QoS, and background pacing."

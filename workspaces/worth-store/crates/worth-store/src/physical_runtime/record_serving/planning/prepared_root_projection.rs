@@ -193,7 +193,7 @@ impl PreparedPhysicalRootProjection {
 
     pub(in crate::physical_runtime) fn recovery_placements(
         &self,
-    ) -> impl ExactSizeIterator<Item = CurrentPhysicalRecordPlacement> {
+    ) -> impl ExactSizeIterator<Item = CurrentPhysicalRecordPlacement> + use<> {
         let mut projected = self.placements.values().copied().collect::<Vec<_>>();
         projected.extend(self.retired_inline_witnesses.values().copied());
         projected.sort_unstable_by_key(|placement| placement.record());

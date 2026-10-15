@@ -129,7 +129,7 @@ impl RelationalPersistentRegionSet {
         regions
     }
 
-    pub(crate) fn values(&self) -> impl Iterator<Item = Arc<RelationalRootRegion>> {
+    pub(crate) fn values(&self) -> impl Iterator<Item = Arc<RelationalRootRegion>> + use<> {
         self.materialize().into_values()
     }
     pub(crate) fn get(&self, partition_id: PartitionId) -> Option<&Arc<RelationalRootRegion>> {

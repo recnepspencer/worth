@@ -216,7 +216,7 @@ where
     admission
         .charge_external_work(5)
         .map_err(|_| work_denial())?;
-    if let Some(mut successor) = demand
+    match demand
         .required_continuations
         .promote_caller_successor::<Family>(
             &runtime.output_demands,
@@ -225,7 +225,7 @@ where
             continues_caller,
             admission,
         )?
-    {
+    { Some(mut successor) => {
         // The successor completed under its own issued mode. This is a
         // Current custody handoff, so future advances retain the caller's
         // original authority, as when an open demand rejoins another refresh.
@@ -237,9 +237,9 @@ where
         successor.required_continuations = demand.required_continuations.take_all();
         successor.producer_contacts_in_this_demand = current_contacts;
         *demand = successor;
-    } else if !caller_current {
+    } _ => if !caller_current {
         return Ok(None);
-    }
+    }}
     let interest = demand
         .interest
         .as_ref()

@@ -199,7 +199,7 @@ impl WorthUiSealedSemanticPackage {
     pub fn declaration_views(
         &self,
         module_id: &WorthUiSourceModuleId,
-    ) -> Option<impl ExactSizeIterator<Item = WorthUiSemanticDeclarationView<'_>>> {
+    ) -> Option<impl ExactSizeIterator<Item = WorthUiSemanticDeclarationView<'_>> + use<'_>> {
         self.modules.get(module_id).map(|module| {
             module.declarations.iter().map(|declaration| {
                 let provenance_ref = declaration.provenance_ref();

@@ -1,6 +1,7 @@
 [package]
 name = "bank-estate-certification"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "External consumer and boundary certification for the Bank estate facade."

@@ -28,7 +28,7 @@ impl<'a> WorthQueryApplicationMutationDescription<'a> {
         self.availability
     }
 
-    pub fn effects(&self) -> impl Iterator<Item = &'a ApplicationOperationProgramTarget> + 'a {
+    pub fn effects(&self) -> impl Iterator<Item = &'a ApplicationOperationProgramTarget> + 'a + use<'a> {
         let operation = self.declaration.operation();
         self.members.iter().filter_map(move |member| match member {
             ApplicationSchemaMember::OperationProgram {
@@ -40,7 +40,7 @@ impl<'a> WorthQueryApplicationMutationDescription<'a> {
     }
 
     /// Declared authorization, preconditions, external effects, and aftermath.
-    pub fn requirements(&self) -> impl Iterator<Item = &'a ApplicationSchemaMember> + 'a {
+    pub fn requirements(&self) -> impl Iterator<Item = &'a ApplicationSchemaMember> + 'a + use<'a> {
         let operation = self.declaration.operation();
         self.members.iter().filter(move |member| match member {
             ApplicationSchemaMember::OperationAbility {

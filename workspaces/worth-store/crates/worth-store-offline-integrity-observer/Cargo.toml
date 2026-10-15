@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-offline-integrity-observer"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Independent bounded observation of inert WORTH Store physical artifacts."

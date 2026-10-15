@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-claim-boundaries"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Proof-bearing Store claim tiers and promotion boundaries."

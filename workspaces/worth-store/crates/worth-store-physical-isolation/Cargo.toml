@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-physical-isolation"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 2 S.5 latches, epochs, stable read plans, and reclaim barriers."

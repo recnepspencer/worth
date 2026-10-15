@@ -175,7 +175,7 @@ impl Model {
             let retired: Vec<_> = self
                 .rows
                 .iter()
-                .filter(|(&id, r)| {
+                .filter(|&(&id, ref r)| {
                     matches!(r.phase, Phase::Superseded | Phase::Closed | Phase::Pending)
                         && !self.held(id)
                 })

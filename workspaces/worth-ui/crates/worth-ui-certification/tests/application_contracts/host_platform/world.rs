@@ -30,7 +30,7 @@ impl MountedPresentationWorld {
         semantic_surface: worth_ui_host_contract::UiSemanticSurfaceIdentity,
     ) -> Self {
         let manifest = include_str!("control_points.toml")
-            .parse::<toml::Value>()
+            .parse::<toml::Table>().map(toml::Value::Table)
             .expect("versioned control-point manifest");
         let identity = text(&manifest, "world_identity").to_owned();
         let version = integer(&manifest, "world_version") as u16;

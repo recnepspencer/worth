@@ -28,13 +28,13 @@ impl WorthUiPresentationAsyncOwner {
             attempt: receipt.attempt,
             binding: receipt.binding,
         };
-        let (mut pending, already_committed) = if let Some(pending) = self
+        let (mut pending, already_committed) = match self
             .unresolved
             .remove(&key)
             .filter(|pending| pending.nonce == receipt.nonce)
-        {
+        { Some(pending) => {
             (pending, true)
-        } else {
+        } _ => {
             (
                 self.pending
                     .remove(&key)
@@ -42,7 +42,7 @@ impl WorthUiPresentationAsyncOwner {
                     .ok_or(WorthUiPresentationSettlementDenial::InvalidPendingReceipt)?,
                 false,
             )
-        };
+        }};
         if pending.settlement.completion_progress.is_none() {
             match pending
                 .admission

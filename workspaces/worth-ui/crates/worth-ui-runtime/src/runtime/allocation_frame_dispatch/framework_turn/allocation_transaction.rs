@@ -22,14 +22,14 @@ pub(super) fn prepare_selected(
     let transaction_authority = UiAllocationTransactionAuthority::for_selection(selection);
     let preparation = if authority.certifies_selection(selection) {
         ledger.prepare_selected(&transaction_authority, selection)
-    } else if let Some(replay) = ledger
+    } else { match ledger
         .completed_replay(selection, None)
         .filter(|replay| authority.certifies_completed_replay(replay))
-    {
+    { Some(replay) => {
         replay.into()
-    } else {
+    } _ => {
         denied_generation().into()
-    };
+    }}};
     UiPendingAllocationTransaction {
         authority: transaction_authority,
         preparation,
@@ -44,14 +44,14 @@ pub(super) fn prepare_viewport(
     let transaction_authority = UiAllocationTransactionAuthority::for_selection(basis.selection());
     let preparation = if authority.certifies_selection(basis.selection()) {
         ledger.prepare_viewport(&transaction_authority, basis)
-    } else if let Some(replay) = ledger
+    } else { match ledger
         .completed_replay(basis.selection(), None)
         .filter(|replay| authority.certifies_completed_replay(replay))
-    {
+    { Some(replay) => {
         replay.into()
-    } else {
+    } _ => {
         denied_generation().into()
-    };
+    }}};
     UiPendingAllocationTransaction {
         authority: transaction_authority,
         preparation,

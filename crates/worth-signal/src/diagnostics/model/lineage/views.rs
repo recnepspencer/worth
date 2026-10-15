@@ -40,7 +40,7 @@ impl<'a> RetainedLineageView<'a> {
         self.len == 0
     }
 
-    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &'a LineageRecord> + ExactSizeIterator {
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &'a LineageRecord> + ExactSizeIterator + use<'a> {
         self.records
             .map(DiagnosticHistory::iter)
             .unwrap_or_default()

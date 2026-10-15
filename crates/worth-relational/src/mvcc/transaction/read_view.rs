@@ -139,7 +139,7 @@ impl super::BranchBoundRelationalTransaction {
         &'a mut self,
         entity: &CreatedEntityRef,
     ) -> Result<
-        Option<impl ExactSizeIterator<Item = &'a CreateIntent> + 'a>,
+        Option<impl ExactSizeIterator<Item = &'a CreateIntent> + 'a + use<'a>>,
         super::RelationalTransactionStagingDenial,
     > {
         let entity = self.overlay.canonical_created_entity_ref(entity);
@@ -154,7 +154,7 @@ impl super::BranchBoundRelationalTransaction {
         &'a mut self,
         relation: &CreatedRelationRef,
     ) -> Result<
-        Option<impl ExactSizeIterator<Item = &'a CreateIntent> + 'a>,
+        Option<impl ExactSizeIterator<Item = &'a CreateIntent> + 'a + use<'a>>,
         super::RelationalTransactionStagingDenial,
     > {
         let relation = self.overlay.canonical_created_relation_ref(relation);

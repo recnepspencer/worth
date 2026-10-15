@@ -315,17 +315,17 @@ impl UiNativeEventLoopClient for UiNativeApplicationDriver {
         {
             let query_close = shutdown.into_query_close_observation();
             UiNativeEventLoopClientClose::CompleteWithObservation(evidence.finalize(&query_close))
-        } else if let Some(cleanup) = shutdown.into_application_cleanup() {
+        } else { match shutdown.into_application_cleanup() { Some(cleanup) => {
             UiNativeEventLoopClientClose::Incomplete(Box::new(
                 UiNativeApplicationDriverCleanup::Application {
                     cleanup: Box::new(cleanup),
                     evidence: Box::new(evidence),
                 },
             ))
-        } else {
+        } _ => {
             UiNativeEventLoopClientClose::Incomplete(Box::new(
                 UiNativeApplicationDriverCleanup::UnresolvedApplication,
             ))
-        }
+        }}}
     }
 }

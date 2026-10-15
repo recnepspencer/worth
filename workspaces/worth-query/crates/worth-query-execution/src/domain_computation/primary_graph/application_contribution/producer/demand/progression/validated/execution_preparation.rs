@@ -147,15 +147,15 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                                 request_admission,
                             ),
                     };
-                    if let Some(finish) = selected_finish.take() {
+                    match selected_finish.take() { Some(finish) => {
                         finish.finish(performed_source, &mut result);
-                    } else {
+                    } _ => {
                         self.output_demands.finish_scheduling(
                             interest,
                             performed_source,
                             &mut result,
                         );
-                    }
+                    }}
                     match result {
                     // The scheduled row is this call's to execute.
                     Ok(crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputSchedulingResult::Scheduled) => {

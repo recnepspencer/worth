@@ -29,7 +29,7 @@ pub(super) fn fintech_evaluator(
 ) -> impl for<'ctx> Fn(
     &mut crate::logic::context::EvaluationContext<'ctx, ()>,
 ) -> Result<crate::logic::evaluation::EvaluationOutput, SignalError>
-       + Sync {
+       + Sync + use<> {
     let ticks = fixture.ticks;
     let volatility = fixture.volatility;
     let throttle = fixture.throttle;
@@ -75,7 +75,7 @@ pub(super) fn fintech_checked_evaluator(
 ) -> Result<
     crate::logic::evaluation::EvaluationOutput,
     SignalError,
-> + Sync {
+> + Sync + use<> {
     let (ticks, volatility, throttle, alert, risk) = (
         fixture.ticks,
         fixture.volatility,

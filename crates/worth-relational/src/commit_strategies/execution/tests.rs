@@ -299,7 +299,7 @@ fn single_partition_locality_rejects_cross_partition_strategy_reads() {
         StrategyExecutionError::ExecutorFailed {
             strategy_id: CommitStrategyId(41),
             failure,
-        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain { class, ref detail, .. } if *class
+        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain { class, detail, .. } if *class
             == crate::commit_strategies::data::StrategyExecutorFailureClass::ReadContractViolation
             && detail.contains("SinglePartition locality"))
     ));

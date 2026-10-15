@@ -30,7 +30,7 @@ pub(super) fn geometry_evaluator(
 ) -> impl for<'ctx> Fn(
     &mut crate::logic::context::EvaluationContext<'ctx, ()>,
 ) -> Result<crate::logic::evaluation::EvaluationOutput, SignalError>
-       + Sync {
+       + Sync + use<> {
     let source_a = fixture.source_a;
     let source_b = fixture.source_b;
     let delta_gate = fixture.delta_gate;
@@ -90,7 +90,7 @@ pub(super) fn geometry_checked_evaluator(
 ) -> Result<
     crate::logic::evaluation::EvaluationOutput,
     SignalError,
-> + Sync {
+> + Sync + use<> {
     let (source_a, source_b, delta_gate, filtered_gate, demand_gate, fused) = (
         fixture.source_a,
         fixture.source_b,

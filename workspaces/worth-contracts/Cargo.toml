@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = ["crates/worth-schema-core", "crates/worth-schema-graph"]
 default-members = ["crates/worth-schema-core", "crates/worth-schema-graph"]
 
@@ -10,7 +10,8 @@ member_lane = "crates/*"
 allowed_crate_prefixes = ["worth-schema-"]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
+rust-version = "1.94"
 version = "0.1.0"
 license = "BUSL-1.1"
 

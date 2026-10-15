@@ -1,6 +1,7 @@
 [package]
 name = "bank-server"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Authoritative bank runtime composition."
@@ -8,7 +9,7 @@ publish = false
 
 [dependencies]
 bank-domain.workspace = true
-getrandom = "0.3"
+getrandom = "0.4"
 worth-foundational.workspace = true
 worth-query-host.workspace = true
 

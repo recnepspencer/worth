@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-physical-backend"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Internal OS-backed filesystem effects and media qualification for Worth Store."

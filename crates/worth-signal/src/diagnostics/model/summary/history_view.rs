@@ -19,7 +19,7 @@ impl<'a> RetainedExecutionHistoryView<'a> {
     }
     pub fn iter(
         &self,
-    ) -> impl DoubleEndedIterator<Item = &'a ExecutionHistorySummary> + ExactSizeIterator {
+    ) -> impl DoubleEndedIterator<Item = &'a ExecutionHistorySummary> + ExactSizeIterator + use<'a> {
         self.history.iter()
     }
     pub fn first(&self) -> Option<&'a ExecutionHistorySummary> {

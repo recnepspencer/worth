@@ -186,7 +186,7 @@ pub(crate) fn manifests_dependencies(
 ) -> Vec<ManifestDependency> {
     let text = inventory.text(path);
     let manifest = text
-        .parse::<toml::Value>()
+        .parse::<toml::Table>().map(toml::Value::Table)
         .unwrap_or_else(|error| panic!("{} should parse as TOML: {error}", path.display()));
 
     ["dependencies", "dev-dependencies", "build-dependencies"]

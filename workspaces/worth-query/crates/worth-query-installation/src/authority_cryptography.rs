@@ -9,8 +9,24 @@ type HmacSha256 = Hmac<Sha256>;
 
 const REDACTED_KEY: &str = "[REDACTED installation authority key]";
 
-#[derive(Clone, Zeroize, ZeroizeOnDrop)]
+#[derive(Clone)]
 pub(crate) struct InstallationAuthorityRootKey([u8; 32]);
+
+// Written out rather than derived: the derive macro alone would pull a
+// second `syn` major into every build of the Query line.
+impl Zeroize for InstallationAuthorityRootKey {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+
+impl Drop for InstallationAuthorityRootKey {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for InstallationAuthorityRootKey {}
 
 impl InstallationAuthorityRootKey {
     pub(crate) fn generate() -> Result<Self, ()> {
@@ -60,8 +76,22 @@ impl Debug for InstallationAuthorityRootKey {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) struct InstallationAuthorityLineage([u8; 32]);
 
-#[derive(Clone, Zeroize, ZeroizeOnDrop)]
+#[derive(Clone)]
 pub(crate) struct PackageAuthorityKey([u8; 32]);
+
+impl Zeroize for PackageAuthorityKey {
+    fn zeroize(&mut self) {
+        self.0.zeroize();
+    }
+}
+
+impl Drop for PackageAuthorityKey {
+    fn drop(&mut self) {
+        self.zeroize();
+    }
+}
+
+impl ZeroizeOnDrop for PackageAuthorityKey {}
 
 impl PackageAuthorityKey {
     pub(crate) fn matches(&self, other: &Self) -> bool {

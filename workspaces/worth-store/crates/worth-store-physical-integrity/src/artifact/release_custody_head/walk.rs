@@ -102,12 +102,12 @@ pub(super) fn walk<P: ReleaseCustodyHeadWalkPort>(
         }
         port.visit_node(reference, &frame).map_err(Denial::Visit)?;
         nodes += 1;
-        if let Some(entries) = view.entries() {
+        match view.entries() { Some(entries) => {
             for entry in entries {
                 roster.push(entry).map_err(Denial::Format)?;
                 port.visit_entry(entry).map_err(Denial::Visit)?;
             }
-        } else if let Some(children) = view.children() {
+        } _ => { match view.children() { Some(children) => {
             let child_count = view.count();
             // Every block the walk reads is admitted here, with its siblings,
             // before it is stacked: the root is one block of a bound of one.
@@ -149,7 +149,7 @@ pub(super) fn walk<P: ReleaseCustodyHeadWalkPort>(
             for child in children.rev() {
                 stack.push((child, next_depth));
             }
-        }
+        } _ => {}}}}
         // The view borrows the frame only within this iteration. Drop the
         // charged frame backing before the next addressed read.
         port.discard_vec(frame);

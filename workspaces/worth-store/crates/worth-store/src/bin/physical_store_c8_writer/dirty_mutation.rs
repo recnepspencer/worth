@@ -13,7 +13,7 @@ pub(super) fn prepare_for_checkpoint(
     placement: AdmittedRecordPlacementPolicy,
     seed: u64,
     invocation: &Invocation,
-) -> Result<impl Sized, String> {
+) -> Result<impl Sized + use<>, String> {
     let gate = serving.pause_physical_mutation_at(
         PhysicalMutationCheckpoint::AfterArenaWriteAdmissionBeforeEffect,
     );

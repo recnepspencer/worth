@@ -242,7 +242,7 @@ where
             crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable
         })?;
 
-        if let Some(performed) = recovery.take_performed() {
+        match recovery.take_performed() { Some(performed) => {
             match self
                 .state
                 .relational
@@ -271,7 +271,7 @@ where
                     }
                 },
             }
-        } else if let Some(settlement) = recovery.settlement().cloned() {
+        } _ => { match recovery.settlement().cloned() { Some(settlement) => {
             let performed_result = settlement.performed_result().clone();
             match self
                 .state
@@ -289,7 +289,7 @@ where
                 }
                 Ok(_) | Err(_) => drop(recovery),
             }
-        } else if let Some(commit_identity) = recovery.take_identity_repair() {
+        } _ => if let Some(commit_identity) = recovery.take_identity_repair() {
             match self
                 .state
                 .relational
@@ -310,7 +310,7 @@ where
             drop(recovery);
             update.finish();
             return Err(crate::recovery::RuntimeWorldRecoveryDenial::SettlementEvidenceUnavailable);
-        }
+        }}}}
 
         let actions = record.next_actions().to_vec();
         update.finish();

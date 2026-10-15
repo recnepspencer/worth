@@ -28,12 +28,12 @@ impl WorthQueryOutputDemandRegistry {
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            let retired = if let Some(mut prepared) = preparation::prepare(
+            let retired = match preparation::prepare(
                 &mut state,
                 &replaced.key,
                 &replacement.key,
                 request_admission,
-            )? {
+            )? { Some(mut prepared) => {
                 let state = prepared.mutation.state_mut();
                 let mut old_record = state.records.get_mut(&replaced.key).unwrap();
                 let mut old_slots = std::mem::take(&mut old_record.performed_obligations);
@@ -74,7 +74,7 @@ impl WorthQueryOutputDemandRegistry {
                     claims,
                     member,
                 )
-            } else {
+            } _ => {
                 let mut priced = super::supersession::price_member(
                     &mut state,
                     &replaced.key,
@@ -85,7 +85,7 @@ impl WorthQueryOutputDemandRegistry {
                     .finish_superseded_row(&replaced.key, subject);
                 let member = priced.release_member(&replaced.key);
                 (Vec::new(), Vec::new(), Vec::new(), 0, claims, member)
-            };
+            }};
             drop(state);
             let retired_bytes = retired.3;
             let member_refund = retired.5.refund_required_bytes;

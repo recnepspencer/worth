@@ -1,6 +1,7 @@
 [package]
 name = "bank-domain"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Bank-world semantic contract and typed Query declarations."

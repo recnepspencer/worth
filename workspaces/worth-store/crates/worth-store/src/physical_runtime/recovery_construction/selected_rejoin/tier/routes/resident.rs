@@ -217,7 +217,7 @@ fn verify_inner<S: RouteWalkStorage>(
             SelectedArtifactSlice::observed(artifact, 0, bytes, true)
                 .ok_or(Denial::RoutingFrame)?,
         );
-        if let Some(entries) = block.entries() {
+        match block.entries() { Some(entries) => {
             validate_leaf_count(entries.len(), root, count)?;
             for placement in entries {
                 if !reference.contains(placement.record())
@@ -241,7 +241,7 @@ fn verify_inner<S: RouteWalkStorage>(
                 }
                 count += 1;
             }
-        } else {
+        } _ => {
             let children = block.children().ok_or(Denial::RoutingFrame)?;
             if children.len() > usize::from(root.node_capacity()) {
                 return Err(Denial::RoutingFrame);
@@ -252,7 +252,7 @@ fn verify_inner<S: RouteWalkStorage>(
                 validate_child(child, reference)?;
                 stack.push(child);
             }
-        }
+        }}
         drop(block);
         storage.discard_frame(frame)?;
     }

@@ -188,7 +188,7 @@ impl<'a> RetainedReplayView<'a> {
         self.len == 0
     }
 
-    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &'a ReplayEvent> + ExactSizeIterator {
+    pub fn iter(&self) -> impl DoubleEndedIterator<Item = &'a ReplayEvent> + ExactSizeIterator + use<'a> {
         self.frames
             .map(DiagnosticHistory::iter)
             .unwrap_or_default()

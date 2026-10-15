@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-replication"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 1 replication, capsules, export/import, and integrity verification."

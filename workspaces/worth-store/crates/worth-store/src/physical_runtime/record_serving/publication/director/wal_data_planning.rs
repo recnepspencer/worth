@@ -50,7 +50,7 @@ impl RecordPublicationDirector {
             }
             return Ok(prepared);
         }
-        let planned = if let Some(copy) = prepared.take_completed_extent_copy() {
+        let planned = match prepared.take_completed_extent_copy() { Some(copy) => {
             match self.build_extent_copy_adoption(&mut prepared, copy) {
                 Ok(plans) => Ok(plans),
                 Err((copy, error)) => {
@@ -58,13 +58,13 @@ impl RecordPublicationDirector {
                     Err(error)
                 }
             }
-        } else if let Some(source) = prepared.extent_rewrite_source() {
+        } _ => if let Some(source) = prepared.extent_rewrite_source() {
             self.build_extent_record_rewrite(&prepared, source)
         } else if prepared.selected_segment_rewrite() {
             self.build_selected_segment_rewrite(&prepared)
         } else {
             self.build_durable_data_plan(&mut prepared)
-        };
+        }};
         match planned {
             Ok((data, root)) => Ok(prepared.attach_plans(data, root)),
             Err(error) => {

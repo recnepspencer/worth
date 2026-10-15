@@ -157,7 +157,7 @@ impl RuntimeCore {
     ) -> impl for<'ctx> Fn(
         &mut EvaluationContext<'ctx, SharedStore>,
     ) -> Result<EvaluationOutput, SignalError>
-           + Sync {
+           + Sync + use<> {
         let store = self.store.clone();
         let callback_diagnostics = self.callback_diagnostics.clone();
         let nodes_by_id = self.nodes_by_id.clone();

@@ -2,6 +2,7 @@
 name = "worth-query"
 autotests = false
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Canonical typed query artifact authority for Worth."
@@ -26,9 +27,6 @@ worth-schema-graph.workspace = true
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 sha2 = "0.10"
-proc-macro2 = { version = "1", features = ["span-locations"] }
-quote = "1"
-syn = { version = "2", features = ["full", "visit"] }
 
 [[test]]
 name = "public_declarative_journeys"
