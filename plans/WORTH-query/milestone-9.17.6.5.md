@@ -1,427 +1,548 @@
 # Milestone 9.17.6.5: Observable Workflow Truth
 
-> **Status:** Planned. Successor to [9.17.6.4](./milestone-9.17.6.4.md). This
-> milestone lets the owner of workflow truth be observed. It composes existing
-> Query read, discovery, disclosure and authorization owners. It adds no store,
-> no registry, no history log and no second authority. Implementation and
-> certification remain outstanding.
+> **Status:** Planned. Follows [9.17.6.4](./milestone-9.17.6.4.md) and consumes
+> the existing workflow kernel, completed 9.17.7 inbound contract and 9.17.6.3
+> envelope subscription. One current contract replaces the displaced surfaces
+> and formats. Implementation and certification remain outstanding.
 
-## Why This Milestone Exists
+## Goal And Governing Decision
 
-WORTH's first principle is that truth has exactly one owner, and that other
-runtimes "may observe it, derive from it, or ask its owner to change it". The
-workflow kernel violates the observation half of that rule today:
+Make Query's own workflow truth sufficient to build a multi-actor application:
+declare its policies, run it through the owning operation API, and discover,
+observe and audit it without copying workflow state or supplying actor identity.
 
-- It retains instances, transitions, proposals and approvals as platform entity
-  kinds lowered above the application catalog
-  (`worth-query-execution/src/domain_computation/primary_graph/schema_layout/platform_entity_lowering.rs`).
-  No consumer can name or query them.
-- A caller sees workflow state only through the typed outcome its own request
-  happened to return. There is no read of an instance's current node, its
-  transitions, its proposals or its approvals.
-- `PublishedWorkflowInstanceRef` and `PublishedWorkflowProposalRef` have no public
-  constructor and no serialization, and there is no instance discovery. After a
-  checkpoint restore, or in any later request or process, a caller has no lawful
-  handle on an instance that already exists.
-- Proposal and transition records do not retain the acting principal. A
-  separation-of-duty rule cannot see who proposed, so consumers put a
-  caller-asserted actor field in business input instead.
+Framework grade means the lawful path is complete and the misleading path is
+mechanically unavailable. AI-first means explicit authoring, typed lifecycle
+states, one ownership model, narrow audience facades and compiled examples.
+Instructions to remember a missing gate, supply an actor, reconstruct a private
+identity or choose between retry styles do not satisfy this milestone.
 
-Every consumer that runs a multi-actor workflow is therefore forced to keep a
-second copy of kernel truth (a status table, an instance registry, an audit log,
-an actor column), which is exactly the defect WORTH exists to prevent. The
-platform manufactures the violation. This is a correctness defect against the
-platform's own principles, not a missing convenience, and this milestone treats
-it that way.
+Query keeps one workflow kernel and one capability decision pipeline. It gains
+required canonical actor attribution, a positive recorded-actor requirement in
+that pipeline, governed discovery and read-only observation, and owning adapters
+for the remaining capability commands. Observation never becomes authority.
 
-The rationale for having no instance-status query was sound: a status projection
-must never stand in for transition admission
-([9.17.6](./milestone-9.17.6.md): "Neither compiled meaning nor instance status
-can execute an operation"; "a stale projection cannot authorize a step"). That
-rule stays. Principle 10 ("reporting is not authority") already permits a
-read-only, derived observation that authorizes nothing. The missing piece is the
-observation, not a relaxation of authority.
+**No legacy or backward compatibility.** Replace affected contracts outright.
+Do not preserve old bytes, optional attribution, omitted-policy meanings, API
+aliases, fallback readers or a second ordinary retry style to avoid a break.
+Keep genuinely distinct semantics distinct: observation and admission; proposer,
+advancer, executor and approver; current logical workflow migration and format
+migration; domain mutation and a kernel capability command.
 
-## Roadmap Placement And Dependencies
+## Placement And Scope
 
-9.17.6.5 consumes the completed 9.17.6 workflow kernel, 9.17.7 inbound
-occurrences and the 9.17.6.3 envelope subscription. Phases 1 to 3 do not depend
-on 9.17.6.4 and may start beside it when capacity allows. Where both milestones
-touch `worth-query-publication/src/application_entry/workflow/`, the later slice
-rebases on the earlier one; neither duplicates the other's owner. Phase 4
-consumes 9.17.6.4's certified workflow adapter and source-only lane.
+This is the successor to 9.17.6.4. Its owning adapters consume that milestone's
+certified descriptor, fresh-admission, recovery and cleanup contracts. Declaration,
+actor facts, disclosure and index work can be prepared beside 9.17.6.4 after their
+shared boundaries are fixed; integration must consume the completed predecessor,
+rather than implement a competing operation owner.
 
-This milestone does not reopen completed milestones, does not gate 9.17.7 or the
-9.17 umbrella, and does not claim durable persistence (Store owns restart
-recovery). It makes the existing process-local and checkpoint-restored truth
-observable and re-acquirable.
+The milestone does not reopen the 9.17 umbrella or retroactively gate 9.17.7.
+It covers process-local truth and supported current-format checkpoint restore.
+Store still owns durable restart recovery. Current-format adoption, logical
+workflow migration and fork continuation remain supported native operations.
 
-## Forbidden Implementations
+Do not add a status table, actor store, history log, instance registry, scheduler,
+polling loop, new observation stream or second permission evaluator. Existing
+commits, workflow facts, capability admission and the envelope retain ownership.
+New indexes and projections are derived and disposable.
 
-These are the mistakes this milestone exists to make impossible. Each is
-plausible, each would ship a second source of truth or a second authority, and
-each must be refused by compile-fail evidence, a court, or a facade/boundary
-check, not by review alone.
+## Grounding In The Existing Implementation
 
-| Forbidden implementation | Why it is wrong | Required evidence that it is absent |
+Paths below are relative to `workspaces/worth-query/crates/`.
+`primary_graph/` abbreviates
+`worth-query-execution/src/domain_computation/primary_graph/`. This is the
+planning baseline; implementation must review changes landed by 9.17.6.4 before
+editing a shared owner.
+
+| Existing boundary | Actual guarantee or defect | Required change |
 | --- | --- | --- |
-| A workflow status field, status table, history log, event stream or instance registry, kernel-side or host-side | A second copy of truth (Principle 1). Status already exists as transitions; history already exists as commits. | Topology review of every new file; no new platform kind or aspect except the optional actor fields in Phase 3; destroying every derived index and rebuilding it yields identical observations. |
-| An observation, or any value derived from it, accepted by `advance`, `approve`, `for_workflow_operation` or any execution entrance in place of `RequiredWorkflowOperation`, `RequiredWorkflowApproval` or transition admission | Observation would become authority (Principle 10). `PublishedWorkflowInstanceRef` / `PublishedWorkflowProposalRef` stay what they are today: non-authoritative locators that advance, approval, migration and fork continuation already accept and re-verify against truth. | Compile-fail examples: no observation type converts into or substitutes for `RequiredWorkflowOperation`, `RequiredWorkflowApproval` or transition admission. Advance continues to re-derive state through `select_current_transition`; approval keeps re-binding a proposal ref to the latest proposal transition and refusing a changed one. |
-| `Serialize`, `Deserialize`, `from_parts` or any public constructor on `PublishedWorkflowInstanceRef` / `PublishedWorkflowProposalRef` | A forged or stale locator. Re-acquisition must re-resolve against truth. | Facade snapshot shows no constructor; compile-fail on construction; the only sources are a landed receipt or governed discovery at an exact observation. |
-| An observation without an exact basis ("latest status") | Reports must name the truth they describe. | Every observation result carries the `WorthQueryApplicationReadObservation` it was read at; no entrance reads an implicit current world. |
-| Making platform workflow kinds nameable in the application catalog, or a raw query over their layout | Breaks the catalog collision guarantee and freezes internal layout as public contract. | Observation is a typed workflow API. `platform_entity_lowering.rs` keeps kinds above the catalog. |
-| Discovery by scanning unrelated population | Cost grows with unrelated truth; violates hot-path honesty. | Discovery uses indexes made current for the basis (the `discover_workflow_definition` pattern); cost courts hold with unrelated instance population increased 1x/10x/100x. |
-| Ungated disclosure of instance existence, actors or approvers | Self-description grants no disclosure authority (Principle 10). | Every read goes through Query's disclosure contract; courts deny an undeclared reader; approver/actor identities need a separately declared audit read. |
-| Recording an actor from business input, `StrategyCallerProvenance` or the settling caller | Caller-asserted identity is forgeable; it is the pattern Principles 3 and 4 forbid. | The actor is taken only from the admitted operation's `operation_scope_binding().principal()`; a court submits a mismatched actor field in input and proves it is ignored. |
-| Treating a missing legacy actor as "a different actor" | Fails open on separation of duty. | Legacy-absent actor is "unknown"; a separation-of-duty rule over unknown denies. Court over a carried pre-milestone instance. |
-| A new rule evaluator, a second authorization path or a workflow-specific permission check for separation of duty | A second way to express policy. | Separation of duty uses the existing capability composition rules over Query-authored actor relations; no new rule clause kind. |
-| Exposing `WorkflowInstanceProgressRetention`, a progress basis, or any cached projection as truth | Derived state promoted to truth (Principle 2). | No facade export; observations are read from kernel truth through the observation readers. |
-| Exposing a fork's copied instance as a live, advanceable ref | Forks hold history, not callable authority (9.17.6). | Discovery on a fork returns copied instances as historical; advancing them is refused; court on a forked branch. |
-| A new polling loop, wake, callback or scheduler to keep an observation fresh | The caller pumps; there is no background scheduler. | Live observation rides the existing 9.17.6.3 envelope subscription; no new stream type. |
+| Publication `application_entry/retained_read.rs`, `request.rs` | `WorthQueryApplicationReadObservation`, `retain_read` and `at(..)` already bind reads to an exact retained basis. | Reuse them; no implicit-latest workflow read API. |
+| `primary_graph/application_discovery/workflow.rs` | Definition discovery has indexed lookup and duplicate detection, but is public on the selected operation and calls broad `ensure_primary_indexes_for_basis`. | Govern the consumer entrance and make only the selected discovery indexes current. |
+| `primary_graph/workflow/schema/indexes.rs` | Branch-scoped instance and proposal identity indexes already exist. | Add their lookup consumers and selected-index currency; use existing derived-index machinery for bounded enumeration. |
+| `primary_graph/application_attempt/workflow_instance_observation.rs`, `step_budget.rs` | Observation purposes serve advance and close, interacting with admission allowance, deadlines and retained progress. | Add a truly read-only purpose with bounded reconstruction and no admission/progress side effects. |
+| `primary_graph/workflow/instance/adoption_inventory.rs`; publication `programs/` | Adoption has an inventory; 9.17.6.4 Phase 0.4 supplies adoption authorization. That is distinct from permission to disclose instance identities. | Gate inventory reads, preparation denials and advanced exposure without duplicating adoption authorization. |
+| `primary_graph/workflow/schema/proposal.rs`, `transition.rs`, `approval.rs` | Proposals and transitions lack actor fields; approvals already retain the admitted approver and authorization evidence. | Required canonical actor roles from the native admitted basis. |
+| `primary_graph/application_attempt/workflow_proposal_program/` | Proposal identity/replay binds operation, input and source without a proposer contract. | Principal-bound proposal intent and replay refusal across principals. |
+| Declaration `application_capability/composition.rs`; execution `domain_computation/authorization/capability_lowering.rs`, `capability_observation/decision_denial.rs` | Existing separation-of-duty and distinct-actor graph rules are prohibitions: a match denies; no matching actor relation does not deny. | Add a positive recorded-actor requirement to the existing composition/lowering/decision pipeline. Missing evidence must deny. |
+| `primary_graph/application_attempt/elevation_lifecycle_facts.rs` | Native admission already authors requester/approver attribution. | Reuse its admitted-identity discipline, without copying its application-relation representation into a second workflow actor fact. |
+| Declaration `application_program/workflow/vocabulary.rs`, `application_operation/binding/workflow_requirements.rs` | Workflow specs have no observation policy; guarded binding omission has an implicit approval meaning. | Explicit workflow observation/actor policies and explicit guarded evidence requirements. |
+| `primary_graph/workflow/schema/version.rs` and workflow readers | Current protocol deliberately accepts earlier condition shapes; retained assessment includes compatibility interpretation of an absent program revision. | Version the changed workflow contract and remove compatibility-only interpretation in affected readers. |
+| Publication capability delegation/revocation; Bank `estate_capability_admission/delegation_progression.rs` | Native commands still expose caller re-issue/replay handling outside the ordinary mutation owner. | Mandatory request-level command-owning adapters using 9.17.6.4 ownership mechanics. |
 
-## Current Boundary: What Exists And What Is Missing
-
-Paths are relative to `workspaces/worth-query/crates/`; `primary_graph/` means
-`worth-query-execution/src/domain_computation/primary_graph/`.
-
-| Existing owner | Present guarantee | Gap this milestone closes |
-| --- | --- | --- |
-| `worth-query-publication/src/application_entry/retained_read.rs` (`WorthQueryApplicationReadObservation`), `request.rs` `retain_read` / `at(..)` | The one exact-basis read binder: branch identity and selected commit, lease-backed, not constructible. | Becomes the only basis for workflow observation and discovery. |
-| `primary_graph/application_discovery/workflow.rs` (`discover_workflow_definition`) | Indexed lookup, `LIMIT 2` corruption detection, index currency for the basis, a non-authoritative ref exact for one occurrence. | The pattern instance discovery must mirror. Definitions shipped; instances, planned in 9.17.6, did not. |
-| `primary_graph/workflow/schema/indexes.rs` | `instance-identity` and `proposal-identity` branch-scoped indexes are registered. | They have no lookup callers and are not in the index-currency set; discovery must make them current for the basis. |
-| `primary_graph/application_attempt/workflow_instance_observation.rs` and its history reader | Advance re-verifies every ref field against truth; an ended-history basis already exists. | Add a read-only observation purpose that reads, reports and authorizes nothing. |
-| `primary_graph/workflow/instance/adoption_inventory.rs` (`read_live_instances`) | Bounded enumeration of live instances for adoption. | It is a scan, not an index, and its public entrance is ungated (below). Enumeration for consumers needs an index. |
-| `worth-query-publication/src/application_entry/programs/request.rs`, `programs/preparation.rs` (`workflow_inventory`) | Lists live instance ids on a branch for adoption. | **Disclosure defect:** the request stores `_principal` and never uses it (as does `programs/branch_set.rs`), so the inventory is not gated by any capability. The same inventory also leaks through `prepare`'s `WorkflowDispositionRequired { inventory }` / `WorkflowInventoryChanged { inventory }` denials, and through the public `WorthQuerySelectedProductOperation::workflow_adoption_inventory`, which a consumer reaches with no principal via `with_host_advancement` and `on_branch(..).select(..)` (`worth_query_host::facade::primary_graph`). Fixed in Phase 1 for every one of these routes. |
-| `primary_graph/workflow/schema/approval.rs`, `primary_graph/application_attempt/workflow_transition_program/approval_decision/identity.rs` | Approvals retain the approver as a partition/slot/generation triple plus an authorization snapshot, failing closed when absent. | The pattern for recording proposal and transition actors. |
-| `primary_graph/workflow/schema/proposal.rs`, `transition.rs` | Proposal and transition truth, no actor. | Optional actor fields (Phase 3). |
-| `primary_graph/application_attempt/workflow_proposal_program.rs` | Proposal replay matches operation, input and source only. | **Replay defect:** a different principal submitting identical input replays the first principal's proposal. Fixed in Phase 3. |
-| `primary_graph/application_attempt/elevation_lifecycle_facts.rs`; `worth-query-declaration/src/application_capability/composition.rs` | Query authors requester/approver relations from the admitted principal into relation kinds the application declares and binds (`ApplicationCapabilityElevationDefinition::requester()` / `approver()`); `separation_of_duty` and `distinct_actor` rules are prohibition paths from the principal that traverse them. | The precedent for workflow actor relations. |
-| `primary_graph/workflow/instance/transition/admission/selection.rs` | An advance at a proposal slot returns `PreparationDenied(WorkflowTransitionNodeUnsupported)` with only a node path. | A typed awaiting-proposal outcome (Phase 2). |
-| `primary_graph/application_installation/program/checkpoint.rs` (`in_memory_rostered_program_from_checkpoint`) | Workflow facts survive restore as relational truth. | No caller can resume a restored instance; no court proves it. |
+The current graph prohibition vocabulary cannot, by itself, enforce the required
+positive presence of an exact private workflow actor. Declaring it sufficient or
+adding a workflow-only check would both be dishonest. The extension below is
+part of the destination, not a conflict deferred until implementation.
 
 ## Product Decision Lock
 
-### Observation Is Derived, Exact And Authorizes Nothing
+### 1. One Supported Contract, With Honest Refusal
 
-Workflow observation is a typed, read-only API on the existing application
-request. It reads kernel truth at one exact `WorthQueryApplicationReadObservation`
-through the existing observation readers with a new read-only purpose. Every
-result carries the observation it was read at. It returns facts, never handles
-that execute: no `RequiredWorkflowOperation`, no `RequiredWorkflowApproval`, no
-issued authority, no transition admission.
+Update affected declaration, installation, canonical identity, portable package,
+workflow fact, checkpoint and facade contracts together. Required actor meaning
+participates in the authoritative record and proposal replay identity. Change
+protocol versions and canonical digests wherever interpretation changes; retaining
+an old identity is not a constraint.
 
-`advance` stays the only way to learn what may happen next with authority. An
-observation that says an instance awaits an operation is a report of truth at a
-basis; it is not permission and it may be stale by the time the caller advances.
-Advance re-derives the transition through `select_current_transition` as today.
+An artifact using a displaced affected contract is unsupported. Detect and refuse
+it with a typed format/version outcome at the earliest owning load, installation,
+restore or replay boundary, before interpreting it as current truth or producing
+effects. A rejected restore/import does not partially install state. Leave the
+source artifact intact; no destructive reset or automatic format migration.
+Do not add an upgrade tool, dual writer, compatibility mode or actor backfill.
 
-An instance observation reports, at its basis: identity, definition and program
-revision recorded in truth (never the revision carried in a ref), subject, live
-or ended state, the node it awaits and what that node needs (proposal, operation,
-approval, inbound completion, condition, terminal), and bounded, paged history of
-transitions, proposals (operation, input type, input identity, node, actor) and
-approvals (decision, node, approver). The proposed input value is not retained and
-is not reported; it remains domain data.
+A malformed current-format record missing its required actor is corruption, not
+a supported old record, an anonymous actor or a successful inequality comparison.
+Genuinely optional lifecycle data stays optional: an instance awaiting a proposal
+has no proposer yet, and a transition with no performed operation has no executor
+role. Represent those states explicitly instead of inventing an unknown principal.
 
-The read-only purpose spends no step budget, binds no deadline, admits nothing
-and never installs, advances or evicts the warm progress projection
-(`WorkflowInstanceProgressRetention`, which today's observation readers update)
-from a basis other than the branch head admission would use. An observation at
-an older basis or on a fork reads truth and leaves the projection untouched.
-Deriving the awaited node is bounded by the existing history reconstruction
-budget, as advance is; only the reported history is paged. A history or
-enumeration page continuation is bound to the observation it was read at;
-continuing it at another basis is refused with a typed denial, never silently
-re-based, and a continuation is not a ref.
+Remove old aliases, omitted guarded-requirement semantics and affected fallback
+branches when the current producer lands. The old condition encoding and absent
+revision branch are concrete cleanup targets where the replaced workflow protocol
+owns them. This does not authorize deleting unrelated platform history support.
+Logical migration between valid current workflow definitions remains a distinct
+native operation; it is not backward-format compatibility.
 
-### No Second Store
+### 2. Canonical Actor Roles, Authored Only By Admission
 
-The milestone adds no status field, status table, history log, event stream,
-instance registry or cached projection exposed as truth. Indexes added or made
-current for discovery are derived, branch-scoped and rebuildable from kernel
-truth, and are proven rebuildable. The only new durable truth is Phase 3's
-admitted actor attribution (see "Actors Are Admitted" for the one-fact rule).
+The admitted operation or command supplies actor identity. A public API accepts
+no actor override, role callback or caller-authored authorization witness.
+Business input and `StrategyCallerProvenance` are never attribution sources.
 
-### Discovery Re-Acquires Locators From Truth
+| Role | Canonical source | Required when |
+| --- | --- | --- |
+| Proposer | Principal of the admitted proposal command | A proposal is published. |
+| Advancer | Principal whose admitted workflow command causes the transition | A transition is published, including native start/close/migration paths as applicable. |
+| Executor | Principal of the admitted performed operation | A workflow transition records performance of that operation. |
+| Approver | Principal of the admitted approval decision | An approval decision is published. |
 
-Instance discovery mirrors `discover_workflow_definition`: an indexed lookup made
-current for the basis, `LIMIT 2` corruption detection, and a ref that is exact for
-one branch occurrence and grants no authority. Two lookups are provided:
+Use typed role-bearing records/constructors and the existing complete entity
+identity discipline (partition, slot, generation). Define each transition kind's
+admitted source so system completion or adoption cannot invent a principal.
+Deferred publication retains the original admitted actor: a later settler is
+neither the original executor nor the proposer merely because it finishes work.
 
-- **Exact:** by the start intent the caller already owns (definition, subject and
-  start key), which determines the instance identity, through the existing
-  `instance-identity` index. The identity
-  (`workflow_instance_program/intent_identity.rs`) also binds the definition
-  entity, its content identity and structure, and the program revision the
-  instance started under. Program adoption later changes the instance's recorded
-  revision but not its identity, so exact discovery takes the start-time
-  revision as part of the intent and never recomputes it from the current
-  program; a court discovers an instance after adoption carried it forward.
-- **Bounded enumeration:** paged instances of one definition, optionally of one
-  subject, through a derived branch-scoped index made current for the basis,
-  using an existing `DerivedIndexKind` (for example `RelatedEntityOrdering` over
-  the existing instance-to-definition relation, the mechanism continuation
-  ordering already uses), not a new index engine.
+These canonical workflow fields are the one actor truth. Policy and audit
+read them; any lookup index is derived. Do not additionally require applications
+to declare and maintain proposer/advancer/executor relations. Do not store an
+independent actor projection whose agreement is a convention or dual-write test.
+Platform workflow kinds remain outside the application catalog; no raw-layout
+query or newly public platform kind substitutes for the typed workflow facade.
 
-Results distinguish live instances (which yield a `PublishedWorkflowInstanceRef`)
-from ended or cancelled instances (which yield history only). An instance a
-migration ended reports its successor through the existing
-`instance_migrated_from` relation, subject to the same disclosure, so
-re-acquisition follows a migration instead of losing the instance; a successor's
-identity, which also binds its source and fork, is never recomputed by the
-caller. A fork's copied instances are historical on the fork. Fork continuation
-and migration already take a `PublishedWorkflowInstanceRef`; discovery must leave
-them a lawful source (the source branch's discovered ref, which they re-verify)
-and must not add a constructor to serve them. Proposal refs are re-acquired from
-an instance observation of the awaited proposal, never constructed by the caller.
-A cross-process caller re-acquires by discovery; it never persists or forges a ref.
+A current-format carry, restore, migration or fork preserves attribution to the
+original occurrence. It does not replace historical actors with the principal
+performing adoption or reconstruction. Comparing a historical actor does not
+re-authorize that historical principal; the acting principal still needs its own
+fresh current admission.
 
-### Disclosure Is Governed
+Proposal intent binds the proposer. Replay matching the same native intent and
+principal can recover its original result. A different principal presenting the
+same key/input/source cannot recover or silently replace the first proposal:
+return a typed mismatch/refusal without leaking it through a weaker read route.
 
-Observation, discovery and enumeration go through Query's existing disclosure
-contract. The workflow spec declares the capability that may observe its
-instances, scoped to the instance subject by default. Actor and approver identities
-require a separately declared audit read; without it they are omitted, and the
-observation states that they were withheld. Redaction may hide detail; it never
-hides that custody, recovery or approval is incomplete. Only entity ids are
-reported; the authorization principal snapshot and external identity material
-are never exposed through a read.
+### 3. Positive Recorded-Actor Requirements In The Capability Pipeline
 
-The existing adoption inventory moves under the same gate. Its request's principal
-is used, not stored and ignored. The gate covers every route that yields the
-inventory or instance ids, including `prepare`'s inventory-carrying denials and
-the public `WorthQuerySelectedProductOperation::workflow_adoption_inventory`,
-which consumers reach without a principal. New discovery, enumeration and
-observation entrances live on the principal-bearing application request, never as
-public methods on `WorthQuerySelectedProductOperation`, even though
-`discover_workflow_definition` sits there today. Definition discovery gains the
-same principal-bearing, disclosure-gated entrance in Phase 1; its ungated
-selected-operation method stops being a consumer route.
+Extend the existing capability actor composition with a typed requirement over
+a native recorded-role source. The source identifies the precise workflow
+proposal/transition occurrence being admitted, not every actor who ever touched
+the subject. It is selected by Query from the admitted workflow binding.
 
-Authorizing program adoption itself (`adopt`, `prepare`, `publish` and branch-set
-adoption on the programs request) is not this milestone's work: it is
-[9.17.6.4 Phase 0.4](./milestone-9.17.6.4.md#phase-0-truth-guards). This
-milestone consumes that authorization and adds only the disclosure gate for the
-inventory routes it does not cover.
+An author declares the required role and comparison against the acting principal.
+The installed program validates the source/role against the guarded operation.
+There is no stringly typed platform path, application actor entity argument or
+consumer-supplied observation accepted as evidence.
 
-A refused read is decided from the principal and the caller-supplied scope before
-any instance is read, and is the same typed refusal whether or not the instance
-exists. Declaring the observation capability is optional on the workflow spec:
-absent, no principal may observe or discover its instances, and a spec that does
-not declare it keeps its installed identity unchanged.
+The requirement is **presence AND the declared actor comparison**, within the
+same Query-to-Bridge/Signal authorization pipeline that already owns capability
+rules. A missing, foreign, stale, wrongly scoped or malformed required source
+cannot satisfy it. A role that has not occurred cannot satisfy a requirement for
+that role either. The distinct-actor case compares the full entity identity.
 
-### Actors Are Admitted, Recorded And Never Asserted
+This requires a principled typed clause/source extension, its canonical encoding,
+installation validation and lowering. It does not require a new rule engine,
+workflow permission service or post-admission side check. Existing graph-based
+prohibitions retain their independent relational meaning; they are not a substitute
+for positive actor presence. Share fact selection and role semantics between policy
+and observation without making an observation an authorization input.
 
-Proposal and transition records gain optional actor fields: the admitted principal
-of the operation that wrote them, as the partition/slot/generation triple used by
-approvals, taken from `operation_scope_binding().principal()`. Deferred owner
-settlement records the actor carried in the admitted operation's settlement basis,
-not the caller that settles it.
+A matched actor comparison alone grants nothing. Current capability grant,
+scope, revocation, program, branch and operation admission remain mandatory.
+Prove separation of duty against another proposal on the same subject, another
+instance, another branch and a reused entity slot with a different generation.
 
-Compatibility follows the 76e1890143 pattern: optional fields, no workflow protocol
-version bump, no new kind inside the full reserved workflow kind block, no change
-to existing proposal or transition identity digests (the actor is stored beside
-them). Legacy records have no actor; an absent actor means unknown. Unknown never
-satisfies a distinct-actor or separation-of-duty rule.
+### 4. Explicit Authoring And Governed Disclosure
 
-Once proposers are recorded, proposal replay matches the principal as well:
-identical input from another principal is refused with a typed denial rather than
-replaying the first principal's proposal.
+Every guarded operation binding explicitly chooses its workflow evidence
+requirements, including occurrence-only and approval-requiring forms. Omission
+is an authoring error. Remove the legacy omitted encoding rather than keep its
+bytes under a new spelling.
 
-### Separation Of Duty Uses Existing Rules
+Every workflow spec explicitly chooses disabled observation or a governed policy,
+including its audit policy and actor requirements. Explicit `NotApplicable` is
+valid where a distinction is genuinely inapplicable; an implicit permissive
+default is not. Installed identity includes these declarations.
 
-Following the elevation lifecycle precedent, Query authors workflow actor relations
-(proposer, advancer, executor, approver of an occurrence) from admitted principals.
-The existing `separation_of_duty` and `distinct_actor` capability composition rules
-traverse them unchanged. No new rule clause kind, rule evaluator or workflow-only
-permission check is added. Recorded actors are historical attribution compared by
-entity id; they never re-authorize the recorded principal.
+Observation, definition/instance discovery and enumeration enter through the
+principal-bearing application request and existing disclosure machinery.
+Instance access is subject-scoped by default. Enumeration across a definition
+requires an explicitly declared definition-scoped read; a missing subject never
+widens a subject-scoped grant. Definition discovery has an explicit declared scope
+rather than borrowing an arbitrary instance's subject.
 
-Three constraints follow from how those rules work, and Phase 3 resolves each
-before it writes code:
+Authorize the principal and caller-supplied scope before existence-dependent
+lookup. Undeclared/unauthorized readers receive the same typed refusal for present
+and absent identities. After that gate, validate the located record against the
+authorized scope; a record outside it is undisclosed, just as an absent record is.
+Pages cannot smuggle records outside it. Historical fact selection does not
+resurrect an expired or revoked disclosure grant: read admission is fresh even
+when the selected data basis is old.
 
-- **Endpoints are application-declared.** The rules are paths from the principal
-  over application-catalog relations, and platform workflow kinds stay
-  unnameable. As with elevation, the workflow spec binds application-declared
-  relation kinds that Query authors; the binding must still identify the one
-  proposal or occurrence being decided, not every past proposal on the subject.
-- **One fact, not two.** An actor relation and an actor field describe the same
-  admitted principal. Either the relation is the record (the elevation precedent
-  keeps no separate field) or both are written by the same owner in the same
-  commit from the same principal, and a court proves they never disagree.
-- **Unknown fails closed through existing rules.** `separation_of_duty` and
-  `distinct_actor` are prohibitions: a matched path refuses, and a missing
-  relation matches nothing, so a legacy record with no actor would pass them. The
-  denial for unknown must come from the existing composition (for example an
-  allow requirement that the recorded actor relation exists). If the existing
-  vocabulary cannot express it, stop and surface the conflict rather than add an
-  evaluator or a workflow-only check.
+Actor/approver identities require the separately declared audit read. A reader
+without it sees explicit withholding rather than misleading actor absence.
+Redaction must still report incomplete custody, recovery or approval honestly.
+Never disclose authorization snapshots or external identity credentials.
 
-### Awaiting A Proposal Is A Named State
+Apply the same inventory disclosure contract to the normal programs request,
+adoption preparation denials and the advanced selected-operation route.
+Unprivileged preparation errors must not embed instance inventories. Remove or
+internalize ungated consumer entrances, including definition discovery; calling
+through an advanced/host facade must not bypass the gate. Adoption authority
+itself remains the existing 9.17.6.4 owner.
 
-An advance at a proposal slot returns a typed awaiting-proposal outcome naming the
-node path, the operation and the input type, alongside the existing `Awaiting*`
-family. `WorkflowTransitionNodeUnsupported` remains for genuinely unsupported
-nodes.
+### 5. Exact-Basis Discovery And Observation, With No New Authority
 
-### Live Observation Uses The Existing Envelope
+All reads use `WorthQueryApplicationReadObservation`. Results identify the basis
+whose truth they report; they never silently consult the current branch head.
 
-A live instance observation is marked through the 9.17.6.3 envelope subscription:
-it registers the instance facts it consumed as an ordinary consumer of that one
-Query-owned subscription and is marked by the touched graph like any other. That
-milestone's rule that "workflow coverage needs no marking" concerns admission
-pins and stays unchanged; it does not mean observations are already covered. No
-new stream, wake or polling contract.
+Provide exact instance discovery and bounded definition/subject enumeration.
+Exact discovery uses Query's canonical original start-intent material, including
+the start-time definition/program identity where the existing identity requires
+it. Supply a typed non-authoritative discovery intent from that owner; do not
+make applications assemble private digest fields or recompute an old intent
+using the currently installed revision. It may be retained as ordinary intent
+data; it is not a serialized live ref, authority or required instance registry.
+Enumeration permits reacquisition when no original intent was retained.
 
-## Consumer Guidance Hardening
+An adoption that carries an instance forward does not change its start identity.
+A logical migration reports the successor through existing native relations,
+with separate disclosure of that successor. The caller never manufactures the
+successor identity. A fork's copied instance is historical on the fork; source
+discovery remains a lawful locator for native fork continuation.
 
-These items were deferred from the 2026-10-13 documentation review. Each removes a
-place where a careful consumer can still build a second way.
+Discovery distinguishes live, historical and missing results. Only live discovery
+yields a `PublishedWorkflowInstanceRef`; an observation of a pending proposal
+can reacquire its `PublishedWorkflowProposalRef` after the same gates.
+References stay opaque and nonserializable, with no public `from_parts`.
+They locate native truth and authorize nothing.
 
-1. **Explicit workflow requirements.** Omitting `workflow_requirements` on a
-   guarded binding currently means "exactly one approval", the opposite of what a
-   reader expects. Make omission a compile error for guarded bindings. Keep the
-   legacy meaning expressible through an explicit named form whose installed
-   encoding is byte-identical to today's absent value, so installed releases,
-   archives and definition identities are unchanged.
-2. **One retry style for capability lifecycle commands.**
-   `execute_capability_delegation_in_program` and its revocation sibling retry by
-   re-issuing and matching `AlreadyCommitted`
-   (`workspaces/worth-query-bank-world/crates/bank-server/src/estate_capability_admission/delegation_progression.rs`).
-   9.17.6.4 places them outside `mutate()`, so its owning operation does not cover
-   them as delivered. Give them a request-level owner that reuses 9.17.6.4's
-   descriptor and fresh-admission model (Query owns the original command and its
-   Query-scoped key; the caller never re-issues), or record in this plan, before
-   Phase 4 closes, why they are kernel commands with a single documented retry
-   contract. They may not remain an undocumented second style, and no third
-   retry shape may be introduced for them.
-3. **Mixed reference workflow.** A compiled, CI-run example in
-   `worth-query-certification/examples/` using a neutral domain (for example a
-   controlled document or a lab sample): unsigned data capture through an
-   occurrence-only guarded operation; a condition-gated signature on a binding
-   declared with `requiring_approval`; separation of duty between proposer and
-   approver through recorded actors; an `AwaitInbound` external completion;
-   discovery of the instance in a second request; observation of its history and
-   approvers; and the complete caller loop, including the awaiting-proposal
-   outcome. Its excerpts in the guides are marker-checked.
-4. **Generated doc facts.** Enumerations that drifted before (workflow node kinds,
-   `WorkflowProgressOutcome`, workflow validation denial kinds, mutation outcomes)
-   are rendered into the docs from source by the existing doc tooling, and the
-   check fails when they differ.
-5. **Absence claims are checked.** A consumer-doc sentence that says a capability
-   does not exist carries a marker naming either a known-gap row or a symbol whose
-   absence the checker verifies against the facade snapshot. Unmarked absence
-   claims fail the doc check.
-6. **One prohibition list.** The four divergent "do not" lists (build guide §8,
-   front door anti-patterns, host README "Host code must not", How WORTH Works
-   §17) collapse into the capability index; the others link to it.
-7. **Facade rustdoc routes to the guides.** The `worth-query-decl` and
-   `worth-query-host` crate docs link the build guide and capability index.
-8. **Agent skill copies stay in sync.** `.grok/skills` is derived from `skills/`
-   and checked, or removed.
-9. **Fence debt reaches zero for consumer docs.** The shrink-only fence debt
-   seeded by 9.17.6.4 Phase 0 is zero for every document in the checker's
-   configuration (`tools/boundary-check/config/consumer-docs.toml`), including
-   `docs/*.md`, Query `docs/foundations/`, Query `docs/AI_README.md` and the
-   `worth-query-host` and `worth-query-decl` READMEs. No configured document
-   keeps silent debt.
+Observation derives state, recorded definition/program revision, subject, awaited
+node/need and bounded history of transitions, proposals and approval decisions.
+Report actor roles only under audit disclosure. Proposed domain input values
+remain domain data; report the existing input type/identity, not a new stored
+payload. State derivation uses the existing bounded history reconstruction
+contract; history pages do not require replaying an unbounded log.
+
+A read-only observation purpose spends no workflow step budget, binds no workflow
+admission deadline and does not install, advance or evict the warm progress
+projection. Normal request cancellation and read/reconstruction resource budgets
+still apply. Old-basis and fork reads cannot modify head admission progress.
+
+A page continuation binds runtime/branch, exact basis, workflow identity,
+authorized scope, filters and ordering. It is opaque, non-authoritative and cannot
+be reused at another basis or with different selection parameters. Fresh read
+admission applies on continuation; no page token preserves a revoked read grant.
+
+Make only the selected lookup/enumeration indexes current. Ordinary requests must
+not inherit workflow population work through all-index currency. An explicitly
+budgeted cold rebuild may reconstruct derived indexes from truth; hot exact
+lookup and bounded pages must not hide a population scan. Duplicate exact hits
+are corruption, never arbitrary selection. Hot cost is the existing index lookup
+plus bounded matching candidates or emitted page, not linear work over unrelated
+population. Reconstruction work is separately identified and budgeted.
+
+`advance` remains the authority-producing workflow decision. Observation cannot
+convert to an operation/approval requirement, admission pin or executable handle.
+Advancing and executing after a read re-derive current state and current permission.
+
+An advance at a proposal slot returns a typed `AwaitingProposal` outcome naming
+the node, operation and input type; it is not an unsupported-node denial.
+Live observation uses the existing 9.17.6.3 envelope/touched-fact subscription.
+There is no additional scheduler, poll contract or workflow stream.
+
+### 6. One Owning Lifecycle For Capability Commands
+
+Ship request-level owning adapters for delegation and revocation. Query retains
+the original native command and its Query-scoped identity; the caller advances
+the owner instead of resubmitting the command and interpreting `AlreadyCommitted`.
+
+Reuse 9.17.6.4's descriptor, fresh-admission, exact recovery and independent cleanup
+mechanics. Native capability command owners still decide authority and publication.
+A command is not a fake domain mutation, workflow operation, domain action or
+manufactured output. Common ownership mechanics belong to one owner; distinct
+native admission and result semantics stay distinct.
+
+Retries use fresh requests and preserve the original command across conflicts,
+deferred settlement and recovery. A changed principal/program/scope cannot reuse
+old admission. Ambiguous publication recovers the exact keyed native result,
+without duplicating effects. Terminal cleanup remains independently advanceable.
+
+Move Bank and public examples to these adapters. Remove displaced ordinary
+consumer re-issue entrances and manual replay plumbing; keep implementation-native
+execution behind its owning boundary. Documenting the second retry style does
+not satisfy closure.
+
+## Intended Caller Experience
+
+The following is a target sketch, not a claim that these names exist today.
+Final spellings follow the existing facade and are compiled in the reference
+consumer. The original start intent is typed Query material, not a hand-built
+workflow identity:
+
+```rust,ignore
+// Illustrative target: one request, declared policy, one exact retained basis.
+let basis = request.retain_read(&phase)?;
+let read = request.at(&basis);
+let found = read.discover_workflow_instance(&workflow, &original_start)?;
+let view = read.observe_workflow_instance(&found)?;
+```
+
+The real example matches typed live/historical/missing and denied/withheld
+outcomes. It discovers in a later request and after current-format restore.
+Execution uses the existing owning workflow adapter and its complete caller
+loop; no new advance API is introduced just to resemble the sketch.
+A capability command uses the same retain-and-advance lifecycle vocabulary while
+retaining its native command semantics. No example supplies actor ids, writes
+workflow status, reconstructs a ref or matches native replay receipts.
+
+## Destination Topology And Owners
+
+Paths below are destinations inside existing audience crates, not a second
+framework. Create files only when their responsibility lands; split by owner
+rather than collecting the milestone in a large miscellaneous module.
+
+| Owner | Destination and responsibility |
+| --- | --- |
+| Declaration: `worth-query-declaration/src/application_program/workflow/` | `observation_policy.rs`, `actor_policy.rs` and existing vocabulary: explicit disclosure/role declarations. |
+| Declaration: `application_capability/` | `recorded_actor.rs` with typed native sources/comparisons; extend existing composition and canonical encoding. |
+| Declaration: `application_operation/binding/workflow_requirements.rs` | Explicit guarded evidence authoring; remove omitted legacy semantics and update macros. |
+| Installation: `worth-query-installation/src/application_program/workflow/` | Role/policy validation and installation through the existing vocabulary owner; identities include meaning. |
+| Execution: `primary_graph/workflow/` | `actor/record.rs`, `actor/selection.rs`: one canonical role record and exact source selection. Existing `schema/` owns required fields, indexes and protocol changes. |
+| Execution: `domain_computation/authorization/` and its existing capability observation | Extend lowering and positive requirement decisions within the existing pipeline; no parallel evaluator. |
+| Execution: `primary_graph/application_attempt/` | Existing proposal, transition, approval, settlement and observation readers publish/consume the new contract; private `workflow_observation/` owns read state, history and paging. |
+| Execution: `primary_graph/application_discovery/workflow/` | Definition, instance and enumeration responsibilities over selected-index currency. The current `workflow.rs` becomes their narrow entry. |
+| Publication: `worth-query-publication/src/application_entry/workflow/` | Discovery/observation entrances and typed outcomes, including `AwaitingProposal`, over existing retained reads and owning adapters. |
+| Publication: `application_entry/capability_command/` | Delegation/revocation adapters and command-specific admission/recovery/close; delegate common lifecycle mechanics to the existing operation owner. Replace the flat ordinary command entrances. |
+| Existing portable/package/checkpoint owners | Current-only encoding and early typed refusal; no compatibility package or migration service. |
+| Certification and doc tooling | Focused workflow-truth courts, one compiled neutral mixed workflow example, and the existing boundary/doc checker owners. |
+
+Audience facades export caller tasks, policies and outcomes; execution layout,
+actor selectors, read purposes and progress retention stay private. Keep module
+and function size within repository laws, with public entry modules explaining
+their task and routing to domain owners. Do not create placeholder files or a
+duplicate helper tree merely to match this table.
+
+The concrete skeleton below uses **E** for an existing owner extended in place,
+**N** for a new responsibility, **R** for a replaced entrance and **D** for removed
+compatibility code. All crate paths are under `workspaces/worth-query/crates/`.
+
+```text
+worth-query-declaration/src/
+  application_program/workflow/                  E: workflow meaning
+    vocabulary.rs                               E: explicit policy contract
+    observation_policy.rs                       N: read/audit scopes
+    actor_policy.rs                             N: occurrence role bindings
+  application_capability/
+    composition.rs                              E: positive actor requirement
+    recorded_actor.rs                           N: source/comparison vocabulary
+    canonical_composition_components.rs          E: current canonical meaning
+  application_operation/binding/
+    workflow_requirements.rs                    R: explicit evidence; D: omission
+worth-query-installation/src/
+  application_program/workflow/
+    actor_policy.rs                             N: source/role validation
+    observation_policy.rs                       N: policy installation
+    vocabulary/installation.rs                  E: install integration
+    vocabulary/support_identity.rs              E: installed meaning
+  application_capability/canonical_basis.rs      E: current contract basis
+worth-query-execution/src/domain_computation/
+  authorization/
+    capability_lowering.rs                      E: same decision pipeline
+    capability_observation/recorded_actor.rs     N: positive evidence/denials
+  primary_graph/
+    workflow/
+      actor/{record,selection}.rs                N: canonical native roles
+      schema/{proposal,transition,approval}.rs   E: required role facts
+      schema/{version,indexes}.rs                E: current format/derived lookup
+    application_attempt/
+      workflow_observation/{state,history,paging}.rs  N: read-only derivation
+      workflow_instance_observation.rs           E: explicit read purpose
+      workflow_proposal_program/                 E: principal-bound intent
+    application_discovery/
+      workflow.rs                               R: narrow governed routing
+      workflow/{definition,instance,enumeration}.rs   N/move: indexed readers
+worth-query-publication/src/application_entry/
+  retained_read.rs                              E: existing exact read basis
+  workflow/{discovery,observation}.rs             N: request audience entrances
+  workflow/operation/                           E: predecessor owning adapter
+  capability_command/                           N: native command adapters
+    delegation.rs
+    revocation.rs
+    operation.rs
+    operation/{admission,recovery,close}.rs       command semantics, not a new engine
+  capability_delegation.rs                       R: ordinary re-issue entrance
+  capability_revocation.rs                       R: ordinary re-issue entrance
+worth-query-certification/
+  examples/observable_workflow.rs                N: compiled mixed consumer
+  tests/workflow_truth/                          N: focused public-boundary courts
+```
+
+The structural axes are declaration meaning, installation validation, native
+truth, authorization decisions and public lifecycle. The command adapter tree
+contains command-specific semantics; shared lifecycle stays in the predecessor
+operation owner. Read derivation depends on canonical facts, never the reverse;
+authorization selects those facts privately and never consumes a public view.
+Existing facade/dependency checks preserve those directions. M2.7.1 enters through
+the certified audience facade without exposing or moving these private owners.
+No uncommitted generic framework or versioned legacy subtree is reserved.
 
 ## Adversarial Courtroom
 
-Use the real Query composition root and installed public consumer programs. Each
-court runs through the public facade.
+Use real Query composition roots, installed programs and public audience facades.
+Internal corruption injection is permitted only to test the owning boundary.
+Choose representative hostile cases and focused mutation probes; do not multiply
+every test by every input dimension.
 
-| Court | Hostile sequence | Required outcome |
+| Court | Hostile sequence | Required result |
 | --- | --- | --- |
-| Cross-request re-acquisition | Start an instance; drop every in-memory value; in a new request, discover it by start intent and by paged enumeration; advance it. | The discovered ref advances exactly as the original would. A forged or altered start intent finds nothing; no ref can be constructed. |
-| Checkpoint restore | Run to `AwaitingOperation`, capture a checkpoint, restore, discover, observe, advance and execute. | Observation after restore equals observation before at the corresponding basis; execution proceeds; no duplicate effect. |
-| Observation is not authority | Observe "awaits operation X"; revoke the approver's grant or advance the instance elsewhere; then try to execute using anything derived from the observation. | Nothing derived from the observation reaches execution (compile-fail); a fresh advance re-derives and refuses or reissues correctly. |
-| Exact basis | Observe at basis A; commit a transition; observe at basis B. | Each observation reports its own basis; A is unchanged when re-read at A. |
-| Disclosure | A principal without the declared observation capability attempts discovery (for an existing and an absent instance), enumeration, observation, the adoption inventory, adoption `prepare` without dispositions, and the selected-operation inventory route; a principal with observation but not audit reads actors. | The same typed refusal for the first in every case, existing or absent; no route yields an instance id; actor and approver identities withheld and the withholding stated for the second; incomplete custody still visible. |
-| Fork isolation | Fork a branch with a live instance; discover on both branches. | The fork reports a historical copy, not an advanceable ref; the source branch is unaffected. |
-| Actor attribution | Propose as A with an input field naming B; advance as C; approve as D; execute as E. | Recorded proposer A, advancer C, approver D, executor E; the input field is ignored for attribution. |
-| Separation of duty | Declare a distinct-actor rule between proposer and approver; approve as the proposer; then as another principal; then on a carried legacy instance with no recorded proposer. | Denied, allowed, denied (unknown actor). |
-| Cross-principal replay | Principal B submits A's exact proposal input and key shape. | Typed refusal; A's proposal is not returned to B. |
-| Awaiting proposal | Advance at a proposal slot. | Typed awaiting-proposal outcome naming operation and input type; no denial. |
-| Cost | Increase unrelated instances 1x/10x/100x and one instance's history length; run an ordinary non-workflow request beside them. | Exact discovery cost independent of unrelated population; enumeration and reported-history cost bounded by the page size requested; state derivation bounded by the existing history reconstruction budget; the ordinary request's index-currency cost does not grow with workflow population. |
-| Rebuildability | Destroy every derived index used by discovery and rebuild it. | Identical discovery and observation results. |
+| Current contract / clean refusal | Load displaced affected package/checkpoint/fact versions, then separately restore a valid current-format checkpoint. | Typed unsupported outcome before partial install/effects; original bytes intact. Current restore retains discovery, actors and exact recovery. No fallback reader. |
+| Required roles | Publish proposal, approval and each relevant transition kind; attempt malformed current records; supply misleading business actor input. | Required admitted roles are present and correct; malformed facts refuse; input never determines actor. Not-yet-performed roles remain typed lifecycle states. |
+| Deferred attribution | A admits an operation, B settles/reconstructs it, C adopts the current program. | Original executor remains A; B/C cannot overwrite it. New commands retain their own distinct actors. |
+| Actor policy | Proposer tries to approve; another currently authorized actor tries; required source is absent, foreign or from another occurrence/branch; an entity slot is reused. | Same actor denies; distinct authorized actor passes only with exact positive source evidence; missing/foreign/stale sources deny; generation matters. |
+| Proposal replay | B submits A's exact key/input/source; A retries after ambiguous publication. | B receives typed refusal; A recovers exactly its own result with no second proposal/effect. |
+| Reacquisition / adoption / migration | Drop refs, discover in another request and after restore; carry by adoption; migrate to a successor. | Original start intent still resolves correctly; bounded enumeration also works; successor follows native truth and disclosure; fresh native advance remains required. |
+| Fork isolation | Discover source and copied instances on a fork; perform native fork continuation. | Copied instances are historical, cannot advance, and do not contaminate source progress; lawful source locator supports continuation. |
+| Observation is not authority | Observe a pending step, change workflow truth or revoke a grant, then attempt execution. | No observation conversion supplies authority; fresh advance/admission sees changed truth and refuses or returns the correct new result. |
+| Exact basis / paging | Read A, change head to B, continue A; attempt token reuse with B, another runtime, filters or scope; revoke read permission. | A stays A; mismatched continuations refuse; revoked disclosure cannot continue; neither read updates head progress or consumes workflow steps. |
+| Disclosure / audit | Unauthorized reads of present/absent ids through every discovery/inventory/preparation/advanced route; subject reader tries definition enumeration; ordinary observer reads actors. | Indistinguishable typed unauthorized refusal, no leaked ids; no scope widening; actors explicitly withheld without hiding incomplete lifecycle state. |
+| Awaiting proposal | Advance a valid proposal node through the owning workflow adapter. | Named awaiting outcome with operation/input type; no unsupported-node error or host status field. |
+| Cost / rebuild | Increase unrelated workflow population; run exact lookup, bounded pages and an ordinary request; discard/rebuild indexes. | Hot work is local to selected lookup/page; no all-index population work on ordinary paths. Cold reconstruction is explicit and budgeted; rebuilt results are identical. |
+| Owning kernel commands | Advance delegation/revocation through conflicts, changed admission, ambiguous commit, deferred settlement and terminal cleanup. | Query retains intent; fresh permission is required; exact recovery avoids duplicate effects; cleanup progresses independently; no caller re-issue loop. |
+| Mechanical misuse | Omit guarded evidence/policies, construct/serialize a live ref, supply an actor or convert observation into authority. | Authoring/compile/facade checks reject these paths. The supported mixed consumer compiles without manual escape hatches. |
 
-Mutation probes must turn these courts red when: discovery skips index currency;
-observation reads an implicit current world; a ref gains a public constructor;
-the actor is read from input; unknown actor passes a distinct-actor rule; replay
-ignores the principal; the disclosure gate is bypassed on any inventory route; a
-refusal differs for an existing and an absent instance; an observation at an
-older basis updates the progress projection.
+Mutation probes must expose the critical lies: removing positive actor presence,
+selecting another occurrence, attributing a settler, ignoring the proposal principal,
+bypassing disclosure, reading head for a retained basis, mutating warm progress
+during a historical read, skipping selected-index currency or replaying a command
+without current admission. Reuse tests for the same boundary rather than requiring
+an exhaustive mutation matrix or repeated full-suite runs per edit.
 
-## Ordered Phase Plan
+## Ordered Delivery Phases
 
-### Phase 1: Governed Discovery And Re-Acquisition
+### Phase 1: Current Actor Contract And Explicit Policy
 
-Gate the existing adoption inventory with its request principal, on every route
-named in Current Boundary. Declare the
-observation capability on the workflow spec and route discovery through Query's
-disclosure contract. Make the instance and proposal identity indexes current for
-the basis. Ship exact and enumerated instance discovery returning live refs or
-history. Prove cross-request, checkpoint-restore and fork courts. The next phase
-may trust lawful re-acquisition.
+Land explicit guarded requirements and workflow policies, required canonical roles,
+principal-bound proposal intent and the positive capability requirement through
+declaration, installation, canonical encoding and native authorization. Update all
+affected publication/read/settlement paths together with version checks and remove
+the replaced compatibility code.
 
-### Phase 2: Instance Observation
+Prove current-format restore, intact predecessor refusal, required roles, deferred
+attribution, exact actor policy and cross-principal replay. Freeze the shared
+policy/actor/discovery-intent contracts before downstream implementation fans out.
+This phase must not ship optional actors or an unenforced policy as a foundation.
 
-Add the read-only observation purpose to the existing observation readers and the
-typed observation API at an exact basis: state, awaited node and its needs, and
-paged history of transitions, proposals and approvals. Add the awaiting-proposal
-outcome. Wire live observation to the envelope subscription. Prove observation is
-not authority, exact basis, disclosure, cost and rebuildability.
+### Phase 2: Governed Discovery And Reacquisition
 
-### Phase 3: Admitted Actor Attribution
+Move definition discovery and all inventory routes behind principal-bearing
+disclosure. Ship typed exact start-intent discovery, current indexed instance
+lookup and bounded authorized enumeration. Return live locators or historical
+results, including adoption/migration/fork semantics. Remove ungated bypasses.
 
-First settle the three separation-of-duty constraints (endpoints, one fact,
-unknown fails closed) against the existing rule vocabulary, or stop and surface
-the conflict. Record optional proposer, advancer and executor actors from admitted
-principals, including deferred owner settlement. Make proposal replay
-principal-aware. Author
-workflow actor relations so existing separation-of-duty rules apply. Report actors
-through the audit read. Prove attribution, separation of duty including legacy
-unknown, cross-principal replay and checkpoint/adoption compatibility of legacy
-records.
+Prove cross-request and current-checkpoint reacquisition, no existence leak,
+scope discipline, fork isolation and selected-index locality/rebuildability.
+Discovery can now supply lawful refs without any host registry.
 
-### Phase 4: Consumer Guidance Hardening And Closure
+### Phase 3: Read-Only Observation And Live Marking
 
-Deliver the nine hardening items, consuming 9.17.6.4's certified owning entry for
-item 2 and its workflow adapter for the reference example. Remove every closed
-row from the known-gap tables in `docs/capability-index.md` and Query
-`docs/foundations/workflows.md`. Run facade, boundary, doc and affected Query
-gate suites. Both correctness and structure reviews clear the joined result.
+Add the isolated read purpose, exact-basis state and paged history, audit withholding,
+proposal-ref reacquisition and the typed awaiting-proposal outcome. Register
+observation dependencies through the existing envelope subscription.
 
-## Documentation Deliverables
+Prove read/admission separation, bounded reconstruction, basis-bound pages,
+fresh disclosure on continuation and unchanged warm progress under old-basis/fork
+reads. Use Phase 1's canonical actor reader; do not invent an audit-only source.
 
-Documentation lands with the phase that ships each capability, in the existing
-documents. Marker-checked or doctested examples only, per 9.17.6.4 Phase 0.
+### Phase 4: Owning Commands, Consumer Deletion And Closure
 
-| Document | Required change |
+Ship mandatory delegation/revocation owning adapters and delete Bank's manual
+re-issue/replay plumbing. Complete the nine hardening obligations below, consume
+the certified 9.17.6.4 workflow adapter and exercise the joined mixed consumer.
+Remove closed known gaps and displaced API/docs/tooling forms.
+
+Run the affected Query gate suites and repository-required boundary, facade,
+agent-context and doc checks on the joined result. Correctness and structural
+review must agree with the public proof. No legacy fallback or undocumented
+alternate ordinary path is an acceptable stopping point.
+
+Independent disclosure/index preparation and doc tooling can proceed after shared
+contracts freeze; command adapters can proceed once 9.17.6.4's owner is certified.
+Parallel workers must own disjoint responsibilities and integrate at these seams.
+
+## Consumer Guidance Hardening: Nine Required Deliverables
+
+1. **Explicit requirements.** Omission on a guarded binding is an authoring error.
+   Occurrence-only and approval-requiring forms are explicit current encodings.
+   Update macros, portable packages, examples and installed identities together.
+2. **One owning command style.** Delegation/revocation use the required adapters,
+   including Bank adoption and deletion of ordinary manual replay handling.
+   There is no documentation-only alternative.
+3. **Compiled mixed reference workflow.** Add a CI-run neutral example under
+   `worth-query-certification/examples/`: occurrence-only data capture, a
+   condition-gated approval-requiring operation, proposer/approver separation,
+   `AwaitInbound` completion, later-request discovery, audit observation and the
+   full owning caller loop including `AwaitingProposal`. Use the real inbound
+   boundary; do not invent a fake remote service. Guide excerpts are marker-checked.
+4. **Generated doc facts.** Render workflow node kinds, progress outcomes,
+   validation denials and mutation outcomes from their source owners through the
+   existing doc tooling; drift fails the check.
+5. **Checked absence claims.** Consumer claims that a capability does not exist
+   require a known-gap or facade-absence marker that the checker verifies.
+6. **One prohibition list.** The capability index owns consumer prohibitions.
+   Build guide, front door, host README and How WORTH Works link to it.
+7. **Facade rustdoc routes.** `worth-query-decl` and `worth-query-host` crate
+   docs link the build guide and capability index.
+8. **One skill source.** `skills/` is authoritative; `.grok/skills` is generated
+   from it and checked for drift, with no independently edited copy.
+9. **Zero consumer fence debt.** Every document configured by
+   `tools/boundary-check/config/consumer-docs.toml` has compiled, marker-checked
+   or explicitly illustrative code under the existing policy. No silent debt
+   remains in configured root docs, foundations, AI README or audience READMEs.
+
+## Documentation And Closure
+
+Deliver documentation with the capability it describes, in the existing documents.
+Consumer guides describe the current lawful path and link to this milestone for
+engineering rationale; they do not teach compatibility branches or private layout.
+
+| Document / owner | Required deliverable |
 | --- | --- |
-| `docs/capability-index.md` | Task rows for discovering, observing and auditing workflow instances and for separation of duty over workflow actors; delete each known-gap row as it closes. |
-| Query `docs/foundations/workflows.md` | Observation, discovery, disclosure and actor sections; the observation API and its no-authority rule; delete closed known-gap rows. |
-| `docs/build-an-application.md` §6 | Re-acquire, observe and audit in the run sequence; replace the "Observing an instance. There is no instance-status query." paragraph with the observation API and its no-authority rule; the awaiting-proposal outcome in the outcome table. |
-| `docs/how-it-works.md` §13 | Observation as derived truth at a basis; actor attribution; why advance remains the only authority. |
-| `docs/glossary.md` | Workflow observation, instance discovery, actor attribution. |
-| `worth-query-host/README.md`, `docs/api.md` | New facade names and their audience. |
+| `docs/capability-index.md` | Discovery, observation, audit, actor policy and owning command task rows; canonical prohibition list; delete closed gap rows. |
+| Query `docs/foundations/workflows.md` | Explicit policies, required roles, discovery intent, live/historical refs, exact observation, audit withholding, fork/migration and read-versus-authority contract. |
+| `docs/build-an-application.md` | Compiled mixed journey, reacquisition after restore, complete owning workflow/command loops and named awaiting outcomes. |
+| `docs/how-it-works.md` | One kernel truth, positive recorded-actor requirement in existing authorization, exact observation and no second owner. |
+| `docs/glossary.md` | Observation, discovery intent, live locator, historical result and distinct admitted actor roles. |
+| Query `docs/api.md`, host/decl READMEs and rustdoc | Audience-correct new entrances; no displaced public signatures or alternative ordinary retry recipe. |
+| Existing doc/boundary tooling and skills | Generated facts, checked absence, marker-linked excerpts, one prohibition source, derived skill check and zero configured fence debt. |
+| Roadmap | This destination, current-only cutover, dependencies and evidence remain consistent with the milestone. |
 
-## Must Ship And Closure
+Closure requires every product decision, courtroom boundary and all nine hardening
+items above, with the affected production, examples, macro/package and checkpoint
+surfaces on one current contract. Accepted earlier evidence is reused unless its
+boundary changed; verify coherent slices, not every small edit. No test-only
+authority, consumer status/actor store or manual identity plumbing is allowed.
 
-- A consumer can re-acquire any live instance it may see, in any request and after
-  checkpoint restore, without holding prior in-memory values, and cannot construct
-  or forge a ref.
-- A consumer can observe an instance's state, awaited need and history at an exact
-  basis, under declared disclosure, and nothing it observes can authorize anything.
-- Proposals and transitions record admitted actors; separation of duty over
-  workflow actors uses the existing rules; unknown never passes.
-- The adoption-inventory disclosure defect and the cross-principal proposal replay
-  defect are closed with courts.
-- Every forbidden implementation above is absent, each by its stated evidence.
-- No new store, registry, log, stream, scheduler or authority path exists.
-- The nine hardening items are delivered or, for item 2 only, recorded with a
-  single documented retry contract.
-- The known-gap tables list none of the gaps this milestone closes.
-- Final joined correctness and structure review, facade/boundary/doc checks and
-  affected Query gate suites all agree.
+After public certification, proprietary M2.7.1 can pin the certified public
+revision and consume these contracts. This milestone does not certify that
+proprietary implementation or silently move private scope into the public plan.

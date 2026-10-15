@@ -1,9 +1,10 @@
 # Owning-operation cutover inventory
 
 Engineering inventory for public Query9.17.6.4. Baseline `045d4ec` precedes the
-owning-operation cutover; audited destination is `f7a6d83` plus the scoped audit
-repair. This records source deletion and audience placement, not an authority,
-receipt registry, consumer usage guide, or milestone certification.
+owning-operation cutover; the joined candidate includes the scoped audit repairs
+and all three explicit-advanced UI bridges. This records source deletion and
+audience placement, not an authority, receipt registry, consumer usage guide,
+or milestone certification.
 
 ## Ordinary and native responsibility
 
@@ -100,16 +101,14 @@ execution wrappers and do not provide an alternate progression door.
   owning progression; HTTP transports store those owners, not cloned diagnostic
   continuation authority. Genuine Bank workflow native control and installation,
   assessment, inbound occurrence and external rail owners keep separate duties.
-- At frozen `f7a6d83`, three UI callers still use implicit native receivers:
-  product_projection/application_action_owner.rs,
+- The joined candidate includes commit `777144081749021d9afde8c18ecbb1403692aa3d`:
+  the three UI sites product_projection/application_action_owner.rs,
   product_projection/application_source_owner.rs and status_integrity/lease_tests.rs
-  under `workspaces/worth-ui/crates/worth-ui-query-binding/src`. Available commit
-  `777144081749021d9afde8c18ecbb1403692aa3d` contains the exact three explicit-advanced
-  bridges. Its successful `--lib --tests` compilation took 9m34s; no runtime cases
-  were executed. Root integration has joined that commit; this Source worktree
-  remains at `f7a6d83` and has not joined it here. The full owning UI consumer
-  conversion remains the distinct future successor; mechanical receiver changes
-  and compilation do not establish that conversion.
+  under `workspaces/worth-ui/crates/worth-ui-query-binding/src` explicitly select
+  advanced native receivers. Their `--lib --tests` compilation succeeded; no runtime
+  cases were executed. Full owning UI consumer conversion remains a distinct
+  future successor; mechanical receiver changes and compilation do not establish
+  that conversion.
 - Private adopter cutover is not certified by neutral fixtures. No old-format,
   alias, fallback or advanced compatibility support is added for it.
 

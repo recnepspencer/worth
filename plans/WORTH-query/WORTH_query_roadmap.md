@@ -396,9 +396,10 @@ cross-feature proof gates before final certification:
   guarded-input validation, CI-enforced documentation examples, authorization of
   program adoption)
 - `Milestone 9.17.6.5` makes workflow truth observable: governed instance
-  discovery and re-acquisition, read-only observation at an exact basis, admitted
-  actor attribution with separation of duty over workflow actors, and consumer
-  guidance hardening; it adds no status store, registry or second authority
+  discovery and re-acquisition, read-only observation at an exact basis, required
+  canonical actor roles with occurrence-bound capability requirements, owning
+  capability commands and consumer guidance hardening, with one current contract
+  and no legacy fallback; it adds no status store, registry or second authority
 - `Milestone 9.17.7` adds authenticated bounded inbound occurrences and exact
   external-effect completion before workflow eligibility
 - `Milestone 9.18` accepts tree-based semantic undo and redo as freshly
@@ -453,8 +454,9 @@ than in it. Its immediate successor is planned `Milestone 9.17.6.4`, which
 composes existing Query owners into the ordinary owning operation API.
 The side chain is `9.17.6.3` -> `9.17.6.4` -> ordinary lifecycle adoption, with
 `9.17.6.5` observable workflow truth following 9.17.6.4. 9.17.6.5 also consumes
-the completed 9.17.7 inbound contract; its first three phases do not depend on
-9.17.6.4 and may run beside it.
+the completed 9.17.7 inbound contract. Actor, disclosure and index work can be
+prepared beside 9.17.6.4 after shared contracts freeze; integrated ownership and
+consumer certification consume the completed 9.17.6.4 contract.
 This does not reopen completed milestones or retroactively gate 9.17.7 or the
 9.17 umbrella. New adopters claiming framework-owned operation lifecycle wait
 for the 9.17.6.4 public proof and consume its certified revision.
@@ -5607,18 +5609,23 @@ authenticated principal.
 ## Milestone 9.17.6.5: Observable Workflow Truth
 
 **Planned.** [milestone-9.17.6.5.md](./milestone-9.17.6.5.md) follows 9.17.6.4.
-The workflow kernel owns instance, transition, proposal and approval truth, but no
-consumer can observe it, re-acquire an existing instance in a later request or
-after checkpoint restore, or see who acted. Every multi-actor consumer is therefore
-forced to keep a second copy of kernel truth, which violates the platform's first
-principle. This milestone corrects that defect by composition: governed instance
-discovery mirroring definition discovery, a typed read-only observation at an
-exact basis that authorizes nothing, optional admitted actor fields on proposals
-and transitions, and separation of duty through the existing capability rules over
-Query-authored actor relations. It also closes the ungated adoption-inventory
-disclosure and cross-principal proposal replay defects, and delivers the deferred
-consumer guidance hardening. It adds no status store, history log, registry,
-stream, scheduler or authority path; advance remains the only authority.
+Make kernel-owned workflow truth sufficient for a multi-actor application without
+a consumer status store, actor copy or instance registry. Ship required canonical
+proposer, advancer, executor and approver roles where those roles have occurred;
+extend the existing capability pipeline with positive, exact-occurrence actor
+requirements instead of relying on graph prohibitions that pass when evidence is
+absent. Govern definition/instance discovery and every adoption-inventory route,
+support exact-basis read-only observation and current-checkpoint re-acquisition,
+and close cross-principal proposal replay. Observation authorizes nothing.
+
+This is a clean current-contract cutover: change affected encodings, identities,
+protocols and APIs together, remove legacy fallbacks and optional actor semantics,
+and refuse unsupported artifacts intact rather than migrate or guess. Current
+logical workflow migration remains distinct from format compatibility. Required
+delegation/revocation owning adapters reuse 9.17.6.4 mechanics while retaining
+native command authority. All nine consumer guidance/tooling obligations close;
+documenting an alternate ordinary retry style is not a substitute. No second
+store, permission evaluator, scheduler or observation stream is introduced.
 
 ## Milestone 9.17.7: Inbound Occurrences And External Effect Completion
 
@@ -6093,7 +6100,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Exact invalidation | Milestone 9.17.6.3; replaces the 9.17.6 touched-evidence-only rules | Observable-revision touched records with index keys; aspect versions bumped only by a changed field; settle-time reverse index with insertion replay; commit-time marking and upstream propagation; clean reuse; input and output cutoff; one-call advancement of the required set; counted full-verification fallback; one Query-owned envelope subscription for outputs, live queries and workflow coverage | No demand-time re-check of clean state, commit scan of settlements or waiting work, second delivery path, footprint-keyed reuse, or application settle polling | Equal marking, verification and contact counts for a fixed edit at 1, 10 and 100 model copies; zero-check clean demand; randomized differential against full verification; counted fallback triggers; mutation probes turn evidence red |
 | Platform parallel computation | Milestone 9.17.6.3; replaces Signal Milestones 14-17 | One execution authority and lease hierarchy for every runtime; structured map/reduce/scan/fork-join/rounds/decompose; keyed, component and bisection partitioners; per-partition reuse with a retained canonical reduction tree; proof-carrying Signal graph parallelism and scope-path locality; parallel advancement inside caller-pumped `advance` | No thread, pool or Rayon use outside `worth-execution`, user-asserted parallel safety, worker-count-dependent partition identity or reduction shape, completion-order publication, or partition key used as an invalidation cause | Serial-oracle equality at one, two, machine and oversubscribed widths under forced schedules; identical charged work at every width; per-partition reuse and island stability by operation count; lease and backpressure bounds; mutation probes turn evidence red |
 | Framework-owned operation continuations | Milestone 9.17.6.4; immediate successor to 9.17.6.3 | Owned original typed descriptor, fresh native admission, fixed/discovered retention and output composition, canonical typed delivery at one observation, independent cleanup and source-only/workflow adapters | No duplicate native state machine, receipt-reconstructed custody, handler replay on read failure, stale currentness, observer-issued authority, hidden polling or delivery-as-cleanup | Real public partial-effect/retention/read-refusal courts, complete discovered-set currentness, finite-policy and cleanup proof, compile-fail misuse, mutation probes and ordinary consumer deletion |
-| Observable workflow truth | Milestone 9.17.6.5; successor to 9.17.6.4 | Governed instance discovery and re-acquisition, read-only instance observation at an exact basis, typed awaiting-proposal outcome, admitted actor attribution and separation of duty over workflow actors, consumer guidance hardening | No status store, history log, registry, observation-as-authority, constructible or serializable ref, implicit current-world read, catalog exposure of platform kinds, unrelated-population scan, ungated disclosure, caller-asserted actor or fail-open unknown actor | Cross-request and checkpoint re-acquisition, observation-is-not-authority compile-fail, exact-basis, disclosure, fork, attribution, separation-of-duty, cross-principal replay, cost and rebuildability courts with mutation probes |
+| Observable workflow truth | Milestone 9.17.6.5; successor to 9.17.6.4 | Governed discovery/re-acquisition, exact-basis observation, required canonical actor roles, positive occurrence-bound capability requirements, awaiting-proposal outcome, owning capability commands and consumer guidance | No legacy fallback, second status/actor store, observation-as-authority, constructible or serializable live ref, implicit current-world read, catalog exposure of platform kinds, unrelated-population scan, ungated disclosure, caller-asserted actor or missing-actor success | Current-checkpoint restore and intact predecessor refusal; cross-request, exact-basis, disclosure, fork/migration, deferred attribution, actor/replay, native command recovery, bounded lookup and rebuildability proofs; compiled mixed workflow and zero consumer fence debt |
 | Inbound occurrences and external effect completion | Milestone 9.17.7 | Installed inbound protocols; authenticated bounded immutable occurrences; exact dispatch/branch correlation; external-effect-owner consumption; workflow posture delivery | Raw callback, payload, status, transport acknowledgement or workflow command cannot complete an effect; fork, duplicate and redispatch races cannot duplicate consumption | Static Bank death-notice process court, publication-gap/custody owner court and approved-payment workflow reconstruction; real CAD remote effects require a later adoption court |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |

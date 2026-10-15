@@ -555,14 +555,27 @@ any commit, even after the branch adopts another program. If the branch's
 program removed the action, the lane returns the inactive-program denial and
 cannot commit the removed action.
 
-A key records its intent durably, and that intent names no runtime, so the same
-request matches it before and after a restore or reopen, and a changed request
-under the key is still `IdempotencyIntentDrift`. The recorded receipt is not
-durable. A native request retry whose receipt is no longer retained answers
-`PreviouslyCommitted(observation)`, naming the original `commit_id()` and
-committing nothing. It carries no live receipt or handler result; read current
-state under fresh authorization before further work. Lower surfaces that
-require a live receipt retain `CommittedReceiptNotRetained { commit }`.
+A key records its native intent durably. Replay after restore or reopen requires
+the full original intent to be re-expressible under fresh authorization. The tested
+no-source, unpinned actions satisfy this requirement where their binding permits
+that source posture and all other native intent material remains identical.
+No-source alone is not a blanket restart guarantee.
+
+A row or result-set source expectation commits to the original runtime authority.
+A new observation after restore is different intent, not a recreation of the old
+source. Do not change the key or source to force replay, retain a foreign old
+observation, or use `without_source` where the binding requires a query source.
+Process-local owning handles are not serialized restart authority; Store retains
+its distinct durable restart responsibility.
+
+When the original intent does match but its live receipt is no longer retained,
+native replay answers `PreviouslyCommitted(observation)`, naming the original
+`commit_id()` and committing nothing. It carries no live receipt or handler result.
+A fresh current read is not proof that an ambiguous external effect never occurred.
+Reconcile the authoritative outcome through the existing native, domain or Store
+recovery owner as appropriate before choosing a new business operation; a new key
+is not recovery for an uncertain old effect. Lower surfaces that require a live
+receipt retain `CommittedReceiptNotRetained { commit }`.
 A record from an earlier intent encoding that cannot be checked against the
 request answers `RecordedIntentUnverifiable`, never drift.
 

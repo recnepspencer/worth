@@ -507,14 +507,29 @@ admission and the send answers `AlreadyCompleted`.
 
 ## Publication Settlement Recovery
 
-An ordinary request retry after checkpoint restore or reopening still compares
-the durable intent under fresh authorization. When its original live receipt
-is absent, `WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
+Checkpoint replay requires the full stable original native intent to be
+re-expressible under fresh authorization. The restored fixed and discovered courts
+exercise lawful no-source, unpinned actions with all other intent material
+unchanged; this is not a guarantee for every no-source action. A row or result-set
+source expectation binds the original runtime authority. Observing again after
+restore creates different intent and cannot promise historical replay. Do not
+substitute `without_source` for a required query source, retain a foreign old
+observation, or change the key/source to force a match.
+
+When the original intent matches and its live receipt is absent,
+`WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
 the sealed `WorthQueryHistoricalApplicationCommit` and its `commit_id()`. This
 is a landed historical fact: the request commits nothing again. It carries no
 handler result, publication authority, workflow settlement authority, or live
-receipt. Query current state through a freshly admitted request before further
-work. An owning operation preserves `PreviouslyCommitted` as terminal historical
+receipt. Current state under fresh authority does not establish that an ambiguous
+external effect never occurred. Reconcile the existing authoritative outcome
+through its native, domain or Store recovery owner as appropriate before choosing
+any new business operation. Do not automatically reissue an uncertain effect under
+a new key. Process-local owning handles and Store's durable restart responsibility
+are distinct; live owners are not serialized to recreate authority.
+
+Within-runtime owning retry and recovery continue to retain their original native
+custody. An owning operation preserves `PreviouslyCommitted` as terminal historical
 evidence: it does not rerun the handler, recover a handler result, or complete
 output settlement. Retain that terminal owner and close it with a fresh request;
 a refused close returns its custody.
