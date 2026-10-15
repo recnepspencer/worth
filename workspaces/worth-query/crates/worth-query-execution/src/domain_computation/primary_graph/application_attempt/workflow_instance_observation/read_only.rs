@@ -5,6 +5,23 @@ pub(in crate::domain_computation::primary_graph) struct ReadOnlyWorkflowHistory 
     history: history::ObservedWorkflowHistory,
 }
 impl ReadOnlyWorkflowHistory {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn matches_target(
+        &self,
+        instance: EntityId,
+        basis: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> bool {
+        matches!(self.history.facts.as_slice(),[WorthQueryApplicationObservedFact::WorkflowHistoryBasis { instance:recorded,snapshot,.. }]
+            if *recorded==instance && snapshot.runtime_instance_id()==basis.runtime_instance_id()
+                && snapshot.branch_id()==basis.branch_id() && snapshot.snapshot_id()==basis.snapshot_id()
+                && snapshot.version_id()==basis.version_id())
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn transitions(
+        &self,
+    ) -> &[ObservedWorkflowTransition] {
+        &self.history.transitions
+    }
+
     pub(in crate::domain_computation::primary_graph) fn transition_count(&self) -> usize {
         self.history.transitions.len()
     }

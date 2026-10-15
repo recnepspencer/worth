@@ -137,7 +137,7 @@ pub use request::{
     WorthQueryApplicationBranchSetRequest, WorthQueryApplicationHistorySelectionDenial,
     WorthQueryApplicationReadObservationDenial, WorthQueryApplicationRequest,
     WorthQueryApplicationRequestExt, WorthQueryApplicationRetainedRequest,
-    WorthQueryOutputCurrentnessDenial,
+    WorthQueryOutputCurrentnessDenial, WorthQueryWorkflowObservationDenial,
 };
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use workflow::{

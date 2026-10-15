@@ -8,6 +8,8 @@ mod contract;
 pub(super) mod declaration;
 #[path = "workflow/definition.rs"]
 mod definition;
+#[path = "workflow/governed_read.rs"]
+pub mod governed_read;
 #[path = "workflow/grant_status.rs"]
 mod grant_status;
 #[path = "workflow/join_replay_definition.rs"]
@@ -95,14 +97,16 @@ pub fn declare(
 ) -> worth_query_host::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<
     super::schema::DocumentRetentionSchema,
 > {
-    advance::install_binding(mutation::install_binding(contract::install(
-        grant_status::install_members(advance::install_members(declaration::install_members(
-            review_requirement::declare(schema),
+    governed_read::declare(advance::install_binding(mutation::install_binding(
+        contract::install(grant_status::install_members(advance::install_members(
+            declaration::install_members(review_requirement::declare(schema)),
         ))),
     )))
 }
 #[path = "workflow/advance.rs"]
 mod advance;
 
-pub(super) use declaration::{WorkflowAuthoringGrant, WorkflowGrantIdentityField,
-    WorkflowDocumentOwner, WorkflowGrantGrantor, WorkflowGrantGrantee};
+pub(super) use declaration::{
+    WorkflowAuthoringGrant, WorkflowDocumentOwner, WorkflowGrantGrantee, WorkflowGrantGrantor,
+    WorkflowGrantIdentityField,
+};

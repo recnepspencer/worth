@@ -60,7 +60,7 @@ pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;
 pub(super) mod snapshot_lease;
 mod workflow_deadline;
 mod workflow_definition_program;
-mod workflow_instance_observation;
+pub(in crate::domain_computation::primary_graph) mod workflow_instance_observation;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::decode_field_revision_fact;
 pub(in crate::domain_computation::primary_graph) use workflow_instance_observation::WorkflowStepAllowance;

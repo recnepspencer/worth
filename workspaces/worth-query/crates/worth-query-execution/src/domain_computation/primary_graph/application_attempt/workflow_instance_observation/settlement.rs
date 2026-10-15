@@ -127,20 +127,15 @@ fn observe_transition(
         facts,
     )?;
     if purpose == TransitionReadPurpose::Command {
-        let advancer = layout
-            .transition
-            .advancer
-            .observe(runtime, execution, snapshot, transition, kind, facts)?;
-        let executor = layout
-            .transition
-            .executor
-            .observe(runtime, execution, snapshot, transition, kind, facts)?;
-        let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
-        if applicable(advancer, true).is_err()
-            || applicable(executor, operation_receipt_identity.is_some()).is_err()
-        {
-            return Err(denial("current transition actor applicability is corrupt"));
-        }
+        super::transition_roles::observe(
+            execution,
+            runtime,
+            snapshot,
+            layout,
+            transition,
+            operation_receipt_identity.is_some(),
+            facts,
+        )?;
     }
     let nodes = adjacency_with_kind(
         execution,

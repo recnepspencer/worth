@@ -10,6 +10,20 @@ pub(in crate::domain_computation::primary_graph) enum WorkflowInstanceState {
 }
 
 impl WorkflowInstanceState {
+    /// Current native record decoding, shared by read projections and command applicability.
+    pub(in crate::domain_computation::primary_graph) fn from_persisted_tag(
+        tag: u64,
+    ) -> Option<Self> {
+        [
+            Self::Ready,
+            Self::Completed,
+            Self::Cancelled,
+            Self::Migrated,
+        ]
+        .into_iter()
+        .find(|state| state.persisted_tag() == tag)
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn persisted_tag(self) -> u64 {
         match self {
             Self::Ready => 0,

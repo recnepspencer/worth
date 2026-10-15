@@ -92,7 +92,9 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         (): Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, DocumentRetentionSchema>,
     ) -> Result<(), primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(super::actor_generation::ActorLifecycleHandler)?;
+        setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
+            super::actor_generation::ActorLifecycleHandler,
+        )?;
         setup.invariant(
             DocumentRetentionV1::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -288,6 +290,7 @@ fn seed_host(
     seed_operator(graph, &principal_binding);
     seed_document(graph);
     super::workflow::seed_authoring(graph);
+    super::workflow::governed_read::seed(graph);
     super::program_adoption::seed(graph);
     Ok(())
 }
