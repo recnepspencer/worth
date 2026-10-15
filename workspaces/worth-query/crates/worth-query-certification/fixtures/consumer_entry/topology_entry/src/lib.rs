@@ -26,7 +26,11 @@ pub use initial_adjustment::*;
 mod checkpoint_recovery;
 #[cfg(test)]
 mod compiled_example_drift;
+mod discovery_connection;
 mod discovery_read;
+pub use discovery_connection::*;
+mod membership;
+pub use membership::*;
 mod mutation;
 mod owning_entry;
 pub use owning_entry::capture_original;

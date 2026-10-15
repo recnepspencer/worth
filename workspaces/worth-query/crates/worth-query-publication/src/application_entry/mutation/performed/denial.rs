@@ -20,6 +20,8 @@ pub enum WorthQueryRequiredOutputPreparationDenial {
     MissingConnection,
     MissingPerformedDelivery,
     MissingSource,
+    /// Complete original discovery could not be retained or combined.
+    Dependencies(worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial),
     SourceQuery(crate::application_entry::WorthQueryApplicationRequestQueryDenial),
     ReadObservation(
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
