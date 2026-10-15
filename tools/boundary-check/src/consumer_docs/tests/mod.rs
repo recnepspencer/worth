@@ -3,6 +3,7 @@ mod ci_ownership;
 mod classification;
 mod compilation_configuration;
 mod debt;
+mod guidance;
 mod links;
 
 use super::configuration::{CONFIG, DEBT, SOURCE};

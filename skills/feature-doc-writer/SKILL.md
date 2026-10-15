@@ -112,3 +112,33 @@ Use the full template in [references/doc-template.md](references/doc-template.md
 
 Run the checklist in [references/qa-checklist.md](references/qa-checklist.md)
 before considering the doc done.
+
+## Source-derived consumer guidance
+
+In WORTH, the capability index owns the consumer prohibition list. Other guides
+link to that list and keep their local lifecycle and refusal explanations.
+Generated `source-facts` regions come from owning declarations: edit the owner
+and regenerate with boundary-check `--write-guidance`, then check the diff.
+Do not hand-maintain a second variant list or claim an unresolved API is absent.
+A `known-gap` reference needs its checked canonical absence claim; Unsupported
+source knowledge is not an absence proof. Keep new native API claims pending
+until their owner and compiled caller are accepted. Required executable examples
+must bind to real compiled/CI-run code, not be relabeled illustrative.
+
+Repository `skills/` is authoritative. `.grok/skills` is generated from it by the
+same explicit guidance command and is checked for drift. Installed user skills
+are outside that generated zone and must not be overwritten by repository sync.
+
+A checked assertion is a standalone `<!-- facade-absence: gap-id -->` in the
+capability index followed by the unique heading `### Gap: gap-id`. A standalone
+`<!-- known-gap: gap-id -->` reference is followed by a Markdown link to that
+index's `#gap-gap-id` heading. Both require an explicit supported source selector;
+markers do not turn incomplete knowledge into proof.
+
+Guidance writes require a quiescent local checkout. Only configured consumer
+Markdown regions and owned derived skill files are writable. Links, Windows
+reparse points, changed destinations and unsupported file kinds refuse. Complete
+files publish by same-directory rename; this is not a hostile-filesystem sandbox
+or a claim of race-safe confinement against concurrent directory replacement.
+The generated notice lists individual owned paths: an unknown extra refuses,
+while only a previously listed generated path may be removed as stale.

@@ -682,30 +682,9 @@ Host code may:
   progress owner-issued branch coverage, recover unpublished adoption, and
   retire unused program support through typed custody inventories.
 
-Host code must not:
+Host constraints are maintained in the
+[canonical consumer prohibitions](../../../../docs/capability-index.md#consumer-prohibitions).
 
-- create a second operating-world or application-authority root;
-- call operation executors directly;
-- expose raw Relational, Bridge, or Signal handles to application code;
-- reconstruct Query authority from receipts, reports, projections, or digests;
-- import certification replay through the host facade;
-- construct lineage outcomes or promoted graph identities from raw identity
-  material.
-- treat acknowledgement, timeout, disconnect, or lost response as external
-  completion;
-- serialize a recovery handle or treat its opaque wire identity as live
-  authority;
-- teach `facade::provisional_aftermath` as accepted undo/redo support.
-- schedule temporal work locally, return raw Signal decisions, or invoke a
-  conditional operation directly.
-- invent a host-local temporal binding or idempotency hash, or derive either
-  again during commit.
-
-Before concluding that the facade lacks a capability, follow the
-missing-capability procedure in the
-[Capability Index](../../../../docs/capability-index.md). Do not build a host
-substitute: no parallel registry, copied authority, host executor, host
-scheduler, or host persistence of platform truth.
 
 ## Application Readiness For Editors
 

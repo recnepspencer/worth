@@ -1,0 +1,4 @@
+interface:
+  display_name: "Plan Implementation"
+  short_description: "Create explicit, architecture-grounded plans"
+  default_prompt: "Use $plan-implementation to create an implementation plan for the requested phase."
