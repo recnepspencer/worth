@@ -6,12 +6,15 @@ mod facts;
 mod inbound_codec;
 mod preparation;
 mod publication;
+pub(in crate::domain_computation::primary_graph) mod retained_descriptor;
 mod retirement;
 pub use compilation::WorthQueryWorkflowCompilationReuseCounters;
 pub(in crate::domain_computation::primary_graph) use compilation::{
-    reconstruct_compiled_definition, CompiledWorkflowAssessmentApplicability,
-    CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
-    WorkflowDefinitionCompilationPosture, WorkflowDefinitionCompilationReuse,
+    compile_node, observe_connection, reconstruct_compiled_definition,
+    CompiledWorkflowAssessmentApplicability, CompiledWorkflowConnection,
+    CompiledWorkflowConnectionKind, CompiledWorkflowDefinition, CompiledWorkflowNode,
+    CompiledWorkflowNodeKind, WorkflowDefinitionCompilationPosture,
+    WorkflowDefinitionCompilationReuse,
 };
 pub use condition::WorkflowConditionOperand;
 pub(in crate::domain_computation::primary_graph) use condition::{

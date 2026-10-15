@@ -78,7 +78,8 @@ pub enum WorthQueryWorkflowInstanceRead {
     },
 }
 /// Owns the exact data basis even when no instance exists; carries no admission.
-pub struct WorthQueryWorkflowReadBasis(Arc<WorthQueryApplicationReadObservation>);
+#[derive(Clone)]
+pub struct WorthQueryWorkflowReadBasis(pub(super) Arc<WorthQueryApplicationReadObservation>);
 impl WorthQueryWorkflowReadBasis {
     pub(super) fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(
         selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
@@ -114,9 +115,14 @@ pub struct WorthQueryWorkflowObservation {
     pub(super) basis: WorthQueryWorkflowReadBasis,
     pub(super) state: WorthQueryWorkflowObservedState,
     pub(super) history: ReadOnlyWorkflowHistory,
+    pub(super) target: super::target::WorthQueryWorkflowReadTarget,
     pub(super) audit: WorthQueryWorkflowAudit,
 }
 impl WorthQueryWorkflowObservation {
+    /// Opaque exact-data locator; each use independently admits current disclosure.
+    pub fn target(&self) -> &super::target::WorthQueryWorkflowReadTarget {
+        &self.target
+    }
     pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.basis.selected_commit()
     }
@@ -131,5 +137,17 @@ impl WorthQueryWorkflowObservation {
     }
     pub fn audit(&self) -> &WorthQueryWorkflowAudit {
         &self.audit
+    }
+}
+
+impl WorthQueryWorkflowInstanceRead {
+    /// Missing is not a locator. Historical locators remain descriptive and freshly governed.
+    pub fn target(&self) -> Option<&super::target::WorthQueryWorkflowReadTarget> {
+        match self {
+            Self::Missing { .. } => None,
+            Self::Live { observation, .. } | Self::Historical { observation, .. } => {
+                Some(observation.target())
+            }
+        }
     }
 }

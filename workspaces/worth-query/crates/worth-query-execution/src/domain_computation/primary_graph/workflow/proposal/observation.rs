@@ -365,8 +365,10 @@ fn optional_identity(
     Ok(Some(identity))
 }
 
-fn decode_identity(text: &str) -> Option<[u8; 32]> {
-    if text.len() != 64 {
+pub(in crate::domain_computation::primary_graph) fn decode_identity(
+    text: &str,
+) -> Option<[u8; 32]> {
+    if text.len() != 64 || !text.is_ascii() {
         return None;
     }
     let mut identity = [0_u8; 32];
@@ -374,4 +376,15 @@ fn decode_identity(text: &str) -> Option<[u8; 32]> {
         *byte = u8::from_str_radix(&text[index * 2..index * 2 + 2], 16).ok()?;
     }
     Some(identity)
+}
+
+#[cfg(test)]
+mod identity_tests {
+    #[test]
+    fn proposal_identity_rejects_utf8_split_before_slicing() {
+        let corrupt = format!("aé{}", "0".repeat(61));
+        assert_eq!(corrupt.len(), 64);
+        assert!(super::decode_identity(&corrupt).is_none());
+        assert_eq!(super::decode_identity(&"0".repeat(64)), Some([0; 32]));
+    }
 }

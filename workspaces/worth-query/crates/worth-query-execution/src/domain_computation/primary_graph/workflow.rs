@@ -14,8 +14,8 @@ pub(in crate::domain_computation::primary_graph) mod proposal;
 pub(in crate::domain_computation::primary_graph) mod schema;
 
 pub(in crate::domain_computation::primary_graph) use approval::{
-    visit_workflow_approval_facts, workflow_approval_fields, WorkflowApprovalFieldText,
-    WorkflowApprovalMeaning,
+    visit_workflow_approval_facts, workflow_approval_fields, workflow_approval_instance_identity,
+    WorkflowApprovalFieldText, WorkflowApprovalMeaning,
 };
 pub(in crate::domain_computation::primary_graph) use assessment::{
     visit_workflow_assessment_facts, workflow_evidence_retained_bytes,

@@ -20,10 +20,34 @@ use super::owner::SourceInvalidationOwner;
 /// `every_commit` covers whole-graph dependencies and bootstrap catch-up.
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct CommitTouchInterest<'a> {
-    pub(in crate::domain_computation::primary_graph) entities: &'a BTreeSet<EntityId>,
+    pub(in crate::domain_computation::primary_graph) entities: CommitTouchEntities<'a>,
     pub(in crate::domain_computation::primary_graph) every_commit: bool,
 }
 
+/// Borrowed interest uses the same canonical touch stream for sets and bounded read dependencies.
+#[derive(Clone, Copy)]
+pub(in crate::domain_computation::primary_graph) enum CommitTouchEntities<'a> {
+    Set(&'a BTreeSet<EntityId>),
+    Slice(&'a [EntityId]),
+}
+impl<'a> From<&'a BTreeSet<EntityId>> for CommitTouchEntities<'a> {
+    fn from(value: &'a BTreeSet<EntityId>) -> Self {
+        Self::Set(value)
+    }
+}
+impl<'a> From<&'a [EntityId]> for CommitTouchEntities<'a> {
+    fn from(value: &'a [EntityId]) -> Self {
+        Self::Slice(value)
+    }
+}
+impl CommitTouchEntities<'_> {
+    fn contains(&self, id: &EntityId) -> bool {
+        match self {
+            Self::Set(v) => v.contains(id),
+            Self::Slice(v) => v.contains(id),
+        }
+    }
+}
 /// One relevant commit on the branch and the watched entities it touched.
 pub(in crate::domain_computation::primary_graph) struct TouchedCommit {
     pub(in crate::domain_computation::primary_graph) position: PatchStreamPosition,
@@ -170,14 +194,88 @@ impl SourceInvalidationOwner {
     }
 }
 
-fn watched_entities(keys: &[FactPostingKey], watched: &BTreeSet<EntityId>) -> BTreeSet<EntityId> {
+fn watched_entities(
+    keys: &[FactPostingKey],
+    watched: CommitTouchEntities<'_>,
+) -> BTreeSet<EntityId> {
     keys.iter()
-        .filter_map(|key| match key {
+        .flat_map(|key| match key {
             FactPostingKey::EntityLifecycle(entity)
             | FactPostingKey::AspectRevision { entity, .. }
-            | FactPostingKey::FieldRevision { entity, .. } => Some(*entity),
-            _ => None,
+            | FactPostingKey::FieldRevision { entity, .. } => [Some(*entity), None],
+            FactPostingKey::Adjacency { anchor, .. } => [Some(*anchor), None],
+            FactPostingKey::RelationMembership { from, to, .. } => [Some(*from), Some(*to)],
+            _ => [None, None],
         })
+        .flatten()
         .filter(|entity| watched.contains(entity))
         .collect()
+}
+
+impl SourceInvalidationOwner {
+    pub(in crate::domain_computation::primary_graph) fn touch_position_at(
+        &self,
+        branch: &BranchId,
+        commit: CommitId,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Option<PatchStreamPosition>, worth_execution::WorkCeilingDenial> {
+        let cell = self
+            .branches
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .cells
+            .get(branch)
+            .and_then(|slot| slot.admitted());
+        let Some(cell) = cell else { return Ok(None) };
+        let image = cell.read_image();
+        execution.consult()?;
+        if image.commit_id() == Some(commit) {
+            return Ok(image.position());
+        }
+        for (position, row) in image.payload().past.iter() {
+            execution.consult()?;
+            if row.commit_id == Some(commit) {
+                return Ok(*position);
+            }
+        }
+        Ok(None)
+    }
+}
+
+#[cfg(test)]
+mod relation_interest_tests {
+    use super::*;
+    use worth_relational::facade::identity::{KindId, PartitionId};
+    #[test]
+    fn relation_only_interest_matches_full_native_anchors_and_endpoints() {
+        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+        let anchor = EntityId::new(PartitionId::new(7), 11, 2);
+        let target = EntityId::new(PartitionId::new(9), 13, 4);
+        let recycled_anchor = EntityId::new(PartitionId::new(7), 11, 3);
+        let recycled_target = EntityId::new(PartitionId::new(9), 13, 5);
+        let watched = [anchor, target, recycled_anchor, recycled_target];
+        let interest = CommitTouchEntities::Slice(&watched);
+        // Neither input has an entity/field revision; absent-edge attachment is sufficient.
+        let adjacency = FactPostingKey::Adjacency {
+            kind: KindId(17),
+            anchor,
+            direction: WorthQueryApplicationAdjacencyDirection::Outgoing,
+        };
+        assert_eq!(
+            watched_entities(std::slice::from_ref(&adjacency), interest),
+            BTreeSet::from([anchor])
+        );
+        let membership = FactPostingKey::RelationMembership {
+            kind: KindId(17),
+            from: anchor,
+            to: target,
+        };
+        assert_eq!(
+            watched_entities(std::slice::from_ref(&membership), interest),
+            BTreeSet::from([anchor, target])
+        );
+        let recycled = [recycled_anchor, recycled_target];
+        assert!(watched_entities(&[adjacency], CommitTouchEntities::Slice(&recycled)).is_empty());
+        assert!(watched_entities(&[membership], CommitTouchEntities::Slice(&recycled)).is_empty());
+    }
 }

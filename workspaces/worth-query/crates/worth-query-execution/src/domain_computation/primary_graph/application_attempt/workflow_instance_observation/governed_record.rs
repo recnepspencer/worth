@@ -7,11 +7,16 @@ use worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeili
 
 pub(in crate::domain_computation::primary_graph) struct WorkflowRecord {
     pub(in crate::domain_computation::primary_graph) state: State,
+    pub(in crate::domain_computation::primary_graph) instance: EntityId,
+    pub(in crate::domain_computation::primary_graph) lineage: EntityId,
+    pub(in crate::domain_computation::primary_graph) subject: EntityId,
     pub(in crate::domain_computation::primary_graph) original_start_revision:
         worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     pub(in crate::domain_computation::primary_graph) occurrence: u64,
     pub(in crate::domain_computation::primary_graph) live: bool,
     pub(in crate::domain_computation::primary_graph) history: ReadOnlyWorkflowHistory,
+    pub(in crate::domain_computation::primary_graph) dependencies:
+        worth_execution::ExecutionArray<EntityId>,
     pub(in crate::domain_computation::primary_graph) reference:
         Option<PublishedWorkflowInstanceRef>,
 }
@@ -174,6 +179,27 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
     } else {
         None
     };
+    let mut components = [0u64; 3];
+    for (i, field) in [
+        &layout.instance.subject_partition,
+        &layout.instance.subject_slot,
+        &layout.instance.subject_generation,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        components[i] = exact_u64(
+            execution, runtime, snapshot, instance, kind, field, &mut facts,
+        )
+        .map_err(Denial::Execution)?;
+    }
+    let subject = EntityId::new(
+        worth_relational::facade::identity::PartitionId::new(
+            u32::try_from(components[0]).map_err(|_| Denial::Corrupt)?,
+        ),
+        components[1],
+        u32::try_from(components[2]).map_err(|_| Denial::Corrupt)?,
+    );
     let history = read_only::observe_read_only_history(
         execution,
         runtime,
@@ -184,8 +210,15 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
         resources.history_reconstruction_budget(),
     )
     .map_err(Denial::Execution)?;
+    let dependencies = super::read_dependencies::observe(
+        execution, runtime, snapshot, layout, instance, lineage, &history,
+    )?;
     Ok(WorkflowRecord {
+        dependencies,
         state,
+        instance,
+        lineage,
+        subject,
         original_start_revision,
         occurrence,
         live,

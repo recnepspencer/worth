@@ -26,6 +26,7 @@ use crate::domain_computation::primary_graph::workflow::{
 
 mod preparation;
 mod publication;
+pub(in crate::domain_computation::primary_graph) use publication::observe_read_only_proposal;
 
 pub use preparation::{
     WorkflowProposalBindingDenial, WorkflowProposalPreparationDenial,

@@ -1015,8 +1015,8 @@ The isolated Document Retention governed-read court exercises the real original
 start, separate subject/audit grants and native grant revocation. It also asserts
 that read-only history does not change the workflow progress cache or branch
 head, and that an unrelated cold equality index stays unpublished. This authored
-court has not yet run. Full definition enumeration, proposal/approval views,
-paging, live marking and broader lifecycle certification remain unfinished.
+court has not yet run. The paged history and envelope receivers below are also
+uncompiled source; broader lifecycle and resource certification remain pending.
 
 Actor values are historical identities with full generations, disclosed only
 after the separate audit gate. No authorization snapshot or external identity
@@ -1068,6 +1068,76 @@ operation still needs its own lane and its own key.
 - Each outcome is typed, so a caller (or an AI agent) can read the `Awaiting*` variant and choose the next request.
 - Each request carries its own idempotency key. Retrying a key replays the recorded outcome.
 
+### Retained proposal and approval history (unreleased source)
+
+Use `found.target()` from an original-intent read or an indexed instance page to
+read its recorded transitions. The opaque target owns exact data custody and no
+grant. Each history page freshly admits the subject rule and independently admits
+audit. Actor `Withheld` does not erase a proposal or approval decision. A row's
+`approval()` is the recorded decision on that row, not current command permission.
+No credentials, authorization envelopes or grant snapshots appear in the view.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let target = found.target().expect("authorized instance exists");
+let page = request.at(&data).read_workflow_history::<ReviewWorkflow, SubjectRead, AuditRead>(
+    workflow.vocabulary(), target, subject_input(), audit_input(), 16,
+    WorthQueryWorkflowIndexRead::PublishedOnly, None,
+)?;
+for row in page.entries() {
+    println!("{}: {:?}", row.node_path(), row.outcome());
+    if let Some(proposal) = row.proposal() {
+        // A genuine native locator reacquired without serializing the original reference.
+        // Fresh prepare_workflow_approval still checks its actual pendingness and authority.
+        inspect_proposal(proposal);
+    }
+}
+let next = request.at(&data).read_workflow_history::<ReviewWorkflow, SubjectRead, AuditRead>(
+    workflow.vocabulary(), target, subject_input(), audit_input(), 16,
+    WorthQueryWorkflowIndexRead::PublishedOnly, page.continuation(),
+)?;
+```
+
+Only request another page when `continuation()` is present. Tokens bind the
+retained runtime/branch/basis, workflow, subject/scope, ordering and width. Each
+page spends normal read resources on the native selected transition index. Hot
+`PublishedOnly` refuses a missing generation; explicit `Reconstruct` permits only
+the selected index's bounded native cold work. Reading does not spend workflow
+steps, renew its deadline or install/evict command progress.
+
+For a screen showing pending work, retain the page's proposal locator, obtain the
+actual current `AwaitingApproval` through the owning workflow adapter, and submit
+that locator under a distinct approver's fresh request. After publication, reading
+the old data still shows the old pending record; select new data explicitly to
+observe the recorded decision. Neither the page nor its audit can be converted to
+an approval authority or a performed-operation witness.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let mut interest = request.at(&data).subscribe_workflow_history::<ReviewWorkflow, SubjectRead>(
+    workflow.vocabulary(), target, subject_input(),
+)?;
+let mark = fresh_request.at(&data).poll_workflow_history::<ReviewWorkflow, SubjectRead>(
+    workflow.vocabulary(), &mut interest, subject_input(),
+)?;
+match mark {
+    WorthQueryWorkflowHistoryMark::Changed => show_refresh_available(),
+    WorthQueryWorkflowHistoryMark::Overflow => show_discontinuity(),
+    WorthQueryWorkflowHistoryMark::Closed => show_subscription_closed(),
+    WorthQueryWorkflowHistoryMark::Pending => {}
+}
+interest.close();
+```
+
+The subscription reuses the native envelope's cursor, bounded retention,
+overflow and close custody. Dependency marks include anchors of currently absent
+workflow edges. They do not refresh immutable data or advance the workflow.
+Every poll freshly authorizes before revealing even a discontinuity; refusal
+retains the subscription and its unacknowledged positions. There is no automatic
+poller or second observation stream. Closing releases only subscription custody.
+
 ### Known gaps
 
 These limits are current, consumer-visible, and verified in source. Before
@@ -1079,8 +1149,8 @@ until a row is removed, its "Do not" rule stands and no substitute may be built.
 
 | Gap | What exists today | Do not |
 |---|---|---|
-| Broader workflow discovery and state/history views | The unreleased original-intent retained-read surface above exposes native state and recorded paths, with independent audit withholding; its joined compilation/runtime certification is pending. Enumeration, proposals/approvals and live views remain unfinished. | Views never authorize advancement. Do not mirror kernel state into your schema as authority; use fresh native command admission. |
-| Proposal reacquisition and subject/definition enumeration remain unfinished (published references have no public constructor or serialization) | Keep the original native discovery intent for exact governed instance lookup; preserve proposal references until their governed reacquisition lands | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
+| Broader workflow discovery and state/history views | The unreleased original-intent retained-read surface above exposes native state and recorded paths, with independent audit withholding; its joined compilation/runtime certification is pending. Bounded instance/history pages, native proposal reacquisition and envelope marks are source-authored; joined compilation and runtime certification remain pending. | Views never authorize advancement. Do not mirror kernel state into your schema as authority; use fresh native command admission. |
+| Proposal reacquisition and subject/definition pages await joined qualification (references have no public constructor or serialization) | Use the opaque original discovery intent or an explicitly governed definition page, then freshly admit history reads; the authored receivers remain unreleased | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
 | Full proposal/approval audit observation and recorded-role certification remain unfinished | The original-intent read uses canonical native actor fields under a separate audit grant; the new source surface still awaits joined certification | Do not supply an actor field or resolve a current logical identity to replace the historical native actor. |
 | Current proposal slot (joined M9.17.6.5 source; qualification pending) | `AwaitingProposal(RequiredWorkflowProposal)` names the actual instance, node path, operation, input type and occurrence. Ordinary `run_workflow` returns it through `Outcome`. | Propose through fresh `prepare_workflow_proposal` admission. The need grants no authority; waiting publishes no transition. |
 
