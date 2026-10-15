@@ -149,6 +149,7 @@ pub struct ApplicationOperationBodyCreation {
     pub(super) fields: Vec<ApplicationOperationBodyCreatedField>,
     pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
     pub(super) signing: Option<super::ApplicationOperationBodySigningSpec>,
+    pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
 }
 
 impl ApplicationOperationBodyCreation {
@@ -163,6 +164,7 @@ impl ApplicationOperationBodyCreation {
             fields,
             links: Vec::new(),
             signing: None,
+            signing_lifecycle: None,
         }
     }
     pub fn entity(&self) -> &str {
@@ -170,6 +172,18 @@ impl ApplicationOperationBodyCreation {
     }
     pub fn signing(&self) -> Option<&super::ApplicationOperationBodySigningSpec> {
         self.signing.as_ref()
+    }
+    pub fn signing_lifecycle(
+        &self,
+    ) -> Option<&super::ApplicationOperationBodySigningLifecycleSpec> {
+        self.signing_lifecycle.as_ref()
+    }
+    pub fn with_untrusted_signing_lifecycle(
+        mut self,
+        spec: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
+    ) -> Self {
+        self.signing_lifecycle = spec;
+        self
     }
     pub fn with_untrusted_signing(
         mut self,

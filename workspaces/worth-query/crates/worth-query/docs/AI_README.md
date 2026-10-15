@@ -449,9 +449,21 @@ tracked for publication, but excluded from the certified dependency footprint.
 V2 refuses unclassified captures; role and source presence travel in body v14
 without reinterpreting v1–v13. Admission facts remain separate. Neither that descriptive
 carrier nor a coverage digest grants approval or implements business supersession.
+For permanent supersession, declare `supersede_on_subject_change` on the same v2
+signed creation, with distinct history/current/consequence relations and the
+native read-only supersession payload field. Query derives source-writer
+publication closure, bounded current-evidence observation and same-commit
+consequences. Only each immutable row's own `Subject` dependencies count; no-op,
+unrelated and audit-context edits preserve it. A dependency edit appends immutable
+supersession and removes current membership without rewriting history; ABA never
+revives it. Membership observation is native currentness, not an evictable cache.
+Retained replay precedes this work; stale/refused batches publish neither half.
+Lifecycle declarations use body v15 without changing older versions. The host
+must not author changed-field maps, relationship repairs or supersession effects.
+Effectful program migration for such a schema currently fails closed.
 Context alone is not domain membership; membership alone is not authorization
 and does not replace a capability's grant witness. General assignment expressions,
-multiple creations, arbitrary relation edits, signature consequences and multi-operation commands
+multiple creations, arbitrary relation edits, later approval consumption and multi-operation commands
 remain unsupported here; do not fill those missing joins with a host substitute
 and call it declarative.
 

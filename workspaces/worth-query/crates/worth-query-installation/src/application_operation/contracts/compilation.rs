@@ -46,6 +46,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             emissions,
             graph_mutation_count,
             candidate_demand,
+            signing_lifecycle,
             invariant_invocations,
         ) = compilation.into_parts();
         ability_requirements.sort();
@@ -62,11 +63,12 @@ impl WorthQueryCompiledApplicationOperationContracts {
                 .iter()
                 .flat_map(|role| role.read_scopes().iter().cloned())
                 .collect(),
-            touches.scopes().to_vec(),
+            signing_lifecycle.publication_touches.scopes().to_vec(),
         );
         let decision_facts = application_decision_fact_contract(authorization_fact_count);
         let resources = application_resource_contract(authored_program_width, candidate_demand)?;
         Ok(Self {
+            signing_lifecycle,
             body,
             authorization,
             ability_requirements,

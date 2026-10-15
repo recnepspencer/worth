@@ -12,8 +12,10 @@ use super::super::WorthQueryApplicationObservedFact;
 mod aspect_presence;
 mod canonical_digest;
 mod indexed_selection;
+mod observation_identity;
 mod workflow_fact;
 use canonical_digest::derive_identity;
+pub(in crate::domain_computation::primary_graph::application_attempt) use observation_identity::authentication_observation_identity;
 
 const DOMAIN: CanonicalBasisDomain =
     CanonicalBasisDomain::Future("worth-query.application-producer-dependencies");
@@ -28,39 +30,7 @@ pub(super) fn dependency_identity(
     facts: &[WorthQueryApplicationObservedFact],
     maximum_canonical_bytes: usize,
 ) -> Result<([u8; 32], WorthQueryCanonicalWorkEvidence), ()> {
-    let mut entries = Vec::new();
-    push(
-        &mut entries,
-        "declared-key".to_owned(),
-        CanonicalBasisEntryKind::Identity,
-        CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(declared_key)),
-    );
-    push(
-        &mut entries,
-        "fact-count".to_owned(),
-        CanonicalBasisEntryKind::Shape,
-        unsigned(u64::try_from(facts.len()).unwrap_or(u64::MAX)),
-    );
-    for (index, fact) in facts.iter().enumerate() {
-        let prefix = format!("fact.{index}");
-        push(
-            &mut entries,
-            format!("{prefix}.locator"),
-            CanonicalBasisEntryKind::Locator,
-            text(fact.locator_identity()),
-        );
-        append_fact(&mut entries, &prefix, fact);
-    }
-    let rule = if facts.iter().any(|fact| {
-        matches!(
-            fact,
-            WorthQueryApplicationObservedFact::IndexedEntitySelection { .. }
-        )
-    }) {
-        INDEX_GUARD_RULE_VERSION
-    } else {
-        RULE_VERSION
-    };
+    let (rule, entries) = observation_identity::basis(declared_key, facts, || Ok::<_, ()>(()))?;
     derive_identity(rule, entries, maximum_canonical_bytes)
 }
 

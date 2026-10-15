@@ -11,6 +11,7 @@ mod outputs;
 mod principal;
 mod requirements;
 mod signing;
+mod signing_lifecycle;
 #[cfg(test)]
 mod tests;
 use crate::{
@@ -34,7 +35,12 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.creation().is_some_and(|creation| {
+    let version = if body
+        .creation()
+        .is_some_and(|creation| creation.signing_lifecycle().is_some())
+    {
+        15
+    } else if body.creation().is_some_and(|creation| {
         creation.fields().iter().any(|step| {
             matches!(
                 step,
@@ -172,6 +178,13 @@ pub(super) fn write(
             body.creation().and_then(|creation| creation.signing()),
         )?;
     }
+    if version >= 15 {
+        signing_lifecycle::write(
+            output,
+            body.creation()
+                .and_then(|creation| creation.signing_lifecycle()),
+        )?;
+    }
     Ok(())
 }
 
@@ -180,7 +193,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=14) {
+    if !matches!(version, 1..=15) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -287,13 +300,19 @@ pub(super) fn decode(
     } else {
         None
     };
+    let signing_lifecycle = if version >= 15 {
+        signing_lifecycle::decode(input)?
+    } else {
+        None
+    };
     let creation = match creation {
         Some(creation) => Some(
             creation
                 .with_untrusted_links(links)
-                .with_untrusted_signing(signing),
+                .with_untrusted_signing(signing)
+                .with_untrusted_signing_lifecycle(signing_lifecycle),
         ),
-        None if links.is_empty() && signing.is_none() => None,
+        None if links.is_empty() && signing.is_none() && signing_lifecycle.is_none() => None,
         None => return Err(Denial::new(Kind::InvalidRecordShape)),
     };
     if let Some(scope) = scope {

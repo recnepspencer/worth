@@ -215,6 +215,11 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::OperationBodyExecutionRequired
                 | Kind::SignedCreationAuthentication { .. }
                 | Kind::SignedEntityImmutable
+                | Kind::SigningLifecycleForgery
+                | Kind::SigningLifecycleUnavailable
+                | Kind::SigningLifecycleEvidenceCapacity { .. }
+                | Kind::SigningLifecycleRepresentationCapacity
+                | Kind::SigningLifecycleObservation { .. }
                 | Kind::ElevationTransitionRequired
                 | Kind::ElevationRequestProgramMismatch
                 | Kind::ElevationApprovalProgramMismatch

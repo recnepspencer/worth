@@ -11,6 +11,7 @@ mod program_binding;
 mod recorded_idempotency;
 mod request_authority;
 mod signed_creation;
+mod signing_lifecycle;
 mod unique_value;
 mod workflow;
 
@@ -100,6 +101,11 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// A signed creation lacks its native authentication or its immutable subject was changed.
     SignedCreationAuthentication { kind: worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial },
     SignedEntityImmutable,
+    SigningLifecycleForgery,
+    SigningLifecycleUnavailable,
+    SigningLifecycleEvidenceCapacity { maximum_evidence: usize },
+    SigningLifecycleRepresentationCapacity,
+    SigningLifecycleObservation { kind: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind },
     /// A sealed undo or redo handoff belongs to different admitted truth.
     RecoveryHandoffMismatch {
         kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,

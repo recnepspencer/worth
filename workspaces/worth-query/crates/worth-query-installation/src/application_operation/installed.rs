@@ -245,7 +245,7 @@ impl<Schema, Operation, Input> WorthQueryInstalledApplicationOperation<Schema, O
                 ability_requirements: contracts.ability_requirements(),
                 capability_requirements: &capability_requirements,
                 graph_reads: contracts.graph_reads(),
-                touches: contracts.touches(),
+                touches: contracts.publication_touches(),
                 effects: contracts.effects(),
                 invariants: contracts.invariants(),
                 invariant_execution: contracts.invariant_execution(),

@@ -307,7 +307,7 @@ pub(super) fn subject(
 
 /// The enclosing Query request already reserves assembly storage. Charge and
 /// check interruption before copying each native carrier, not only at hashing.
-pub(super) fn admit_assembly(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn admit_assembly(
     context: &mut worth_execution::MapKernelContext<'_, '_>,
     bytes: usize,
 ) -> Result<(), Denial> {

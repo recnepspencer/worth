@@ -6,6 +6,21 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    if let Some(lifecycle) = body
+        .creation()
+        .and_then(|creation| creation.signing_lifecycle())
+    {
+        return framed_record(
+            "operation-body-v12",
+            [
+                ("body", operation_body_signing_record(body)),
+                ("signing-lifecycle", lifecycle.canonical_record()),
+            ],
+        );
+    }
+    operation_body_signing_record(body)
+}
+fn operation_body_signing_record(body: &ApplicationOperationBodyProgram) -> String {
     let record = operation_body_link_record(body);
     if let Some(signing) = body.creation().and_then(|creation| creation.signing()) {
         return framed_record(

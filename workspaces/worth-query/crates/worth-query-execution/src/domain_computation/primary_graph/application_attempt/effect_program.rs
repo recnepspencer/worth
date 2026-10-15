@@ -66,7 +66,8 @@ pub use output_correspondence::{
     WorthQueryApplicationTypedOutputCorrespondence,
 };
 pub(in crate::domain_computation::primary_graph) use platform_reservation::{
-    admit_platform_effects, admit_workflow_settlement_effects, PlatformEffectDemand,
+    admit_platform_effects, admit_signing_lifecycle_effects, admit_workflow_settlement_effects,
+    PlatformEffectDemand,
 };
 use target_admission::installed_contract_admits_program_target;
 use worth_query_declaration::facade::{

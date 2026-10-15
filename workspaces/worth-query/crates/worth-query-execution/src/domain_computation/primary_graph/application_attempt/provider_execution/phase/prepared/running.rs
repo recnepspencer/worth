@@ -78,6 +78,7 @@ where
     Schema: ApplicationSchema,
 {
     let WorthQueryPreparedApplicationCommit {
+        _signing_lifecycle_memory,
         mut admission,
         lease,
         provider_attempt,

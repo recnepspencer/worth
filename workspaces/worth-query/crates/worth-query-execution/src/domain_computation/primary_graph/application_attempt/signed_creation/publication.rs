@@ -188,6 +188,9 @@ fn validate_effects(
                 if layout.is_signed_entity_kind(kind) {
                     return Err(Denial::signed_entity_immutable());
                 }
+                if layout.signing_lifecycle.is_record(kind) {
+                    return Err(Denial::signing_lifecycle(super::super::WorthQueryApplicationCommitDenialKind::SigningLifecycleForgery));
+                }
             }
             _ => {}
         }

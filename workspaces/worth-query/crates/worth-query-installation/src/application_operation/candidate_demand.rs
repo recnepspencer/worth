@@ -28,6 +28,22 @@ fn workflow_settlement_ceiling() -> ApplicationCandidateRequirements {
 }
 
 impl WorthQueryApplicationCandidateDemand {
+    pub(in crate::application_operation) fn with_signing_lifecycle(
+        mut self,
+        ceiling: Option<ApplicationCandidateRequirements>,
+    ) -> Result<Self, ()> {
+        if let Some(ceiling) = ceiling {
+            self.candidate_items = self
+                .candidate_items
+                .checked_add(cardinality_items(ceiling.cardinality())?)
+                .ok_or(())?;
+            self.retained_representation_bytes = self
+                .retained_representation_bytes
+                .checked_add(retained_bytes(ceiling)?)
+                .ok_or(())?;
+        }
+        Ok(self)
+    }
     pub(in crate::application_operation) fn derive(
         bindings: &[ApplicationMutationBindingDescriptor],
         operation: &str,

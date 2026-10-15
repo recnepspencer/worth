@@ -20,6 +20,12 @@ pub(super) fn append(
     }
     basis.text(format!("{prefix}.created.entity"), creation.entity());
     basis.text(format!("{prefix}.created.key"), creation.key());
+    if let Some(lifecycle) = creation.signing_lifecycle() {
+        basis.text(
+            format!("{prefix}.created.signing-lifecycle"),
+            &lifecycle.canonical_record(),
+        );
+    }
     if let Some(signing) = creation.signing() {
         basis.text(
             format!("{prefix}.created.signing"),

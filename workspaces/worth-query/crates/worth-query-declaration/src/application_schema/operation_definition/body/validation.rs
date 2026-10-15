@@ -34,6 +34,9 @@ pub(crate) fn validate_operation_bodies(
         super::output_validation::validate_outputs(operation, body, members)?;
         super::principal_validation::validate_principals(operation, body, members)?;
         super::creation_link_validation::validate_links(operation, body, members)?;
+        if !super::signing_lifecycle::validate(body, members) {
+            return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
+        }
         let mut writes = BTreeSet::new();
         for step in body.scope_fields() {
             if step.field().entity() != scope {

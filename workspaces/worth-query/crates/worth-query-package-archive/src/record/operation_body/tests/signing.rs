@@ -162,6 +162,53 @@ fn classified(role: Role, presence: Presence) -> ApplicationOperationBodyProgram
 }
 
 #[test]
+fn lifecycle_uses_v15_and_preserves_every_declared_association_and_bound() {
+    use worth_query_declaration::facade::application_schema::ApplicationOperationBodySigningLifecycleSpec as Spec;
+    let original = classified(Role::Subject, Presence::Optional);
+    let creation = original
+        .creation()
+        .unwrap()
+        .clone()
+        .with_untrusted_signing_lifecycle(Some(Spec {
+            history_relation: "History".into(),
+            current_relation: "Current".into(),
+            source_entity: "Draft".into(),
+            consequence_relation: "Supersessions".into(),
+            consequence_field: Locus::new("Supersession", "Facts", "Record"),
+            maximum_evidence: 32,
+        }));
+    let body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+        "Draft".into(),
+        vec![],
+        Some(creation),
+        original.requirements().to_vec(),
+    );
+    let mut output = BinaryOutput::with_capacity(2048);
+    write(&mut output, &body).unwrap();
+    let mut bytes = output.into_bytes();
+    assert_eq!(&bytes[..2], &15_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    let mut input = BinaryInput::new(&bytes);
+    assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
+    assert!(input.is_finished());
+    bytes[..2].copy_from_slice(&14_u16.to_be_bytes());
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    let mut input = BinaryInput::new(&bytes);
+    // The old record cannot consume the v15 lifecycle suffix as v14 meaning.
+    assert!(decode(&mut input, &mut budget).is_err() || !input.is_finished());
+}
+
+#[test]
 fn v14_retains_role_and_presence_and_v13_cannot_reinterpret_classified_captures() {
     let mut encodings = std::collections::BTreeSet::new();
     for role in [Role::Subject, Role::AuditContext] {

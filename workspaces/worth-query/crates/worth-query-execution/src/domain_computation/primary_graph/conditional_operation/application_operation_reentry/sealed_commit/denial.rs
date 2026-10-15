@@ -185,6 +185,11 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::OperationBodyExecutionRequired
         | Kind::SignedCreationAuthentication { .. }
         | Kind::SignedEntityImmutable
+        | Kind::SigningLifecycleForgery
+        | Kind::SigningLifecycleUnavailable
+        | Kind::SigningLifecycleEvidenceCapacity { .. }
+        | Kind::SigningLifecycleRepresentationCapacity
+        | Kind::SigningLifecycleObservation { .. }
         | Kind::ElevationTransitionRequired
         | Kind::ElevationRequestProgramMismatch
         | Kind::ElevationApprovalProgramMismatch

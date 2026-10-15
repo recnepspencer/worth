@@ -26,6 +26,7 @@ pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Sch
 pub enum WorthQuerySignedCreationPreparationDenial {
     Execution(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     Commit(WorthQueryApplicationCommitDenial),
+    LifecycleObservation(Box<super::super::WorthQueryApplicationCommitOutcome>),
     Attempt(WorthQueryApplicationAttemptDenial),
     Authentication(WorthQueryAuthenticationEventDenial),
     OwnerUnavailable,
@@ -64,6 +65,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     let execution = phase
         .execution_for(&application.product_runtime)
         .map_err(|cause| Denial::Execution(cause.into()))?;
+    let candidate = super::super::signing_lifecycle::capture_signing(execution, candidate)?;
     let (mut candidate, dependencies_memory) = super::dependencies::capture(execution, candidate)?;
     let state = candidate
         .read_set
@@ -211,6 +213,14 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .read_set
         .admission
         .installed_operation_identity_bytes();
+    let observation = if encoding == worth_query_declaration::facade::application_schema::ApplicationSigningProvenanceEncoding::CertifiedSubjectV2 {
+        let (digest, work) = execution.decision_stage(|context|
+            super::super::dependency_identity::authentication_observation_identity(
+                operation_meaning, &candidate.read_set.facts, maximum_bytes, &request, context,
+            )).map_err(Denial::Execution)??;
+        candidate.read_set.admission.retain_execution_canonical_work(work);
+        Some(digest)
+    } else { None };
     let (signing, signing_work) = execution
         .decision_stage(|context| {
             identity::admit_assembly(context, metadata_bytes)?;
@@ -223,11 +233,18 @@ pub(in crate::domain_computation::primary_graph) fn seal<
             signing.digest("input", *identities.input_identity());
             signing.digest("subject", coverage);
             signing.digest("candidate", effect_identity);
+            if let Some(observation) = observation {
+                signing.digest("observation", observation);
+            }
             signing.entity("signer", signer);
             signing.text("external-issuer", principal.issuer());
             signing.text("external-subject", principal.subject());
             signing.derive(
-                "worth-query-signed-creation-intent-v1",
+                if observation.is_some() {
+                    "worth-query-signed-certified-creation-intent-v2"
+                } else {
+                    "worth-query-signed-creation-intent-v1"
+                },
                 maximum_bytes,
                 &request,
                 context,

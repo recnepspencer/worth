@@ -41,6 +41,13 @@ where
             ),
         );
     }
+    if !program.read_set.lease.layout.signing_lifecycle.is_empty() && !program.effects.is_empty() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot bypass signing lifecycle consequences",
+            ),
+        );
+    }
     let WorthQueryApplicationEffectProgram {
         read_set,
         effects,

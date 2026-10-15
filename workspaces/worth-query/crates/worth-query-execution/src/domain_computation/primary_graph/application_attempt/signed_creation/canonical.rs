@@ -10,7 +10,7 @@ use worth_foundational::facade::{
 };
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
-pub(super) fn derive(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn derive(
     entries: Vec<CanonicalBasisEntry>,
     domain: CanonicalBasisDomain,
     rule: &str,

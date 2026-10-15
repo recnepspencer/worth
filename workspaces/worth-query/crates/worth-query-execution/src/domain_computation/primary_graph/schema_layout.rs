@@ -27,6 +27,7 @@ mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
 mod signed_entities;
+mod signing_lifecycle;
 mod support_admission;
 #[cfg(test)]
 mod tests;
@@ -71,6 +72,8 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     application_entity_kinds: BTreeSet<KindId>,
     signed_entity_kinds: BTreeSet<KindId>,
+    pub(in crate::domain_computation::primary_graph) signing_lifecycle:
+        signing_lifecycle::SigningLifecycleLayout,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
@@ -175,6 +178,11 @@ impl WorthQueryPrimaryGraphLayout {
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
         let application_entity_kinds = entity_kinds.values().copied().collect();
         let signed_entity_kinds = signed_entities::lower(schema, &entity_kinds)?;
+        let signing_lifecycle = signing_lifecycle::SigningLifecycleLayout::lower(
+            schema,
+            &entity_kinds,
+            &relation_kinds,
+        )?;
         let application_relation_kinds = relation_layouts
             .values()
             .map(|layout| layout.kind)
@@ -196,6 +204,7 @@ impl WorthQueryPrimaryGraphLayout {
                 relation_kinds: relation_layouts,
                 application_entity_kinds,
                 signed_entity_kinds,
+                signing_lifecycle,
                 application_relation_kinds,
                 fields,
                 unique_fields,

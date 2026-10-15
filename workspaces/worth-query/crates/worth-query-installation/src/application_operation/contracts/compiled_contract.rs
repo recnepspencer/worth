@@ -23,6 +23,7 @@ use crate::domain_operation::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryCompiledApplicationOperationContracts {
+    pub(super) signing_lifecycle: super::SigningLifecycleClosure,
     pub(super) body: Option<ApplicationOperationBodyProgram>,
     pub(super) authorization: WorthQueryInstalledApplicationOperationAuthorization,
     pub(super) ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
@@ -46,6 +47,16 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
 }
 
 impl WorthQueryCompiledApplicationOperationContracts {
+    /// Native publication closure; it does not enlarge a product handler's writer contract.
+    pub fn publication_touches(&self) -> &WorthQueryOperationTouchContract {
+        &self.signing_lifecycle.publication_touches
+    }
+    pub fn signing_lifecycle_rules(&self) -> &[super::WorthQueryInstalledSigningLifecycleRule] {
+        &self.signing_lifecycle.rules
+    }
+    pub fn signing_lifecycle_ceiling(&self) -> Option<ApplicationCandidateRequirements> {
+        self.signing_lifecycle.ceiling
+    }
     /// Installed executable meaning; advanced callers cannot replace this body.
     pub const fn body(&self) -> Option<&ApplicationOperationBodyProgram> {
         self.body.as_ref()

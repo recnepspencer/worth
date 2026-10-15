@@ -52,6 +52,7 @@ mod relation_integrity;
 mod schema_identity;
 mod schema_member;
 mod signing_provenance;
+mod signing_supersession;
 pub use signing_provenance::{
     ApplicationSigningEntityCoordinates, ApplicationSigningProvenance,
     ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceEncoding,
@@ -59,6 +60,10 @@ pub use signing_provenance::{
     ApplicationSigningProvenanceValueBinding, ApplicationSigningSubjectDependency,
     ApplicationSigningSubjectProvenance, ApplicationSigningSubjectProvenanceBinding,
     ApplicationSigningSubjectProvenanceParts,
+};
+pub use signing_supersession::{
+    ApplicationSigningSupersession, ApplicationSigningSupersessionBinding,
+    ApplicationSigningSupersessionParts,
 };
 mod value_binding;
 mod values;
@@ -167,8 +172,9 @@ pub use operation_definition::{
     ApplicationOperationBodyRequirementDirection, ApplicationOperationBodyRequirementExpression,
     ApplicationOperationBodyRequirementOperand, ApplicationOperationBodyRequirementOperands,
     ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
-    ApplicationOperationBodyScopeField, ApplicationOperationBodySigningSpec,
-    ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
+    ApplicationOperationBodyScopeField, ApplicationOperationBodySigningLifecycleSpec,
+    ApplicationOperationBodySigningSpec, ApplicationOperationDefinition,
+    ApplicationOperationDefinitionBuilder,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{

@@ -96,17 +96,13 @@ where
     if let Err(outcome) = validate_workflow_deadline(application, workflow_deadline) {
         return terminal(outcome);
     }
-    let lease = match readmit_current_basis(
-        execution,
-        application,
-        &mut admission,
-        read_set.lease,
-        current_product,
-        ordinary_basis,
-    ) {
-        Ok(lease) => lease,
-        Err(outcome) => return terminal(outcome),
-    };
+    // Consequences belong to the retained decision, not a newer publication
+    // basis. Preserve those observations before ordinary basis re-admission;
+    // membership movement must compare stale like any other dependency.
+    let lease = read_set.lease;
+    if let Err(outcome) = crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::validate_incoming(
+        &lease, &effects, signed_creation.as_ref(), execution, admission.scope_entity_id(),
+    ) { return terminal(outcome); }
     if let Err(outcome) =
         crate::domain_computation::primary_graph::application_attempt::signed_creation::publish(
             signed_creation,
@@ -120,15 +116,32 @@ where
     {
         return terminal(outcome);
     }
+    let lifecycle = match crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::expand(
+        &admission, &lease, &mut effects, read_set.facts,
+        phase.execution_for(&application.product_runtime).expect("phase readmitted for this runtime"),
+        *idempotency.key_identity(),
+    ) { Ok(lifecycle) => lifecycle, Err(outcome) => return terminal(outcome) };
+    let lease = match readmit_current_basis(
+        execution,
+        application,
+        &mut admission,
+        lease,
+        current_product,
+        ordinary_basis,
+    ) {
+        Ok(lease) => lease,
+        Err(outcome) => return terminal(outcome),
+    };
     prepare_authorized_application_commit(
         application,
         WorthQueryCurrentApplicationCommit {
             admission,
             lease,
             provider: WorthQueryProviderAttemptPreparation {
+                signing_lifecycle_memory: lifecycle.memory,
                 required_output_demand,
                 installed_read_scopes: read_set.installed_read_scopes,
-                facts: read_set.facts,
+                facts: lifecycle.facts,
                 consumed_outputs: read_set.consumed_outputs,
                 application_effect_count: effects.len(),
                 effects,

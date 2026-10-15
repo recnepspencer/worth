@@ -24,6 +24,10 @@ Declare through `worth_query_decl::facade::application_schema`:
 - `creation.capture_from_scope(source, snapshot, ApplicationOperationBodyCaptureRole)`
   and `capture_from_present_scope` for explicitly classified v2 captures;
 - `operation.requirement_operands().principal_identity::<Binding>(name)`.
+- `creation.supersede_on_subject_change(history, current, consequences, record, maximum_evidence)`
+  for native dependency-scoped permanent supersession.
+- `ApplicationSigningSupersession` and `ApplicationSigningSupersessionBinding`
+  for the immutable, descriptive consequence payload.
 
 Install the body through the usual contribution's `operation_body::<Binding>()`.
 Install a genuine authentication-event owner using
@@ -68,10 +72,19 @@ values remain in the immutable signed snapshot but not in `dependencies()`.
 V2 rejects unclassified scope captures. Classified captures require v2 signing;
 they cannot be silently interpreted by an unsigned creation or the legacy profile.
 
-This persisted correspondence is not a supersession event or an effectiveness
-decision. A no-op, a dependency edit, and a later restored value need the separate
-authoritative business consequence contract; comparing these revisions or digests
-in the host cannot implement it.
+The footprint alone is not a supersession event or an effectiveness decision.
+Opt into `supersede_on_subject_change` on the signed creation to declare the native
+consequence contract once. Query derives its publication closure for installed
+source writers; the host supplies neither changed-field lists nor consequence effects.
+
+History and current evidence are different native relations. Signing appends the
+history link and adds current membership. A real change to a row's own `Subject`
+dependencies atomically creates its immutable supersession record, links that
+record to the evidence and removes its current membership. The source edit and
+consequence share one publication. History and signed contents remain untouched.
+No-op/unrelated edits preserve evidence, and restoring a previous value never
+removes a supersession or revives the old row. `AuditContext` changes alone do not
+supersede it. The declared limit bounds current fan-out, not lifetime history.
 
 ## How It Executes
 
@@ -84,6 +97,15 @@ in the host cannot implement it.
 4. Commit rechecks native source revisions, current authority, program occurrence,
    immutable effects and the owner's expiry/revocation decisions. It fills the
    reserved slot and publishes snapshot, actor, provenance, output and links together.
+
+For a lifecycle declaration, signing also observes current membership and its
+capacity before authentication, including absence. The v2 intent binds this full
+admission observation separately from certified subject coverage. An unused event
+cannot be reused after membership movement even when the certified content matches.
+Source-edit consequences are observed on the retained decision basis before
+publication-basis readmission. Concurrent new evidence makes that edit stale;
+neither its source write nor its consequence publishes. Refusals never publish
+one half of the batch. Exact retained replay precedes consequence discovery.
 
 Missing proof, stale dependencies or owner refusal publish no partial snapshot.
 An unrelated source edit need not stale the candidate. Exact logical replay
@@ -138,6 +160,11 @@ creation
     .signed_by::<VerifyBinding, _, _, _, _, _, _, _>(
         VerifiedActor::reference(), V2Provenance::reference(), "verification",
     )?
+    .supersede_on_subject_change(
+        VerificationHistory::reference(), VerificationCurrent::reference(),
+        VerificationSupersessions::reference(), SupersessionRecord::reference(),
+        std::num::NonZeroUsize::new(32).expect("bounded current evidence"),
+    )?
     .finish()?;
 ```
 
@@ -162,6 +189,16 @@ With v2, the governed result's `provenance.dependencies()` exposes the installed
 source-to-snapshot correspondence. `provenance.authentication()` exposes the
 authentication metadata. These are inspection data, not reusable authority.
 
+Declare distinct same-context, retain-for-audit relations: document→evidence for
+history and current, and evidence→supersession for consequences. The consequence
+entity contains exactly one required, unitless, read-only field bound to
+`ApplicationSigningSupersessionBinding`. Ordinary operations cannot create, edit
+or delete that record or mutate protected associations; only the signed body's
+own history/current links and native consequence owner can do so. A signed body
+cannot simultaneously write the `Subject` values whose preimages it certifies.
+The ordinary handler's candidate ceiling stays unchanged; installation derives
+a separate bounded native consequence reservation and publication touch closure.
+
 ## How It Relates To Other Features
 
 Workflow operation authority and workflow approval remain separate native
@@ -183,6 +220,13 @@ it is not a future validity predicate. Only the declared certified dependencies
 describe that footprint. The two typed codecs reject each other's
 bytes: a v1 record is never silently interpreted as an empty v2 footprint.
 
+Read supersession history through an ordinary governed query. Its payload records
+exact source/evidence/actor coordinates, operation, logical request digest and
+changed dependency loci. It does not claim UTC time or grant approval authority.
+Typed lifecycle denials distinguish unavailable observations, evidence capacity,
+representation capacity and forgery. Observation failures retain their typed
+source cause; inspect `signing_lifecycle_observation_failure()` when applicable.
+
 ## Anti-Patterns
 
 Do not accept actor, signed flags, provenance JSON or precomputed coverage as
@@ -191,6 +235,8 @@ after authentication, auto-retry a stale signature, or mint fake workflow approv
 Do not seed signed business records through bootstrap or checkpoint migration.
 Program-adoption migration also refuses signed creations explicitly; it cannot
 discard their signing state and publish them as ordinary migration effects.
+Do not treat an evictable invalidation index or current-value/digest comparison as
+permanent supersession. Do not scan or rewrite all historical evidence on each edit.
 
 ## Current Limits
 
@@ -202,10 +248,15 @@ capture role and source presence use body record v14; earlier versions cannot
 reinterpret its new opcode. The v2 provenance binding has a distinct codec
 identity; it does not reinterpret v1 records or require a build-counter
 schema revision. Unsupported codecs fail installation rather than falling back.
+The lifecycle declaration uses body record v15 without changing v1–v14, requires
+v2 provenance, and operates on the one admitted source kind and its declared
+captures. Fan-out/capacity exhaustion refuses the whole edit, never truncates.
+Effectful program-adoption migration for a lifecycle schema is explicitly
+unsupported until it has a native consequence join; it cannot bypass this law.
 
 Checkpoint restoration preserves signed data and durable idempotency facts, not
-live event or receipt authority. Permanent business supersession, approval-round
-selection, automatic consumption of early evidence by later approval, regulatory
+live event or receipt authority. Approval-round selection, automatic consumption
+of early evidence by later approval, regulatory
 signature manifestation and UTC evidence are not supplied by this feature.
 
 ## Related Docs

@@ -10,9 +10,9 @@ use worth_query_declaration::facade::{
     authentication::WorthQueryExternalPrincipalIdentity,
 };
 
-mod canonical;
+pub(super) mod canonical;
 mod dependencies;
-mod identity;
+pub(super) mod identity;
 mod publication;
 mod sealing;
 mod subject_binding;

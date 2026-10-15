@@ -13,8 +13,10 @@ pub use created_field::ApplicationOperationBodyCaptureRole;
 mod principal;
 mod principal_validation;
 mod signing;
+mod signing_lifecycle;
 mod signing_validation;
 pub use signing::ApplicationOperationBodySigningSpec;
+pub use signing_lifecycle::ApplicationOperationBodySigningLifecycleSpec;
 mod program;
 mod requirement;
 mod validation;
@@ -60,6 +62,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     IncompatibleSourceBinding,
     InvalidSigningPurpose,
     UnclassifiedSignedCapture,
+    InvalidSigningLifecycle,
     ForeignSourceEntity,
     IncompatibleOutput,
     InvalidCreationLink,
