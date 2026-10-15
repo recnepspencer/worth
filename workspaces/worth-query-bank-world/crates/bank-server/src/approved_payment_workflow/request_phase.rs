@@ -209,31 +209,21 @@ fn committed_owner_custody_is_accepted_in_one_request() {
         let runtime = &ready.fixture.world.runtime;
         let vocabulary = runtime.approved_payment_workflow_runtime();
         let perform_key = key("approved-payment:operation:perform");
-        // Retain the actual native performed receipt, rather than reconstructing
-        // executor identity from a business-input principal or a later command.
-        let effect = runtime
+        let request = runtime
             .request(&ready.principal, &ready.scope)
-            .on_branch(ready.operation.branch())
-            .mutate(ApprovedBusinessPaymentApplyIntent {
-                input: ready.authority.clone(),
-            })
-            .idempotency(&perform_key)
-            .for_workflow_operation(vocabulary, &ready.operation)
-            .unwrap()
-            .execute_in_program(
-                vocabulary.program_runtime(),
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            .on_branch(ready.operation.branch());
+        let operation = runtime
+            .approved_business_payment(&ready.principal, &ready.scope)
+            .retain_apply(
+                &ready.operation,
+                ready.authority.clone(),
+                perform_key.clone(),
             )
-            .expect("the real native payment executes");
-        let worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed {
-            receipt: original_receipt, ..
-        } = effect else { panic!("the real rail payment must newly commit: {effect:?}"); };
-        let original = original_receipt.principal_scope().principal();
-        let executor = (
-            original.partition_id(),
-            original.local_slot(),
-            original.generation(),
-        );
+            .expect("retain the installed payment action and original occurrence");
+        let mut operation = match operation.advance(&request) {
+            worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
+            _ => panic!("the actual dispatch must retain its original owner until inbound"),
+        };
 
         let token = ready.rail.attempts()[0]
             .token()
@@ -245,21 +235,41 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             .runtime
             .observe_payment_rail_completion(&route, token)
             .expect("the synchronous transport completion entered the installed terminal owner");
+        let effect = loop {
+            use worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance as Advance;
+            match operation.advance(&request) {
+                Advance::Progress(next) => operation = next,
+                Advance::Completed(completed) => break completed,
+                Advance::Refused { operation, denial } => {
+                    let _original_owner = operation;
+                    panic!("the completed real rail effect must settle: {denial:?}");
+                }
+                Advance::Terminal(terminal) => {
+                    let _original_owner = terminal;
+                    panic!("the completed real rail effect cannot stop terminally");
+                }
+            }
+        };
+        // The actual original receipt is the actor oracle, never business input.
+        let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+            receipt: original_receipt,
+            ..
+        } = effect.evidence()
+        else {
+            panic!("the real rail payment must newly commit");
+        };
+        let original = original_receipt.principal_scope().principal();
+        let executor = (
+            original.partition_id(),
+            original.local_slot(),
+            original.generation(),
+        );
         let later_actor = ready.fixture.authenticate(fixture::STRANGER);
         let later_authority = bank_domain::schema::ApprovePayment {
             payment: ready.fixture.payment,
             approver: fixture::principal_id(fixture::STRANGER),
         };
         let command_key = key("approved-payment:operation:committed-custody");
-        let mutation = runtime
-            .request(&ready.principal, &ready.scope)
-            .on_branch(ready.operation.branch())
-            .mutate(ApprovedBusinessPaymentApplyIntent {
-                input: ready.authority.clone(),
-            })
-            .idempotency(&perform_key)
-            .for_workflow_operation_recovery(vocabulary, &ready.operation)
-            .unwrap();
         let prepared = runtime
             .request(&later_actor, &ready.scope)
             .mutate(ApprovedBusinessPaymentAdvanceIntent {
@@ -271,14 +281,16 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             .unwrap();
         reports();
         let before = reads();
-        let outcome = prepared.accept_operation_from_owner(&ready.operation, mutation);
-        let completed = match outcome {
-            Ok(
-                worth_query_host::facade::application_entry::WorkflowProgressOutcome::Completed(
-                    completed,
-                ),
+        let accepted = prepared
+            .accept_owned_operation(effect)
+            .unwrap_or_else(|(_owner, cause)| {
+                panic!("committed custody completes acceptance: {cause:?}")
+            });
+        let completed = match &accepted.progress {
+            worth_query_host::facade::application_entry::WorkflowProgressOutcome::Completed(
+                completed,
             ) => completed,
-            other => panic!("committed custody completes acceptance: {other:?}"),
+            other => panic!("committed custody must record its transition: {other:?}"),
         };
         let later = completed.receipt().principal_scope().principal();
         let advancer = (later.partition_id(), later.local_slot(), later.generation());
@@ -312,5 +324,11 @@ fn committed_owner_custody_is_accepted_in_one_request() {
         );
         assert_eq!(ready.rail.completed_effect_count(), 1);
         admitted(before);
+        accepted
+            .operation
+            .close(&request)
+            .unwrap_or_else(|(_owner, cause)| {
+                panic!("original payment cleanup must close: {cause:?}")
+            });
     }
 }

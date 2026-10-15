@@ -10,6 +10,7 @@ use super::*;
 use crate::estate_capability_admission::fixture::{
     emergency_request_world_with_alternate_bound, request_scope, GrantSpec, ESTATE, GRANT,
 };
+use crate::BankMutationCommitOutcome;
 
 #[test]
 fn generic_program_cannot_bypass_the_installed_revocation_action() {
