@@ -852,6 +852,8 @@ owner_source = "workspaces/worth-query/crates/worth-query-execution/src/facade/p
 root = "workspaces/worth-query/crates"
 exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src/publication_boundary.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies/cumulative_court.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses.rs",
   "workspaces/worth-query/crates/worth-query-publication",
 ]
 forbidden_identifiers = ["program_publication_access"]
