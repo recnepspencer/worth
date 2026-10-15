@@ -6,7 +6,7 @@ use worth_relational::facade::{
     indexes::{DerivedIndexBuildRequest, DerivedIndexId},
     runtime::RelationalRuntime,
 };
-pub(super) fn prepare(
+pub(in crate::domain_computation::primary_graph::application_discovery::workflow) fn prepare(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis: &AdmittedRelationalBranchBasis,
