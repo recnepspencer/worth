@@ -195,6 +195,7 @@ let installed = WorthQueryApplicationWorkflowSpecInstallation::<
 - `.operation::<Binding>()`, `.assessment::<Binding>()`, and `.condition_operand::<Binding>()` add members. Each member must already be installed in the program.
 - `.approval::<Capability, Operation, Input>()` adds an approval capability.
 - `.authoring_capability`, `.instance_start_capability`, and `.advance_capability` are required. Without them, `finish()` refuses.
+- Member categories are optional individually. An operation-only information-gathering workflow needs no assessment or approval member. `finish()` rejects only when all operation, assessment, condition and approval collections are empty. Definition binding still rejects every member outside the installed vocabulary; do not install dummy approvals to satisfy vocabulary shape.
 - `finish()` returns `WorthQueryInstalledApplicationWorkflowSpec`. It exposes `schema_binding()`, `program_revision()`, `resources()`, and `bind_definition(..)`.
 - `WorthQueryApplicationWorkflowResourceCeiling::new` returns `None` when a ceiling is zero. `with_history_reconstruction_budget(..)` sets how much retained history a request may reconstruct (`WorthQueryWorkflowHistoryReconstructionBudget::standard()` is the default budget).
 

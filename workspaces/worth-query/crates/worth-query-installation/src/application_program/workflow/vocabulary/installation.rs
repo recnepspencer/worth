@@ -358,7 +358,11 @@ where
                 Spec::IDENTITY.as_str(),
             )
         })?;
-        if self.operations.is_empty() || self.assessments.is_empty() || self.approvals.is_empty() {
+        if self.operations.is_empty()
+            && self.assessments.is_empty()
+            && self.conditions.is_empty()
+            && self.approvals.is_empty()
+        {
             return Err(denial(
                 WorthQueryApplicationWorkflowInstallationDenialKind::EmptyVocabulary,
                 Spec::IDENTITY.as_str(),

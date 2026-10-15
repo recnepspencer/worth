@@ -79,6 +79,8 @@ mod workflow_receipt_lifecycle;
 mod workflow_retirement;
 #[path = "application_graph/workflow_retry.rs"]
 mod workflow_retry;
+#[path = "application_graph/workflow_vocabulary.rs"]
+mod workflow_vocabulary;
 
 #[path = "application_graph/source_bound_replay.rs"]
 mod source_bound_replay;
