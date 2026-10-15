@@ -1,3 +1,6 @@
+pub(in crate::domain_computation::primary_graph) mod history_projection;
+mod read_dependencies;
+pub(in crate::domain_computation::primary_graph) mod read_fields;
 mod recorded_actor;
 pub(in crate::domain_computation::primary_graph::application_attempt) use recorded_actor::{
     original_parent, original_scope, original_transition, recorded_approval,

@@ -259,9 +259,9 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_transition(
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
     let progress = progress_basis.progress();
     let node = select_current_node(compiled, progress)?;
-    if !proposal_need::proposal_node(node).is_some_and(|selected| {
-        selected.operation == operation && selected.input_type == input_type
-    }) {
+    if !SelectedWorkflowProposal::from_node(node)
+        .is_some_and(|selected| selected.matches_recorded(operation, input_type, node.path()))
+    {
         return Err(denial(
             WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
             node.path(),
@@ -296,9 +296,9 @@ pub(in crate::domain_computation::primary_graph) fn select_proposal_replay_trans
             "settled proposal node is absent from the compiled node inventory",
         )
     })?;
-    if !proposal_need::proposal_node(node).is_some_and(|selected| {
-        selected.operation == operation && selected.input_type == input_type
-    }) {
+    if !SelectedWorkflowProposal::from_node(node)
+        .is_some_and(|selected| selected.matches_recorded(operation, input_type, node.path()))
+    {
         return Err(denial(
             WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
             node.path(),

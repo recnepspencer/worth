@@ -20,6 +20,8 @@ use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 #[derive(Debug)]
 pub enum WorthQueryWorkflowReadDenial {
     PolicyMismatch,
+    SubscriptionCapacity,
+    Work(worth_execution::WorkCeilingDenial),
     ContinuationMismatch,
     Page(worth_relational::facade::indexes::BoundedRelatedEntityPrefixDenial),
     PageShape(worth_relational::facade::indexes::BoundedRelatedEntityOrderedLookupDenial),

@@ -170,7 +170,7 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
         crate::domain_computation::primary_graph::workflow::WorkflowApprovalMeaning {
             identity,
             identity_text: hex(identity),
-            instance_identity: format!("{:?}", required.instance()),
+            instance_identity: crate::domain_computation::primary_graph::workflow::workflow_approval_instance_identity(required.instance()),
             definition_content_identity: compiled.content_identity().to_string(),
             program_revision: compiled.program_revision().to_string(),
             proposal: proposal.entity_id(),

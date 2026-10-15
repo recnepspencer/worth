@@ -13,6 +13,17 @@ mod enumeration;
 pub(in crate::domain_computation::primary_graph) mod indexes;
 mod original_intent;
 mod read;
+mod target;
+pub use target::WorthQueryWorkflowReadTarget;
+mod subscription;
+pub use subscription::{WorthQueryWorkflowHistoryMark, WorthQueryWorkflowHistorySubscription};
+mod history_view;
+pub use history_view::{
+    WorthQueryWorkflowApprovalRead, WorthQueryWorkflowHistoryAudit, WorthQueryWorkflowHistoryEntry,
+    WorthQueryWorkflowHistoryPage,
+};
+mod history_page;
+
 mod selection;
 pub use definition::WorthQueryWorkflowDefinitionRead;
 pub use enumeration::*;

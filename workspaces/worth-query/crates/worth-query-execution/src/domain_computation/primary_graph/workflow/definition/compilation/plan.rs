@@ -347,3 +347,17 @@ impl CompiledWorkflowDefinition {
 #[cfg(test)]
 #[path = "plan/tests.rs"]
 mod tests;
+
+impl CompiledWorkflowConnection {
+    pub(in crate::domain_computation::primary_graph) fn source(&self) -> EntityId {
+        self.source
+    }
+    pub(in crate::domain_computation::primary_graph) fn target(&self) -> EntityId {
+        self.target
+    }
+    pub(in crate::domain_computation::primary_graph) fn kind(
+        &self,
+    ) -> &CompiledWorkflowConnectionKind {
+        &self.kind
+    }
+}

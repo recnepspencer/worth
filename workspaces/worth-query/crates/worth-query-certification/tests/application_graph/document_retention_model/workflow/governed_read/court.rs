@@ -21,6 +21,8 @@ use worth_query_host::facade::{
 };
 mod definition;
 mod enumeration;
+mod history;
+mod history_stimuli;
 mod provenance;
 mod publication;
 mod reacquisition;

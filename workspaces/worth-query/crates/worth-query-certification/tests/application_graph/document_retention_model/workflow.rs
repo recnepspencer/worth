@@ -48,6 +48,7 @@ pub use declaration::{
     WorkflowInstanceStartCapability, WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
 };
 pub(crate) use definition::definition_limits;
+pub(super) use definition::governed_reviewed_definition;
 pub use definition::{
     advance_instance, advance_instance_on, approval_retry_definition, approve_instance,
     authoring_intent, cancel_instance, condition_terminal_definition, condition_terminal_draft,

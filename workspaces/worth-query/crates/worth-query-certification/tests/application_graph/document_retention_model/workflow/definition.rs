@@ -63,7 +63,7 @@ pub fn reviewed_document_definition_with_join_policy(
     completion_identity: &str,
     join_policy: worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy,
 ) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
-    reviewed_document_definition_with_policy::<ReviewedSetRetentionBinding>(
+    reviewed_document_definition_with_policy::<ReviewedDocumentWorkflow, ReviewedSetRetentionBinding>(
         completion_identity,
         join_policy,
         Rejection::Terminal,
@@ -77,7 +77,7 @@ pub fn reviewed_document_definition_with_deadline(
     completion_identity: &str,
     deadline: std::time::Duration,
 ) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
-    reviewed_document_definition_with_policy::<ReviewedSetRetentionBinding>(
+    reviewed_document_definition_with_policy::<ReviewedDocumentWorkflow,ReviewedSetRetentionBinding>(
         completion_identity,
         worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
         Rejection::Terminal,
@@ -91,7 +91,7 @@ pub fn reviewed_document_definition_with_deadline(
 pub fn reproposing_document_definition(
     completion_identity: &str,
 ) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
-    reviewed_document_definition_with_policy::<ReviewedSetRetentionBinding>(
+    reviewed_document_definition_with_policy::<ReviewedDocumentWorkflow,ReviewedSetRetentionBinding>(
         completion_identity,
         worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
         Rejection::Repropose,
@@ -106,7 +106,7 @@ pub fn reviewed_document_definition_for_binding<
 >(
     completion_identity: &str,
 ) -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
-    reviewed_document_definition_with_policy::<Binding>(
+    reviewed_document_definition_with_policy::<ReviewedDocumentWorkflow,Binding>(
         completion_identity,
         worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
         Rejection::Terminal, definition_limits(),
@@ -114,7 +114,7 @@ pub fn reviewed_document_definition_for_binding<
 }
 
 pub fn approval_retry_definition() -> ValidatedWorkflowDefinition<ReviewedDocumentWorkflow> {
-    reviewed_document_definition_with_policy::<ReviewedSetRetentionBinding>(
+    reviewed_document_definition_with_policy::<ReviewedDocumentWorkflow,ReviewedSetRetentionBinding>(
         "applied",
         worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,
         Rejection::Retry(2),
@@ -296,4 +296,9 @@ pub(crate) fn definition_limits() -> ApplicationWorkflowDefinitionLimits {
         64 * 1024,
     )
     .expect("the workflow definition limits are nonzero")
+}
+
+pub(in super::super) fn governed_reviewed_definition(
+) -> ValidatedWorkflowDefinition<super::governed_read::GovernedDocumentWorkflow> {
+    reviewed_document_definition_with_policy::<super::governed_read::GovernedDocumentWorkflow,ReviewedSetRetentionBinding>("applied",worth_query_host::facade::declaration::application_program::ApplicationWorkflowEvidenceJoinPolicy::AllRequiredPassing,Rejection::Terminal,definition_limits())
 }

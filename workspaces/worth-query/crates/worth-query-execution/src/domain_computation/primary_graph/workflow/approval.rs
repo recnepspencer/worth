@@ -257,3 +257,10 @@ fn hex(bytes: [u8; 32]) -> String {
     }
     text
 }
+
+/// Native approval instance encoding, deliberately distinct from original start-intent identity.
+pub(in crate::domain_computation::primary_graph) fn workflow_approval_instance_identity(
+    instance: EntityId,
+) -> String {
+    format!("{instance:?}")
+}

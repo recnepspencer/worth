@@ -28,7 +28,7 @@ use worth_relational::facade::{
     },
     mvcc::CompanionPreflightBudget,
 };
-mod currency;
+pub(super) mod currency;
 /// Explicit selected scope; omitting a subject never widens a subject rule.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowReadExtent {

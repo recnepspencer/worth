@@ -13,6 +13,14 @@ pub fn install() -> GovernedRuntime {
 pub(super) fn retain(
     application: super::super::super::host::DocumentRetentionRuntime<RetentionProgramP0>,
 ) -> GovernedRuntime {
+    retain_with_auth(application).0
+}
+pub(super) fn retain_with_auth(
+    application: super::super::super::host::DocumentRetentionRuntime<RetentionProgramP0>,
+) -> (
+    GovernedRuntime,
+    super::super::CertificationAuthenticationOwner,
+) {
     let workflow = super::super::runtime::install_workflow_spec_for::<
         RetentionProgramP0,
         GovernedDocumentWorkflow,
@@ -24,7 +32,8 @@ pub(super) fn retain(
     let (authentication, _clock) = super::super::install_certification_authentication_with_clock(
         application.runtime().installed_schema(),
     );
-    application
+    let runtime = application
         .retain_workflow_spec(workflow, authentication.signing_owner())
-        .expect("real governed vocabulary installs")
+        .expect("real governed vocabulary installs");
+    (runtime, authentication)
 }

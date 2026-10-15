@@ -150,7 +150,15 @@ pub(super) fn project_record<Schema: ApplicationSchema>(
         WorthQueryWorkflowHistoricalPosture::RetainedBasis
     };
     let live = record.reference.take();
+    let target = super::target::WorthQueryWorkflowReadTarget::observed(
+        data,
+        record.instance,
+        record.lineage,
+        record.subject,
+        record.dependencies,
+    );
     let observation = WorthQueryWorkflowObservation {
+        target,
         basis: WorthQueryWorkflowReadBasis::retained(data),
         state: record.state,
         history: record.history,

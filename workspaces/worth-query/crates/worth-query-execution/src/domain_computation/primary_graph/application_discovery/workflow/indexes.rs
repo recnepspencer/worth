@@ -7,6 +7,7 @@ use worth_relational::facade::indexes::{
 #[derive(Debug, Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct WorkflowReadIndexes {
     pub(in crate::domain_computation::primary_graph) instances: DerivedIndexId,
+    pub(in crate::domain_computation::primary_graph) transitions: DerivedIndexId,
 }
 impl WorkflowReadIndexes {
     pub(in crate::domain_computation::primary_graph) fn install(
@@ -38,8 +39,23 @@ impl WorkflowReadIndexes {
             },
             branch_scoped: true,
         })?;
+        let transitions = install(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "worth-query-workflow.instance-transitions".to_owned(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::RelatedEntityOrdering {
+                relation_kind: layout.instance_transition_relation,
+                parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                child_kind: layout.transition.entity_kind,
+                ordering: vec![RelatedEntityOrderingField::new(
+                    layout.transition.occurrence.clone(),
+                    RelatedEntityOrderingDirection::Ascending,
+                )],
+            },
+        })?;
         Ok(Self {
             instances: definition.index_id,
+            transitions: transitions.index_id,
         })
     }
 }
