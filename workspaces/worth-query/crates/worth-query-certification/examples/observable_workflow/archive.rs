@@ -206,7 +206,7 @@ fn meaning_digest(
         CanonicalBasisValue::ExactText(semantics.into()),
     );
     let version = CanonicalizationRuleVersion::new("neutral.archive.v1")
-        .map_err(|_| WorthQueryInboundVerificationDenial::Malformed)?;
+        .ok_or(WorthQueryInboundVerificationDenial::Malformed)?;
     let TransitionOutcome::Success(ready) =
         prepare_canonical_basis_sequence(version.clone(), domain, [entry])
     else {

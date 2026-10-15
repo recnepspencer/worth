@@ -191,5 +191,6 @@ pub type ArchiveAction = ApplicationActionReference<
     ArchiveBinding,
     ArchiveDelivery,
 >;
+#[path = "effect/handler.rs"]
 mod handler;
 use handler::ArchiveHandler;
