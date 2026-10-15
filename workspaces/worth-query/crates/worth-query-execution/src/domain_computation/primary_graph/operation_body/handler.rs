@@ -119,12 +119,15 @@ where
         drop(findings);
         let mut sources = Vec::new();
         if let Some(creation) = self.body.creation() {
-            for source in creation
-                .fields()
-                .iter()
-                .filter_map(|step| step.source_field())
-            {
-                match reader.body_scope_value(source) {
+            for step in creation.fields() {
+                let (source, captured) = if let Some(source) = step.source_field() {
+                    (source, reader.body_scope_value(source))
+                } else if let Some(source) = step.principal_source() {
+                    (source, reader.body_principal_value(source))
+                } else {
+                    continue;
+                };
+                match captured {
                     Ok(Some(value)) => sources.push(value),
                     Ok(None) => {
                         return HandlerResult::DomainDenied(
@@ -260,7 +263,8 @@ where
                         };
                         std::borrow::Cow::Owned(value)
                     }
-                    ApplicationOperationBodyCreatedField::ScopeField { .. } => {
+                    ApplicationOperationBodyCreatedField::ScopeField { .. }
+                    | ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
                         let (source, reservation) = source_values
                             .next()
                             .expect("one captured source per installed initializer")

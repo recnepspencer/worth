@@ -124,6 +124,18 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                         return Err(denied());
                     }
                 }
+                if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreatedField::PrincipalIdentity {
+                    mutation_binding, principal_binding, source, ..
+                } = step {
+                    let principal = Binding::principal_binding();
+                    if mutation_binding != Binding::IDENTITY || principal_binding != principal.name()
+                        || source.entity() != principal.principal_entity() || source.aspect() != principal.principal_identity_aspect()
+                        || source.field() != principal.principal_identity_field() || step.binding().as_str() != principal.principal_identity_value_type()
+                        || step.scalar_family() != principal.principal_identity_scalar_family() || binding.unit().is_some()
+                    { return Err(denied()); }
+                    let identity_binding = schema.value_bindings().field(source.entity(), source.aspect(), source.field()).ok_or_else(denied)?;
+                    if identity_binding.identity() != step.binding() || identity_binding.scalar_family() != step.scalar_family() || identity_binding.unit() != binding.unit() { return Err(denied()); }
+                }
                 if step.input_member().is_some() {
                     if !Binding::InputBinding::RETAIN_CANONICAL_INPUT
                         || !binding.is_readable()

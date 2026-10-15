@@ -6,7 +6,9 @@ A scope-field body declares the source expectations and scalar writes of one
 operation. It can also declare one typed entity creation in the admitted scope's
 context, without writing an existing scope field. Required writes and created-field initializers can use authored literals or named
 members of the operation's once encoded input. A created field may also copy a
-tracked scope-field preimage from the same decision observation. Optional scalar
+tracked scope-field preimage from the same decision observation. An unsigned
+audit field can also copy the exact admitted principal identity, with its source
+derived from the operation's mutation binding rather than input. Optional scalar
 fields can be set from a present scalar input, explicitly cleared, or replaced
 and initialized from one-level Option-valued input. Query installs and executes those
 values; the host does not choose a handler that independently restates them.
@@ -52,6 +54,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   `.initialize_from_scope(source_field, created_field)` and `.finish()`;
 - `creation.initialize_optional_input(optional_field, "member")` to initialize
   the new field for Some and leave it absent for None;
+- `creation.initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor_field)`
+  to attribute a created row to the operation's admitted principal;
 - `creation.link_from_scope(relation, "link-slot")` and
   `creation.link_to_scope(relation, "link-slot")` for links to the new row;
 - `body.preserve_scope_output::<Binding, Role>()` and
@@ -221,6 +225,17 @@ write, reserves its retained value on the request, and holds that reservation
 through candidate initialization. Missing source or changed source dependency
 denies/stales through the ordinary owners; the host cannot supply a before-image.
 
+`initialize_from_principal_identity` binds to the exact mutation operation/input,
+principal binding, identity source field and codec. Its target is unitless and
+uses that same identity value and codec. Registration derives the principal-field
+read; cold readmission checks the declared contracts and native installation
+checks their correspondence with the actual typed binding. Execution reads from
+the principal entity retained by admission at the same decision observation—not
+from a scope ID, input member, display name, or fresh host lookup. The existing
+tracked scalar read and reservation retain the value through candidate creation.
+This is an unsigned actor attribution. It does not retain a signing event,
+establish freshness of authentication, or grant approval authority.
+
 An output use names a role of the exact binding's `Output` contract. The compiler
 checks operation/input, schema, contract, entity and posture, including the role's
 declared inventory. Fresh readmission checks the complete binding/role tuple and
@@ -344,6 +359,30 @@ AuditPriorRetentionField::reference())` before the creation builder's `finish()`
 The audit receives the observed old value even if the same body assigns a new
 retention to the document.
 
+For an actor-bearing transition audit, initialize the actor in that same body:
+
+```rust
+let body = EnterReview::reference().body()
+    .expect(CurrentStage::reference(), Stage::Draft)?
+    .assign(CurrentStage::reference(), Stage::Review)?
+    .create_in_scope(TransitionAudit::reference(), "transition")?
+    .initialize_from_scope(CurrentStage::reference(), AuditFrom::reference())?
+    .initialize(AuditTo::reference(), Stage::Review)?
+    .initialize_from_principal_identity::<EnterReviewBinding, _, _, _, _, _>(
+        AuditActor::reference(),
+    )?
+    .link_from_scope(DraftAudits::reference(), "audit-owner")?
+    .finish()?;
+```
+
+Here `AuditActor` has `OperationWrites<EnterReview>` and exactly the identity
+value/codec of `EnterReviewBinding`. Admit the creation, link and four writes in
+the binding's normal candidate ceiling. Query commits the old stage, new stage,
+actor, and membership atomically. A governed audit query reads the persisted
+actor independently of the unit mutation result. The intent contains no actor
+selector. This is not a signed attestation; a workflow occurrence or signature
+requirement still needs its own native authority.
+
 To create the document itself under an existing tenant, declare
 `OperationReads<CreateDocument>` on the tenant marker and the binding's scope
 identity field, plus Create/initializer Write capabilities on the document.
@@ -454,6 +493,10 @@ retain their previous bytes. Their meaning enters both schema and program identi
 Creation links select portable body record v11; valid no-link v1–v10 encodings
 retain their previous bytes. Direction, endpoints, relation and key enter both
 schema and program meaning, and fresh reconstruction keeps that exact linkage.
+Principal-identity initializers select portable body record v12; valid bodies
+without them retain their previous v1–v11 encoding. Their exact binding/source
+tuple enters schema and program meaning. An older record cannot consume the new
+opcode. Transported actor metadata remains descriptive, not principal authority.
 
 Workflow occurrence authority and approval evidence remain separate. A source
 expectation is not an approval, signature or general evaluated requirement, and
@@ -492,7 +535,8 @@ initialization, operation-specific presence requirements,
 and Foundation Boolean requirements over scope scalar/presence and distinct
 incoming/outgoing related-item count operands, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage
-initializers, links between that creation and its admitted scope, plus fixed
+initializers or an exact unitless admitted-principal identity initializer,
+links between that creation and its admitted scope, plus fixed
 Preserve-scope/Create-slot output uses. It requires
 at least one real creation, scope assignment or output use and unit results.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's

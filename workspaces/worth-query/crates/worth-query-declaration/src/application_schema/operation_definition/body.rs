@@ -1,11 +1,14 @@
 //! Typed values in an operation body, distinct from its derived effect ceiling.
 
 mod builder;
+mod created_field;
 mod creation;
 mod creation_link;
 mod creation_link_validation;
 mod output;
 mod output_validation;
+mod principal;
+mod principal_validation;
 mod program;
 mod requirement;
 mod validation;

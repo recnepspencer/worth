@@ -6,6 +6,7 @@ use super::{
 
 mod creation_links;
 mod outputs;
+mod principal;
 mod requirements;
 #[cfg(test)]
 mod tests;
@@ -30,7 +31,14 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body
+    let version = if body.creation().is_some_and(|creation| {
+        creation
+            .fields()
+            .iter()
+            .any(|step| step.principal_source().is_some())
+    }) {
+        12
+    } else if body
         .creation()
         .is_some_and(|creation| !creation.links().is_empty())
     {
@@ -138,6 +146,7 @@ pub(super) fn write(
                 ApplicationOperationBodyCreatedField::Input { .. } => 2,
                 ApplicationOperationBodyCreatedField::ScopeField { .. } => 3,
                 ApplicationOperationBodyCreatedField::OptionalInput { .. } => 4,
+                ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => 5,
             })?;
             output.text(step.field().entity())?;
             output.text(step.field().aspect())?;
@@ -170,6 +179,9 @@ pub(super) fn write(
                     output.text(source.aspect())?;
                     output.text(source.field())
                 }
+                ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
+                    principal::write(output, step)
+                }
             }
         })?;
     }
@@ -193,7 +205,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=11) {
+    if !matches!(version, 1..=12) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -284,7 +296,11 @@ pub(super) fn decode(
         let key = input.text()?.to_owned();
         let fields = decode_sequence(input, budget, 20, |input, _| {
             let tag = input.u16()?;
-            if !matches!(tag, 1 | 2) && !(version >= 4 && tag == 3) && !(version >= 9 && tag == 4) {
+            if !matches!(tag, 1 | 2)
+                && !(version >= 4 && tag == 3)
+                && !(version >= 9 && tag == 4)
+                && !(version >= 12 && tag == 5)
+            {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
             let field =
@@ -318,6 +334,7 @@ pub(super) fn decode(
                     scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
                     member: input.text()?.to_owned(),
                 },
+                5 => principal::decode(input, field, binding)?,
                 _ => unreachable!("creation opcode admitted before operands"),
             })
         })?;

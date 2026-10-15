@@ -46,10 +46,19 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     const HANDLER_IDENTITY: &'static str = "worth.query.body-court.native-body.v1";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.body-court.command.v1";
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
-    const CANDIDATES: ApplicationCandidateRequirements = if matches!(DESTINATION, 20 | 21 | 23..=29)
-    {
+    const CANDIDATES: ApplicationCandidateRequirements = if matches!(
+        DESTINATION,
+        20 | 21 | 23..=29 | 36
+    ) {
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 1, 0, 4, 0),
+            ApplicationCandidateCardinalityCeiling::fixed(
+                1,
+                0,
+                1,
+                0,
+                if DESTINATION == 36 { 5 } else { 4 },
+                0,
+            ),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
         )
     } else {

@@ -29,6 +29,8 @@ mod optional_input;
 mod output;
 #[path = "operation_body/persistence.rs"]
 mod persistence;
+#[path = "operation_body/principal.rs"]
+mod principal;
 #[path = "operation_body/program.rs"]
 mod program;
 #[path = "operation_body/query.rs"]

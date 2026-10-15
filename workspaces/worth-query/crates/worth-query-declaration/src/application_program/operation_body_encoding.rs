@@ -215,6 +215,10 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
         .fields()
         .iter()
         .any(|step| step.source_field().is_some());
+    let has_principal_source = creation
+        .fields()
+        .iter()
+        .any(|step| step.principal_source().is_some());
     let fields = creation.fields().iter().enumerate().map(|(index, step)| {
         let (source_name, source) = match step {
             ApplicationOperationBodyCreatedField::Literal { value, .. } => (
@@ -262,9 +266,31 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
                     ],
                 ),
             ),
+            ApplicationOperationBodyCreatedField::PrincipalIdentity {
+                source,
+                scalar_family,
+                mutation_binding,
+                principal_binding,
+                ..
+            } => (
+                "principal-identity",
+                framed_record(
+                    "principal-source-v1",
+                    [
+                        ("mutation-binding", mutation_binding.clone()),
+                        ("principal-binding", principal_binding.clone()),
+                        ("entity", source.entity().to_owned()),
+                        ("aspect", source.aspect().to_owned()),
+                        ("field", source.field().to_owned()),
+                        ("family", scalar_family.canonical_name().to_owned()),
+                    ],
+                ),
+            ),
         };
         framed_record(
-            if has_scope_source {
+            if has_principal_source {
+                "operation-body-created-field-v3"
+            } else if has_scope_source {
                 "operation-body-created-field-v2"
             } else {
                 "operation-body-created-field-v1"
@@ -280,7 +306,9 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
         )
     });
     let created = framed_record(
-        if has_scope_source {
+        if has_principal_source {
+            "operation-body-creation-v3"
+        } else if has_scope_source {
             "operation-body-creation-v2"
         } else {
             "operation-body-creation-v1"

@@ -19,6 +19,7 @@ pub struct AuditRow {
     pub identity: String,
     pub retention_days: u64,
     pub prior_retention_days: u64,
+    pub actor: Option<u64>,
 }
 worth_query_portable_type!(AuditRow => "worth.query.body-court.audit-row.v1");
 worth_query_structured_value_binding!(pub AuditReadBinding for AuditRead {
@@ -31,6 +32,8 @@ worth_query_structured_value_binding!(pub AuditRowBinding for AuditRow {
 pub struct AuditIdentitySlot;
 pub struct AuditRetentionSlot;
 pub struct AuditPriorRetentionSlot;
+pub struct AuditActorSlot;
+worth_query_portable_type!(AuditActorSlot => "worth.query.body-court.audit-actor-slot.v1");
 worth_query_portable_type!(AuditIdentitySlot => "worth.query.body-court.audit-identity-slot.v1");
 worth_query_portable_type!(AuditRetentionSlot => "worth.query.body-court.audit-retention-slot.v1");
 worth_query_portable_type!(AuditPriorRetentionSlot => "worth.query.body-court.audit-prior-retention-slot.v1");
@@ -81,6 +84,20 @@ fn prior_retention_result<Schema: BodySchemaBinding>() -> ApplicationQueryResult
     ApplicationQueryResultFieldRef::new("prior_retention", AuditPriorRetentionField::reference())
 }
 
+fn actor_result<Schema: BodySchemaBinding>() -> ApplicationQueryResultFieldRef<
+    AuditQuery,
+    AuditActorSlot,
+    Schema,
+    Audit,
+    AuditActorFacts,
+    AuditActorField,
+    u64,
+    ReadOnly,
+    EqualityPredicate,
+    NoApplicationUnit,
+> {
+    ApplicationQueryResultFieldRef::new("actor", AuditActorField::reference())
+}
 pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefinition<
     DocumentRetentionSchema<DESTINATION>,
     AuditQuery,
@@ -97,7 +114,12 @@ pub fn audit_query_definition<const DESTINATION: u64>() -> ApplicationQueryDefin
     >::new(Audit::reference())
     .field(identity_result())
     .field(retention_result())
-    .field(prior_retention_result())
+    .field(prior_retention_result());
+    let shape = if DESTINATION == 36 {
+        shape.field(actor_result())
+    } else {
+        shape
+    }
     .build();
     ApplicationQueryDefinitionBuilder::declare(AuditQuery::reference())
         .root(Audit::reference())
@@ -127,6 +149,11 @@ impl<const DESTINATION: u64>
             identity: row.field(identity_result())?,
             retention_days: row.field(retention_result())?,
             prior_retention_days: row.field(prior_retention_result())?,
+            actor: if DESTINATION == 36 {
+                Some(row.field(actor_result())?)
+            } else {
+                None
+            },
         })
     }
 }

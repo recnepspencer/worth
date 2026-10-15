@@ -42,11 +42,29 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         &mut self,
         field: &ApplicationFieldBindingLocus,
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
+        self.body_source_value(field, false)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn body_principal_value(
+        &mut self,
+        field: &ApplicationFieldBindingLocus,
+    ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
+        let _ = self.principal_identity();
+        self.body_source_value(field, true)
+    }
+
+    fn body_source_value(
+        &mut self,
+        field: &ApplicationFieldBindingLocus,
+        principal: bool,
+    ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
-        self.context_use.set(self.context_use.get().scope());
+        if !principal {
+            self.context_use.set(self.context_use.get().scope());
+        }
         let execution = self.execution;
         let captured = execution.decision_stage(|context| {
-            self.reader.body_value(self.scope, field, |raw| {
+            let capture = |raw: &AspectValue| {
                 let work = u64::try_from(raw.semantic_byte_width()).map_err(|_| {
                     HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(
                         WorthQueryManagedComputationResourceDenial::CapacityOverflow,
@@ -75,7 +93,12 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                     ))
                 })?;
                 Ok(PreparedBodySource::new(raw.clone(), reservation))
-            })
+            };
+            if principal {
+                self.reader.body_principal_value(field, capture)
+            } else {
+                self.reader.body_value(self.scope, field, capture)
+            }
         });
         captured.map_err(HandlerExecutionDenial::new)?
     }

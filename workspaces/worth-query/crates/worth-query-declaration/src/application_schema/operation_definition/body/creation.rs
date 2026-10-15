@@ -18,7 +18,7 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) parent: ApplicationOperationBodyBuilder<Schema, Operation, Input>,
     entity: String,
     pub(super) key: String,
-    fields: Vec<ApplicationOperationBodyCreatedField>,
+    pub(super) fields: Vec<ApplicationOperationBodyCreatedField>,
     pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
     marker: PhantomData<fn() -> Entity>,
 }

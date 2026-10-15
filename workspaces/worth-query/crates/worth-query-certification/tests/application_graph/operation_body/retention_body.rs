@@ -43,7 +43,7 @@ pub(super) fn body<const DESTINATION: u64>(
         body.assign(DocumentRetentionField::reference(), authored_destination)
             .unwrap()
     };
-    if matches!(DESTINATION, 20 | 21 | 23..=29) {
+    if matches!(DESTINATION, 20 | 21 | 23..=29 | 36) {
         let creation = body
             .create_in_scope(Audit::reference(), "audit")
             .unwrap()
@@ -54,6 +54,15 @@ pub(super) fn body<const DESTINATION: u64>(
         let creation = creation
             .link_from_scope(DocumentMembers::reference(), "audit-owner")
             .unwrap();
+        let creation = if DESTINATION == 36 {
+            creation
+                .initialize_from_principal_identity::<BodyBinding<DESTINATION>, _, _, _, _, _>(
+                    AuditActorField::reference(),
+                )
+                .unwrap()
+        } else {
+            creation
+        };
         let creation = if DESTINATION == 23 {
             creation
                 .initialize_from_scope(

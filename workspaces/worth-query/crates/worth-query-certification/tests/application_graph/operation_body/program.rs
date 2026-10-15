@@ -28,6 +28,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
     ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>> {
         let body = super::retention_body::body::<DESTINATION>();
         let schema = schema
+            .unit::<FixtureDays>(ApplicationUnitRef::from_schema_identifier("days"))
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())
             .entity(Document::reference())
@@ -181,6 +182,13 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
             .application_query_binding::<super::audit_query::AuditQueryBinding<DESTINATION>>()
             .application_query(super::draft_query::draft_query_definition::<DESTINATION>())
             .application_query_binding::<super::draft_query::DraftQueryBinding<DESTINATION>>();
+        let schema = if DESTINATION == 36 {
+            schema
+                .aspect(Audit::reference(), AuditActorFacts::reference())
+                .field(Audit::reference(), AuditActorField::reference())
+        } else {
+            schema
+        };
         super::genesis::declaration::declare::<DESTINATION>(schema)
     }
 }

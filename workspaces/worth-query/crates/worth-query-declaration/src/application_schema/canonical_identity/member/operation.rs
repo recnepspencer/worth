@@ -2,6 +2,7 @@ use crate::application_schema::canonical_basis::ApplicationSchemaCanonicalBasis;
 use crate::application_schema::canonical_decision_read_identity::append_decision_read_target;
 use crate::application_schema::canonical_operation_identity::append_operation_target;
 use crate::application_schema::ApplicationSchemaMember;
+mod creation;
 
 pub(super) fn append_body(
     basis: &mut ApplicationSchemaCanonicalBasis,
@@ -9,9 +10,7 @@ pub(super) fn append_body(
     operation: &str,
     body: &crate::application_schema::ApplicationOperationBodyProgram,
 ) {
-    use crate::application_schema::{
-        ApplicationOperationBodyCreatedField, ApplicationOperationBodyScopeField,
-    };
+    use crate::application_schema::ApplicationOperationBodyScopeField;
     append_operation_header(
         basis,
         prefix,
@@ -122,69 +121,7 @@ pub(super) fn append_body(
         }
     }
     if let Some(creation) = body.creation() {
-        if !creation.links().is_empty() {
-            basis.usize(format!("{prefix}.created.links"), creation.links().len());
-            for (index, link) in creation.links().iter().enumerate() {
-                basis.text(
-                    format!("{prefix}.created.link[{index}]"),
-                    &link.canonical_record(),
-                );
-            }
-        }
-        basis.text(format!("{prefix}.created.entity"), creation.entity());
-        basis.text(format!("{prefix}.created.key"), creation.key());
-        basis.usize(format!("{prefix}.created.fields"), creation.fields().len());
-        for (index, step) in creation.fields().iter().enumerate() {
-            let field = format!("{prefix}.created.field[{index}]");
-            basis.text(
-                format!("{field}.kind"),
-                match step {
-                    ApplicationOperationBodyCreatedField::Literal { .. } => "literal",
-                    ApplicationOperationBodyCreatedField::Input { .. } => "input",
-                    ApplicationOperationBodyCreatedField::OptionalInput { .. } => "optional-input",
-                    ApplicationOperationBodyCreatedField::ScopeField { .. } => "scope-field",
-                },
-            );
-            basis.text(format!("{field}.entity"), step.field().entity());
-            basis.text(format!("{field}.aspect"), step.field().aspect());
-            basis.text(format!("{field}.field"), step.field().field());
-            basis.text(format!("{field}.binding"), step.binding().as_str());
-            match step {
-                ApplicationOperationBodyCreatedField::Literal { value, .. } => basis.value(
-                    format!("{field}.value"),
-                    worth_foundational::facade::canonical_basis_value_for_aspect_value(value),
-                ),
-                ApplicationOperationBodyCreatedField::Input {
-                    member,
-                    scalar_family,
-                    ..
-                }
-                | ApplicationOperationBodyCreatedField::OptionalInput {
-                    member,
-                    scalar_family,
-                    ..
-                } => {
-                    basis.text(format!("{field}.input-member"), member);
-                    basis.text(
-                        format!("{field}.input-family"),
-                        scalar_family.canonical_name(),
-                    );
-                }
-                ApplicationOperationBodyCreatedField::ScopeField {
-                    source,
-                    scalar_family,
-                    ..
-                } => {
-                    basis.text(format!("{field}.source.entity"), source.entity());
-                    basis.text(format!("{field}.source.aspect"), source.aspect());
-                    basis.text(format!("{field}.source.field"), source.field());
-                    basis.text(
-                        format!("{field}.source-family"),
-                        scalar_family.canonical_name(),
-                    );
-                }
-            }
-        }
+        creation::append(basis, prefix, creation);
     }
 }
 

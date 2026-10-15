@@ -436,6 +436,10 @@ remain separate owners. Guidance and native
 submission share the installed requirements. Creation `link_from_scope` and
 `link_to_scope` bind only the admitted scope and that body's actual created row,
 derive Link membership, and use the existing native relation-effect owner.
+Creation `initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)`
+binds a unitless actor field to the exact mutation/principal identity codec and
+captures admission's actual principal through the tracked decision observation.
+It records unsigned actor attribution, not a signing event or approval grant.
 Context alone is not domain membership; membership alone is not authorization
 and does not replace a capability's grant witness. General assignment expressions,
 multiple creations, arbitrary relation edits, signature consequences and multi-operation commands

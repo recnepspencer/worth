@@ -170,6 +170,13 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                         work.observe_text(source.aspect());
                         work.observe_text(source.field());
                         work.observe_fixed(2);
+                    } else if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreatedField::PrincipalIdentity {
+                        mutation_binding, principal_binding, source, ..
+                    } = step {
+                        for text in [mutation_binding.as_str(), principal_binding.as_str(), source.entity(), source.aspect(), source.field()] {
+                            work.observe_text(text);
+                        }
+                        work.observe_fixed(2);
                     }
                 }
             }
@@ -216,6 +223,69 @@ mod optional_body_tests {
         let work = record.reconstruction_work();
         assert!(work.logical_bytes > 0);
         assert!(work.nested_entries >= 7);
+    }
+
+    #[test]
+    fn principal_initializer_reconstruction_accounts_for_every_source_component() {
+        use worth_query_declaration::facade::application_schema::{
+            ApplicationOperationBodyCreatedField as Field, ApplicationOperationBodyCreation,
+        };
+        let value = worth_foundational::facade::AspectValue::UInt64(1);
+        let target = ApplicationFieldBindingLocus::new("Audit", "Facts", "Actor");
+        let binding = WorthQueryPortableTypeIdentity::from_untrusted("worth.rust.u64".to_owned());
+        let record = |step| {
+            WorthQueryPortableApplicationOperationContractRecord::new(
+                "Schema".to_owned(),
+                "Change".to_owned(),
+                WorthQueryPortableTypeIdentity::from_untrusted("Input".to_owned()),
+                vec![],
+                vec![],
+                vec![],
+                None,
+                None,
+            )
+            .with_body(Some(
+                ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                    "Item".to_owned(),
+                    vec![],
+                    Some(ApplicationOperationBodyCreation::from_untrusted(
+                        "Audit".to_owned(),
+                        "audit".to_owned(),
+                        vec![step],
+                    )),
+                    vec![],
+                ),
+            ))
+            .reconstruction_work()
+        };
+        let literal = record(Field::Literal {
+            field: target.clone(),
+            binding: binding.clone(),
+            value: value.clone(),
+        });
+        let principal = record(Field::PrincipalIdentity {
+            field: target,
+            binding,
+            scalar_family: ScalarAspectType::UInt64,
+            mutation_binding: "ChangeBinding".to_owned(),
+            principal_binding: "PrincipalBinding".to_owned(),
+            source: ApplicationFieldBindingLocus::new("Principal", "Identity", "Id"),
+        });
+        let source_bytes: u64 = [
+            "ChangeBinding",
+            "PrincipalBinding",
+            "Principal",
+            "Identity",
+            "Id",
+        ]
+        .into_iter()
+        .map(crate::package::reconstruction_text_bytes)
+        .sum();
+        assert_eq!(
+            principal.logical_bytes + value.semantic_byte_width() as u64,
+            literal.logical_bytes + source_bytes + 2
+        );
+        assert_eq!(principal.nested_entries, literal.nested_entries + 5);
     }
 }
 

@@ -82,6 +82,35 @@ impl<Schema: ApplicationSchema, Operation>
         self.reader.body_scalar_capture(identity, &locator, capture)
     }
 
+    pub(in crate::domain_computation::primary_graph) fn body_principal_value(
+        &mut self,
+        field: &ApplicationFieldBindingLocus,
+        capture: impl FnOnce(&AspectValue) -> Result<PreparedBodySource, HandlerExecutionDenial>,
+    ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
+        let refused = || {
+            HandlerExecutionDenial::new(WorthQueryInvariantDecisionPlanDenial::new(
+                WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
+                field.entity(),
+            ))
+        };
+        let entity_id = self.admitted_principal.ok_or_else(refused)?;
+        let kind = self
+            .reader
+            .layout
+            .entity_kind(field.entity())
+            .ok_or_else(refused)?;
+        // Only this projection's actual admitted principal mints this identity.
+        let identity = WorthQueryInvariantEntityIdentity::<Schema, ()> {
+            entity_id,
+            kind,
+            entity: std::sync::Arc::from(field.entity()),
+            authority_identity: self.reader.authority_identity,
+            _marker: std::marker::PhantomData,
+        };
+        self.reader.realized_scope.record(entity_id);
+        self.body_value(&identity, field, capture)
+    }
+
     pub(super) fn tracked_body_locator<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
