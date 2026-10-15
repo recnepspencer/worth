@@ -4,7 +4,6 @@ use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 
 use super::ConsumedOutputEvidence;
 use crate::domain_computation::primary_graph::{
-    application_attempt::WorthQueryApplicationObservedFact,
     output_lineage::{invalidation::FullVerificationReason, RecordedSettlementIdentity},
     SourceInvalidationOwner,
 };

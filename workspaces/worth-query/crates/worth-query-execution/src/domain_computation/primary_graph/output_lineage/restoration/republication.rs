@@ -14,9 +14,7 @@ use super::super::{
     WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputLineage,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        CompletedHandlerFactBoundary, WorthQueryApplicationObservedFact as Fact,
-    },
+    application_attempt::CompletedHandlerFactBoundary,
     application_contribution::WorthQueryProducerDemandResources,
     invariant_projection::ConsumedOutputEvidence,
 };

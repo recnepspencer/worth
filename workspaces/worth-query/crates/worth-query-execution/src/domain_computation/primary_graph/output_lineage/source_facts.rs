@@ -1,7 +1,9 @@
 //! Custody of postconditions is distinct from comparable computation inputs.
 use super::{ComputationSourceEvidence, CurrentComputation};
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
-use std::{ops::Deref, sync::Arc};
+use std::ops::Deref;
+#[cfg(test)]
+use std::sync::Arc;
 type Fact = WorthQueryApplicationObservedFact;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
 
