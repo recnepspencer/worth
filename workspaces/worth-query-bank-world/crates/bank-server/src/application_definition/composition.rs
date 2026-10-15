@@ -59,44 +59,45 @@ fn bank_feature_specs_with_optional_effects(
 
     let estate = ApplicationFeatureSpec::root::<BankSchema, BankEstateFeature>();
     let estate = if include_estate_notification {
-        estate.mutation::<NotifyEstateDeathMutationBinding>()
+        estate.operation_action::<NotifyEstateDeathMutationBinding, super::estate_actions::DeathNotificationDelivery>()
     } else {
         estate
     };
     let payments = ApplicationFeatureSpec::root::<BankSchema, BankPaymentsFeature>()
-        .mutation::<ApplyOpeningFundingMutationBinding>()
-        .mutation::<DepositMutationBinding>()
-        .mutation::<WithdrawMutationBinding>()
-        .mutation::<SendMoneyMutationBinding>()
-        .mutation::<InitiateBusinessPaymentMutationBinding>()
+        .operation_action::<ApplyOpeningFundingMutationBinding, super::money_actions::OpeningFundingDelivery>()
+        .operation_action::<DepositMutationBinding, super::money_actions::DepositDelivery>()
+        .operation_action::<WithdrawMutationBinding, super::money_actions::WithdrawalDelivery>()
+        .operation_action::<SendMoneyMutationBinding, super::money_actions::SendMoneyDelivery>()
+        .operation_action::<InitiateBusinessPaymentMutationBinding, super::payment_actions::PaymentInitiationDelivery>()
         .mutation::<ApprovedBusinessPaymentAuthoringBinding>()
         .mutation::<ApprovedBusinessPaymentApprovalBinding>()
         .mutation::<ApprovedBusinessPaymentInstanceStartBinding>()
         .mutation::<ApprovedBusinessPaymentAdvanceBinding>()
         .conditional_operation::<PublishApprovedPaymentAssessment>();
     let payments = if include_ordinary_payment_approval {
-        payments.mutation::<ApprovePaymentMutationBinding>()
+        payments.operation_action::<ApprovePaymentMutationBinding, super::workflow_actions::ApprovedPaymentEffectDelivery>()
     } else {
         payments
     };
     vec![
         ApplicationFeatureSpec::root::<BankSchema, BankAccountsFeature>()
-            .mutation::<CreatePersonalAccountMutationBinding>()
-            .mutation::<CreateBusinessAccountMutationBinding>()
-            .mutation::<GrantAccountAccessMutationBinding>()
-            .mutation::<RevokeAccountAccessMutationBinding>()
+            .operation_action::<ProgramDeploymentRevocationBinding, super::deployment_actions::ProgramDeploymentRevocationDelivery>()
+            .operation_action::<CreatePersonalAccountMutationBinding, super::account_actions::PersonalAccountCreationDelivery>()
+            .operation_action::<CreateBusinessAccountMutationBinding, super::account_actions::BusinessAccountCreationDelivery>()
+            .operation_action::<GrantAccountAccessMutationBinding, super::account_actions::AccountAccessGrantDelivery>()
+            .operation_action::<RevokeAccountAccessMutationBinding, super::account_actions::AccountAccessRevocationDelivery>()
             .finish(),
         payments
-            .mutation::<RejectPaymentMutationBinding>()
-            .mutation::<ReverseJournalMutationBinding>()
+            .operation_action::<RejectPaymentMutationBinding, super::payment_actions::PaymentRejectionDelivery>()
+            .operation_action::<ReverseJournalMutationBinding, super::money_actions::ReverseJournalDelivery>()
             .finish(),
         estate
-            .mutation::<FreezeEstateAccountMutationBinding>()
-            .mutation::<OpenEstateCaseMutationBinding>()
-            .mutation::<RecognizeEstateExecutorMutationBinding>()
-            .mutation::<ReleaseEstateMutationBinding>()
-            .mutation::<DisburseEstateMutationBinding>()
-            .mutation::<RetransmitEstateDeathNoticeMutationBinding>()
+            .operation_action::<FreezeEstateAccountMutationBinding, super::estate_actions::EstateAccountFreezeDelivery>()
+            .operation_action::<OpenEstateCaseMutationBinding, super::estate_actions::EstateCaseOpeningDelivery>()
+            .operation_action::<RecognizeEstateExecutorMutationBinding, super::estate_actions::ExecutorRecognitionDelivery>()
+            .operation_action::<ReleaseEstateMutationBinding, super::estate_actions::EstateReleaseDelivery>()
+            .operation_action::<DisburseEstateMutationBinding, super::estate_actions::EstateDisbursementDelivery>()
+            .operation_action::<RetransmitEstateDeathNoticeMutationBinding, super::estate_actions::DeathNoticeRetransmissionDelivery>()
             .operation::<RequestEstateEmergencyAccessOperation>()
             .operation::<ApproveEstateEmergencyAccessOperation>()
             .operation::<RevokeEstateEmergencyAccessOperation>()
@@ -119,6 +120,9 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplicationP1 {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.application.p1.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<BankSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<bank_domain::schema::BankProgramDeploymentBinding>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         bank_feature_specs_with_optional_effects(false, true)
     }
@@ -136,6 +140,9 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplicationP2 {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.application.p2.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<BankSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<bank_domain::schema::BankProgramDeploymentBinding>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         bank_feature_specs_with_optional_effects(false, false)
     }
@@ -153,6 +160,9 @@ impl ApplicationProgramDefinition<BankSchema> for BankApplication {
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.bank.application.v1");
 
+    fn adoption_authorization<Visitor: worth_query_host::facade::declaration::application_program::ApplicationProgramAdoptionAuthorizationVisitor<BankSchema>>(visitor: Visitor) -> Visitor::Output{
+        visitor.capability::<bank_domain::schema::BankProgramDeploymentBinding>()
+    }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         bank_feature_specs()
     }

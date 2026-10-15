@@ -1,6 +1,6 @@
 use bank_server::{
-    BankCommitReceipt, BankIdentityRuntime, BankMutationCommitOutcome, BankRecoveryClaimStatus,
-    BankRecoveryDenial, BankRecoveryPosture,
+    BankCommitReceipt, BankIdentityRuntime, BankRecoveryClaimStatus, BankRecoveryDenial,
+    BankRecoveryPosture,
 };
 
 use super::super::super::protocol::{
@@ -10,7 +10,7 @@ use super::super::super::protocol::{
     BankHttpRecoveryStatus,
 };
 
-pub(super) fn omitted_recovery_status(
+pub(in crate::http::server) fn omitted_recovery_status(
     runtime: &BankIdentityRuntime,
     receipt: &BankCommitReceipt,
 ) -> Result<BankHttpRecoveryStatus, BankRecoveryDenial> {
@@ -25,7 +25,7 @@ pub(super) fn omitted_recovery_status(
     })
 }
 
-pub(super) fn commit_description(
+pub(in crate::http::server) fn commit_description(
     receipt: &bank_server::BankCommitReceipt,
 ) -> BankHttpCommitDescription {
     BankHttpCommitDescription {
@@ -44,49 +44,6 @@ pub(super) const fn recovery_posture(posture: BankRecoveryPosture) -> BankHttpRe
         BankRecoveryPosture::Compensatable => BankHttpRecoveryPosture::Compensatable,
         BankRecoveryPosture::Reconcilable => BankHttpRecoveryPosture::Reconcilable,
         BankRecoveryPosture::Irreversible => BankHttpRecoveryPosture::Irreversible,
-    }
-}
-
-pub(super) fn commit_denial(outcome: BankMutationCommitOutcome) -> BankHttpDenial {
-    match outcome {
-        BankMutationCommitOutcome::ProductStale(_) => stale(),
-        BankMutationCommitOutcome::ProductUnpublished(_) => BankHttpDenial::new(
-            BankHttpDenialKind::Unavailable,
-            BankHttpNextAction::ContactOperator,
-        ),
-        BankMutationCommitOutcome::NoEffect(_) => unavailable(),
-        BankMutationCommitOutcome::Stale { .. } => stale(),
-        BankMutationCommitOutcome::PreviouslyCommitted(_) => stale(),
-        BankMutationCommitOutcome::Cancelled => {
-            BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
-        }
-        BankMutationCommitOutcome::TimedOut => deadline_exceeded(),
-        BankMutationCommitOutcome::Denied { .. }
-        | BankMutationCommitOutcome::CustomInvariantDenied { .. }
-        | BankMutationCommitOutcome::Aborted => unavailable(),
-        BankMutationCommitOutcome::Deferred(_)
-        | BankMutationCommitOutcome::SettlementDeferred(_) => BankHttpDenial::new(
-            BankHttpDenialKind::Unavailable,
-            BankHttpNextAction::ContactOperator,
-        ),
-        BankMutationCommitOutcome::Indeterminate(evidence) => {
-            use worth_query_host::facade::primary_graph::WorthQueryProviderSessionControlStopKind as Control;
-            match evidence.provider_failure_kind() {
-                Err(Control::Cancelled) => {
-                    BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry)
-                }
-                Err(Control::TimedOut) => deadline_exceeded(),
-                Ok(bank_server::BankProviderFailureKind::ExecutionResource { denial, .. }) => {
-                    super::super::mutation_application::execution_resource(denial).1
-                }
-                Ok(_) => BankHttpDenial::new(
-                    BankHttpDenialKind::Unavailable,
-                    BankHttpNextAction::ContactOperator,
-                ),
-            }
-        }
-        BankMutationCommitOutcome::Committed(_)
-        | BankMutationCommitOutcome::AlreadyCommitted(_) => unavailable(),
     }
 }
 

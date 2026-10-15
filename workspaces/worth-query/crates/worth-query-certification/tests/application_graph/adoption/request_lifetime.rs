@@ -50,8 +50,12 @@ fn adoption_preparation_and_publication_own_separate_requests() {
             .programs();
         let requirements = programs.compare(&target).unwrap();
         reports();
-        let dropped = programs.adopt(&requirements).prepare(64).unwrap();
-        assert_eq!(reports().len(), 1);
+        let dropped = programs
+            .adopt(&requirements)
+            .expect("declared adoption capability admits")
+            .prepare(64)
+            .unwrap();
+        assert_eq!(reports().len(), 2);
         drop(dropped);
         assert!(
             reports().is_empty(),
@@ -65,17 +69,26 @@ fn adoption_preparation_and_publication_own_separate_requests() {
                 .request(&principal, &scope)
                 .on_branch(initial)
                 .programs();
-            let prepared = programs.adopt(&requirements).prepare(64).unwrap();
-            assert_eq!(reports().len(), 1);
+            let prepared = programs
+                .adopt(&requirements)
+                .expect("declared adoption capability admits")
+                .prepare(64)
+                .unwrap();
+            assert_eq!(reports().len(), 2);
             bound(Some(worth_foundational::ExecutionBudget::new(
                 NonZeroUsize::MIN,
                 if zero_memory { 0 } else { 64 * 1024 * 1024 },
                 if zero_memory { 8_000_000 } else { 0 },
             )));
             let before = reads();
-            let Outcome::ExecutionDenied(cause) = prepared.publish() else {
+            let Outcome::AdmissionDenied {
+                cause,
+                prepared: retained,
+            } = prepared.publish(host.runtime(), &principal, &scope)
+            else {
                 panic!("publication reports its request admission refusal");
             };
+            drop(retained);
             assert_eq!(reads(), before);
             if zero_memory {
                 let Denial::Resource(Resource::MemoryLimit {
@@ -101,10 +114,17 @@ fn adoption_preparation_and_publication_own_separate_requests() {
             .request(&principal, &scope)
             .on_branch(initial)
             .programs();
-        let prepared = programs.adopt(&requirements).prepare(64).unwrap();
-        assert_eq!(reports().len(), 1);
+        let prepared = programs
+            .adopt(&requirements)
+            .expect("declared adoption capability admits")
+            .prepare(64)
+            .unwrap();
+        assert_eq!(reports().len(), 2);
         let before = reads();
-        assert!(matches!(prepared.publish(), Outcome::Performed(_)));
+        assert!(matches!(
+            prepared.publish(host.runtime(), &principal, &scope),
+            Outcome::Performed(_)
+        ));
         assert!(
             reads() > before,
             "admitted publication contacts its revalidation reader"

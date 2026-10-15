@@ -2,7 +2,7 @@ mod composition;
 pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
 mod contracts;
-mod execution_denial;
+pub(in crate::domain_computation) mod execution_denial;
 mod partitioned_computation;
 mod producer;
 pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
@@ -92,9 +92,7 @@ pub(in crate::domain_computation::primary_graph) use partitioned_computation::se
 pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
 pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
 
-pub(in crate::domain_computation::primary_graph) use request_execution::{
-    advancement_denial, with_serial_host_advancement, with_world_advancement,
-};
+pub(in crate::domain_computation::primary_graph) use request_execution::advancement_denial;
 
 pub use request_execution::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,

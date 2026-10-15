@@ -103,6 +103,7 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .on_branch(main)
         .programs()
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(1_024)
     {
         Err(denial) => denial,
@@ -163,7 +164,8 @@ fn supplier_removal_requires_owner_disposition_for_a_waiting_instance() {
         .request(&principal, &scope)
         .on_branch(historical_fork)
         .programs()
-        .adopt(&fork_requirements);
+        .adopt(&fork_requirements)
+        .expect("declared adoption capability admits");
     let fork_inventory = fork_adoption
         .workflow_inventory(1_024)
         .expect("the fork inventories its workflow facts");

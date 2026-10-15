@@ -56,6 +56,7 @@ fn case(transitive: bool, changed_own_source: bool) {
         roots.push(selected.observed_sources()[0].root_entity_for_test());
         if rank == 0 || changed_own_source {
             request
+                .advanced()
                 .mutate(PlanarSourceAdjustment {
                     scope_key: key.into(),
                     replacement_y: length(7),
@@ -100,8 +101,11 @@ fn case(transitive: bool, changed_own_source: bool) {
         application.entered_required_selection_is_frozen_for_test(),
         Some(true)
     );
-    assert!(pending,
-        "inspection cannot prove Current while its source changed or its prerequisite is Published and undelivered: direct={}, changed={}", !transitive, changed_own_source);
+    assert!(
+        pending,
+        "inspection cannot prove Current while its source changed or its prerequisite is Published and undelivered: direct={}, changed={}",
+        !transitive, changed_own_source
+    );
     assert_eq!(
         primary_graph::query_read_kernel_entries_by_root_on_this_thread_for_test(),
         reads,

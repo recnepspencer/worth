@@ -1,5 +1,4 @@
 use bank_server::{mutations, BankMutationControls};
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::{
     fixture::{ordinary_read_world, OWNER},
@@ -22,7 +21,17 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
             request_scope(),
             key("mutation-publication-baseline"),
         ))
-        .execute();
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
+    let scope = request_scope();
+    let request = baseline.world.runtime.request(&baseline_owner, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        baseline_outcome,
+    ) = baseline_outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("fresh retained send completion")
+    };
+
     let expanded_outcome = expanded
         .world
         .runtime
@@ -32,20 +41,30 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
             request_scope(),
             key("mutation-publication-expanded"),
         ))
-        .execute();
-    let Ok(WorthQueryApplicationMutationOutcome::Committed {
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
+    let scope = request_scope();
+    let request = expanded.world.runtime.request(&expanded_owner, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        expanded_outcome,
+    ) = expanded_outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("fresh retained send completion")
+    };
+
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
         receipt: baseline_receipt,
         ..
-    }) = &baseline_outcome
+    } = baseline_outcome.evidence()
     else {
-        panic!("baseline mutation did not commit: {baseline_outcome:?}");
+        panic!("fresh native evidence")
     };
-    let Ok(WorthQueryApplicationMutationOutcome::Committed {
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
         receipt: expanded_receipt,
         ..
-    }) = &expanded_outcome
+    } = expanded_outcome.evidence()
     else {
-        panic!("expanded mutation did not commit: {expanded_outcome:?}");
+        panic!("fresh native evidence")
     };
 
     let baseline_work = baseline_receipt
@@ -93,4 +112,11 @@ fn unrelated_graph_population_does_not_widen_commit_publication() {
         baseline_receipt.emitted_effect_count(),
         expanded_receipt.emitted_effect_count()
     );
+    let scope = request_scope();
+    assert!(baseline_outcome
+        .close(&baseline.world.runtime.request(&baseline_owner, &scope))
+        .is_ok());
+    assert!(expanded_outcome
+        .close(&expanded.world.runtime.request(&expanded_owner, &scope))
+        .is_ok());
 }

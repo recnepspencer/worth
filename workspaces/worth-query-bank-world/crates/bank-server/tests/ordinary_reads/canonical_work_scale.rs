@@ -4,7 +4,6 @@ use bank_domain::model::{BusinessId, Money};
 use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::InitiateBusinessPayment;
 use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 
 use super::canonical_scale_fixture::canonical_scale_world;
 use super::fixture::{
@@ -63,7 +62,9 @@ fn guarded_candidate_fanout_is_visible_only_as_closed_public_work() {
         .expect("baseline guarded query should execute");
 
     for ordinal in 1..EXPANDED_CANDIDATE_COUNT {
-        let outcome = fixture
+        let scope = request_scope();
+        let request = fixture.world.runtime.request(&owner, &scope);
+        let operation = fixture
             .world
             .runtime
             .mutate(mutations::initiate_business_payment(
@@ -79,14 +80,20 @@ fn guarded_candidate_fanout_is_visible_only_as_closed_public_work() {
                 request_scope(),
                 BankIdempotencyKey::new(format!("candidate-scale-{ordinal}")).unwrap(),
             ))
-            .execute();
-        assert!(
-            matches!(
-                outcome.execution(),
-                Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-            ),
-            "scale mutation {ordinal} must commit: {outcome:?}"
-        );
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("declared initiation: {cause:?}"));
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = operation.advance(&request)
+        else {
+            panic!("scale initiation {ordinal} completes")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        done.close(&request)
+            .unwrap_or_else(|(_, cause)| panic!("scale close: {cause:?}"));
     }
 
     let expanded_result = fixture

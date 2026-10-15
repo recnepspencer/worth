@@ -12,9 +12,13 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::{WorthQueryApplicationMutationOutcome, WorthQueryRequiredOutputPreparationDenial};
 
+mod intent_handoff;
 mod outputs;
 mod recovered;
+mod retention_failure;
+pub use retention_failure::WorthQueryDiscoveredOutputRetentionFailure;
 mod recovery;
+pub(in crate::application_entry) use recovery::AdmittedDiscoveredRecoveryDenial;
 
 mod selected;
 mod start;
@@ -58,24 +62,25 @@ where
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
+    /// Original classified discovery and actual failed managed cleanup remain owned.
+    CleanupRequired {
+        cleanup: worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup,
+        outcome: Box<Self>,
+    },
     /// Original native partial and discovered preparation remain owned.
     ProductUnpublished(
         WorthQueryUnpublishedDiscoveredApplicationMutation<Schema, Intent, Program, Root>,
     ),
     Performed(WorthQueryPerformedDiscoveredApplicationMutation<Schema, Intent, Program, Root>),
-    RequiredOutputDenied {
-        receipt: WorthQueryApplicationCommitReceipt,
-        result: MutationResult<Schema, Intent>,
-        denial: WorthQueryRequiredOutputPreparationDenial,
-        custody: Option<worth_query_execution::facade::primary_graph::WorthQueryRequiredOutputSourcePreparationFailure>,
-        discovery: Discovery<Schema, Root>,
-    },
+    RequiredOutputDenied(WorthQueryDiscoveredOutputRetentionFailure<Schema, Intent, Program, Root>),
     /// Performed or unresolved native outcome whose recovery is not supported here.
-    Blocked(super::performed_source::WorthQueryBlockedProgramSource<
-        <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-        MutationResult<Schema, Intent>,
-        Discovery<Schema, Root>,
-    >),
+    Blocked(
+        super::performed_source::WorthQueryBlockedProgramSource<
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
+            MutationResult<Schema, Intent>,
+            Discovery<Schema, Root>,
+        >,
+    ),
     NotPerformed(
         WorthQueryApplicationMutationOutcome<
             <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -117,6 +122,11 @@ where
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
+    /// Borrows the actual Fresh handler result without transferring or reconstructing custody.
+    pub fn result(&self) -> &MutationResult<Schema, Intent> {
+        &self.result
+    }
+
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
     }
@@ -194,6 +204,11 @@ where
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
+    // Classify the already-produced native evidence; this invokes no handler or publication.
+    if let WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::CleanupRequired(required)) = outcome {
+        let (outcome, cleanup) = required.into_parts();
+        return WorthQueryApplicationDiscoveredMutationOutcome::CleanupRequired { cleanup, outcome: Box::new(discovered_outcome::<Schema, Intent, Program, Root>(discovery, WorthQueryApplicationMutationOutcome::Commit(outcome), source)) };
+    }
     let outcome = match outcome {
         WorthQueryApplicationMutationOutcome::Commit(worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {
             if let Some(pending) = source.take_unpublished() {
@@ -206,7 +221,8 @@ where
     };
     if matches!(&outcome, WorthQueryApplicationMutationOutcome::Commit(
         worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::SettlementDeferred(_)
-        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_))) {
+        | worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted::Indeterminate(_)
+)) {
         if let Some(preparation) = source.take_unpublished() {
             return WorthQueryApplicationDiscoveredMutationOutcome::Blocked(super::performed_source::WorthQueryBlockedProgramSource { _preparation: preparation, payload: discovery, outcome });
         }
@@ -216,13 +232,16 @@ where
     };
     match source.into_custody() {
         Err((denial, custody)) => {
-            WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied {
-                receipt,
-                result,
-                denial,
-                custody,
-                discovery,
-            }
+            WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied(
+                WorthQueryDiscoveredOutputRetentionFailure {
+                    receipt,
+                    result,
+                    denial,
+                    custody,
+                    discovery,
+                    program: std::marker::PhantomData,
+                },
+            )
         }
         Ok((prepared, retained_source)) => {
             WorthQueryApplicationDiscoveredMutationOutcome::Performed(

@@ -60,6 +60,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         target: &ApplicationProgramRevision,
         expected_requirements: &WorthQueryProgramAdoptionRequirements,
         maximum_selection_work: usize,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
@@ -71,6 +72,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     None,
                     None,
                     maximum_selection_work,
+                    principal,
                     request,
                 )
             })
@@ -83,6 +85,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         expected_requirements: &WorthQueryProgramAdoptionRequirements,
         migration: WorthQueryPreparedProgramMigration,
         maximum_selection_work: usize,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
@@ -94,6 +97,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     Some(migration),
                     None,
                     maximum_selection_work,
+                    principal,
                     request,
                 )
             })
@@ -110,6 +114,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         migration: Option<WorthQueryPreparedProgramMigration>,
         workflow: Option<WorthQueryWorkflowDispositions>,
         maximum_selection_work: usize,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         self.application()
@@ -121,6 +126,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     migration,
                     workflow,
                     maximum_selection_work,
+                    principal,
                     request,
                 )
             })
@@ -137,37 +143,33 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         migration: Option<WorthQueryPreparedProgramMigration>,
         workflow: Option<WorthQueryWorkflowDispositions>,
         maximum_selection_work: usize,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         let application = self.application();
-        let phase_request = phase
+        let _phase_request = phase
             .execution_request_for(&application.product_runtime)
             .map_err(|cause| {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause.into())
             })?;
-        let execution = &phase_request;
-        let gate = application
-            .product_runtime
-            .activations
-            .gate(self.product().branch_identity())
-            .map_err(|denial| {
-                WorthQueryBranchAdoptionPreparationDenial::ProductActivation(denial.into())
-            })?;
-        gate.publish(|| {
-            preparation::prepare(
-                execution,
-                phase,
-                self,
-                target,
-                expected_requirements,
+        use super::super::authorization::{AdoptionEffect, AdoptionEffectOutcome};
+        match self.with_program_adoption(
+            phase,
+            principal,
+            request,
+            target,
+            AdoptionEffect::Prepare {
+                requirements: expected_requirements,
                 migration,
                 workflow,
                 maximum_selection_work,
-                request,
-            )
-        })
-        .map_err(|denial| {
-            WorthQueryBranchAdoptionPreparationDenial::ProductActivation(denial.into())
-        })?
+            },
+        ) {
+            Ok(AdoptionEffectOutcome::Prepared(outcome)) => outcome,
+            Err(refusal) => Err(WorthQueryBranchAdoptionPreparationDenial::Authorization(
+                refusal.cause,
+            )),
+            Ok(_) => unreachable!("preparation dispatch preserves the requested effect"),
+        }
     }
 }

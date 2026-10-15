@@ -71,6 +71,7 @@ fn back_is_refused_while_an_approval_awaits_its_receipted_operation() {
         .idempotency(&1_974_u64)
         .for_workflow_operation(&application, &required)
         .expect("the effect request matches the durable operation requirement")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

@@ -1,14 +1,14 @@
 use super::*;
 
-impl<Schema, Intent, Program, Root>
-    WorthQueryPerformedApplicationMutation<Schema, Intent, Program, Root>
+impl<Schema, Binding, Program, Root>
+    WorthQueryPerformedApplicationMutation<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema + 'static,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema> + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
+    Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
     Root::Dependents:
         crate::application_entry::mutation::program_output_continuation::ProgramOutputContinuationFactory<Schema,
@@ -34,7 +34,7 @@ where
         application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         request: &crate::application_entry::WorthQueryApplicationRequest<'_, '_, '_, Schema>,
         controls: crate::application_entry::WorthQueryOutputDemandControls,
-    ) -> Result<WorthQueryStartedRequiredOutputs<Schema, Intent, Program, Root>, WorthQueryRequiredOutputStartFailure<Schema, Intent, Program, Root>> {
+    ) -> Result<WorthQueryStartedRequiredOutputs<Schema, Binding, Program, Root>, WorthQueryRequiredOutputStartFailure<Schema, Binding, Program, Root>> {
         let Self { result, source } = self;
         let receipt = source.receipt.clone();
         match source.start_required_outputs(application, request, controls) {

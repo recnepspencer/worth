@@ -16,6 +16,8 @@ pub mod host;
 pub mod operator_identity;
 #[path = "document_retention_model/presented_request.rs"]
 pub mod presented_request;
+#[path = "document_retention_model/program_adoption.rs"]
+pub mod program_adoption;
 #[path = "document_retention_model/programs.rs"]
 pub mod programs;
 #[path = "document_retention_model/readback.rs"]

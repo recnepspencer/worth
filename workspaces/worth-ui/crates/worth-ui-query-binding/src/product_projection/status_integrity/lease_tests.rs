@@ -72,6 +72,7 @@ fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
     }
     let outcome = application
         .request(&principal, &scope)
+        .advanced()
         .mutate(Record::new("ONLINE", 1).unwrap())
         .expect_source(source.clone())
         .idempotency(&1_u64)

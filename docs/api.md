@@ -72,7 +72,9 @@ says what it is: the aftermath and recovery vocabulary is still settling.
 
 ### 3.1 `worth-query-decl`: declare meaning
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_decl::facade::{application_capability, application_query, application_schema};
 ```
 
@@ -100,7 +102,9 @@ Guide: [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-
 
 ### 3.2 `worth-query-host`: install and run
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::{admission, domain, primary_graph, publication, runtime};
 ```
 
@@ -127,7 +131,9 @@ lower-runtime internals.
 
 The two request shapes you will use most:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::application_entry::WorthQueryApplicationRequestExt;
 
 let request = application.request(&external_principal, &request_scope);
@@ -140,51 +146,39 @@ let published = request
 let rows = published.rows();
 let sources = published.observed_sources();
 
-// A mutation. The outcome is a type you must match; nothing is implied.
-// On a runtime installed with a program, every mutation runs through the
-// program the branch runs. Plain execute(..) refuses it with
-// ApplicationProgramRequired; it is only for a runtime installed without one.
-// Every mutation lane takes an ExecutionAllocationPolicy
-// (worth_query_host::facade::runtime). The caller chooses; there is no default.
-match request
-    .mutate(SomeOperation::new(input))
-    .without_source()                        // or .expect_source(source)
-    .idempotency(&key)
-    .execute_in_program(
-        &application,                                 // the installed program runtime
-        ExecutionAllocationPolicy::SystemAllocation,  // or Execution(&lease)
-    )?
-{
-    Committed { receipt, result } => { /* new state is published */ }
-    AlreadyCommitted(receipt)     => { /* this key already committed */ }
-    PreviouslyCommitted(earlier)  => { /* the same intent committed earlier; its live
-                                        receipt and handler result are not retained.
-                                        Read current state with a fresh query. */ }
-    IdempotencyIntentDrift        => { /* same key, different intent */ }
-    DomainDenied(denial)          => { /* your handler refused */ }
-    Cancelled | DeadlineExceeded  => { /* stopped before commit */ }
-    Commit(uncommitted)           => { /* not a clean landing: stale, denied, deferred,
-                                        indeterminate, or moved-but-unsettled.
-                                        Match the inner outcome; never blindly retry. */ }
-}
+// Reads remain independently admitted at this observation.
 ```
 
-The names above are shortened. The outcome type is
-`WorthQueryApplicationMutationOutcome<Denial, Result>`; the match above covers
-all of its variants. `PreviouslyCommitted` carries a
-`WorthQueryHistoricalApplicationCommit` (its `commit_id()` only), which grants no
-mutation, publication, or receipt authority. Mutation requests also
-take `preconditions`. A mutation that feeds the program's output graph runs
-with `execute_performed::<Program, Root>(&application, allocation_policy)` instead; see
-[Build an Application §5](build-an-application.md#5-run-the-program). How WORTH Works
-[§9](how-it-works.md#9-query-the-life-of-one-request) and
-[§11](how-it-works.md#11-outcomes-every-way-a-request-can-end) explain what each outcome
-means, and why `Commit(..)` is never collapsed into an error string.
+For an action, capture original meaning and select its exact installed occurrence.
+The ordinary builder has no manual execution, preparation or recovery methods.
 
-Guide: [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md).
-It covers contribution-composed applications, branch-local program evolution,
-output demand and live reads, typed handler access, the ordinary typed query
-entry, installed domain use, and application readiness.
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let operation = request.mutate(intent)
+    .without_source() // only a declaration-authorized no-source binding
+    .preconditions(original_conditions)
+    .idempotency_owned(key)?
+    .retain_operation::<Program, Action>(&application)?;
+let next = operation.advance(&fresh_request);
+```
+
+Fixed actions own publication, retention, native output advancement and settlement.
+A settled owner reads its declared query/batch at one authentic current observation;
+refusal retains settlement and cleanup. Source-only actions complete with native
+fresh result or recovered receipt evidence. Every attempt supplies fresh authority.
+Close can refuse and returns the complete remaining owner. See
+[Build §5](build-an-application.md#5-run-the-program).
+
+#### Advanced native entrances
+
+Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
+for fixed, discovered, source-only and bound workflow actions. `request.advanced().mutate(intent)` exposes
+current native execute, prepare and recovery controls; `application_entry::advanced`
+contains their types. Fixed output start and registered recovery also require
+`request.advanced()`. Program-less runtime installation is advanced.
+Discovered and bound workflow actions retain their original owning operation.
+Manual execute, prepare and recovery calls are explicit advanced native controls.
 
 ### 3.3 Runnable examples
 

@@ -78,7 +78,7 @@ fn assessment_history_settles_at_each_request_width() {
     };
     let mut trace = super::assessment_trace::Trace::default();
     macro_rules! judged {
-        ($name:literal,$body:expr) => {
+        ($name:literal,$body:expr_2021) => {
             trace.phase($name, width, || $body)
         };
     }
@@ -164,7 +164,7 @@ fn assessment_history_settles_at_each_request_width() {
     let mut demand = judged!(
         "begin",
         workflow
-            .begin_payment_assessment(
+            .retain_payment_assessment(
                 instance.clone(),
                 authority.clone(),
                 BankPaymentAssessmentSettlement::new(
@@ -186,12 +186,12 @@ fn assessment_history_settles_at_each_request_width() {
             .world
             .runtime
             .approved_business_payment(&approver, &expired);
-        super::deadline::assessment(width, || stopped.settle_payment_assessment(&mut demand));
+        super::deadline::assessment(width, || stopped.advance_payment_assessment(&mut demand));
         return;
     }
     let assessment = match judged!(
         "settle",
-        workflow.settle_payment_assessment(&mut demand).unwrap()
+        workflow.advance_payment_assessment(&mut demand).unwrap()
     ) {
         BankApprovedPaymentAssessmentProgress::Settled(settled) => settled,
         BankApprovedPaymentAssessmentProgress::Pending => {
@@ -202,7 +202,7 @@ fn assessment_history_settles_at_each_request_width() {
         matches!(
             judged!(
                 "retry",
-                workflow.settle_payment_assessment(&mut demand).unwrap()
+                workflow.advance_payment_assessment(&mut demand).unwrap()
             ),
             BankApprovedPaymentAssessmentProgress::Settled(_)
         ),

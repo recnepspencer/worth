@@ -262,3 +262,47 @@ impl ApplicationMutationIntent<BankSchema> for NotifyEstateDeath {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
     }
 }
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for FreezeEstateAccountMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            FreezeEstateAccountCapability,
+        >;
+}
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for NotifyEstateDeathMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            NotifyDeathEstateCapability,
+        >;
+}
+
+impl TryFrom<EstateAction> for NotifyEstateDeath {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::NotifyDeath {
+                estate,
+                notice,
+                subject,
+            } => Ok(Self::new(estate, notice, subject)),
+            original => Err(original),
+        }
+    }
+}
+
+impl TryFrom<EstateAction> for FreezeEstateAccount {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::FreezeAccount { estate, account } => Ok(Self::new(estate, account)),
+            original => Err(original),
+        }
+    }
+}

@@ -32,6 +32,7 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
             self.actions(),
             self.connections(),
             self.rules(),
+            self.adoption_authorization(),
         )
     }
 }
@@ -46,6 +47,7 @@ impl ApplicationProgramManifest {
         actions: &[ApplicationActionDeclaration],
         connections: &[ApplicationConnectionDeclaration],
         rules: &[ApplicationProgramRuleDeclaration],
+        adoption_authorization: Option<&super::ApplicationProgramAdoptionAuthorizationDeclaration>,
     ) -> Self {
         let mut records = Vec::new();
         for feature in features {
@@ -177,6 +179,16 @@ impl ApplicationProgramManifest {
             }
         }
         for action in actions {
+            if let Some(delivery) = action.delivery() {
+                records.push(framed_record(
+                    "delivery",
+                    [
+                        ("action", action.semantic_subject()),
+                        ("meaning", delivery.canonical_meaning()),
+                    ],
+                ));
+            }
+
             let mut fields = vec![
                 ("owner", action.composition_instance().to_owned()),
                 ("feature", action.feature().to_owned()),
@@ -296,6 +308,9 @@ impl ApplicationProgramManifest {
                     )
                 }),
         );
+        if let Some(authorization) = adoption_authorization {
+            records.push(authorization.canonical_meaning().to_owned());
+        }
         records.sort_unstable();
         Self {
             program_identity: program_identity.to_owned(),

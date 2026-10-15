@@ -242,6 +242,7 @@ fn compiled_examples_parallel_advancement() {
             .execute()
             .unwrap();
         let changed = request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: key.to_owned(),
                 replacement_y: length(y),

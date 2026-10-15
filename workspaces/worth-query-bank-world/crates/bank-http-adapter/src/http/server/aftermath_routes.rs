@@ -93,7 +93,9 @@ fn response(
     outcome: BankHttpEstateDisbursementOutcome,
 ) -> (StatusCode, Json<BankHttpEstateDisbursementOutcome>) {
     let status = match &outcome {
-        BankHttpEstateDisbursementOutcome::Applied { .. } => StatusCode::OK,
+        BankHttpEstateDisbursementOutcome::Owning { outcome } => {
+            super::mutation_routes::mutation_status(outcome)
+        }
         BankHttpEstateDisbursementOutcome::Denied { denial, .. } => response_status(denial.kind),
     };
     (status, Json(outcome))

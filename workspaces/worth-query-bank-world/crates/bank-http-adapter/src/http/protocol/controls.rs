@@ -4,12 +4,10 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 /// version and refuses every other as `UnsupportedProtocol`, so a client
 /// never receives a shape it cannot decode.
 ///
-/// `v3` adds the historical `previously_committed` mutation outcome without
-/// live receipt evidence. Older decoders cannot interpret that outcome, so
-/// `v1` and `v2` requests are refused before effects.
+/// `v4` carries owning money custody commands. Earlier versions are refused before effects.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BankHttpProtocolVersion {
-    V3,
+    V4,
     Unsupported(String),
 }
 
@@ -19,7 +17,7 @@ impl Serialize for BankHttpProtocolVersion {
         S: Serializer,
     {
         serializer.serialize_str(match self {
-            Self::V3 => "v3",
+            Self::V4 => "v4",
             Self::Unsupported(value) => value,
         })
     }
@@ -31,8 +29,8 @@ impl<'de> Deserialize<'de> for BankHttpProtocolVersion {
         D: Deserializer<'de>,
     {
         let value = String::deserialize(deserializer)?;
-        Ok(if value == "v3" {
-            Self::V3
+        Ok(if value == "v4" {
+            Self::V4
         } else {
             Self::Unsupported(value)
         })
@@ -59,4 +57,11 @@ impl BankHttpRequestControls {
             maximum_work,
         }
     }
+}
+
+/// Effect commands that do not select retained history carry only their deadline.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct BankHttpEffectControls {
+    pub deadline_milliseconds: u64,
 }

@@ -4,7 +4,7 @@ mod aggregate_projection;
 pub(crate) mod application_attempt;
 mod application_branch;
 mod application_checkpoint;
-mod application_contribution;
+pub(in crate::domain_computation) mod application_contribution;
 pub(in crate::domain_computation) use application_contribution::{
     ComputationPrior, SealedComputationRetention,
 };
@@ -40,7 +40,7 @@ mod granular_invalidation;
 mod handler;
 pub(in crate::domain_computation) use handler::DecisionContextUse;
 mod index_currency;
-mod index_maintenance_budget;
+pub(in crate::domain_computation) mod index_maintenance_budget;
 mod index_refresh;
 mod initial_schema_denial;
 mod invariant_installation;
@@ -170,3 +170,5 @@ pub use crate::domain_computation::execution_runtime::product_world::installed_s
 pub(crate) use tests::fixture::AdvancementHost;
 
 pub use observations::principal_target_reads_on_this_thread_for_test;
+
+pub use application_runtime::WorthQueryOperationInputCaptureDenial;

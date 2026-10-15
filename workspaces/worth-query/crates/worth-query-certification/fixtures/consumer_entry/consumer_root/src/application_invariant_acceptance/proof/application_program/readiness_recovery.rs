@@ -45,6 +45,7 @@ pub(super) fn program_demand_rejects_a_foreign_request_and_releases_on_drop(
     let request = world.application.request(&principal, &scope);
     let foreign_request = other.application.request(&principal, &scope);
     let mut demand = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             PlanarOutputDemand::new("anchor-a"),
@@ -81,6 +82,7 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
     .expect("the program application authenticates its principal");
     let request = world.application.request(&principal, &scope);
     let mut denied = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             PlanarOutputDemand::new("anchor-a"),
@@ -88,6 +90,7 @@ pub(super) fn denied_program_producer_releases_the_shared_claim(
         )
         .expect("the first program interest admits");
     let mut peer = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             PlanarOutputDemand::new("anchor-a"),
@@ -183,6 +186,7 @@ pub(super) fn readiness_failure_recovers_exact_pending_output(
     drop(output);
 
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,
@@ -267,6 +271,7 @@ pub(super) fn readiness_snapshot_pressure_keeps_published_output_recoverable(
     drop(output);
 
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &source_receipt,

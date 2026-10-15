@@ -185,6 +185,7 @@ pub fn run(cell: cases::Cell) -> Observed {
             .execute()
             .unwrap();
         let outcome = request
+            .advanced()
             .mutate(edit::Input {
                 key: m.key,
                 revision: 1,

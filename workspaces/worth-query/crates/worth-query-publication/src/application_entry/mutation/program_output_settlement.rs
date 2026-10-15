@@ -29,6 +29,7 @@ pub struct WorthQueryApplicationProgramOutputSettlement<RootQuery> {
     pub(super) root:
         crate::application_entry::WorthQueryApplicationOutputDemandSettlement<RootQuery>,
     pub(super) outputs: Vec<ProgramOutputRecord>,
+    pub(in crate::application_entry) dependencies: Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
     pub(super) work: super::program_output_work::WorthQueryApplicationProgramWork,
 }
 
@@ -177,7 +178,7 @@ pub struct ProgramOutputRecord {
 }
 
 impl ProgramOutputRecord {
-    fn retained_settlement(
+    pub(in crate::application_entry) fn retained_settlement(
         &self,
     ) -> &worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement {
         self.retained_settlement.as_ref()

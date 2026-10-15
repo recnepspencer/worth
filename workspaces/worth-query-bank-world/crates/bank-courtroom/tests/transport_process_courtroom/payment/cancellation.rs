@@ -47,7 +47,8 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
         court
             .runtime
             .approved_business_payment(&court.approver, &scope)
-            .perform_apply(
+            .advanced()
+            .execute_operation(
                 instance.clone(),
                 &operation,
                 authority.clone(),
@@ -97,7 +98,7 @@ async fn callback_settled_cancellation_survives_late_exact_duplicate() {
             .approved_business_payment(&court.approver, &scope);
         require_completed(
             tokio::task::block_in_place(|| {
-                workflow.accept_applied(
+                workflow.advanced().accept_native_effect(
                     instance.clone(),
                     &operation,
                     authority.clone(),

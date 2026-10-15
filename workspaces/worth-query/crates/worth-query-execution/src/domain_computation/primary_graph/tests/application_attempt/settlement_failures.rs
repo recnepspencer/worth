@@ -65,9 +65,13 @@ fn admitted_ordinary_recovery_uses_the_original_commit_and_exact_world_successor
     let crate::domain_computation::primary_graph::WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = outcome else {
         panic!("settled ordinary recovery must finish the original application");
     };
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    let (read, publication_failure, cleanup_failure, pending_cleanup) = performed.into_parts();
     assert!(publication_failure.is_none());
     assert!(cleanup_failure.is_none());
+    assert!(
+        pending_cleanup.is_none(),
+        "immediate native recovery already releases its record"
+    );
     assert!(matches!(read.unwrap().into_resolution(), crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(_)));
     assert_eq!(
         commits(),

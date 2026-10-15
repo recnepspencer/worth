@@ -24,7 +24,7 @@ pub(crate) use subsystems::{
     CommitStrategiesSubsystem, DurabilitySubsystem, ExactLookupInputs, HistorySubsystem,
     IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, LineageIdentityAllocator,
     LineageState, LineageSubsystem, PartitionEdition, PendingRecordAllocations,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
     PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
     PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
     PublishedSnapshotCloseout, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,

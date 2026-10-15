@@ -34,7 +34,11 @@ fn migration_assessment_impact_is_inspectable_and_stops_before_selection() {
             == worth_query_host::facade::declaration::application_program::ApplicationSemanticFamily::Features
     }));
 
-    let denial = match programs.adopt(&requirements).prepare(0) {
+    let denial = match programs
+        .adopt(&requirements)
+        .expect("declared adoption capability admits")
+        .prepare(0)
+    {
         Ok(_) => panic!("migration assessment must fail before zero-budget selection"),
         Err(denial) => denial,
     };

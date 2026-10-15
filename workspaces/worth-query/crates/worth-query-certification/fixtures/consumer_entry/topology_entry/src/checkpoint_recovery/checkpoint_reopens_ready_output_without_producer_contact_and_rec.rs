@@ -55,6 +55,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         .execute()
         .expect("the recovered source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(3),
@@ -73,7 +74,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
             &restored_settlement,
             NonZeroUsize::new(4_096).unwrap(),
         ),
-        Err(WorthQueryProgramOutputCurrentnessDenial::Output(denial))
+        Err(WorthQueryOutputCurrentnessDenial::Output(denial))
             if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded
     ));
     drop(restored_settlement);

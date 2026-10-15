@@ -138,7 +138,7 @@ exposes it. Read the linked section for the behavior; change the owner crate.
 | Outcomes | [§11](../../../../../docs/how-it-works.md#11-outcomes-every-way-a-request-can-end) | `worth-query-publication` (`WorthQueryApplicationMutationOutcome`); `worth-query-execution` (`WorthQueryApplicationCommitOutcome`) | `application_entry`, `primary_graph` |
 | Branches, programs, adoption | [§12](../../../../../docs/how-it-works.md#12-branches-programs-and-adoption); calls in [Build an Application §7](../../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch); full guide [foundations/programs-and-adoption.md](foundations/programs-and-adoption.md) | `worth-query-execution` for rosters, activation, and adoption publication; `worth-query-publication` for `programs()` and branch-set requests | `application_entry`, `application_installation`, `product`, `primary_graph` |
 | Workflows | [§13](../../../../../docs/how-it-works.md#13-workflows); calls in [Build an Application §6](../../../../../docs/build-an-application.md#6-author-publish-and-run-workflows); full guide [foundations/workflows.md](foundations/workflows.md) | `worth-query-declaration` for specs, builders, and node kinds; `worth-query-installation` for vocabulary installation and resource ceilings; `worth-query-execution` for the workflow kernel, runtime, outcomes, discovery, and adoption inventory; `worth-query-publication` for workflow requests and their preparation denials | `application_program`, `domain`, `application_installation`, `application_discovery`, `application_entry`, `primary_graph` |
-| Workflow-bound operation checks (operation authorization, occurrence authority, approval evidence) | [workflows guide, Operations](foundations/workflows.md#operations); summary in [three independent checks](#workflow-bound-operations-three-independent-checks) | `worth-query-declaration` for `workflow_authority` and `ApplicationWorkflowExecutionRequirements`; `worth-query-execution` for admission, authority issue, and commit rechecks; `worth-query-publication` for `for_workflow_operation` | `worth_query_decl::facade::application_operation`; `declaration`, `application_entry`, `primary_graph` |
+| Workflow-bound operation checks (operation authorization, occurrence authority, approval evidence) | [workflows guide, Operations](foundations/workflows.md#operations); summary in [three independent checks](#three-independent-checks) | `worth-query-declaration` for `workflow_authority` and `ApplicationWorkflowExecutionRequirements`; `worth-query-execution` for admission, authority issue, and commit rechecks; `worth-query-publication` for `for_workflow_operation` | `worth_query_decl::facade::application_operation`; `declaration`, `application_entry`, `primary_graph` |
 | Aftermath and recovery | [§14](../../../../../docs/how-it-works.md#14-aftermath-and-recovery) | `worth-query-execution` for recovery and provisional aftermath; `worth-query-publication` for published aftermath | `primary_graph`, `publication`, `provisional_aftermath` |
 
 ## Engine Laws
@@ -384,16 +384,23 @@ derives a deterministic, sorted diagnostic description from validated meaning.
 It holds owned strings only, no type identity, handle, or authority, and it
 never participates in validation or installation.
 
-**Installation lanes.** `application_installation::in_memory_program` returns
-`WorthQueryProgramApplicationRuntime<Schema, Program>`. Program-owned actions
-execute through `.execute_in_program(&application, allocation_policy)`;
-capability-owned actions through
-`.execute_capability_in_program(&application, allocation_policy)`. Both take an
-`ExecutionAllocationPolicy` (`SystemAllocation` or `Execution(&lease)`); there
-is no default. A program-owned action on the weaker
-`.execute(allocation_policy)` path returns `ApplicationProgramRequired`, and a
-runtime from another host returns `ApplicationProgramMismatch`. The lane commits
-under the program that the request's branch runs.
+**Installation and ordinary actions.** `in_memory_program` installs canonical
+program/action/delivery meaning. `request.mutate` captures original meaning into
+an owned descriptor and `retain_operation::<Program, Action>` resolves the exact
+occurrence. Fixed, discovered, source-only and guarded workflow owners accept fresh
+ordinary requests for advancement, delivery where supported, and close. They retain
+no principal or grant.
+Capability admission follows the binding at every relevant native handoff.
+The [host contract fences](../../worth-query-host/src/ordinary_contract.rs) reject
+manual execution through ordinary receivers.
+
+#### Advanced native execution
+
+Use the [ordinary owning entry](foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for fixed, discovered, source-only and guarded workflow actions. Deliberate manual
+execution, two-phase prepare and recovery select `request.advanced()`; native types are exported under
+`application_entry::advanced`. Current native allocation/admission rules remain
+unchanged. The ordinary builder cannot prepare or execute a manual mutation.
 
 **Rosters and adoption.** One host may roster several validated revisions. The
 revision and its codec describe meaning; they do not select current meaning.
@@ -464,7 +471,9 @@ and How WORTH Works
 read and a write. The projection observes the exact value or lawful absence,
 and `write_optional_field` authors presence or absence:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let note = reader.decision_field(projected, DraftNote::reference())?;
 let quantity = reader.decision_field(projected, DraftQuantity::reference())?;
 
@@ -671,7 +680,21 @@ prohibitions, and composition rules.
 See [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)
 and [Policy, Tenant, And Relationship-Proof Narrowing](./foundations/policy-tenant-and-relationship-proof-narrowing.md).
 
-#### Workflow-bound operations: three independent checks
+#### Workflow-bound operations
+
+Retain the original guarded no-output operation through
+`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+Every `advance(&fresh_request)` rechecks current action/binding authority. Native
+unpublished and dispatch custody stay in the same owner, without retaining a
+principal or prepared admission. Completed effect cleanup is retained separately
+from workflow acceptance; an assessment owns its actual admitted demand.
+
+##### Advanced native workflow execution
+
+Use the ordinary owner above for application operations. Deliberate native controls
+use the [borrowed native chain](foundations/workflows.md#advanced-native-workflow-execution).
+
+##### Three independent checks
 
 A workflow-bound business operation passes up to three checks. They answer
 different questions, are declared in different places, and none grants another.
@@ -700,14 +723,15 @@ The installed requirement (`workflow_requirements` inside
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
+| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
 | `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
 Leaving `workflow_requirements` out does **not** mean "no approval". It means
 "exactly one approval". To run a guarded operation without a signature, declare
 `new()`. A definition cannot weaken the installed evidence floor. Execute
-through the existing `for_workflow_operation` plus `execute_in_program` funnel.
+through fallible `idempotency_owned`, `for_workflow_operation`, the installed
+action's `retain_operation`, and fresh owning `advance`/`close`.
 Do not invent signed/unsigned authorization modes, dummy approvals, host permit
 flags, or a parallel state machine to bridge it.
 
@@ -982,7 +1006,7 @@ and [Signal Orchestration](./domain-capabilities/signal-compatibility-orchestrat
 ### Continuations and managed runs
 
 The checks a workflow-bound business operation passes are in
-[Workflow-bound operations: three independent checks](#workflow-bound-operations-three-independent-checks).
+[Workflow-bound operations: three independent checks](#three-independent-checks).
 
 Application workflows are in How WORTH Works
 [§13](../../../../../docs/how-it-works.md#13-workflows) and the full

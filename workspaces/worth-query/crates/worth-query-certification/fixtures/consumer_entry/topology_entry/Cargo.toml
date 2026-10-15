@@ -11,8 +11,13 @@ worth-query-decl.workspace = true
 worth-query-host.workspace = true
 worth-foundational = { path = "../../../../../../../crates/worth-foundational" }
 serde.workspace = true
+# Match the doc parser's memchr default alias so courts and consumers reuse
+# the same dependency artifacts; both already enable std and alloc.
+memchr = "2.8"
 
 [dev-dependencies]
+toml = "0.8"
+pulldown-cmark = { version = "0.13", default-features = false }
 sha2 = "0.10"
 worth-query-host = { workspace = true }
 worth-execution = { path = "../../../../../../../crates/worth-execution" }

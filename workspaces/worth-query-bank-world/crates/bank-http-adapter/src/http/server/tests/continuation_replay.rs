@@ -6,7 +6,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::{GrantAccountAuthorization, RevokeAccountAuthorization};
 use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance;
 
 use super::fixture::held_authentication_application;
 use super::{
@@ -40,18 +40,24 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
             fresh_scope(),
             BankIdempotencyKey::new("http-replay-grant-viewer").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
-        granted,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("grant construction: {cause:?}"));
+    let scope = fresh_scope();
+    let request = application.runtime.request(&owner, &scope);
+    let WorthQuerySourceOnlyAdvance::Completed(granted) = granted.advance(&request) else {
+        panic!("native grant completion")
+    };
+    assert!(granted.close(&request).is_ok());
+    drop(request);
 
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         application.clone(),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let page_endpoint = format!(
         "http://{}/v1/queries/account-activity/page",
@@ -70,7 +76,7 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
     let origin_page = post_page(&client, &page_endpoint, &resume_origin).await;
     let token = continuation(&origin_page).to_owned();
     let resume_request = serde_json::json!({
-        "protocol": "v3",
+        "protocol": "v4",
         "request_id": "revoked-replay-resume",
         "credential": first_request["credential"],
         "controls": controls_json(1),
@@ -109,11 +115,15 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
             fresh_scope(),
             BankIdempotencyKey::new("http-replay-revoke-viewer").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
-        revoked,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("revoke construction: {cause:?}"));
+    let scope = fresh_scope();
+    let request = application.runtime.request(&owner, &scope);
+    let WorthQuerySourceOnlyAdvance::Completed(revoked) = revoked.advance(&request) else {
+        panic!("native revoke completion")
+    };
+    assert!(revoked.close(&request).is_ok());
+    drop(request);
 
     for (endpoint, request) in [
         (&page_endpoint, &first_request),
@@ -127,15 +137,19 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
         ));
     }
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn temporary_replay_read_failure_keeps_the_original_response() {
     let account = AccountId::new(100).unwrap();
     let application = Arc::new(application(account));
-    let server = bind_application(application, BankHttpServerConfiguration::local_ephemeral())
-        .await
-        .expect("HTTP server should bind");
+    let (server, _mutation_continuation) =
+        bind_application(application, BankHttpServerConfiguration::local_ephemeral())
+            .await
+            .expect("HTTP server should bind")
+            .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let endpoint = format!(
         "http://{}/v1/queries/account-activity/page",
@@ -159,18 +173,21 @@ async fn temporary_replay_read_failure_keeps_the_original_response() {
         "a temporary revalidation failure must not erase the cached publication"
     );
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn abandoned_resume_finishes_and_replays_its_exact_response() {
     let account = AccountId::new(100).unwrap();
     let (application, gate) = held_authentication_application(account);
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let page_endpoint = format!(
         "http://{}/v1/queries/account-activity/page",
@@ -190,7 +207,7 @@ async fn abandoned_resume_finishes_and_replays_its_exact_response() {
     gate.release(1);
     let first = first.await.expect("first page task should finish");
     let resume_request = serde_json::json!({
-        "protocol": "v3", "request_id": "abandoned-resume",
+        "protocol": "v4", "request_id": "abandoned-resume",
         "credential": super::credential_json(), "controls": controls_json(1),
         "account": account.canonical_text(), "continuation": continuation(&first)
     });
@@ -234,4 +251,5 @@ async fn abandoned_resume_finishes_and_replays_its_exact_response() {
         }
     ));
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }

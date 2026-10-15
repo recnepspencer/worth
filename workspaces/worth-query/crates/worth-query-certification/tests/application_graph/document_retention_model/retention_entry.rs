@@ -225,6 +225,15 @@ worth_query_structured_value_binding!(pub SetRetentionDenialBinding for SetReten
 
 pub struct SetRetentionBinding;
 
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for SetRetentionBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
+}
+
 type SetRetentionScope = ApplicationMutationFieldScope<
     DocumentRetentionSchema,
     Document,

@@ -147,6 +147,7 @@ impl WorthQueryMandatoryReview {
 /// again.
 #[derive(Debug)]
 pub enum WorthQueryElevationCloseOutcome {
+    CleanupRequired(Box<super::WorthQueryApplicationCleanupRequired>),
     /// The product branch moved after the basis. Nothing was committed.
     ProductStale(
         crate::domain_computation::WorthQueryProductStaleApplication,
@@ -251,6 +252,9 @@ pub(in crate::domain_computation::primary_graph) fn closed_outcome(
         }
         WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
             WorthQueryElevationCloseOutcome::SettlementDeferred(deferred)
+        }
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            WorthQueryElevationCloseOutcome::CleanupRequired(cleanup)
         }
         WorthQueryApplicationCommitOutcome::Indeterminate(_) => {
             WorthQueryElevationCloseOutcome::Indeterminate

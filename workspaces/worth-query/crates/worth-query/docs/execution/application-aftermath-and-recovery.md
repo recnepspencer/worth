@@ -68,17 +68,64 @@ Application hosts should normally wrap the generic host surface in domain-named
 operations, as Bank does with `BankCommitReceipt::aftermath()` and its recovery
 methods.
 
-The executable
-[ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
-shows successful publication and exhaustively matches every typed commit
-terminal. Its `ProductUnpublished` arm performs bounded catalog inspection,
-continues owed owner settlement, and consumes the recovery carrier through
-public cleanup. Its `SettlementDeferred` arm invokes the exact public repair
-route, while cancellation and `NoEffect` remain explicit no-publication stops.
-The executable does not manufacture an owner failure to enter those arms.
+The executable [ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
+uses a declared source-only owning action, observes actual native fresh evidence,
+closes independent cleanup and reads current/retained product truth. Real partial
+publication/refusal are exercised by the public owning certification courts.
 
 The `provisional_aftermath` facade contains the current undo/redo experiment.
 It is not part of the stable feature described here.
+
+## Ordinary operation recovery
+
+The [owning action entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+retains original intent/key/preconditions/source and actual native custody. Keep
+Progress/Refused owners and supply a fresh ordinary request. Unpublished recovery
+and fixed/discovered retention promotion reuse original effects; registered replay rejoins
+outputs without fabricating a handler result. Missing registration and terminal
+native postures retain evidence/cleanup, without an advance method.
+
+Current delivery checks the actual required set and executes the installed
+projection at one observation in one phase. Refusal retains settlement; stale
+settlement permits history and close. Delivery does not discharge cleanup.
+Close returns custody with its typed refusal when native release cannot complete.
+Drop is abandonment, not completion or crash durability.
+
+### Advanced native recovery
+
+Use the [ordinary owning entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
+for covered actions. Exact native unpublished/keyed/fixed recovery remains under
+`request.advanced()` for deliberate control and hostile certification. A receipt
+cannot reconstruct unregistered custody. Workflow recovery retains its distinct issued native authority. Ordinary discovered
+recovery is composed by its owning operation without request reconstruction.
+
+### Committed discovered retention
+
+A real committed source can return
+`WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied(failure)`.
+The opaque `WorthQueryDiscoveredOutputRetentionFailure` retains the original
+handler result, discovery and unregistered native carrier. Keep that owner;
+its borrowed receipt and denial do not reconstruct the carrier.
+
+A fresh native request with the original intent, key and conditions calls
+`request.advanced().mutate(intent)` and then
+`retry_discovered_output_retention(failure, application)`. Refusal returns the
+same failure alongside the current typed denial. Successful retry returns the
+performed discovered source; its existing `start_required_outputs` preserves
+that owner if starting fails. A terminal native posture is not permission for
+an endless retry. Keep independent managed cleanup and partial-recovery
+obligations; registering or settling outputs does not discharge them.
+
+Registered `request.advanced().recover_discovered_required_outputs` uses an existing registration
+and returns no original handler result. It cannot replace committed-retention
+retry or recreate missing one-shot delivery. These deliberate native controls
+are advanced native substrate. Ordinary discovered callers retain the complete
+operation and supply fresh authority to `advance`; they never rebuild these
+requests or extract raw custody to implement a second retry path.
+
+The sealed certification control exercises controlled reservation-capacity
+refusal on the actual abandoned-source vector. It does not claim ordinary
+allocator OOM resilience or enforcement of an execution-memory quota.
 
 ## Authenticated Inbound Completion
 
@@ -88,7 +135,9 @@ host installs a verifier for that exact operation. Incoming bytes cannot select
 a different verifier or completion target. The public host entry is
 `worth_query_host::facade::application_entry::WorthQueryApplicationInboundOccurrencesExt`:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let receipt = application.inbound_occurrences()
     .receive(&installed_source, bounded_envelope, &scope)
     .execute();
@@ -266,7 +315,9 @@ Define a stable external payload. The protocol family is application-owned,
 version-free, and not a Rust module path; its exact produced version is a
 separate typed value.
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_foundational::facade::{
     BoundaryProtocolIdentity, BoundaryProtocolVersion,
 };
@@ -308,7 +359,9 @@ Assume `InvoiceReadyEffect` is the schema's typed effect reference and
 `declared_aftermath` is its installed declaration contract. The operation
 builder then makes both static choices before `finish()` becomes available:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let correlation_family =
     WorthQueryExternalEffectCorrelationFamily::new("billing-rail")
         .expect("the application-owned correlation family is an atomic identity");
@@ -322,7 +375,9 @@ let definition = operation
 
 An ordinary operation with neither feature states that just as explicitly:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let definition = operation
     .definition()
     .no_external_effect()
@@ -333,7 +388,9 @@ let definition = operation
 Hosts may inspect the exact installed contract through the read-only domain
 facade:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 let contracts = installed_operation.contracts();
 let aftermath = contracts
     .aftermath()
@@ -367,14 +424,18 @@ authority.
 Bank's death-notification operation declares one emission, one stable protocol
 family with an exact version, and one rail:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 schema
     .operation_emit(operation, EstateDeathNotificationEffect::reference())
 ```
 
 The operation definition binds the escaping lane:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_decl::facade::application_schema::WorthQueryExternalEffectCorrelationFamily;
 
 operation
@@ -392,7 +453,9 @@ The payload encodes the exact estate, notice, and subject as three big-endian
 `u64` values under family `bank.estate.death-notification`, version `1`. After a
 real commit, an application consumer reads only the published posture:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::publication::application_aftermath::{
     WorthQueryPublishedExternalEffectPosture,
     WorthQueryPublishedExternalEffectFailure,
@@ -444,14 +507,34 @@ admission and the send answers `AlreadyCompleted`.
 
 ## Publication Settlement Recovery
 
-An ordinary request retry after checkpoint restore or reopening still compares
-the durable intent under fresh authorization. When its original live receipt
-is absent, `WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
+Checkpoint replay requires the full stable original native intent to be
+re-expressible under fresh authorization. The restored fixed and discovered courts
+exercise lawful no-source, unpinned actions with all other intent material
+unchanged; this is not a guarantee for every no-source action. A row or result-set
+source expectation binds the original runtime authority. Observing again after
+restore creates different intent and cannot promise historical replay. Do not
+substitute `without_source` for a required query source, retain a foreign old
+observation, or change the key/source to force a match.
+
+When the original intent matches and its live receipt is absent,
+`WorthQueryApplicationMutationOutcome::PreviouslyCommitted` carries
 the sealed `WorthQueryHistoricalApplicationCommit` and its `commit_id()`. This
 is a landed historical fact: the request commits nothing again. It carries no
 handler result, publication authority, workflow settlement authority, or live
-receipt. Query current state through a freshly admitted request before further
-work. In-process retries whose original receipt remains retained continue to
+receipt. Current state under fresh authority does not establish that an ambiguous
+external effect never occurred. Reconcile the existing authoritative outcome
+through its native, domain or Store recovery owner as appropriate before choosing
+any new business operation. Do not automatically reissue an uncertain effect under
+a new key. Process-local owning handles and Store's durable restart responsibility
+are distinct; live owners are not serialized to recreate authority.
+
+Within-runtime owning retry and recovery continue to retain their original native
+custody. An owning operation preserves `PreviouslyCommitted` as terminal historical
+evidence: it does not rerun the handler, recover a handler result, or complete
+output settlement. Retain that terminal owner and close it with a fresh request;
+a refused close returns its custody.
+
+In-process retries whose original receipt remains retained continue to
 return `AlreadyCommitted(receipt)`.
 
 Lower APIs that require a live receipt retain the typed
@@ -463,7 +546,9 @@ Split the application commit outcome with `landed()` before entering aftermath
 handling. A landed commit returns its receipt; every other terminal arrives as a
 `WorthQueryApplicationUncommitted` variant:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationSettlementNextAction,
     WorthQueryApplicationUncommitted,
@@ -508,7 +593,9 @@ the same operation under current truth and has obtained both
 `admitted_operation` and its disclosure-admitted `capability_access`. The public
 host sequence is:
 
-```rust
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
 use worth_query_host::facade::primary_graph::{
     inspect_recovery_handle, resolve_recovery_handle,
 };
@@ -560,7 +647,9 @@ but World does not publish the target program, the
 migration and custody dispositions, the unpublished World recovery, and
 mandatory support custody. Continue it only through the same branch request:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let recovery = unpublished.into_recovery();
 let outcome = application
     .request(&principal, &fresh_scope)

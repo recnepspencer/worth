@@ -59,6 +59,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent(RETENTION))
         .without_source()
         .idempotency(&key)
@@ -86,7 +87,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&principal, &stopped_scope)
             .on_branch(branch)
-            .mutate(intent(RETENTION))
+            .advanced().mutate(intent(RETENTION))
             .without_source()
             .idempotency(&key)
             .recover_unpublished_in_program(&recovery, &host),
@@ -100,6 +101,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&fresh_principal, &fresh_scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(RETENTION + 1))
             .without_source()
             .idempotency(&key)
@@ -115,6 +117,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&fresh_principal, &fresh_scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(RETENTION))
             .without_source()
             .idempotency(&wrong_key)
@@ -128,6 +131,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let recovered = runtime
         .request(&fresh_principal, &fresh_scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent(RETENTION))
         .without_source()
         .idempotency(&key)
@@ -136,7 +140,11 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = recovered else {
         panic!("settled owner effects must produce a performed product successor");
     };
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    let (read, publication_failure, cleanup_failure, pending_cleanup) = performed.into_parts();
+    assert!(
+        pending_cleanup.is_none(),
+        "ordinary raw recovery already attempted native cleanup"
+    );
     assert!(publication_failure.is_none());
     assert!(cleanup_failure.is_none());
     let Resolution::AlreadyCommitted(receipt) = read.unwrap().into_resolution() else {
@@ -149,6 +157,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
     let resolved = runtime
         .request(&fresh_principal, &fresh_scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent(RETENTION))
         .without_source()
         .idempotency(&key)
@@ -162,6 +171,7 @@ fn fresh_request_recovers_the_actual_unpublished_commit_without_rerunning_handle
         runtime
             .request(&fresh_principal, &fresh_scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(RETENTION + 1))
             .without_source()
             .idempotency(&key)
@@ -200,7 +210,12 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         .programs();
     let comparison = programs.compare(&target).unwrap();
     assert!(matches!(
-        programs.adopt(&comparison).prepare(64).unwrap().publish(),
+        programs
+            .adopt(&comparison)
+            .unwrap()
+            .prepare(64)
+            .unwrap()
+            .publish(runtime, &principal, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
     let before = observe_head(runtime, branch).selected_commit().clone();
@@ -209,6 +224,7 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         runtime
             .request(&principal, &scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(9))
             .without_source()
             .idempotency(&key)
@@ -221,6 +237,7 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         runtime
             .request(&principal, &scope)
             .on_branch(branch)
+            .advanced()
             .mutate(ReviewedSetRetentionIntent {
                 input: intent(9).input
             })
@@ -234,6 +251,7 @@ fn recovery_reads_require_the_current_program_and_refuse_workflow_bound_actions(
         runtime
             .request(&principal, &scope)
             .on_branch(branch)
+            .advanced()
             .mutate(intent(9))
             .without_source()
             .idempotency(&key)

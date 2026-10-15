@@ -108,7 +108,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationFixedOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -125,7 +125,7 @@ where
         >(access)?;
         let artifact = self.validate_root_artifact_demand::<Root>()?;
         let limits = self.resolve_artifact_limits(limits, artifact)?;
-        self.runtime
+        self.backing.runtime
             .admit_required_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             >(execution, source, limits)
@@ -163,11 +163,11 @@ where
                 "selected output root is not installed for this program",
             ));
         }
-        self.runtime.validate_recovered_output_root_kind(
+        self.backing.runtime.validate_recovered_output_root_kind(
             receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
         )?;
-        self.runtime
+        self.backing.runtime
             .recover_prepared_output_source(receipt, TypeId::of::<Root>())
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
@@ -197,7 +197,8 @@ where
                 "selected output root is not installed for this program",
             ));
         }
-        self.runtime
+        self.backing
+            .runtime
             .ensure_recovered_output_source_bound(prepared, source)
     }
 
@@ -225,7 +226,8 @@ where
                 "selected output root is not installed for this program",
             ));
         }
-        self.runtime
+        self.backing
+            .runtime
             .validate_recovered_output_source_currentness(prepared, retained, current)
     }
 
@@ -249,7 +251,9 @@ where
                 "selected output root is not installed for this program",
             ));
         }
-        self.runtime.bind_prepared_output_source(prepared, source)
+        self.backing
+            .runtime
+            .bind_prepared_output_source(prepared, source)
     }
 
     pub fn recover_program_root_output<Root>(
@@ -275,7 +279,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -289,11 +293,11 @@ where
         }
         let artifact = self.validate_root_artifact_demand::<Root>()?;
         let limits = self.resolve_artifact_limits(limits, artifact)?;
-        self.runtime.validate_recovered_output_root_kind(
+        self.backing.runtime.validate_recovered_output_root_kind(
             source_receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
         )?;
-        self.runtime
+        self.backing.runtime
             .admit_recovered_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             >(execution,
@@ -329,7 +333,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -343,7 +347,7 @@ where
         }
         let artifact = self.validate_root_artifact_demand::<Root>()?;
         let limits = self.resolve_artifact_limits(limits, artifact)?;
-        self.runtime
+        self.backing.runtime
             .admit_performed_output_demand::<
                 Family<Schema, WorthQueryProgramRootDemand<Schema, Root>>,
             >(execution, source, limits, prepared)

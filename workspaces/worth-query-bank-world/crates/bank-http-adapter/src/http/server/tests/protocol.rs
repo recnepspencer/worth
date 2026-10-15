@@ -14,19 +14,21 @@ use super::{application, controls_json, credential_json, post_outcome};
 #[tokio::test]
 async fn authenticated_account_summary_crosses_the_bounded_tcp_boundary() {
     let account = AccountId::new(100).unwrap();
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(account)),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let response = reqwest::Client::new()
         .post(format!(
             "http://{}/v1/queries/account-summary",
             server.local_address()
         ))
         .json(&serde_json::json!({
-            "protocol": "v3", "request_id": "account-summary-1",
+            "protocol": "v4", "request_id": "account-summary-1",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000,
                 "maximum_results": 1, "maximum_work": 20_000 },
@@ -75,18 +77,21 @@ async fn authenticated_account_summary_crosses_the_bounded_tcp_boundary() {
         }
     }
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn unknown_protocol_version_returns_the_typed_upgrade_denial() {
     let account = AccountId::new(100).unwrap();
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(account)),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
-    for protocol in ["v1", "v2", "v99"] {
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
+    for protocol in ["v1", "v2", "v3", "v99"] {
         let outcome = reqwest::Client::new()
             .post(format!(
                 "http://{}/v1/queries/account-summary",
@@ -110,20 +115,23 @@ async fn unknown_protocol_version_returns_the_typed_upgrade_denial() {
         ));
     }
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn full_request_queue_rejects_before_authentication_or_domain_work() {
     let account = AccountId::new(100).unwrap();
     let (application, hold) = held_authentication_application(account);
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application),
         BankHttpServerConfiguration::local_ephemeral()
             .with_queue_capacity(std::num::NonZeroUsize::new(1).unwrap())
             .with_maximum_concurrency(std::num::NonZeroUsize::new(1).unwrap()),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let endpoint = format!(
         "http://{}/v1/queries/account-summary",
@@ -173,17 +181,20 @@ async fn full_request_queue_rejects_before_authentication_or_domain_work() {
         "saturated work must not cross authentication or reach the Bank runtime"
     );
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 #[tokio::test]
 async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
     let account = AccountId::new(100).unwrap();
-    let server = bind_application(
+    let (server, _mutation_continuation) = bind_application(
         Arc::new(application(account)),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .expect("HTTP server should bind");
+    .expect("HTTP server should bind")
+    .into_parts();
+    let server = server.activate();
     let client = reqwest::Client::new();
     let origin = format!("http://{}", server.local_address());
 
@@ -191,7 +202,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/queries/account-summary"),
         serde_json::json!({
-            "protocol": "v3", "request_id": "unknown-summary",
+            "protocol": "v4", "request_id": "unknown-summary",
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text(), "branch": "forged"
         }),
@@ -206,7 +217,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/queries/account-activity/page"),
         serde_json::json!({
-            "protocol": "v3", "request_id": "unknown-page",
+            "protocol": "v4", "request_id": "unknown-page",
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text(), "provider": "forged"
         }),
@@ -221,7 +232,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/estate/notify-death"),
         serde_json::json!({
-            "protocol": "v3", "request_id": "unknown-notification",
+            "protocol": "v4", "request_id": "unknown-notification",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000 },
             "idempotency_key": "unknown-notification-key",
@@ -239,7 +250,7 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
         &client,
         &format!("{origin}/v1/mutations"),
         serde_json::json!({
-            "protocol": "v3", "request_id": "unknown-mutation",
+            "protocol": "v4", "request_id": "unknown-mutation",
             "credential": credential_json(),
             "controls": { "deadline_milliseconds": 5_000 },
             "idempotency_key": "unknown-mutation-key", "operation": "deposit",
@@ -249,11 +260,12 @@ async fn authority_shaped_unknown_fields_fail_closed_across_wire_families() {
     )
     .await;
     assert!(
-        matches!(mutation, BankHttpMutationOutcome::NotApplied { denial, .. }
+        matches!(mutation, BankHttpMutationOutcome::Rejected { denial, .. }
         if denial.kind == BankHttpDenialKind::MalformedRequest)
     );
 
     server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
 }
 
 async fn post_summary(
@@ -265,7 +277,7 @@ async fn post_summary(
     client
         .post(endpoint)
         .json(&serde_json::json!({
-            "protocol": "v3", "request_id": request_id,
+            "protocol": "v4", "request_id": request_id,
             "credential": credential_json(), "controls": controls_json(1),
             "account": account.canonical_text()
         }))

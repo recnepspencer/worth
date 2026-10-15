@@ -33,7 +33,7 @@ where
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);
         }
         let revision = workflow.program_revision();
-        if revision == self.runtime.program.revision()
+        if revision == self.runtime.installed_program().revision()
             || self
                 .supported
                 .iter()
@@ -43,11 +43,13 @@ where
         }
         let rostered = self
             .runtime
+            .backing
             .supported
             .iter()
             .any(|rostered| rostered.revision() == revision);
         let present = self
             .runtime
+            .backing
             .runtime
             .installed_program_support()
             .and_then(|support| support.present(revision))
@@ -55,7 +57,8 @@ where
         if !(rostered && present) {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
-        self.runtime
+        std::sync::Arc::get_mut(&mut self.runtime.backing)
+            .ok_or(WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained)?
             .runtime
             .workflow_coverage
             .register(workflow.adoption_coverage())

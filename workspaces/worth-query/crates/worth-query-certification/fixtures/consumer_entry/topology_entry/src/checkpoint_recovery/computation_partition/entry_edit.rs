@@ -353,3 +353,9 @@ impl<Schema: TopologySchemaBinding> OperationHandler<Schema, EntryEditBinding<Sc
 
 mod declaration;
 pub(super) use declaration::declare;
+
+impl<Schema: TopologySchemaBinding> ApplicationMutationAdmissionBinding<Schema>
+    for EntryEditBinding<Schema>
+{
+    type Admission = ApplicationConventionalAdmission;
+}

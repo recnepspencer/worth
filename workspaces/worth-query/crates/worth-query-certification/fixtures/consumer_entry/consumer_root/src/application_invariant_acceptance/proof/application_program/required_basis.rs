@@ -40,6 +40,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .observed_sources()[0]
         .clone();
     let first = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -83,6 +84,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .observed_sources()[0]
         .clone();
     let second = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(3),
@@ -148,6 +150,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .observed_sources()[0]
         .clone();
     let third = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(4),
@@ -169,6 +172,7 @@ pub(super) fn joined_required_root_discovers_at_its_own_publication(
         .ordinal();
     drop(third);
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<ConsumerProgram, ConsumerRequiredSharedRoot>(
             &world.application,
             &receipt,

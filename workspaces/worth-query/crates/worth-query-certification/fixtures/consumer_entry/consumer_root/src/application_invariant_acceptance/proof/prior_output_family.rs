@@ -79,6 +79,7 @@ fn absent_family_is_a_domain_outcome(
 ) {
     let source = observed_source(request, "anchor-b");
     let outcome = request
+        .advanced()
         .mutate(PriorCycleAdjustment {
             scope_key: "anchor-b".to_owned(),
             offset_y: length(1),
@@ -100,6 +101,7 @@ fn absent_family_is_a_domain_outcome(
     let before = source_version(request);
     let source = observed_source(request, "anchor-b");
     let selected = request
+        .advanced()
         .mutate(PriorCycleAdjustment {
             scope_key: "anchor-b".to_owned(),
             offset_y: length(1),
@@ -139,6 +141,7 @@ fn oversized_family_is_denied_before_publication(
     let before = source_version(&request);
     let source = observed_source(&request, "anchor-a");
     let denial = request
+        .advanced()
         .mutate(PriorCycleAdjustment {
             scope_key: "anchor-a".to_owned(),
             offset_y: length(30),
@@ -182,6 +185,7 @@ fn direct_member_fits_where_whole_inventory_does_not(
 ) {
     let source = observed_source(request, "anchor-a");
     let outcome = request
+        .advanced()
         .mutate(PriorCycleAdjustment {
             scope_key: "anchor-a".to_owned(),
             offset_y: length(1),
@@ -217,6 +221,7 @@ fn missing_member_is_a_denial_not_initial_absence(
     let before = source_version(request);
     let source = observed_source(request, "anchor-a");
     let denied = request
+        .advanced()
         .mutate(PriorCycleAdjustment {
             scope_key: "anchor-a".to_owned(),
             offset_y: length(1),
@@ -292,6 +297,7 @@ fn adjust_prior(
 ) -> Vec<String> {
     let source = observed_source(request, "anchor-a");
     let outcome = request
+        .advanced()
         .mutate(PriorCycleAdjustment {
             scope_key: "anchor-a".to_owned(),
             offset_y: length(offset_y),

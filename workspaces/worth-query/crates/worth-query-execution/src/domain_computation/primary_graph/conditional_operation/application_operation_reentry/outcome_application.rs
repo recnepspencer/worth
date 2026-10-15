@@ -25,6 +25,15 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
     counts: &mut WorthQueryTemporalReentryCounts,
 ) {
     match outcome {
+        WorthQueryTemporalReentryOutcome::CleanupRequired(cleanup) => {
+            wake.decision = WorthQueryRetainedConditionalDecision::OperationCleanupRequired(
+                evidence,
+                Box::new(
+                    super::super::retained_managed_cleanup::RetainedManagedCleanup::new(cleanup),
+                ),
+            );
+            counts.indeterminate += 1;
+        }
         WorthQueryTemporalReentryOutcome::ProductStale(stale) => {
             wake.decision =
                 WorthQueryRetainedConditionalDecision::OperationProductStale(evidence, stale);

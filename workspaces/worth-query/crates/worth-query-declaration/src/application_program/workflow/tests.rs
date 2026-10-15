@@ -15,6 +15,7 @@ mod authoring;
 mod condition;
 mod content_identity;
 mod inbound;
+mod operation_input;
 mod resource_limits;
 mod retry;
 mod scale;

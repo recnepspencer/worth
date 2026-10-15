@@ -63,6 +63,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
         host.fail_next_durable_append_for_test(request_execution);
         match host
             .request(&principal, &scope)
+            .advanced()
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
@@ -75,6 +76,12 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
             WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(recovery) => recovery,
             WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome) => {
                 panic!("actual append fault did not reach a required native partial: {outcome:?}")
+            }
+            WorthQueryApplicationPerformedMutationOutcome::CleanupRequired { cleanup, .. } => {
+                panic!(
+                    "this unarmed court met genuine managed cleanup refusal: {:?}",
+                    cleanup.failure()
+                )
             }
             WorthQueryApplicationPerformedMutationOutcome::Blocked(blocked) => {
                 panic!(
@@ -115,7 +122,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     cancellation.cancel();
     assert!(matches!(
         host.request(&principal, &stopped)
-            .mutate(intent.clone())
+            .advanced().mutate(intent.clone())
             .without_source()
             .idempotency(&key)
             .recover_unpublished_required_in_program(&mut recovery, &host),
@@ -124,6 +131,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     assert!(recovery.performed().is_none());
     assert_eq!(
         host.request(&principal, &scope)
+            .advanced()
             .mutate(intent.clone())
             .without_source()
             .idempotency(&key)
@@ -133,6 +141,7 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
     );
     let (source, initial, performed, prior) = host
         .request(&principal, &scope)
+        .advanced()
         .mutate(intent)
         .without_source()
         .idempotency(&key)
@@ -141,7 +150,21 @@ fn initial_required_partial_recovers_original_demand_without_handler_reexecution
         .into_parts();
     assert_eq!(initial, ProductUnpublishedCause::SettlementPending);
     assert!(prior.is_empty());
-    let (read, publication, cleanup) = performed.into_parts();
+    let (read, publication, cleanup, pending_cleanup) = performed.into_parts();
+    let released = host
+        .with_application_advancement(&scope, |phase| {
+            host.release_product_publication_recovery_in_advancement(
+                &phase,
+                pending_cleanup.expect("required-source recovery transfers real cleanup custody"),
+                0,
+            )
+        })
+        .unwrap()
+        .unwrap();
+    assert!(
+        released.is_complete(),
+        "native old-record cleanup completed"
+    );
     assert!(publication.is_none());
     assert!(cleanup.is_none());
     let WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) =

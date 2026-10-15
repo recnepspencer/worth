@@ -189,6 +189,16 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         runtime: &WorthQueryProductRuntime,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
     {
+        self.retry_admitted(identity, runtime, |_| Ok(()))
+    }
+
+    pub(super) fn retry_admitted(
+        &self,
+        identity: u64,
+        runtime: &WorthQueryProductRuntime,
+        checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
+    ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
+    {
         let entry = lock(&self.state)
             .entries
             .get(&identity)
@@ -197,7 +207,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         let mut record = RetryRecordGuard::take(&entry.record)?;
         match record
             .record_mut()
-            .retry(runtime, || self.after_component_progress())
+            .retry(runtime, || self.after_component_progress(), checkpoint)
         {
             Ok(receipt) => {
                 let mut state = lock(&self.state);

@@ -16,8 +16,8 @@ use bank_domain::{
 };
 use worth_query_host::facade::application_entry::{
     PublishedWorkflowInstanceRef, RequiredWorkflowAssessment, WorkflowProgressOutcome,
-    WorthQueryOutputDemandControls, WorthQueryWorkflowAssessmentDemandHandle,
-    WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandSettlement,
+    WorthQueryOutputDemandControls, WorthQueryWorkflowAssessmentDemandProgress,
+    WorthQueryWorkflowAssessmentDemandSettlement, WorthQueryWorkflowAssessmentOperation,
 };
 
 use super::{BankApprovedPaymentWorkflow, BankApprovedPaymentWorkflowError};
@@ -57,19 +57,27 @@ impl BankPaymentAssessmentSettlement {
     }
 }
 
-/// One started payment assessment and the settlement policy it keeps.
-pub struct BankApprovedPaymentAssessmentDemand<'runtime> {
-    handle: WorthQueryWorkflowAssessmentDemandHandle<
-        'runtime,
+/// One retained payment assessment and the settlement policy it keeps.
+/// Native observer driving is not an ordinary assessment entrance.
+/// ```compile_fail,E0599
+/// fn cannot_start(request:worth_query_host::facade::application_entry::WorthQueryWorkflowAssessmentDemandRequest<'_,'_,'_,bank_domain::schema::BankSchema,bank_domain::schema::ApprovedBusinessPaymentWorkflow,bank_domain::schema::ApprovedPaymentAssessmentDemand>) { request.start(); }
+/// ```
+/// The actual installed Bank program retains the admitted demand instead.
+/// ```no_run
+/// fn retain(request:worth_query_host::facade::application_entry::WorthQueryWorkflowAssessmentDemandRequest<'_,'_,'_,bank_domain::schema::BankSchema,bank_domain::schema::ApprovedBusinessPaymentWorkflow,bank_domain::schema::ApprovedPaymentAssessmentDemand>,runtime:&worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<bank_domain::schema::BankSchema,bank_server::BankApplication>) { let _=request.retain_operation(runtime); }
+/// ```
+pub struct BankApprovedPaymentAssessmentDemand {
+    handle: WorthQueryWorkflowAssessmentOperation<
         BankSchema,
         ApprovedBusinessPaymentWorkflow,
         ApprovedPaymentAssessmentDemand,
+        crate::BankApplication,
     >,
     settlement: BankPaymentAssessmentSettlement,
 }
 
-impl BankApprovedPaymentAssessmentDemand<'_> {
-    pub const fn required(&self) -> &RequiredWorkflowAssessment {
+impl BankApprovedPaymentAssessmentDemand {
+    pub fn required(&self) -> &RequiredWorkflowAssessment {
         self.handle.required()
     }
 
@@ -77,20 +85,40 @@ impl BankApprovedPaymentAssessmentDemand<'_> {
         self.settlement
     }
 
-    pub fn close(&mut self) {
-        self.handle.close();
+    pub fn close(
+        self,
+        request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+            '_,
+            '_,
+            '_,
+            BankSchema,
+        >,
+    ) -> Result<
+        worth_query_host::facade::application_entry::WorthQueryClosedAssessmentObservation<
+            BankSchema,
+            ApprovedPaymentAssessmentDemand,
+            crate::BankApplication,
+        >,
+        (
+            Self,
+            worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandDenial,
+        ),
+    > {
+        let Self { handle, settlement } = self;
+        handle
+            .close(request)
+            .map_err(|(handle, cause)| (Self { handle, settlement }, cause))
     }
 }
 
 impl<'runtime> BankApprovedPaymentWorkflow<'runtime, '_, '_> {
-    pub fn begin_payment_assessment(
+    pub fn retain_payment_assessment(
         &self,
         instance: PublishedWorkflowInstanceRef,
         authority: ApprovePayment,
         settlement: BankPaymentAssessmentSettlement,
         command_key: &BankIdempotencyKey,
-    ) -> Result<BankApprovedPaymentAssessmentDemand<'runtime>, BankApprovedPaymentWorkflowError>
-    {
+    ) -> Result<BankApprovedPaymentAssessmentDemand, BankApprovedPaymentWorkflowError> {
         let payment_id = authority.payment;
         let handle = self
             .runtime
@@ -106,24 +134,27 @@ impl<'runtime> BankApprovedPaymentWorkflow<'runtime, '_, '_> {
                 WorthQueryOutputDemandControls::new(ASSESSMENT_WORK, ASSESSMENT_BYTES)
                     .settlement_attempts(settlement.attempts),
             )
-            .start()
+            .retain_operation(self.runtime.application_program())
             .map_err(|denial| {
                 BankApprovedPaymentWorkflowError::AssessmentDemand(Box::new(denial))
             })?;
         Ok(BankApprovedPaymentAssessmentDemand { handle, settlement })
     }
 
-    pub fn settle_payment_assessment(
+    pub fn advance_payment_assessment(
         &self,
-        demand: &mut BankApprovedPaymentAssessmentDemand<'runtime>,
+        demand: &mut BankApprovedPaymentAssessmentDemand,
     ) -> Result<BankApprovedPaymentAssessmentProgress, BankApprovedPaymentWorkflowError> {
         let notifications = demand.handle.notifications().map_err(|denial| {
             BankApprovedPaymentWorkflowError::AssessmentDemand(Box::new(denial))
         })?;
-        let request = self.runtime.request(self.principal, self.scope);
+        let request = self
+            .runtime
+            .request(self.principal, self.scope)
+            .on_branch(demand.handle.branch());
         for _ in 0..demand.settlement.rounds.get() {
             let observed = notifications.generation();
-            let progress = demand.handle.settle(&request).map_err(|denial| {
+            let progress = demand.handle.advance(&request).map_err(|denial| {
                 BankApprovedPaymentWorkflowError::AssessmentDemand(Box::new(denial))
             })?;
             if matches!(

@@ -33,6 +33,7 @@ use super::reconstruction_authority::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(super) enum WorthQueryTemporalReentryOutcome {
+    CleanupRequired(Box<super::super::WorthQueryApplicationCleanupRequired>),
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
     NoEffect(crate::domain_computation::primary_graph::WorthQueryApplicationNoEffectCause),

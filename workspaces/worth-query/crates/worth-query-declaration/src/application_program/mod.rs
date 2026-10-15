@@ -1,6 +1,12 @@
 //! Authored static application composition.
 
 mod action;
+mod adoption_authorization;
+pub use adoption_authorization::{
+    ApplicationProgramAdoptionAuthorizationDeclaration,
+    ApplicationProgramAdoptionAuthorizationVisitor, ApplicationProgramAdoptionBinding,
+    ApplicationProgramAdoptionContext,
+};
 mod action_correspondence;
 mod change_shape;
 mod connection;
@@ -26,7 +32,21 @@ mod workflow;
 #[cfg(test)]
 mod program_tests;
 
-pub use action::{ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration};
+pub use action::{
+    ApplicationAction, ApplicationActionDelivery, ApplicationActionDeliveryMode,
+    ApplicationDiscoveredAction, ApplicationDiscoveredActionDelivery,
+    ApplicationDiscoveredBatchDelivery, ApplicationDiscoveredDeliveryMode,
+    ApplicationDiscoveredQueryDelivery, ApplicationFixedDeliveryMode,
+    ApplicationOutputActionDeliveryDeclaration, ApplicationRetainedCommit,
+    ApplicationSourceCompletion,
+};
+pub use action::{
+    ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration,
+    ApplicationActionDeliveryDeclaration, ApplicationActionReference, ApplicationFixedAction,
+    ApplicationFixedActionDelivery, ApplicationFixedBatchDelivery, ApplicationFixedQueryDelivery,
+    ApplicationNoProjection, ApplicationOutputProjection, ApplicationQueryBatchProjection,
+    ApplicationQueryProjection,
+};
 pub use action_correspondence::{
     ApplicationOptionalMemberEdit, ApplicationRepeatedOptionalMemberCorrespondence,
 };

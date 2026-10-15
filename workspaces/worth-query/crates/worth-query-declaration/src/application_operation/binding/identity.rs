@@ -44,6 +44,8 @@
 
 mod encoder;
 mod input;
+mod shared_input;
+pub use shared_input::ApplicationSharedInput;
 mod partition;
 mod request;
 mod work;

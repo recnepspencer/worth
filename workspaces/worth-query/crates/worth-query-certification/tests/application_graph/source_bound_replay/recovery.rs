@@ -73,6 +73,7 @@ fn recover_original_source(
         runtime
             .request(&principal, &scope)
             .on_branch(branch)
+            .advanced()
             .mutate(set_retention(retention))
             .without_source()
             .idempotency(&seed_key)
@@ -116,6 +117,7 @@ fn recover_original_source(
             let request = runtime
                 .request($principal, $scope)
                 .on_branch(branch)
+                .advanced()
                 .mutate($input);
             let request = if $as_set {
                 request.expect_result_set(set_source.clone())
@@ -186,7 +188,11 @@ fn recover_original_source(
     let WorthQueryManagedApplicationRecoveryOutcome::Performed(performed) = outcome else {
         panic!("original source must recover its retained performed effects");
     };
-    let (read, publication_failure, cleanup_failure) = performed.into_parts();
+    let (read, publication_failure, cleanup_failure, pending_cleanup) = performed.into_parts();
+    assert!(
+        pending_cleanup.is_none(),
+        "ordinary raw recovery already attempted native cleanup"
+    );
     assert!(publication_failure.is_none());
     assert!(cleanup_failure.is_none());
     let Resolution::AlreadyCommitted(receipt) = read.unwrap().into_resolution() else {
@@ -205,6 +211,7 @@ fn recover_original_source(
         runtime
             .request(&fresh_principal, &fresh_scope)
             .on_branch(branch)
+            .advanced()
             .mutate(set_retention(retention + 1))
             .without_source()
             .idempotency(&edit_key)
@@ -224,6 +231,7 @@ fn recover_original_source(
     let changed_request = runtime
         .request(&fresh_principal, &fresh_scope)
         .on_branch(branch)
+        .advanced()
         .mutate(intent.clone());
     let changed_request = if result_set {
         changed_request.expect_result_set(

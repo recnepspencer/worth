@@ -39,7 +39,7 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
                 let value =
                     worth_query_consumer_values::PositiveLength::get(&source.rows()[0].y) + 1;
                 let published = request
-                    .mutate(PlanarEdit(PlanarMutation {
+                    .advanced().mutate(PlanarEdit(PlanarMutation {
                         scope_key: name.clone(),
                         operation:
                             worth_query_consumer_values::PlanarOperation::PublishDerivedOutput(
@@ -117,6 +117,7 @@ fn first_ordinary_and_performed_requests_visit_only_their_occurrence() {
             .unwrap();
         let visits = app.whole_registry_rows_visited_for_test();
         let changed = request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "unrelated-1006".to_owned(),
                 replacement_y: length(2),

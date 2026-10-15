@@ -23,6 +23,8 @@ mod producer_predicate_checkpoint;
 mod restored_primary_backend;
 #[path = "application_graph/restored_replay.rs"]
 mod restored_replay;
+#[path = "application_graph/source_only.rs"]
+mod source_only;
 #[path = "support/execution_policy.rs"]
 mod test_request_policy;
 #[path = "application_graph/unpublished_recovery.rs"]
@@ -43,6 +45,8 @@ mod workflow_component_scale;
 mod workflow_condition;
 #[path = "application_graph/workflow_control_scale.rs"]
 mod workflow_control_scale;
+#[path = "application_graph/workflow_definition_readmission.rs"]
+mod workflow_definition_readmission;
 #[path = "application_graph/workflow_draft_archive.rs"]
 mod workflow_draft_archive;
 #[path = "application_graph/workflow_effect_resources.rs"]
@@ -53,6 +57,8 @@ mod workflow_execution;
 mod workflow_history_scale;
 #[path = "application_graph/workflow_navigation.rs"]
 mod workflow_navigation;
+#[path = "application_graph/workflow_operation_input.rs"]
+mod workflow_operation_input;
 #[path = "application_graph/workflow_ordinary.rs"]
 mod workflow_ordinary;
 #[path = "application_graph/workflow_ordinary_component.rs"]
@@ -86,3 +92,6 @@ mod native_staging_allocation;
 
 #[path = "support/process_deadline.rs"]
 mod process_deadline;
+
+#[path = "application_graph/workflow_owning.rs"]
+mod workflow_owning;

@@ -39,10 +39,11 @@ mod courtroom;
 mod cutoff;
 mod decision_plan;
 mod handler_absence;
-mod installation;
+pub(super) mod installation;
 mod republication;
 mod restoration;
 mod seeded_absence;
+mod source_delivery;
 mod tree_count;
 // This courtroom injects a reducer panic; it requires unwinding.
 #[cfg(panic = "unwind")]

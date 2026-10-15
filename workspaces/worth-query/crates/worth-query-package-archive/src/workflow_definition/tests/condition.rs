@@ -45,22 +45,7 @@ fn operand(name: &str) -> DraftConditionOperand {
 }
 
 #[test]
-fn a_version_1_condition_decodes_as_its_query_read_under_the_migrated_operand() {
-    let bytes = Draft::new(1, 8).condition(|output| {
-        QUERY.iter().for_each(|field| output.text(field));
-    });
-    assert_eq!(
-        decoded_condition(&bytes),
-        DraftCondition::Migrated(operand(MIGRATED_WORKFLOW_CONDITION_OPERAND))
-    );
-    // The version-2 layout under a version-1 header is not a condition.
-    let bytes = Draft::new(1, 8).condition(|output| expression(output, b"x", &["left"]));
-    decode_workflow_definition_draft(&bytes, WorthQueryPackageArchiveLimits::DEFAULT)
-        .expect_err("a version-1 reader takes the version-2 body as other fields");
-}
-
-#[test]
-fn a_version_2_condition_carries_its_draft_and_named_operands() {
+fn a_current_condition_carries_its_draft_and_named_operands() {
     let bytes = Draft::current().condition(|output| expression(output, b"xy", &["left", "right"]));
     assert_eq!(
         decoded_condition(&bytes),

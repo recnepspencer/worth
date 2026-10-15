@@ -15,6 +15,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::RootConnection;
 use crate::application_entry::mutation::authorization::PreparedMutation;
+use crate::application_entry::mutation::authorization::WorthQueryBindingAdmission;
 use crate::application_entry::mutation::{
     WorthQueryApplicationMutationRequestWithIdempotency, WorthQueryApplicationRecoveryRequestDenial,
 };
@@ -33,6 +34,8 @@ impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,
+    Intent::Binding: worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>,
+    <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission: crate::application_entry::mutation::authorization::WorthQueryBindingAdmission<Schema, Intent::Binding>,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + Send + Sync,
     <Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding:
         ApplicationMutationScopeResolution<
@@ -61,6 +64,19 @@ where
                 Schema,
                 RootConnection<Schema, Root>,
             >,
+    {
+        self.authorize_fixed_source::<Program, Root>(phase, application, Some(source))
+    }
+    pub(in crate::application_entry) fn authorize_fixed_source<Program, Root>(
+        &mut self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        source: Option<&worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource>,
+    ) -> Result<PreparedMutation<Schema, Intent::Binding>, WorthQueryApplicationRecoveryRequestDenial>
+    where Program: ApplicationProgramDefinition<Schema>, Program::Outputs: ApplicationProgramOutputsShape<Schema>,
+        Root: ApplicationOutputGraphShape<Schema> + ApplicationRequiredOutputRoot,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Intent::Binding: worth_query_execution::facade::primary_graph::WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
     {
         self.request
             .application
@@ -92,31 +108,32 @@ where
         let owner = application.selected_program_owner(&selected).map_err(
             crate::application_entry::mutation::selected_program::map_selected_program_owner_denial,
         )?;
+        if let Some(declared) = self.compiled_action {
+            owner
+                .resolve_declared_action::<Intent::Binding>(declared)
+                .map_err(WorthQueryApplicationRecoveryRequestDenial::Action)?;
+        }
         let staged = self.stage()?;
         let identities = self.identities()?;
         // Only bind the original source proof. The retained native attempt owns
         // its original facts; pending_source must not author another candidate.
-        let prepared = crate::application_entry::mutation::authorization::prepare_selected(
+        let prepared = <Intent::Binding as worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding<Schema>>::Admission::prepare_selected(
             phase,
             self,
             &identities,
             staged,
             &selected,
         )?;
-        application
-            .validate_unpublished_required_source::<Root, Intent::Binding>(
+        if let Some(source) = source {
+            application.validate_unpublished_required_source::<Root, Intent::Binding>(
                 &worth_query_execution::publication_boundary::program_publication_access(),
-                &owner,
-                source,
-                prepared.idempotency,
-                self.request.branch,
-            )
-            .map_err(|denial| {
-                WorthQueryApplicationRecoveryRequestDenial::Recovery(
-                    WorthQueryManagedApplicationRecoveryDenial::Demand(denial),
-                )
-            })?;
+                &owner, source, prepared.idempotency, self.request.branch,
+            ).map_err(|denial| WorthQueryApplicationRecoveryRequestDenial::Recovery(
+                WorthQueryManagedApplicationRecoveryDenial::Demand(denial),
+            ))?;
+        }
         self.check_recovery_liveness()?;
         Ok(prepared)
     }
+
 }

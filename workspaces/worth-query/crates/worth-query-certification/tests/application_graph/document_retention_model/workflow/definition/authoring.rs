@@ -4,7 +4,11 @@
 use super::*;
 
 pub fn publish_definition(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     expected_predecessor: WorkflowDefinitionExpectedPredecessor,
     idempotency: u64,
@@ -32,7 +36,11 @@ pub fn publish_definition(
 }
 
 pub fn retire_definition(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     definition: PublishedWorkflowDefinitionRef,
     idempotency: u64,
 ) -> Result<

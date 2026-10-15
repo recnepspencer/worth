@@ -105,11 +105,14 @@ fn a_waiting_instance_keeps_its_pinned_revision_across_a_definition_and_a_capaci
 
     // The lineage capacity changes under it: the branch adopts the program
     // whose vocabulary admits a third live instance.
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
     let third = expect_started(start_instance(&application, second.clone(), 97_006));
     assert_eq!(
         third.definition_entity_id(),

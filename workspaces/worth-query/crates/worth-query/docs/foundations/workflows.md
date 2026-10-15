@@ -116,7 +116,9 @@ read a workflow instance.
 
 A workflow spec is a marker type:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 pub struct PurchaseWorkflowSpec;
 
 impl ApplicationWorkflowSpec for PurchaseWorkflowSpec {
@@ -167,7 +169,9 @@ node. Workflow authority does not replace operation permission. See
 
 Install the spec against one installed schema and one installed program:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
     32,                  // maximum_definition_nodes
     64,                  // maximum_definition_connections
@@ -297,7 +301,7 @@ The sequence:
 4. **Authorize.** An advance at a guarded Operation node returns `AwaitingOperation` carrying
    single-use authority for that occurrence. Nothing is committed. The authority lives in memory
    on the returned `RequiredWorkflowOperation`; if it is lost, advance again.
-5. **Execute and settle.** `for_workflow_operation(..)` then `execute_in_program(..)` runs ordinary
+5. **Execute and settle.** `for_workflow_operation(..)` then retaining and advancing the declared action runs ordinary
    admission (check 1 in [Three independent checks](#three-independent-checks)), requires the
    input to hash to the proposal's digest (`for_workflow_operation` refuses another input with
    `RequirementMismatch`), and commits the business write together with the node's settlement.
@@ -344,7 +348,7 @@ Connection methods return `&mut Self` and chain:
 | `assessment_evidence(&assessment, &join)` | Feeds evidence into a join. |
 | `joined_evidence(&join, &approval)` | The approver sees the joined evidence. |
 | `approval_authority(&approval, &operation)` | The approval is required evidence for that guarded operation. It is not permission: ordinary operation permission still applies (see [Three independent checks](#three-independent-checks)). |
-| `operation_input(&operation, &operation)` | The guarded operation's input must be the proposed input. The platform binds the proposal's input-identity digest; the caller supplies the same value to `for_workflow_operation`. The two input types must be equal (`IncompatibleOperationInput`). |
+| `operation_input(&operation, &operation)` | Every guarded operation needs exactly one source (`MissingOperationInput`), including operations requiring no approval. Its input must be the proposed input. The platform binds the proposal's input-identity digest; the caller supplies the same value to `for_workflow_operation`. The two input types must be equal (`IncompatibleOperationInput`). Unguarded proposal slots have no input-cardinality requirement. |
 
 `validate()` enforces these minimums (`ApplicationWorkflowValidationDenialKind`):
 
@@ -352,6 +356,7 @@ Connection methods return `&mut Self` and chain:
 - Each evidence join receives at least two `assessment_evidence` inputs (`IncompleteEvidenceJoin`).
 - Each approval has exactly one `proposal_for_approval` and exactly one `joined_evidence` (`IncompleteApproval`). So every approval needs an evidence join over at least two assessments.
 - A guarded operation has at most one `approval_authority` edge, and exactly one when its installed requirement asks for an approval: `workflow_requirements` omitted, or `requiring_approval` (`MissingWorkflowAuthority`). An unguarded operation has none and declares no `workflow_requirements` (`UnexpectedWorkflowAuthority`).
+- After the authority check, each guarded operation has exactly one `operation_input` source (`MissingOperationInput` for zero or multiple sources). Publication and imported drafts use this validation. Native reconstruction refuses unsupported stored definitions before executable readmission without rewriting their original bytes.
 
 `finish()` returns `Result<AuthoredWorkflowDefinition<Spec>,
 ApplicationWorkflowAuthoringDenial>`. `validate()` checks the whole graph and
@@ -364,7 +369,9 @@ second grammar. It creates the builder, runs your block, and evaluates to the
 `Result<_, ApplicationWorkflowAuthoringDenial>`, because it applies `?` to
 `new`:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let authored = worth_query_workflow! {
     spec: PurchaseWorkflowSpec;
     identity: identity;
@@ -400,13 +407,17 @@ the occurrence name.
 
 Binding checks the validated definition against the installed vocabulary:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let contract = installed.bind_definition(validated)?; // WorthQueryInstalledWorkflowDefinitionContract
 ```
 
 Publishing is a control step on one branch:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = runtime
     .request(&principal, &scope)
     .on_branch(branch)
@@ -433,7 +444,9 @@ Preparation refusals are `WorthQueryWorkflowDefinitionPublicationPreparationDeni
 
 Discovery asks one selected branch occurrence which revision is current for an identity:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // `execution` is the host's `ExecutionRequest`
 // (`worth_query_host::facade::primary_graph::ExecutionRequest`).
 let selected = runtime
@@ -475,7 +488,9 @@ preparation refusals are `WorthQueryWorkflowDefinitionRetirementPreparationDenia
 
 ## Start an instance
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let started = runtime
     .request(&principal, &scope)
     .on_branch(definition.branch())
@@ -564,7 +579,9 @@ is observation-time readiness: no transition attempt was prepared.
 
 An assessment step settles through an output demand, then records evidence:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut handle = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -577,12 +594,25 @@ let mut handle = runtime
         NonZeroUsize::new(512).unwrap(),
         NonZeroUsize::new(1024).unwrap(),
     ))
-    .start()?;
+    .retain_operation(workflow.program_runtime())?;
 
-let settlement = match handle.settle(&runtime.request(&principal, &scope).on_branch(instance.branch()))? {
-    WorthQueryWorkflowAssessmentDemandProgress::Settled(settlement) => settlement,
-    WorthQueryWorkflowAssessmentDemandProgress::Pending => return Ok(()), // pump again later
+// This caller returns the actual owner on pending or refusal. Its caller must
+// retain that tuple and supply a newly authenticated request on the next attempt.
+let settlement = match handle.advance(&fresh_request) {
+    Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(settlement)) => settlement,
+    Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending) => {
+        return Err((handle, None, None));
+    }
+    Err(denial) => return Err((handle, None, Some(denial))),
 };
+
+// Closing the observer is separate from accepting the settlement as evidence.
+// A refused close returns both the actual owner and the genuine settlement.
+let closed_observer = match handle.close(&fresh_close_request) {
+    Ok(closed) => closed,
+    Err((handle, denial)) => return Err((handle, Some(settlement), Some(denial))),
+};
+// Keep closed_observer and its native cleanup receipt with the caller's evidence.
 
 let outcome = runtime
     .request(&principal, &scope)
@@ -595,7 +625,8 @@ let outcome = runtime
 ```
 
 - `into_assessment_demand` (and `into_assessment_demand_for`) refuses a demand whose contract does not match the installed assessment with `WorthQueryWorkflowAssessmentDemandPreparationDenial`.
-- `settle(&fresh_request)` runs bounded attempts and returns `Settled` or `Pending`. `Pending` means pump again.
+- `advance(&fresh_request)` runs the existing bounded native attempts and returns `Settled` or `Pending`; refusal retains the actual admitted demand.
+- `close(&fresh_request)` returns the closed observer and actual producer cleanup receipt, or the same owner on refusal. Observer close, physical release, evidence acceptance and approval remain separate.
 - `accept_assessment` returns `WorkflowProgressOutcome` or `WorthQueryWorkflowAssessmentAcceptanceDenial` (`NotAwaitingAssessment`, `RequirementMismatch`, `Replay(..)`, `Attempt(..)`).
 - `prepare_workflow_collect_assessment(&workflow, instance, node_path)` collects evidence for a declared assessment before the instance reaches it.
 
@@ -604,7 +635,9 @@ let outcome = runtime
 A condition node evaluates a Bool expression in the shared expression language.
 Its operands are named, typed results of installed queries:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let condition = builder.condition(
     "review-capacity",
     "uint64(30) / days >= uint64(5) && retained",
@@ -625,7 +658,9 @@ fixed-width integers, `f32`, `f64`, `String`, `Option<T>`, and `Vec<T>` are
 provided. A domain type states its own reading; a money amount, for example,
 reads as its exact count of minor units so comparisons never round:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 impl ApplicationExpressionOperandValue for Money<USD> {
     fn expression_type() -> ExpressionType {
         ExpressionType::INT64
@@ -642,7 +677,9 @@ When the instance returns
 request on the instance's branch, then supply every published result by name to
 a fresh advance request:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let outcome = request
     .prepare_workflow_advance(&workflow, instance)?
     .condition(&required)
@@ -677,7 +714,9 @@ A true result follows `ConditionSatisfied` and a false one
 An approval is a signed control step. Each decision needs a fresh
 authentication event:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let signing = runtime
     .request(&principal, &scope)
     .on_branch(instance.branch())
@@ -703,6 +742,13 @@ Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalSta
 `WorkflowApprovalDelegationChanged`, and `WorkflowApprovalAuthorityDenied`.
 
 ## Operations
+
+Retain the original description with `for_workflow_operation(..)?.retain_operation(..)`.
+`WorthQueryWorkflowOperation` owns the original slot, exact runtime and native source/recovery
+custody; every `advance(&fresh_request)` selects the original action and freshly admits its
+binding. It stores no principal, scope or prepared admission. Required-output actions cannot
+use this declared no-output lane. See [Advanced native workflow execution](#advanced-native-workflow-execution)
+for deliberate native controls.
 
 ### Three independent checks
 
@@ -748,7 +794,9 @@ to execute every business operation within it.
 For a guarded operation that needs no approval (occurrence-only execution),
 declare no additional workflow evidence:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 // Inside worth_query_mutation_binding!(...), alongside its other contracts:
 workflow_authority required,
 workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
@@ -757,7 +805,9 @@ workflow_requirements ApplicationWorkflowExecutionRequirements::new(),
 For an operation requiring a particular native approval capability, use the
 immutable constructor instead:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 workflow_authority required,
 workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approval::<ReleaseReviewCapability>(),
 ```
@@ -765,13 +815,12 @@ workflow_requirements ApplicationWorkflowExecutionRequirements::requiring_approv
 `ApplicationWorkflowExecutionRequirements` is exported through
 `worth_query_decl::facade::application_operation` and the host's declaration
 facade. Manual `ApplicationMutationBinding` implementations return `Some(...)`
-from `workflow_execution_requirements()`. The default `None` preserves the old
-guarded-binding contract: exactly one native approval is required. It is not the
-same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
+from `workflow_execution_requirements()`. The default `None` requires exactly one
+native approval. It is not the same as `Some(ApplicationWorkflowExecutionRequirements::new())`.
 
 | Declared | Meaning |
 |---|---|
-| nothing (`workflow_execution_requirements()` returns `None`) | Legacy guarded contract: exactly one approval edge is required. |
+| nothing (`workflow_execution_requirements()` returns `None`) | Default guarded requirement: exactly one approval edge is required. |
 | `ApplicationWorkflowExecutionRequirements::new()` | No additional evidence. Zero or one approval edge; an authored edge is still enforced. |
 | `ApplicationWorkflowExecutionRequirements::requiring_approval::<Cap>()` | An approval by `Cap` is required, and an edited definition cannot remove it. |
 
@@ -798,29 +847,63 @@ Existing releases and old definition identities keep their approval behavior.
 Occurrence-only execution requires a newly installed contract/program release;
 it is not enabled by removing an approval from an old editable definition.
 
-### Execute through the same funnel
+### Retain and advance the original operation
 
-When advance returns `AwaitingOperation(required)`, run the guarded effect
-through an ordinary mutation request bound to that requirement:
+Construction is effect-free and retains the original input, conditions, key, branch and issued requirement.
 
+<!-- illustrative -->
 ```rust,ignore
-let committed = runtime
-    .request(&principal, &scope)
-    .on_branch(instance.branch())
-    .mutate(PlaceOrderIntent { input })
-    .without_source()
-    .idempotency(&key)
+// Illustrative: not compiled.
+let owner = runtime.request(&principal, &scope).on_branch(instance.branch())
+    .mutate(PlaceOrderIntent { input }).without_source()
+    .preconditions(original_conditions).idempotency_owned(key)?
     .for_workflow_operation(&workflow, &required)?
-    .execute_in_program(workflow.program_runtime(), ExecutionAllocationPolicy::SystemAllocation)?;
+    .retain_operation::<PurchaseProgramV1, PlaceOrderAction>(workflow.program_runtime())?;
+let outcome = owner.advance(&runtime.request(&fresh_principal, &fresh_scope)
+    .on_branch(instance.branch()));
 ```
 
-- `for_workflow_operation` returns `WorthQueryWorkflowOperationBindingDenial`: `RuntimeMismatch` if the workflow belongs to another runtime; `RequirementMismatch` if the intent's binding, operation, workflow requirements, input type, or branch does not match the requirement, or its input does not hash to the proposal's input-identity digest; `AuthorityUnavailable` if the advance issued no authority (see [Three independent checks](#three-independent-checks)); `Identity(..)` if the input cannot be encoded.
-- The authority is single-use and lives only in the returned `RequiredWorkflowOperation`. Execution takes it after ordinary admission and idempotency resolution, before the handler runs; a new attempt with the same requirement that is not resolved as an idempotent replay is refused with `WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent`. If it is lost or spent without a commit, advance again for a fresh one. Nothing was committed when it was issued.
-- `execute_in_program` resolves the program from the request's branch and returns `WorthQueryApplicationMutationOutcome` (for example `Committed { .. }`).
-- A local effect and its native operation settlement publish in the same candidate. Advance again to follow `Completed` to the successor; do not execute the business effect again. External effects retain owner custody and settle only through their completion/recovery protocol.
-- Retrying the same logical request preserves its key and exact intent. It can recover `AlreadyCommitted` without repeating the handler's effects. A new request against a stale/spent occurrence is denied; reconcile rather than automatically retrying a lifecycle mutation.
-- For an external effect whose owner holds custody, `accept_operation_from_owner` accepts the owner-resolved receipt and returns `WorkflowProgressOutcome`, or `WorthQueryWorkflowOperationOwnerAcceptanceDenial`. `WorthQueryWorkflowOperationOwnerPosture` reports what the owner saw.
-- Recovery of an owner operation binds only the exact performed operation. It never issues authority for a new effect. First bind the request with `for_workflow_operation_recovery(&workflow, &required)`, which returns `WorthQueryWorkflowOperationBindingDenial` if the intent does not match. Without that binding, recovery preparation is refused with `NotWorkflowBound`. `prepare_workflow_operation_recovery_from_owner` returns a `WorthQueryPreparedWorkflowOperationRecovery` or `WorthQueryWorkflowOperationRecoveryPreparationDenial`. Its `safe_retry()` returns the safe-retry admission or `WorthQueryWorkflowOperationRecoveryDenial`, which hands the prepared recovery back through `into_recovery()` when it can be tried again. `accept_recovered_operation_from_owner` then accepts the recovered receipt, with the same outcome and denial as `accept_operation_from_owner`.
+`Progress` and `Refused` return the same original owner. `Completed` retains actual Fresh
+result or Recovered native evidence plus cleanup; recovery does not invent a handler result.
+`Terminal` exposes native stopped evidence and cleanup without an advancement entrance.
+Ordinary authorization, keyed resolution and pending-source checks precede taking the slot.
+Approval/currentness follows taking it: revoked approval can spend it without a business effect.
+The owner never restores a spent slot. Original native abort evidence survives that stop.
+
+Unpublished recovery retains the real World/managed attempt and does not rerun its handler.
+Dispatch recovery retains its original handle, opening fresh selected binding admission before
+using it. Independent authenticated inbound settlement does not itself discharge that handle:
+the owner performs the actual native disposal transition and retains its receipt before
+completion. Unknown consumption cannot become completed from a descriptive custody read.
+
+A local guarded effect settles its operation atomically with the business commit.
+You may close its actual effect cleanup and freshly advance the workflow successor.
+Optional `prepare_workflow_advance(..)?.accept_owned_operation(completed)` confirms
+that ORIGINAL settlement under fresh exact action selection and binding admission.
+It returns native replayed progress for the original effect node and commit; it
+neither records the new confirmation key nor executes the prepared successor.
+
+External source completion alone does not settle the operation. Its actual native
+recovery or authenticated inbound evidence must satisfy guarded custody before
+fresh acceptance can commit the owed workflow settlement. Dispatch-handle disposal,
+workflow settlement and source cleanup remain separate obligations.
+
+Acceptance refusal returns the same completed owner; success retains both actual
+WorkflowProgressOutcome and that owner. Close it through fresh authority; refusal
+retains custody. Assessment evidence acceptance and approval remain separate from
+operation confirmation. Effect completion, workflow terminality and physical
+cleanup remain different facts. Drop performs no settlement.
+
+### Advanced native workflow execution
+
+Use the [ordinary workflow owner](#operations) for application operations. Deliberate
+native execution uses this borrowed-key request chain; the owned description
+returned by `idempotency_owned` has no `advanced()` method.
+
+`request.mutate(intent).without_source().idempotency(&key).for_workflow_operation(&workflow, &required)?.advanced().execute_in_program(program, allocation)`.
+
+Generic mutation recovery still refuses workflow operations. Native workflow
+recovery preserves the original workflow binding and dispatch custody.
 
 ## Navigate back
 
@@ -916,7 +999,9 @@ Accept the owner's receipt (see [Operations](#operations)), then retry.
 same declared inbound binding that operation installed. Bank's approved-payment
 definition uses the public authoring shape:
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let apply = builder.operation_binding::<ApprovePaymentMutationBinding>("apply")?;
 let await_completion = builder.await_inbound::<ApprovedPaymentSettlementEffect>(
     "await-inbound",
@@ -1000,7 +1085,7 @@ authored definitions. It is not part of the `worth-query-decl` or
 `worth-query-host` facades. The in-repo users are certification and release
 tooling. This guide does not state that application crates may depend on it.
 
-- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). Version 4 retains the exact optional operation evidence contract. Version 3 added `await_inbound`; readers retain v1–3 drafts, with absent operation evidence, but reject a wait tag under v1/v2.
+- `encode_workflow_definition_draft(&validated, limits)` writes a `WQWD` byte stream (protocol version `WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION`, currently `4`). It retains the exact optional operation evidence contract and inbound wait meaning. Only the current version is supported; predecessor versions are refused before body decoding, without migration or rewriting their bytes.
 - `decode_workflow_definition_draft(bytes, limits)` returns `WorthQueryUntrustedWorkflowDefinitionDraft`. Every count is checked against the draft's limits and the remaining bytes before allocation. Node identities must be in ascending order.
 - `draft.author::<Schema, Spec>(&installed)` rebuilds an `AuthoredWorkflowDefinition` against an installed spec. Operation evidence must exactly match the installed binding: an old absent contract cannot silently acquire an explicit-empty or explicit-required floor. An inbound wait resolves its origin and complete source/effect/protocol/limits contract against the installed typed vocabulary; archive bytes never provide a Rust effect marker. It refuses with `WorthQueryWorkflowDefinitionDraftDenial` and names the node it refuses.
 - A draft carries no instances, approvals, or authority. Decoded bytes mint nothing. The rebuilt definition still validates, binds, and publishes through the ordinary path.
@@ -1022,7 +1107,7 @@ idempotency key.
 | Variant | Cause |
 |---|---|
 | `ProgramSelection(..)` | The branch's adopted program could not be inspected, so no installed owner could be chosen. |
-| `ApplicationProgramRequired` | The binding needs an application program: send it through `execute_in_program`. On that lane, it means neither the branch's program nor the initial installation supplies this action. |
+| `ApplicationProgramRequired` | Select an installed declared action through the ordinary owning entry. On the advanced native `execute_in_program` lane, this means neither the branch's program nor the initial installation supplies the action. |
 | `ApplicationProgramMismatch` | The program runtime passed is not the request's runtime. |
 | `RequiresWorkflowTransition` | The binding requires workflow authority and the request is not bound to a workflow step. |
 | `WorkflowAuthoritySpent` | The issued workflow authority was already consumed. |
@@ -1147,7 +1232,9 @@ approval ──RetryExhausted──> declined
 
 ### Reusable checks component
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let mut checks = ApplicationWorkflowComponentBuilder::<PurchaseWorkflowSpec>::new("purchase-checks")?;
 let budget = checks.assessment::<BudgetAvailable>("budget")?;
 let vendor = checks.assessment::<VendorApproved>("vendor")?;
@@ -1165,7 +1252,9 @@ let checks = checks.finish()?;
 
 ### Definition
 
+<!-- illustrative -->
 ```rust,ignore
+// Illustrative: not compiled.
 let limits = ApplicationWorkflowDefinitionLimits::new(
     16, 32, 2,
     ApplicationWorkflowComponentLimits::new(8, 1, 16, 32, 32).unwrap(),
@@ -1227,12 +1316,17 @@ let contract = installed.bind_definition(validated)?;
 | 9 | Propose a revised request and repeat steps 4 to 7 | `AwaitingApproval` |
 | 10 | Approve the same way | `Completed` at `approval` |
 | 11 | Advance | `AwaitingOperation(required)` |
-| 12 | `mutate(PlaceOrderIntent).for_workflow_operation(..).execute_in_program(..)` | `Committed { .. }` |
-| 13 | Advance | `Completed` at `ordered`; `terminal()` is true |
+| 12 | Original input/conditions/owned key, `for_workflow_operation(..).retain_operation(..)` | Uneffected owning operation |
+| 13 | `operation.advance(&fresh_request)` | Actual completed effect, original progress/refusal owner, or terminal stop |
+| 14 | Optional local `accept_owned_operation(completed)` under fresh prepared advance; external acceptance requires authentic recovery/inbound | Original local settlement replay, or owed external settlement; same completed owner retained on success/refusal |
+| 15 | Close the completed owner (or `accepted.operation`) with a fresh request, then freshly advance the successor | Lawful cleanup, then separate native successor progress |
 
-Every row is one caller request with its own key. Each step's exact
-intermediate outcomes depend on the graph; the caller reads each outcome and
-chooses the next request.
+New workflow commands use distinct command keys. Construction at step 12 retains
+one original operation key with its input and conditions; subsequent operation
+advance and close calls reuse that owner and accept no replacement key. Every
+advance, acceptance and close uses a fresh authenticated request. Each step's
+exact intermediate outcomes depend on the graph; the caller retains returned
+owners and chooses the next request.
 
 ### What the example shows
 
@@ -1240,7 +1334,7 @@ chooses the next request.
 - **Bounded retry.** A third rejection takes `RetryExhausted` to `declined`.
 - **Evidence budget.** Each accepted check charges the instance lineage's evidence budget.
 - **Owner custody.** If `PlaceOrder` is an external effect, the request cannot be canceled or migrated until its owner receipt is accepted.
-- **Cancellation.** Canceling after step 12 leaves the placed order recorded; the outcome names it.
+- **Cancellation.** Step 12 constructs an owner without placing an order. Cancellation after an actual performed effect at step 13 leaves that effect recorded; retain its owning evidence and complete lawful cleanup.
 - **Deadline.** After seven days of trusted time, no further step runs; cancellation still works.
 - **Revisions.** Publishing a successor with `Published(first)` makes new starts on the first revision return `Superseded`. Running instances stay pinned.
 - **Adoption.** If a new program revision changes `VendorApproved`, the definition becomes incompatible. See [programs-and-adoption.md](programs-and-adoption.md) for what each instance may do.
@@ -1259,7 +1353,7 @@ The same run first executes `information.rs`, an unsigned workflow: a
 `propose` slot, a guarded `record` operation whose binding declares
 `workflow_requirements ApplicationWorkflowExecutionRequirements::new()`, and a
 terminal. It proposes, advances to `AwaitingOperation`, executes the write
-through `for_workflow_operation(..).execute_in_program(..)`, and advances to
+through the retained `for_workflow_operation(..)` owner, and advances to
 `done` with no approval. Both parts propose with the authoring control intent
 (see [Propose and advance](#propose-and-advance)).
 

@@ -26,16 +26,18 @@ use super::{
     WorkflowInstanceStartInput, WorkflowInstanceStartOperation,
 };
 
-pub fn retain_workflow(
-    application: DocumentRetentionRuntime<RetentionProgramP0>,
-) -> DocumentWorkflowRuntime {
+pub fn retain_workflow<Program: ApplicationProgramDefinition<DocumentRetentionSchema>>(
+    application: DocumentRetentionRuntime<Program>,
+) -> DocumentWorkflowRuntime<Program> {
     retain_workflow_with_resources(application, workflow_resources())
 }
 
-pub fn retain_workflow_with_resources(
-    application: DocumentRetentionRuntime<RetentionProgramP0>,
+pub fn retain_workflow_with_resources<
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+>(
+    application: DocumentRetentionRuntime<Program>,
     resources: WorthQueryApplicationWorkflowResourceCeiling,
-) -> DocumentWorkflowRuntime {
+) -> DocumentWorkflowRuntime<Program> {
     let workflow = install_workflow_spec(
         application.runtime().installed_schema(),
         application.installed_program(),
@@ -114,7 +116,7 @@ where
         .expect("the vocabulary belongs to a rostered program");
 }
 
-fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
+pub fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
     WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,

@@ -5,19 +5,19 @@ use super::*;
 /// be retained. Its prederived demand stays paired with the original native
 /// preparation and carrier. Borrowed receipt, result and denial access does
 /// not permit replacing that demand before a checked retention retry.
-pub struct WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>
+pub struct WorthQueryRequiredOutputRetentionFailure<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
+    Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     pub(super) receipt: WorthQueryApplicationCommitReceipt,
-    pub(super) result: MutationResult<Schema, Intent>,
+    pub(super) result: MutationResult<Schema, Binding>,
     pub(super) denial: WorthQueryRequiredOutputPreparationDenial,
     pub(super) custody: Option<
         worth_query_execution::facade::primary_graph::WorthQueryRequiredOutputSourcePreparationFailure,
@@ -26,17 +26,16 @@ where
     pub(super) program: std::marker::PhantomData<fn() -> Program>,
 }
 
-impl<Schema, Intent, Program, Root>
-    WorthQueryRequiredOutputRetentionFailure<Schema, Intent, Program, Root>
+impl<Schema, Binding, Program, Root>
+    WorthQueryRequiredOutputRetentionFailure<Schema, Binding, Program, Root>
 where
     Schema: ApplicationSchema,
-    Intent: ApplicationMutationIntent<Schema>,
+    Binding: ApplicationMutationBinding<Schema>,
     Program: ApplicationProgramDefinition<Schema>,
     Root: ApplicationOutputGraphShape<Schema>
         + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
     RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
-    Intent::Binding:
-        WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+    Binding: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
     /// The exact original publication, distinct from required-output completion.
     pub fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
@@ -44,7 +43,7 @@ where
     }
 
     /// The original handler result; retry never invokes that handler again.
-    pub fn result(&self) -> &MutationResult<Schema, Intent> {
+    pub fn result(&self) -> &MutationResult<Schema, Binding> {
         &self.result
     }
 

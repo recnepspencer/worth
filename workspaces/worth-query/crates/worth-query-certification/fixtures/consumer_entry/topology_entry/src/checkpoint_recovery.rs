@@ -13,7 +13,7 @@ use worth_query_host::facade::{
     admission::authenticated_principal as authentication,
     application_entry::{
         WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationRequestExt,
-        WorthQueryOutputDemandControls, WorthQueryProgramOutputCurrentnessDenial,
+        WorthQueryOutputCurrentnessDenial, WorthQueryOutputDemandControls,
     },
     application_installation::{self, WorthQueryInMemoryApplicationLimits},
     primary_graph::{self, WorthQueryOutputDemandDenialKind},
@@ -156,6 +156,7 @@ fn recovered_output_survives_an_unrelated_settled_edit_without_producer_contact(
         .execute()
         .expect("the unrelated source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-isolated".to_owned(),
             replacement_y: length(51),
@@ -202,6 +203,7 @@ fn unadopted_recovered_output_survives_an_unrelated_edit_before_first_demand() {
         .execute()
         .expect("the unrelated source is readable");
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-isolated".to_owned(),
             replacement_y: length(51),
@@ -301,6 +303,7 @@ fn settle_for<'application, 'principal, 'scope>(
         .unwrap(),
     );
     let mut output = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             application,
             PlanarOutputDemand::new(root),

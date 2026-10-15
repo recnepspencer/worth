@@ -166,7 +166,7 @@
 //!
 //! ```compile_fail,E0599
 //! use worth_query_host::facade::{
-//!     application_entry::WorthQueryApplicationMutationRequestWithIdempotency,
+//!     application_entry::advanced::WorthQueryApplicationMutationRequestWithIdempotency,
 //!     application_installation::WorthQueryProgramApplicationRuntime,
 //!     declaration::application_operation::ApplicationMutationIntent,
 //!     domain::ApplicationSchema,
@@ -190,7 +190,7 @@
 //! ```
 //! use worth_query_host::facade::{
 //!     application_entry::{
-//!         WorthQueryApplicationMutationRequestWithIdempotency,
+//!         advanced::WorthQueryApplicationMutationRequestWithIdempotency,
 //!         WorthQueryMutationSourcePrepared,
 //!     },
 //!     declaration::application_operation::ApplicationMutationIntent,
@@ -247,7 +247,7 @@
 //!     <RootSource<S, R> as ApplicationQueryBinding<S>>::ScopeBinding: ApplicationQueryScopeResolution<S, <RootSource<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity>,
 //!     RootValue<S, R>: WorthQueryApplicationProjection<S, RootQuery<S, R>> + Clone,
 //! {
-//!     let _ = request.recover_required_outputs::<P, R>(application, receipt, "root-output", controls);
+//!     let _ = request.advanced().recover_required_outputs::<P, R>(application, receipt, "root-output", controls);
 //! }
 //! ```
 //!
@@ -324,3 +324,11 @@
 //! ```
 
 pub mod facade;
+mod ordinary_contract;
+mod workflow_owner_contract;
+
+mod discovered_currentness_contract;
+
+mod funded_input_contract;
+
+mod cutover_contract;

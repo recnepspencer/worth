@@ -24,10 +24,21 @@ pub(crate) fn http_client() -> Result<reqwest::Client, AuthentikOidcAdapterBuild
 }
 
 pub(crate) fn cold_certification_http_client_for_test(
+    trusted_root_pem: Option<&[u8]>,
 ) -> Result<reqwest::Client, AuthentikOidcAdapterBuildError> {
-    // A cold court must hand us its named TLS root. The current court supplies
-    // only issuer URLs, so fail closed until that certificate handoff exists.
-    Err(AuthentikOidcAdapterBuildError::MissingColdCertificationTrustedRoot)
+    let pem = trusted_root_pem
+        .ok_or(AuthentikOidcAdapterBuildError::MissingColdCertificationTrustedRoot)?;
+    let mut roots = reqwest::Certificate::from_pem_bundle(pem)
+        .map_err(|_| AuthentikOidcAdapterBuildError::InvalidColdCertificationTrustedRoot)?;
+    if roots.len() != 1 {
+        return Err(AuthentikOidcAdapterBuildError::InvalidColdCertificationTrustedRoot);
+    }
+    let root = roots.pop().expect("one named root certificate");
+    reqwest::ClientBuilder::new()
+        .redirect(reqwest::redirect::Policy::none())
+        .add_root_certificate(root)
+        .build()
+        .map_err(|_| AuthentikOidcAdapterBuildError::InvalidColdCertificationTrustedRoot)
 }
 
 pub(crate) async fn discover_client(
@@ -60,8 +71,29 @@ mod tests {
     #[test]
     fn cold_certification_without_its_trusted_root_is_refused() {
         assert!(matches!(
-            super::cold_certification_http_client_for_test(),
+            super::cold_certification_http_client_for_test(None),
             Err(super::AuthentikOidcAdapterBuildError::MissingColdCertificationTrustedRoot)
+        ));
+    }
+    #[test]
+    fn valid_named_cold_trusted_root_constructs_validating_client() {
+        assert!(
+            super::cold_certification_http_client_for_test(Some(include_bytes!(
+                "client/trusted_root.pem"
+            )))
+            .is_ok()
+        );
+    }
+    #[test]
+    fn malformed_cold_trusted_root_is_refused() {
+        let invalid_der = b"-----BEGIN CERTIFICATE-----\nAQID\n-----END CERTIFICATE-----\n";
+        assert!(matches!(
+            super::cold_certification_http_client_for_test(Some(invalid_der)),
+            Err(super::AuthentikOidcAdapterBuildError::InvalidColdCertificationTrustedRoot)
+        ));
+        assert!(matches!(
+            super::cold_certification_http_client_for_test(Some(b"not a certificate")),
+            Err(super::AuthentikOidcAdapterBuildError::InvalidColdCertificationTrustedRoot)
         ));
     }
 }

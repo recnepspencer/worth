@@ -123,3 +123,23 @@ impl ApplicationMutationIntent<BankSchema> for OpenEstateCase {
         ApplicationMutationFieldScope::new(EstateCaseIdentityField::reference(), self.estate)
     }
 }
+
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+    for OpenEstateCaseMutationBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
+            OpenEstateCaseCapability,
+        >;
+}
+
+impl TryFrom<EstateAction> for OpenEstateCase {
+    type Error = EstateAction;
+    fn try_from(action: EstateAction) -> Result<Self, Self::Error> {
+        match action {
+            EstateAction::OpenEstateCase { estate, notice } => Ok(Self::new(estate, notice)),
+            original => Err(original),
+        }
+    }
+}

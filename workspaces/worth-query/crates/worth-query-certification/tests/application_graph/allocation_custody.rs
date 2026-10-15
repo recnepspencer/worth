@@ -97,6 +97,7 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
             runtime
                 .request(&principal, &scope)
                 .on_branch(branch)
+                .advanced()
                 .mutate(SetRetentionIntent {
                     input: SetRetentionInput {
                         identity: DOCUMENT_IDENTITY.to_owned(),

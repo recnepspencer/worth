@@ -1,6 +1,7 @@
 //! The host policy or sealed request placement accompanies the same real transfers.
 //! Runtime-created IDs are opaque symbols: preserve their exact native identity
 //! and independently enforce one symbol per command and one command per journal.
+mod transfer;
 use super::{
     journal_model::{Outcome, Posting, Purpose, Transfer},
     seeded_world::{key, principal, World},
@@ -113,114 +114,6 @@ impl<'a> Observer<'a> {
             bindings,
             receipts: BTreeMap::new(),
             last: Vec::new(),
-        }
-    }
-    pub fn transfer(
-        &mut self,
-        input: &Transfer,
-        posture: Posture,
-    ) -> Result<Outcome, Box<bank_server::BankMoneyMovementExecution>> {
-        use worth_query_host::facade::primary_graph::{
-            advancement_observations_on_this_thread_for_test as observations,
-            place_managed_computations_on_this_thread_for_test as place,
-            WorthQueryExecutionPlacementForTest as Placement,
-        };
-        let placement = match posture {
-            Posture::Serial => Placement::World,
-            Posture::Leased(width) => Placement::Leased(width),
-        };
-        let previous = place(placement);
-        observations();
-        let actor = self.world.authenticate(input.actor);
-        let recipient = if input.to == 12 { 2 } else { 1 };
-        let result = self
-            .world
-            .world
-            .runtime
-            .mutate(mutations::send_money(SendMoney {
-                from: AccountId::new(input.from).unwrap(),
-                recipient: principal(recipient),
-                amount: Money::from_minor(input.amount).unwrap(),
-            }))
-            .as_principal(&actor)
-            .controls(BankMutationControls::new(
-                crate::support::request_scope(),
-                key(input.command),
-            ))
-            .execute();
-        self.last = observations();
-        let expected_width = match posture {
-            Posture::Serial => 1,
-            Posture::Leased(width) => width.get(),
-        };
-        assert!(
-            self.last.iter().any(|r| r.workers == Some(expected_width)),
-            "the Bank request dispatch reaches its named width"
-        );
-        assert!(
-            self.last.iter().all(|r| r.workers == Some(expected_width)),
-            "Bank dispatches preserve the requested width"
-        );
-        place(previous);
-        let events = self
-            .last
-            .iter()
-            .flat_map(|record| &record.applied)
-            .collect::<Vec<_>>();
-        let expected_events = if matches!(
-            &result,
-            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-        ) {
-            2
-        } else {
-            0
-        };
-        assert_eq!(
-            events.len(),
-            expected_events,
-            "a new Bank commit has two events; retry and denial have none"
-        );
-        match result {
-            Ok(WorthQueryApplicationMutationOutcome::Committed { result, receipt }) => {
-                use worth_query_host::facade::primary_graph::WorthQueryAdvancementIdentityForTest as Identity;
-                let binding = receipt.idempotency_binding();
-                let expected = Identity::Mutation {
-                    operation: *receipt.installed_operation(),
-                    key: *binding.key_identity(),
-                    intent: *binding.intent_identity(),
-                };
-                assert!(
-                    self.last
-                        .iter()
-                        .flat_map(|r| &r.applied)
-                        .all(|event| event.identity == expected),
-                    "Bank commit events carry this command's authoritative receipt by value"
-                );
-                self.receipts.insert(input.command, receipt);
-                Ok(self.bindings.committed(input.command, result.journal))
-            }
-            Ok(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt)) => {
-                assert!(
-                    receipt.is_same_authoritative_commit(&self.receipts[&input.command]),
-                    "retry recovers exactly the original commit"
-                );
-                let journal = self.bindings.commands[&input.command];
-                Ok(Outcome::Committed(self.bindings.journals[&journal]))
-            }
-            Ok(WorthQueryApplicationMutationOutcome::DomainDenied(
-                BankProposalDenial::InsufficientFunds(_),
-            )) => Ok(Outcome::Insufficient),
-            Err(WorthQueryApplicationRequestMutationDenial::Authorization(denial)) => {
-                assert_eq!(
-                    denial.kind(),
-                    WorthQueryOperationAuthorizationDenialKind::Refused(
-                        AuthorizationRefusal::PermissionDenied
-                    ),
-                    "typed authorization cause"
-                );
-                Ok(Outcome::Unauthorized)
-            }
-            other => Err(Box::new(other)),
         }
     }
     pub fn balances(&self) -> BTreeMap<u64, i64> {

@@ -16,27 +16,31 @@ pub enum WorthQueryOutputCurrentnessDenial {
         worth_query_execution::facade::primary_graph::WorthQueryProductBranchAdmissionDenial,
     ),
     ForeignBranch,
+    /// Original discovery validation, materialization or storage refused.
+    Source(worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial),
     Output(worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenial),
 }
-
-/// Compatibility name for the earlier program-only currentness surface.
-pub type WorthQueryProgramOutputCurrentnessDenial = WorthQueryOutputCurrentnessDenial;
 
 impl<'application, 'principal, 'scope, Schema>
     WorthQueryApplicationRetainedRequest<'application, 'principal, 'scope, Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Requires every output in a program settlement to retain its Query-owned
-    /// source lineage at this request's one exact World observation.
+    /// Requires every retained output and any original dependent discovery
+    /// consumption at this request's one exact World observation. A fixed
+    /// root with no discovery retains the native output-only meaning.
     pub fn require_current_program_output<RootQuery>(
         &self,
         settlement: &crate::application_entry::WorthQueryApplicationProgramOutputSettlement<
             RootQuery,
         >,
         maximum_work: NonZeroUsize,
-    ) -> Result<(), WorthQueryProgramOutputCurrentnessDenial> {
-        self.require_current_output_settlements(settlement.retained_settlements(), maximum_work)
+    ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
+        self.application
+            .with_application_advancement(self.scope, |phase| {
+                self.require_current_program_output_in_advancement(&phase, settlement, maximum_work)
+            })
+            .map_err(WorthQueryOutputCurrentnessDenial::ExecutionRequest)?
     }
 
     /// Requires a direct root or dependent demand's retained output lineage at
@@ -57,17 +61,33 @@ where
     ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
         self.application
             .with_application_advancement(self.scope, |phase| {
-                let selected = self
-                    .application
-                    .select_application_read_observation(&phase, &self.observation)
-                    .map_err(WorthQueryOutputCurrentnessDenial::Observation)?;
-                if selected.product().product_branch() != self.branch {
-                    return Err(WorthQueryOutputCurrentnessDenial::ForeignBranch);
-                }
-                selected
-                    .require_current_output_settlements(&phase, settlements, maximum_work)
-                    .map_err(WorthQueryOutputCurrentnessDenial::Output)
+                self.require_current_output_settlements_in_advancement(
+                    &phase,
+                    settlements,
+                    maximum_work,
+                )
             })
             .map_err(WorthQueryOutputCurrentnessDenial::ExecutionRequest)?
+    }
+    pub(in crate::application_entry) fn require_current_output_settlements_in_advancement<
+        'settlement,
+    >(
+        &self,
+        phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<
+            '_,
+        >,
+        settlements: impl IntoIterator<Item = &'settlement worth_query_execution::facade::primary_graph::WorthQueryOutputDemandSettlement>,
+        maximum_work: NonZeroUsize,
+    ) -> Result<(), WorthQueryOutputCurrentnessDenial> {
+        let selected = self
+            .application
+            .select_application_read_observation(phase, &self.observation)
+            .map_err(WorthQueryOutputCurrentnessDenial::Observation)?;
+        if selected.product().product_branch() != self.branch {
+            return Err(WorthQueryOutputCurrentnessDenial::ForeignBranch);
+        }
+        selected
+            .require_current_output_settlements(phase, settlements, maximum_work)
+            .map_err(WorthQueryOutputCurrentnessDenial::Output)
     }
 }

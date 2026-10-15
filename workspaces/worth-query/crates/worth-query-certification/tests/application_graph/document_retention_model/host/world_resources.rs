@@ -10,6 +10,8 @@ pub(super) fn world_resources(
 
 pub(super) const WORKFLOW_SCALE_WIDTH: u64 = 200_000;
 
+pub const ACTIVE_WORLD_OBSERVATIONS: u64 = 128;
+
 pub const WORKFLOW_DEFINITION_BYTES: u32 = 16 * 1024 * 1024;
 
 pub(super) fn workflow_scale_resources(
@@ -73,7 +75,7 @@ fn world_resources_with_work(
                 history_metadata_bytes: metadata_bytes,
             },
             observations: runtime::RuntimeWorldObservationBudgetInstallation {
-                active_observations: 128,
+                active_observations: ACTIVE_WORLD_OBSERVATIONS,
             },
             publication: runtime::RuntimeWorldPublicationBudgetInstallation {
                 active_publication_attempts: 32,

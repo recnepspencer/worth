@@ -211,6 +211,17 @@ where
     )?;
     let (installed, supported) =
         admitted.ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?;
+    if let Some(support) = runtime.program_support.as_mut() {
+        use crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::admit_program;
+        support
+            .adoption_admissions
+            .insert(*installed.revision(), admit_program::<Schema, Program>);
+        for record in &supported {
+            support
+                .adoption_admissions
+                .insert(*record.revision(), record.adoption_admission::<Schema>());
+        }
+    }
     runtime
         .mutation_handlers
         .validate_managed_computations(installed.features())
@@ -252,19 +263,21 @@ where
         .program_required_bindings
         .extend(output_source_bindings.iter().copied());
     Ok(WorthQueryProgramApplicationRuntime {
-        runtime,
-        program: installed,
-        connection_types: Program::Outputs::connection_types()
-            .into_iter()
-            .map(TypeId::from)
-            .collect(),
-        root_graph_types: Program::Outputs::root_graph_types()
-            .into_iter()
-            .map(TypeId::from)
-            .collect(),
-        output_source_bindings: output_source_bindings.into_boxed_slice(),
-        action_bindings: action_bindings.into_iter().collect(),
-        supported: supported.into_boxed_slice(),
+        backing: std::sync::Arc::new(super::program_runtime::WorthQueryProgramRuntimeBacking {
+            runtime,
+            program: installed,
+            connection_types: Program::Outputs::connection_types()
+                .into_iter()
+                .map(TypeId::from)
+                .collect(),
+            root_graph_types: Program::Outputs::root_graph_types()
+                .into_iter()
+                .map(TypeId::from)
+                .collect(),
+            output_source_bindings: output_source_bindings.into_boxed_slice(),
+            action_bindings: action_bindings.into_iter().collect(),
+            supported: supported.into_boxed_slice(),
+        }),
     })
 }
 

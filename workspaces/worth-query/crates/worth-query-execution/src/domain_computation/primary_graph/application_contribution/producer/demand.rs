@@ -38,6 +38,7 @@ pub(in crate::domain_computation::primary_graph) use required_continuations::{
 use required_provenance::DemandProgressionProvenance;
 
 mod denial;
+mod managed_cleanup;
 pub use denial::{
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture,

@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::{
 type Commit = worth_runtime_world::facade::CompositeCommitIdentity;
 
 mod navigation;
+mod observation;
 
 /// The record and its public wake have distinct final owners. Both debit the
 /// registry-record allowance; a notification may retain the wake after the

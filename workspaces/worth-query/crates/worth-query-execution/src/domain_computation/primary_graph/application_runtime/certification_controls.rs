@@ -1,3 +1,4 @@
+mod managed_cleanup;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 #[path = "certification_controls/workflow_membership.rs"]
 mod workflow_membership;
@@ -9,6 +10,7 @@ use worth_foundational::facade::{AspectValue, InternedString};
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 mod native_field_write;
+mod publication;
 mod workflow_approval;
 mod workflow_definition;
 use worth_relational::facade::{

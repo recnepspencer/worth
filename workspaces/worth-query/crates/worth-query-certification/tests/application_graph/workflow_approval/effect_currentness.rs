@@ -45,6 +45,7 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
         .idempotency(&943_u64)
         .for_workflow_operation(&application, &required)
         .expect("the old requirement still names this exact binding")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -66,6 +67,7 @@ fn approved_effect_denies_stale_evidence_before_handler_work() {
         .idempotency(&943_u64)
         .for_workflow_operation(&application, &required)
         .expect("the same requirement still names the operation")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

@@ -271,7 +271,11 @@ pub fn repeated_proposal_definition() -> ValidatedWorkflowDefinition<ReviewedDoc
 }
 
 pub fn bind_definition(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
 ) -> WorthQueryInstalledWorkflowDefinitionContract<DocumentRetentionSchema, ReviewedDocumentWorkflow>
 {

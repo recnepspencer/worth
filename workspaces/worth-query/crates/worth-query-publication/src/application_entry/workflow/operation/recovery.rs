@@ -272,26 +272,11 @@ where
             admission,
             handle,
         } = self;
-        let authority = match application.admit_recovery_effect_authority(&handle, &admission) {
-            Ok(authority) => authority,
-            Err(denial) => {
-                return Err(retained(denial, application, admission, handle));
-            }
-        };
-        let redispatch = match application
-            .redispatch_admitted_external_effect(phase, &handle, &authority, &admission)
-        {
-            Ok(redispatch) => redispatch,
-            Err(denial) => {
-                return Err(retained(denial.into(), application, admission, handle));
-            }
-        };
-        safe_retry_recovery_handle(handle, &authority, redispatch).map_err(|denial| {
-            let (denial, handle) = denial.into_parts();
+        retry_original_handle(phase, application, &admission, handle).map_err(|(denial, handle)| {
             WorthQueryWorkflowOperationRecoveryDenial {
                 denial,
                 recovery: handle.map(|handle| {
-                    Box::new(WorthQueryPreparedWorkflowOperationRecovery {
+                    Box::new(Self {
                         application,
                         admission,
                         handle,
@@ -302,30 +287,9 @@ where
     }
 }
 
-fn retained<'application, Schema, Binding>(
-    denial: WorthQueryRecoveryHandleDenial,
-    application: &'application WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    admission: WorthQueryAdmittedApplicationOperation<
-        Schema,
-        Binding::Operation,
-        Binding::Input,
-        MutationScope<Schema, Binding>,
-    >,
-    handle: WorthQueryRecoveryHandle,
-) -> WorthQueryWorkflowOperationRecoveryDenial<'application, Schema, Binding>
-where
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
-{
-    let terminal = denial.kind() == WorthQueryRecoveryHandleDenialKind::AlreadyTerminal;
-    WorthQueryWorkflowOperationRecoveryDenial {
-        denial,
-        recovery: (!terminal).then(|| {
-            Box::new(WorthQueryPreparedWorkflowOperationRecovery {
-                application,
-                admission,
-                handle,
-            })
-        }),
-    }
-}
+#[path = "recovery/native.rs"]
+mod native;
+
+#[path = "recovery/retry.rs"]
+mod retry;
+pub(in crate::application_entry) use retry::retry_original_handle;

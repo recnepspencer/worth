@@ -263,6 +263,7 @@ fn ten_thousand_neutral_partitions_isolate_a_real_one_entry_edit() {
     let edited = at_demand_scope(edited).commanded(0x612_10000);
     let outcome = kept
         .request(&principal, &scope)
+        .advanced()
         .mutate(edited)
         .without_source()
         .idempotency(&0x612_10000_u64)

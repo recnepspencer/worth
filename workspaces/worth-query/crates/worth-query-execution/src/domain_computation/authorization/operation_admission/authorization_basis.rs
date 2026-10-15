@@ -7,36 +7,43 @@ use crate::domain_computation::authorization::{
 pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Input> {
     Conventional,
     Capability {
-        input: Input,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
     },
     DelegationActivation {
-        input: Input,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryDelegationActivationBinding,
     },
     CapabilityRevocation {
-        input: Input,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryCapabilityRevocationBinding,
     },
     ElevationRequest {
-        input: Input,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryElevationRequestBinding,
     },
     ElevationApproval {
-        input: Input,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryElevationApprovalBinding,
     },
     ElevationClose {
-        input: Input,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryElevationCloseBinding,
     },
     MandatoryReview {
-        input: Input,
+        input:
+            worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
         binding: WorthQueryMandatoryReviewBinding,
     },
 }
 
 impl<Input> WorthQueryOperationAuthorizationBasis<Input> {
-    pub(super) const fn capability_input(&self) -> Option<&Input> {
+    pub(super) fn capability_input(&self) -> Option<&Input> {
         match self {
             Self::Conventional => None,
             Self::Capability { input }
@@ -45,7 +52,7 @@ impl<Input> WorthQueryOperationAuthorizationBasis<Input> {
             | Self::ElevationRequest { input, .. }
             | Self::ElevationApproval { input, .. }
             | Self::ElevationClose { input, .. }
-            | Self::MandatoryReview { input, .. } => Some(input),
+            | Self::MandatoryReview { input, .. } => Some(input.as_ref()),
         }
     }
 

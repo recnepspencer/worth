@@ -16,7 +16,7 @@ use super::request::{
 /// The request's identities borrow its key and input, so preparation cannot also
 /// borrow the request mutably to take these. An entry point stages them first,
 /// encodes the identities once, then prepares with shared borrows only.
-pub(in crate::application_entry) struct WorthQueryStagedMutation<Schema, Intent>
+pub struct WorthQueryStagedMutation<Schema, Intent>
 where
     Schema: ApplicationSchema,
     Intent: ApplicationMutationIntent<Schema>,

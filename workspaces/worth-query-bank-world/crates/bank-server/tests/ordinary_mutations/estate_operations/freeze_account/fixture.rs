@@ -36,6 +36,31 @@ impl FreezeFixture {
         self.authenticate(2)
     }
 
+    pub(crate) fn authenticate_grantor(&self) -> BankAuthenticatedPrincipal {
+        self.authenticate(1)
+    }
+
+    pub(crate) fn revoke_freeze_permission(&self) {
+        let grantor = self.authenticate_grantor();
+        let outcome = self
+            .world
+            .runtime
+            .revoke_estate_capability_with_key(
+                &grantor,
+                EstateAction::RevokeCapability {
+                    estate: self.estate,
+                    grant: GRANT,
+                },
+                &bank_domain::proposals::BankIdempotencyKey::new("owning-freeze-revoke").unwrap(),
+                &crate::support::request_scope(),
+            )
+            .expect("recorded issuer revokes the original native grant");
+        assert!(matches!(
+            outcome,
+            bank_server::BankMutationCommitOutcome::Committed(_)
+        ));
+    }
+
     pub(crate) const fn action(&self, account: AccountId) -> EstateAction {
         EstateAction::FreezeAccount {
             estate: self.estate,
@@ -99,6 +124,32 @@ fn freeze_world(
     granted_account: AccountId,
     protected_foreign_status: AccountStatus,
 ) -> FreezeFixture {
+    freeze_world_with_revocation(
+        scenario,
+        estate_account_status,
+        granted_account,
+        protected_foreign_status,
+        false,
+    )
+}
+
+pub(crate) fn revocable_freeze_world(scenario: &str) -> FreezeFixture {
+    freeze_world_with_revocation(
+        scenario,
+        AccountStatus::Open,
+        ESTATE_ACCOUNT,
+        AccountStatus::Open,
+        true,
+    )
+}
+
+fn freeze_world_with_revocation(
+    scenario: &str,
+    estate_account_status: AccountStatus,
+    granted_account: AccountId,
+    protected_foreign_status: AccountStatus,
+    revocable: bool,
+) -> FreezeFixture {
     let identities = [
         DynamicIdentity::new(&format!("{scenario}-deceased")),
         DynamicIdentity::new(&format!("{scenario}-specialist")),
@@ -125,7 +176,19 @@ fn freeze_world(
         )
         .build()
         .expect("the freeze fixture snapshot should be structurally valid");
-    let estate = estate_world(granted_account);
+    let estate = if revocable {
+        // This separate court has a real employee issuer and a scoped revocation capability.
+        let mut freeze = freeze_grant(GRANT, granted_account);
+        freeze.grantor = SPECIALIST;
+        let mut revocation = freeze_grant(CapabilityGrantId::new(13).unwrap(), granted_account);
+        revocation.scope.account = None;
+        revocation.scope.operation = EstateCapabilityOperation::RevokeCapability;
+        estate_world(granted_account)
+            .with_grant(freeze)
+            .with_grant(revocation)
+    } else {
+        estate_world(granted_account)
+    };
     let seed = identities.iter().enumerate().fold(
         BankWorldSeed::new(snapshot)
             .employee(BankEmployeeAssignmentSeed::new(

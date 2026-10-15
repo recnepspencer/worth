@@ -80,6 +80,7 @@ where
         Schema: 'static,
     {
         let limits = self
+            .backing
             .runtime
             .output_demand_resource_profile()
             .constrain(limits);
@@ -153,6 +154,7 @@ where
             return Ok(());
         };
         let action = self
+            .backing
             .program
             .action_for_mutation::<Binding>()
             .ok_or_else(|| {
@@ -217,7 +219,7 @@ where
         let connection = Connection::declaration();
         let producer_family =
             <Demand::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::IDENTITY;
-        match self.program.artifact_posture(
+        match self.backing.program.artifact_posture(
             connection.target_instance(),
             TypeId::of::<Connection::TargetFeature>().into_external(),
             producer_family,

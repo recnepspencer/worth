@@ -101,6 +101,7 @@ fn explicitly_required_approval_executes_with_its_exact_native_grant() {
         .idempotency(&92012_u64)
         .for_workflow_operation(&application, &required)
         .unwrap()
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             ExecutionAllocationPolicy::SystemAllocation,
@@ -131,6 +132,7 @@ fn empty_installed_floor_does_not_ignore_an_authored_approval_or_its_revocation(
     let changed = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(WorkflowGrantStatusIntent {
             input: WorkflowGrantStatusInput {
                 grant_identity: "workflow-approval-grant".to_owned(),

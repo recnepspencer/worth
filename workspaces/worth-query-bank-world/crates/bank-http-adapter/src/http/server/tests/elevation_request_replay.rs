@@ -12,12 +12,14 @@ use super::fixture::application;
 #[tokio::test]
 async fn elevation_request_replays_from_query_after_http_registry_restarts() {
     let application = Arc::new(application(AccountId::new(100).unwrap()));
-    let first_server = bind_application(
+    let (first_server, _mutation_continuation) = bind_application(
         Arc::clone(&application),
         BankHttpServerConfiguration::local_ephemeral(),
     )
     .await
-    .unwrap();
+    .unwrap()
+    .into_parts();
+    let first_server = first_server.activate();
     let client = reqwest::Client::new();
     let first_origin = format!("http://{}", first_server.local_address());
     let first = post_request(&client, &first_origin, "first", "prevent_immediate_loss").await;
@@ -31,11 +33,14 @@ async fn elevation_request_replays_from_query_after_http_registry_restarts() {
         other => panic!("first HTTP request must publish: {other:?}"),
     };
     first_server.shutdown().await.unwrap();
+    assert!(_mutation_continuation.finish().await.is_ok());
 
-    let resumed_server =
+    let (resumed_server, _resumed_mutations) =
         bind_application(application, BankHttpServerConfiguration::local_ephemeral())
             .await
-            .unwrap();
+            .unwrap()
+            .into_parts();
+    let resumed_server = resumed_server.activate();
     let resumed_origin = format!("http://{}", resumed_server.local_address());
     let query_drift = post_request(
         &client,
@@ -78,6 +83,7 @@ async fn elevation_request_replays_from_query_after_http_registry_restarts() {
         BankHttpElevationRequestOutcome::Denied { denial, .. } if denial == query_denial
     ));
     resumed_server.shutdown().await.unwrap();
+    assert!(_resumed_mutations.finish().await.is_ok());
 }
 
 async fn post_request(
@@ -89,7 +95,7 @@ async fn post_request(
     client
         .post(format!("{origin}/v1/estate/elevation/request"))
         .json(&serde_json::json!({
-            "protocol": "v3",
+            "protocol": "v4",
             "request_id": request_id,
             "credential": {
                 "id_token": "test-only",

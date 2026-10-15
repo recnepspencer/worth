@@ -178,13 +178,14 @@ pub mod facade {
     };
     pub use crate::application_program::{
         install_application_program, install_rostered_application_program,
-        require_complete_program_binding_membership, WorthQueryAdmittedExternalInput,
-        WorthQueryApplicationProgramInstallationDenial,
+        require_complete_program_binding_membership, WorthQueryActionResolutionDenial,
+        WorthQueryAdmittedExternalInput, WorthQueryApplicationProgramInstallationDenial,
         WorthQueryApplicationWorkflowInstallationDenial,
         WorthQueryApplicationWorkflowInstallationDenialKind,
         WorthQueryApplicationWorkflowResourceCeiling,
         WorthQueryApplicationWorkflowSpecInstallation, WorthQueryCapturedExternalInput,
-        WorthQueryCorrespondedAction, WorthQueryInstalledApplicationProgram,
+        WorthQueryCorrespondedAction, WorthQueryErasedInstalledProgramMeaning,
+        WorthQueryInstalledActionInventory, WorthQueryInstalledApplicationProgram,
         WorthQueryInstalledApplicationWorkflowSpec, WorthQueryInstalledDerivedArtifact,
         WorthQueryInstalledEvaluatedRequirement, WorthQueryInstalledExternalInputProvider,
         WorthQueryInstalledRepeatedOptionalMember, WorthQueryInstalledScopedAction,

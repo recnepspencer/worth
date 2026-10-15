@@ -43,17 +43,18 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("all three branches preflight");
 
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } if *branch == b
     ));
     let recovery = match adoption.begin_recovery() {
@@ -121,7 +122,7 @@ fn unpublished_middle_branch_recovers_without_stranding_prefix_or_suffix() {
     };
     assert_eq!(adoption.progress().len(), 2);
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == c
     ));
     let closed = match adoption.close() {
@@ -167,17 +168,18 @@ fn unpublished_middle_branch_can_release_custody_without_relabeling_untouched_su
         .unwrap()
         .programs()
         .adopt(&target)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("all three branches preflight");
 
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::Performed { branch, .. } if *branch == a
     ));
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
     assert!(matches!(
-        adoption.advance().unwrap().unwrap(),
+        adoption.advance(host.runtime(), &principal, &scope).unwrap().unwrap(),
         WorthQueryBranchSetAdoptionProgress::ProductUnpublished { branch, .. } if *branch == b
     ));
     let recovery = match adoption.begin_recovery() {

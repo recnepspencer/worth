@@ -48,6 +48,7 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
     );
     drop(output);
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &receipt,
@@ -62,6 +63,7 @@ fn recovery_ready_with_changed_output_refuses_refresh_of_its_exact_publication()
         .execute()
         .unwrap();
     let changed = request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-c".to_owned(),
             operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {

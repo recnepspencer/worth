@@ -1,3 +1,28 @@
+mod output_delivery;
+pub use output_delivery::ApplicationOutputActionDeliveryDeclaration;
+mod discovered_delivery;
+pub use discovered_delivery::{
+    ApplicationDiscoveredActionDelivery, ApplicationDiscoveredQueryDelivery,
+};
+mod discovered_batch_delivery;
+pub use discovered_batch_delivery::ApplicationDiscoveredBatchDelivery;
+mod batch_delivery;
+mod delivery;
+pub use batch_delivery::ApplicationFixedBatchDelivery;
+mod projection;
+pub use projection::{
+    ApplicationNoProjection, ApplicationOutputProjection, ApplicationQueryBatchProjection,
+    ApplicationQueryProjection,
+};
+mod delivery_attachment;
+mod delivery_contract;
+mod reference;
+pub use delivery::{ApplicationFixedActionDelivery, ApplicationFixedQueryDelivery};
+pub use delivery_contract::*;
+pub use reference::{
+    ApplicationAction, ApplicationActionReference, ApplicationDiscoveredAction,
+    ApplicationFixedAction,
+};
 use std::any::TypeId;
 use std::marker::PhantomData;
 
@@ -97,6 +122,7 @@ pub struct ApplicationActionDeclaration {
     operation_input_identity: WorthQueryPortableTypeIdentity,
     conditional_only: bool,
     required_output_source: bool,
+    delivery: Option<ApplicationActionDeliveryDeclaration>,
     correspondence: Option<ApplicationActionCorrespondenceDeclaration>,
     evaluated_requirement: Option<ApplicationActionEvaluatedRequirementDeclaration>,
     external_input: Option<ApplicationActionExternalInputDeclaration>,
@@ -251,6 +277,7 @@ where
                 <Binding::InputBinding as ApplicationStructuredValueBinding>::IDENTITY,
             conditional_only: false,
             required_output_source: false,
+            delivery: None,
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,
@@ -287,6 +314,7 @@ where
             operation_input_identity: Operation::InputBinding::IDENTITY,
             conditional_only: false,
             required_output_source: false,
+            delivery: None,
             correspondence: None,
             evaluated_requirement: None,
             external_input: None,

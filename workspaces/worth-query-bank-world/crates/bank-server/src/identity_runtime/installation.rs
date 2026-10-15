@@ -70,6 +70,11 @@ pub(super) fn install_prepared(
         .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
     let successor_p2 = validated_bank_application_p2()
         .map_err(BankIdentityRuntimeBuildError::ApplicationProgramValidation)?;
+    let deployment_revisions = [
+        *program.revision(),
+        *successor.revision(),
+        *successor_p2.revision(),
+    ];
     let declaration =
         BankSchema::declaration().map_err(BankIdentityRuntimeBuildError::SchemaDeclaration)?;
     let limits = bank_application_limits();
@@ -79,6 +84,7 @@ pub(super) fn install_prepared(
          graph: &mut WorthQueryPrimaryGraphBootstrap<BankSchema>,
          installed: &WorthQueryInstalledApplicationSchema<BankSchema>| {
             bind_principals(graph, installed, seeds)?;
+            crate::graph_bootstrap::bind_program_deployment_scopes(graph, &deployment_revisions)?;
             bind_world_truth(graph, world.as_ref())?;
             invariant_projection = Some(graph.retain_invariant_projection_authority());
             Ok(())
@@ -232,7 +238,8 @@ fn bind_world_truth(
         &world.owners,
         &world.employees,
         world.estate.as_ref(),
-    )
+    )?;
+    crate::graph_bootstrap::bind_program_deployment_grants(graph, &world.deployment_grants)
 }
 
 fn resolve_installed_principal_binding(

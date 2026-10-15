@@ -11,10 +11,7 @@ use bank_domain::{
     reads::AccountActivityItem,
     schema::PostingPurpose,
 };
-use bank_server::{
-    queries, BankAuthenticatedPrincipal, BankCommitReceipt, BankEstateProgressionDenial,
-    BankMutationCommitOutcome, BankReadControls,
-};
+use bank_server::{queries, BankAuthenticatedPrincipal, BankCommitReceipt, BankReadControls};
 
 use self::fixture::{disbursement_drift_world, disbursement_world, DisbursementFixture};
 use crate::support::request_scope;
@@ -24,11 +21,29 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
     let fixture = disbursement_world("estate-disbursement-commit", 1_000);
     let specialist = fixture.authenticate_actor();
     let key = idempotency(11);
-    let outcome = disburse(&fixture, &specialist, fixture.action(250), key.clone())
-        .expect("the exact lawful estate disbursement should execute through Query");
-    let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-        panic!("the first disbursement must commit: {outcome:?}");
+    let outcome = {
+        let closing_actor = &specialist;
+        let closing_scope = crate::support::request_scope();
+        let closing_request = (&fixture)
+            .world
+            .runtime
+            .request(closing_actor, &closing_scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = disburse(&fixture, &specialist, fixture.action(250), key.clone())
+        else {
+            panic!("native source completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        bank_server::BankCommitReceipt::from_closed_source(
+            done.close_with_evidence(&closing_request)
+                .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
+        )
     };
+    let receipt = outcome;
 
     assert_eq!(receipt.emitted_effect_count(), 2);
     assert_eq!(receipt.decision_fact_count(), Some(36));
@@ -47,16 +62,47 @@ fn idempotency_rejects_a_different_authorized_disbursement_input() {
     let specialist = fixture.authenticate_actor();
     let key = idempotency(31);
     let action = fixture.action(250);
-    let committed = disburse(&fixture, &specialist, action, key.clone())
-        .expect("the baseline disbursement should execute");
-    assert!(matches!(committed, BankMutationCommitOutcome::Committed(_)));
+    let committed = {
+        let closing_actor = &specialist;
+        let closing_scope = crate::support::request_scope();
+        let closing_request = (&fixture)
+            .world
+            .runtime
+            .request(closing_actor, &closing_scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = disburse(&fixture, &specialist, action, key.clone())
+        else {
+            panic!("native source completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+        ));
+        bank_server::BankCommitReceipt::from_closed_source(
+            done.close_with_evidence(&closing_request)
+                .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
+        )
+    };
+    assert!(committed.changed_record_count() > 0);
 
-    let drift = disburse(&fixture, &specialist, fixture.action(251), key)
-        .expect_err("the same key with a different amount must retain typed drift");
-    assert!(matches!(
-        drift,
-        BankEstateProgressionDenial::IdempotencyIntentDrift
-    ));
+    let _drift = {
+        let closing_actor = &specialist;
+        let closing_scope = crate::support::request_scope();
+        let closing_request = (&fixture)
+            .world
+            .runtime
+            .request(closing_actor, &closing_scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
+            done,
+        ) = disburse(&fixture, &specialist, fixture.action(251), key)
+        else {
+            panic!("native keyed drift")
+        };
+        assert!(matches!(done.native_outcome(), Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)));
+        done.close(&closing_request)
+            .unwrap_or_else(|(_, cause)| panic!("drift close: {cause:?}"))
+    };
 }
 
 #[test]
@@ -67,31 +113,65 @@ fn malformed_postings_and_insufficient_journal_funds_deny_before_commit() {
         unreachable!("the fixture always constructs a disbursement")
     };
     malformed.postings.swap(0, 1);
-    let malformed_denial = disburse(
-        &malformed_fixture,
-        &specialist,
-        EstateAction::DisburseEstate(malformed),
-        idempotency(51),
-    )
-    .expect_err("posting order is part of the governed command shape");
+    let malformed_denial = {
+        let closing_actor = &specialist;
+        let closing_scope = crate::support::request_scope();
+        let closing_request = (&malformed_fixture)
+            .world
+            .runtime
+            .request(closing_actor, &closing_scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
+            done,
+        ) = disburse(
+            &malformed_fixture,
+            &specialist,
+            EstateAction::DisburseEstate(malformed),
+            idempotency(51),
+        )
+        else {
+            panic!("native domain no-effect denial")
+        };
+        let Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::DomainDenied(bank_domain::schema::EstateMutationDenial::Proposal(cause))) = done.native_outcome() else { panic!("original proposal denial") };
+        let cause = cause.clone();
+        done.close(&closing_request)
+            .unwrap_or_else(|(_, denial)| panic!("terminal close: {denial:?}"));
+        cause
+    };
     assert!(matches!(
         malformed_denial,
-        BankEstateProgressionDenial::Proposal(BankProposalDenial::DisbursementPostingMismatch)
+        BankProposalDenial::DisbursementPostingMismatch
     ));
     assert_no_disbursement_effects(&malformed_fixture);
 
     let poor_fixture = disbursement_world("estate-disbursement-insufficient", 100);
     let specialist = poor_fixture.authenticate_actor();
-    let denial = disburse(
-        &poor_fixture,
-        &specialist,
-        poor_fixture.action(250),
-        idempotency(52),
-    )
-    .expect_err("a journal-derived balance below the requested amount must deny");
+    let denial = {
+        let closing_actor = &specialist;
+        let closing_scope = crate::support::request_scope();
+        let closing_request = (&poor_fixture)
+            .world
+            .runtime
+            .request(closing_actor, &closing_scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
+            done,
+        ) = disburse(
+            &poor_fixture,
+            &specialist,
+            poor_fixture.action(250),
+            idempotency(52),
+        )
+        else {
+            panic!("native domain no-effect denial")
+        };
+        let Some(worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::DomainDenied(bank_domain::schema::EstateMutationDenial::Proposal(cause))) = done.native_outcome() else { panic!("original proposal denial") };
+        let cause = cause.clone();
+        done.close(&closing_request)
+            .unwrap_or_else(|(_, denial)| panic!("terminal close: {denial:?}"));
+        cause
+    };
     assert!(matches!(
         denial,
-        BankEstateProgressionDenial::Proposal(BankProposalDenial::InsufficientFunds(account))
+        BankProposalDenial::InsufficientFunds(account)
             if account == poor_fixture.source
     ));
 }
@@ -101,11 +181,49 @@ fn disburse(
     specialist: &BankAuthenticatedPrincipal,
     action: EstateAction,
     key: BankIdempotencyKey,
-) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-    fixture
-        .world
-        .runtime
-        .disburse_estate_with_key(specialist, action, &key, &request_scope())
+) -> worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
+    worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
+        bank_domain::schema::BankSchema,
+        bank_domain::schema::DisburseEstate,
+        bank_server::BankApplication,
+        bank_server::EstateDisbursementAction,
+        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+    >,
+    worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
+        bank_domain::schema::BankSchema,
+        bank_domain::schema::DisburseEstate,
+        bank_server::BankApplication,
+        bank_server::EstateDisbursementAction,
+        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+    >,
+    worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
+        bank_domain::schema::BankSchema,
+        bank_domain::schema::DisburseEstate,
+        bank_server::BankApplication,
+        bank_server::EstateDisbursementAction,
+        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+    >,
+> {
+    {
+        let source_actor = specialist;
+        let source_scope = &request_scope();
+        let source_key = &key;
+        let source_intent = bank_domain::schema::DisburseEstate::try_from(action)
+            .expect("typed estate command preserves the exact variant");
+        let source_request = fixture.world.runtime.request(source_actor, source_scope);
+        let source_operation = fixture
+            .world
+            .runtime
+            .mutate(bank_server::mutations::disburse_estate(source_intent))
+            .as_principal(source_actor)
+            .controls(bank_server::BankMutationControls::new(
+                (*source_scope).clone(),
+                (*source_key).clone(),
+            ))
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+        source_operation.advance(&source_request)
+    }
 }
 
 fn assert_equivalent_retry(
@@ -114,11 +232,29 @@ fn assert_equivalent_retry(
     key: &BankIdempotencyKey,
     committed: &BankCommitReceipt,
 ) {
-    let retry = disburse(fixture, specialist, fixture.action(250), key.clone())
-        .expect("an equivalent authorized retry must resolve before reprojection");
-    let BankMutationCommitOutcome::AlreadyCommitted(recovered) = retry else {
-        panic!("the retry must recover the authoritative commit: {retry:?}");
+    let retry = {
+        let closing_actor = specialist;
+        let closing_scope = crate::support::request_scope();
+        let closing_request = (fixture)
+            .world
+            .runtime
+            .request(closing_actor, &closing_scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            done,
+        ) = disburse(fixture, specialist, fixture.action(250), key.clone())
+        else {
+            panic!("native source completion")
+        };
+        assert!(matches!(
+            done.evidence(),
+            worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Recovered { .. }
+        ));
+        bank_server::BankCommitReceipt::from_closed_source(
+            done.close_with_evidence(&closing_request)
+                .unwrap_or_else(|(_, cause)| panic!("source close: {cause:?}")),
+        )
     };
+    let recovered = retry;
     assert_eq!(committed.aftermath(), recovered.aftermath());
     assert_admission_derives_the_request_identities_once(&recovered);
 }
@@ -207,19 +343,16 @@ fn assert_no_disbursement_effects(fixture: &DisbursementFixture) {
 
 fn assert_admission_derives_the_request_identities_once(receipt: &BankCommitReceipt) {
     let phases = receipt.canonical_work();
-    // Admission derives the request's two identities once each, streamed into
-    // their hashes with no basis sequence: the governed input (563 encoded
-    // bytes + 67 framing, 10 blocks) and the key `estate-disbursement-11` (44
-    // encoded bytes + 85 framing, ceil((129 + 9) / 64) = 3 blocks). A
-    // replayed retry is admitted the same way and reports the same work. Every
-    // other phase performs no canonical work.
+    // Binding-selected capability admission governs its input as well as the mutation
+    // input/key identities. All three native derivations are included here; later
+    // publication and domain recovery do not rebuild these identities.
     let admission = phases.admission();
     assert_eq!(admission.basis_preparations(), 0);
-    assert_eq!(admission.digest_derivations(), 2);
-    assert_eq!(admission.canonical_entries(), 2);
-    assert_eq!(admission.canonical_encoded_bytes(), 607);
-    assert_eq!(admission.sha256_input_bytes(), 759);
-    assert_eq!(admission.sha256_compression_blocks(), 13);
+    assert_eq!(admission.digest_derivations(), 3);
+    assert_eq!(admission.canonical_entries(), 3);
+    assert_eq!(admission.canonical_encoded_bytes(), 1170);
+    assert_eq!(admission.sha256_input_bytes(), 1389);
+    assert_eq!(admission.sha256_compression_blocks(), 23);
     assert_eq!(admission.digest_text_materializations(), 0);
     for phase in [
         phases.installation(),

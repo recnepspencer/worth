@@ -34,7 +34,8 @@ fn authenticated_actor_cannot_be_relabelled_in_payment_input() {
     };
     let (instance, operation) = journey::prepare_approved_payment_operation(&workflow, &relabelled);
     let denied = workflow
-        .perform_apply(
+        .advanced()
+        .execute_operation(
             instance,
             &operation,
             relabelled,

@@ -86,7 +86,25 @@ fn performed_publication_lease_blocks_explicit_reclamation_after_branch_retireme
 
     let (fixture, owner, expected) = setup();
     let cell = owner.state.branches.root_cell().expect("bootstrapped cell");
-    let ready = ready_relational_publication(execution, &fixture, &owner, expected.clone());
+    let prepared = crate::lifecycle::RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected.clone(),
+        crate::publication::CompositePublicationIntent::without_signal(
+            worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
+        .with_successor_observation()
+        .with_prepared_relational_candidate(
+            fixture.prepare_relational_owner_candidate(execution, "one-shot-observation"),
+        ),
+        &crate::publication::RuntimeWorldCancellationSource::new().token(),
+        None,
+    )
+    .expect("native reservation precedes all effects");
+    let ready = super::publication::ready_from_prepared(
+        &owner,
+        prepared,
+        "reserved observation publication settles",
+    );
     let performed = match ready.publish(&cell, CompositeLateCancellationPosture::NotRequested) {
         RuntimeWorldPublicationOutcome::Performed(performed) => performed,
         other => panic!("publication performs: {other:?}"),
@@ -99,7 +117,15 @@ fn performed_publication_lease_blocks_explicit_reclamation_after_branch_retireme
         .unwrap();
     assert_eq!(lease.commit_identity(), &identity);
     let mut consumed = performed.consume();
-    drop(consumed.take_successor_observation());
+    let observation = consumed
+        .take_successor_observation()
+        .expect("first native consumption retains the reserved successor observation");
+    assert_eq!(observation.selected_commit(), &identity);
+    assert!(
+        consumed.take_successor_observation().is_none(),
+        "native observation cannot be consumed twice"
+    );
+    drop(observation);
     drop(consumed);
     let current = RuntimeWorldObservationService::observe_product_branch(
         owner.as_ref(),

@@ -47,6 +47,7 @@ fn one_binding_with_both_postures_keeps_a_distinct_preserve_row() {
         WorthQueryProducerLifecyclePosture::Preserve
     );
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: support::length(9),
@@ -107,6 +108,7 @@ fn held_required_initial_refreshes_through_preserve_and_reopens_current() {
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".into(),
             replacement_y: support::length(9),

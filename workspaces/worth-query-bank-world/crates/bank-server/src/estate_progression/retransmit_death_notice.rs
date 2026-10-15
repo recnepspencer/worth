@@ -1,60 +1,17 @@
 use bank_domain::{
     estate::{DeathNoticeId, DeathNoticeStatus, EstateAction},
     model::BankPrincipalId,
-    proposals::BankIdempotencyKey,
     schema::{
         BankSchema, DeathNoticeIdentityField, DeathNoticeStatusField, DeathNoticeSubject,
         EstateCase, EstateDeathNotice, EstateDeceased, PrincipalIdentityField,
         RetransmitDeathNoticeEstateOperation,
     },
 };
-use worth_query_host::facade::{
-    admission::authenticated_principal::WorthQueryRequestScope,
-    primary_graph::{
-        WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
-    },
+use worth_query_host::facade::primary_graph::{
+    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
 };
 
 use super::{notify_death::BankDeathNotificationProjectionDenial, BankEstateProgressionDenial};
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
-
-impl BankIdentityRuntime {
-    pub fn retransmit_estate_death_notice_with_key(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        key: &BankIdempotencyKey,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let EstateAction::RetransmitDeathNotice {
-            estate,
-            notice,
-            subject,
-        } = action
-        else {
-            return Err(BankEstateProgressionDenial::CommandInput(
-                "RetransmitDeathNoticeEstateOperation",
-            ));
-        };
-        super::program_outcome::program_outcome(
-            self.request(principal, request)
-                .mutate(bank_domain::schema::RetransmitEstateDeathNotice::new(
-                    estate, notice, subject,
-                ))
-                .idempotency(key)
-                .execute_capability_in_program(
-                    self.application_program(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                ),
-            "RetransmitDeathNoticeEstateOperation",
-            |denial| {
-                denial
-                    .downcast::<BankDeathNotificationProjectionDenial>()
-                    .map(BankEstateProgressionDenial::DeathNotificationProjection)
-            },
-        )
-    }
-}
 
 #[derive(Clone, Copy)]
 pub(crate) struct RetransmitCommand {

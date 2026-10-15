@@ -23,7 +23,7 @@ use super::{
 type Resource = WorthQueryManagedComputationResourceDenial;
 
 /// What a lease refusal is to the computation that asked for the lease.
-pub(super) const fn lease_denial(denial: LeaseDenial) -> Resource {
+pub(in crate::domain_computation) const fn lease_denial(denial: LeaseDenial) -> Resource {
     match denial {
         LeaseDenial::WorkerLimitExceedsParent => Resource::WorkerLimit,
         LeaseDenial::MemoryLimitExceedsParent => Resource::PolicyMemoryLimit,
@@ -53,7 +53,7 @@ pub(super) const fn memory_denial(denial: MemoryLimitDenial) -> Resource {
 
 /// What an owner learns at a checkpoint from the kernel stop it met. Each
 /// stop is its own cause.
-pub(super) const fn checkpoint_denial(
+pub(in crate::domain_computation) const fn checkpoint_denial(
     stop: MapKernelStop,
 ) -> WorthQueryManagedComputationCheckpointDenial {
     match stop {
@@ -269,3 +269,32 @@ mod tests;
 
 mod publication;
 pub(in crate::domain_computation::primary_graph) use publication::publication_execution_kind;
+
+/// Native lifecycle owners keep the original admitted request's exact stop cause.
+pub(in crate::domain_computation) fn advancement_scope_stop(
+    denial: WorkCeilingDenial,
+) -> super::WorthQueryAdvancementDenial {
+    match denial {
+        WorkCeilingDenial::Admission(denial) => {
+            super::WorthQueryAdvancementDenial::Resource(lease_denial(denial))
+        }
+        WorkCeilingDenial::Stopped(stop) => advancement_checkpoint_stop(stop),
+        WorkCeilingDenial::Panicked => super::WorthQueryAdvancementDenial::Panicked,
+    }
+}
+
+pub(in crate::domain_computation) fn advancement_checkpoint_stop(
+    stop: MapKernelStop,
+) -> super::WorthQueryAdvancementDenial {
+    match checkpoint_denial(stop) {
+        WorthQueryManagedComputationCheckpointDenial::Resource(resource) => {
+            super::WorthQueryAdvancementDenial::Resource(resource)
+        }
+        WorthQueryManagedComputationCheckpointDenial::Interrupted(interruption) => {
+            super::WorthQueryAdvancementDenial::Interrupted(interruption)
+        }
+        WorthQueryManagedComputationCheckpointDenial::NestedPatternStopped => {
+            super::WorthQueryAdvancementDenial::NestedStopped
+        }
+    }
+}

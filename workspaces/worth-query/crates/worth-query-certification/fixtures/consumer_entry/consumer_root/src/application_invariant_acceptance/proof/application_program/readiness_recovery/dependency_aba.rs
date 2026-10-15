@@ -17,6 +17,7 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
     .expect("the application authenticates its principal");
     let request = world.application.request(&principal, &scope);
     let mut initial_program = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             PlanarOutputDemand::new("anchor-a"),
@@ -80,6 +81,7 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
         .execute()
         .expect("the direct source remains readable");
     let changed = request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation: PlanarOperation::PublishDerivedOutput(PlanarDerivedOutput {
@@ -102,6 +104,7 @@ pub(crate) fn complete_dependency_aba_advances_the_live_demand(
         .clone();
 
     let mut restored_program = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             PlanarOutputDemand::new("anchor-a"),

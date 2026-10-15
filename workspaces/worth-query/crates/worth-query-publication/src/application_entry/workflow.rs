@@ -4,7 +4,7 @@ mod condition;
 mod definition;
 mod instance;
 mod navigation;
-mod operation;
+pub(in crate::application_entry) mod operation;
 mod ordinary;
 mod progress;
 mod proposal;
@@ -13,10 +13,12 @@ pub use approval::WorthQueryWorkflowApprovalSigningRequest;
 pub use condition::WorthQueryWorkflowConditionAcceptance;
 
 pub use assessment::{
-    WorthQueryWorkflowAssessmentDemandHandle, WorthQueryWorkflowAssessmentDemandPreparationDenial,
+    WorthQueryAdvancedAssessmentObservation, WorthQueryAdvancedAssessmentRequest,
+    WorthQueryClosedAssessmentObservation, WorthQueryWorkflowAssessmentDemandHandle,
+    WorthQueryWorkflowAssessmentDemandPreparationDenial,
     WorthQueryWorkflowAssessmentDemandPreparationDenialKind,
     WorthQueryWorkflowAssessmentDemandProgress, WorthQueryWorkflowAssessmentDemandRequest,
-    WorthQueryWorkflowAssessmentDemandSettlement,
+    WorthQueryWorkflowAssessmentDemandSettlement, WorthQueryWorkflowAssessmentOperation,
 };
 pub use definition::{
     WorthQueryWorkflowDefinitionPublicationPreparationDenial,
@@ -32,6 +34,7 @@ pub use instance::{
 };
 pub use navigation::WorthQueryWorkflowNavigateBackRequest;
 pub use operation::{
+    WorthQueryAdvancedWorkflowOperation, WorthQueryBoundWorkflowOperation,
     WorthQueryPreparedWorkflowOperationRecovery, WorthQueryWorkflowOperationAcceptanceDenial,
     WorthQueryWorkflowOperationBindingDenial, WorthQueryWorkflowOperationOwnerAcceptanceDenial,
     WorthQueryWorkflowOperationOwnerPosture, WorthQueryWorkflowOperationRecoveryDenial,

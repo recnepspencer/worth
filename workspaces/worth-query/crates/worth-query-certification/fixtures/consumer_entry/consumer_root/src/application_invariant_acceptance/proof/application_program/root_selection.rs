@@ -29,6 +29,7 @@ pub(in crate::application_invariant_acceptance::proof) fn result_set_source_bind
         .into_result_set_observation()
         .expect("one-shot publication retains the result-set proof");
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -80,6 +81,7 @@ pub(in crate::application_invariant_acceptance::proof) fn foreign_program_is_den
         .expect("the source occurrence is readable");
     let source = before.observed_sources()[0].clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -128,6 +130,7 @@ pub(in crate::application_invariant_acceptance::proof) fn undeclared_root_is_den
         .expect("the source occurrence is readable");
     let source = before.observed_sources()[0].clone();
     let denial = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),
@@ -181,6 +184,7 @@ pub(in crate::application_invariant_acceptance::proof) fn truncated_root_is_deni
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
             replacement_y: length(2),

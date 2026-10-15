@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use bank_domain::{estate::DeathNoticeStatus, proposals::BankIdempotencyKey};
 use bank_external_rail::RailProcessHandle;
-use bank_server::{queries, BankCommitReceipt, BankMutationCommitOutcome, BankReadControls};
+use bank_server::{queries, BankCommitReceipt, BankReadControls};
 
 use super::super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
 use super::super::notify_death::fixture::{
@@ -67,43 +67,97 @@ impl CrossGateWorld {
     }
 
     pub(crate) fn commit_second_notification(&self, identity: u8) -> BankCommitReceipt {
-        let outcome = self
-            .fixture
-            .world
-            .runtime
-            .notify_estate_death_with_key(
-                &self.fixture.authenticate_specialist(),
+        let outcome = {
+            let source_actor = &self.fixture.authenticate_specialist();
+            let source_scope = &request_scope();
+            let source_key = &idempotency(identity);
+            let source_intent = bank_domain::schema::NotifyEstateDeath::try_from(
                 bank_domain::estate::EstateAction::NotifyDeath {
                     estate: self.fixture.second_estate,
                     notice: self.fixture.second_notice,
                     subject: self.fixture.other_subject,
                 },
-                &idempotency(identity),
-                &request_scope(),
             )
-            .expect("lawful second death notification reaches commit");
-        let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-            panic!("second reported notice must commit: {outcome:?}");
+            .expect("typed estate command preserves the exact variant");
+            let source_request = self
+                .fixture
+                .world
+                .runtime
+                .request(source_actor, source_scope);
+            let source_operation = self
+                .fixture
+                .world
+                .runtime
+                .mutate(bank_server::mutations::notify_estate_death(source_intent))
+                .as_principal(source_actor)
+                .controls(bank_server::BankMutationControls::new(
+                    (*source_scope).clone(),
+                    (*source_key).clone(),
+                ))
+                .retain_operation()
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+                source_completed,
+            ) = source_operation.advance(&source_request)
+            else {
+                panic!("native source completion required")
+            };
+            assert!(matches!(
+                source_completed.evidence(),
+                worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+            ));
+            let closed_source = source_completed
+                .close_with_evidence(&source_request)
+                .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+            bank_server::BankCommitReceipt::from_closed_source(closed_source)
         };
+        let receipt = outcome;
         receipt
     }
 
     pub(crate) fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
-        let outcome = self
-            .fixture
-            .world
-            .runtime
-            .notify_estate_death_with_key(
-                &self.fixture.authenticate_specialist(),
+        let outcome = {
+            let source_actor = &self.fixture.authenticate_specialist();
+            let source_scope = &request_scope();
+            let source_key = &binding;
+            let source_intent = bank_domain::schema::NotifyEstateDeath::try_from(
                 self.fixture
                     .action(self.fixture.notice, self.fixture.deceased),
-                &binding,
-                &request_scope(),
             )
-            .expect("lawful death notification reaches commit");
-        let BankMutationCommitOutcome::Committed(receipt) = outcome else {
-            panic!("exact reported notice must commit: {outcome:?}");
+            .expect("typed estate command preserves the exact variant");
+            let source_request = self
+                .fixture
+                .world
+                .runtime
+                .request(source_actor, source_scope);
+            let source_operation = self
+                .fixture
+                .world
+                .runtime
+                .mutate(bank_server::mutations::notify_estate_death(source_intent))
+                .as_principal(source_actor)
+                .controls(bank_server::BankMutationControls::new(
+                    (*source_scope).clone(),
+                    (*source_key).clone(),
+                ))
+                .retain_operation()
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
+            let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+                source_completed,
+            ) = source_operation.advance(&source_request)
+            else {
+                panic!("native source completion required")
+            };
+            assert!(matches!(
+                source_completed.evidence(),
+                worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
+            ));
+            let closed_source = source_completed
+                .close_with_evidence(&source_request)
+                .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
+            bank_server::BankCommitReceipt::from_closed_source(closed_source)
         };
+        let receipt = outcome;
         receipt
     }
 

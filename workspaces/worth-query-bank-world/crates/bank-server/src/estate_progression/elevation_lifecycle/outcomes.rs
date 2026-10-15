@@ -17,6 +17,7 @@ use crate::{BankCommitDenialKind, BankCommitDenialStage};
 
 #[derive(Debug)]
 pub enum BankEstateElevationRequestOutcome {
+    CleanupRequired(crate::BankManagedCleanup),
     ProductStale(WorthQueryProductStaleApplication),
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
     NoEffect(WorthQueryApplicationNoEffectCause),
@@ -39,6 +40,7 @@ pub enum BankEstateElevationRequestOutcome {
 
 #[derive(Debug)]
 pub enum BankEstateElevationApprovalOutcome {
+    CleanupRequired(crate::BankManagedCleanup),
     ProductStale(
         WorthQueryProductStaleApplication,
         BankRequestedEstateElevation,
@@ -69,6 +71,7 @@ pub enum BankEstateElevationApprovalOutcome {
 
 #[derive(Debug)]
 pub enum BankEstateElevationCloseOutcome {
+    CleanupRequired(crate::BankManagedCleanup),
     ProductStale(
         WorthQueryProductStaleApplication,
         BankApprovedEstateElevation,
@@ -99,6 +102,7 @@ pub enum BankEstateElevationCloseOutcome {
 
 #[derive(Debug)]
 pub enum BankEstateMandatoryReviewOutcome {
+    CleanupRequired(crate::BankManagedCleanup),
     ProductStale(WorthQueryProductStaleApplication, BankEstateMandatoryReview),
     ProductUnpublished(WorthQueryProductUnpublishedApplication),
     NoEffect(
@@ -127,6 +131,9 @@ pub enum BankEstateMandatoryReviewOutcome {
 impl BankEstateElevationRequestOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationRequestOutcome) -> Self {
         match outcome {
+            WorthQueryElevationRequestOutcome::CleanupRequired(owner) => {
+                Self::CleanupRequired(owner.into())
+            }
             WorthQueryElevationRequestOutcome::ProductStale(stale) => Self::ProductStale(stale),
             WorthQueryElevationRequestOutcome::ProductUnpublished(unpublished) => {
                 Self::ProductUnpublished(unpublished)
@@ -162,6 +169,9 @@ impl BankEstateElevationRequestOutcome {
 impl BankEstateElevationApprovalOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationApprovalOutcome) -> Self {
         match outcome {
+            WorthQueryElevationApprovalOutcome::CleanupRequired(owner) => {
+                Self::CleanupRequired(owner.into())
+            }
             WorthQueryElevationApprovalOutcome::ProductStale(stale, requested) => {
                 Self::ProductStale(stale, BankRequestedEstateElevation::from_query(requested))
             }
@@ -206,6 +216,9 @@ impl BankEstateElevationApprovalOutcome {
 impl BankEstateElevationCloseOutcome {
     pub(crate) fn from_query(outcome: WorthQueryElevationCloseOutcome) -> Self {
         match outcome {
+            WorthQueryElevationCloseOutcome::CleanupRequired(owner) => {
+                Self::CleanupRequired(owner.into())
+            }
             WorthQueryElevationCloseOutcome::ProductStale(stale, approved) => {
                 Self::ProductStale(stale, BankApprovedEstateElevation::from_query(approved))
             }
@@ -250,6 +263,9 @@ impl BankEstateElevationCloseOutcome {
 impl BankEstateMandatoryReviewOutcome {
     pub(crate) fn from_query(outcome: WorthQueryMandatoryReviewOutcome) -> Self {
         match outcome {
+            WorthQueryMandatoryReviewOutcome::CleanupRequired(owner) => {
+                Self::CleanupRequired(owner.into())
+            }
             WorthQueryMandatoryReviewOutcome::ProductStale(stale, mandatory) => {
                 Self::ProductStale(stale, BankEstateMandatoryReview::from_query(mandatory))
             }

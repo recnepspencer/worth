@@ -4,7 +4,10 @@ use bank_domain::model::{BankPrincipalId, Money};
 use bank_domain::proposals::BankProposalDenial;
 use bank_domain::schema::SendMoney;
 use bank_server::{mutations, BankMutationControls, BankPrincipalSeed, BankWorldSeed};
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
+use worth_query_host::facade::application_entry::{
+    WorthQueryApplicationMutationOutcome, WorthQuerySourceCompletion as Completion,
+    WorthQuerySourceOnlyAdvance as Advance,
+};
 
 use super::fixture::{funded_independent_sender_world, funded_personal_world, id, key};
 use crate::support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
@@ -52,12 +55,36 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
         let actor = Arc::clone(&actor);
         let input = input.clone();
         std::thread::spawn(move || {
-            world
+            let scope = request_scope();
+            let request = world.runtime.request(&actor, &scope);
+            let operation = world
                 .runtime
                 .mutate(mutations::send_money(input))
                 .as_principal(&actor)
                 .controls(controls(operation_key))
-                .execute()
+                .retain_operation()
+                .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
+            match operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap()) {
+                Advance::Completed(done) => {
+                    let Completion::Fresh { result, .. } = done.evidence() else {
+                        panic!("fresh send evidence")
+                    };
+                    let journal = result.journal;
+                    assert!(done.close(&request).is_ok());
+                    Ok(journal)
+                }
+                Advance::Terminal(terminal) => {
+                    let Some(WorthQueryApplicationMutationOutcome::DomainDenied(denial)) =
+                        terminal.native_outcome()
+                    else {
+                        panic!("native domain refusal")
+                    };
+                    let denial = denial.clone();
+                    assert!(terminal.close(&request).is_ok());
+                    Err(denial)
+                }
+                _ => panic!("unexpected transfer custody"),
+            }
         })
     };
     let outcomes = [
@@ -67,12 +94,7 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
     assert_eq!(
         outcomes
             .iter()
-            .filter(|outcome| {
-                matches!(
-                    outcome,
-                    Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-                )
-            })
+            .filter(|outcome| { matches!(outcome, Ok(_)) })
             .count(),
         1
     );
@@ -82,16 +104,16 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
             .filter(|outcome| {
                 matches!(
                     outcome,
-                    Ok(WorthQueryApplicationMutationOutcome::DomainDenied(
-                        BankProposalDenial::InsufficientFunds(account)
-                    )) if *account == source
+                    Err(BankProposalDenial::InsufficientFunds(account)) if *account == source
                 )
             })
             .count(),
         1
     );
 
-    let denial = world
+    let scope = request_scope();
+    let request = world.runtime.request(&actor, &scope);
+    let operation = world
         .runtime
         .mutate(mutations::send_money(SendMoney {
             from: source,
@@ -100,14 +122,20 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
         }))
         .as_principal(&actor)
         .controls(controls("program-post-concurrency-overspend"))
-        .execute()
-        .unwrap();
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
+    let Advance::Terminal(terminal) =
+        operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native overspend denial")
+    };
     assert!(matches!(
-        denial,
-        WorthQueryApplicationMutationOutcome::DomainDenied(
+        terminal.native_outcome(),
+        Some(WorthQueryApplicationMutationOutcome::DomainDenied(
             BankProposalDenial::InsufficientFunds(account)
-        ) if account == source
+        )) if *account == source
     ));
+    assert!(terminal.close(&request).is_ok());
 }
 
 #[test]
@@ -144,20 +172,7 @@ fn independent_program_transfers_commit_across_world_generations() {
         4,
         "program-independent-second",
     );
-    let (
-        WorthQueryApplicationMutationOutcome::Committed {
-            result: first_result,
-            ..
-        },
-        WorthQueryApplicationMutationOutcome::Committed {
-            result: second_result,
-            ..
-        },
-    ) = (first, second)
-    else {
-        panic!("both independent program transfers must commit");
-    };
-    assert_ne!(first_result.journal, second_result.journal);
+    assert_ne!(first, second);
 }
 
 fn execute_send(
@@ -166,10 +181,7 @@ fn execute_send(
     source: bank_domain::model::AccountId,
     recipient: u64,
     operation_key: &str,
-) -> WorthQueryApplicationMutationOutcome<
-    BankProposalDenial,
-    bank_domain::schema::MoneyMovementResult,
-> {
+) -> bank_domain::model::JournalEntryId {
     let request = request_scope();
     let actor = block_on(world.runtime.authenticate_with(
         &world.authentication,
@@ -177,7 +189,7 @@ fn execute_send(
         &request,
     ))
     .unwrap();
-    world
+    let operation = world
         .runtime
         .mutate(mutations::send_money(SendMoney {
             from: source,
@@ -186,8 +198,20 @@ fn execute_send(
         }))
         .as_principal(&actor)
         .controls(controls(operation_key))
-        .execute()
-        .unwrap()
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
+    let fresh = world.runtime.request(&actor, &request);
+    let Advance::Completed(done) =
+        operation.advance(&fresh, std::num::NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("independent native send")
+    };
+    let Completion::Fresh { result, .. } = done.evidence() else {
+        panic!("fresh journal")
+    };
+    let journal = result.journal;
+    assert!(done.close(&fresh).is_ok());
+    journal
 }
 
 fn controls(operation_key: &str) -> BankMutationControls {

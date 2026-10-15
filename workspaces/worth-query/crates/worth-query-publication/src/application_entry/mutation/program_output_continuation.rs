@@ -28,6 +28,8 @@ use crate::application_entry::{
     WorthQueryOutputDemandControls, WorthQueryRequiredOutputPreparationDenial,
 };
 
+use worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies;
+
 mod branch;
 mod edge;
 mod leaf;
@@ -60,6 +62,7 @@ pub enum ProgramOutputContinuationProgress {
     Settled {
         outputs: Vec<ProgramOutputRecord>,
         work: ProgramOutputTraversalWork,
+        dependencies: Option<WorthQueryRetainedQueryDependencies>,
     },
 }
 

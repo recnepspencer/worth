@@ -250,3 +250,6 @@ pub(super) fn map_expiry(
         ) => BankRecoveryExpiryEvaluation::Expired(BankRecoveryExpiryDecision { query }),
     }
 }
+
+mod disposal;
+pub use disposal::{BankRecoveryDisposalDenial, BankRecoveryDisposalReceipt};

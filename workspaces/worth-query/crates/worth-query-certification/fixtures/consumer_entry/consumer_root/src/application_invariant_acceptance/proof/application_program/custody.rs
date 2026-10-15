@@ -44,6 +44,7 @@ pub(super) fn abandoned_and_superseded_preparations_are_bounded(
         "caller disposal leaves exact prepared custody with the owner"
     );
     let mut recovered = request
+        .advanced()
         .recover_required_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             &world.application,
             &abandoned_receipt,
@@ -223,7 +224,7 @@ type ProgramApplication =
 
 type Prepared = worth_query_host::facade::application_entry::WorthQueryPerformedApplicationMutation<
     ConsumerSchema,
-    PlanarSourceAdjustment,
+    worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
 >;
@@ -244,6 +245,7 @@ fn prepare<'a>(
         .observed_sources()[0]
         .clone();
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: key.to_owned(),
             replacement_y: length(y),
@@ -271,7 +273,7 @@ fn controls() -> WorthQueryOutputDemandControls {
 fn settle<'a>(
     application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<ConsumerSchema, crate::ConsumerProgram>,
     performed: &mut worth_query_host::facade::application_entry::WorthQueryStartedRequiredOutputs<ConsumerSchema,
-        PlanarSourceAdjustment,
+        worth_query_topology_entry::PlanarSourceAdjustmentBinding<ConsumerSchema>,
         crate::ConsumerProgram,
         crate::ConsumerProgramRoot,
     >,

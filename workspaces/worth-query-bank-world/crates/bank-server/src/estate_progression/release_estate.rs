@@ -6,51 +6,9 @@ pub use projection::BankEstateReleaseProjectionDenial;
 use bank_domain::{
     estate::{EstateAction, EstateCaseId, LegalAuthorityId, MandatoryReviewId},
     model::BankPrincipalId,
-    proposals::BankIdempotencyKey,
 };
-use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 
 use super::BankEstateProgressionDenial;
-use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationCommitOutcome};
-
-impl BankIdentityRuntime {
-    pub fn release_estate_with_key(
-        &self,
-        principal: &BankAuthenticatedPrincipal,
-        action: EstateAction,
-        key: &BankIdempotencyKey,
-        request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let EstateAction::ReleaseEstate {
-            estate,
-            executor,
-            authority,
-            review,
-        } = action
-        else {
-            return Err(BankEstateProgressionDenial::CommandInput(
-                "ReleaseEstateOperation",
-            ));
-        };
-        super::program_outcome::program_outcome(
-            self.request(principal, request)
-                .mutate(bank_domain::schema::ReleaseEstate::new(
-                    estate, executor, authority, review,
-                ))
-                .idempotency(key)
-                .execute_capability_in_program(
-                    self.application_program(),
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                ),
-            "ReleaseEstateOperation",
-            |denial| {
-                denial
-                    .downcast::<BankEstateReleaseProjectionDenial>()
-                    .map(BankEstateProgressionDenial::EstateReleaseProjection)
-            },
-        )
-    }
-}
 
 #[derive(Clone, Copy)]
 pub(crate) struct ReleaseCommand {

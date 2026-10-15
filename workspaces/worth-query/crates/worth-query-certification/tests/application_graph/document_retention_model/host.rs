@@ -26,7 +26,7 @@ use worth_query_host::facade::{declaration, primary_graph, runtime};
 #[path = "host/world_resources.rs"]
 mod world_resources;
 use world_resources::world_resources;
-pub use world_resources::WORKFLOW_DEFINITION_BYTES;
+pub use world_resources::{ACTIVE_WORLD_OBSERVATIONS, WORKFLOW_DEFINITION_BYTES};
 
 use super::assessment_output::{
     OrdinaryRetentionAssessmentBinding, OrdinaryRetentionAssessmentHandler,
@@ -287,6 +287,7 @@ fn seed_host(
     seed_operator(graph, &principal_binding);
     seed_document(graph);
     super::workflow::seed_authoring(graph);
+    super::program_adoption::seed(graph);
     Ok(())
 }
 
@@ -361,3 +362,9 @@ pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }
+
+#[path = "host/owning_workflow.rs"]
+mod owning_workflow;
+pub use owning_workflow::{
+    publish_owner_workflow, publish_owner_workflow_with_projection, read_owner_approval_grant,
+};

@@ -14,6 +14,8 @@ mod notify_death;
 mod open_estate_case;
 #[path = "estate_operations/phase8_cross_gate.rs"]
 mod phase8_cross_gate;
+#[path = "estate_operations/phase8_disposal.rs"]
+mod phase8_disposal;
 #[path = "estate_operations/phase8_exact_handle_authority.rs"]
 mod phase8_exact_handle_authority;
 #[path = "estate_operations/phase8_ordinary_commit_cost.rs"]
@@ -44,3 +46,9 @@ mod recognize_executor;
 mod release_estate;
 #[path = "estate_operations/undeclared_external_effect.rs"]
 mod undeclared_external_effect;
+
+#[path = "estate_operations/program_adoption_authorization.rs"]
+mod program_adoption_authorization;
+
+#[path = "estate_operations/owning_sources.rs"]
+mod owning_sources;

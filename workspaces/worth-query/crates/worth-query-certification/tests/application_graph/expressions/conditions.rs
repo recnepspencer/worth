@@ -196,6 +196,7 @@ fn change_advance_grant(court: &Court, status: &str, key: u64) {
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(court.instance.branch())
+        .advanced()
         .mutate(WorkflowGrantStatusIntent {
             input: WorkflowGrantStatusInput {
                 grant_identity: "workflow-advance-grant".to_owned(),

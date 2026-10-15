@@ -18,6 +18,7 @@ mod fact_conversion;
 mod footprint_accounting;
 mod prepared_expectation;
 mod result_set;
+pub(crate) mod retained_dependencies;
 mod retained_parameters;
 mod root_selection;
 mod scope_selector;

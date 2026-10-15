@@ -305,7 +305,7 @@ where
             ProgramOutputContinuationProgress::Pending => {
                 Ok(WorthQueryApplicationProgramOutputProgress::Pending)
             }
-            ProgramOutputContinuationProgress::Settled { outputs, work } => {
+            ProgramOutputContinuationProgress::Settled { outputs, work, dependencies } => {
                 if let Some(source_receipt) = &self.source_receipt {
                     application.complete_program_output_source(
                         &worth_query_execution::publication_boundary::program_publication_access(),
@@ -340,6 +340,7 @@ where
                         root,
                         outputs,
                         work: program_work,
+                        dependencies,
                     },
                 ))
             }

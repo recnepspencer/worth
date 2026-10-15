@@ -11,7 +11,7 @@ use super::authorization_denial::authorization_denial;
 pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDenial {
     use BankEstateProgressionDenial as D;
     match denial {
-        D::ProgramAction(denial) => super::mutation_application::commit_denial(denial.kind()).1,
+        D::ProgramAction(denial) => super::mutation_application::commit_denial(denial.kind()),
         D::ProgramMismatch
         | D::PrincipalBindingInstallation(_)
         | D::IdentityEncoding(_)

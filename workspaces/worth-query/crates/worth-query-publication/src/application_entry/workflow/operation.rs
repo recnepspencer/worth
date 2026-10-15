@@ -16,9 +16,9 @@ use super::progress::WorthQueryWorkflowAdvanceRequest;
 use crate::application_entry::mutation::WorthQueryApplicationMutationRequestWithIdempotency;
 
 #[path = "operation/owner.rs"]
-mod owner;
+pub(in crate::application_entry) mod owner;
 #[path = "operation/recovery.rs"]
-mod recovery;
+pub(in crate::application_entry) mod recovery;
 pub use owner::{
     WorthQueryWorkflowOperationOwnerAcceptanceDenial, WorthQueryWorkflowOperationOwnerPosture,
 };
@@ -236,7 +236,7 @@ where
             | PreparedWorkflowAdvance::AwaitingEvidence { .. }
             | PreparedWorkflowAdvance::AwaitingApproval { .. }
             | PreparedWorkflowAdvance::ReplayOnly { .. } => {
-                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation)
+                return Err(WorthQueryWorkflowOperationAcceptanceDenial::NotAwaitingOperation);
             }
         };
         if !same_requirement(prepared.required(), required) {
@@ -276,3 +276,8 @@ fn same_requirement(left: &RequiredWorkflowOperation, right: &RequiredWorkflowOp
         && left.input_type() == right.input_type()
         && left.input_identity() == right.input_identity()
 }
+
+mod ordinary;
+
+mod bound;
+pub use bound::{WorthQueryAdvancedWorkflowOperation, WorthQueryBoundWorkflowOperation};

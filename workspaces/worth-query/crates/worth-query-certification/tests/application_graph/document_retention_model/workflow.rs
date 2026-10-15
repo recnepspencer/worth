@@ -5,7 +5,7 @@ mod authentication;
 #[path = "workflow/contract.rs"]
 mod contract;
 #[path = "workflow/declaration.rs"]
-mod declaration;
+pub(super) mod declaration;
 #[path = "workflow/definition.rs"]
 mod definition;
 #[path = "workflow/grant_status.rs"]
@@ -84,7 +84,7 @@ pub use review_requirement::{
 };
 pub use runtime::{
     install_workflow_spec, retain_workflow, retain_workflow_with_resources,
-    support_workflow_program,
+    support_workflow_program, workflow_resources,
 };
 pub use start_outcome::{expect_capacity_refused, expect_retired_start, expect_superseded_start};
 

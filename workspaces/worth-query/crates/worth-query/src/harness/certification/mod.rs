@@ -2,7 +2,7 @@ mod core;
 mod requirements;
 
 pub use core::{
-    contains_row, covered_perturbation_classes, digest_parts, unmet_required_assertion_classes,
+    covered_perturbation_classes, digest_parts, unmet_required_assertion_classes,
     unmet_required_rows, CanonicalCertificationRow, CertificationMatrix, HostileExpectation,
     ParityAnchor, RejectionCertificationRow,
 };

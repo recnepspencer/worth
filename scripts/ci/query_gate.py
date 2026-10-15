@@ -38,6 +38,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -50,7 +51,6 @@ FIXTURE = (
 BANK = "workspaces/worth-query-bank-world/Cargo.toml"
 UI = "workspaces/worth-ui/Cargo.toml"
 BOUNDARY = "tools/boundary-check/Cargo.toml"
-
 
 def packages(*names):
     return [part for name in names for part in ("-p", name)]
@@ -68,7 +68,7 @@ FIXTURE_PACKAGES = ("worth-query-topology-entry", "worth-query-parameter-entry",
 ROOT_TESTS = [
     *packages("worth-relational", "worth-signal", "worth-execution",
               "worth-signal-wasm", "worth-server"),
-    "--lib", "--test", "server_contracts",
+    "--lib", "--tests",
 ]
 GROUPS = {
     "root": ROOT_TESTS,
@@ -78,10 +78,12 @@ GROUPS = {
     "ui": ["--manifest-path", UI, "-p", "worth-ui-query-binding", "--lib"],
 }
 
-
 def lib_of(*names):
     return lambda binary: binary["package"] in names and binary["lib"]
 
+
+def package_of(*names):
+    return lambda binary: binary["package"] in names
 
 def everything(_binary):
     return True
@@ -89,9 +91,9 @@ def everything(_binary):
 
 # suite -> (group, which binaries, tests per process, processes at once)
 TEST_SUITES = {
-    "relational": ("root", lib_of("worth-relational"), 150, 4),
-    "signal": ("root", lib_of("worth-signal", "worth-signal-wasm"), 150, 4),
-    "execution": ("root", lib_of("worth-execution"), 150, 2),
+    "relational": ("root", package_of("worth-relational"), 150, 4),
+    "signal": ("root", package_of("worth-signal", "worth-signal-wasm"), 150, 4),
+    "execution": ("root", package_of("worth-execution"), 150, 2),
     "query-execution": ("query", lib_of("worth-query-execution"), 80, 4),
     "query-rest": (
         "query", lambda binary: not lib_of("worth-query-execution")(binary), 150, 1,
@@ -118,15 +120,34 @@ PROCESS_WIDE_PROBES = (
     "tests::application_attempt::predecode_admission::",
 )
 
-
 def clippy(*selection):
     return ["cargo", "clippy", *selection, "--all-targets", "--", "-D", "warnings"]
-
 
 def bash():
     # On Windows a bare `bash` can resolve to the WSL launcher.
     git_bash = Path("C:/Program Files/Git/bin/bash.exe")
     return str(git_bash) if git_bash.exists() else (shutil.which("bash") or "bash")
+
+def consumer_doctest_commands():
+    configuration = tomllib.loads(
+        (ROOT / "tools/boundary-check/config/consumer-docs.toml").read_text(encoding="utf-8")
+    )
+    return [
+        ("doc-" + Path(selection["manifest"]).parent.name,
+         ["cargo", "test", "--doc", "--no-fail-fast", "--jobs", "8",
+          "--manifest-path", selection["manifest"], *packages(*selection["packages"])])
+        for selection in configuration["doctests"]
+    ] + [
+        ("doc-owning-fixtures", ["cargo", "test", "--manifest-path", FIXTURE,
+         "-p", "worth-query-consumer-root", "-p", "worth-query-topology-entry",
+         "--bins", "--lib", "--jobs", "8", "--no-fail-fast", "--",
+         "compiled_examples_match_consumer_documents"]),
+        ("doc-owning-examples", ["cargo", "test", "--manifest-path", QUERY,
+         *packages("worth-query-declaration", "worth-query-execution", "worth-query-publication",
+                   "worth-query-host", "worth-query-certification"),
+         "--example", "authored_workflow", "--example", "ordinary_product_workflow",
+         "--jobs", "8", "--no-fail-fast"]),
+    ]
 
 
 # suite -> [(label, command)], one command at a time
@@ -153,12 +174,10 @@ COMMAND_SUITES = {
          clippy("--manifest-path", UI, *packages("worth-ui-query-binding"))),
     ],
     # Compiled doc examples: no other suite builds them.
-    "doc": [
+    "doc-lower": [
         ("doc-root", ["cargo", "test", "--doc", "--no-fail-fast", *packages(*LOWER)]),
-        ("doc-query",
-         ["cargo", "test", "--doc", "--no-fail-fast", "--manifest-path", QUERY,
-          *packages(*QUERY_PUBLIC, "worth-query-installation")]),
     ],
+    "doc": consumer_doctest_commands(),
     "wasm": [
         ("wasm-check", ["cargo", "check", "-p", "worth-signal-wasm", "--all-targets"]),
     ],
@@ -188,8 +207,7 @@ COMMAND_SUITES = {
 
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
-         "fixture", "ui", "bank", "doc", "wasm", "boundary", "extra"]
-
+         "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
 
 def environment():
     env = dict(os.environ)
@@ -203,11 +221,9 @@ def environment():
         env["RUSTC_WRAPPER"] = "sccache"
     return env
 
-
 def package_name(manifest):
     found = re.search(r'(?m)^name\s*=\s*"([^"]+)"', manifest.read_text(encoding="utf-8"))
     return found.group(1) if found else manifest.parent.name
-
 
 class Gate:
     def __init__(self, out):
@@ -223,6 +239,13 @@ class Gate:
                 argv, cwd=ROOT, env=self.env, stdout=sink, stderr=subprocess.STDOUT
             ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
+        if code != 0:
+            tail = "\n".join(text[-80:]).encode("utf-8")[-16384:].decode(
+                "utf-8", errors="ignore"
+            )
+            print(f"GATE failed command {label}: exit {code}; complete log: {log.resolve()}",
+                  flush=True)
+            print(tail, flush=True)
         return {
             "name": label, "exit": code, "seconds": round(time.time() - started),
             "results": [line for line in text if line.startswith("test result")],
@@ -290,6 +313,9 @@ class Gate:
         if binaries is None:
             return {"suite": suite, "build": "FAILED", "log": build_log, "ok": False}
         shared, alone, whole, listing, total = [], [], [], [], 0
+        # Preserve the CI court's single-threaded process state; separate
+        # fixture chunks still run in parallel processes.
+        test_args = ("--test-threads=1",) if suite == "fixture" else ()
         for binary in filter(want, binaries):
             env = dict(self.env, CARGO_MANIFEST_DIR=binary["cwd"])
             listed = subprocess.run(
@@ -308,7 +334,7 @@ class Gate:
             total += len(names)
             probes = [n for n in names if any(mark in n for mark in PROCESS_WIDE_PROBES)]
             rest = [n for n in names if n not in set(probes)]
-            shared += [(binary, rest[at:at + size], ()) for at in range(0, len(rest), size)]
+            shared += [(binary, rest[at:at + size], test_args) for at in range(0, len(rest), size)]
             if probes:
                 alone.append((binary, probes, ("--test-threads=1",)))
             # (the probes run after every shared chunk has ended)
@@ -350,11 +376,9 @@ class Gate:
                                                 encoding="utf-8")
         return result
 
-
 def failed_tests(lines):
     return sorted({line.split()[1] for line in lines
                    if line.startswith("test ") and line.rstrip().endswith("FAILED")})
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])

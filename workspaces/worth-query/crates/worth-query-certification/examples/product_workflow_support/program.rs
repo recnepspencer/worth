@@ -12,6 +12,10 @@ use super::schema::{
     TemporalIntegrity,
 };
 
+mod action;
+pub use action::AmendTemporalAction;
+use action::TemporalCompletion;
+
 pub struct TemporalExampleProgram;
 pub struct TemporalExampleFeature;
 
@@ -38,7 +42,7 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for TemporalExampleProgram
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalExampleFeature>()
-                .mutation::<AmendTemporalBinding>()
+                .operation_action::<AmendTemporalBinding, TemporalCompletion>()
                 .conditional_operation::<ExecuteTemporal>()
                 .operation::<RevokeTemporalPrincipal>()
                 .finish(),

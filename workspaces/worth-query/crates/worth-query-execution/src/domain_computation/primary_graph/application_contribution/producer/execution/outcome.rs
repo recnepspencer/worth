@@ -135,6 +135,15 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         return Err(denial(kind, identity.to_owned()));
     }
     match outcome {
+        WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
+            let denial = WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ManagedCleanupRequired(
+                    cleanup.cleanup().failure().kind(),
+                ),
+                identity.to_owned(),
+            );
+            Err(denial.with_managed_cleanup(cleanup))
+        }
         WorthQueryApplicationCommitOutcome::Committed(receipt) => Ok(ProducerCommitReceipt {
             receipt,
             publication: CommitPublication::PublishedNow,
@@ -259,7 +268,8 @@ fn refused_budget(
             Deferred::RelationalDeferred(CompanionPreflight(stop)) => stop,
             _ => return None,
         },
-        WorthQueryApplicationCommitOutcome::Committed(_)
+        WorthQueryApplicationCommitOutcome::CleanupRequired(_)
+        | WorthQueryApplicationCommitOutcome::Committed(_)
         | WorthQueryApplicationCommitOutcome::AlreadyCommitted(_)
         | WorthQueryApplicationCommitOutcome::ProductStale(_)
         | WorthQueryApplicationCommitOutcome::ProductUnpublished(_)

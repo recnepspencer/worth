@@ -100,13 +100,17 @@ pub(super) fn producer_qualified_missing_and_stale(
     let isolated = execute_verification(request, application, &[expectation("remote-a")], 967)
         .expect("an unrelated producer remains selectable after the A-source edit");
     assert!(
-        matches!(isolated, WorthQueryApplicationMutationOutcome::Committed { .. }),
+        matches!(
+            isolated,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ),
         "the unrelated current output must remain usable by a real handler and provider: {isolated:?}"
     );
 }
 
 fn publish_initial(request: &Request<'_>, application: &ProgramApplication, scope_key: &str) {
     let mut output = request
+        .advanced()
         .start_program_outputs::<crate::ConsumerProgram, crate::ConsumerProgramRoot>(
             application,
             PlanarOutputDemand::new(scope_key),
@@ -134,6 +138,7 @@ fn adjust_source(
 ) {
     let source = observed_source(request, scope_key);
     let outcome = request
+        .advanced()
         .mutate(PlanarSourceAdjustment {
             scope_key: scope_key.to_owned(),
             replacement_y: length(y),
@@ -168,6 +173,7 @@ fn execute_verification(
         operation: PlanarOperation::VerifyCurrentOutputs(expectations.to_vec()),
     };
     request
+        .advanced()
         .mutate(PlanarEdit(input))
         .expect_source(observed_source(request, "anchor-a"))
         .idempotency(&command)

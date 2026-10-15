@@ -58,81 +58,129 @@ pub enum EstateCommandStoppedOutcome {
     ElevationRequest(BankEstateElevationRequestOutcome),
 }
 
+/// Results from one phase per ordinary source command; specialized authorities stay distinct.
+pub struct EstateCommandOutcomes {
+    pub notify: super::estate_source_outcome::EstateSourceCommandOutcome<
+        bank_domain::schema::NotifyEstateDeath,
+        bank_server::DeathNotificationAction,
+    >,
+    pub retransmit: super::estate_source_outcome::EstateSourceCommandOutcome<
+        bank_domain::schema::RetransmitEstateDeathNotice,
+        bank_server::DeathNoticeRetransmissionAction,
+    >,
+    pub freeze: super::estate_source_outcome::EstateSourceCommandOutcome<
+        bank_domain::schema::FreezeEstateAccount,
+        bank_server::EstateAccountFreezeAction,
+    >,
+    pub open: super::estate_source_outcome::EstateSourceCommandOutcome<
+        bank_domain::schema::OpenEstateCase,
+        bank_server::EstateCaseOpeningAction,
+    >,
+    pub recognize: super::estate_source_outcome::EstateSourceCommandOutcome<
+        bank_domain::schema::RecognizeEstateExecutor,
+        bank_server::ExecutorRecognitionAction,
+    >,
+    pub release: super::estate_source_outcome::EstateSourceCommandOutcome<
+        bank_domain::schema::ReleaseEstate,
+        bank_server::EstateReleaseAction,
+    >,
+    pub disburse: super::estate_source_outcome::EstateSourceCommandOutcome<
+        bank_domain::schema::DisburseEstate,
+        bank_server::EstateDisbursementAction,
+    >,
+    pub specialized: Vec<Result<(), EstateCommandCertificationDenial>>,
+}
 pub fn exercise_estate_commands(
     runtime: &BankIdentityRuntime,
     principal: &BankAuthenticatedPrincipal,
     request: &WorthQueryRequestScope,
     inputs: EstateCommandInputs,
-) -> Vec<Result<(), EstateCommandCertificationDenial>> {
+) -> EstateCommandOutcomes {
     let [notify, retransmit, freeze, open, recognize, delegate, revoke, request_elevation, release, disburse] =
         inputs.actions;
-    vec![
-        runtime
-            .notify_estate_death_with_key(principal, notify, &inputs.notify_idempotency, request)
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .retransmit_estate_death_notice_with_key(
-                principal,
-                retransmit,
-                &inputs.retransmit_idempotency,
-                request,
-            )
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .freeze_estate_account_with_key(principal, freeze, &inputs.freeze_idempotency, request)
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .open_estate_case_with_key(principal, open, &inputs.open_idempotency, request)
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .recognize_estate_executor_with_key(
-                principal,
-                recognize,
-                &inputs.recognize_idempotency,
-                request,
-            )
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .delegate_estate_capability_with_key(
-                principal,
-                delegate,
-                &inputs.delegate_idempotency,
-                request,
-            )
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .revoke_estate_capability_with_key(
-                principal,
-                revoke,
-                &inputs.revoke_idempotency,
-                request,
-            )
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .request_estate_emergency_access_with_key(
-                principal,
-                request_elevation,
-                &inputs.request_idempotency,
-                request,
-            )
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(certified_elevation_request),
-        runtime
-            .release_estate_with_key(principal, release, &inputs.release_idempotency, request)
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-        runtime
-            .disburse_estate_with_key(principal, disburse, &inputs.disburse_idempotency, request)
-            .map_err(EstateCommandCertificationDenial::Progression)
-            .and_then(committed_command),
-    ]
+    let notify = super::estate_source_commands::notify(
+        runtime,
+        principal,
+        request,
+        notify,
+        inputs.notify_idempotency,
+    );
+    let retransmit = super::estate_source_commands::retransmit(
+        runtime,
+        principal,
+        request,
+        retransmit,
+        inputs.retransmit_idempotency,
+    );
+    let freeze = super::estate_source_commands::freeze(
+        runtime,
+        principal,
+        request,
+        freeze,
+        inputs.freeze_idempotency,
+    );
+    let open = super::estate_source_commands::open(
+        runtime,
+        principal,
+        request,
+        open,
+        inputs.open_idempotency,
+    );
+    let recognize = super::estate_source_commands::recognize(
+        runtime,
+        principal,
+        request,
+        recognize,
+        inputs.recognize_idempotency,
+    );
+    let delegate = runtime
+        .delegate_estate_capability_with_key(
+            principal,
+            delegate,
+            &inputs.delegate_idempotency,
+            request,
+        )
+        .map_err(EstateCommandCertificationDenial::Progression)
+        .and_then(committed_command);
+    let revoke = runtime
+        .revoke_estate_capability_with_key(principal, revoke, &inputs.revoke_idempotency, request)
+        .map_err(EstateCommandCertificationDenial::Progression)
+        .and_then(committed_command);
+    let request_elevation = runtime
+        .request_estate_emergency_access_with_key(
+            principal,
+            request_elevation,
+            &inputs.request_idempotency,
+            request,
+        )
+        .map_err(EstateCommandCertificationDenial::Progression)
+        .and_then(certified_elevation_request);
+    let release = super::estate_source_commands::release(
+        runtime,
+        principal,
+        request,
+        release,
+        inputs.release_idempotency,
+    );
+    let disburse = super::estate_source_commands::disburse(
+        runtime,
+        principal,
+        request,
+        disburse,
+        inputs.disburse_idempotency,
+    );
+    // Evaluation above follows the original authority-visible command order.
+    // Assembly only moves the already-owned outcomes; it executes no command.
+    EstateCommandOutcomes {
+        notify,
+        retransmit,
+        freeze,
+        open,
+        recognize,
+        release,
+        disburse,
+        specialized: vec![delegate, revoke, request_elevation],
+    }
 }
 
 fn committed_command(

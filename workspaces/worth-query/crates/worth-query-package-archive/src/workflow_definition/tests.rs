@@ -5,7 +5,6 @@ use crate::compatibility::{
 };
 use crate::denial::WorthQueryPackageArchiveDenialKind as Kind;
 use crate::limits::WorthQueryPackageArchiveLimits;
-use worth_query_declaration::facade::application_program::MIGRATED_WORKFLOW_CONDITION_OPERAND;
 
 mod condition;
 mod operation_requirements;
@@ -123,6 +122,18 @@ fn unsupported_draft_versions_report_their_exact_layer() {
     for (version, posture) in [
         (0, WorthQueryPackageArchiveCompatibilityPosture::InvalidZero),
         (
+            1,
+            WorthQueryPackageArchiveCompatibilityPosture::PredatesWindow,
+        ),
+        (
+            2,
+            WorthQueryPackageArchiveCompatibilityPosture::PredatesWindow,
+        ),
+        (
+            3,
+            WorthQueryPackageArchiveCompatibilityPosture::PredatesWindow,
+        ),
+        (
             WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION + 1,
             WorthQueryPackageArchiveCompatibilityPosture::ExceedsWindow,
         ),
@@ -216,16 +227,7 @@ fn malformed_records_are_refused_by_kind() {
 }
 
 #[test]
-fn version_two_cannot_read_the_version_three_inbound_wait_tag() {
-    let mut draft = Draft::new(2, 8);
-    draft.output.u32(1);
-    draft.output.raw_bytes(&[7]);
-    draft.output.text("wait");
-    assert_eq!(refused(&draft.bytes()), Kind::UnsupportedRecordVariant);
-}
-
-#[test]
-fn version_three_reads_only_portable_inbound_wait_fields() {
+fn current_draft_reads_only_portable_inbound_wait_fields() {
     let mut draft = Draft::current();
     draft.output.u32(1);
     draft.output.raw_bytes(&[7]);
@@ -241,7 +243,7 @@ fn version_three_reads_only_portable_inbound_wait_fields() {
     draft.output.u32(0);
     let decoded =
         decode_workflow_definition_draft(&draft.bytes(), WorthQueryPackageArchiveLimits::DEFAULT)
-            .expect("v3 portable wait draft decodes without a typed marker");
+            .expect("current portable wait draft decodes without a typed marker");
     let DraftMember::AwaitInbound(inbound) = &decoded.nodes[0].member else {
         panic!("tag seven must be a portable inbound wait");
     };

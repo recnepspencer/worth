@@ -184,7 +184,11 @@ pub(super) fn declare(
 }
 
 pub fn unlink_review_requirement(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     idempotency: u64,
 ) -> Result<
     WorthQueryApplicationMutationOutcome<ReviewRequirementDenial, ReviewRequirementUnlinked>,
@@ -199,7 +203,11 @@ pub fn unlink_review_requirement(
 
 /// Issues the same mutation on one exact World product occurrence.
 pub fn unlink_review_requirement_on(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     branch: WorthQueryProductBranch,
     idempotency: u64,
 ) -> Result<
@@ -212,6 +220,7 @@ pub fn unlink_review_requirement_on(
     runtime
         .request(&principal, &scope)
         .on_branch(branch)
+        .advanced()
         .mutate(UnlinkReviewRequirementIntent {
             input: ReviewRequirementInput {
                 resource: DOCUMENT_IDENTITY.to_owned(),

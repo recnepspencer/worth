@@ -76,6 +76,16 @@ publish = false
         "schema_version = 1\nreferences = []\n",
     );
     write_file(root, "tools/boundary-check/config/road1.toml", config_body);
+    write_file(
+        root,
+        "tools/boundary-check/config/consumer-docs.toml",
+        "documents = []\ndoctests = []\n",
+    );
+    write_file(
+        root,
+        "tools/boundary-check/snapshots/consumer-doc-fence-debt.toml",
+        "documents = []\n",
+    );
 }
 
 fn query_audience_config_fragment() -> &'static str {

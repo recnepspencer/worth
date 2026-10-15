@@ -115,6 +115,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         adoption: WorthQueryStoppedBranchSetAdoption,
         coverage: WorthQueryOrderedProgramAdoptionCoverage,
         maximum_selection_work_per_branch: usize,
+        principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreparedBranchSetAdoption, WorthQueryBranchSetAdoptionResumeFailure> {
         let mut retained = Some(adoption);
@@ -138,6 +139,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             coverage.branches(),
             &adoption.target,
             maximum_selection_work_per_branch,
+            principal,
             request,
         ) {
             Ok(prepared) => prepared,

@@ -116,6 +116,7 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
     application
         .runtime
         .request(&principal, &scope)
+        .advanced()
         .mutate(intent.clone())
         .assess_current_authorization()
         .expect("fresh current authorization is observable without execution authority");
@@ -127,11 +128,12 @@ fn program_example_denies_plain_commit_and_conditional_client_admission() {
     let denial = application
         .runtime
         .request(&principal, &scope)
+        .advanced()
         .mutate(intent.clone())
         .without_source()
         .idempotency(&idempotency_key)
         .execute(worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation)
-        .expect_err("the plain entry must deny a program-owned action");
+        .expect_err("the unbound native entry must deny a program-owned action");
     assert!(matches!(
         denial,
         WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired
@@ -333,6 +335,7 @@ fn program_action_from_another_runtime_cannot_commit_this_product() {
     let result = first
         .runtime
         .request(&principal, &scope)
+        .advanced()
         .mutate(amendment("must-not-publish", 2))
         .without_source()
         .idempotency(&0x72_u64)

@@ -7,6 +7,8 @@ use worth_query_host::facade::runtime::{
     WorthQueryProductWorldClock, WorthQueryProductWorldResources,
 };
 
+pub(super) const ACTIVE_WORLD_OBSERVATIONS: u64 = 32;
+
 // Bounds this fixture World's serial request memory and deterministic work.
 pub(super) const EXECUTION_POLICY: worth_foundational::ExecutionRequestPolicy =
     worth_foundational::ExecutionRequestPolicy::new(
@@ -30,7 +32,7 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
                 history_metadata_bytes: 1_048_576,
             },
             observations: RuntimeWorldObservationBudgetInstallation {
-                active_observations: 32,
+                active_observations: ACTIVE_WORLD_OBSERVATIONS,
             },
             publication: RuntimeWorldPublicationBudgetInstallation {
                 active_publication_attempts: 8,
@@ -60,4 +62,21 @@ pub(super) fn world_resources() -> WorthQueryProductWorldResources {
         EXECUTION_POLICY,
     )
     .expect("the consumer's finite World resources are valid")
+}
+
+pub(super) fn application_limits(
+    candidate_bytes: u64,
+    query_bytes: usize,
+) -> worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits {
+    worth_query_host::facade::application_installation::WorthQueryInMemoryApplicationLimits::new(
+        world_resources(),
+        worth_query_host::facade::runtime::WorthQueryApplicationCandidateResourceProfile::physical_resources(
+            4096,
+            candidate_bytes,
+        )
+        .unwrap(),
+        worth_query_host::facade::runtime::WorthQueryApplicationQueryResourceProfile::bounded(4096, query_bytes, 4096, 32)
+            .unwrap(),
+        worth_query_host::facade::primary_graph::SignalConditionalEvaluationBudget::development(),
+    )
 }

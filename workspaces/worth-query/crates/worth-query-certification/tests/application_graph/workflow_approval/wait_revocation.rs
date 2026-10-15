@@ -73,6 +73,7 @@ fn assert_grant_change_denies_wait(
         .idempotency(&(key + 20))
         .for_workflow_operation(&application, &required)
         .expect("the operation binding remains exact")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -104,6 +105,7 @@ fn change_approval_grant(
     let outcome = runtime
         .request(&principal, &scope)
         .on_branch(instance.branch())
+        .advanced()
         .mutate(WorkflowGrantStatusIntent {
             input: WorkflowGrantStatusInput {
                 grant_identity: "workflow-approval-grant".to_owned(),

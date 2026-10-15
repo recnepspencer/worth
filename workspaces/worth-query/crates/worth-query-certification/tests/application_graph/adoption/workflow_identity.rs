@@ -41,11 +41,14 @@ fn equal_content_publications_and_their_instances_never_alias() {
     assert_eq!(inventory.instances().len(), 2);
     assert!(inventory.instance(early.entity_id()).is_some());
     assert!(inventory.instance(late.entity_id()).is_some());
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
 
     assert!(matches!(
         advance_instance(&application, early.clone(), 85_530),
@@ -82,11 +85,14 @@ fn an_advance_prepared_under_the_source_program_is_stale_after_adoption() {
         .idempotency(&85_621_u64)
         .prepare_workflow_advance(&application, instance.clone())
         .expect("the advance prepares under P0");
-    publish_adoption(prepare_second_program_adoption(
+    publish_adoption(
         &application,
-        main,
-        Some(&|inventory| inventory.carry_compatible().unwrap()),
-    ));
+        prepare_second_program_adoption(
+            &application,
+            main,
+            Some(&|inventory| inventory.carry_compatible().unwrap()),
+        ),
+    );
 
     match prepared.execute() {
         WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(_)) => {}

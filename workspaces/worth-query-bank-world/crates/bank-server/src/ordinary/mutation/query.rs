@@ -1,5 +1,7 @@
+mod construction_refusal;
 mod declarations;
 mod execution;
+pub use construction_refusal::BankOperationConstructionRefusal;
 
 pub use declarations::{mutations, BankMutationContract};
 

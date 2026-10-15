@@ -124,6 +124,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                         running,
                         crate::domain_computation::WorthQueryManagedRunTerminalKind::Failed,
                         lease.release_custody(),
+                        false,
                     )
                     .unwrap();
             },

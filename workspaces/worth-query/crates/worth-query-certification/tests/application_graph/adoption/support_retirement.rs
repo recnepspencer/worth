@@ -112,6 +112,7 @@ fn prepared_adoption_custody_blocks_target_support_retirement() {
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
 
@@ -170,11 +171,12 @@ fn unpublished_adoption_prevents_retirement_until_exact_recovery_is_released() {
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let unpublished = match prepared.publish() {
+    let unpublished = match prepared.publish(host.runtime(), &principal, &scope) {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => unpublished,
         _ => panic!("the injected durability loss must retain adoption custody"),
     };
@@ -252,11 +254,12 @@ fn denied_recovery_release_preserves_support_custody_for_retry() {
     let requirements = programs.compare(&target).expect("P0 to P1 compares");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the adoption prepares with exact support custody");
     host.runtime()
         .fail_next_durable_append_for_test(request_execution);
-    let recovery = match prepared.publish() {
+    let recovery = match prepared.publish(host.runtime(), &principal, &scope) {
         WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
             unpublished.into_recovery()
         }
@@ -331,10 +334,11 @@ pub(super) fn adopt(
     let requirements = programs.compare(target).expect("P0 to P1 compares");
     let prepared = programs
         .adopt(&requirements)
+        .expect("declared adoption capability admits")
         .prepare(64)
         .expect("the adoption prepares");
     assert!(matches!(
-        prepared.publish(),
+        prepared.publish(host.runtime(), &principal, &scope),
         WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
     ));
 }

@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::time::Duration;
 
-use bank_http_adapter::{BankHttpCommitDisposition, BankHttpMutationOutcome};
+use bank_http_adapter::BankHttpMutationOutcome;
 use bank_user_node::{
     BankUserNodeAuthorizationOutcome, BankUserNodeDenial, BankUserNodeDenialKind,
     BankUserNodeMutationOutcome,
@@ -103,22 +103,31 @@ async fn assert_update_crosses_processes(
         node,
         &serde_json::json!({
             "request_id": "process-live-send",
-            "controls": { "deadline_milliseconds": 5_000 },
+            "command": "create", "custody_id": "process-live-send", "sequence": 1,
+            "controls": { "deadline_milliseconds": 5_000, "maximum_history_work": 128 },
             "idempotency_key": "process-live-send-key",
-            "operation": "send_money",
-            "from": "fixture:100",
-            "recipient": "fixture:2",
-            "amount_minor_units": 1
+            "operation": { "operation": "send_money",
+            "from": "fixture:100", "recipient": "fixture:2", "amount_minor_units": 1 }
         }),
     )
     .await;
     assert!(matches!(
         mutation,
         BankUserNodeMutationOutcome::Forwarded {
-            response: BankHttpMutationOutcome::Applied {
-                disposition: BankHttpCommitDisposition::Committed,
+            response: BankHttpMutationOutcome::Completed {
+                recovered: false,
                 ..
             }
+        }
+    ));
+    let closed = node_mutation(client, node, &serde_json::json!({
+        "request_id": "process-live-close", "command": "close", "custody_id": "process-live-send", "sequence": 2,
+        "controls": { "deadline_milliseconds": 5000,  }
+    })).await;
+    assert!(matches!(
+        closed,
+        BankUserNodeMutationOutcome::Forwarded {
+            response: BankHttpMutationOutcome::Closed { .. }
         }
     ));
     read_until(stream, transcript, "\"event\":\"update\"").await;

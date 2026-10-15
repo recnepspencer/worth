@@ -34,6 +34,7 @@ pub struct WorthQueryConditionalExecutionProvenance {
     application_attempt_ordinal: Option<u64>,
     terminal: WorthQueryConditionalExecutionTerminal,
     cause: Option<WorthQueryConditionalExecutionCause>,
+    managed_cleanup_run_identity: Option<String>,
     canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases,
 }
 
@@ -67,6 +68,11 @@ impl WorthQueryConditionalExecutionProvenance {
         self.cause.clone()
     }
 
+    /// Native failed terminal or actual release-receipt identity; descriptive only.
+    pub fn managed_cleanup_run_identity(&self) -> Option<&str> {
+        self.managed_cleanup_run_identity.as_deref()
+    }
+
     pub const fn canonical_work(
         &self,
     ) -> worth_query_installation::facade::WorthQueryCanonicalWorkPhases {
@@ -89,6 +95,12 @@ pub(super) fn execution_provenance(
             application_attempt_ordinal: wake.application_attempted.then_some(wake.attempt),
             terminal: terminal(&wake.decision),
             cause: cause(&wake.decision),
+            managed_cleanup_run_identity: match &wake.decision {
+                WorthQueryRetainedConditionalDecision::OperationCleanupRequired(_, cleanup) => {
+                    Some(cleanup.run_identity().to_owned())
+                }
+                _ => None,
+            },
             canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkPhases::new(
                 worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
                 wake.application_admission_canonical_work,
@@ -129,6 +141,9 @@ fn cause(
         Decision::OperationCommitRetryable(_, kind) => Some(Cause::ApplicationCommitDenied(*kind)),
         Decision::OperationSettlementExecutionDenied(_, _, kind) => {
             Some(Cause::SettlementExecutionDenied(*kind))
+        }
+        Decision::OperationCleanupRequired(_, cleanup) => {
+            Some(Cause::ManagedCleanupRequired(cleanup.kind()))
         }
         Decision::OperationProductStale(_, _) => Some(Cause::ProductHeadChanged),
         Decision::OperationNoEffect(_, cause) => Some(Cause::NoEffect(*cause)),
@@ -296,7 +311,8 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::OperationTerminalFailure(_, _) => {
             WorthQueryConditionalExecutionTerminal::Failed
         }
-        WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _) => {
+        WorthQueryRetainedConditionalDecision::OperationCleanupRequired(_, _)
+        | WorthQueryRetainedConditionalDecision::OperationIndeterminate(_, _) => {
             WorthQueryConditionalExecutionTerminal::Indeterminate
         }
         WorthQueryRetainedConditionalDecision::OperationProductUnpublished(_, _) => {

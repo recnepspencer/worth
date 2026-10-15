@@ -198,9 +198,9 @@ impl PreparedSelectedExecutionFinish<'_> {
         Ok(())
     }
 
-    /// Keep the complete denial with the caller. The registry stores only its
-    /// typed kind and posture; all terminal custody is detached under the
-    /// guard and destroyed afterward.
+    /// Return the complete producer stop to its typed demand owner. The row
+    /// stores diagnostics only; failed managed cleanup is never cloned here.
+    /// Retired delivery obligations are detached under the guard and dropped afterward.
     pub(in crate::domain_computation::primary_graph) fn failure(
         self,
         denial: &mut WorthQueryOutputDemandDenial,

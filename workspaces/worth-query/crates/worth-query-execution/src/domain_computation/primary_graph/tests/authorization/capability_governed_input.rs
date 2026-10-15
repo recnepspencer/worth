@@ -289,3 +289,6 @@ fn assert_admission_only_work(
         assert_eq!(phase, WorthQueryCanonicalWorkEvidence::zero());
     }
 }
+
+#[path = "capability_governed_input/funded_capture.rs"]
+mod funded_capture;

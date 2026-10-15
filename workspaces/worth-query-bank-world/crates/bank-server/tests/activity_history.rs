@@ -20,7 +20,6 @@ use bank_server::{
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
 use support::request_scope;
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
-use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryResumeControls;
 
 #[test]
@@ -58,11 +57,25 @@ fn activity_pages_keep_one_exact_basis_across_a_new_commit() {
             request_scope(),
             BankIdempotencyKey::new("activity-page-version-change").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
-        mutation,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-    ));
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
+    let scope = request_scope();
+    let request = fixture.world.runtime.request(&teller, &scope);
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+        completed,
+    ) = mutation.advance(&request, NonZeroUsize::new(20_000).unwrap())
+    else {
+        panic!("native retained deposit completion")
+    };
+    let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+        receipt,
+        ..
+    } = completed.evidence()
+    else {
+        panic!("fresh deposit evidence")
+    };
+    assert!(receipt.emitted_effect_count() > 0);
+    assert!(completed.close(&request).is_ok());
 
     let next_request = request_scope();
     let second = fixture
@@ -178,7 +191,9 @@ fn revocation_before_resume_denies_fresh_page_admission() {
     let (_, continuation) = first.into_parts();
     let continuation = continuation.expect("first page must continue");
 
-    let revoked = fixture
+    let revoked_scope = crate::support::request_scope();
+    let revoked_request = fixture.world.runtime.request(&owner, &revoked_scope);
+    let operation = fixture
         .world
         .runtime
         .mutate(mutations::revoke_account_access(
@@ -192,11 +207,21 @@ fn revocation_before_resume_denies_fresh_page_admission() {
             request_scope(),
             BankIdempotencyKey::new("revoke-continuation-viewer").unwrap(),
         ))
-        .execute();
-    assert!(matches!(
+        .retain_operation()
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
+    let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
-        Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
+    ) = operation.advance(&revoked_request)
+    else {
+        panic!("fresh source completion")
+    };
+    assert!(matches!(
+        revoked.evidence(),
+        worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh { .. }
     ));
+    revoked
+        .close(&revoked_request)
+        .unwrap_or_else(|(_, cause)| panic!("lawful source close: {cause:?}"));
 
     let resume_request = request_scope();
     let resumed = fixture
@@ -277,11 +302,25 @@ fn activity_order_follows_committed_account_sequence_not_derived_identity() {
                 request_scope(),
                 BankIdempotencyKey::new(key).unwrap(),
             ))
-            .execute();
-        assert!(matches!(
-            outcome,
-            Ok(WorthQueryApplicationMutationOutcome::Committed { .. })
-        ));
+            .retain_operation()
+            .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
+        let scope = request_scope();
+        let request = fixture.world.runtime.request(&teller, &scope);
+        let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
+            completed,
+        ) = outcome.advance(&request, NonZeroUsize::new(20_000).unwrap())
+        else {
+            panic!("native retained deposit completion")
+        };
+        let worth_query_host::facade::application_entry::WorthQuerySourceCompletion::Fresh {
+            receipt,
+            ..
+        } = completed.evidence()
+        else {
+            panic!("fresh deposit evidence")
+        };
+        assert!(receipt.emitted_effect_count() > 0);
+        assert!(completed.close(&request).is_ok());
     }
 
     let request = request_scope();

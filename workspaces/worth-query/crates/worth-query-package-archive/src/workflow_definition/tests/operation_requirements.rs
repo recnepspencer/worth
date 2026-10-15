@@ -17,11 +17,8 @@ fn operation(version: u16, requirements: Option<&str>) -> Vec<u8> {
 }
 
 #[test]
-fn old_operation_drafts_preserve_absent_evidence_and_new_drafts_distinguish_empty() {
+fn current_operation_drafts_distinguish_absent_and_empty_evidence() {
     for (version, encoded, expected) in [
-        (1, None, None),
-        (2, None, None),
-        (3, None, None),
         (4, Some(""), None),
         (
             4,

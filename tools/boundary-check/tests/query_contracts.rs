@@ -5,6 +5,8 @@ mod query_source_fixture;
 
 #[path = "query_contracts/audience.rs"]
 mod audience;
+#[path = "query_contracts/consumer_docs.rs"]
+mod consumer_docs;
 #[path = "query_contracts/internal_authority_topology.rs"]
 mod internal_authority_topology;
 #[path = "query_contracts/macro_equivalence.rs"]

@@ -17,7 +17,7 @@ pub(super) async fn execute_approval<A>(
     registry: &mut BankHttpElevationRegistry,
     request: AdmittedBankHttpElevationTransition,
     cancellation: WorthQueryCancellationSource,
-) -> BankHttpElevationApprovalOutcome
+) -> super::super::native_route::NativeRouteResult<BankHttpElevationApprovalOutcome>
 where
     A: BankHttpApplicationAuthenticator,
 {
@@ -25,25 +25,26 @@ where
     let scope = WorthQueryRequestScope::new(Some(request.deadline), cancellation.token());
     let principal = match application.authenticate(request.credential, &scope).await {
         Ok(principal) => principal,
-        Err(denial) => return approval_denied(Some(request_id), denial),
+        Err(denial) => return (approval_denied(Some(request_id), denial)).into(),
     };
     let owner = BankHttpAuthenticatedOwner::from_principal(&principal);
     match registry.approval_replay(&owner, &request.token, &request.idempotency_key) {
         BankHttpElevationReplay::Applied(facts) => {
-            return approved(
+            return (approved(
                 request_id,
                 BankHttpCommitDisposition::AlreadyCommitted,
                 request.token,
                 facts,
-            );
+            ))
+            .into();
         }
         BankHttpElevationReplay::Conflicting => {
-            return approval_denied(Some(request_id), malformed());
+            return (approval_denied(Some(request_id), malformed())).into();
         }
         BankHttpElevationReplay::Missing => {}
     }
     let Some(requested) = registry.take_requested(&request.token) else {
-        return approval_denied(Some(request_id), stale());
+        return (approval_denied(Some(request_id), stale())).into();
     };
     let action = requested.context.approval_action();
     let outcome = match application
@@ -61,20 +62,31 @@ where
             if let Some(authority) = authority {
                 registry.restore_requested(&request.token, authority);
             }
-            return approval_denied(Some(request_id), estate_denial(denial));
+            return (approval_denied(Some(request_id), estate_denial(denial))).into();
         }
     };
     let (authority, disposition) = match outcome {
+        BankEstateElevationApprovalOutcome::CleanupRequired(custody) => {
+            return super::super::native_route::NativeRouteResult::Cleanup {
+                owner,
+                custody,
+                outcome: BankHttpElevationApprovalOutcome::CleanupRequired {
+                    request_id: request_id.clone(),
+                    custody_id: request_id,
+                    sequence: 1,
+                },
+            };
+        }
         BankEstateElevationApprovalOutcome::ProductStale(_, requested) => {
             registry.restore_requested(&request.token, requested);
-            return approval_denied(Some(request_id), stale());
+            return (approval_denied(Some(request_id), stale())).into();
         }
         BankEstateElevationApprovalOutcome::NoEffect(_, requested) => {
             registry.restore_requested(&request.token, requested);
-            return approval_denied(Some(request_id), unavailable());
+            return (approval_denied(Some(request_id), unavailable())).into();
         }
         BankEstateElevationApprovalOutcome::ProductUnpublished(_) => {
-            return approval_denied(Some(request_id), indeterminate());
+            return (approval_denied(Some(request_id), indeterminate())).into();
         }
         BankEstateElevationApprovalOutcome::Approved(authority) => {
             (authority, BankHttpCommitDisposition::Committed)
@@ -84,24 +96,24 @@ where
         }
         BankEstateElevationApprovalOutcome::Stale { requested, .. } => {
             registry.restore_requested(&request.token, requested);
-            return approval_denied(Some(request_id), stale());
+            return (approval_denied(Some(request_id), stale())).into();
         }
         BankEstateElevationApprovalOutcome::Cancelled(requested) => {
             registry.restore_requested(&request.token, requested);
-            return approval_denied(Some(request_id), cancelled());
+            return (approval_denied(Some(request_id), cancelled())).into();
         }
         BankEstateElevationApprovalOutcome::TimedOut => {
-            return approval_denied(Some(request_id), deadline_exceeded());
+            return (approval_denied(Some(request_id), deadline_exceeded())).into();
         }
         BankEstateElevationApprovalOutcome::Denied { requested, .. }
         | BankEstateElevationApprovalOutcome::Aborted(requested) => {
             registry.restore_requested(&request.token, requested);
-            return approval_denied(Some(request_id), unavailable());
+            return (approval_denied(Some(request_id), unavailable())).into();
         }
         BankEstateElevationApprovalOutcome::Deferred(_)
         | BankEstateElevationApprovalOutcome::SettlementDeferred(_)
         | BankEstateElevationApprovalOutcome::Indeterminate => {
-            return approval_denied(Some(request_id), indeterminate());
+            return (approval_denied(Some(request_id), indeterminate())).into();
         }
     };
     let facts = BankHttpElevationFacts {
@@ -115,7 +127,7 @@ where
         authority,
         facts,
     );
-    approved(request_id, disposition, request.token, facts)
+    approved(request_id, disposition, request.token, facts).into()
 }
 
 fn approved(

@@ -1,6 +1,9 @@
 //! Primary Graph application contracts.
 
 pub use crate::domain_computation::primary_graph::WorthQueryExecutionLeaseDenial;
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryPublicationFaultGuardForTest, WorthQueryPublicationFaultRegistrationDenial,
+};
 
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
@@ -57,13 +60,14 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryInboundVerificationDenial, WorthQueryOpaqueRecoveryWireIdentity,
     WorthQueryPerformedExternalRedispatch, WorthQueryRecoveryClaimStatus,
     WorthQueryRecoveryCompensateAdmission, WorthQueryRecoveryCurrentDecision,
-    WorthQueryRecoveryDisclosureAdmission, WorthQueryRecoveryDisposalReceipt,
-    WorthQueryRecoveryDurabilityPosture, WorthQueryRecoveryEffectAuthority,
-    WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle,
-    WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial,
-    WorthQueryRecoveryHandleDenialKind, WorthQueryRecoveryInspectAuthority,
-    WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
-    WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
+    WorthQueryRecoveryDisclosureAdmission, WorthQueryRecoveryDisposalDenial,
+    WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryDurabilityPosture,
+    WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryExpiryDecision,
+    WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
+    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryInspectionView,
+    WorthQueryRecoveryReconcileAdmission, WorthQueryRecoverySafeRetryAdmission,
+    WorthQueryRecoverySafeRetryDenial,
 };
 pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
@@ -244,16 +248,17 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryProductBranchLease, WorthQueryProductBranchReadIdentity,
     WorthQueryProductObservationLease, WorthQueryProductQueryControls,
     WorthQueryProductStaleApplication, WorthQueryProductUnpublishedApplication,
-    WorthQueryProductUnpublishedRecovery, WorthQueryProgramAdoptionCoverage,
-    WorthQueryProgramAdoptionCoverageDenial, WorthQueryProgramCustodyDisposition,
-    WorthQueryProgramCustodyDispositionInventory, WorthQueryProgramCustodyDispositionKind,
-    WorthQueryProgramMigrationDescription, WorthQueryProgramMigrationPreparationDenial,
-    WorthQueryProjectedApplicationMutation, WorthQueryPublicTemporalOperationAuthorization,
-    WorthQueryPublicTemporalQueryAuthorization, WorthQueryReconstructedOutputEntity,
-    WorthQueryRequestedElevation, WorthQueryRequiredOutputConnectionDenial,
-    WorthQueryRequiredOutputSourcePreparationFailure, WorthQueryRestoredGeneratedOutput,
-    WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
-    WorthQueryReviewedElevation, WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
+    WorthQueryProductUnpublishedRecovery, WorthQueryProgramAdoptionAuthorizationDenial,
+    WorthQueryProgramAdoptionCoverage, WorthQueryProgramAdoptionCoverageDenial,
+    WorthQueryProgramCustodyDisposition, WorthQueryProgramCustodyDispositionInventory,
+    WorthQueryProgramCustodyDispositionKind, WorthQueryProgramMigrationDescription,
+    WorthQueryProgramMigrationPreparationDenial, WorthQueryProjectedApplicationMutation,
+    WorthQueryPublicTemporalOperationAuthorization, WorthQueryPublicTemporalQueryAuthorization,
+    WorthQueryReconstructedOutputEntity, WorthQueryRequestedElevation,
+    WorthQueryRequiredOutputConnectionDenial, WorthQueryRequiredOutputSourcePreparationFailure,
+    WorthQueryRestoredGeneratedOutput, WorthQueryRetainedBatchQueryAdmissionDenial,
+    WorthQueryRetainedGeneratedOutputEntity, WorthQueryReviewedElevation,
+    WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
     WorthQuerySelectedApplicationProducer, WorthQuerySelectedProductOperation,
     WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
@@ -337,3 +342,27 @@ pub use worth_runtime_bridge::facade::{
 pub use crate::domain_computation::primary_graph::principal_target_reads_on_this_thread_for_test;
 
 pub use crate::domain_computation::primary_graph::conditional_intent_read_is_active_for_test;
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest,
+};
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
+};
+pub use crate::domain_computation::{
+    WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
+};
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
+};
+
+pub use crate::domain_computation::WorthQueryManagedRunCleanupFailureKind;
+
+pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
+};

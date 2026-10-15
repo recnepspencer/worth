@@ -21,6 +21,7 @@ fn producer_domain_denial_preserves_reason_and_releases_claim_for_retry() {
     // The provider asks the real handler to verify an output that cannot yet
     // exist. The handler, not a test substitute, owns CurrentOutputMissing.
     let mut output = request
+        .advanced()
         .start_program_outputs::<CheckpointProgram, CheckpointRoot>(
             &application,
             PlanarOutputDemand::new("anchor-a"),

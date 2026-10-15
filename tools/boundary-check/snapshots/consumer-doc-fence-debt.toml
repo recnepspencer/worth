@@ -1,0 +1,53 @@
+# Unclassified Rust fence debt. Rows must only decrease; CI compares the predecessor.
+
+[[documents]]
+path = "docs/build-an-application.md"
+unclassified = 0
+
+[[documents]]
+path = "docs/how-it-works.md"
+unclassified = 0
+
+[[documents]]
+path = "docs/api.md"
+unclassified = 0
+
+[[documents]]
+path = "docs/capability-index.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/README.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query-host/README.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/AI_README.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/foundations/programs-and-adoption.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/execution/application-aftermath-and-recovery.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/workflow/README.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/domain-capabilities/execution-resource-admission-and-managed-runs.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md"
+unclassified = 0
+
+[[documents]]
+path = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+unclassified = 0

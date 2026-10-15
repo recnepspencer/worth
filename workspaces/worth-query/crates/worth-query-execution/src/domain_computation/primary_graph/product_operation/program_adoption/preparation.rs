@@ -1,6 +1,7 @@
 mod dispositions;
 mod migration;
 mod selection;
+mod selector_indexes;
 mod state;
 mod workflow;
 
@@ -47,6 +48,7 @@ pub enum WorthQueryBranchAdoptionActivationDenial {
 /// Why a branch adoption could not be prepared. Nothing was published.
 #[derive(Debug)]
 pub enum WorthQueryBranchAdoptionPreparationDenial {
+    Authorization(super::authorization::WorthQueryProgramAdoptionAuthorizationDenial),
     /// The caller's read request stopped.
     ReadExecution(
         Result<
@@ -111,10 +113,14 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
         slot: usize,
     },
     /// A validation scope names an entity type the schema does not declare.
-    UnknownEntityScope { entity: String },
+    UnknownEntityScope {
+        entity: String,
+    },
     /// A validation scope names a relation; adoption revalidates only entity
     /// scopes.
-    RelationScopeUnsupported { relation: String },
+    RelationScopeUnsupported {
+        relation: String,
+    },
     /// Selecting what to revalidate would exceed the work limit. The fields
     /// give the limit and the work consumed.
     SelectionLimitExceeded {
@@ -127,6 +133,10 @@ pub enum WorthQueryBranchAdoptionPreparationDenial {
     TransactionAdmission(
         worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial,
     ),
+    /// The exact predecessor snapshot could not be retained for selector maintenance.
+    SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
+    /// Selected installed selector generations could not be maintained on the candidate.
+    SelectorMaintenance(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
     /// The adoption's changes could not be staged in the branch transaction.
     TransactionStaging(worth_relational::facade::mvcc::RelationalTransactionStagingDenial),
     /// A custom invariant of the target program rejected the prepared adoption;
@@ -167,10 +177,8 @@ impl From<crate::domain_computation::execution_runtime::product_world::activatio
 /// candidate make it impossible to construct from a target revision alone.
 #[must_use = "a prepared adoption owns a reserved publication attempt"]
 pub struct WorthQueryPreparedBranchAdoption {
-    pub(super) owner: std::sync::Weak<worth_runtime_world::facade::RuntimeWorldOwner<(), (), (), (), ()>>,
+    pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) owner_identity: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
-    pub(super) host_policy: worth_foundational::ExecutionRequestPolicy,
-    pub(super) host_request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     pub(super) source: ApplicationProgramRevision,
     pub(super) target: ApplicationProgramRevision,
     pub(super) requirements: WorthQueryProgramAdoptionRequirements,
@@ -187,6 +195,10 @@ pub struct WorthQueryPreparedBranchAdoption {
 }
 
 impl WorthQueryPreparedBranchAdoption {
+    pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
+        self.branch
+    }
+
     pub fn source(&self) -> &ApplicationProgramRevision {
         &self.source
     }
@@ -216,8 +228,14 @@ impl WorthQueryPreparedBranchAdoption {
     }
 }
 
-pub(super) fn prepare<Schema: ApplicationSchema>(
+pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
+    admission: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
     target: &ApplicationProgramRevision,
@@ -231,6 +249,7 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
     state::prepare(
         execution,
+        admission,
         phase,
         selected,
         target,

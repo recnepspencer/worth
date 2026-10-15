@@ -85,3 +85,14 @@ pub mod workflow_proposal {
         WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
     };
 }
+
+/// Opaque original-discovery evidence for Publication's complete-set guard.
+pub mod discovery_currentness {
+    pub use crate::domain_computation::primary_graph::application_query::{
+        WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
+    };
+}
+
+pub mod operation_input_capture {
+    pub use crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial;
+}

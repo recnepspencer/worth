@@ -57,6 +57,7 @@ fn installed_alias_full_oracle_preserves_output_and_rejects_later_output_change(
             .execute()
             .unwrap();
         request
+            .advanced()
             .mutate(PlanarSourceAdjustment {
                 scope_key: "anchor-b".to_owned(),
                 replacement_y: length(replacement_y),
@@ -202,6 +203,7 @@ fn mutate_anchor<'application>(
         .execute()
         .unwrap();
     request
+        .advanced()
         .mutate(PlanarEdit(PlanarMutation {
             scope_key: "anchor-a".to_owned(),
             operation,

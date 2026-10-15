@@ -11,10 +11,16 @@ pub struct AuthentikAdministration {
 }
 
 impl AuthentikAdministration {
-    pub fn new(api_origin: String, bootstrap_token: String) -> Result<Self, String> {
+    pub fn new(
+        api_origin: String,
+        bootstrap_token: String,
+        trusted_root_pem: &[u8],
+    ) -> Result<Self, String> {
+        let root = reqwest::Certificate::from_pem(trusted_root_pem)
+            .map_err(|error| format!("administration named root invalid: {error}"))?;
         let client = reqwest::ClientBuilder::new()
             .redirect(reqwest::redirect::Policy::none())
-            .danger_accept_invalid_certs(true)
+            .add_root_certificate(root)
             .build()
             .map_err(|error| format!("Authentik administration client failed: {error}"))?;
         Ok(Self {

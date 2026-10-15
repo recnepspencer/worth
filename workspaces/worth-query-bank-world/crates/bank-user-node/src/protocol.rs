@@ -1,8 +1,8 @@
 use bank_http_adapter::{
-    BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome,
+    BankHttpAccountActivityPageOutcome, BankHttpAccountSummaryOutcome, BankHttpEffectControls,
     BankHttpEstateDisbursementOutcome, BankHttpEstateNotificationOutcome, BankHttpMutationControls,
-    BankHttpMutationOperation, BankHttpMutationOutcome, BankHttpRecoveryInspectionOutcome,
-    BankHttpRecoverySafeRetryOutcome, BankHttpRequestControls,
+    BankHttpMutationOperation, BankHttpMutationOutcome, BankHttpMutationReadControls,
+    BankHttpRecoveryInspectionOutcome, BankHttpRecoverySafeRetryOutcome, BankHttpRequestControls,
 };
 use serde::{Deserialize, Serialize};
 
@@ -48,20 +48,53 @@ pub struct BankUserNodeAccountActivityResumeRequest {
     pub continuation: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct BankUserNodeMutationRequest {
-    pub request_id: String,
-    pub controls: BankHttpMutationControls,
-    pub idempotency_key: String,
-    #[serde(flatten)]
-    pub operation: BankHttpMutationOperation,
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields, tag = "command", rename_all = "snake_case")]
+pub enum BankUserNodeMutationRequest {
+    Create {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpMutationControls,
+        idempotency_key: String,
+        operation: BankHttpMutationOperation,
+    },
+    Resume {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpMutationControls,
+    },
+    Read {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpMutationReadControls,
+    },
+    ResumeSource {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpEffectControls,
+    },
+    ReleaseCleanup {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpEffectControls,
+    },
+    Close {
+        request_id: String,
+        custody_id: String,
+        sequence: u64,
+        controls: BankHttpEffectControls,
+    },
 }
-
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct BankUserNodeEstateNotificationRequest {
     pub request_id: String,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub estate: String,
     pub notice: String,
@@ -72,7 +105,7 @@ pub struct BankUserNodeEstateNotificationRequest {
 #[serde(deny_unknown_fields)]
 pub struct BankUserNodeRecoveryRequest {
     pub request_id: String,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub recovery: String,
 }
 
@@ -80,7 +113,7 @@ pub struct BankUserNodeRecoveryRequest {
 #[serde(deny_unknown_fields)]
 pub struct BankUserNodeEstateDisbursementRequest {
     pub request_id: String,
-    pub controls: BankHttpMutationControls,
+    pub controls: BankHttpEffectControls,
     pub idempotency_key: String,
     pub estate: String,
     pub source_account: String,

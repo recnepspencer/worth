@@ -101,7 +101,7 @@ pub(crate) fn publish_batch<Query, QueryResult>(
             .checked_add(terminal.authorization_work().observation_work_units())
             .ok_or(WorthQueryApplicationQueryBatchResourceDenial::CounterOverflow)?;
     }
-    let publication_claim = admission.claim_memory(bytes)?;
+    let publication_claim = admission.claim_publication_memory(bytes)?;
     let mut results = Vec::with_capacity(staged.len());
     for admitted in staged {
         results.push(publish_application_result(admitted));
