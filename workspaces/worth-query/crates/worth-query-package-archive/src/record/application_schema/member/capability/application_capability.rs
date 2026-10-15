@@ -12,6 +12,7 @@ use super::super::super::wire_vocabulary::{decode_type_identity, write_type_iden
 mod bindings;
 mod composition;
 mod elevation;
+mod resource_path;
 mod scope;
 
 pub(super) fn write(
@@ -35,6 +36,7 @@ pub(super) fn write(
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
+    scoped_resource: bool,
 ) -> Result<ErasedApplicationCapabilityContract, Denial> {
     let name = input.text()?.to_owned();
     let capability_type = decode_type_identity(input)?;
@@ -42,7 +44,7 @@ pub(super) fn decode(
     let operation_type = decode_type_identity(input)?;
     let input_type = decode_type_identity(input)?;
     let grant_entity = input.text()?.to_owned();
-    let target = scope::decode_target(input)?;
+    let target = scope::decode_target(input, budget, scoped_resource)?;
     let constraints = scope::decode_constraints(input)?;
     let delegation = scope::decode_delegation(input, budget)?;
     let composition = composition::decode(input, budget)?;

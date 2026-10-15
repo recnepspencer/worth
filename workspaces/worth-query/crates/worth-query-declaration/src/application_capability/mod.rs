@@ -17,6 +17,11 @@ pub(crate) mod lifecycle_effect;
 mod marker_identity;
 mod operation_binding;
 mod reference;
+mod resource_path;
+pub use resource_path::{
+    ApplicationCapabilityResourcePath, ApplicationCapabilityResourcePathBuilder,
+    ApplicationCapabilityResourcePathDenial,
+};
 mod request_projection;
 mod rule_clause;
 mod scope;

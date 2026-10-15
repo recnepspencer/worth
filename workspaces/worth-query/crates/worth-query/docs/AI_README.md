@@ -742,6 +742,18 @@ decision boundary. The path answers **who may perform the requested command**.
 Query also verifies the installed operation, input scope, purpose, exact grant,
 prohibitions, and composition rules.
 
+For a parent grant authorizing an actual descendant mutation/signing scope, use
+`ApplicationCapabilityResourcePath::root(grant_resource_relation, parent_slot)`
+and its typed forward/reverse continuation on the ordinary capability target.
+The request binds the parent through its declared context slot; Query resolves
+that claim and proves the full required path to the actual child. Every Allow
+clause must anchor the same parent slot. Parent predicates and current-child
+membership remain native path semantics, not host lookups or copied grants.
+The rich grant's enabled/purpose/action/trusted-time/revision checks and exact
+retained witness still apply. Rooted delegation/elevation/lifecycle profiles
+are cold-refused, not silently downgraded. Direct resources remain unchanged.
+See the descendant-scope example in the authorization guide below.
+
 - **Exact-grant binding.** When several grants could satisfy a capability,
   Query retains the exact grant witness that authorized the request, and later
   revalidation uses it. An equivalent-looking grant does not silently replace

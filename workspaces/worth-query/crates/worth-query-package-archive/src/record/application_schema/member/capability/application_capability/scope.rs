@@ -29,16 +29,28 @@ pub(super) fn write_target(
 ) -> Result<(), Denial> {
     bindings::write_value(output, value.action())?;
     bindings::write_relation(output, value.resource())?;
+    if !value.resource_path().is_direct() {
+        super::resource_path::write(output, value.resource_path())?;
+    }
     write_relation_dimension(output, value.relation())?;
     write_field_dimension(output, value.field())?;
     bindings::write_value(output, value.purpose())
 }
 pub(super) fn decode_target(
     input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
+    scoped_resource: bool,
 ) -> Result<ApplicationCapabilityTargetDefinition, Denial> {
+    let action = bindings::decode_value(input)?;
+    let head = bindings::decode_relation(input)?;
+    let resource = if scoped_resource {
+        super::resource_path::decode(input, budget, head)?
+    } else {
+        head.into()
+    };
     Ok(ApplicationCapabilityTargetDefinition::new(
-        bindings::decode_value(input)?,
-        bindings::decode_relation(input)?,
+        action,
+        resource,
         decode_relation_dimension(input)?,
         decode_field_dimension(input)?,
         bindings::decode_value(input)?,

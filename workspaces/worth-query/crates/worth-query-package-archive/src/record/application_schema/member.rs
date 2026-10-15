@@ -82,7 +82,7 @@ pub(super) fn decode(
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input),
-        tag @ 6..=10 => capability::decode(tag, input, budget),
+        tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30) => operation::decode(tag, input, budget),
         tag @ 19..=22 => authorization::decode(tag, input, budget),
         tag @ 23..=24 => vocabulary::decode(tag, input),
@@ -116,6 +116,8 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::Relation { .. } => 4,
         ApplicationSchemaMember::PrincipalBinding { .. } => 5,
         ApplicationSchemaMember::ApplicationQuery { .. } => 6,
+        ApplicationSchemaMember::ApplicationCapability { contract }
+            if !contract.target().resource_path().is_direct() => 33,
         ApplicationSchemaMember::ApplicationCapability { .. } => 7,
         ApplicationSchemaMember::ApplicationCapabilityContext { .. } => 8,
         ApplicationSchemaMember::ApplicationCapabilityContextEntitySlot { .. } => 9,

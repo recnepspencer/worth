@@ -65,7 +65,7 @@ mod tests {
             let charges = crate::test_read_stops::charged_prefixes_for_test(&observer).into_iter().map(|(_, required)| required).collect();
             match outcome {
                 Outcome::Committed(_) => (true, None, charges),
-                Outcome::Denied(denial) => (false, Some((denial.stage(), denial.execution_denial_cause(), denial.request_authority())), charges),
+                Outcome::Denied(denial) => (false, Some((denial.stage(), denial.execution_denial_cause(), denial.authorization_denial_kind())), charges),
                 other => panic!("the real commit door has a committed or pre-effect denied answer: {other:?}"),
             }
         }).unwrap()

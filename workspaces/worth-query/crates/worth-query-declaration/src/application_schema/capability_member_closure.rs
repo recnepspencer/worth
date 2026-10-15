@@ -14,6 +14,7 @@ mod declared_dimensions;
 mod delegation_activation_program;
 mod dependencies;
 mod elevation_lifecycle_program;
+mod resource_path;
 mod topology;
 
 use canonical_structure::validate_canonical_structure;
@@ -162,7 +163,10 @@ fn validate_contract(
     contract: &ErasedApplicationCapabilityContract,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     dependencies_are_closed(members, dimensions, contract)?;
-    if !topology_is_valid(contract) || !composition_is_closed(closure, dimensions, contract) {
+    if !resource_path::is_closed(members, dimensions, contract)
+        || !topology_is_valid(contract)
+        || !composition_is_closed(closure, dimensions, contract)
+    {
         return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationCapability);
     }
     Ok(())

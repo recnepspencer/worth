@@ -48,10 +48,9 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    /// Why the request was refused authorization, when that refused the commit.
-    pub(in crate::domain_computation::primary_graph) fn request_authority(
-        &self,
-    ) -> Option<WorthQueryOperationAuthorizationDenialKind> {
+    /// Descriptive retained authorization cause, not access or retry authority.
+    /// `None` means this denial carries no request-authorization cause.
+    pub fn authorization_denial_kind(&self) -> Option<WorthQueryOperationAuthorizationDenialKind> {
         match self.cause.as_deref() {
             Some(DenialCause::RequestAuthority(kind)) => Some(*kind),
             _ => None,

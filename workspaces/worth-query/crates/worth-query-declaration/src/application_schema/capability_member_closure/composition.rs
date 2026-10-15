@@ -75,8 +75,10 @@ fn graph_rule_is_closed(
             !requirement.clauses().is_empty()
                 && requirement.clauses().iter().all(|clause| {
                     clause.path().effect() == expected_effect
+                        && (expected_effect != ApplicationAuthorizationPathEffect::Allow
+                            || allow_root_is_anchored(contract, clause))
                         && closure.authorization_path_is_closed(
-                            contract.target().resource().to(),
+                            contract.target().resource_path().scope_entity(),
                             clause.path(),
                         )
                         && guard_is_owned(contract, clause.guard())
@@ -85,6 +87,20 @@ fn graph_rule_is_closed(
                         })
                 })
         })
+}
+
+fn allow_root_is_anchored(
+    contract: &ErasedApplicationCapabilityContract,
+    clause: &crate::application_capability::ApplicationCapabilityGraphClause,
+) -> bool {
+    let resource = contract.target().resource_path();
+    resource.root_slot().is_none_or(|slot| {
+        clause.context_anchors().iter().any(|anchor| {
+            anchor.slot() == slot
+                && anchor.relation() == resource.head()
+                && anchor.direction() == ApplicationAuthorizationTraversalDirection::Forward
+        })
+    })
 }
 
 fn anchor_is_closed(

@@ -62,6 +62,7 @@ fn append_target(
     let target = contract.target();
     append_value_binding(components, "target.action", target.action());
     append_relation(components, "target.resource", target.resource());
+    super::resource_path::append_canonical(components, target.resource_path());
     append_relation_dimension(components, "target.relation", target.relation());
     append_field_dimension(components, "target.field", target.field());
     append_value_binding(components, "target.purpose", target.purpose());

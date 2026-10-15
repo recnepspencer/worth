@@ -15,40 +15,7 @@ pub(super) fn lower_authorization_path(
 ) -> Result<RelationalAuthorizationPathPlan, WorthQueryOperationAuthorizationDenial> {
     let mut traversals = Vec::with_capacity(path.traversals().len());
     for traversal in path.traversals() {
-        let relation = layout.relation(traversal.relation()).ok_or_else(|| {
-            authorization_denial(
-                traversal.relation(),
-                "authorization relation is not installed",
-            )
-        })?;
-        let from = layout.entity_kind(traversal.from()).ok_or_else(|| {
-            authorization_denial(
-                traversal.from(),
-                "authorization source kind is not installed",
-            )
-        })?;
-        let to = layout.entity_kind(traversal.to()).ok_or_else(|| {
-            authorization_denial(traversal.to(), "authorization target kind is not installed")
-        })?;
-        if relation.from != from || relation.to != to {
-            return Err(authorization_denial(
-                traversal.relation(),
-                "authorization traversal endpoints changed",
-            ));
-        }
-        traversals.push(RelationalAuthorizationTraversal::new(
-            relation.kind,
-            from,
-            to,
-            match traversal.direction() {
-                ApplicationAuthorizationTraversalDirection::Forward => {
-                    RelationalAuthorizationTraversalDirection::Forward
-                }
-                ApplicationAuthorizationTraversalDirection::Reverse => {
-                    RelationalAuthorizationTraversalDirection::Reverse
-                }
-            },
-        ));
+        traversals.push(lower_authorization_traversal(layout, traversal)?);
     }
     let mut predicates = Vec::with_capacity(path.predicates().len());
     for predicate in path.predicates() {
@@ -75,4 +42,44 @@ pub(super) fn lower_authorization_path(
         ));
     }
     Ok(RelationalAuthorizationPathPlan::new(traversals, predicates))
+}
+
+pub(super) fn lower_authorization_traversal(
+    layout: &WorthQueryPrimaryGraphLayout,
+    traversal: &worth_query_declaration::facade::application_schema::ApplicationAuthorizationTraversal,
+) -> Result<RelationalAuthorizationTraversal, WorthQueryOperationAuthorizationDenial> {
+    let relation = layout.relation(traversal.relation()).ok_or_else(|| {
+        authorization_denial(
+            traversal.relation(),
+            "authorization relation is not installed",
+        )
+    })?;
+    let from = layout.entity_kind(traversal.from()).ok_or_else(|| {
+        authorization_denial(
+            traversal.from(),
+            "authorization source kind is not installed",
+        )
+    })?;
+    let to = layout.entity_kind(traversal.to()).ok_or_else(|| {
+        authorization_denial(traversal.to(), "authorization target kind is not installed")
+    })?;
+    if relation.from != from || relation.to != to {
+        return Err(authorization_denial(
+            traversal.relation(),
+            "authorization traversal endpoints changed",
+        ));
+    }
+    Ok(RelationalAuthorizationTraversal::new(
+        relation.kind,
+        from,
+        to,
+        match traversal.direction() {
+            ApplicationAuthorizationTraversalDirection::Forward => {
+                RelationalAuthorizationTraversalDirection::Forward
+            }
+            ApplicationAuthorizationTraversalDirection::Reverse => {
+                RelationalAuthorizationTraversalDirection::Reverse
+            }
+        },
+    ))
 }
