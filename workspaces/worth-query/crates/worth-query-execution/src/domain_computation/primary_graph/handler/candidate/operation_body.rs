@@ -10,6 +10,17 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_creation_unlink<Entity>(
+        &mut self,
+        scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        predecessor: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let target = link
+            .replacement_target()
+            .expect("installed replacement posture");
+        self.candidate.unlink_at_target(&target, scope, predecessor)
+    }
     pub(in crate::domain_computation::primary_graph) fn body_signing_slot(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, ()>,

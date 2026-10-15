@@ -436,6 +436,16 @@ remain separate owners. Guidance and native
 submission share the installed requirements. Creation `link_from_scope` and
 `link_to_scope` bind only the admitted scope and that body's actual created row,
 derive Link membership, and use the existing native relation-effect owner.
+For an at-most-one current-subject link, use creation `replace_from_scope`.
+The installed relation must have outgoing edge maximum exactly one, and the
+operation must declare Reads, Links and Unlinks. Query seals empty/nonempty
+selection and liveness, carries the predecessor, retires only its observed edges
+and links the actual created row in the same guarded publication. Declare a
+separate append-only history/ownership link. Replacement does not delete the old
+subject or supersede signatures. Body v19 preserves this distinct posture;
+old Append bytes remain unchanged. This does not provide arbitrary retargeting,
+approval-round policy, Reopen or existing-subject enrollment. Do not fill those
+joins with host effects or a mutable certified generation counter.
 Creation `initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)`
 binds a unitless actor field to the exact mutation/principal identity codec and
 captures admission's actual principal through the tracked decision observation.

@@ -5,9 +5,11 @@ mod handler;
 mod input;
 mod installation;
 mod output;
+mod replacement;
 mod requirement;
 mod source;
 pub(in crate::domain_computation::primary_graph) use input::{prepare_inputs, PreparedBodyInputs};
+pub(in crate::domain_computation::primary_graph) use replacement::PreparedBodyReplacements;
 pub(in crate::domain_computation::primary_graph) use source::PreparedBodySource;
 
 pub use assessment::{
@@ -27,11 +29,12 @@ pub use requirement::{
 use super::WorthQueryInvariantMutationTarget;
 use serde::{Deserialize, Serialize};
 
-/// A native body decision retains only its exact admitted scope mutation target.
+/// A native body decision retains its exact scope and observed replacement targets.
 pub struct WorthQueryOperationBodyDecision<Schema, Scope> {
     target: WorthQueryInvariantMutationTarget<Schema, Scope>,
     inputs: Option<PreparedBodyInputs>,
     sources: Vec<PreparedBodySource>,
+    replacements: PreparedBodyReplacements<Schema>,
 }
 
 /// A declared source expectation failed before any candidate effect.

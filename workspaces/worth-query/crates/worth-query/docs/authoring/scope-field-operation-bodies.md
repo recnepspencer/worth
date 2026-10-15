@@ -64,6 +64,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   to attribute a created row to the operation's admitted principal;
 - `creation.link_from_scope(relation, "link-slot")` and
   `creation.link_to_scope(relation, "link-slot")` for links to the new row;
+- `creation.replace_from_scope(relation, "link-slot")` to atomically replace an
+  at-most-one outgoing selection with that exact new row;
 - `body.preserve_scope_output::<Binding, Role>()` and
   `creation.create_output::<Binding, Role>()` for fixed typed output correspondence;
 - a completed operation definition's `with_body(body)`;
@@ -265,6 +267,32 @@ enforces the relation's declared integrity and commits row, fields and links
 together. A stale candidate publishes none of them. Appending a creation link
 does not require pretending an existing edge was observed or absent.
 
+For a current-subject pointer, use `replace_from_scope` rather than a host unlink
+followed by a create/link request. Its relation requires declared
+`OperationReads`, `OperationLinks` and `OperationUnlinks`, plus installed
+`integrity.cardinality.source_max == Some(1)`. This bounds outgoing **edges**,
+including duplicates—not merely distinct targets. An unbounded relation or a
+zero limit cannot be used. Direction remains FromScope; replacement is a separate
+`ReplaceSingle` posture, not an inverse link or a flag on the caller's payload.
+
+Decision reads seal the complete outgoing adjacency, including empty selection,
+and root/predecessor liveness. The decision retains the native predecessor
+target. Candidate construction retires exactly the carried old edge IDs and
+links the actual created reference through the existing relation-effect owner;
+it does not reread, choose a first/latest row, or accept an old-subject ID.
+No predecessor means initial selection. Ambiguous authoritative selection fails
+closed. Installation requires room for one unlink per replacement instruction,
+even when this particular invocation starts empty. Conflicting instructions for
+the same selection relation are refused.
+
+Keep ownership/history as a separate append link. Replacement does not delete
+the previous subject, clear its fields or supersede its signatures. Any later
+source edit still follows its own declared native supersession law. Creation,
+history link, predecessor retirement and new selection share one guarded
+publication: concurrent replacement stales a loser without publishing its new
+subject or any link. Exact replay recovers the original outcome without replacing
+again. A prepared consumer over the old selection also becomes stale.
+
 Publication uses ordinary currentness, authorization, invariant and commit
 machinery. A changed dependency can stale an already prepared candidate. A failed
 expectation returns `DomainDenied(SourceMismatch { entity, aspect, field })` before
@@ -424,6 +452,31 @@ For an optional description on that new document, add
 `.initialize_optional_input(Description::reference(), "description")` before
 `finish()`. No dummy empty value needs to be initialized first.
 
+For a new revision with preserved historical membership, combine the two link
+intentions in the same creation:
+
+```rust,ignore
+let body = CreateRevision::reference().body()
+    .in_scope(Document::reference())?
+    .create_in_scope(Revision::reference(), "revision")?
+    .initialize_input(RevisionDescription::reference(), "description")?
+    .link_from_scope(AllRevisions::reference(), "history")?
+    .replace_from_scope(CurrentRevision::reference(), "current")?
+    .create_output::<CreateRevisionBinding, CreatedRevision>()?
+    .finish()?;
+```
+
+Here CurrentRevision is Document→Revision with outgoing edge maximum one;
+AllRevisions is the separate history relation. Initialize every required revision
+field and admit one creation, two links, one unlink and the initializer writes
+in the ordinary binding. The actual supplier example uses the same arrangement
+for Tenant→Deviation selection, preserves both drafts in TenantDrafts, and signs
+each genuinely through Query. The old signature cannot satisfy a related-evidence
+requirement on the new selected subject.
+This is not a complete revision/approval-round lifecycle: declare its own edit,
+signing and business-open policy. Reopen and existing-subject workflow enrollment
+need their own native joins; a current pointer is not that authority.
+
 To expose its actual committed identity, give `CreateDocumentBinding::Output` a
 fixed role whose Entity is Document and Action is `WorthQueryCreateOutput`, then
 add `.create_output::<CreateDocumentBinding, CreatedDocument>()?` to that creation
@@ -499,6 +552,9 @@ retain their previous bytes. Their meaning enters both schema and program identi
 Creation links select portable body record v11; valid no-link v1–v10 encodings
 retain their previous bytes. Direction, endpoints, relation and key enter both
 schema and program meaning, and fresh reconstruction keeps that exact linkage.
+Replacement posture selects body v19 and distinct canonical meaning. Earlier
+Append-only records keep their bytes and decode as Append; an old profile cannot
+silently acquire replacement semantics.
 Principal-identity initializers select portable body record v12; valid bodies
 without them retain their previous v1–v11 encoding. Their exact binding/source
 tuple enters schema and program meaning. An older record cannot consume the new
@@ -531,6 +587,9 @@ expect installation to fill in missing program semantics. Do not turn an
 unsupported before-image, expression or signature consequence into a hidden host
 callback while claiming the body owns it. Advanced handler-backed operations
 remain a different supported surface, not an equivalent declarative body.
+Do not implement replacement with a second host commit, predict a created ID,
+use a mutable generation field to erase old attestations, or reuse an unbounded
+history relation as a current-subject pointer.
 
 ## Current Limits
 
@@ -542,7 +601,8 @@ and Foundation Boolean requirements over scope scalar/presence and distinct
 incoming/outgoing related-item count operands, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage
 initializers or an exact unitless admitted-principal identity initializer,
-links between that creation and its admitted scope, plus fixed
+links between that creation and its admitted scope, including at-most-one outgoing
+selection replacement, plus fixed
 Preserve-scope/Create-slot output uses. It requires
 at least one real creation, scope assignment or output use and unit results.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's

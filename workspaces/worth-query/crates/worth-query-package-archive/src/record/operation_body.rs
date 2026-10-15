@@ -36,7 +36,10 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
+    let version = if body.creation().is_some_and(|creation| creation.links().iter().any(|link|
+        link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle)) {
+        19
+    } else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
         matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::RelatedSignedEvidence { .. })) {
         18
     } else if body.creation().is_some_and(|creation| creation.enrollment().is_some()) {
@@ -179,6 +182,7 @@ pub(super) fn write(
         creation_links::write(
             output,
             body.creation().map_or(&[], |creation| creation.links()),
+            version,
         )?;
     }
     if version >= 13 {
@@ -208,7 +212,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=18) {
+    if !matches!(version, 1..=19) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -306,7 +310,7 @@ pub(super) fn decode(
         Vec::new()
     };
     let links = if version >= 11 {
-        creation_links::decode(input, budget)?
+        creation_links::decode(input, budget, version)?
     } else {
         Vec::new()
     };

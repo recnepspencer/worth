@@ -1,4 +1,5 @@
 //! Execution-only body read; no raw-field API enters the application facade.
+mod replacement;
 use super::super::super::operation_body::{BodyFieldExpectation, PreparedBodySource};
 use super::super::super::{
     application_contribution::advancement_denial, HandlerExecutionDenial,

@@ -12,6 +12,7 @@ use super::WorthQueryApplicationOperationInvariantProjectionReader;
 mod indexed_selection;
 mod prepared_selection;
 pub use prepared_selection::WorthQueryPreparedEntitySelection;
+mod body_replacement;
 mod body_requirement;
 mod field_presence;
 mod operation_body;

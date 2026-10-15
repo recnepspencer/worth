@@ -41,7 +41,9 @@ fn operation_body_link_record(body: &ApplicationOperationBodyProgram) -> String 
         return record;
     };
     framed_record(
-        "operation-body-v10",
+        if creation.links().iter().any(|link| link.posture == crate::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle) {
+            "operation-body-v14"
+        } else { "operation-body-v10" },
         [
             ("body", record),
             (

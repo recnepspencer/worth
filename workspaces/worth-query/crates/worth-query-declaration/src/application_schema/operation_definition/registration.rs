@@ -46,6 +46,12 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             if let Some(creation) = body.creation() {
                 reads.extend(
                     creation
+                        .links()
+                        .iter()
+                        .flat_map(|link| link.replacement_reads()),
+                );
+                reads.extend(
+                    creation
                         .fields()
                         .iter()
                         .filter_map(|step| step.source_read()),
@@ -71,7 +77,9 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 for target in creation
                     .links()
                     .iter()
-                    .map(|link| link.program_target())
+                    .flat_map(|link| {
+                        std::iter::once(link.program_target()).chain(link.replacement_target())
+                    })
                     .collect::<std::collections::BTreeSet<_>>()
                 {
                     self.push_member_in_place(ApplicationSchemaMember::OperationProgram {

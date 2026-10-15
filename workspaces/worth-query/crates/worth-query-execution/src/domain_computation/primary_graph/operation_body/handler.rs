@@ -149,11 +149,16 @@ where
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
+        let replacements = match reader.body_replacements(&self.body) {
+            Ok(replacements) => replacements,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
         match reader.body_scope_target(&self.body) {
             Ok(target) => HandlerResult::Completed(WorthQueryOperationBodyDecision {
                 target,
                 inputs,
                 sources,
+                replacements,
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
@@ -288,7 +293,18 @@ where
                     }
                 }
             }
-            for link in creation.links() {
+            for (index, link) in creation.links().iter().enumerate() {
+                if link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle {
+                    if let Some(predecessor) = &decision.replacements.targets[index] {
+                        let predecessor = match writer.projected_entity(predecessor) {
+                            Ok(target) => target,
+                            Err(cause) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+                        };
+                        if let Err(cause) = writer.body_creation_unlink(&target, &predecessor, link) {
+                            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                        }
+                    }
+                }
                 if let Err(cause) = writer.body_creation_link(&target, &created, link) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }

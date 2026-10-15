@@ -14,7 +14,10 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body
+        if body.creation().is_some_and(|creation| creation.links().iter().any(|link|
+            link.posture == crate::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle)) {
+            "operation-body-v11"
+        } else if body
             .creation()
             .is_some_and(|creation| creation.enrollment().is_some())
         {

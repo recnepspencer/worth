@@ -48,6 +48,8 @@ fn fixture() -> (Body, Vec<Member>) {
         ["History", "Current"]
             .into_iter()
             .map(|name| Link {
+                posture:
+                    crate::application_schema::ApplicationOperationBodyCreationLinkPosture::Append,
                 relation: name.into(),
                 from: "Draft".into(),
                 to: "Evidence".into(),
