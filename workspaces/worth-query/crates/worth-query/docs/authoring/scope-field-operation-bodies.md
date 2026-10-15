@@ -162,6 +162,25 @@ The assessment owns its finding bytes until it is dropped and carries no mutatio
 permit or retained snapshot. A later
 submission observes afresh, and a Clear after preparation stales the candidate.
 
+For a capability-owned binding, use the capability counterpart:
+
+```rust,ignore
+let requirements = request.mutate(intent)
+    .assess_current_capability_body_requirements(program, projection)?;
+```
+
+It uses the same installed body evaluator after fresh encoded-input capability
+admission for the principal, purpose, resource and current grant. The selected
+branch/program/action and admission share one native observation. Conventional
+assessment cannot bypass a required capability; it returns `CapabilityRequired`.
+Revoked, mismatched or unavailable authorization returns its typed denial, not
+an invented Unmet finding. Neither assessment method needs an idempotency key or
+consumes workflow occurrence authority. A guarded operation may be inspected
+before its frontier, but executing it still needs the exact native requirement.
+Met describes only the authored body requirements—not stage eligibility, a signed
+approval, or a mutation permit. Never cache it as authorization or auto-advance
+from it; execution observes and admits afresh.
+
 For an expression requirement, Query evaluates applicability first. False reports
 NotApplicable without reading satisfaction-only operands. Otherwise the Boolean
 satisfaction result reports Met or Unmet. An unmet named rule denies submission

@@ -22,6 +22,7 @@ use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
 mod authorized;
 use authorized::AuthorizedMutation;
 mod capability;
+pub(super) use capability::admit_capability_for_assessment;
 pub(in crate::application_entry) use capability::prepare_capability_selected;
 
 type IntentBinding<Schema, Intent> = <Intent as ApplicationMutationIntent<Schema>>::Binding;
@@ -101,6 +102,32 @@ where
 {
     let preconditions = std::mem::take(&mut request.preconditions);
     authorize(phase, request, preconditions).map(|authorized| authorized.admission)
+}
+
+pub(super) fn admit_for_assessment_selected<Schema, Intent, SourcePreparation>(
+    phase: &AdvancementPhase<'_>,
+    request: &mut WorthQueryApplicationMutationRequest<
+        '_,
+        '_,
+        '_,
+        Schema,
+        Intent,
+        SourcePreparation,
+    >,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+) -> Result<
+    AdmittedMutation<Schema, IntentBinding<Schema, Intent>>,
+    WorthQueryApplicationRequestMutationDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Intent: ApplicationMutationIntent<Schema>,
+    <IntentBinding<Schema, Intent> as ApplicationMutationBinding<Schema>>::ScopeBinding:
+        ApplicationMutationScopeResolution<Schema, IntentPrincipal<Schema, Intent>>,
+{
+    let preconditions = std::mem::take(&mut request.preconditions);
+    authorize_selected(phase, request, preconditions, selected)
+        .map(|authorized| authorized.admission)
 }
 
 fn authorize<Schema, Intent, SourcePreparation>(

@@ -1,13 +1,16 @@
 //! Authorized read-only assessment of an installed body's own requirements.
 use worth_query_declaration::facade::application_operation::{
-    ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,
+    ApplicationCapabilityMutationBinding, ApplicationMutationBinding, ApplicationMutationIntent,
+    ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
+use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 use worth_query_execution::facade::application_installation::{
     WorthQueryProgramApplicationRuntime, WorthQueryProgramOwner,
 };
 use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationInvariantProjectionAuthority, WorthQueryOperationBodyAssessmentDenial,
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationInvariantProjectionAuthority,
+    WorthQueryOperationBodyAssessmentDenial, WorthQuerySelectedProductOperation,
 };
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -24,6 +27,19 @@ pub enum WorthQueryCurrentBodyRequirementAssessmentDenial {
     Native(WorthQueryOperationBodyAssessmentDenial),
 }
 
+type Admission<Schema, Intent> = WorthQueryAdmittedApplicationOperation<
+    Schema,
+    <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<
+        Schema,
+    >>::Operation,
+    <<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<
+        Schema,
+    >>::Input,
+    <<<Intent as ApplicationMutationIntent<Schema>>::Binding as ApplicationMutationBinding<
+        Schema,
+    >>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+>;
+
 impl<Schema, Intent, SourcePreparation>
     WorthQueryApplicationMutationRequest<'_, '_, '_, Schema, Intent, SourcePreparation>
 where
@@ -36,9 +52,56 @@ where
         >,
 {
     pub fn assess_current_body_requirements<Program>(
+        self,
+        program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        projection: &WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+    ) -> Result<
+        WorthQueryCurrentBodyRequirementAssessment,
+        WorthQueryCurrentBodyRequirementAssessmentDenial,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        self.assess_body_requirements_with(
+            program,
+            projection,
+            super::authorization::admit_for_assessment_selected,
+        )
+    }
+
+    /// Inspects requirements with fresh capability authorization but no mutation,
+    /// idempotency identity or workflow occurrence consumption. Findings are descriptive.
+    pub fn assess_current_capability_body_requirements<Program>(
+        self,
+        program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
+        projection: &WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+    ) -> Result<WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentBodyRequirementAssessmentDenial>
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+        Intent::Binding: ApplicationCapabilityMutationBinding<Schema>,
+        <Intent::Binding as ApplicationMutationBinding<Schema>>::Input: Clone + worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
+            Schema, <Intent::Binding as ApplicationCapabilityMutationBinding<Schema>>::Capability,
+            Scope = <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>,
+    {
+        self.assess_body_requirements_with(
+            program,
+            projection,
+            super::authorization::admit_capability_for_assessment,
+        )
+    }
+
+    fn assess_body_requirements_with<Program>(
         mut self,
         program: &WorthQueryProgramApplicationRuntime<Schema, Program>,
         projection: &WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+        authorize: impl FnOnce(
+            &WorthQueryAdvancementPhase<'_>,
+            &mut Self,
+            &WorthQuerySelectedProductOperation<'_, Schema>,
+        ) -> Result<
+            Admission<Schema, Intent>,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
     ) -> Result<
         WorthQueryCurrentBodyRequirementAssessment,
         WorthQueryCurrentBodyRequirementAssessmentDenial,
@@ -87,7 +150,7 @@ where
                             WorthQueryApplicationRequestMutationDenial::BindingInstallation(denial),
                         )
                     })?;
-                let admission = super::authorization::admit_for_assessment(&phase, &mut self)
+                let admission = authorize(&phase, &mut self, &selected)
                     .map_err(WorthQueryCurrentBodyRequirementAssessmentDenial::Request)?;
                 let findings = application
                     .assess_admitted_operation_body_requirements(
