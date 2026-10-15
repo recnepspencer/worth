@@ -13,6 +13,8 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 };
 
 mod approval;
+mod back_action;
+pub(in crate::domain_computation::primary_graph) use back_action::select_back_action_transition;
 mod collection;
 mod identity;
 mod inbound;
@@ -53,7 +55,7 @@ pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowInbound 
     pub(in crate::domain_computation::primary_graph) origin_receipt_identity: [u8; 32],
 }
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct SelectedWorkflowOperation {
     pub(in crate::domain_computation::primary_graph) operation: String,
     pub(in crate::domain_computation::primary_graph) input_type: String,
@@ -217,8 +219,12 @@ pub(in crate::domain_computation::primary_graph) fn select_navigation_back_trans
     progress_basis: &WorkflowTransitionProgressBasis,
 ) -> Result<SelectedWorkflowTransition, WorthQueryApplicationAttemptDenial> {
     let progress = progress_basis.progress();
-    progress.back_target()?;
     let node = select_current_node(compiled, progress)?;
+    if compiled.has_back_action(node.entity()) {
+        return Err(denial(WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+            "business Back requires its declared action binding; cursor-only navigation cannot skip its body"));
+    }
+    progress.back_target()?;
     if matches!(node.kind(), CompiledWorkflowNodeKind::Terminal) {
         return Err(denial(
             WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,

@@ -36,9 +36,14 @@ where
                 self.admission.operation(),
             ));
         }
-        if !installed.advance_binding_matches::<Capability, Operation>()
-            || self.admission.installed_capability_identity()
-                != Some(*installed.advance_capability_identity_bytes())
+        let business_back = matches!(
+            request_kind,
+            WorkflowTransitionRequestKind::BackAction { .. }
+        );
+        if !business_back
+            && (!installed.advance_binding_matches::<Capability, Operation>()
+                || self.admission.installed_capability_identity()
+                    != Some(*installed.advance_capability_identity_bytes()))
         {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch,
@@ -89,6 +94,12 @@ where
         let (live_membership, retire_live_membership) = match observed.live_membership {
             Some(membership) => (membership, true),
             None => {
+                if business_back {
+                    return Err(denial(
+                        WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
+                        "settled workflow has no business Back action",
+                    ));
+                }
                 if request_kind == WorkflowTransitionRequestKind::NavigateBack {
                     return Ok(self.navigation_replay_denial(
                         &layout,
@@ -186,6 +197,33 @@ where
                 });
             }
         };
+        if let WorkflowTransitionRequestKind::BackAction {
+            requested,
+            input_identity,
+        } = &request_kind
+        {
+            let selected = self.select_observed_back_action(
+                execution,
+                &layout,
+                &compiled,
+                &instance,
+                &mut observed,
+                requested,
+                maximum_transitions,
+            )?;
+            facts.append(&mut observed.facts);
+            return self.materialize_back_action_requirement(
+                &layout,
+                &compiled,
+                instance,
+                selected,
+                live_membership,
+                facts,
+                requested.clone(),
+                *input_identity,
+                allowance,
+            );
+        }
         if request_kind == WorkflowTransitionRequestKind::NavigateBack {
             let selected = match select_navigation_back_transition(
                 &compiled,
@@ -235,6 +273,9 @@ where
                 )
             }
             WorkflowTransitionRequestKind::NavigateBack => unreachable!("Back returned above"),
+            WorkflowTransitionRequestKind::BackAction { .. } => {
+                unreachable!("business Back returned above")
+            }
         };
         let selected = match selection {
             Ok(selected) => selected,

@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_program::{
 };
 use worth_relational::facade::identity::EntityId;
 
+mod back_action;
 mod coverage;
 mod dispatch;
 mod identity;
@@ -107,6 +108,12 @@ pub(in crate::domain_computation::primary_graph) struct CompiledWorkflowConnecti
 pub(in crate::domain_computation::primary_graph) enum CompiledWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
+    BackAction {
+        operation: String,
+        input_type: String,
+        binding: String,
+        requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
+    },
     Retry {
         trigger: ApplicationWorkflowControlOutcome,
         reason: String,

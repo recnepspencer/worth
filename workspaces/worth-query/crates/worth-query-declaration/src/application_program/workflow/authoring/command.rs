@@ -161,6 +161,19 @@ impl ApplicationWorkflowAuthoringCommand {
         )
     }
 
+    /// Rebound typed meaning, including when readmitting an untrusted draft.
+    pub fn back_action(
+        source: impl Into<String>,
+        operation: ApplicationWorkflowOperationRef,
+        target: impl Into<String>,
+    ) -> Result<Self, ApplicationWorkflowAuthoringDenial> {
+        Self::connection(
+            source,
+            target,
+            ApplicationWorkflowConnectionKind::BackAction(operation),
+        )
+    }
+
     fn node(
         identity: impl Into<String>,
         kind: ApplicationWorkflowNodeKind,

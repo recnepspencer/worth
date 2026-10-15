@@ -98,6 +98,21 @@ where
         )
     }
 
+    /// Binds the permitted current node, return destination and actual business
+    /// operation once. Native execution must publish its body and navigation together.
+    pub fn back_action<Binding, SourceKind, TargetKind>(
+        &mut self,
+        source: &impl ApplicationWorkflowOutputBinding<SourceKind>,
+        target: &impl ApplicationWorkflowInputBinding<TargetKind>,
+    ) -> &mut Self
+    where
+        Binding: crate::application_operation::ApplicationMutationBinding<Spec::Schema>,
+    {
+        self.connect(source, target, ApplicationWorkflowConnectionKind::BackAction(
+            crate::application_program::workflow::ApplicationWorkflowOperationRef::declared_binding::<Spec, Binding>(),
+        ))
+    }
+
     pub fn proposal_for_assessment<Source, Target>(
         &mut self,
         source: &Source,

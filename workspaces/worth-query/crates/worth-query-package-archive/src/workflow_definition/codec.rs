@@ -25,9 +25,9 @@ use crate::limits::WorthQueryPackageArchiveLimits;
 
 const MAGIC: &[u8; 4] = b"WQWD";
 
-/// Current deterministic workflow definition draft protocol. Version 4
-/// carries operation evidence contracts; versions 1 through 3 remain readable.
-pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 4;
+/// V5 carries business Back actions. Definitions without them retain v4 bytes;
+/// v1 through v4 remain readable unchanged.
+pub const WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION: u16 = 5;
 
 /// The oldest draft protocol still read. Its conditions readmit as migrated
 /// expressions; nothing writes it.
@@ -45,7 +45,9 @@ where
     let limits = limits.narrowed();
     let mut output = BinaryOutput::with_capacity(256);
     output.raw_bytes(MAGIC);
-    output.u16(WORTH_QUERY_WORKFLOW_DEFINITION_DRAFT_PROTOCOL_VERSION);
+    let version = if definition.connections().iter().any(|edge| matches!(edge.kind(),
+        worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(_))) { 5 } else { 4 };
+    output.u16(version);
     records::text(&mut output, Spec::IDENTITY.as_str())?;
     records::text(&mut output, definition.identity().as_str())?;
     encode_limits(&mut output, definition.limits())?;
@@ -119,7 +121,7 @@ pub fn decode_workflow_definition_draft(
     )?;
     let mut connections = Vec::with_capacity(connection_count);
     for _ in 0..connection_count {
-        connections.push(records::decode_connection(&mut input)?);
+        connections.push(records::decode_connection(&mut input, version)?);
     }
     if !input.is_finished() {
         return Err(Denial::new(Kind::TrailingBytes));

@@ -10,8 +10,9 @@ mod retirement;
 pub use compilation::WorthQueryWorkflowCompilationReuseCounters;
 pub(in crate::domain_computation::primary_graph) use compilation::{
     reconstruct_compiled_definition, CompiledWorkflowAssessmentApplicability,
-    CompiledWorkflowDefinition, CompiledWorkflowNode, CompiledWorkflowNodeKind,
-    WorkflowDefinitionCompilationPosture, WorkflowDefinitionCompilationReuse,
+    CompiledWorkflowConnectionKind, CompiledWorkflowDefinition, CompiledWorkflowNode,
+    CompiledWorkflowNodeKind, WorkflowDefinitionCompilationPosture,
+    WorkflowDefinitionCompilationReuse,
 };
 pub use condition::WorkflowConditionOperand;
 pub(in crate::domain_computation::primary_graph) use condition::{

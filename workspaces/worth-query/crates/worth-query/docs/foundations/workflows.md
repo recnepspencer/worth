@@ -730,6 +730,85 @@ replayed. Back spends a step. Back is refused with
 `WorkflowTransitionOperationUnsettled` when it would abandon an approved
 operation that has not settled.
 
+### Business Back actions
+
+Use `back_action` when returning also changes business state or appends an
+audit. This is not historical cursor navigation, cancellation, or rollback.
+Declare the target and its native body binding together:
+
+```rust,ignore
+definition.back_action::<ReturnToDraftBinding, _, _>(&review, &draft);
+```
+
+There is at most one business Back route per source. Its target must be a
+nonterminal prior point reachable along the forward graph; self, forward,
+terminal and ambiguous routes are refused. A Back edge is explicit caller-driven
+meaning, not an automatic control successor. Only an installed local, unsigned
+native operation body with occurrence authority and explicit empty workflow
+execution requirements can serve it. An installed handler, matching name,
+external effect, or approval floor is insufficient.
+
+For example, a return body can require business stage `Review`, assign `Draft`
+and capture the actual source stage and admitted actor in an audit. It should
+not clear document fields or supersede signatures merely because the cursor
+returns. Declare certified dependencies separately through native signing
+lifecycle; a later relevant edit, not navigation alone, supersedes them.
+
+Prepare under the return binding's own capability, not the Advance capability.
+The request supplies intent and logical key, never a destination:
+
+```rust,ignore
+let required = application.request(&principal, &scope)
+    .on_branch(instance.branch())
+    .mutate(ReturnToDraft { identity: identity.clone() })
+    .without_source()
+    .idempotency(&key)
+    .prepare_workflow_back_action(&workflow, instance.clone())?;
+
+let outcome = application.request(&principal, &scope)
+    .on_branch(required.branch())
+    .mutate(ReturnToDraft { identity })
+    .without_source()
+    .idempotency(&key)
+    .for_workflow_operation(&workflow, &required)?
+    .execute_capability_in_program(&program, ExecutionAllocationPolicy::SystemAllocation)?;
+```
+
+Preparation changes nothing. Query derives input identity from the admitted
+input, checks the binding-associated installed capability, resolves the current
+source occurrence and exact route, and retains its facts in the operation
+authority. Normal mutation execution freshly authorizes the request and admits
+the body. Its business effects, audit and native `Returned` settlement publish
+in one candidate. The same compiled route drives incremental progression and
+cold reconstruction; no second host call moves the cursor after commit.
+
+Retain `required` together with the original input and key until the outcome
+is known. Retry through `for_workflow_operation`, not fresh Back preparation
+against a cursor that may already have moved. The retained idempotency owner
+returns the original outcome before trying to reuse consumed authority. A
+different key or input is not the original request. Preserve typed committed,
+stale, indeterminate and recovery outcomes; do not blindly retry a stale action.
+No cross-restart reconstruction of a live requirement is promised by this API.
+
+An ordinary mutation cannot bypass occurrence authority. Cursor-only
+`prepare_workflow_navigate_back` refuses a head with an authored business Back
+action. Back cannot abandon approved-but-unsettled operations or external owner
+custody. Concurrent forward progress makes the entire return stale: no partial
+audit, business change or cursor movement. Closed or ended instances have no
+fresh Back action, and deadlines/step limits still apply to fresh attempts.
+
+Back declarations participate in canonical definition identity, retained native
+facts and adoption dependency coverage even when their operation appears only
+on the action edge. Draft protocol v5 carries the operation, input, binding and
+execution requirements and readmits them against installed vocabulary; it carries
+no authority. Definitions without Back retain their v4 draft encoding. Missing
+or changed members refuse readmission and incompatible program adoption cannot
+silently carry the route.
+
+This surface does not implement business Void, Reopen, an atomic multi-operation
+Submit, external-effect Back, automatic signature invalidation or compensation
+of earlier performed effects. Use the separate owners for those semantics.
+
 ## The ordinary convenience lane
 
 The ordinary lane wraps the common steps on a mutation request:

@@ -246,6 +246,28 @@ fn assessment_applicability_record(
 
 fn connection_record(connection: &ApplicationWorkflowConnection) -> String {
     match connection.kind() {
+        ApplicationWorkflowConnectionKind::BackAction(operation) => {
+            let requirements = operation
+                .workflow_execution_requirements()
+                .map(|requirements| requirements.persistence_identity())
+                .unwrap_or_default();
+            framed_record(
+                "back-action-v1",
+                &[
+                    connection.source().as_str(),
+                    connection.target().as_str(),
+                    operation.identifier(),
+                    operation.input_type().as_str(),
+                    operation.binding().map_or("", |binding| binding.0),
+                    if operation.binding().is_some_and(|binding| binding.2) {
+                        "guarded"
+                    } else {
+                        "unguarded"
+                    },
+                    &requirements,
+                ],
+            )
+        }
         ApplicationWorkflowConnectionKind::Control(outcome) => framed_record(
             "control",
             &[
@@ -297,6 +319,7 @@ const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u8 {
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
+        ApplicationWorkflowControlOutcome::Returned => 9,
     }
 }
 

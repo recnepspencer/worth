@@ -242,6 +242,18 @@ impl WorkflowInstanceProgress {
         transition: SettledWorkflowTransition,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.validate_next(transition)?;
+        if transition.outcome() == ApplicationWorkflowControlOutcome::Returned {
+            if transition.operation_receipt_identity().is_none() {
+                return Err(denial(
+                    "business Back requires its jointly committed operation receipt",
+                ));
+            }
+            let (target, _) = compiled.back_action(transition.node())?;
+            let target = target.entity();
+            self.increment_back_edge(transition.node(), target)?;
+            self.cross_operation_boundary();
+            return self.finish_advance(target);
+        }
         if transition.outcome() == ApplicationWorkflowControlOutcome::NavigatedBack {
             self.back_target()?;
             return self.advance_back();

@@ -267,6 +267,10 @@ pub(super) fn lower_connection(
         .required("variant", ScalarAspectType::UInt64)
         .optional("retry-reason", ScalarAspectType::String)
         .optional("retry-maximum-attempts", ScalarAspectType::UInt64)
+        .optional("back-action-operation", ScalarAspectType::String)
+        .optional("back-action-input-type", ScalarAspectType::String)
+        .optional("back-action-binding", ScalarAspectType::String)
+        .optional("back-action-requirements", ScalarAspectType::String)
         .finish()
         .map_err(|_| invalid_member(CONNECTION_ASPECT))?;
     let registry = register_platform_entity(
@@ -287,6 +291,12 @@ pub(super) fn lower_connection(
             variant,
             retry_reason,
             retry_maximum_attempts,
+            back_action: super::layout::WorkflowBackActionLayout {
+                operation: planned_field_locator(CONNECTION_ASPECT, "back-action-operation")?,
+                input_type: planned_field_locator(CONNECTION_ASPECT, "back-action-input-type")?,
+                binding: planned_field_locator(CONNECTION_ASPECT, "back-action-binding")?,
+                requirements: planned_field_locator(CONNECTION_ASPECT, "back-action-requirements")?,
+            },
         },
     ))
 }

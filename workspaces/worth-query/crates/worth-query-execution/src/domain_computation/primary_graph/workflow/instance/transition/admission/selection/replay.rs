@@ -45,11 +45,17 @@ pub(in crate::domain_computation::primary_graph) fn select_settled_replay_transi
             "settled replay node is absent from the compiled node inventory",
         )
     })?;
-    let (identity, identity_bytes) =
+    let (identity, identity_bytes) = if settled.outcome() == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Returned {
+        if settled.operation_receipt_identity().is_none() {
+            return Err(denial(WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch, "business return history has no operation receipt"));
+        }
+        super::identity::business_return_identity(compiled, instance, node, settled.occurrence(), back_edge_iterations)?
+    } else {
         transition_identity(
             compiled, instance, node, settled.occurrence(), back_edge_iterations,
             settled.outcome() == worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::NavigatedBack,
-        )?;
+        )?
+    };
     Ok(SelectedWorkflowTransitionReplay {
         node_path: node.path().to_owned(),
         identity,

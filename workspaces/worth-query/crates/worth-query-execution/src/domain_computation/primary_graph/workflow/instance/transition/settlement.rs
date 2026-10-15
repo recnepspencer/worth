@@ -79,7 +79,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_operation_set
     visit_transition_facts_from_basis(
         layout,
         TransitionFactBasis::from_settlement(basis),
-        worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome::Completed,
+        basis.outcome(),
         super::super::state::WorkflowInstanceState::Ready,
         Some(operation_receipt_identity),
         emit,

@@ -19,8 +19,7 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowRetainedNode {
     pub(in crate::domain_computation::primary_graph) entity: EntityId,
     pub(in crate::domain_computation::primary_graph) path: String,
     pub(in crate::domain_computation::primary_graph) inbound_origin: Option<String>,
-    /// Empty for evidence joins and terminals, which act through no program
-    /// member; one per operand for a condition; otherwise one.
+    /// Node member dependencies, plus any requested Back action attached to it.
     pub(in crate::domain_computation::primary_graph) dependencies:
         Vec<WorthQueryWorkflowNodeDependency>,
 }
@@ -101,6 +100,33 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
             record.u64(execution, &layout.connection.variant)?,
         )
         .ok_or(WorkflowAdoptionReadDenial::UnreadableEntity { entity: connection })?;
+        if matches!(tag, WorkflowConnectionTag::BackAction) {
+            let required = |locator| {
+                record
+                    .optional_text(execution, locator)?
+                    .filter(|value| !value.is_empty())
+                    .ok_or(unreadable)
+            };
+            let action = &layout.connection.back_action;
+            let dependency = WorthQueryWorkflowNodeDependency::BackAction {
+                identifier: required(&action.operation)?, input_type: required(&action.input_type)?, binding: required(&action.binding)?,
+                requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(&required(&action.requirements)?)
+                    .filter(|requirements| requirements.approval().is_none()).ok_or(unreadable)?,
+            };
+            let source =
+                truth.single_target(execution, connection, layout.connection_source_relation)?;
+            let target =
+                truth.single_target(execution, connection, layout.connection_target_relation)?;
+            if !nodes.iter().any(|node| node.entity == target) {
+                return Err(unreadable);
+            }
+            let source = nodes
+                .iter_mut()
+                .find(|node| node.entity == source)
+                .ok_or(unreadable)?;
+            source.dependencies.push(dependency);
+            continue;
+        }
         if !matches!(
             tag,
             WorkflowConnectionTag::Data(ApplicationWorkflowDataFlow::ApprovalAuthority)
@@ -126,12 +152,12 @@ pub(in crate::domain_computation::primary_graph) fn read_definition_dependencies
                 dependencies
                     .node(*approval)
                     .map(|node| node.dependencies.as_slice()),
-                Some([WorthQueryWorkflowNodeDependency::Approval { .. }])
+                Some(dependencies) if dependencies.iter().any(|dependency| matches!(dependency, WorthQueryWorkflowNodeDependency::Approval { .. }))
             ) && matches!(
                 dependencies
                     .node(*operation)
                     .map(|node| node.dependencies.as_slice()),
-                Some([WorthQueryWorkflowNodeDependency::Operation { .. }])
+                Some(dependencies) if dependencies.iter().any(|dependency| matches!(dependency, WorthQueryWorkflowNodeDependency::Operation { .. }))
             )
         });
     if !joined {

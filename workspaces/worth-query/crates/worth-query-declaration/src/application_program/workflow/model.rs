@@ -101,6 +101,8 @@ pub enum ApplicationWorkflowControlOutcome {
     RetryExhausted,
     /// Owner-published navigation over the settled path, never an authored control arm.
     NavigatedBack,
+    /// A declared business return body and its cursor change settled together.
+    Returned,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -151,6 +153,9 @@ pub enum ApplicationWorkflowConnectionKind {
     Control(ApplicationWorkflowControlOutcome),
     Data(ApplicationWorkflowDataFlow),
     Retry(ApplicationWorkflowRetry),
+    /// An explicitly requested business action returns to this exact target.
+    /// It is neither an automatic control edge nor historical cursor-only Back.
+    BackAction(super::ApplicationWorkflowOperationRef),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

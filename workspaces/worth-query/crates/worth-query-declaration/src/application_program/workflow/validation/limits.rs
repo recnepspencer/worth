@@ -8,7 +8,7 @@ use super::{
 pub(super) fn enforce<Spec>(
     authored: &AuthoredWorkflowDefinition<Spec>,
     work: &mut ValidationWorkMeter,
-) -> Result<(), ApplicationWorkflowValidationDenial>
+) -> Result<usize, ApplicationWorkflowValidationDenial>
 where
     Spec: ApplicationWorkflowSpec,
 {
@@ -76,5 +76,5 @@ where
             port_provenance.to_string(),
         ));
     }
-    Ok(())
+    Ok(effects)
 }

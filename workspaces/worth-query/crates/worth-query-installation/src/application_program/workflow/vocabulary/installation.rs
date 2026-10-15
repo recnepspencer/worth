@@ -30,6 +30,7 @@ use super::{
 
 #[path = "installation/capability_binding.rs"]
 mod capability_binding;
+mod operation;
 
 pub struct WorthQueryApplicationWorkflowSpecInstallation<'installed, Schema, Spec, Program>
 where
@@ -75,40 +76,6 @@ where
             markers: HashSet::new(),
             marker: PhantomData,
         }
-    }
-
-    pub fn operation<Binding>(
-        mut self,
-    ) -> Result<Self, WorthQueryApplicationWorkflowInstallationDenial>
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-    {
-        self.insert_marker(0, TypeId::of::<Binding>(), Binding::IDENTITY)?;
-        if !self
-            .program
-            .actions()
-            .iter()
-            .any(|action| action.ordinary_mutation_binding_type() == Some(TypeId::of::<Binding>()))
-        {
-            return Err(denial(
-                WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInProgram,
-                Binding::IDENTITY,
-            ));
-        }
-        self.schema
-            .installed_mutation_binding::<Binding>()
-            .map_err(|_| {
-                denial(
-                    WorthQueryApplicationWorkflowInstallationDenialKind::OperationNotInstalled,
-                    Binding::IDENTITY,
-                )
-            })?;
-        let mut operation = InstalledWorkflowOperation::declared::<Spec, Binding>();
-        operation.inbound_ref = self
-            .schema
-            .installed_workflow_inbound_ref(Binding::Operation::IDENTIFIER);
-        self.operations.push(operation);
-        Ok(self)
     }
 
     pub fn assessment<Binding>(

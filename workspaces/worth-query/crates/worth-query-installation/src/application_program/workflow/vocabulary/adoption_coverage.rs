@@ -17,6 +17,13 @@ use super::WorthQueryInstalledApplicationWorkflowSpec;
 /// plan to learn what a definition needs.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum WorthQueryWorkflowNodeDependency {
+    /// A requested Back operation declared on this source node's outgoing route.
+    BackAction {
+        identifier: String,
+        input_type: String,
+        binding: String,
+        requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
+    },
     Operation {
         identifier: String,
         input_type: String,
@@ -56,6 +63,11 @@ impl WorthQueryWorkflowNodeDependency {
     /// or query identifier and, when present, its installed binding.
     pub fn program_names(&self) -> impl Iterator<Item = &str> {
         let (identifier, binding) = match self {
+            Self::BackAction {
+                identifier,
+                binding,
+                ..
+            } => (Some(identifier.as_str()), Some(binding.as_str())),
             Self::Operation {
                 identifier,
                 binding,
@@ -191,6 +203,22 @@ where
                     capability_identity: hex(&approval.binding.installed_identity),
                 });
         let mut nodes = operations
+            .chain(
+                self.operations
+                    .iter()
+                    .filter(|operation| operation.supports_back_action)
+                    .filter_map(|operation| {
+                        Some(WorthQueryWorkflowNodeDependency::BackAction {
+                            identifier: operation.identifier.to_owned(),
+                            input_type: operation.input_type.as_str().to_owned(),
+                            binding: operation.binding_identity.to_owned(),
+                            requirements: operation
+                                .reference
+                                .workflow_execution_requirements()?
+                                .clone(),
+                        })
+                    }),
+            )
             .chain(direct)
             .chain(inbound)
             .chain(assessments)

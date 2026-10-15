@@ -29,6 +29,8 @@ mod adapter_owner;
 mod adapter_preparation;
 #[path = "preparation/adapter_replay.rs"]
 mod adapter_replay;
+#[path = "preparation/back_action.rs"]
+mod back_action;
 
 /// Why a workflow transition could not bind to the branch's program: the installed spec
 /// belongs to another schema, the adopted program could not be inspected, the branch runs

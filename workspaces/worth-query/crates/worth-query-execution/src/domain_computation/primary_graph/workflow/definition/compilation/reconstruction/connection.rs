@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+mod back_action;
 use worth_relational::facade::identity::EntityId;
 
 use super::{exact_adjacent, observed_optional_text, observed_optional_u64, observed_u64};
@@ -93,6 +94,9 @@ pub(super) fn compile_connection(
         return Err(invalid_connection());
     }
     let kind = match tag {
+        WorkflowConnectionTag::BackAction => {
+            back_action::observe(execution, runtime, snapshot, layout, entity, facts)?
+        }
         WorkflowConnectionTag::Control(outcome) => CompiledWorkflowConnectionKind::Control(outcome),
         WorkflowConnectionTag::Data(flow) => CompiledWorkflowConnectionKind::Data(flow),
         WorkflowConnectionTag::Retry(trigger) => {

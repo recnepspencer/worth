@@ -8,7 +8,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationWorkflowNodeKind, ApplicationWorkflowRetry,
 };
 
-use super::{DraftConnection, DraftMember, DraftNode};
+use super::{DraftConnection, DraftConnectionKind, DraftMember, DraftNode};
 
 mod await_inbound;
 mod condition;
@@ -169,10 +169,29 @@ pub(super) fn encode_connection(
         ApplicationWorkflowConnectionKind::Control(_) => 1,
         ApplicationWorkflowConnectionKind::Data(_) => 2,
         ApplicationWorkflowConnectionKind::Retry(_) => 3,
+        ApplicationWorkflowConnectionKind::BackAction(_) => 4,
     }]);
     text(output, connection.source().as_str())?;
     text(output, connection.target().as_str())?;
     match kind {
+        ApplicationWorkflowConnectionKind::BackAction(operation) => {
+            text(output, operation.identifier())?;
+            text(output, operation.input_type().as_str())?;
+            text(
+                output,
+                operation
+                    .binding()
+                    .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?
+                    .0,
+            )?;
+            text(
+                output,
+                &operation
+                    .workflow_execution_requirements()
+                    .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?
+                    .persistence_identity(),
+            )?;
+        }
         ApplicationWorkflowConnectionKind::Control(outcome) => {
             output.raw_bytes(&[control_tag(outcome)]);
         }
@@ -186,20 +205,28 @@ pub(super) fn encode_connection(
     Ok(())
 }
 
-pub(super) fn decode_connection(input: &mut BinaryInput<'_>) -> Result<DraftConnection, Denial> {
+pub(super) fn decode_connection(
+    input: &mut BinaryInput<'_>,
+    version: u16,
+) -> Result<DraftConnection, Denial> {
     let tag = input.u8()?;
     let source = nonempty_text(input)?;
     let target = nonempty_text(input)?;
     let kind = match tag {
-        1 => ApplicationWorkflowConnectionKind::Control(control_outcome(input.u8()?)?),
-        2 => ApplicationWorkflowConnectionKind::Data(data_flow(input.u8()?)?),
+        1 => DraftConnectionKind::Control(control_outcome(input.u8()?)?),
+        2 => DraftConnectionKind::Data(data_flow(input.u8()?)?),
         3 => {
             let trigger = control_outcome(input.u8()?)?;
             let reason = input.text()?;
             let retry = ApplicationWorkflowRetry::new(trigger, reason, input.u16()?)
                 .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?;
-            ApplicationWorkflowConnectionKind::Retry(retry)
+            DraftConnectionKind::Retry(retry)
         }
+        4 if version >= 5 => DraftConnectionKind::BackAction {
+            operation: nonempty_text(input)?, input_type: nonempty_text(input)?, binding: nonempty_text(input)?,
+            requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(input.text()?)
+                .ok_or_else(|| Denial::new(Kind::InvalidRecordShape))?,
+        },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(DraftConnection {
@@ -250,6 +277,7 @@ pub(super) const fn control_tag(outcome: ApplicationWorkflowControlOutcome) -> u
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
+        ApplicationWorkflowControlOutcome::Returned => 9,
     }
 }
 

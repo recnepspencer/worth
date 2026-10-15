@@ -83,6 +83,32 @@ pub(super) fn transition_identity(
     Ok((identity, identity_bytes))
 }
 
+pub(super) fn business_return_identity(
+    compiled: &CompiledWorkflowDefinition,
+    instance: EntityId,
+    node: &CompiledWorkflowNode,
+    occurrence: u64,
+    iterations: &OrdMap<(EntityId, EntityId), u64>,
+) -> Result<(String, [u8; 32]), WorthQueryApplicationAttemptDenial> {
+    let (base, _) = transition_identity(compiled, instance, node, occurrence, iterations, false)?;
+    let (target, kind) = compiled.back_action(node.entity())?;
+    let crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowConnectionKind::BackAction { operation, input_type, binding, requirements } = kind else { unreachable!("Back route selected") };
+    let material = canonical_operation_material(vec![
+        ("workflow.transition", base),
+        ("workflow.action", "business-return-v1".to_owned()),
+        ("workflow.return.target", target.path().to_owned()),
+        ("workflow.return.operation", operation.clone()),
+        ("workflow.return.input", input_type.clone()),
+        ("workflow.return.binding", binding.clone()),
+        (
+            "workflow.return.requirements",
+            requirements.persistence_identity(),
+        ),
+    ]);
+    let bytes: [u8; 32] = Sha256::digest(material.as_bytes()).into();
+    Ok((encode(bytes)?, bytes))
+}
+
 fn encode(identity: [u8; 32]) -> Result<String, WorthQueryApplicationAttemptDenial> {
     let mut text = String::with_capacity(64);
     for byte in identity {

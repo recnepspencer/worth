@@ -6,9 +6,9 @@ use worth_query_declaration::facade::application_program::{
     ApplicationWorkflowAuthoringCommand, ApplicationWorkflowAuthoringDenial,
     ApplicationWorkflowAwaitInbound, ApplicationWorkflowCommandAdapter,
     ApplicationWorkflowCondition, ApplicationWorkflowConditionOperand,
-    ApplicationWorkflowConnectionKind, ApplicationWorkflowEvidenceJoinPolicy,
-    ApplicationWorkflowInboundWait, ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind,
-    ApplicationWorkflowSpec, ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
+    ApplicationWorkflowEvidenceJoinPolicy, ApplicationWorkflowInboundWait,
+    ApplicationWorkflowNodeIdentity, ApplicationWorkflowNodeKind, ApplicationWorkflowSpec,
+    ApplicationWorkflowSubjectSelector, AuthoredWorkflowDefinition,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaDeclaration,
@@ -16,8 +16,8 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec;
 
 use super::{
-    DraftCondition, DraftConditionOperand, DraftConnection, DraftMember, DraftNode,
-    WorthQueryUntrustedWorkflowDefinitionDraft,
+    DraftCondition, DraftConditionOperand, DraftConnection, DraftConnectionKind, DraftMember,
+    DraftNode, WorthQueryUntrustedWorkflowDefinitionDraft,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -114,9 +114,7 @@ impl WorthQueryUntrustedWorkflowDefinitionDraft {
                 .map_err(|refused| authoring(&self.start, refused))?,
         );
         for connection in &self.connections {
-            commands.push(
-                command(connection).map_err(|refused| authoring(&connection.source, refused))?,
-            );
+            commands.push(command(connection, installed)?);
         }
         ApplicationWorkflowCommandAdapter::author::<Spec>(
             self.identity.as_str(),
@@ -295,21 +293,43 @@ where
     })
 }
 
-fn command(
+fn command<Schema, Spec>(
     connection: &DraftConnection,
-) -> Result<ApplicationWorkflowAuthoringCommand, ApplicationWorkflowAuthoringDenial> {
+    installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+) -> Result<ApplicationWorkflowAuthoringCommand, Denial>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
     let (source, target) = (connection.source.as_str(), connection.target.as_str());
-    match connection.kind.clone() {
-        ApplicationWorkflowConnectionKind::Control(outcome) => {
+    let command = match connection.kind.clone() {
+        DraftConnectionKind::Control(outcome) => {
             ApplicationWorkflowAuthoringCommand::control(source, outcome, target)
         }
-        ApplicationWorkflowConnectionKind::Data(flow) => {
+        DraftConnectionKind::Data(flow) => {
             ApplicationWorkflowAuthoringCommand::data(source, flow, target)
         }
-        ApplicationWorkflowConnectionKind::Retry(retry) => {
+        DraftConnectionKind::Retry(retry) => {
             ApplicationWorkflowAuthoringCommand::retry(source, retry, target)
         }
-    }
+        DraftConnectionKind::BackAction {
+            operation,
+            input_type,
+            binding,
+            requirements,
+        } => {
+            let rebound = installed
+                .draft_operation(&operation, Some(&binding))
+                .ok_or_else(|| denial(Kind::UnknownMember, source))?;
+            if rebound.input_type().as_str() != input_type
+                || rebound.workflow_execution_requirements() != Some(&requirements)
+            {
+                return Err(denial(Kind::ChangedMember, source));
+            }
+            ApplicationWorkflowAuthoringCommand::back_action(source, rebound, target)
+        }
+    };
+    command.map_err(|refused| authoring(source, refused))
 }
 
 fn denial(kind: Kind, subject: &str) -> Denial {

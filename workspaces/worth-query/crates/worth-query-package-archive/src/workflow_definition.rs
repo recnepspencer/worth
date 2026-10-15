@@ -6,9 +6,7 @@
 //! rebuilds the typed definition, which then validates, binds and publishes
 //! like any other; decoded bytes alone mint nothing.
 
-use worth_query_declaration::facade::application_program::{
-    ApplicationWorkflowConnectionKind, ApplicationWorkflowDefinitionLimits,
-};
+use worth_query_declaration::facade::application_program::ApplicationWorkflowDefinitionLimits;
 
 mod codec;
 mod compatibility;
@@ -133,5 +131,17 @@ pub(crate) struct DraftConditionOperand {
 pub(crate) struct DraftConnection {
     source: String,
     target: String,
-    kind: ApplicationWorkflowConnectionKind,
+    kind: DraftConnectionKind,
+}
+
+/// Untrusted names rebind through installed vocabulary; bytes reconstruct no markers or authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum DraftConnectionKind {
+    Control(worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome),
+    Data(worth_query_declaration::facade::application_program::ApplicationWorkflowDataFlow),
+    Retry(worth_query_declaration::facade::application_program::ApplicationWorkflowRetry),
+    BackAction {
+        operation: String, input_type: String, binding: String,
+        requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
+    },
 }

@@ -15,6 +15,7 @@ mod adoption_coverage;
 mod approval_binding;
 mod draft_vocabulary;
 mod installation;
+mod operation;
 mod support_identity;
 pub use adoption_coverage::{
     WorthQueryWorkflowNodeDependency, WorthQueryWorkflowVocabularyCoverage,
@@ -81,6 +82,7 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) binding_type: TypeId,
     pub(super) binding_identity: &'static str,
     pub(super) requires_workflow_authority: bool,
+    pub(super) supports_back_action: bool,
     pub(super) reference: ApplicationWorkflowOperationRef,
     pub(super) inbound_ref:
         Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,

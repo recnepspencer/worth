@@ -22,7 +22,7 @@ pub(super) struct IndexedConnection<'a> {
 #[derive(Clone, Default)]
 pub(super) struct NodeConnectionSummary {
     incoming_data: [u32; 7],
-    outgoing_control: [u32; 9],
+    outgoing_control: [u32; 10],
     retry_count: u32,
     retry_trigger: Option<ApplicationWorkflowControlOutcome>,
 }
@@ -175,6 +175,9 @@ fn index_connections<'a>(
         let target = resolve(nodes, connection.target(), work)
             .ok_or_else(|| unknown_endpoint(connection))?;
         match connection.kind_ref() {
+            // Requested actions do not add automatic control successors or
+            // participate in its DAG/dominance proof.
+            ApplicationWorkflowConnectionKind::BackAction(_) => {}
             ApplicationWorkflowConnectionKind::Control(outcome) => {
                 summaries[source].outgoing_control[control_index(*outcome)] += 1;
                 control_edges.push((source, target));
@@ -293,5 +296,6 @@ const fn control_index(outcome: ApplicationWorkflowControlOutcome) -> usize {
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 6,
         ApplicationWorkflowControlOutcome::RetryExhausted => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
+        ApplicationWorkflowControlOutcome::Returned => 9,
     }
 }

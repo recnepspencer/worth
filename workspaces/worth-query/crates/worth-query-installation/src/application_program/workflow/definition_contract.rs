@@ -162,20 +162,7 @@ where
                 requires_workflow_authority,
             } => {
                 let matching = installed.operations.iter().filter(|candidate| {
-                    candidate.marker == operation.operation_type()
-                        && candidate.identifier == operation.identifier()
-                        && &candidate.input_type == operation.input_type()
-                        && candidate.requires_workflow_authority == *requires_workflow_authority
-                        && candidate.reference.workflow_execution_requirements()
-                            == operation.workflow_execution_requirements()
-                        && match operation.binding() {
-                            Some((identity, marker, posture)) => {
-                                candidate.binding_type == marker
-                                    && candidate.binding_identity == identity
-                                    && candidate.requires_workflow_authority == posture
-                            }
-                            None => !*requires_workflow_authority,
-                        }
+                    candidate.matches_reference(operation, *requires_workflow_authority)
                 });
                 matching.count() == 1
             }
@@ -262,6 +249,13 @@ where
         }
     }
     assessment_bindings.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+    for edge in definition.connections() {
+        if let worth_query_declaration::facade::application_program::ApplicationWorkflowConnectionKind::BackAction(operation) = edge.kind() {
+            if installed.operations.iter().filter(|candidate| candidate.supports_back_action && candidate.matches_reference(&operation, true)).count() != 1 {
+                return Err(denial(WorthQueryApplicationWorkflowInstallationDenialKind::UnsupportedDefinitionMember, edge.source().as_str()));
+            }
+        }
+    }
     condition_bindings.sort_unstable_by(|left, right| {
         (&left.node_path, &left.operand).cmp(&(&right.node_path, &right.operand))
     });

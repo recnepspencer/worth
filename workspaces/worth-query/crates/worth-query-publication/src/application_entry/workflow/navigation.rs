@@ -107,6 +107,25 @@ where
             Scope = MutationScope<Schema, IntentBinding<Schema, Intent>>,
         >,
 {
+    /// Resolves this binding's single authored Back route under its own fresh
+    /// capability. Preparation changes nothing. Retain the returned requirement
+    /// for exact retries, then execute the same intent/key through
+    /// `for_workflow_operation(...).execute_capability_in_program(...)`; its body and return settle
+    /// in one publication. The caller never supplies a destination.
+    pub fn prepare_workflow_back_action<Spec>(
+        self,
+        workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,
+        instance: PublishedWorkflowInstanceRef,
+    ) -> Result<worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
+        WorthQueryWorkflowAdvancePreparationDenial>
+    where Spec: ApplicationWorkflowSpec<Schema = Schema> {
+        let prepared = self.prepare_workflow_request(workflow.into(), instance, WorkflowRequestedAction::BackAction)?;
+        match prepared.prepared {
+            worth_query_execution::publication_boundary::workflow_advance::PreparedWorkflowAdvance::AwaitingOperation(operation) => Ok(operation.into_required()),
+            _ => Err(WorthQueryWorkflowAdvancePreparationDenial::BackActionUnavailable),
+        }
+    }
+
     pub fn prepare_workflow_navigate_back<Spec>(
         self,
         workflow: impl Into<WorthQueryWorkflowVocabulary<'application, Schema, Spec>>,

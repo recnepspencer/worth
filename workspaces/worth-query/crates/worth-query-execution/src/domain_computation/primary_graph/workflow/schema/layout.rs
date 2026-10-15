@@ -212,6 +212,15 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowConnectionLayout
     pub(in crate::domain_computation::primary_graph) variant: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) retry_reason: AspectFieldLocator,
     pub(in crate::domain_computation::primary_graph) retry_maximum_attempts: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) back_action: WorkflowBackActionLayout,
+}
+
+#[derive(Clone, Debug)]
+pub(in crate::domain_computation::primary_graph) struct WorkflowBackActionLayout {
+    pub(in crate::domain_computation::primary_graph) operation: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) input_type: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) binding: AspectFieldLocator,
+    pub(in crate::domain_computation::primary_graph) requirements: AspectFieldLocator,
 }
 
 #[derive(Clone, Debug)]

@@ -4,6 +4,7 @@ use worth_foundational::facade::CanonicalDigestDerivationDenial;
 
 use super::{ApplicationWorkflowSpec, AuthoredWorkflowDefinition, ValidatedWorkflowDefinition};
 
+mod back_actions;
 mod connections;
 mod control;
 mod dominance;
@@ -51,6 +52,8 @@ pub enum ApplicationWorkflowValidationDenialKind {
     ControlCycle,
     MissingTerminal,
     CanonicalBudgetExceeded,
+    InvalidBackAction,
+    AmbiguousBackAction,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -94,7 +97,7 @@ where
         )
     })?;
     let mut validation_work = ValidationWorkMeter::default();
-    limits::enforce(&authored, &mut validation_work)?;
+    let effects = limits::enforce(&authored, &mut validation_work)?;
     let graph = index::ValidationGraph::build(
         &authored.nodes,
         &authored.connections,
@@ -106,7 +109,12 @@ where
             start.as_str(),
         ));
     };
-    connections::validate(&graph, &mut validation_work)?;
+    connections::validate(
+        &graph,
+        effects,
+        authored.limits.maximum_effects(),
+        &mut validation_work,
+    )?;
     connections::validate_requirements(&graph, &mut validation_work)?;
     let control = control::validate(start_index, &graph, &mut validation_work)?;
     dominance::validate_availability(

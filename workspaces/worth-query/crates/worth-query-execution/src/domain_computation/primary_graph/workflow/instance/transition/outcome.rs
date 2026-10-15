@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) const fn encode_transition_outc
         ApplicationWorkflowControlOutcome::ConditionSatisfied => 6,
         ApplicationWorkflowControlOutcome::ConditionUnsatisfied => 7,
         ApplicationWorkflowControlOutcome::NavigatedBack => 8,
+        ApplicationWorkflowControlOutcome::Returned => 9,
     }
 }
 
@@ -29,6 +30,7 @@ pub(in crate::domain_computation::primary_graph) const fn decode_transition_outc
         6 => Some(ApplicationWorkflowControlOutcome::ConditionSatisfied),
         7 => Some(ApplicationWorkflowControlOutcome::ConditionUnsatisfied),
         8 => Some(ApplicationWorkflowControlOutcome::NavigatedBack),
+        9 => Some(ApplicationWorkflowControlOutcome::Returned),
         _ => None,
     }
 }
@@ -49,6 +51,7 @@ mod tests {
             ApplicationWorkflowControlOutcome::ConditionSatisfied,
             ApplicationWorkflowControlOutcome::ConditionUnsatisfied,
             ApplicationWorkflowControlOutcome::NavigatedBack,
+            ApplicationWorkflowControlOutcome::Returned,
         ] {
             assert_eq!(
                 decode_transition_outcome(encode_transition_outcome(outcome)),
@@ -62,6 +65,6 @@ mod tests {
             None,
             "retry exhaustion is derived routing meaning, not a settleable result"
         );
-        assert_eq!(decode_transition_outcome(9), None);
+        assert_eq!(decode_transition_outcome(10), None);
     }
 }
