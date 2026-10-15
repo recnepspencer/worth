@@ -50,6 +50,7 @@ pub(super) fn append(
                 Field::Input { .. } => "input",
                 Field::OptionalInput { .. } => "optional-input",
                 Field::ScopeField { .. } => "scope-field",
+                Field::RelatedField { .. } => "related-field",
                 Field::PresentScopeField { .. } => "present-scope-field",
                 Field::CapturedScopeField { .. } => "classified-scope-field",
                 Field::SigningProvenance { .. } => "signing-provenance",
@@ -115,6 +116,20 @@ pub(super) fn append(
                     );
                     basis.text(format!("{field}.capture-role"), role.canonical_name());
                 }
+            }
+            Field::RelatedField {
+                source,
+                scalar_family,
+                ..
+            } => {
+                basis.text(
+                    format!("{field}.related-source"),
+                    &source.canonical_record(),
+                );
+                basis.text(
+                    format!("{field}.source-family"),
+                    scalar_family.canonical_name(),
+                );
             }
             Field::SigningProvenance { .. } => {}
             Field::PrincipalIdentity {

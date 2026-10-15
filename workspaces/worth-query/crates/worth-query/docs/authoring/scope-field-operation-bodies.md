@@ -7,6 +7,8 @@ operation. It can also declare one typed entity creation in the admitted scope's
 context, without writing an existing scope field. Required writes and created-field initializers can use authored literals or named
 members of the operation's once encoded input. A created field may also copy a
 tracked scope-field preimage from the same decision observation. An unsigned
+creation may instead copy required or optional fields of one selected related
+subject, without passing those values through caller input. An unsigned
 audit field can also copy the exact admitted principal identity, with its source
 derived from the operation's mutation binding rather than input. Optional scalar
 fields can be set from a present scalar input, explicitly cleared, or replaced
@@ -60,6 +62,9 @@ Declare through `worth_query_decl::facade::application_schema`:
   `.initialize_from_scope(source_field, created_field)` and `.finish()`;
 - `creation.initialize_optional_input(optional_field, "member")` to initialize
   the new field for Some and leave it absent for None;
+- `creation.initialize_from_related(relation, source_field, created_field)` and
+  `creation.initialize_optional_from_related(relation, source_field, created_field)`
+  to copy the single live outgoing subject's required or optional preimage;
 - `creation.initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor_field)`
   to attribute a created row to the operation's admitted principal;
 - `creation.link_from_scope(relation, "link-slot")` and
@@ -232,6 +237,27 @@ read. Query captures the source at the decision snapshot before any candidate
 write, reserves its retained value on the request, and holds that reservation
 through candidate initialization. Missing source or changed source dependency
 denies/stales through the ordinary owners; the host cannot supply a before-image.
+
+`initialize_from_related` uses the outgoing relation's typed target as the source
+entity. Source and destination must share value type, unit, exact codec and scalar
+family. The required form requires both fields to be Required; the optional form
+requires both to be Optional. `None`, present-empty and present text remain
+distinct. Zero selected subjects denies with native `MissingAuthoritativeFact`
+naming the relation; multiple distinct subjects deny with `AmbiguousRelation`.
+A missing subject is never an absent optional field. Relation endpoints, field
+metadata and complete Entity/Relation/Field reads are rechecked during cold admission.
+
+Query selects each distinct related source once per body decision, observes its
+complete adjacency and endpoint liveness, and reserves captured source values on
+the request. If `replace_from_scope` uses that relation too, copying and retiring
+the predecessor share the exact retained native selection. Candidate construction
+uses only retained values/absence, never a new read or host-supplied ID. Source or
+selection changes after preparation stale the whole publication, including the
+creation, history link and replacement. Exact logical-request replay recovers the
+original outcome without copying or replacing again. This copies unsigned
+business data, not signatures or approval authority. Combining related-source
+initializers with `signed_by` is explicitly refused until related certified
+footprints have their own native support.
 
 `initialize_from_principal_identity` binds to the exact mutation operation/input,
 principal binding, identity source field and codec. Its target is unitless and
@@ -477,6 +503,47 @@ This is not a complete revision/approval-round lifecycle: declare its own edit,
 signing and business-open policy. Reopen and existing-subject workflow enrollment
 need their own native joins; a current pointer is not that authority.
 
+To seed that revision from the actual current one rather than values supplied by
+the caller, replace its input description initializer with:
+
+```rust,ignore
+.initialize_optional_from_related(
+    CurrentRevision::reference(),
+    RevisionDescription::reference(),
+    RevisionDescription::reference(),
+)?
+```
+
+Here RevisionDescription is Optional String on Revision. A fuller round-copy
+body can copy required assignment in the same selection:
+
+```rust,ignore
+let body = CopyRound::reference().body()
+    .expect(CurrentStatus::reference(), Status::Active)?
+    .create_in_scope(ApprovalRound::reference(), "round")?
+    .initialize_input(RoundIdentity::reference(), "identity")?
+    .initialize_optional_from_related(
+        CurrentRound::reference(), RoundDescription::reference(), RoundDescription::reference(),
+    )?
+    .initialize_from_related(
+        CurrentRound::reference(), RoundAssignee::reference(), RoundAssignee::reference(),
+    )?
+    .initialize_from_scope(PolicyRevision::reference(), RoundPolicyRevision::reference())?
+    .link_from_scope(RoundHistory::reference(), "history")?
+    .replace_from_scope(CurrentRound::reference(), "current")?
+    .create_output::<CopyRoundBinding, CreatedRound>()?
+    .finish()?;
+```
+
+Declare the corresponding typed Read/Create/Write/Link/Unlink capabilities and
+ordinary candidate ceiling. The intent contains parent and fresh round identity
+only. Query derives installed reads and publishes the new fields, history and
+current pointer together. Historical signature/provenance remains unchanged;
+the new subject has no evidence until it signs independently. The real runnable
+deviation supplier exercises this path, source/selection races and retry after a
+later current selection. The Active guard is intentional: this is not a Reopen
+operation or fresh enrollment of an existing item.
+
 To expose its actual committed identity, give `CreateDocumentBinding::Output` a
 fixed role whose Entity is Document and Action is `WorthQueryCreateOutput`, then
 add `.create_output::<CreateDocumentBinding, CreatedDocument>()?` to that creation
@@ -590,6 +657,9 @@ remain a different supported surface, not an equivalent declarative body.
 Do not implement replacement with a second host commit, predict a created ID,
 use a mutable generation field to erase old attestations, or reuse an unbounded
 history relation as a current-subject pointer.
+Do not read the selected round in a host and feed copied fields into an input
+initializer: that discards the native preimage/selection join. Do not substitute
+a signature row, policy revision or copied fields for approval or release identity.
 
 ## Current Limits
 
@@ -599,7 +669,8 @@ Set-from-flat-input, explicit Clear, one-level Option-valued replacement and
 initialization, operation-specific presence requirements,
 and Foundation Boolean requirements over scope scalar/presence and distinct
 incoming/outgoing related-item count operands, plus
-one in-context created entity with literal, flat-input, or tracked scope-preimage
+one in-context created entity with literal, flat-input, tracked scope-preimage or
+single outgoing related-subject required/optional preimage
 initializers or an exact unitless admitted-principal identity initializer,
 links between that creation and its admitted scope, including at-most-one outgoing
 selection replacement, plus fixed
@@ -612,6 +683,10 @@ general input/source assignments, filtered collections, governed-query operands,
 custom expression kernels, multiple creations, arbitrary existing-target relation
 edits, signature consequences and command
 continuation are not implemented here.
+Related copying has no filtered, multi-subject or reverse-selection form and
+cannot initialize a required target from an optional source. Related certified
+captures are refused, not reinterpreted as root-scope captures. Copying alone does
+not start/succeed a native workflow instance or admit a retained release pin.
 Value operands support unitless Boolean, fixed-width integer, finite float,
 decimal and string families. Unsupported scalar interpretations and unit-bearing
 value operands are refused; presence alone does not interpret a value's family

@@ -257,10 +257,13 @@ impl<Schema, Operation, Input, Entity>
             if !fields.insert(step.field()) {
                 return Err(ApplicationOperationBodyAuthoringDenial::DuplicateAssignment);
             }
-            if step
-                .source_field()
-                .is_some_and(|source| source.entity() != scope)
-            {
+            let foreign_source = match step.related_source() {
+                Some(source) => source.from != scope || source.field.entity() != source.to,
+                None => step
+                    .source_field()
+                    .is_some_and(|source| source.entity() != scope),
+            };
+            if foreign_source {
                 return Err(ApplicationOperationBodyAuthoringDenial::ForeignSourceEntity);
             }
         }

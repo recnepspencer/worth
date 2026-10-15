@@ -179,7 +179,9 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                     return Err(denied());
                 }
                 if let Some(source) = step.source_field() {
-                    if source.entity() != Binding::scope_field().entity() {
+                    if step.related_source().is_none()
+                        && source.entity() != Binding::scope_field().entity()
+                    {
                         return Err(denied());
                     }
                     let source_binding = schema
@@ -217,6 +219,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             }
         }
         Ok(Self {
+            selection_reads: super::selection::installed_reads(body),
             outputs: super::output::install_outputs::<Schema, Binding>(schema, body)?,
             body: body.clone(),
             marker: PhantomData,

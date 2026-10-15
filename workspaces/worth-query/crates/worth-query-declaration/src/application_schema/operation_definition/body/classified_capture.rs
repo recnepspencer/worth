@@ -166,6 +166,14 @@ pub(super) fn validate_roles(fields: &[Step], encoding: Option<Encoding>) -> Res
     Ok(())
 }
 pub(super) fn validate_creation(creation: &ApplicationOperationBodyCreation) -> Result<(), Denial> {
+    if creation.signing().is_some()
+        && creation
+            .fields()
+            .iter()
+            .any(|step| step.related_source().is_some())
+    {
+        return Err(Denial::UnclassifiedSignedCapture);
+    }
     let encoding = creation.signing().and_then(|signing| {
         creation.fields().iter().find_map(|step| match step {
             Step::SigningProvenance { field, binding } if field == signing.provenance() => {

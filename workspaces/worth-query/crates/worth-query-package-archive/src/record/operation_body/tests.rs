@@ -14,6 +14,8 @@ mod optional_input;
 mod outputs;
 #[path = "tests/principal.rs"]
 mod principal;
+#[path = "tests/related_source.rs"]
+mod related_source;
 #[path = "tests/requirements.rs"]
 mod requirements;
 #[path = "tests/signed_evidence.rs"]

@@ -84,49 +84,7 @@ pub(crate) fn validate_operation_bodies(
                         ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency,
                     );
                 }
-                if let Some(source) = step.source_field() {
-                    let target_unit = members.iter().find_map(|member| match member {
-                        ApplicationSchemaMember::Field {
-                            entity,
-                            aspect,
-                            field,
-                            unit,
-                            ..
-                        } if entity == locus.entity()
-                            && aspect == locus.aspect()
-                            && field == locus.field() =>
-                        {
-                            Some(unit)
-                        }
-                        _ => None,
-                    });
-                    if source.entity() != scope
-                        || target_unit.is_none()
-                        || !members.iter().any(|member| {
-                            matches!(member, ApplicationSchemaMember::Field {
-                                entity, aspect, field, scalar_family, value_type,
-                                unit, presence, ..
-                            } if entity == source.entity() && aspect == source.aspect()
-                                && field == source.field()
-                                && value_type == step.binding().as_str()
-                                && *scalar_family == step.scalar_family()
-                                && Some(*presence) == step.source_presence()
-                                && target_unit == Some(unit))
-                        })
-                        || !members.iter().any(|member| {
-                            matches!(member, ApplicationSchemaMember::OperationDecisionRead {
-                                operation: candidate, target,
-                            } if candidate == operation && Some(target.clone()) == step.source_read())
-                        })
-                    {
-                        return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
-                    }
-                    if matches!(step, super::ApplicationOperationBodyCreatedField::PresentScopeField { .. } | super::ApplicationOperationBodyCreatedField::CapturedScopeField { .. })
-                        && !members.iter().any(|member| matches!(member, ApplicationSchemaMember::Field { entity, aspect, field, presence: ApplicationFieldPresence::Required, .. }
-                            if entity == locus.entity() && aspect == locus.aspect() && field == locus.field())) {
-                        return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
-                    }
-                }
+                super::source_validation::validate(operation, scope, step, members)?;
                 if !members.iter().any(|member| {
                     matches!(member, ApplicationSchemaMember::Field {
                         entity, aspect, field, scalar_family, value_type, ..

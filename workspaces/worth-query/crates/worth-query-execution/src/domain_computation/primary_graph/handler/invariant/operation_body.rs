@@ -1,5 +1,6 @@
 //! Execution-only body read; no raw-field API enters the application facade.
-mod replacement;
+mod selection;
+mod source;
 use super::super::super::operation_body::{BodyFieldExpectation, PreparedBodySource};
 use super::super::super::{
     application_contribution::advancement_denial, HandlerExecutionDenial,
@@ -10,6 +11,13 @@ use super::{
 };
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
+enum BodySource<'a, Schema> {
+    Scope,
+    Principal,
+    Related(
+        &'a crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<Schema, ()>,
+    ),
+}
 
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
@@ -43,7 +51,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         &mut self,
         field: &ApplicationFieldBindingLocus,
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
-        self.body_source_value(field, false)
+        self.body_source_value(field, BodySource::Scope)
     }
 
     pub(in crate::domain_computation::primary_graph) fn body_principal_value(
@@ -51,16 +59,27 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         field: &ApplicationFieldBindingLocus,
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
         let _ = self.principal_identity();
-        self.body_source_value(field, true)
+        self.body_source_value(field, BodySource::Principal)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn body_related_value(
+        &mut self,
+        field: &ApplicationFieldBindingLocus,
+        selected: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<
+            Schema,
+            (),
+        >,
+    ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
+        self.body_source_value(field, BodySource::Related(selected))
     }
 
     fn body_source_value(
         &mut self,
         field: &ApplicationFieldBindingLocus,
-        principal: bool,
+        source: BodySource<'_, Schema>,
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
-        if !principal {
+        if !matches!(source, BodySource::Principal) {
             self.context_use.set(self.context_use.get().scope());
         }
         let execution = self.execution;
@@ -95,10 +114,10 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 })?;
                 Ok(PreparedBodySource::new(raw.clone(), reservation))
             };
-            if principal {
-                self.reader.body_principal_value(field, capture)
-            } else {
-                self.reader.body_value(self.scope, field, capture)
+            match source {
+                BodySource::Principal => self.reader.body_principal_value(field, capture),
+                BodySource::Scope => self.reader.body_value(self.scope, field, capture),
+                BodySource::Related(identity) => self.reader.body_value(identity, field, capture),
             }
         });
         captured.map_err(HandlerExecutionDenial::new)?

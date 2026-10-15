@@ -66,6 +66,11 @@ pub(super) fn validate_member_identifiers(
                                 validate_simple_identifier(identifier)?;
                             }
                         }
+                        if let Some(source) = step.related_source() {
+                            for identifier in [&source.relation, &source.from, &source.to] {
+                                validate_simple_identifier(identifier)?;
+                            }
+                        }
                     }
                 }
             }

@@ -217,6 +217,12 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                 work.observe_text(creation.entity());
                 work.observe_text(creation.key());
                 for step in creation.fields() {
+                    if let Some(source) = step.related_source() {
+                        for text in [&source.relation, &source.from, &source.to] {
+                            work.observe_text(text);
+                        }
+                        work.observe_fixed(1);
+                    }
                     work.observe_text(step.field().entity());
                     work.observe_text(step.field().aspect());
                     work.observe_text(step.field().field());

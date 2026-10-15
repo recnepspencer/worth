@@ -22,6 +22,9 @@ pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Sch
     pub(super) input_bindings:
         Vec<worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding>,
     pub(super) outputs: Vec<super::output::InstalledBodyOutput>,
+    pub(super) selection_reads: Vec<
+        worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget,
+    >,
 }
 
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding> {
@@ -117,31 +120,17 @@ where
             });
         }
         drop(findings);
-        let mut sources = Vec::new();
-        if let Some(creation) = self.body.creation() {
-            for step in creation.fields() {
-                let (source, captured) = if let Some(source) = step.source_field() {
-                    (source, reader.body_scope_value(source))
-                } else if let Some(source) = step.principal_source() {
-                    (source, reader.body_principal_value(source))
-                } else {
-                    continue;
-                };
-                match captured {
-                    Ok(Some(value)) => sources.push(value),
-                    Ok(None) => {
-                        return HandlerResult::DomainDenied(
-                            WorthQueryOperationBodyDenial::SourceMismatch {
-                                entity: source.entity().to_owned(),
-                                aspect: source.aspect().to_owned(),
-                                field: source.field().to_owned(),
-                            },
-                        );
-                    }
-                    Err(cause) => return HandlerResult::ExecutionDenied(cause),
-                }
-            }
-        }
+        let selections = match reader.body_selections(&self.selection_reads) {
+            Ok(selections) => selections,
+            Err(cause) => return HandlerResult::ExecutionDenied(cause),
+        };
+        let sources = match reader.body_created_sources(&self.body, &selections) {
+            HandlerResult::Completed(sources) => sources,
+            HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
+            HandlerResult::ExecutionDenied(cause) => return HandlerResult::ExecutionDenied(cause),
+            HandlerResult::Cancelled => return HandlerResult::Cancelled,
+            HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
+        };
         let inputs = match reader.body_inputs(&self.body, &self.input_bindings) {
             HandlerResult::Completed(inputs) => inputs,
             HandlerResult::DomainDenied(cause) => return HandlerResult::DomainDenied(cause),
@@ -149,16 +138,12 @@ where
             HandlerResult::Cancelled => return HandlerResult::Cancelled,
             HandlerResult::DeadlineExceeded => return HandlerResult::DeadlineExceeded,
         };
-        let replacements = match reader.body_replacements(&self.body) {
-            Ok(replacements) => replacements,
-            Err(cause) => return HandlerResult::ExecutionDenied(cause),
-        };
         match reader.body_scope_target(&self.body) {
             Ok(target) => HandlerResult::Completed(WorthQueryOperationBodyDecision {
                 target,
                 inputs,
                 sources,
-                replacements,
+                selections,
             }),
             Err(cause) => HandlerResult::ExecutionDenied(cause),
         }
@@ -271,11 +256,15 @@ where
                     ApplicationOperationBodyCreatedField::ScopeField { .. }
                     | ApplicationOperationBodyCreatedField::PresentScopeField { .. }
                     | ApplicationOperationBodyCreatedField::CapturedScopeField { .. }
+                    | ApplicationOperationBodyCreatedField::RelatedField { .. }
                     | ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
-                        let (source, reservation) = source_values
+                        let Some(source) = source_values
                             .next()
                             .expect("one captured source per installed initializer")
-                            .into_parts();
+                        else {
+                            continue;
+                        };
+                        let (source, reservation) = source.into_parts();
                         source_reservation = Some(reservation);
                         std::borrow::Cow::Owned(source)
                     }
@@ -293,10 +282,10 @@ where
                     }
                 }
             }
-            for (index, link) in creation.links().iter().enumerate() {
+            for link in creation.links() {
                 if link.posture == worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkPosture::ReplaceSingle {
-                    if let Some(predecessor) = &decision.replacements.targets[index] {
-                        let predecessor = match writer.projected_entity(predecessor) {
+                    if let Some(predecessor) = decision.selections.selected(&link.relation, &link.from, &link.to) {
+                        let predecessor = match writer.projected_entity(&predecessor.target) {
                             Ok(target) => target,
                             Err(cause) => return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
                         };

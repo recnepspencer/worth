@@ -221,13 +221,29 @@ pub(super) fn operation_body_base_record(body: &ApplicationOperationBodyProgram)
                     ],
                 ),
             ),
+            ApplicationOperationBodyCreatedField::RelatedField {
+                source,
+                scalar_family,
+                ..
+            } => (
+                "related-field",
+                framed_record(
+                    "related-field-source-v1",
+                    [
+                        ("source", source.canonical_record()),
+                        ("family", scalar_family.canonical_name().to_owned()),
+                    ],
+                ),
+            ),
             ApplicationOperationBodyCreatedField::SigningProvenance { .. } => (
                 "signing-provenance",
                 "native-deferred-provenance-v1".to_owned(),
             ),
         };
         framed_record(
-            if has_principal_source {
+            if step.related_source().is_some() {
+                "operation-body-created-field-v4"
+            } else if has_principal_source {
                 "operation-body-created-field-v3"
             } else if has_scope_source {
                 "operation-body-created-field-v2"

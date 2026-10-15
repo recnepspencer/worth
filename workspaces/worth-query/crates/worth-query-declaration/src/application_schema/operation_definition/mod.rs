@@ -17,13 +17,13 @@ pub use body::{
     ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyCreationLinkPosture,
     ApplicationOperationBodyEnrollment, ApplicationOperationBodyOutput,
     ApplicationOperationBodyOutputTarget, ApplicationOperationBodyProgram,
-    ApplicationOperationBodyRequirement, ApplicationOperationBodyRequirementDenial,
-    ApplicationOperationBodyRequirementDirection, ApplicationOperationBodyRequirementExpression,
-    ApplicationOperationBodyRequirementOperand, ApplicationOperationBodyRequirementOperands,
-    ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
-    ApplicationOperationBodyScopeField, ApplicationOperationBodySigningLifecycleSpec,
-    ApplicationOperationBodySigningSpec, ApplicationSigningEvidenceRef,
-    ApplicationSigningEvidenceSource,
+    ApplicationOperationBodyRelatedFieldSource, ApplicationOperationBodyRequirement,
+    ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
+    ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
+    ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
+    ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodySigningLifecycleSpec, ApplicationOperationBodySigningSpec,
+    ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource,
 };
 pub(crate) use builder::AftermathAssociationAuthority;
 pub use builder::ApplicationOperationDefinitionBuilder;

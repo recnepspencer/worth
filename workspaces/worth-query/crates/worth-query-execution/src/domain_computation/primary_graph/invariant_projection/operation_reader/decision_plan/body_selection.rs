@@ -4,29 +4,32 @@ use super::{
     WorthQueryInvariantEntityIdentity,
 };
 use crate::domain_computation::primary_graph::{
-    application_contribution::QueryRequestExecution, HandlerExecutionDenial,
-    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
-    WorthQueryInvariantMutationTarget,
+    application_contribution::QueryRequestExecution, operation_body::PreparedBodySelection,
+    HandlerExecutionDenial, WorthQueryApplicationAttemptDenial as Denial,
+    WorthQueryApplicationAttemptDenialKind as Kind,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationBodyCreationLink,
     ApplicationOperationBodyRequirementDirection as Direction,
-    ApplicationOperationBodyRequirementSource as Source,
+    ApplicationOperationBodyRequirementSource as Source, ApplicationOperationDecisionReadTarget,
 };
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub(in crate::domain_computation::primary_graph) fn body_creation_predecessor<Entity>(
+    pub(in crate::domain_computation::primary_graph) fn body_related_selection<Entity>(
         &mut self,
         root: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
-        link: &ApplicationOperationBodyCreationLink,
+        selection: &ApplicationOperationDecisionReadTarget,
         execution: &QueryRequestExecution<'_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
-    ) -> Result<Option<WorthQueryInvariantMutationTarget<Schema, ()>>, HandlerExecutionDenial> {
+    ) -> Result<Option<PreparedBodySelection<Schema>>, HandlerExecutionDenial> {
+        let ApplicationOperationDecisionReadTarget::Relation { relation, from, to } = selection
+        else {
+            unreachable!("installed body relation selection");
+        };
         let source = Source::RelatedItemCount {
-            relation: link.relation.clone(),
-            from: link.from.clone(),
-            to: link.to.clone(),
+            relation: relation.clone(),
+            from: from.clone(),
+            to: to.clone(),
             direction: Direction::Outgoing,
         };
         let selected = self.observed_requirement_collection(root, &source, execution, context)?;
@@ -36,22 +39,23 @@ impl<Schema: ApplicationSchema, Operation>
             _ => {
                 return Err(HandlerExecutionDenial::new(Denial::new(
                     Kind::AmbiguousRelation,
-                    &link.relation,
+                    relation,
                 )))
             }
         };
-        let kind = self.reader.layout.entity_kind(&link.to).ok_or_else(|| {
-            HandlerExecutionDenial::new(Denial::new(Kind::MissingAuthoritativeFact, &link.to))
+        let kind = self.reader.layout.entity_kind(to).ok_or_else(|| {
+            HandlerExecutionDenial::new(Denial::new(Kind::MissingAuthoritativeFact, to))
         })?;
         let identity = WorthQueryInvariantEntityIdentity::<Schema, ()> {
             entity_id,
             kind,
-            entity: link.to.clone().into(),
+            entity: to.clone().into(),
             authority_identity: self.reader.authority_identity,
             _marker: std::marker::PhantomData,
         };
-        self.mutation_target(&identity)
-            .map(Some)
-            .map_err(HandlerExecutionDenial::new)
+        let target = self
+            .mutation_target(&identity)
+            .map_err(HandlerExecutionDenial::new)?;
+        Ok(Some(PreparedBodySelection { identity, target }))
     }
 }

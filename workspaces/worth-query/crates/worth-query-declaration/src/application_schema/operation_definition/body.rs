@@ -11,7 +11,9 @@ pub use enrollment::ApplicationOperationBodyEnrollment;
 mod output;
 mod output_validation;
 mod present_source;
+mod related_source;
 pub use created_field::ApplicationOperationBodyCaptureRole;
+pub use related_source::ApplicationOperationBodyRelatedFieldSource;
 mod principal;
 mod principal_validation;
 mod signing;
@@ -23,6 +25,7 @@ pub use signing::ApplicationOperationBodySigningSpec;
 pub use signing_lifecycle::ApplicationOperationBodySigningLifecycleSpec;
 mod program;
 mod requirement;
+mod source_validation;
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;

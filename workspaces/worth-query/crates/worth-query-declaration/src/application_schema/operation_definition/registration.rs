@@ -56,6 +56,13 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                         .iter()
                         .filter_map(|step| step.source_read()),
                 );
+                reads.extend(
+                    creation
+                        .fields()
+                        .iter()
+                        .filter_map(|step| step.related_source())
+                        .flat_map(|source| source.decision_reads()),
+                );
             }
             for target in reads {
                 self.push_member_in_place(ApplicationSchemaMember::OperationDecisionRead {
