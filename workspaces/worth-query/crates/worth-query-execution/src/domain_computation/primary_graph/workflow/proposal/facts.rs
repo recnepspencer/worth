@@ -79,7 +79,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
             text(source_identity.clone()),
         );
     }
-    let proposer = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admitted.read_set().admission);
+    let proposer = admitted.read_set().admitted_workflow_actor();
     debug_assert_eq!(proposal.proposer, proposer.entity());
     proposer.append_fields(&layout.proposal.proposer, &mut fields);
     emit(WorthQueryApplicationRealizedEffect::CreateEntity {

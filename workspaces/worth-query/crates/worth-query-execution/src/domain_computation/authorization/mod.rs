@@ -30,12 +30,14 @@ mod operation_scope_binding;
 pub(in crate::domain_computation) use operation_scope_binding::WorthQueryDecisionScopeWitness;
 mod retained_capability_request;
 pub(in crate::domain_computation) use retained_capability_request::{
-    WorkflowApprovalRequestDecodingDenial,
-    WorkflowApprovalRequestEncodingDenial, WorthQueryRetainedCapabilityRequest,
-    MAXIMUM_PORTABLE_BYTES,
+    WorkflowApprovalRequestDecodingDenial, WorkflowApprovalRequestEncodingDenial,
+    WorthQueryRetainedCapabilityRequest, MAXIMUM_PORTABLE_BYTES,
 };
 mod retained_capability_support;
 mod workflow_approval_authority;
+pub(in crate::domain_computation) use workflow_approval_authority::decoding::{
+    decode_lineage, decode_principal, DecodedApprovalLineage,
+};
 mod workflow_approval_dependencies;
 pub(in crate::domain_computation) use workflow_approval_authority::{
     decode_workflow_approval_support, encode_workflow_approval_support,

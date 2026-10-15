@@ -109,7 +109,7 @@ fn actor_fact_execution_causes_remain_native_at_bootstrap() {
         let denial = CheckpointDecodeDenial::from_fact(FactDecodeDenial::Execution(cause))
             .into_installation_denial();
         assert!(
-            matches!(denial.kind(), Kind::ExecutionControlStopped { kind } if *kind == expected)
+            matches!(denial.kind(), Kind::ExecutionControlStopped { kind } if kind == expected)
         );
     }
     let denial = CheckpointDecodeDenial::from_fact(FactDecodeDenial::Execution(

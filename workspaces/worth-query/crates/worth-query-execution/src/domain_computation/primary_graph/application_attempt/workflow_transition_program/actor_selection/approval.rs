@@ -51,7 +51,7 @@ pub(super) fn approval_actor(
     });
     let expected_proposal =
         proposal.ok_or_else(|| affinity("approval has no original proposal"))?;
-    use super::super::super::super::workflow_instance_observation::instance_binding::{
+    use super::super::super::workflow_instance_observation::instance_binding::{
         adjacency_with_kind, exact,
     };
     let proposals = adjacency_with_kind(

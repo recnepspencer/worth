@@ -10,7 +10,8 @@ use crate::domain_computation::primary_graph::{
         definition::{CompiledWorkflowDefinition, CompiledWorkflowNode},
         instance::WorkflowTransitionLocator,
     },
-    WorthQueryPrimaryGraphIntegrationHandle, WorthQueryPrimaryGraphLayout,
+    WorthQueryApplicationObservedFact, WorthQueryPrimaryGraphIntegrationHandle,
+    WorthQueryPrimaryGraphLayout,
 };
 use approval::approval_actor;
 use worth_query_declaration::facade::application_capability::{

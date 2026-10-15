@@ -48,3 +48,14 @@ impl WorthQueryOperationAuthorizationDenial {
             .map(|cause| cause.0.as_ref())
     }
 }
+
+impl worth_execution::ChargedBytes for WorkflowActorNativeDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        // Arc retains the native value and its nested payload through every clone.
+        (std::mem::size_of::<NativeDenial>() as u64)
+            .saturating_add((2 * std::mem::size_of::<usize>()) as u64)
+            .saturating_add(worth_execution::ChargedBytes::additional_charged_bytes(
+                self.0.as_ref(),
+            ))
+    }
+}

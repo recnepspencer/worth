@@ -226,7 +226,7 @@ pub(in crate::domain_computation::primary_graph) fn admit_workflow_transition<
     allowance: WorkflowStepAllowance,
 ) -> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
     allowance.spend();
-    let advancer = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&read_set.admission);
+    let advancer = read_set.admitted_workflow_actor();
     AdmittedWorkflowTransition {
         advancer,
         read_set,

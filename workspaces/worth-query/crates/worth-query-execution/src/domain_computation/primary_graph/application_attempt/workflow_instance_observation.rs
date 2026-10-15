@@ -7,12 +7,8 @@ pub(in crate::domain_computation::primary_graph) mod audit;
 pub(in crate::domain_computation::primary_graph) mod governed_record;
 mod governed_start_path;
 mod transition_roles;
-pub(in crate::domain_computation::primary_graph::application_attempt) use actors::{
-    observe as observe_instance_roles, WorkflowInstanceRoles,
-};
-pub(in crate::domain_computation::primary_graph::application_attempt) use transition_roles::{
-    observe as observe_transition_roles, WorkflowTransitionRoles,
-};
+pub(in crate::domain_computation::primary_graph::application_attempt) use actors::observe as observe_instance_roles;
+pub(in crate::domain_computation::primary_graph::application_attempt) use transition_roles::observe as observe_transition_roles;
 pub(in crate::domain_computation::primary_graph) mod read_only;
 mod retained_history;
 pub(in crate::domain_computation::primary_graph::application_attempt) use read_only::observe_read_only_history;

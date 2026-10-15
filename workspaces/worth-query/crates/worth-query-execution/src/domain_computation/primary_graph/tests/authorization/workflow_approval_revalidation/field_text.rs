@@ -280,7 +280,7 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
         // Open the real receiver while live. Cancellation occurs inside, with
         // no intervening outer with_runtime check or new callback/test control.
         handle.with_runtime_mut(&execution, |runtime| {
-            assert!(basis.is_current());
+            assert!(runtime.owner_component_services().basis_port().compare_current_exact(basis).is_ok());
             let before = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
             let before_pin = runtime.read_truth().pin_read_capability(&before, &[], &observer).unwrap();
             cancellation.cancel();
@@ -290,7 +290,7 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
             };
             assert_eq!(denied.kind(), AttemptKind::Cancelled);
             assert_eq!(denied.relational_execution_cause(), Some(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled));
-            assert!(basis.is_current(), "original carried basis still names the current head");
+            assert!(runtime.owner_component_services().basis_port().compare_current_exact(basis).is_ok(), "original carried basis still names the current head");
             let after = runtime.snapshots().snapshot_for_observation(&basis.observation()).unwrap();
             let after_pin = runtime.read_truth().pin_read_capability(&after, &[], &observer).unwrap();
             assert_eq!(after.version_id(), before.version_id(), "no field/head publication");
