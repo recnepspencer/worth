@@ -28,10 +28,10 @@ impl RelationalAuthorizationDurableDependencies {
         execution
             .consult()
             .map_err(|stop| Denial::Execution(stop.into()))?;
-        if self.version != DURABLE_DEPENDENCY_VERSION {
+        if self.owned.data.version != DURABLE_DEPENDENCY_VERSION {
             return Err(Denial::UnsupportedVersion);
         }
-        self.bounded_wire_bytes()?;
+        self.check_wire_limits(execution)?;
         if snapshot.runtime_instance_id != runtime.runtime_instance_id() {
             return Err(Denial::ForeignRuntime);
         }
@@ -46,14 +46,22 @@ impl RelationalAuthorizationDurableDependencies {
         execution
             .consult()
             .map_err(|stop| Denial::Execution(stop.into()))?;
-        if capture::capture_entity(execution, &view, self.principal.entity, &mut remaining)?
-            != self.principal
-            || capture::capture_entity(execution, &view, self.scope.entity, &mut remaining)?
-                != self.scope
+        if capture::capture_entity(
+            execution,
+            &view,
+            self.owned.data.principal.entity,
+            &mut remaining,
+        )? != self.owned.data.principal
+            || capture::capture_entity(
+                execution,
+                &view,
+                self.owned.data.scope.entity,
+                &mut remaining,
+            )? != self.owned.data.scope
         {
             return Ok(false);
         }
-        for path in &self.paths {
+        for path in &self.owned.data.paths {
             execution
                 .consult()
                 .map_err(|stop| Denial::Execution(stop.into()))?;
@@ -124,6 +132,7 @@ fn field_revision_matches(
     view: &crate::visibility::materialization::read_records::VisibilityProjectionView,
     field: &FieldDependency,
 ) -> Result<bool, Denial> {
+    let _locator_storage = super::storage::locator_storage(execution, &field.aspect, &field.field)?;
     let locator = AspectFieldLocator::new(
         LocatorAuthority::Authoritative,
         AspectKey::new(&field.aspect).ok_or(Denial::MalformedWire)?,

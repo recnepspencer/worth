@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use super::super::effect_lowering::WorthQueryLoweredProviderEffect;
 use super::super::WorthQueryApplicationAttemptDenial;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenialKind;
 use crate::domain_computation::{
@@ -36,16 +35,7 @@ impl WorthQueryExpectedEffectStepPreparationWork {
 }
 
 impl WorthQueryExpectedEffectSteps {
-    pub(super) fn from_lowered(
-        lowered: Vec<WorthQueryLoweredProviderEffect>,
-    ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
-        Self::from_step_groups(lowered.into_iter().filter_map(|effect| match effect {
-            WorthQueryLoweredProviderEffect::Mutation { steps, .. } => Some(steps),
-            WorthQueryLoweredProviderEffect::Emission(_) => None,
-        }))
-    }
-
-    fn from_step_groups(
+    pub(super) fn from_step_groups(
         groups: impl IntoIterator<Item = Vec<WorthQueryProvisionalEffectStep>>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
         let mut positions = BTreeMap::new();

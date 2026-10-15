@@ -130,6 +130,7 @@ where
         )?;
         facts.extend(inputs.facts);
         let meaning = identity::derive(
+            execution,
             &compiled,
             required,
             proposal,

@@ -83,7 +83,7 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
         emission_retained_bytes_ceiling: u64,
         output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     ) -> Result<WorthQueryRegisteredProviderEffects, WorthQueryApplicationAttemptDenial> {
-        let (intents, emissions) = materialize_commit_projections(&self.lowered);
+        let (intents, emissions, expected_steps) = materialize_commit_projections(self.lowered)?;
         let batch = intents.into_iter().fold(
             WorkerIntentBatch::new("application-provider-attempt"),
             WorkerIntentBatch::push,
@@ -96,7 +96,6 @@ impl<'facts, 'layout> WorthQueryProviderEffectAccumulator<'facts, 'layout> {
         if emissions.retained_bytes() != expected_emission_retained_bytes {
             return Err(retained_bytes_denial());
         }
-        let expected_steps = WorthQueryExpectedEffectSteps::from_lowered(self.lowered)?;
         Ok(WorthQueryRegisteredProviderEffects {
             expected_steps,
             batch,
@@ -218,19 +217,30 @@ impl WorthQueryRegisteredProviderEffects {
 }
 
 fn materialize_commit_projections(
-    lowered: &[WorthQueryLoweredProviderEffect],
-) -> (Vec<MutationIntent>, Vec<WorthQueryApplicationEmission>) {
+    lowered: Vec<WorthQueryLoweredProviderEffect>,
+) -> Result<
+    (
+        Vec<MutationIntent>,
+        Vec<WorthQueryApplicationEmission>,
+        WorthQueryExpectedEffectSteps,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
     let mut intents = Vec::new();
     let mut emissions = Vec::new();
-    for effect in lowered {
-        match effect {
-            WorthQueryLoweredProviderEffect::Mutation { intent, .. } => {
-                intents.push(intent.clone());
+    let expected_steps = WorthQueryExpectedEffectSteps::from_step_groups(
+        lowered.into_iter().filter_map(|effect| match effect {
+            WorthQueryLoweredProviderEffect::Mutation { intent, steps } => {
+                intents.push(intent);
+                Some(steps)
             }
-            WorthQueryLoweredProviderEffect::Emission(emission) => emissions.push(emission.clone()),
-        }
-    }
-    (intents, emissions)
+            WorthQueryLoweredProviderEffect::Emission(emission) => {
+                emissions.push(emission);
+                None
+            }
+        }),
+    )?;
+    Ok((intents, emissions, expected_steps))
 }
 
 #[cfg(test)]

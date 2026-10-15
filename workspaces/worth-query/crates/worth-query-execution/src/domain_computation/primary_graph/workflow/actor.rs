@@ -1,10 +1,11 @@
 //! Native admission is the only author of canonical workflow actors.
 mod dependencies;
+pub(in crate::domain_computation) mod encoding;
 pub(in crate::domain_computation) mod record;
 mod revision_transport;
 pub(in crate::domain_computation) use dependencies::WorkflowActorDependencies;
 
-fn storage_denial(
+pub(in crate::domain_computation) fn storage_denial(
     cause: worth_execution::ExecutionAllocationDenial,
     subject: &str,
 ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
@@ -27,10 +28,24 @@ pub(in crate::domain_computation) fn fund_actor_codec(
     use crate::domain_computation::primary_graph::{
         application_attempt::retained_decision_facts::StorageControl, application_checkpoint::facts,
     };
+    encoding::check_live(execution)?;
     let payload = facts::CodecPayloadReservation::admit(
         StorageControl::new(execution.allocation_policy(), None),
         bytes,
     )
     .map_err(dependencies::decode_denial)?;
+    encoding::check_live(execution)?;
     Ok(std::sync::Arc::new(ActorCodecFunding { _payload: payload }))
+}
+
+pub(in crate::domain_computation::primary_graph) fn decoded_denial(
+    cause: crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial,
+    subject: &str,
+) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
+    use crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial as Cause;
+    match cause {
+        Cause::Actor(cause) => *cause,
+        Cause::InvalidRequest => crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue, subject),
+    }
 }

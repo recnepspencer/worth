@@ -25,7 +25,13 @@ fn grant_expiry_aba_does_not_revive_older_approval() {
             )
         })
         .expect("the fixture read owns its installed host call");
-    let basis = durable_approval_basis(&admission);
+    let basis = world
+        .application
+        .with_host_advancement(|phase| {
+            let host = phase.test_host_request();
+            durable_approval_basis(&host.borrowed_request_for_test(), &admission)
+        })
+        .expect("the fixture envelope owns its installed host call");
     let expiry_field = field(
         &world,
         super::super::super::fixture::capability::CapabilityNotAfterField::reference(),

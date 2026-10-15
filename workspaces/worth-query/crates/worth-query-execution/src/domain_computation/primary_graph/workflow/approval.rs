@@ -1,3 +1,4 @@
+use super::actor::encoding::FundedActorText;
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::{AspectValue, InternedString};
@@ -29,12 +30,12 @@ pub(in crate::domain_computation::primary_graph) struct WorkflowApprovalMeaning 
     pub approver: EntityId,
     pub grant: EntityId,
     pub authorization_decision: [u8; 32],
-    pub authorization_request: String,
-    pub authorization_principal: String,
+    pub authorization_request: FundedActorText,
+    pub authorization_principal: FundedActorText,
     pub capability_authority_identity: String,
-    pub authorization_lineage: String,
-    pub authorization_support: String,
-    pub authorization_dependencies: String,
+    pub authorization_lineage: FundedActorText,
+    pub authorization_support: FundedActorText,
+    pub authorization_dependencies: FundedActorText,
     pub action: String,
     pub purpose: String,
     pub timeline: &'static str,
@@ -217,8 +218,8 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_approval_fact
     Ok((transition, approval))
 }
 
-fn text(value: impl Into<String>) -> AspectValue {
-    AspectValue::String(InternedString::Raw(value.into()))
+fn text(value: impl AsRef<str>) -> AspectValue {
+    AspectValue::String(InternedString::Raw(value.as_ref().to_owned()))
 }
 
 fn hex(bytes: [u8; 32]) -> String {

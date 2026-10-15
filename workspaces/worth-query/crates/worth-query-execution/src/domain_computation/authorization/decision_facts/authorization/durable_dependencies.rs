@@ -37,41 +37,36 @@ pub(super) enum WorthQueryDurableDelegationDependencies {
     },
 }
 
+mod encoding;
+pub(in crate::domain_computation) use encoding::DurableDependenciesView;
+
 impl WorthQueryAuthorizationDecisionFact {
     pub(in crate::domain_computation) fn retained_durable_dependencies(
         &self,
-    ) -> Result<WorthQueryDurableAuthorizationDependencies, ()> {
-        Ok(WorthQueryDurableAuthorizationDependencies {
-            primary: self.native_dependencies.clone().ok_or(())?,
-            recorded_actor: match &self.recorded_actor {
-                None => DurableRecordedActor::NotApplicable,
-                Some(actor) => DurableRecordedActor::Native(actor.encode()?),
-            },
-            delegation: self
-                .delegation
-                .as_ref()
-                .map(|delegation| delegation.retained_durable_dependencies())
-                .transpose()?,
-            activation: self
-                .delegation_activation
-                .as_ref()
-                .map(|activation| activation.retained_durable_dependencies())
-                .transpose()?,
-        })
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        DurableDependenciesView<'_>,
+        crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial,
+    > {
+        encoding::capture(self, execution)
     }
 }
 
 impl WorthQueryDurableAuthorizationDependencies {
-    pub(in crate::domain_computation) fn validate(&self) -> Result<(), ()> {
-        validate(&self.primary)?;
+    pub(in crate::domain_computation) fn validate(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial>
+    {
+        validate(execution, &self.primary)?;
         if let DurableRecordedActor::Native(encoded) = &self.recorded_actor {
-            crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation::validate_encoding(encoded)?;
+            crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation::validate_encoding(execution, encoded)?;
         }
         if let Some(delegation) = &self.delegation {
-            delegation.validate()?;
+            delegation.validate(execution)?;
         }
         if let Some(activation) = &self.activation {
-            validate(activation)?;
+            validate(execution, activation)?;
         }
         Ok(())
     }
@@ -79,95 +74,87 @@ impl WorthQueryDurableAuthorizationDependencies {
     pub(in crate::domain_computation) fn matches_with_retained_activation(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        observed: &Self,
+        observed: &DurableDependenciesView<'_>,
         runtime: &RelationalRuntime,
         snapshot: &SnapshotHandle,
     ) -> Result<
         bool,
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     > {
         #[cfg(test)]
         let _scope = crate::domain_computation::primary_graph::application_attempt::consult_observation::ReadConsultScopeForTest::enter_for_test(crate::domain_computation::primary_graph::application_attempt::consult_observation::Door::Activation);
-        execution
-            .check_live()
-            .map_err(crate::domain_computation::authorization::denial::kernel_stop_kind)?;
-        if self.recorded_actor != observed.recorded_actor
-            || self.primary != observed.primary
-            || self.delegation != observed.delegation
-            || observed.activation.is_some()
-        {
+        execution.check_live().map_err(|stop| denial::admission(
+            worth_relational::facade::authorization::RelationalAuthorizationDependencyDenial::Execution(stop.into())))?;
+        if !self.matches_view_without_activation(observed) || observed.has_activation() {
             return Ok(false);
         }
         let Some(activation) = &self.activation else {
             return Ok(false);
         };
-        let Ok(stamp) = RelationalAuthorizationDurableDependencies::from_wire_string(activation)
-        else {
-            return Ok(false);
-        };
-        let observed = stamp.source_revisions_match(runtime, execution, snapshot);
-        execution
-            .check_live()
-            .map_err(crate::domain_computation::authorization::denial::kernel_stop_kind)?;
         use worth_relational::facade::authorization::RelationalAuthorizationDependencyDenial as Stop;
-        match observed {
+        let stamp =
+            match RelationalAuthorizationDurableDependencies::from_wire(execution, activation) {
+                Ok(stamp) => stamp,
+                Err(cause @ (Stop::Execution(_) | Stop::Allocation(_))) => {
+                    return Err(denial::admission(cause))
+                }
+                Err(_) => return Ok(false),
+            };
+        match stamp.source_revisions_match(runtime, execution, snapshot) {
             Ok(current) => Ok(current),
-            Err(Stop::Execution(cause)) => Err(
-                crate::domain_computation::authorization::denial::relational_read_denial(
-                    cause,
-                    "retained activation",
-                )
-                .kind(),
-            ),
-            Err(
-                Stop::ForeignRuntime
-                | Stop::SnapshotUnavailable
-                | Stop::InexactSnapshot
-                | Stop::IncompleteObservation
-                | Stop::DependencyUnavailable
-                | Stop::UnsupportedFieldLocator
-                | Stop::DependencyBudgetExceeded
-                | Stop::ByteBudgetExceeded
-                | Stop::MalformedWire
-                | Stop::UnsupportedVersion,
-            ) => Ok(false),
+            Err(cause @ (Stop::Execution(_) | Stop::Allocation(_))) => {
+                Err(denial::admission(cause))
+            }
+            Err(_) => Ok(false),
         }
     }
 }
 
 impl WorthQueryDurableDelegationDependencies {
-    fn validate(&self) -> Result<(), ()> {
+    fn validate(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial>
+    {
         match self {
-            Self::Root { discovery } => validate(discovery),
+            Self::Root { discovery } => validate(execution, discovery),
             Self::Delegated {
                 discovery,
                 transition,
                 parent,
             } => {
-                validate(discovery)?;
-                validate(transition)?;
-                parent.validate()
+                validate(execution, discovery)?;
+                validate(execution, transition)?;
+                parent.validate(execution)
             }
         }
     }
 }
 
+mod denial;
+
 pub(super) fn capture(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     evidence: &RelationalAuthorizationObservationEvidence,
-) -> Result<String, ()> {
+) -> Result<
+    worth_relational::facade::authorization::RelationalAuthorizationDependencyWire,
+    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+> {
     runtime
         .capture_authorization_durable_dependencies(evidence, execution)
-        .map_err(|_| ())?
-        .to_wire_string()
-        .map_err(|_| ())
+        .map_err(denial::admission)?
+        .to_wire(execution)
+        .map_err(denial::admission)
 }
 
-fn validate(encoded: &str) -> Result<(), ()> {
-    RelationalAuthorizationDurableDependencies::from_wire_string(encoded)
+fn validate(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    encoded: &str,
+) -> Result<(), crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial> {
+    RelationalAuthorizationDurableDependencies::from_wire(execution, encoded)
         .map(|_| ())
-        .map_err(|_| ())
+        .map_err(denial::decode)
 }
 
 #[cfg(test)]

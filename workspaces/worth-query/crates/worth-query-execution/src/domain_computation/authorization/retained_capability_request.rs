@@ -27,10 +27,6 @@ pub(in crate::domain_computation) struct WorthQueryRetainedCapabilityRequest {
     data: Arc<RetainedCapabilityRequestData>,
 }
 pub(in crate::domain_computation) struct RetainedCapabilityRequestData {
-    _codec_funding: Option<(
-        Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
-        Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
-    )>,
     resource_entity: Arc<str>,
     elevation: Option<worth_relational::facade::identity::EntityId>,
     action: AspectValue,
@@ -43,6 +39,11 @@ pub(in crate::domain_computation) struct RetainedCapabilityRequestData {
     context_name: Arc<str>,
     context_type: Arc<str>,
     context: RetainedContext,
+    // Payload fields are destroyed before their original admission.
+    _codec_funding: Option<(
+        Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
+        Arc<crate::domain_computation::primary_graph::workflow::actor::ActorCodecFunding>,
+    )>,
 }
 
 impl std::ops::Deref for WorthQueryRetainedCapabilityRequest {

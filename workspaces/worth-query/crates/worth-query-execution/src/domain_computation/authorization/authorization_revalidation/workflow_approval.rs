@@ -98,10 +98,10 @@ where
                 },
             )
             .observe_active_capability(execution, Some(authority.grant()), None)?;
-            (observed.decision().durable_lineage() == *authority.lineage())
+            authority.lineage().matches_view(&observed.decision().durable_lineage_view())
                 .then_some(())
                 .ok_or_else(stale_authorization)?;
-            if !authority.dependencies().primary_matches(observed.decision()) {
+            if !authority.dependencies().primary_matches(execution, observed.decision())? {
                 return Err(stale_authorization());
             }
             if let Some(support) = authority.support() {
@@ -145,17 +145,16 @@ where
                     support.grant(),
                     None,
                 )?;
-                if observed.decision().durable_lineage() != *support.lineage() {
+                if !support.lineage().matches_view(&observed.decision().durable_lineage_view()) {
                     return Err(stale_authorization());
                 }
                 let dependencies_match = match support.role() {
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::DelegationTarget => authority
                         .dependencies()
-                        .delegation_target_support_matches(execution, observed.decision(), runtime, snapshot)
-                        .map_err(|kind| WorthQueryOperationAuthorizationDenial::new(kind, "workflow approval support"))?,
+                        .delegation_target_support_matches(execution, observed.decision(), runtime, snapshot)?,
                     crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::ElevationUpperBound => authority
                         .dependencies()
-                        .support_matches(observed.decision()),
+                        .support_matches(execution, observed.decision())?,
                 };
                 if !dependencies_match {
                     return Err(stale_authorization());

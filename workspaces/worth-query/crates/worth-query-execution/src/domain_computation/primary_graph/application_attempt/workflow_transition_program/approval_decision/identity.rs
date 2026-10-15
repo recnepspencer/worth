@@ -61,6 +61,7 @@ pub(super) fn authentication_intent(
 }
 
 pub(super) fn derive<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
     required: &RequiredWorkflowApproval,
     proposal: &super::super::super::PublishedWorkflowProposalRef,
@@ -80,23 +81,23 @@ pub(super) fn derive<Schema, Operation, Input, Scope>(
         .workflow_approval_authority()
         .ok_or_else(|| affinity("workflow approval lacks retained capability authorization"))?;
     let authorization_request = admission
-        .workflow_approval_request_snapshot()
+        .workflow_approval_request_snapshot(execution)
         .map_err(snapshot_denial)?
         .ok_or_else(|| affinity("workflow approval lacks retained capability request"))?;
     let authorization_principal = admission
-        .workflow_approval_principal_snapshot()
+        .workflow_approval_principal_snapshot(execution)
         .map_err(snapshot_denial)?
         .ok_or_else(|| affinity("workflow approval lacks retained principal evidence"))?;
     let authorization_lineage = admission
-        .workflow_approval_lineage_snapshot()
+        .workflow_approval_lineage_snapshot(execution)
         .map_err(snapshot_denial)?
         .ok_or_else(|| affinity("workflow approval lacks retained capability lineage"))?;
     let authorization_support = admission
-        .workflow_approval_support_snapshot()
+        .workflow_approval_support_snapshot(execution)
         .map_err(snapshot_denial)?
         .ok_or_else(|| affinity("workflow approval lacks retained capability support state"))?;
     let authorization_dependencies = admission
-        .workflow_approval_dependencies_snapshot()
+        .workflow_approval_dependencies_snapshot(execution)
         .map_err(snapshot_denial)?
         .ok_or_else(|| {
             affinity("workflow approval lacks retained native authority dependencies")
@@ -202,6 +203,7 @@ fn snapshot_denial(
 ) -> WorthQueryApplicationAttemptDenial {
     use crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial;
     let (kind, subject) = match encoding {
+        WorkflowApprovalRequestEncodingDenial::Native(cause) => return *cause,
         WorkflowApprovalRequestEncodingDenial::TooLarge => (
             WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
             "workflow approval authorization snapshot exceeds its durable bound",

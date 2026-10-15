@@ -20,8 +20,18 @@ enum ActorState {
 }
 
 impl WorkflowRecordedActorObservation {
-    pub(in crate::domain_computation) fn validate_encoding(encoded: &str) -> Result<(), ()> {
-        Self::parse_encoding(encoded).map(|_| ())
+    pub(in crate::domain_computation) fn validate_encoding(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        encoded: &str,
+    ) -> Result<(), crate::domain_computation::authorization::WorkflowApprovalRequestDecodingDenial>
+    {
+        let quote = encoded.len().checked_mul(4).ok_or(())?;
+        let _funding = crate::domain_computation::primary_graph::workflow::actor::fund_actor_codec(
+            execution, quote,
+        )?;
+        let parsed = Self::parse_encoding(encoded);
+        crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
+        parsed.map(|_| ()).map_err(Into::into)
     }
     fn parse_encoding(encoded: &str) -> Result<RecordedRole, ()> {
         let value: RecordedRole = serde_json::from_str(encoded).map_err(|_| ())?;
@@ -34,14 +44,34 @@ impl WorkflowRecordedActorObservation {
         }
         Ok(value)
     }
-    pub(in crate::domain_computation) fn encode(&self) -> Result<String, ()> {
-        serde_json::to_string(&RecordedRole {
-            version: 1, requirement: self.requirement.persistence_identity().to_owned(),
-            actor: self.actor.map_or(ActorState::NotYet, ActorState::Present),
-            sources: self.dependencies.wire().to_vec(),
-            source_version: crate::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION,
-            record: self.record.map_or(ActorState::NotYet, ActorState::Present),
-        }).map_err(|_| ())
+    pub(in crate::domain_computation) fn encode(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        maximum: usize,
+    ) -> Result<
+        crate::domain_computation::primary_graph::workflow::actor::encoding::FundedActorText,
+        crate::domain_computation::authorization::WorkflowApprovalRequestEncodingDenial,
+    > {
+        #[derive(Serialize)]
+        struct Role<'a> {
+            version: u16,
+            requirement: &'a str,
+            actor: ActorState,
+            sources: &'a [u8],
+            source_version: u16,
+            record: ActorState,
+        }
+        crate::domain_computation::primary_graph::workflow::actor::encoding::encode(
+            execution,
+            &Role {
+                version: 1, requirement: self.requirement.persistence_identity(),
+                actor: self.actor.map_or(ActorState::NotYet, ActorState::Present),
+                sources: self.dependencies.wire(),
+                source_version: crate::domain_computation::primary_graph::application_checkpoint::facts::WIRE_VERSION,
+                record: self.record.map_or(ActorState::NotYet, ActorState::Present),
+            },
+            maximum,
+        )
     }
     pub(in crate::domain_computation) fn decode(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -61,6 +91,7 @@ impl WorkflowRecordedActorObservation {
                 execution, quote,
             )?;
         let value = Self::parse_encoding(encoded).map_err(|_| invalid())?;
+        crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
         let requirement =
             Requirement::from_persistence_identity(&value.requirement).ok_or_else(invalid)?;
         let dependencies = WorkflowActorDependencies::restore(execution, &value.sources)?;

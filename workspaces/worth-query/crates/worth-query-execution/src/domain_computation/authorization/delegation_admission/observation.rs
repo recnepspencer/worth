@@ -97,22 +97,13 @@ pub(super) fn observe_lineage(
             current_principal,
         )?;
         let Some(parent_grant) = observed.parent else {
-            let mut decision = current_policy.with_delegation(
-                WorthQueryDelegationDecisionFact::root(
+            let mut decision =
+                current_policy.with_delegation(WorthQueryDelegationDecisionFact::root(
                     execution,
                     observation.relational,
                     observed.evidence,
                     status_revision,
-                )
-                .map_err(|()| {
-                    denial(
-                        WorthQueryOperationAuthorizationDenialKind::Refused(
-                            AuthorizationRefusal::InconsistentDecision,
-                        ),
-                        installed.contract().name(),
-                    )
-                })?,
-            );
+                )?);
             while let Some(frame) = frames.pop() {
                 decision = frame.child_policy.with_delegation(
                     WorthQueryDelegationDecisionFact::delegated(
@@ -124,15 +115,7 @@ pub(super) fn observe_lineage(
                         frame.transition,
                         decision,
                         frame.status_revision,
-                    )
-                    .map_err(|()| {
-                        denial(
-                            WorthQueryOperationAuthorizationDenialKind::Refused(
-                                AuthorizationRefusal::InconsistentDecision,
-                            ),
-                            installed.contract().name(),
-                        )
-                    })?,
+                    )?,
                 );
             }
             return Ok(decision);

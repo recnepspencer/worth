@@ -31,7 +31,7 @@ fn copied_primary_dependencies_cannot_forge_delegation_target_support() {
             );
             let authority = admission.workflow_approval_authority().unwrap();
             let support = serde_json::json!({
-                "request": admission.workflow_approval_request_snapshot().unwrap().unwrap(),
+                "request": admission.workflow_approval_request_snapshot(execution).unwrap().unwrap(),
                 "grant": authority.grant,
                 "capability_authority_identity": authority.capability_authority_identity,
                 "posture": "active",
@@ -39,11 +39,11 @@ fn copied_primary_dependencies_cannot_forge_delegation_target_support() {
                 "timeline": authority.timeline.canonical_name(),
                 "expiry": 300,
                 "lineage": serde_json::from_str::<serde_json::Value>(
-                    &admission.workflow_approval_lineage_snapshot().unwrap().unwrap()
+                    &admission.workflow_approval_lineage_snapshot(execution).unwrap().unwrap()
                 ).unwrap(),
             })
             .to_string();
-            let basis = durable_approval_basis_with_snapshots(&admission, Some(&support), None);
+            let basis = durable_approval_basis_with_snapshots(execution, &admission, Some(&support), None);
             let denial = world
                 .application
                 .readmit_workflow_approval_authority(execution, &basis, &admission)
@@ -85,7 +85,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             // This comparator court uses a separate real native source. It does not
             // claim production delegation issuance.
             let support = serde_json::json!({
-                "request": admission.workflow_approval_request_snapshot().unwrap().unwrap(),
+                "request": admission.workflow_approval_request_snapshot(execution).unwrap().unwrap(),
                 "grant": authority.grant,
                 "capability_authority_identity": authority.capability_authority_identity,
                 "posture": "active",
@@ -93,27 +93,26 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 "timeline": authority.timeline.canonical_name(),
                 "expiry": 300,
                 "lineage": serde_json::from_str::<serde_json::Value>(
-                    &admission.workflow_approval_lineage_snapshot().unwrap().unwrap()
+                    &admission.workflow_approval_lineage_snapshot(execution).unwrap().unwrap()
                 ).unwrap(),
             })
             .to_string();
             let mut dependencies: serde_json::Value = serde_json::from_str(
                 &admission
-                    .workflow_approval_dependencies_snapshot()
+                    .workflow_approval_dependencies_snapshot(execution)
                     .unwrap()
                     .unwrap(),
             )
             .unwrap();
             dependencies["support"] = dependencies["primary"].clone();
-            dependencies["support"]["activation"] = native_stamp_for_independent_grant(
+            dependencies["support"]["activation"] = serde_json::to_value(native_stamp_for_independent_grant(
                 &host_custody.phase_for_application(&world.application),
                 execution,
                 &world,
-            )
-            .into();
+            )).unwrap();
             let dependency_snapshot = dependencies.to_string();
             let basis = durable_approval_basis_with_dependency_snapshot(
-                &admission,
+                execution, &admission,
                 Some(&support),
                 None,
                 Some(&dependency_snapshot),
@@ -132,7 +131,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 ),
             ] {
                 let altered = durable_approval_basis_with_dependency_snapshot(
-                    &admission,
+                    execution, &admission,
                     Some(&mutated),
                     None,
                     Some(&dependency_snapshot),
@@ -154,7 +153,7 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             support_request["resource"] = serde_json::to_value(authority.grant).unwrap();
             wrong_resource["request"] = serde_json::Value::String(support_request.to_string());
             let altered = durable_approval_basis_with_dependency_snapshot(
-                &admission,
+                execution, &admission,
                 Some(&wrong_resource.to_string()),
                 None,
                 Some(&dependency_snapshot),
@@ -203,14 +202,14 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
             );
             let original_dependencies: serde_json::Value = serde_json::from_str(
                 &admission
-                    .workflow_approval_dependencies_snapshot()
+                    .workflow_approval_dependencies_snapshot(execution)
                     .unwrap()
                     .unwrap(),
             )
             .unwrap();
             let fresh_dependencies: serde_json::Value = serde_json::from_str(
                 &fresh
-                    .workflow_approval_dependencies_snapshot()
+                    .workflow_approval_dependencies_snapshot(execution)
                     .unwrap()
                     .unwrap(),
             )
@@ -220,8 +219,8 @@ fn delegation_support_comparator_rejects_independent_native_source_aba() {
                 fresh_dependencies["primary"]
             );
             assert_eq!(
-                admission.workflow_approval_lineage_snapshot().unwrap(),
-                fresh.workflow_approval_lineage_snapshot().unwrap()
+                admission.workflow_approval_lineage_snapshot(execution).unwrap(),
+                fresh.workflow_approval_lineage_snapshot(execution).unwrap()
             );
             let denial = world
                 .application
@@ -241,7 +240,7 @@ fn native_stamp_for_independent_grant(
     phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &super::super::super::fixture::AuthorizationWorld,
-) -> String {
+) -> worth_relational::facade::authorization::RelationalAuthorizationDependencyWire {
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let snapshot = selected.application_basis().snapshot_handle().clone();
     let graph = world.application.runtime.primary_graph().unwrap();
@@ -282,7 +281,7 @@ fn native_stamp_for_independent_grant(
             runtime
                 .capture_authorization_durable_dependencies(&observation, execution)
                 .unwrap()
-                .to_wire_string()
+                .to_wire(execution)
                 .unwrap()
         })
 }
@@ -313,13 +312,13 @@ let principal = authenticated_principal(
             worth_foundational::facade::AspectValue::UInt64(primary_expiry) if primary_expiry > 108
         ));
         let support = serde_json::json!({
-            "request": admission.workflow_approval_request_snapshot().unwrap().unwrap(),
+            "request": admission.workflow_approval_request_snapshot(execution).unwrap().unwrap(),
             "grant": authority.grant,
             "capability_authority_identity": authority.capability_authority_identity,
             "posture": "active",
             "role": "delegation_target",
             "lineage": serde_json::from_str::<serde_json::Value>(
-                &admission.workflow_approval_lineage_snapshot().unwrap().unwrap()
+                &admission.workflow_approval_lineage_snapshot(execution).unwrap().unwrap()
             ).unwrap(),
             "timeline": authority.timeline.canonical_name(),
             "expiry": 105,
@@ -327,7 +326,7 @@ let principal = authenticated_principal(
         .to_string();
         let mut dependencies: serde_json::Value = serde_json::from_str(
             &admission
-                .workflow_approval_dependencies_snapshot()
+                .workflow_approval_dependencies_snapshot(execution)
                 .unwrap()
                 .unwrap(),
         )
@@ -335,7 +334,7 @@ let principal = authenticated_principal(
         dependencies["support"] = dependencies["primary"].clone();
         dependencies["support"]["activation"] = dependencies["primary"]["primary"].clone();
         let basis = durable_approval_basis_with_dependency_snapshot(
-            &admission,
+            execution, &admission,
             Some(&support),
             None,
             Some(&dependencies.to_string()),

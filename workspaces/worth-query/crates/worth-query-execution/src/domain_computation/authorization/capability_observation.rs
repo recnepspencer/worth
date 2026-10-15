@@ -213,15 +213,7 @@ pub(super) fn observe_capability_policy(
             evidence,
             bridge_evidence,
             recorded,
-        )
-        .map_err(|()| {
-            WorthQueryOperationAuthorizationDenial::new(
-                WorthQueryOperationAuthorizationDenialKind::Refused(
-                    AuthorizationRefusal::InconsistentDecision,
-                ),
-                installed.contract().name(),
-            )
-        })?
+        )?
         .with_preparatory_relational_work(preparatory_relational_work),
         grant,
         capability_authority_identity: std::sync::Arc::clone(

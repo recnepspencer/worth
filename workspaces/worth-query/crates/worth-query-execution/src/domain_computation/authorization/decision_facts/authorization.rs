@@ -10,6 +10,7 @@ use worth_runtime_bridge::facade::{
 
 mod delegation;
 mod durable_dependencies;
+mod lineage_view;
 pub(in crate::domain_computation::authorization) use delegation::WorthQueryDelegationDecisionFact;
 pub(in crate::domain_computation) use delegation::WorthQueryDurableCapabilityLineage;
 pub(in crate::domain_computation) use durable_dependencies::WorthQueryDurableAuthorizationDependencies;
@@ -23,7 +24,7 @@ pub(in crate::domain_computation) struct WorthQueryAuthorizationDecisionFact {
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: Arc<RelationalAuthorizationObservationEvidence>,
     bridge: Arc<BridgeAuthorizationDecisionEvidence>,
-    native_dependencies: Option<String>,
+    native_dependencies: Option<worth_relational::facade::authorization::RelationalAuthorizationDependencyWire>,
     recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
     delegation: Option<Arc<WorthQueryDelegationDecisionFact>>,
     delegation_activation: Option<Arc<WorthQueryDelegationActivationDecisionFact>>,
@@ -48,7 +49,10 @@ impl WorthQueryAuthorizationDecisionFact {
         relational: RelationalAuthorizationObservationEvidence,
         bridge: BridgeAuthorizationDecisionEvidence,
         recorded_actor: Option<Arc<crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::WorkflowRecordedActorObservation>>,
-    ) -> Result<Self, ()> {
+    ) -> Result<
+        Self,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    > {
         let dependencies = durable_dependencies::capture(execution, runtime, &relational)?;
         let mut decision = Self::mint(session_identity, relational, bridge);
         decision.native_dependencies = Some(dependencies);

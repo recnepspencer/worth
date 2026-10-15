@@ -1,6 +1,8 @@
 //! Durable, bounded form of the exact request authorized at workflow approval.
 mod context_inventory;
+mod encoding;
 
+#[cfg(test)]
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
@@ -53,17 +55,27 @@ struct PortableRelation {
     to: String,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Debug)]
 pub(in crate::domain_computation) enum WorkflowApprovalRequestEncodingDenial {
     TooLarge,
     NonPortableValue,
     InvalidRequest,
+    Native(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
 }
 
 #[derive(Debug)]
 pub(in crate::domain_computation) enum WorkflowApprovalRequestDecodingDenial {
     InvalidRequest,
     Actor(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
+}
+impl From<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    for WorkflowApprovalRequestDecodingDenial
+{
+    fn from(
+        cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    ) -> Self {
+        Self::Actor(Box::new(cause))
+    }
 }
 impl From<()> for WorkflowApprovalRequestDecodingDenial {
     fn from(_: ()) -> Self {
@@ -72,55 +84,6 @@ impl From<()> for WorkflowApprovalRequestDecodingDenial {
 }
 
 impl WorthQueryRetainedCapabilityRequest {
-    pub(in crate::domain_computation) fn encode_workflow_approval_request(
-        &self,
-    ) -> Result<String, WorkflowApprovalRequestEncodingDenial> {
-        let relation = self.related_relation.as_ref().map(|binding| {
-            let parts = binding.parts();
-            PortableRelation {
-                relation: parts.relation,
-                from: parts.from,
-                to: parts.to,
-            }
-        });
-        let portable = PortableRequest {
-            version: PORTABLE_VERSION,
-            recorded_actor: match &self.recorded_actor {
-                None => RecordedActorRequest::NotApplicable,
-                Some(actor) => RecordedActorRequest::Native(
-                    actor
-                        .encode()
-                        .map_err(|_| WorkflowApprovalRequestEncodingDenial::InvalidRequest)?,
-                ),
-            },
-            capability_identity: self.capability_identity,
-            principal: self.principal,
-            resource: self.resource,
-            resource_entity: self.resource_entity.to_string(),
-            elevation: self.elevation,
-            action: self.action.clone(),
-            purpose: self.purpose.clone(),
-            related_relation: relation,
-            related: self.related,
-            field: self.field.clone(),
-            magnitude: self.magnitude.clone(),
-            cardinality: self.cardinality,
-            context_name: self.context_name.to_string(),
-            context_type: self.context_type.to_string(),
-            context: self
-                .context
-                .iter()
-                .map(|(key, entity)| (key.clone(), *entity))
-                .collect(),
-        };
-        validate_portable(&portable)?;
-        let encoded = serde_json::to_string(&portable)
-            .map_err(|_| WorkflowApprovalRequestEncodingDenial::InvalidRequest)?;
-        (encoded.len() <= MAXIMUM_PORTABLE_BYTES)
-            .then_some(encoded)
-            .ok_or(WorkflowApprovalRequestEncodingDenial::TooLarge)
-    }
-
     pub(in crate::domain_computation) fn decode_workflow_approval_request(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         encoded: &str,
@@ -136,6 +99,9 @@ impl WorthQueryRetainedCapabilityRequest {
             .map_err(|cause| WorkflowApprovalRequestDecodingDenial::Actor(Box::new(cause)))?;
         let inventory: PortableRequest<context_inventory::ContextCount> =
             serde_json::from_str(encoded).map_err(|_| ())?;
+        if inventory.version != PORTABLE_VERSION {
+            return Err(().into());
+        }
         let entries = inventory.context.0;
         drop(inventory);
         // serde JSON sequence has no length hint. Vec's nonzero-size initial
@@ -160,6 +126,7 @@ impl WorthQueryRetainedCapabilityRequest {
             )
             .map_err(|cause| WorkflowApprovalRequestDecodingDenial::Actor(Box::new(cause)))?;
         let portable: PortableRequest = serde_json::from_str(encoded).map_err(|_| ())?;
+        crate::domain_computation::primary_graph::workflow::actor::encoding::check_live(execution)?;
         validate_portable(&portable).map_err(|_| ())?;
         let context = super::context::RetainedContext::decoded(portable.context).map_err(|_| ())?;
         let related_relation = portable.related_relation.map(|parts| {
@@ -213,13 +180,6 @@ fn validate_portable(
         || portable.related_relation.as_ref().is_some_and(|relation| {
             relation.relation.is_empty() || relation.from.is_empty() || relation.to.is_empty()
         })
-        || portable
-            .context
-            .iter()
-            .map(|(key, _)| key)
-            .collect::<std::collections::BTreeSet<_>>()
-            .len()
-            != portable.context.len()
     {
         return Err(InvalidRequest);
     }

@@ -35,6 +35,10 @@ pub(super) fn capture(
     if evidence.paths().len() > MAXIMUM_AUTHORIZATION_DEPENDENCIES {
         return Err(Denial::DependencyBudgetExceeded);
     }
+    execution
+        .consult()
+        .map_err(|stop| Denial::Execution(stop.into()))?;
+    let storage = super::storage::capture_quote(evidence)?.admit(execution)?;
     let mut remaining = MAXIMUM_AUTHORIZATION_DEPENDENCIES;
     let mut string_bytes = 0usize;
     let principal = capture_entity(execution, &view, evidence.principal(), &mut remaining)?;
@@ -49,20 +53,21 @@ pub(super) fn capture(
             consume_many(&mut remaining, witness.entities().len())?;
         }
         let witness = path.witness().map(|witness| witness.entities().to_vec());
-        let entities = path
-            .entities()
-            .iter()
-            .map(|&entity| capture_entity(execution, &view, entity, &mut remaining))
-            .collect::<Result<Vec<_>, _>>()?;
-        let relations = path
-            .relations()
-            .iter()
-            .map(|&relation| capture_relation(execution, &view, relation, &mut remaining))
-            .collect::<Result<Vec<_>, _>>()?;
-        let adjacencies = path
-            .adjacency_lists()
-            .iter()
-            .map(|dependency| {
+        let entities = super::storage::capture_list(
+            path.entities().len(),
+            path.entities()
+                .iter()
+                .map(|&entity| capture_entity(execution, &view, entity, &mut remaining)),
+        )?;
+        let relations = super::storage::capture_list(
+            path.relations().len(),
+            path.relations()
+                .iter()
+                .map(|&relation| capture_relation(execution, &view, relation, &mut remaining)),
+        )?;
+        let adjacencies = super::storage::capture_list(
+            path.adjacency_lists().len(),
+            path.adjacency_lists().iter().map(|dependency| {
                 consume(&mut remaining)?;
                 let direction = match dependency.direction() {
                     RelationalAuthorizationTraversalDirection::Forward => {
@@ -88,12 +93,11 @@ pub(super) fn capture(
                     direction: dependency.direction(),
                     revision,
                 })
-            })
-            .collect::<Result<Vec<_>, Denial>>()?;
-        let fields = path
-            .fields()
-            .iter()
-            .map(|(entity, locator)| {
+            }),
+        )?;
+        let fields = super::storage::capture_list(
+            path.fields().len(),
+            path.fields().iter().map(|(entity, locator)| {
                 consume(&mut remaining)?;
                 let locator_authority = match locator.aspect().authority() {
                     LocatorAuthority::Authoritative => FieldLocatorAuthority::Authoritative,
@@ -114,6 +118,8 @@ pub(super) fn capture(
                 if string_bytes > MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES {
                     return Err(Denial::ByteBudgetExceeded);
                 }
+                let _locator_storage =
+                    super::storage::locator_storage(execution, aspect, field.as_str())?;
                 let authoritative_locator = AspectFieldLocator::new(
                     LocatorAuthority::Authoritative,
                     locator.aspect().aspect_key().clone(),
@@ -130,8 +136,8 @@ pub(super) fn capture(
                     field: field.as_str().to_owned(),
                     revision,
                 })
-            })
-            .collect::<Result<Vec<_>, Denial>>()?;
+            }),
+        )?;
         paths.push(PathDependencies {
             matched: path.matched(),
             witness,
@@ -141,13 +147,19 @@ pub(super) fn capture(
             fields,
         });
     }
-    let stamp = RelationalAuthorizationDurableDependencies {
+    let data = super::DependencyData {
         version: DURABLE_DEPENDENCY_VERSION,
         principal,
         scope,
         paths,
     };
-    stamp.bounded_wire_bytes()?;
+    let stamp = RelationalAuthorizationDurableDependencies {
+        owned: std::sync::Arc::new(super::OwnedDependencies {
+            data,
+            _storage: storage,
+        }),
+    };
+    stamp.check_wire_limits(execution)?;
     Ok(stamp)
 }
 
