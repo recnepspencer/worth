@@ -32,23 +32,23 @@ impl BankRequestedEstateElevation {
         self.query.capability_authority_identity()
     }
 
-    pub const fn action(&self) -> &AspectValue {
+    pub fn action(&self) -> &AspectValue {
         self.query.action()
     }
 
-    pub const fn purpose(&self) -> &AspectValue {
+    pub fn purpose(&self) -> &AspectValue {
         self.query.purpose()
     }
 
-    pub const fn field(&self) -> Option<&AspectValue> {
+    pub fn field(&self) -> Option<&AspectValue> {
         self.query.field()
     }
 
-    pub const fn magnitude(&self) -> Option<&AspectValue> {
+    pub fn magnitude(&self) -> Option<&AspectValue> {
         self.query.magnitude()
     }
 
-    pub const fn cardinality(&self) -> u32 {
+    pub fn cardinality(&self) -> u32 {
         self.query.cardinality()
     }
 

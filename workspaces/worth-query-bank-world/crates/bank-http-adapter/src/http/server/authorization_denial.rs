@@ -51,6 +51,9 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         | Authorization::ConflictRuleMatched
         | Authorization::SeparationOfDutyRuleMatched
         | Authorization::DistinctActorRuleMatched
+        | Authorization::WorkflowActorContextRequired
+        | Authorization::WorkflowActorAbsent
+        | Authorization::WorkflowActorComparisonMismatch
         | Authorization::CapabilityRequired
         | Authorization::CapabilityNotRequired
         | Authorization::CapabilityExpired
@@ -74,9 +77,9 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         | Authorization::ScopeMismatch
         | Authorization::ProductSecurityBasis(_)
         | Authorization::PermissionDenied => (Kind::PermissionDenied, Next::None),
-        Authorization::TrustedTimeUnavailable | Authorization::GraphWorkAdmissionUnavailable => {
-            (Kind::Unavailable, Next::Retry)
-        }
+        Authorization::WorkflowActorEvidenceUnavailable
+        | Authorization::TrustedTimeUnavailable
+        | Authorization::GraphWorkAdmissionUnavailable => (Kind::Unavailable, Next::Retry),
         // Repeating the request cannot install or repair its policy.
         Authorization::PolicyNotInstalled => (Kind::Unavailable, Next::ContactOperator),
         Authorization::ForeignPhase
@@ -85,6 +88,7 @@ pub(super) fn authorization_denial(kind: BankAuthorizationDenialKind) -> BankHtt
         | Authorization::InvalidInstalledPolicy
         | Authorization::RelationalObservationRejected
         | Authorization::BridgeEvaluationRejected
+        | Authorization::WorkflowActorSourceInvalid
         | Authorization::InconsistentDecision => (Kind::InternalDenied, Next::ContactOperator),
     };
     BankHttpDenial::new(denial, next)

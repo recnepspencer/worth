@@ -30,6 +30,11 @@ pub enum BankAuthorizationDenialKind {
     ConflictRuleMatched,
     SeparationOfDutyRuleMatched,
     DistinctActorRuleMatched,
+    WorkflowActorContextRequired,
+    WorkflowActorAbsent,
+    WorkflowActorComparisonMismatch,
+    WorkflowActorSourceInvalid,
+    WorkflowActorEvidenceUnavailable,
     CapabilityRequired,
     CapabilityNotRequired,
     CapabilityExpired,
@@ -181,6 +186,11 @@ const fn map_kind(kind: QueryKind) -> BankAuthorizationDenialKind {
         QueryKind::Refused(AuthorizationRefusal::GrantSelectionLimitExceeded) => Bank::GrantSelectionLimitExceeded,
         QueryKind::Refused(AuthorizationRefusal::BridgeEvaluationRejected) => Bank::BridgeEvaluationRejected,
         QueryKind::Refused(AuthorizationRefusal::InconsistentDecision) => Bank::InconsistentDecision,
+        QueryKind::Refused(AuthorizationRefusal::WorkflowActorContextRequired) => Bank::WorkflowActorContextRequired,
+        QueryKind::Refused(AuthorizationRefusal::WorkflowActorAbsent) => Bank::WorkflowActorAbsent,
+        QueryKind::Refused(AuthorizationRefusal::WorkflowActorComparisonMismatch) => Bank::WorkflowActorComparisonMismatch,
+        QueryKind::Refused(AuthorizationRefusal::WorkflowActorSourceInvalid) => Bank::WorkflowActorSourceInvalid,
+        QueryKind::Refused(AuthorizationRefusal::WorkflowActorEvidenceUnavailable) => Bank::WorkflowActorEvidenceUnavailable,
         QueryKind::Refused(AuthorizationRefusal::PermissionDenied) => Bank::PermissionDenied,
     }
 }
@@ -248,6 +258,11 @@ const fn authorization_code(kind: BankAuthorizationDenialKind) -> &'static str {
         Bank::GrantSelectionLimitExceeded => "grant-selection-limit-exceeded",
         Bank::BridgeEvaluationRejected => "bridge-evaluation-rejected",
         Bank::InconsistentDecision => "inconsistent-decision",
+        Bank::WorkflowActorContextRequired => "workflow-actor-context-required",
+        Bank::WorkflowActorAbsent => "workflow-actor-absent",
+        Bank::WorkflowActorComparisonMismatch => "workflow-actor-comparison-mismatch",
+        Bank::WorkflowActorSourceInvalid => "workflow-actor-source-invalid",
+        Bank::WorkflowActorEvidenceUnavailable => "workflow-actor-evidence-unavailable",
         Bank::PermissionDenied => "permission-denied",
     }
 }
