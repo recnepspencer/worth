@@ -1,0 +1,43 @@
+//! Business admission and typed emission for the actual archive request.
+use super::*;
+pub(super) struct ArchiveHandler;
+impl OperationHandler<DocumentRetentionSchema, ArchiveBinding> for ArchiveHandler {
+    fn decide(
+        &self,
+        input: &SetRetentionInput,
+        reader: &mut DecisionReader<'_, '_, '_, DocumentRetentionSchema, ArchiveBinding>,
+    ) -> HandlerResult<
+        <ArchiveBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::Decision,
+        SetRetentionDenial,
+    > {
+        let target = (|| {
+            let document = reader
+                .resolve_entity(DocumentIdentityField::reference(), input.identity.clone())?;
+            reader.mutation_target(&document)
+        })();
+        match target {
+            Ok(target) => HandlerResult::Completed(target),
+            Err(cause) => HandlerResult::ExecutionDenied(cause),
+        }
+    }
+    fn candidate_requirements(
+        &self,
+        _: &SetRetentionInput,
+        _: &<ArchiveBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::Decision,
+    ) -> ApplicationCandidateRequirements {
+        ArchiveBinding::CANDIDATES
+    }
+    fn build_candidate(
+        &self,
+        input: &SetRetentionInput,
+        _: <ArchiveBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::Decision,
+        writer: &mut CandidateWriter<'_, DocumentRetentionSchema, ArchiveBinding>,
+    ) -> HandlerResult<ArchiveRequested, SetRetentionDenial> {
+        match writer.emit_external(ArchiveEffect::reference(), input.clone()) {
+            Ok(()) => HandlerResult::Completed(ArchiveRequested {
+                retention_days: input.retention_days,
+            }),
+            Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+        }
+    }
+}
