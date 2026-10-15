@@ -68,7 +68,6 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
     pub(in crate::application_entry) description: WorthQueryOperationDescription<S, I>,
     pub(in crate::application_entry) installed_action:
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
@@ -76,6 +75,8 @@ where
         worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
     >,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
+    // Retention outlives captured intent and native workflow custody on abandonment.
+    pub(in crate::application_entry) runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
 impl<S, I, P, A, Mode> WorthQuerySourceOperationAdmission<S, I, P, A, Mode>
 where

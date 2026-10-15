@@ -9,9 +9,10 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(in crate::application_entry) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
     pub(in crate::application_entry::operation) evidence:
         WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
+    // Evidence carriers release before the operation's authentic runtime keepalive.
+    pub(in crate::application_entry) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
 }
 #[must_use = "retain terminal evidence and close its remaining cleanup"]
 /// Native terminal custody cannot be advanced.
