@@ -192,9 +192,14 @@ mod tests {
 
     #[test]
     fn value_serialization_stops_at_the_declared_codec_budget() {
-        let mut writer = ValueWriter(Vec::new());
-        assert!(serde_json::to_writer(&mut writer, &"x".repeat(MAXIMUM_VALUE_BYTES + 1)).is_err());
-        assert!(writer.0.len() <= MAXIMUM_VALUE_BYTES);
+        let mut bytes = Vec::new();
+        assert!(json(
+            &mut bytes,
+            &"x".repeat(MAXIMUM_VALUE_BYTES + 1),
+            MAXIMUM_VALUE_BYTES
+        )
+        .is_none());
+        assert!(bytes.len() <= MAXIMUM_VALUE_BYTES);
     }
 
     #[test]
