@@ -1,5 +1,6 @@
 //! The declared delivery mode chooses a concrete owning lane before effects.
 use super::*;
+mod discovered;
 use worth_query_declaration::facade::application_program::{
     ApplicationAction, ApplicationActionDelivery, ApplicationFixedDeliveryMode,
     ApplicationRetainedCommit, ApplicationSourceCompletion,

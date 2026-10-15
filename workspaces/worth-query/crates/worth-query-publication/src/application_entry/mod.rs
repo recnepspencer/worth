@@ -22,16 +22,17 @@ mod ordinary;
 pub use ordinary::{WorthQueryOperationBuilder, WorthQueryPendingApplicationLane};
 mod operation;
 pub use operation::{
-    WorthQueryClosedOperation, WorthQueryCompletedSourceOperation, WorthQueryFixedOperation,
-    WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial, WorthQueryOperationCleanup,
-    WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
+    WorthQueryClosedOperation, WorthQueryCompletedSourceOperation, WorthQueryDiscoveredOperation,
+    WorthQueryFixedOperation, WorthQueryOperationAdvance, WorthQueryOperationAdvanceDenial,
+    WorthQueryOperationCleanup, WorthQueryOperationCleanupReceipt, WorthQueryOperationCloseDenial,
     WorthQueryOperationConstructionDenial, WorthQueryOperationDeliveryDenial,
     WorthQueryOperationDeliveryPolicy, WorthQueryOperationDescription,
     WorthQueryOperationModeFactory, WorthQueryOperationProgress,
-    WorthQueryOutputProjectionInstallation, WorthQuerySettledFixedOperation,
-    WorthQuerySourceCompletion, WorthQuerySourceDeliveryMode, WorthQuerySourceOnlyAdvance,
-    WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,
-    WorthQuerySourceOperationAdmission, WorthQueryTerminalFixedOperation,
+    WorthQueryOutputProjectionInstallation, WorthQuerySettledDiscoveredOperation,
+    WorthQuerySettledFixedOperation, WorthQuerySourceCompletion, WorthQuerySourceDeliveryMode,
+    WorthQuerySourceOnlyAdvance, WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation,
+    WorthQuerySourceOnlyPosture, WorthQuerySourceOperationAdmission,
+    WorthQueryTerminalDiscoveredOperation, WorthQueryTerminalFixedOperation,
     WorthQueryTerminalSourceOperation,
 };
 mod programs;

@@ -112,9 +112,10 @@ selector. Runtime type stamps are excluded from canonical meaning.
 The [nested Planar declaration](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/discovered_contracts.rs)
 shows a query, two-selector batch and explicit no-projection declaration against
 one real discovered root. These are declaration and installation contracts.
-They do not yet provide an ordinary discovered `retain_operation` factory or
-replace the current native discovered lifecycle. Fixed and SourceOnly owning
-entry points below retain their existing behavior.
+Declaration and installation alone do not establish current delivery or replace
+the native discovered lifecycle. The ordinary discovered current/historical
+delivery composition is not yet available. Fixed and SourceOnly owning entry
+points below retain their existing behavior.
 
 ## Owning fixed and source-only actions
 

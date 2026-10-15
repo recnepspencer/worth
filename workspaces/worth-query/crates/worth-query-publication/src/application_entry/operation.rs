@@ -19,6 +19,11 @@ mod batch_delivery;
 mod current_delivery;
 mod delivery_policy;
 mod descriptor;
+mod discovered;
+pub use discovered::{
+    WorthQueryDiscoveredOperation, WorthQuerySettledDiscoveredOperation,
+    WorthQueryTerminalDiscoveredOperation,
+};
 #[cfg(test)]
 mod discovered_delivery_handoff_contract;
 #[cfg(test)]
