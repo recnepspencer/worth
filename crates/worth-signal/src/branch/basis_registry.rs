@@ -250,19 +250,22 @@ impl Drop for AcquisitionClaimGuard {
         if !self.armed {
             return;
         }
-        match self.state.upgrade() { Some(state) => {
-            finish_denied(
-                &state,
-                &self.key,
-                self.reservation_id,
-                &self.completion,
-                SignalBranchRetentionAcquisitionDenial::OwnerOperationPanicked,
-            );
-        } _ => {
-            self.completion.finish(Err(
-                SignalBranchRetentionAcquisitionDenial::OwnerOperationPanicked,
-            ));
-        }}
+        match self.state.upgrade() {
+            Some(state) => {
+                finish_denied(
+                    &state,
+                    &self.key,
+                    self.reservation_id,
+                    &self.completion,
+                    SignalBranchRetentionAcquisitionDenial::OwnerOperationPanicked,
+                );
+            }
+            _ => {
+                self.completion.finish(Err(
+                    SignalBranchRetentionAcquisitionDenial::OwnerOperationPanicked,
+                ));
+            }
+        }
     }
 }
 

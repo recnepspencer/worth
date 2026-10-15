@@ -248,7 +248,10 @@ pub(super) fn occurrence_rows<'a, C: OccurrenceSearchCharge>(
     records: &'a super::record_map::DemandRecords,
     key: &'a WorthQueryOutputDemandKey,
     charge: &mut C,
-) -> Result<impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> + use<'a, C>, C::Refusal> {
+) -> Result<
+    impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> + use<'a, C>,
+    C::Refusal,
+> {
     charge.occurrence_path(records.len())?;
     Ok(records.occurrence_rows(key))
 }
@@ -258,7 +261,10 @@ pub(super) fn source_rows<'a, C: OccurrenceSearchCharge>(
     records: &'a super::record_map::DemandRecords,
     source: &'a super::SourceEpoch,
     charge: &mut C,
-) -> Result<impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> + use<'a, C>, C::Refusal> {
+) -> Result<
+    impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> + use<'a, C>,
+    C::Refusal,
+> {
     charge.occurrence_path(records.len())?;
     Ok(records.source_occurrence_rows(source))
 }

@@ -66,13 +66,16 @@ where
         },
         proof,
         admission,
-    )? { Some(proof) => {
-        frontier.members[0].state = MemberState::AcceptedCaller;
-        Ok(CallerAcceptance::Accepted(proof))
-    } _ => {
-        caller.state = MemberState::Pending;
-        Ok(CallerAcceptance::Deferred)
-    }}
+    )? {
+        Some(proof) => {
+            frontier.members[0].state = MemberState::AcceptedCaller;
+            Ok(CallerAcceptance::Accepted(proof))
+        }
+        _ => {
+            caller.state = MemberState::Pending;
+            Ok(CallerAcceptance::Deferred)
+        }
+    }
 }
 
 /// Native Current proof consumption is immediate; only promotion may defer.

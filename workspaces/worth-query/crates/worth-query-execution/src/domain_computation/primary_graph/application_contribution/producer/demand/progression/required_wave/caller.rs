@@ -224,22 +224,26 @@ where
             selected,
             continues_caller,
             admission,
-        )?
-    { Some(mut successor) => {
-        // The successor completed under its own issued mode. This is a
-        // Current custody handoff, so future advances retain the caller's
-        // original authority, as when an open demand rejoins another refresh.
-        let mut provenance = std::mem::take(&mut demand.progression_provenance);
-        if let DemandProgressionProvenance::RequiredSuccessor(required) = &mut provenance {
-            required.bind_successor(successor.installed_entry.edition);
+        )? {
+        Some(mut successor) => {
+            // The successor completed under its own issued mode. This is a
+            // Current custody handoff, so future advances retain the caller's
+            // original authority, as when an open demand rejoins another refresh.
+            let mut provenance = std::mem::take(&mut demand.progression_provenance);
+            if let DemandProgressionProvenance::RequiredSuccessor(required) = &mut provenance {
+                required.bind_successor(successor.installed_entry.edition);
+            }
+            successor.progression_provenance = provenance;
+            successor.required_continuations = demand.required_continuations.take_all();
+            successor.producer_contacts_in_this_demand = current_contacts;
+            *demand = successor;
         }
-        successor.progression_provenance = provenance;
-        successor.required_continuations = demand.required_continuations.take_all();
-        successor.producer_contacts_in_this_demand = current_contacts;
-        *demand = successor;
-    } _ => if !caller_current {
-        return Ok(None);
-    }}
+        _ => {
+            if !caller_current {
+                return Ok(None);
+            }
+        }
+    }
     let interest = demand
         .interest
         .as_ref()

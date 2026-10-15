@@ -102,54 +102,65 @@ pub(super) fn walk<P: ReleaseCustodyHeadWalkPort>(
         }
         port.visit_node(reference, &frame).map_err(Denial::Visit)?;
         nodes += 1;
-        match view.entries() { Some(entries) => {
-            for entry in entries {
-                roster.push(entry).map_err(Denial::Format)?;
-                port.visit_entry(entry).map_err(Denial::Visit)?;
+        match view.entries() {
+            Some(entries) => {
+                for entry in entries {
+                    roster.push(entry).map_err(Denial::Format)?;
+                    port.visit_entry(entry).map_err(Denial::Visit)?;
+                }
             }
-        } _ => { match view.children() { Some(children) => {
-            let child_count = view.count();
-            // Every block the walk reads is admitted here, with its siblings,
-            // before it is stacked: the root is one block of a bound of one.
-            // A count past every count is no limit.
-            let observed = nodes
-                .checked_add(stack.len() as u64)
-                .and_then(|held| held.checked_add(child_count as u64))
-                .ok_or(Denial::BoundExceeded)?;
-            ReleaseCustodyHeadWalkAllowance::nodes(limits.max_nodes)
-                .admit(observed)
-                .map_err(Denial::Limit)?;
-            let required = stack
-                .len()
-                .checked_add(child_count)
-                .ok_or(Denial::BoundExceeded)?;
-            if required > stack.capacity() {
-                let prospective = scratch_bytes(
-                    seen.capacity_bytes(),
-                    vector_bytes(&stack).and_then(|old| {
-                        old.checked_add(slot_bytes::<(ReleaseCustodyHeadBlockReferenceV1, u16)>(
-                            required,
-                        )?)
-                    }),
-                    vector_bytes(&frame),
-                )?;
-                require_resident(prospective, limits.max_resident_bytes)?;
-                let previous = vector_bytes(&stack).ok_or(Denial::BoundExceeded)?;
-                port.grow_vec(&mut stack, child_count)
-                    .map_err(Denial::Storage)?;
-                let overlap = scratch_bytes(
-                    seen.capacity_bytes(),
-                    vector_bytes(&stack).and_then(|new| new.checked_add(previous)),
-                    vector_bytes(&frame),
-                )?;
-                require_resident(overlap, limits.max_resident_bytes)?;
-                peak = peak.max(overlap);
+            _ => {
+                match view.children() {
+                    Some(children) => {
+                        let child_count = view.count();
+                        // Every block the walk reads is admitted here, with its siblings,
+                        // before it is stacked: the root is one block of a bound of one.
+                        // A count past every count is no limit.
+                        let observed = nodes
+                            .checked_add(stack.len() as u64)
+                            .and_then(|held| held.checked_add(child_count as u64))
+                            .ok_or(Denial::BoundExceeded)?;
+                        ReleaseCustodyHeadWalkAllowance::nodes(limits.max_nodes)
+                            .admit(observed)
+                            .map_err(Denial::Limit)?;
+                        let required = stack
+                            .len()
+                            .checked_add(child_count)
+                            .ok_or(Denial::BoundExceeded)?;
+                        if required > stack.capacity() {
+                            let prospective = scratch_bytes(
+                                seen.capacity_bytes(),
+                                vector_bytes(&stack).and_then(|old| {
+                                    old.checked_add(slot_bytes::<(
+                                        ReleaseCustodyHeadBlockReferenceV1,
+                                        u16,
+                                    )>(
+                                        required
+                                    )?)
+                                }),
+                                vector_bytes(&frame),
+                            )?;
+                            require_resident(prospective, limits.max_resident_bytes)?;
+                            let previous = vector_bytes(&stack).ok_or(Denial::BoundExceeded)?;
+                            port.grow_vec(&mut stack, child_count)
+                                .map_err(Denial::Storage)?;
+                            let overlap = scratch_bytes(
+                                seen.capacity_bytes(),
+                                vector_bytes(&stack).and_then(|new| new.checked_add(previous)),
+                                vector_bytes(&frame),
+                            )?;
+                            require_resident(overlap, limits.max_resident_bytes)?;
+                            peak = peak.max(overlap);
+                        }
+                        let next_depth = depth.checked_add(1).ok_or(Denial::BoundExceeded)?;
+                        for child in children.rev() {
+                            stack.push((child, next_depth));
+                        }
+                    }
+                    _ => {}
+                }
             }
-            let next_depth = depth.checked_add(1).ok_or(Denial::BoundExceeded)?;
-            for child in children.rev() {
-                stack.push((child, next_depth));
-            }
-        } _ => {}}}}
+        }
         // The view borrows the frame only within this iteration. Drop the
         // charged frame backing before the next addressed read.
         port.discard_vec(frame);

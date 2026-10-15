@@ -32,17 +32,16 @@ impl WorthUiPresentationAsyncOwner {
             .unresolved
             .remove(&key)
             .filter(|pending| pending.nonce == receipt.nonce)
-        { Some(pending) => {
-            (pending, true)
-        } _ => {
-            (
+        {
+            Some(pending) => (pending, true),
+            _ => (
                 self.pending
                     .remove(&key)
                     .filter(|pending| pending.nonce == receipt.nonce)
                     .ok_or(WorthUiPresentationSettlementDenial::InvalidPendingReceipt)?,
                 false,
-            )
-        }};
+            ),
+        };
         if pending.settlement.completion_progress.is_none() {
             match pending
                 .admission

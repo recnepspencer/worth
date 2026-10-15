@@ -215,7 +215,9 @@ impl LineageState {
         self.rebuild_derived_indexes();
     }
 
-    pub(crate) fn drain_events(&mut self) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
+    pub(crate) fn drain_events(
+        &mut self,
+    ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
         self.published_event_ids.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()

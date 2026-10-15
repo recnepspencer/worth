@@ -39,7 +39,8 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationDiscovery<'a, Schema> {
 
     pub fn mutations(
         &self,
-    ) -> impl Iterator<Item = WorthQueryApplicationMutationDescription<'a>> + 'a + use<'a, Schema> {
+    ) -> impl Iterator<Item = WorthQueryApplicationMutationDescription<'a>> + 'a + use<'a, Schema>
+    {
         let schema = self.schema;
         let members = schema.installed_declaration().members();
         members.iter().filter_map(move |member| {
@@ -57,7 +58,10 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationDiscovery<'a, Schema> {
         })
     }
 
-    pub fn queries(&self) -> impl Iterator<Item = WorthQueryApplicationQueryDescription<'a>> + 'a + use<'a, Schema> {
+    pub fn queries(
+        &self,
+    ) -> impl Iterator<Item = WorthQueryApplicationQueryDescription<'a>> + 'a + use<'a, Schema>
+    {
         let schema = self.schema;
         schema
             .installed_declaration()
@@ -78,7 +82,10 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationDiscovery<'a, Schema> {
             })
     }
 
-    pub fn fields(&self) -> impl Iterator<Item = WorthQueryApplicationFieldDescription<'a>> + 'a + use<'a, Schema> {
+    pub fn fields(
+        &self,
+    ) -> impl Iterator<Item = WorthQueryApplicationFieldDescription<'a>> + 'a + use<'a, Schema>
+    {
         self.schema
             .installed_declaration()
             .members()

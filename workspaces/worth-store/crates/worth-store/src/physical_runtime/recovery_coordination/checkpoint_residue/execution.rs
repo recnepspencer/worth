@@ -170,16 +170,19 @@ fn admit_execution(
         Ok(PhysicalWorkReadiness::Blocked(blocked)) => {
             let identity = blocked.intent().identity();
             let route = blocked.authority().binding();
-            match blocked.into_revalidation_parts() { Some((_, request)) => {
-                cancel(
-                    coordination,
-                    crate::physical_runtime::PhysicalWorkConsumerHandle::new(
-                        identity, request, route,
-                    ),
-                );
-            } _ => {
-                let _ = coordination.submission.cancel_before_dispatch(identity);
-            }}
+            match blocked.into_revalidation_parts() {
+                Some((_, request)) => {
+                    cancel(
+                        coordination,
+                        crate::physical_runtime::PhysicalWorkConsumerHandle::new(
+                            identity, request, route,
+                        ),
+                    );
+                }
+                _ => {
+                    let _ = coordination.submission.cancel_before_dispatch(identity);
+                }
+            }
             return Err(RecoveryCheckpointResidueDenial::Admission);
         }
         Err(_) => {

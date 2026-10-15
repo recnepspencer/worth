@@ -172,11 +172,17 @@ impl Drop for SignalOwnerOperationAdmission<'_> {
             .counters
             .record_admission_records_scanned(scanned);
         if self.lifecycle.release_operation() {
-            match self.close_coordinator.take() { Some(coordinator) => {
-                coordinator.finish_owner_close();
-            } _ => { match self.lifecycle.claim_cleanup() { Some(claim) => {
-                claim.complete();
-            } _ => {}}}}
+            match self.close_coordinator.take() {
+                Some(coordinator) => {
+                    coordinator.finish_owner_close();
+                }
+                _ => match self.lifecycle.claim_cleanup() {
+                    Some(claim) => {
+                        claim.complete();
+                    }
+                    _ => {}
+                },
+            }
         }
     }
 }
@@ -199,10 +205,16 @@ impl Drop for SignalOwnerPendingAdmission<'_> {
         if self.committed || !self.lifecycle.release_operation() {
             return;
         }
-        match self.close_coordinator.take() { Some(coordinator) => {
-            coordinator.finish_owner_close();
-        } _ => { match self.lifecycle.claim_cleanup() { Some(claim) => {
-            claim.complete();
-        } _ => {}}}}
+        match self.close_coordinator.take() {
+            Some(coordinator) => {
+                coordinator.finish_owner_close();
+            }
+            _ => match self.lifecycle.claim_cleanup() {
+                Some(claim) => {
+                    claim.complete();
+                }
+                _ => {}
+            },
+        }
     }
 }

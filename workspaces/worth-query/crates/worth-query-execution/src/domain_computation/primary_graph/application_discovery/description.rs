@@ -28,7 +28,9 @@ impl<'a> WorthQueryApplicationMutationDescription<'a> {
         self.availability
     }
 
-    pub fn effects(&self) -> impl Iterator<Item = &'a ApplicationOperationProgramTarget> + 'a + use<'a> {
+    pub fn effects(
+        &self,
+    ) -> impl Iterator<Item = &'a ApplicationOperationProgramTarget> + 'a + use<'a> {
         let operation = self.declaration.operation();
         self.members.iter().filter_map(move |member| match member {
             ApplicationSchemaMember::OperationProgram {
