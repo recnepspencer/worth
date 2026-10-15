@@ -201,10 +201,7 @@ pub(super) fn assert_repeated_optional_member_correspondence(world: &ConsumerWor
     let correspondence = world
         .application
         .installed_program()
-        .repeated_optional_member::<
-            PlanarEditBinding<ConsumerSchema>,
-            OptionalAdjustmentCorrespondence,
-        >()
+        .repeated_optional_member::<PlanarEditBinding<ConsumerSchema>, OptionalAdjustmentCorrespondence>()
         .expect("the program installs its declared row correspondence");
     let first = correspondence.initialize(
         &OptionalAdjustmentRow {

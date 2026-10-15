@@ -4,8 +4,7 @@ use crate::application_program::{
     action_instances::*, ConsumerFixedAction, ConsumerFixedDelivery, SecondaryPlanarRoot,
 };
 use worth_query_decl::facade::application_program::{
-    ApplicationAction, ApplicationActionDelivery, ApplicationCompositionInstance,
-    ApplicationProgramAuthoring,
+    ApplicationActionDelivery, ApplicationCompositionInstance, ApplicationProgramAuthoring,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryOperationAdvance as Advance, WorthQueryOperationConstructionDenial,
@@ -47,7 +46,7 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
             "model-owner",
         ),
     ];
-    let world = installation::install_selected_program(
+    let mut world = installation::install_selected_program(
         &crate::installed_schema(),
         8192,
         4096,
@@ -57,6 +56,8 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         program,
     )
     .unwrap();
+    let request_runtime = world.application.clone();
+    let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(adapter.authenticate(
@@ -66,10 +67,42 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
     .unwrap();
     let request = world.application.request(&principal, &scope);
     type Binding = PlanarSourceAdjustmentBinding<ConsumerSchema>;
-    let primary_declaration =
-        <ConsumerFixedAction as ApplicationAction<ConsumerSchema, Binding>>::declaration();
-    let secondary_declaration =
-        <SecondaryAction as ApplicationAction<ConsumerSchema, Binding>>::declaration();
+    let primary_declaration = constructing
+        .installed_program()
+        .resolve_action::<Binding, ConsumerFixedAction>()
+        .unwrap()
+        .clone();
+    let secondary_declaration = constructing
+        .installed_program()
+        .resolve_action::<Binding, SecondaryAction>()
+        .unwrap()
+        .clone();
+    assert_eq!(
+        primary_declaration.locality().unwrap().identity(),
+        "consumer.source-root.v1"
+    );
+    assert_eq!(
+        primary_declaration.change_shape().unwrap().identity(),
+        "consumer.source-replacement.v1"
+    );
+    assert_eq!(
+        primary_declaration.external_input().unwrap().identity(),
+        "consumer.source-catalog.v1"
+    );
+    assert!(primary_declaration.evaluated_requirement().is_some());
+    assert!(secondary_declaration.locality().is_none());
+    assert!(secondary_declaration.external_input().is_none());
+    assert_eq!(
+        constructing
+            .installed_program()
+            .actions()
+            .iter()
+            .filter(
+                |action| action.mutation_binding_type() == Some(std::any::TypeId::of::<Binding>())
+            )
+            .count(),
+        2
+    );
     assert_eq!(
         primary_declaration.binding(),
         secondary_declaration.binding()
@@ -106,7 +139,7 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         .with_host_advancement(|phase| request.retain_read(&phase).unwrap())
         .unwrap();
     let (description, denial) = match description
-        .retain_operation::<ActionInstanceProgram, WrongSecondaryAction>(&world.application)
+        .retain_operation::<ActionInstanceProgram, WrongSecondaryAction>(&constructing)
     {
         Err(refusal) => refusal,
         Ok(_) => panic!("primary delivery cannot substitute at the secondary occurrence"),
@@ -124,7 +157,7 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         .unwrap();
     assert_eq!(after.selected_commit(), before.selected_commit());
     let secondary = description
-        .retain_operation::<ActionInstanceProgram, SecondaryAction>(&world.application)
+        .retain_operation::<ActionInstanceProgram, SecondaryAction>(&constructing)
         .unwrap_or_else(|(_, denial)| {
             panic!("returned original description selects actual secondary contract: {denial:?}")
         });
@@ -159,9 +192,55 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         .unwrap_or_else(|(_, cause)| panic!("secondary close: {cause:?}"));
 
     // compiled-example: begin
+    use crate::application_program::{
+        composed_action::CatalogInputRequirement,
+        external_input::{NeutralExternalDenial, NeutralExternalProvider},
+    };
+    use worth_query_topology_entry::AdjustPlanarSource;
+    let external = constructing
+        .installed_program()
+        .external_input_provider::<AdjustPlanarSource, NeutralExternalProvider>()
+        .unwrap();
+    let provider = NeutralExternalProvider::new(7);
+    let before_input_refusal = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    let captured = external.resolve(&provider, "replacement-y").unwrap();
+    provider.change(2);
+    assert_eq!(
+        captured.admit(&provider).err(),
+        Some(NeutralExternalDenial::Changed)
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &before_input_refusal
+    );
+    let accepted = external
+        .resolve(&provider, "replacement-y")
+        .unwrap()
+        .admit(&provider)
+        .unwrap()
+        .into_resolution();
+    assert_eq!(accepted.revision(), &2);
+    let requirement = constructing
+        .installed_program()
+        .evaluated_requirement::<AdjustPlanarSource, CatalogInputRequirement>()
+        .unwrap()
+        .evaluate(accepted.revision());
+    assert_eq!(
+        requirement.required_input_guidance(),
+        Some(&"catalog-value")
+    );
+    assert_eq!(
+        requirement.enforce_submission(false).unwrap_err().missing(),
+        &"catalog-value"
+    );
+    requirement.enforce_submission(true).unwrap();
     let primary_input = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
-        replacement_y: length(2),
+        replacement_y: length(*accepted.values()),
     };
     reset_planar_source_adjustment_contacts(&primary_input);
     let source = request
@@ -177,8 +256,19 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
         .expect_source(source)
         .idempotency_owned(10_193)
         .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<ActionInstanceProgram, ConsumerFixedAction>(&world.application)
+        .retain_operation::<ActionInstanceProgram, ConsumerFixedAction>(&constructing)
         .unwrap_or_else(|(_, denial)| panic!("primary exact contract: {denial:?}"));
+    drop(constructing);
+    assert_eq!(world.application.close_conditional_runtime().unwrap_err().kind(),
+        worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained);
+    // Fresh requests come from the independently retained authentic allocation.
+    let fresh_scope = authentication::request_scope();
+    let fresh_principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &fresh_scope,
+    ))
+    .unwrap();
+    let request = world.application.request(&fresh_principal, &fresh_scope);
     let mut primary = Some(primary);
     let primary = (0..32)
         .find_map(|_| match primary.take().unwrap().advance(&request) {
@@ -201,9 +291,21 @@ fn fixed_action_instances_deliver_only_their_canonical_contract() {
     let output_delivery = primary.read_current(&request).unwrap();
     assert_eq!(output_delivery.rows()[0].body_key, "anchor-a");
     assert_eq!(output_delivery.rows()[0].value, length(3));
+    assert_eq!(
+        request
+            .query(PlanarRead {
+                body_key: primary_input.scope_key.clone()
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .y,
+        length(*accepted.values())
+    );
     assert_eq!(planar_source_adjustment_contacts(&primary_input), (1, 1));
     primary
         .close(&request)
         .unwrap_or_else(|(_, cause)| panic!("primary close: {cause:?}"));
+    world.application.close_conditional_runtime().unwrap();
     // compiled-example: end
 }

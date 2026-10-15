@@ -1,3 +1,4 @@
+use super::source_completion::ConsumerSourceCompletion;
 use super::*;
 
 fn consumer_specs_with_source(source: ApplicationFeatureSpec) -> Vec<ApplicationFeatureSpec> {
@@ -71,23 +72,23 @@ fn consumer_specs_with_source(source: ApplicationFeatureSpec) -> Vec<Application
     ]
 }
 
-fn source_builder() -> worth_query_decl::facade::application_program::ApplicationFeatureSpecBuilder<
+pub(super) fn source_builder(
+) -> worth_query_decl::facade::application_program::ApplicationFeatureSpecBuilder<
     ConsumerSchema,
     ApplicationRootComposition,
     PlanarSourceFeature,
 > {
     ApplicationFeatureSpec::root::<ConsumerSchema, PlanarSourceFeature>()
-            .provides::<PlanarBodyOutput>()
-            .repeated_optional_member_with_external_input::<
-                PlanarEditBinding<ConsumerSchema>,
-                correspondence::OptionalAdjustmentCorrespondence,
-                external_input::NeutralExternalProvider,
-            >()
-            .mutation::<PriorCycleAdjustmentBinding<ConsumerSchema>>()
-            .mutation_with_external_input::<
-                VertexReplacementBinding<ConsumerSchema>,
-                external_input::NeutralExternalProvider,
-            >()
+        .provides::<PlanarBodyOutput>()
+        .action::<PlanarEditBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+        .correspondence::<correspondence::OptionalAdjustmentCorrespondence>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action()
+        .action::<PriorCycleAdjustmentBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+        .finish_action()
+        .action::<VertexReplacementBinding<ConsumerSchema>, ConsumerSourceCompletion>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action()
 }
 
 pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
@@ -95,7 +96,7 @@ pub(super) fn consumer_feature_specs() -> Vec<ApplicationFeatureSpec> {
 }
 
 pub(super) fn consumer_fixed_feature_specs() -> Vec<ApplicationFeatureSpec> {
-    consumer_specs_with_source(source_builder().fixed_output_action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, ConsumerFixedDelivery>().finish())
+    consumer_specs_with_source(composed_action::source_feature_spec())
 }
 
 #[cfg(test)]
@@ -108,7 +109,18 @@ where
 {
     consumer_specs_with_source(
         source_builder()
-            .operation_action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, D>()
+            .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, D>()
+            .finish_action()
             .finish(),
     )
+}
+
+#[cfg(test)]
+pub(super) fn consumer_changed_fixed_feature_specs() -> Vec<ApplicationFeatureSpec> {
+    consumer_specs_with_source(source_builder()
+        .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, ConsumerFixedDelivery>()
+        .locality_and_change::<composed_action::SourceLocality, composed_action::ChangedSourceChange>()
+        .evaluated_requirement::<composed_action::CatalogInputRequirement>()
+        .external_input::<external_input::NeutralExternalProvider>()
+        .finish_action().finish())
 }

@@ -72,11 +72,11 @@ pub(super) fn seed(
     }
     graph.commit_seed_batch(phase).unwrap();
 }
-pub(super) fn retain_unrelated<'a>(
-    runtime: &'a Runtime,
+pub(super) fn retain_unrelated(
+    runtime: &Runtime,
     request: &Request<'_>,
     count: usize,
-) -> Vec<Settled<'a>> {
+) -> Vec<Settled> {
     (0..count)
         .map(|i| {
             let body = format!("unrelated-{i}-a");

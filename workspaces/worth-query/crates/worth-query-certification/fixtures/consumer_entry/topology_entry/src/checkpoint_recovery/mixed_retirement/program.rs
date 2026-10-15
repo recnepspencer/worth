@@ -119,8 +119,10 @@ impl ApplicationProgramDefinition<MixedSchema> for MixedProgram {
         vec![
             ApplicationFeatureSpec::root::<MixedSchema, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .mutation::<PlanarSourceAdjustmentBinding<MixedSchema>>()
-                .mutation::<PlanarEditBinding<MixedSchema>>()
+                .native_action::<PlanarSourceAdjustmentBinding<MixedSchema>>()
+                .finish_action()
+                .native_action::<PlanarEditBinding<MixedSchema>>()
+                .finish_action()
                 .finish(),
             required_chain::output_feature_spec_for::<MixedSchema>(),
             ApplicationFeatureSpec::root::<MixedSchema, PlanarFinalOutputFeature>()

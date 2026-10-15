@@ -156,9 +156,12 @@ impl ApplicationProgramDefinition<Schema> for MembershipProgram {
         vec![
             ApplicationFeatureSpec::root::<Schema, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .mutation::<PlanarSourceAdjustmentBinding<Schema>>()
-                .mutation::<PlanarEditBinding<Schema>>()
-                .mutation::<PlanarDiscoveryLinkBinding<Schema>>()
+                .native_action::<PlanarSourceAdjustmentBinding<Schema>>()
+                .finish_action()
+                .native_action::<PlanarEditBinding<Schema>>()
+                .finish_action()
+                .native_action::<PlanarDiscoveryLinkBinding<Schema>>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, PlanarOutputFeature>()
                 .provides::<PlanarDerivedBodyOutput>()

@@ -107,3 +107,32 @@ impl ApplicationExternalInputProvider<ConsumerSchema, ReplacePlanarVertex>
         )
     }
 }
+
+impl
+    ApplicationExternalInputProvider<ConsumerSchema, worth_query_topology_entry::AdjustPlanarSource>
+    for NeutralExternalProvider
+{
+    const IDENTITY: &'static str = "consumer.source-catalog.v1";
+    type Selection = &'static str;
+    type Values = u64;
+    type Revision = u64;
+    type Provenance = &'static str;
+    type Denial = NeutralExternalDenial;
+    fn resolve(
+        &self,
+        selection: &&'static str,
+    ) -> Result<ApplicationExternalInputResolution<u64, u64, &'static str>, Self::Denial> {
+        <Self as ApplicationExternalInputProvider<ConsumerSchema, EditPlanar>>::resolve(
+            self, selection,
+        )
+    }
+    fn validate_revision(
+        &self,
+        selection: &&'static str,
+        revision: &u64,
+    ) -> Result<(), Self::Denial> {
+        <Self as ApplicationExternalInputProvider<ConsumerSchema, EditPlanar>>::validate_revision(
+            self, selection, revision,
+        )
+    }
+}

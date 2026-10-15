@@ -186,8 +186,10 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Program {
             ApplicationFeatureSpec::root::<CheckpointSchema, PlanarOutputFeature>()
                 .derived_artifact::<computation::Artifact>()
                 .managed_computation::<computation::Computation>()
-                .mutation::<PlanarEditBinding<CheckpointSchema>>()
-                .mutation::<VertexReplacementBinding<CheckpointSchema>>()
+                .native_action::<PlanarEditBinding<CheckpointSchema>>()
+                .finish_action()
+                .native_action::<VertexReplacementBinding<CheckpointSchema>>()
+                .finish_action()
                 .conditional_operation::<MutatePlanar>()
                 .finish(),
         );

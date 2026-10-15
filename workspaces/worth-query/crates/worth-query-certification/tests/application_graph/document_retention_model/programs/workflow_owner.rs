@@ -1,7 +1,7 @@
 //! Separate action meaning leaves canonical P0 and its cold artifact unchanged.
 use super::super::{
     assessment_output::PublishRetentionAssessment,
-    programs::{DocumentRetentionFeature, RetentionProgramP0},
+    programs::{DocumentRetentionFeature, RetentionCompletion, RetentionProgramP0},
     retention_entry::*,
     schema::*,
     workflow::*,
@@ -77,18 +77,29 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for WorkflowOwnerProg
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-                .operation_action::<OccurrenceSetRetentionBinding, WorkflowEffectDelivery>()
-                .operation_action::<ReviewedSetRetentionBinding, ReviewedEffectDelivery>()
-                .operation_action::<SetRetentionBinding, SavedSourceDelivery>()
-                .mutation::<ExplicitReviewedSetRetentionBinding>()
-                .mutation::<ReviewRequirementBinding>()
-                .mutation::<UnlinkReviewRequirementBinding>()
+                .action::<OccurrenceSetRetentionBinding, WorkflowEffectDelivery>()
+                .finish_action()
+                .action::<ReviewedSetRetentionBinding, ReviewedEffectDelivery>()
+                .finish_action()
+                .action::<SetRetentionBinding, SavedSourceDelivery>()
+                .finish_action()
+                .action::<ExplicitReviewedSetRetentionBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<ReviewRequirementBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<UnlinkReviewRequirementBinding, RetentionCompletion>()
+                .finish_action()
                 .conditional_operation::<PublishRetentionAssessment>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .operation_action::<WorkflowGrantStatusBinding, GrantStatusDelivery>()
+                .native_action::<WorkflowDefinitionAuthoringBinding>()
+                .finish_action()
+                .native_action::<WorkflowInstanceStartBinding>()
+                .finish_action()
+                .native_action::<WorkflowAdvanceBinding>()
+                .finish_action()
+                .native_action::<WorkflowApprovalBinding>()
+                .finish_action()
+                .action::<WorkflowGrantStatusBinding, GrantStatusDelivery>()
+                .finish_action()
                 .finish(),
         ]
     }

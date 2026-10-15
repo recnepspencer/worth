@@ -25,7 +25,7 @@ fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_deliver
             Program<NoProjectionDelivery>,
         >("model-owner", "model-owner"),
     ];
-    let world = installation::install_selected_program(
+    let mut world = installation::install_selected_program(
         &crate::installed_schema(),
         8192,
         4096,
@@ -34,6 +34,8 @@ fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_deliver
         original,
     )
     .unwrap();
+    let request_runtime = world.application.clone();
+    let constructing = std::mem::replace(&mut world.application, request_runtime);
     let runtime = world.application.runtime();
     let root = runtime.current_world();
     let branch = runtime
@@ -71,13 +73,25 @@ fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_deliver
         .unwrap()
         .observed_sources()[0]
         .clone();
-    let operation = request
-        .mutate(Original(input.clone()))
-        .expect_source(source)
-        .idempotency_owned(110_051)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
-        .unwrap_or_else(|(_, d)| panic!("construction: {d:?}"));
+    let operation = {
+        let construction_scope = authentication::request_scope();
+        let construction_principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &construction_scope,
+        ))
+        .unwrap();
+        let construction_request = constructing
+            .request(&construction_principal, &construction_scope)
+            .on_branch(branch);
+        construction_request
+            .mutate(Original(input.clone()))
+            .expect_source(source)
+            .idempotency_owned(110_051)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&constructing)
+            .unwrap_or_else(|(_, d)| panic!("construction: {d:?}"))
+    };
+    drop(constructing);
     assert_eq!(operation.branch(), branch);
     let operation = match operation.advance(&wrong) {
         Advance::Refused {

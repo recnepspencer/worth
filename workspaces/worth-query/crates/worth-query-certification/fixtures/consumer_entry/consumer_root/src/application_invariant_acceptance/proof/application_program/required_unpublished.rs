@@ -73,7 +73,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             "model-owner",
         ),
     ];
-    let world = installation::install_with_roster(foreign, 8192, 4096, roster, &grants).unwrap();
+    let mut world =
+        installation::install_with_roster(foreign, 8192, 4096, roster, &grants).unwrap();
+    let request_runtime = world.application.clone();
+    let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
     let contact_identity = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
@@ -102,7 +105,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
             .idempotency_owned(10_062)
             .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
         let (description, denial) = description
-            .retain_operation::<crate::ConsumerProgram, MissingFixedAction>(&world.application)
+            .retain_operation::<crate::ConsumerProgram, MissingFixedAction>(&constructing)
             .err()
             .expect("an uninstalled exact occurrence refuses construction");
         assert!(matches!(
@@ -113,7 +116,7 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         ));
         assert_eq!(planar_source_adjustment_contacts(&contact_identity), (0, 0));
         description
-            .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
+            .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&constructing)
             .unwrap_or_else(|(_, denial)| {
                 panic!("returned original description constructs: {denial:?}")
             })
@@ -135,13 +138,14 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         &scope,
     ))
     .unwrap();
-    let operation = match operation.advance(&world.application.request(&principal, &scope)) {
+    let operation = match operation.advance(&constructing.request(&principal, &scope)) {
         Advance::Progress {
             operation,
             progress: Progress::SourceUnpublished,
         } => operation,
         _ => panic!("the actual append fault retains original fixed partial custody"),
     };
+    drop(constructing);
     assert_eq!(planar_source_adjustment_contacts(&contact_identity), (1, 1));
     assert_eq!(
         world.application.retained_source_custody_count_for_test(),

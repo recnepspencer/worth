@@ -2,6 +2,8 @@
 use super::*;
 pub(crate) struct UnchangedFixed;
 pub(crate) struct RemovedFixed;
+#[cfg(test)]
+pub(crate) struct ChangedFixed;
 macro_rules! successor {
     ($ty:ty, $id:literal, $specs:ident) => {
         impl ApplicationProgramDefinition<ConsumerSchema> for $ty {
@@ -27,4 +29,11 @@ successor!(
     RemovedFixed,
     "fixed-action-removed-successor",
     consumer_feature_specs
+);
+
+#[cfg(test)]
+successor!(
+    ChangedFixed,
+    "fixed-action-changed-contract-successor",
+    consumer_changed_fixed_feature_specs
 );

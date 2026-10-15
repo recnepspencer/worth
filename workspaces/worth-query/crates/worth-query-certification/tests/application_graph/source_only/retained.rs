@@ -36,7 +36,8 @@ impl ApplicationProgramDefinition<SourceOnlyRetentionSchema> for RetainedProgram
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<SourceOnlyRetentionSchema, DocumentRetentionFeature>()
-                .operation_action::<SetRetentionBinding, RetainedDelivery>()
+                .action::<SetRetentionBinding, RetainedDelivery>()
+                .finish_action()
                 .finish(),
         ]
     }

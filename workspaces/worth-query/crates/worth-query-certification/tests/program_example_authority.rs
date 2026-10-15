@@ -80,7 +80,7 @@ impl ApplicationProgramDefinition<TemporalHostSchema> for MissingConditionalActi
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<TemporalHostSchema, TemporalExampleFeature>()
-                .mutation::<AmendTemporalBinding>()
+                .action::<AmendTemporalBinding, product_workflow_support::program::TemporalCompletion>().finish_action()
                 .operation::<RevokeTemporalPrincipal>()
                 .finish(),
         ]

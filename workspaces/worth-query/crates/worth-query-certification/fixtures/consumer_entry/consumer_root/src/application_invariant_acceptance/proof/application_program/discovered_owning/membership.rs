@@ -62,7 +62,7 @@ impl ApplicationProgramDefinition<S> for Program {
                 && spec.feature().identity()
                     == <PlanarSourceFeature as ApplicationFeature<S>>::IDENTITY)
         });
-        specs.push(ApplicationFeatureSpec::root::<S,PlanarSourceFeature>().provides::<PlanarBodyOutput>().mutation::<B>().mutation::<worth_query_topology_entry::PlanarEditBinding<S>>().operation_action::<worth_query_topology_entry::PlanarDiscoveryLinkBinding<S>,MembershipDelivery>().finish());
+        specs.push(ApplicationFeatureSpec::root::<S,PlanarSourceFeature>().provides::<PlanarBodyOutput>().native_action::<B>().finish_action().native_action::<worth_query_topology_entry::PlanarEditBinding<S>>().finish_action().action::<worth_query_topology_entry::PlanarDiscoveryLinkBinding<S>, MembershipDelivery>().finish_action().finish());
         specs.retain(|spec| {
             !(spec.feature().composition_instance() == Fanout::PATH
                 && spec.feature().identity()
@@ -71,7 +71,8 @@ impl ApplicationProgramDefinition<S> for Program {
         specs.push(
             ApplicationFeatureSpec::at::<S, Fanout, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .operation_action::<B, Delivery>()
+                .action::<B, Delivery>()
+                .finish_action()
                 .finish(),
         );
         specs

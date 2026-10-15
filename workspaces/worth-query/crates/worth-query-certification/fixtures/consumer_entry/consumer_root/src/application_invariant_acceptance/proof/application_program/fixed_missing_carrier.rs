@@ -13,16 +13,14 @@ use worth_query_topology_entry::{
 };
 
 mod guard_lifecycle;
-type Fixed<'a> = WorthQueryFixedOperation<
-    'a,
+type Fixed = WorthQueryFixedOperation<
     ConsumerSchema,
     PlanarSourceAdjustment,
     crate::ConsumerProgram,
     crate::ConsumerProgramRoot,
     ConsumerFixedAction,
 >;
-type Settled<'a> = WorthQuerySettledFixedOperation<
-    'a,
+type Settled = WorthQuerySettledFixedOperation<
     ConsumerSchema,
     PlanarSourceAdjustment,
     crate::ConsumerProgram,
@@ -49,12 +47,12 @@ fn append_failure(world: &World) {
         })
         .unwrap();
 }
-fn partial<'a>(
-    world: &'a World,
+fn partial(
+    world: &World,
     request: &WorthQueryApplicationRequest<'_, '_, '_, ConsumerSchema>,
     intent: PlanarSourceAdjustment,
     key: u64,
-) -> Fixed<'a> {
+) -> Fixed {
     let source = request
         .query(PlanarRead {
             body_key: intent.scope_key.clone(),
@@ -79,10 +77,10 @@ fn partial<'a>(
         _ => panic!("genuine append refusal retains original native partial"),
     }
 }
-fn recover<'a>(
-    operation: Fixed<'a>,
+fn recover(
+    operation: Fixed,
     request: &WorthQueryApplicationRequest<'_, '_, '_, ConsumerSchema>,
-) -> Fixed<'a> {
+) -> Fixed {
     match operation.advance(request) {
         Advance::Progress {
             operation,
@@ -94,10 +92,10 @@ fn recover<'a>(
         _ => panic!("actual native recovery performs once"),
     }
 }
-fn settle<'a>(
-    operation: Fixed<'a>,
+fn settle(
+    operation: Fixed,
     request: &WorthQueryApplicationRequest<'_, '_, '_, ConsumerSchema>,
-) -> Settled<'a> {
+) -> Settled {
     let mut operation = Some(operation);
     (0..32)
         .find_map(|_| match operation.take().unwrap().advance(request) {

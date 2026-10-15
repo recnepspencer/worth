@@ -60,9 +60,12 @@ impl ApplicationProgramDefinition<ConsumerSchema> for ActionInstanceProgram {
     }
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         let mut features = ConsumerProgram::feature_specs();
-        let secondary = ApplicationFeatureSpec::at::<ConsumerSchema, SecondaryPlanarRoot, PlanarSourceFeature>()
+        let secondary =
+            ApplicationFeatureSpec::at::<ConsumerSchema, SecondaryPlanarRoot, PlanarSourceFeature>(
+            )
             .provides::<PlanarBodyOutput>()
-            .fixed_output_action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, SecondarySourceDelivery>()
+            .action::<PlanarSourceAdjustmentBinding<ConsumerSchema>, SecondarySourceDelivery>()
+            .finish_action()
             .finish();
         let mut positions = features
             .iter()

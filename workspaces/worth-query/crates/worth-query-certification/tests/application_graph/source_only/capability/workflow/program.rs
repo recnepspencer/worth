@@ -27,10 +27,14 @@ impl ApplicationProgramDefinition<CapabilitySchema> for Program {
         ApplicationProgramIdentity::new("capability-workflow.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<CapabilitySchema, Feature>()
-            .operation_action::<GuardedBinding, Completion>()
-            .mutation::<ControlBinding>()
-            .mutation::<StartBinding>()
-            .mutation::<AdvanceBinding>()
+            .action::<GuardedBinding, Completion>()
+            .finish_action()
+            .native_action::<ControlBinding>()
+            .finish_action()
+            .native_action::<StartBinding>()
+            .finish_action()
+            .native_action::<AdvanceBinding>()
+            .finish_action()
             .finish()]
     }
 }

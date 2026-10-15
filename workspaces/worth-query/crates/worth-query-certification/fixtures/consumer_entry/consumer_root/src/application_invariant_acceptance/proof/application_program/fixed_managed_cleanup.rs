@@ -237,7 +237,9 @@ fn terminal_court(interference: Interference) {
 #[test]
 fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
     use worth_query_host::facade::application_entry::WorthQueryOperationProgress as Progress;
-    let world = installation::install(&crate::installed_schema());
+    let mut world = installation::install(&crate::installed_schema());
+    let request_runtime = world.application.clone();
+    let constructing = std::mem::replace(&mut world.application, request_runtime);
     let adapter = authentication::admit(world.application.installed_schema());
     let scope = authentication::request_scope();
     let principal = authentication::block_on(adapter.authenticate(
@@ -257,13 +259,24 @@ fn fixed_producer_cleanup_survives_diagnostic_drop_and_refused_release() {
         })
         .execute()
         .unwrap();
-    let operation = request
-        .mutate(input.clone())
-        .expect_source(source.observed_sources()[0].clone())
-        .idempotency_owned(10_649)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
-        .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"));
+    let operation = {
+        let construction_scope = authentication::request_scope();
+        let construction_principal = authentication::block_on(adapter.authenticate(
+            authentication::LocalCredential::issued_for_model_owner(),
+            &construction_scope,
+        ))
+        .unwrap();
+        let construction_request =
+            constructing.request(&construction_principal, &construction_scope);
+        construction_request
+            .mutate(input.clone())
+            .expect_source(source.observed_sources()[0].clone())
+            .idempotency_owned(10_649)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&constructing)
+            .unwrap_or_else(|(_, cause)| panic!("descriptor: {cause:?}"))
+    };
+    drop(constructing);
     let operation = match operation.advance(&request) {
         Advance::Progress {
             operation,

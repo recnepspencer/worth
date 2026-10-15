@@ -20,15 +20,24 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for RemovedAssessment
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
-                .mutation::<SetRetentionBinding>()
-                .mutation::<ReviewedSetRetentionBinding>()
-                .mutation::<ReviewRequirementBinding>()
-                .mutation::<UnlinkReviewRequirementBinding>()
-                .mutation::<WorkflowDefinitionAuthoringBinding>()
-                .mutation::<WorkflowInstanceStartBinding>()
-                .mutation::<WorkflowAdvanceBinding>()
-                .mutation::<WorkflowApprovalBinding>()
-                .mutation::<WorkflowGrantStatusBinding>()
+                .action::<SetRetentionBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<ReviewedSetRetentionBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<ReviewRequirementBinding, RetentionCompletion>()
+                .finish_action()
+                .action::<UnlinkReviewRequirementBinding, RetentionCompletion>()
+                .finish_action()
+                .native_action::<WorkflowDefinitionAuthoringBinding>()
+                .finish_action()
+                .native_action::<WorkflowInstanceStartBinding>()
+                .finish_action()
+                .native_action::<WorkflowAdvanceBinding>()
+                .finish_action()
+                .native_action::<WorkflowApprovalBinding>()
+                .finish_action()
+                .action::<WorkflowGrantStatusBinding, RetentionCompletion>()
+                .finish_action()
                 .finish(),
         ]
     }

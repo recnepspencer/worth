@@ -28,7 +28,8 @@ impl ApplicationProgramDefinition<CapabilitySchema> for Program {
         ApplicationProgramIdentity::new("capability-retention.program");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<CapabilitySchema, Feature>()
-            .operation_action::<SetRetentionBinding, Completion>()
+            .action::<SetRetentionBinding, Completion>()
+            .finish_action()
             .operation::<RevokeGrant>()
             .finish()]
     }

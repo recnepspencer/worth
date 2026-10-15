@@ -117,7 +117,8 @@ impl ApplicationProgramDefinition<CheckpointSchema> for HistoryProgram {
                 .managed_computation::<OracleTotals>()
                 .managed_computation::<ChangedCodeTotals>()
                 .conditional_operation::<TotalRegionOutput>()
-                .mutation::<EntryEditBinding<CheckpointSchema>>()
+                .native_action::<EntryEditBinding<CheckpointSchema>>()
+                .finish_action()
                 .finish(),
         )
     }

@@ -101,12 +101,14 @@ impl ApplicationProgramDefinition<Schema> for Program {
         vec![
             ApplicationFeatureSpec::root::<Schema, PlanarSourceFeature>()
                 .provides::<PlanarBodyOutput>()
-                .mutation::<PlanarSourceAdjustmentBinding<Schema>>()
+                .native_action::<PlanarSourceAdjustmentBinding<Schema>>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, PlanarOutputFeature>()
                 .provides::<PlanarDerivedBodyOutput>()
                 .conditional_operation::<publication::PublishRoot>()
-                .mutation::<PlanarEditBinding<Schema>>()
+                .native_action::<PlanarEditBinding<Schema>>()
+                .finish_action()
                 .finish(),
             ApplicationFeatureSpec::root::<Schema, graph::DependentFeature>()
                 .provides::<graph::DependentOutput>()

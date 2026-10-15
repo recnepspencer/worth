@@ -170,7 +170,8 @@ pub(super) fn feature_specs_with_final_output(
     vec![
         ApplicationFeatureSpec::root::<CheckpointSchema, PlanarSourceFeature>()
             .provides::<PlanarBodyOutput>()
-            .mutation::<PlanarEditBinding<CheckpointSchema>>()
+            .native_action::<PlanarEditBinding<CheckpointSchema>>()
+            .finish_action()
             .finish(),
         output,
         final_output,

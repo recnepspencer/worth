@@ -112,7 +112,9 @@ where
     application
         .workflow
         .support_workflow_spec(workflow)
-        .expect("the vocabulary belongs to a rostered program");
+        .unwrap_or_else(|(_, denial)| {
+            panic!("the vocabulary belongs to a rostered program: {denial:?}")
+        });
 }
 
 pub fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {

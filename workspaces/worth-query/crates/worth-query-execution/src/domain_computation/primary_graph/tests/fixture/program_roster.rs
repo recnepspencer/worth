@@ -40,7 +40,8 @@ impl ApplicationProgramDefinition<IdentityExecutionSchema> for ProgramRequiredPr
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<IdentityExecutionSchema, ProgramRequiredFeature>()
-                .mutation::<ProgramRequiredMutationBinding>()
+                .native_action::<ProgramRequiredMutationBinding>()
+                .finish_action()
                 .finish(),
         ]
     }
@@ -67,7 +68,8 @@ impl ApplicationProgramDefinition<IdentityExecutionSchema> for UnadmittedProgram
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<IdentityExecutionSchema, UnadmittedFeature>()
-                .mutation::<ProgramRequiredMutationBinding>()
+                .native_action::<ProgramRequiredMutationBinding>()
+                .finish_action()
                 .finish(),
         ]
     }
