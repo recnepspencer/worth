@@ -51,7 +51,7 @@ fn checkpoint_one_buffer_matches_independent_v10_grammar_and_sections() {
                 role("c", WorthQueryApplicationOutputPosture::Retire, "gamma", 7),
             ])
             .into(),
-            producer_facts: (Some(facts.clone())).map(std::sync::Arc::new),
+            producer_facts: Some(std::sync::Arc::new(facts.clone())),
             producer_fact_wire_version: super::super::facts::WIRE_VERSION,
             metadata: None,
         },

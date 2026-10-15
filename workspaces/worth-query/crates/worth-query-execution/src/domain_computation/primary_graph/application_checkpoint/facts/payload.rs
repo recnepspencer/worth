@@ -5,9 +5,9 @@ use std::ops::Deref;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, MemoryLimitLevel};
 
 #[derive(Debug)]
-pub(in crate::domain_computation) struct CodecPayloadReservation(
-    Option<ExecutionMemoryReservation>,
-);
+pub(in crate::domain_computation) struct CodecPayloadReservation {
+    _funding: Option<ExecutionMemoryReservation>,
+}
 impl CodecPayloadReservation {
     pub(in crate::domain_computation::primary_graph) fn admit(
         control: StorageControl<'_, '_>,
@@ -28,19 +28,19 @@ impl CodecPayloadReservation {
             })?),
         };
         control.check_live().map_err(FactDecodeDenial::Retention)?;
-        Ok(Arc::new(Self(held)))
+        Ok(Arc::new(Self { _funding: held }))
     }
 }
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation::primary_graph) struct FactPayload {
     facts: Arc<[Fact]>,
-    funding: Option<Arc<CodecPayloadReservation>>,
+    _funding: Option<Arc<CodecPayloadReservation>>,
 }
 impl FactPayload {
     pub(super) fn decoded(facts: Vec<Fact>, funding: Arc<CodecPayloadReservation>) -> Self {
         Self {
             facts: facts.into(),
-            funding: Some(funding),
+            _funding: Some(funding),
         }
     }
     pub(in crate::domain_computation::primary_graph) fn same_backing(&self, other: &Self) -> bool {
@@ -53,7 +53,7 @@ impl From<Arc<[Fact]>> for FactPayload {
     fn from(facts: Arc<[Fact]>) -> Self {
         Self {
             facts,
-            funding: None,
+            _funding: None,
         }
     }
 }
