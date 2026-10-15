@@ -56,9 +56,21 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         _ => panic!("real prior must commit and register"),
     };
     drop(prior);
+    assert_eq!(
+        request
+            .query(PlanarRead {
+                body_key: "anchor-a".to_owned()
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .y,
+        length(2),
+        "the prior effect really precedes the new 2-to-1 transition"
+    );
     let input = PlanarSourceAdjustment {
         scope_key: "anchor-a".to_owned(),
-        replacement_y: length(3),
+        replacement_y: length(1),
     };
     reset_planar_source_adjustment_contacts(&input);
     let source = request
@@ -102,7 +114,7 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
             .unwrap()
             .rows()[0]
             .y,
-        length(3)
+        length(1)
     );
     let original_commit = request
         .retain_current_read()
@@ -176,12 +188,29 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
         if denial.kind()==worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
     ));
-    let policy = Policy::currentness(NonZeroUsize::new(8192).unwrap());
-    assert!(matches!(
-        settled.read_current_with_policy(&request, policy.query(one, one)),
-        Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Admission(denial)))
-        if matches!(denial.kind(),worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded)
-    ));
+    let policy = Policy::currentness(
+        NonZeroUsize::new(
+            world
+                .application
+                .runtime()
+                .output_demand_resource_profile()
+                .limits()
+                .source_currentness_work(),
+        )
+        .expect("installed finite positive currentness allowance"),
+    );
+    let query_denial = settled
+        .read_current_with_policy(&request, policy.query(one, one))
+        .err()
+        .expect("declared query must refuse its narrow work allowance");
+    assert!(
+        matches!(
+            &query_denial,
+            WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Admission(denial))
+            if matches!(denial.kind(),worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded)
+        ),
+        "actual declared query refusal: {query_denial:?}"
+    );
     let fresh_scope = authentication::request_scope();
     let fresh_principal = authentication::block_on(adapter.authenticate(
         authentication::LocalCredential::issued_for_model_owner(),

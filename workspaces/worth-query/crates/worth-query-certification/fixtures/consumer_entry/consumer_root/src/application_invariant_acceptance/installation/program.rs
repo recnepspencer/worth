@@ -10,6 +10,28 @@ pub(in crate::application_invariant_acceptance) fn install_selected_program<Prog
 where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
     Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
 Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
+    install_selected_program_with_isolated_cycle(
+        foreign,
+        candidate_bytes,
+        query_bytes,
+        roster,
+        deployment_grants,
+        false,
+        program,
+    )
+}
+
+
+pub(in crate::application_invariant_acceptance) fn install_selected_program_with_isolated_cycle<Program>(
+    foreign: &domain::WorthQueryInstalledApplicationSchema<ConsumerSchema>, candidate_bytes: u64, query_bytes: usize,
+    roster: installation::WorthQueryApplicationProgramRoster<ConsumerSchema>,
+    deployment_grants: &[crate::program_deployment::ConsumerDeploymentGrantSeed],
+    isolated_cycle: bool,
+    program: worth_query_decl::facade::application_program::ValidatedApplicationProgram<ConsumerSchema, Program>,
+) -> Result<ConsumerWorld<Program>, installation::WorthQueryInMemoryApplicationDenial>
+where Program: worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema,
+    Contributions = <ConsumerProgram as worth_query_decl::facade::application_program::ApplicationProgramDefinition<ConsumerSchema>>::Contributions>,
+Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema>{
     let topology_calls = Arc::new(AtomicUsize::new(0));
     let parameter_calls = Arc::new(AtomicUsize::new(0));
     let invariant_calls = Arc::new(AtomicUsize::new(0));
@@ -55,6 +77,9 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
                 grant.bind(graph)?;
             }
             seed::seed_cycles(bootstrap_phase, graph);
+            if isolated_cycle {
+                seed::seed_isolated_cycle(bootstrap_phase, graph);
+            }
             graph.bind_principal(
                 &principal,
                 primary_graph::WorthQueryApplicationPrincipalKey::new("sibling-owner").unwrap(),

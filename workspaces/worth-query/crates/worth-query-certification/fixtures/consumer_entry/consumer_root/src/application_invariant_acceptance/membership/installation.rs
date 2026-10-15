@@ -5,8 +5,9 @@ use std::sync::{
     atomic::{AtomicBool, AtomicUsize},
     Arc,
 };
-use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
-use worth_query_decl::facade::application_schema::ApplicationSchema;
+use worth_query_decl::facade::application_program::{
+    ApplicationProgramAuthoring, ApplicationProgramDefinition,
+};
 use worth_query_host::facade::{
     application_installation::{in_memory_program, WorthQueryProgramApplicationRuntime},
     declaration::authentication::WorthQueryPrincipalMappingStatus,
@@ -21,7 +22,11 @@ pub(in crate::application_invariant_acceptance) fn install() -> MembershipWorld 
     install_program::<MembershipProgram>()
 }
 pub(in crate::application_invariant_acceptance) fn install_program<
-    P: worth_query_decl::facade::application_program::ApplicationProgramDefinition<Schema>,
+    P: ApplicationProgramDefinition<
+        Schema,
+        Contributions = <MembershipProgram as ApplicationProgramDefinition<Schema>>::Contributions,
+        Outputs = <MembershipProgram as ApplicationProgramDefinition<Schema>>::Outputs,
+    >,
 >() -> MembershipWorld<P> {
     let configuration = (
         TopologyConfiguration {

@@ -512,8 +512,8 @@ phases do not resolve latest product truth again.
 #### Advanced native branch lanes
 
 Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed, discovered and source-only actions.
-The covered manual lanes below require `request.advanced()`; discovered and
-bound workflow native lanes remain ordinary until their adapters land.
+The covered manual lanes below require `request.advanced()`. Only the issued
+bound workflow funnel remains ordinary until its owning adapter lands.
 
 
 A mutation does not name the program that commits it. Each lane selects the

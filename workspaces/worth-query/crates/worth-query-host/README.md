@@ -163,8 +163,10 @@ Both output-source lanes retain unsupported `SettlementDeferred` and
 `Blocked` custody. They are not no-effect outcomes or evidence that recovery
 finished. Workflow recovery remains outside these entrances.
 
-> **Discovered Phase B handoff.** Fixed ownership is available now. Discovered
-> ownership lands in Phase B; keep its existing native custody until then.
+> **Discovered owning entry.** Fixed, discovered and source-only actions use
+> `retain_operation` and fresh-request advancement, delivery and close. Deliberate
+> native custody controls require `advanced()`; only the issued workflow funnel
+> remains ordinary until its owning adapter lands.
 
 A native candidate-preparation refusal before product publication is a typed
 `Denied` outcome, with its original native error available through

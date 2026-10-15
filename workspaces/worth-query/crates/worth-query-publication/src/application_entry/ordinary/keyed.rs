@@ -11,10 +11,34 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 /// Borrowing a key cannot reopen manual discovered publication on the ordinary surface.
 /// ```compile_fail,E0599
 /// use worth_query_publication::facade::application_entry::*;
-/// use worth_query_declaration::facade::{application_program::*,application_operation::ApplicationMutationIntent,application_schema::ApplicationSchema};
-/// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime,runtime::ExecutionAllocationPolicy};
-/// fn manual<S,I,P,R>(pending:WorthQueryPendingApplicationLane<'_, '_, '_, '_,S,I,WorthQueryMutationSourcePrepared>, runtime:&WorthQueryProgramApplicationRuntime<S,P>, allocation:ExecutionAllocationPolicy<'_, '_>)
-/// where S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,P:ApplicationProgramDefinition<S>,R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot {
+/// use worth_query_declaration::facade::{application_program::*,application_operation::*,application_schema::ApplicationSchema};
+/// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime,primary_graph::WorthQueryApplicationDiscoveredOutputConnection,runtime::ExecutionAllocationPolicy};
+/// fn manual<'a,'p,'s,'k,S,I,P,R>(pending:WorthQueryPendingApplicationLane<'a,'p,'s,'k,S,I,WorthQueryMutationSourcePrepared>,runtime:&'a WorthQueryProgramApplicationRuntime<S,P>,allocation:ExecutionAllocationPolicy<'_, '_>)
+/// where S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,
+/// I::Binding:ApplicationMutationAdmissionBinding<S,Admission=ApplicationConventionalAdmission>,
+/// <I::Binding as ApplicationMutationBinding<S>>::Input:Clone+Send+Sync,
+/// <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:ApplicationMutationScopeResolution<S,<I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
+/// P:ApplicationProgramDefinition<S>,P::Outputs:ApplicationProgramOutputsShape<S>,
+/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
+/// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding> {
+///     let _ = pending.execute_performed_discovered::<P,R>(runtime,allocation);
+/// }
+/// ```
+/// The same native call is lawful with identical binding/input/scope/root and lifetime bounds
+/// on the explicit advanced receiver. No missing admission bound explains the negative.
+/// ```
+/// use worth_query_publication::facade::application_entry::*;
+/// use worth_query_declaration::facade::{application_program::*,application_operation::*,application_schema::ApplicationSchema};
+/// use worth_query_execution::facade::{application_installation::WorthQueryProgramApplicationRuntime,primary_graph::WorthQueryApplicationDiscoveredOutputConnection,runtime::ExecutionAllocationPolicy};
+/// use worth_query_publication::facade::application_entry::advanced::WorthQueryApplicationMutationRequestWithIdempotency;
+/// fn manual<'a,'p,'s,'k,S,I,P,R>(pending:WorthQueryApplicationMutationRequestWithIdempotency<'a,'p,'s,'k,S,I,WorthQueryMutationSourcePrepared>,runtime:&'a WorthQueryProgramApplicationRuntime<S,P>,allocation:ExecutionAllocationPolicy<'_, '_>)
+/// where S:ApplicationSchema+'static,I:ApplicationMutationIntent<S>,
+/// I::Binding:ApplicationMutationAdmissionBinding<S,Admission=ApplicationConventionalAdmission>,
+/// <I::Binding as ApplicationMutationBinding<S>>::Input:Clone+Send+Sync,
+/// <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:ApplicationMutationScopeResolution<S,<I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
+/// P:ApplicationProgramDefinition<S>,P::Outputs:ApplicationProgramOutputsShape<S>,
+/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
+/// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding> {
 ///     let _ = pending.execute_performed_discovered::<P,R>(runtime,allocation);
 /// }
 /// ```

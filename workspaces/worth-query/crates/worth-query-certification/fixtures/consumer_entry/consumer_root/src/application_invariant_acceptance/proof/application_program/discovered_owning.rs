@@ -2,7 +2,7 @@
 use super::*;
 use crate::application_program::discovered_delivery::{Action, Program, QueryDelivery};
 use worth_query_decl::facade::{
-    application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
+    application_operation::ApplicationMutationIntent,
     application_program::ApplicationProgramAuthoring,
     application_schema::{ApplicationEncodedScalarValue, TypedMutationPreconditions},
 };
@@ -30,6 +30,7 @@ mod delivery;
 mod membership;
 mod replay;
 mod retention;
+mod unrelated;
 
 // The initiating intent cannot be cloned or reconstructed by the ordinary owner.
 struct Original(PlanarSourceAdjustment);

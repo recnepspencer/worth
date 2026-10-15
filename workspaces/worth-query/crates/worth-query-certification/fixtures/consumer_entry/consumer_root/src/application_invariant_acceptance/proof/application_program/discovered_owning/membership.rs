@@ -133,6 +133,7 @@ fn discovered_ordinary_membership_refuses_current_but_keeps_original_history_and
             scope_key: "sibling-a".to_owned(),
             target_key: "remote-b".to_owned(),
         })
+        .without_source()
         .idempotency_owned(110_042)
         .retain_operation::<Program, MembershipAction>(&world.application)
         .unwrap_or_else(|(_, d)| panic!("real membership construction: {d:?}"));
@@ -154,7 +155,7 @@ fn discovered_ordinary_membership_refuses_current_but_keeps_original_history_and
     assert!(matches!(
         settled.read_current_with_policy(
             &request,
-            Policy::currentness(NonZeroUsize::new(8192).unwrap())
+            Policy::currentness(NonZeroUsize::new(world.application.runtime().output_demand_resource_profile().limits().source_currentness_work()).expect("installed finite positive currentness allowance"))
         ),
         Err(DeliveryDenial::Stale(denial)) if denial.kind()==worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded
     ));

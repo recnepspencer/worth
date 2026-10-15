@@ -4,6 +4,7 @@ use crate::application_program::discovered_delivery::NoProjectionDelivery;
 use worth_query_host::facade::application_entry::{
     WorthQueryOperationCloseDenial, WorthQueryOperationDeliveryDenial,
 };
+use worth_query_host::facade::application_installation::WorthQueryProgramOwner;
 #[test]
 fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_delivery_preserves_history(
 ) {

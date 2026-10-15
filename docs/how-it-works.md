@@ -870,9 +870,9 @@ completion cannot prove required outputs. Delivery and drop do not certify clean
 #### Advanced native mutation control
 
 Use the [ordinary owning entry](build-an-application.md#53-execute-through-the-program)
-for fixed and source-only actions. The native lanes below require
+for fixed, discovered and source-only actions. The native lanes below require
 `request.advanced().mutate(intent)` and their existing explicit allocation policy.
-Discovered and bound workflow lanes remain ordinary until their adapters land.
+Only the issued bound workflow funnel remains ordinary until its owning adapter lands.
 Native owners retain effect, custody and unresolved-publication authority.
 
 **Native substrate.** Every lane takes an `ExecutionAllocationPolicy`
