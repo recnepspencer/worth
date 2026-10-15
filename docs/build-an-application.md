@@ -3120,47 +3120,47 @@ against the native receipt, not business input or a source of authority.
 
 <!-- compiled: observable_proposal.rs -->
 ```rust
-let waiting = advance(&application, &instance, &[10, 11]);
-let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingProposal(need)) =
-    waiting.stop()
-else {
-    panic!("the first node must expose its actual proposal need: {waiting:?}");
-};
-assert_eq!(need.node_path(), "propose");
-assert_eq!(
-    need.operation(),
-    WorkflowDefinitionAuthoringOperation::reference().name()
-);
-assert_eq!(
-    need.input_type(),
-    WorkflowDefinitionAuthoringOperation::reference()
-        .input_identity()
-        .as_str()
-);
-assert!(waiting.transitions().is_empty());
-let proposal = runtime
-    .request(&actor, &scope)
-    .on_branch(instance.branch())
-    .mutate(WorkflowDefinitionAuthoringIntent { input: input() })
-    .without_source()
-    .idempotency(&20_u64)
-    .prepare_workflow_proposal(&application, instance.clone())
-    .unwrap()
-    .execute();
-let (proposal, expected_proposer) = match proposal {
-    WorkflowProposalOutcome::Published(published) => {
-        let principal = published.receipt().principal_scope().principal();
-        (
-            published.proposal().clone(),
-            [
-                u64::from(principal.partition_id()),
-                principal.local_slot(),
-                u64::from(principal.generation()),
-            ],
-        )
-    }
-    other => panic!("original proposal publication: {other:?}"),
-};
+    let waiting = advance(&application, &instance, &[10, 11]);
+    let WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingProposal(need)) =
+        waiting.stop()
+    else {
+        panic!("the first node must expose its actual proposal need: {waiting:?}");
+    };
+    assert_eq!(need.node_path(), "propose");
+    assert_eq!(
+        need.operation(),
+        WorkflowDefinitionAuthoringOperation::reference().name()
+    );
+    assert_eq!(
+        need.input_type(),
+        WorkflowDefinitionAuthoringOperation::reference()
+            .input_identity()
+            .as_str()
+    );
+    assert!(waiting.transitions().is_empty());
+    let proposal = runtime
+        .request(&actor, &scope)
+        .on_branch(instance.branch())
+        .mutate(WorkflowDefinitionAuthoringIntent { input: input() })
+        .without_source()
+        .idempotency(&20_u64)
+        .prepare_workflow_proposal(&application, instance.clone())
+        .unwrap()
+        .execute();
+    let (proposal, expected_proposer) = match proposal {
+        WorkflowProposalOutcome::Published(published) => {
+            let principal = published.receipt().principal_scope().principal();
+            (
+                published.proposal().clone(),
+                [
+                    u64::from(principal.partition_id()),
+                    principal.local_slot(),
+                    u64::from(principal.generation()),
+                ],
+            )
+        }
+        other => panic!("original proposal publication: {other:?}"),
+    };
 ```
 
 Next it advances to capture, runs the original occurrence-bound owner, and
@@ -3181,82 +3181,82 @@ performed operation, and independently closes cleanup:
 
 <!-- compiled: observable_operation.rs -->
 ```rust
-let operation = request
-    .mutate(crate::effect::ArchiveIntent {
-        input: crate::journey::input(),
-    })
-    .without_source()
-    .idempotency_owned(80_u64)
-    .unwrap_or_else(|(_, _, cause)| panic!("original archive capture: {cause:?}"))
-    .for_workflow_operation(application, &required)
-    .unwrap_or_else(|_| panic!("exact approved occurrence"))
-    .retain_operation::<MixedProgram, crate::effect::ArchiveAction>(
-        application.program_runtime(),
-    )
-    .unwrap_or_else(|_| panic!("installed archive action"));
-let operation = match operation.advance(&request) {
-    WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
-    _ => panic!("acknowledgement cannot settle the original dispatch"),
-};
-let (mut operation, cause) = operation
-    .close(&request)
-    .err()
-    .expect("DispatchPending retains original native owner");
-assert!(matches!(
-    cause,
-    WorthQueryOperationCloseDenial::NativeObligationRetained
-));
-let waiting = crate::journey::advance(application, instance, &[81, 82]);
-assert!(
-    matches!(waiting.stop(), WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingOperation(need)) if need.node_path() == "archive")
-);
-let envelope = archive
-    .envelope()
-    .expect("actual child file write and authenticated pipe completion");
-application
-    .runtime()
-    .inbound_occurrences()
-    .receive(verifier, &envelope, &scope)
-    .execute()
-    .expect("native provenance admission of the real completion");
-let completed = loop {
-    match operation.advance(
-        &application
-            .runtime()
-            .request(&actor, &scope)
-            .on_branch(instance.branch()),
-    ) {
-        WorthQueryWorkflowOperationAdvance::Progress(next) => operation = next,
-        WorthQueryWorkflowOperationAdvance::Completed(done) => break done,
-        WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
-            let _original_owner = operation;
-            panic!("native settlement refused with original custody: {denial:?}");
+    let operation = request
+        .mutate(crate::effect::ArchiveIntent {
+            input: crate::journey::input(),
+        })
+        .without_source()
+        .idempotency_owned(80_u64)
+        .unwrap_or_else(|(_, _, cause)| panic!("original archive capture: {cause:?}"))
+        .for_workflow_operation(application, &required)
+        .unwrap_or_else(|_| panic!("exact approved occurrence"))
+        .retain_operation::<MixedProgram, crate::effect::ArchiveAction>(
+            application.program_runtime(),
+        )
+        .unwrap_or_else(|_| panic!("installed archive action"));
+    let operation = match operation.advance(&request) {
+        WorthQueryWorkflowOperationAdvance::Progress(operation) => operation,
+        _ => panic!("acknowledgement cannot settle the original dispatch"),
+    };
+    let (mut operation, cause) = operation
+        .close(&request)
+        .err()
+        .expect("DispatchPending retains original native owner");
+    assert!(matches!(
+        cause,
+        WorthQueryOperationCloseDenial::NativeObligationRetained
+    ));
+    let waiting = crate::journey::advance(application, instance, &[81, 82]);
+    assert!(
+        matches!(waiting.stop(), WorthQueryOrdinaryWorkflowRunStop::Outcome(WorkflowProgressOutcome::AwaitingOperation(need)) if need.node_path() == "archive")
+    );
+    let envelope = archive
+        .envelope()
+        .expect("actual child file write and authenticated pipe completion");
+    application
+        .runtime()
+        .inbound_occurrences()
+        .receive(verifier, &envelope, &scope)
+        .execute()
+        .expect("native provenance admission of the real completion");
+    let completed = loop {
+        match operation.advance(
+            &application
+                .runtime()
+                .request(&actor, &scope)
+                .on_branch(instance.branch()),
+        ) {
+            WorthQueryWorkflowOperationAdvance::Progress(next) => operation = next,
+            WorthQueryWorkflowOperationAdvance::Completed(done) => break done,
+            WorthQueryWorkflowOperationAdvance::Refused { operation, denial } => {
+                let _original_owner = operation;
+                panic!("native settlement refused with original custody: {denial:?}");
+            }
+            WorthQueryWorkflowOperationAdvance::Terminal(terminal) => {
+                let _original_custody = terminal;
+                panic!("native settlement stopped terminally");
+            }
         }
-        WorthQueryWorkflowOperationAdvance::Terminal(terminal) => {
-            let _original_custody = terminal;
-            panic!("native settlement stopped terminally");
-        }
-    }
-};
-let accepted = request
-    .mutate(WorkflowAdvanceIntent {
-        input: WorkflowAdvanceInput {
-            document_identity: DOCUMENT_IDENTITY.into(),
-        },
-    })
-    .without_source()
-    .idempotency(&90_u64)
-    .prepare_workflow_advance(application, instance.clone())
-    .unwrap()
-    .accept_owned_operation(completed)
-    .unwrap_or_else(|(_owner, cause)| panic!("exact original external settlement: {cause:?}"));
-assert!(
-    matches!(&accepted.progress, WorkflowProgressOutcome::Completed(performed) if performed.node_path() == "archive")
-);
-accepted
-    .operation
-    .close(&request)
-    .unwrap_or_else(|_| panic!("original dispatch and native cleanup must close"));
+    };
+    let accepted = request
+        .mutate(WorkflowAdvanceIntent {
+            input: WorkflowAdvanceInput {
+                document_identity: DOCUMENT_IDENTITY.into(),
+            },
+        })
+        .without_source()
+        .idempotency(&90_u64)
+        .prepare_workflow_advance(application, instance.clone())
+        .unwrap()
+        .accept_owned_operation(completed)
+        .unwrap_or_else(|(_owner, cause)| panic!("exact original external settlement: {cause:?}"));
+    assert!(
+        matches!(&accepted.progress, WorkflowProgressOutcome::Completed(performed) if performed.node_path() == "archive")
+    );
+    accepted
+        .operation
+        .close(&request)
+        .unwrap_or_else(|_| panic!("original dispatch and native cleanup must close"));
 ```
 
 A refused advance returns its original owner; retain it before deciding whether
@@ -3286,123 +3286,123 @@ marks relevant changes without altering `old`. The caller explicitly retains
 
 <!-- compiled: observable_history.rs -->
 ```rust
-let mut subscription = runtime
-    .request(&operator, &scope)
-    .on_branch(instance.branch())
-    .at(&old)
-    .subscribe_workflow_history::<MixedWorkflow, SubjectRead>(
-        application.vocabulary(),
-        &target,
-        input(),
-    )
-    .expect("native envelope interest at the old data basis");
-assert_eq!(
-    runtime
+    let mut subscription = runtime
         .request(&operator, &scope)
         .on_branch(instance.branch())
         .at(&old)
-        .poll_workflow_history::<MixedWorkflow, SubjectRead>(
+        .subscribe_workflow_history::<MixedWorkflow, SubjectRead>(
             application.vocabulary(),
-            &mut subscription,
+            &target,
             input(),
         )
-        .unwrap(),
-    WorthQueryWorkflowHistoryMark::Pending
-);
-let expected_approver = approve();
-assert_eq!(
-    runtime
+        .expect("native envelope interest at the old data basis");
+    assert_eq!(
+        runtime
+            .request(&operator, &scope)
+            .on_branch(instance.branch())
+            .at(&old)
+            .poll_workflow_history::<MixedWorkflow, SubjectRead>(
+                application.vocabulary(),
+                &mut subscription,
+                input(),
+            )
+            .unwrap(),
+        WorthQueryWorkflowHistoryMark::Pending
+    );
+    let expected_approver = approve();
+    assert_eq!(
+        runtime
+            .request(&operator, &scope)
+            .on_branch(instance.branch())
+            .at(&old)
+            .poll_workflow_history::<MixedWorkflow, SubjectRead>(
+                application.vocabulary(),
+                &mut subscription,
+                input(),
+            )
+            .unwrap(),
+        WorthQueryWorkflowHistoryMark::Changed
+    );
+    // A mark reports relevant change. It does not mutate the old retained read.
+    let historical = page(application, &reviewer, &scope, &old, &target);
+    assert_eq!(historical.basis().selected_commit(), old.selected_commit());
+    assert!(historical
+        .entries()
+        .iter()
+        .all(|row| row.approval().is_none()));
+    // Refresh is an explicit caller choice with new current admission.
+    let now = runtime
         .request(&operator, &scope)
         .on_branch(instance.branch())
-        .at(&old)
-        .poll_workflow_history::<MixedWorkflow, SubjectRead>(
+        .retain_current_read()
+        .expect("explicitly retain a fresh post-approval basis");
+    let fresh_discovery = runtime
+        .request(&operator, &scope)
+        .on_branch(instance.branch())
+        .at(&now)
+        .read_original_workflow::<MixedWorkflow, SubjectRead, AuditRead>(
             application.vocabulary(),
-            &mut subscription,
+            original,
+            input(),
             input(),
         )
-        .unwrap(),
-    WorthQueryWorkflowHistoryMark::Changed
-);
-// A mark reports relevant change. It does not mutate the old retained read.
-let historical = page(application, &reviewer, &scope, &old, &target);
-assert_eq!(historical.basis().selected_commit(), old.selected_commit());
-assert!(historical
-    .entries()
-    .iter()
-    .all(|row| row.approval().is_none()));
-// Refresh is an explicit caller choice with new current admission.
-let now = runtime
-    .request(&operator, &scope)
-    .on_branch(instance.branch())
-    .retain_current_read()
-    .expect("explicitly retain a fresh post-approval basis");
-let fresh_discovery = runtime
-    .request(&operator, &scope)
-    .on_branch(instance.branch())
-    .at(&now)
-    .read_original_workflow::<MixedWorkflow, SubjectRead, AuditRead>(
-        application.vocabulary(),
-        original,
-        input(),
-        input(),
-    )
-    .unwrap();
-let fresh_target = fresh_discovery
-    .target()
-    .expect("same native instance at fresh data");
-let fresh = page(application, &reviewer, &scope, &now, fresh_target);
-assert_eq!(fresh.basis().selected_commit(), now.selected_commit());
-let approved = fresh
-    .entries()
-    .iter()
-    .find(|row| row.approval().is_some())
-    .expect("actual recorded approval");
-assert_eq!(
-    approved.approval().unwrap().decision(),
-    WorkflowApprovalDecision::Approve
-);
-assert_eq!(
-    approved.approval().unwrap().proposal_identity(),
-    proposal.identity()
-);
-match approved.audit() {
-    WorthQueryWorkflowHistoryAudit::Visible {
-        approver: Some(actor),
-        ..
-    } => {
-        let actor = actor.entity_id();
-        assert_eq!(
-            [
-                actor.partition_value_u64(),
-                actor.local_slot_value(),
-                u64::from(actor.generation_value())
-            ],
-            expected_approver,
-            "the performed native approval is the actor oracle"
-        );
-        assert_ne!(actor, proposer);
+        .unwrap();
+    let fresh_target = fresh_discovery
+        .target()
+        .expect("same native instance at fresh data");
+    let fresh = page(application, &reviewer, &scope, &now, fresh_target);
+    assert_eq!(fresh.basis().selected_commit(), now.selected_commit());
+    let approved = fresh
+        .entries()
+        .iter()
+        .find(|row| row.approval().is_some())
+        .expect("actual recorded approval");
+    assert_eq!(
+        approved.approval().unwrap().decision(),
+        WorkflowApprovalDecision::Approve
+    );
+    assert_eq!(
+        approved.approval().unwrap().proposal_identity(),
+        proposal.identity()
+    );
+    match approved.audit() {
+        WorthQueryWorkflowHistoryAudit::Visible {
+            approver: Some(actor),
+            ..
+        } => {
+            let actor = actor.entity_id();
+            assert_eq!(
+                [
+                    actor.partition_value_u64(),
+                    actor.local_slot_value(),
+                    u64::from(actor.generation_value())
+                ],
+                expected_approver,
+                "the performed native approval is the actor oracle"
+            );
+            assert_ne!(actor, proposer);
+        }
+        _ => panic!("independent audit reveals the performed approver"),
     }
-    _ => panic!("independent audit reveals the performed approver"),
-}
-let fresh_withheld = page(application, &operator, &scope, &now, fresh_target);
-assert_eq!(fresh.entries().len(), fresh_withheld.entries().len());
-for (audited, withheld) in fresh.entries().iter().zip(fresh_withheld.entries()) {
-    assert_eq!(audited.occurrence(), withheld.occurrence());
-    assert_eq!(audited.node_path(), withheld.node_path());
-    assert_eq!(audited.outcome(), withheld.outcome());
-    assert_eq!(audited.proposal(), withheld.proposal());
-}
-let approved_without_audit = fresh_withheld
-    .entries()
-    .iter()
-    .find(|row| row.approval().is_some())
-    .expect("withholding cannot hide approval state");
-assert!(matches!(
-    approved_without_audit.audit(),
-    WorthQueryWorkflowHistoryAudit::Withheld
-));
-// Releases native subscription custody only; never operation cleanup proof.
-subscription.close();
+    let fresh_withheld = page(application, &operator, &scope, &now, fresh_target);
+    assert_eq!(fresh.entries().len(), fresh_withheld.entries().len());
+    for (audited, withheld) in fresh.entries().iter().zip(fresh_withheld.entries()) {
+        assert_eq!(audited.occurrence(), withheld.occurrence());
+        assert_eq!(audited.node_path(), withheld.node_path());
+        assert_eq!(audited.outcome(), withheld.outcome());
+        assert_eq!(audited.proposal(), withheld.proposal());
+    }
+    let approved_without_audit = fresh_withheld
+        .entries()
+        .iter()
+        .find(|row| row.approval().is_some())
+        .expect("withholding cannot hide approval state");
+    assert!(matches!(
+        approved_without_audit.audit(),
+        WorthQueryWorkflowHistoryAudit::Withheld
+    ));
+    // Releases native subscription custody only; never operation cleanup proof.
+    subscription.close();
 ```
 
 `subscription.close()` takes no request or execution argument: it releases native
