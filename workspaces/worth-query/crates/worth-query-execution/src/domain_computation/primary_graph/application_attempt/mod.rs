@@ -133,7 +133,8 @@ pub(in crate::domain_computation::primary_graph) use fact::{
     observe_adjacency, observe_indexed_candidates, observe_indexed_entity_selection,
     reobserve_indexed_entity_selection, FactMovement, IndexedSelectionReobserveDenial, Movement,
     ObservedRetained, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
-    WorthQueryIndexedSelectionRefusal, WorthQuerySourceCurrentnessFailure,
+    WorthQueryApplicationObservedRelation, WorthQueryIndexedSelectionRefusal,
+    WorthQuerySourceCurrentnessFailure,
 };
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryRecordedIntentMatch;
 pub use idempotency::{
