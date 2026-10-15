@@ -200,12 +200,7 @@ fn committed_owner_custody_is_accepted_in_one_request() {
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
         let ready = ReadyPaymentWorld::new("workflow-committed-custody", FaultScript::Succeed);
-        let route = ready
-            .fixture
-            .world
-            .runtime
-            .install_payment_rail_completion_verifier(std::sync::Arc::new(PaymentRailSource))
-            .expect("the payment completion source installs before dispatch");
+        let route = ready.install_synchronous_completion();
         ready
             .perform()
             .into_performed()
@@ -258,40 +253,5 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             "committed custody completes acceptance: {outcome:?}"
         );
         admitted(before);
-    }
-}
-
-// The installed source enables the real synchronous completion owner. This
-// control authenticates no callback, so it cannot manufacture terminal custody.
-struct PaymentRailSource;
-impl worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceVerifier
-    for PaymentRailSource
-{
-    fn audience(&self) -> &str {
-        "bank-workflow-committed-custody"
-    }
-    fn source_identity(&self) -> &str {
-        "rail-primary"
-    }
-    fn protocol_identity(&self) -> &worth_foundational::facade::BoundaryProtocolIdentity {
-        static IDENTITY: worth_foundational::facade::BoundaryProtocolIdentity =
-            worth_foundational::facade::BoundaryProtocolIdentity::new(
-                "bank.payment.approved-settlement",
-            );
-        &IDENTITY
-    }
-    fn protocol_version(&self) -> worth_foundational::facade::BoundaryProtocolVersion {
-        worth_foundational::facade::BoundaryProtocolVersion::new(1)
-    }
-    fn verify(
-        &self,
-        _: &[u8],
-        _: u64,
-        _: std::num::NonZeroU64,
-    ) -> Result<
-        worth_query_host::facade::primary_graph::WorthQueryInboundOccurrenceClaims,
-        worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial,
-    > {
-        Err(worth_query_host::facade::primary_graph::WorthQueryInboundVerificationDenial::AuthenticationFailed)
     }
 }

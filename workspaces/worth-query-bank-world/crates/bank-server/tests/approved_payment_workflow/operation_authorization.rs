@@ -28,6 +28,8 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
         .runtime
         .install_external_effect_transport(rail.clone())
         .expect("the real Bank settlement rail installs");
+    let _completion_route =
+        super::ready_payment::install_synchronous_completion(&fixture.world.runtime);
     let starter = fixture.authenticate(APPROVER);
     let actor = fixture.authenticate(STRANGER);
     let owner = fixture.authenticate(OWNER);
