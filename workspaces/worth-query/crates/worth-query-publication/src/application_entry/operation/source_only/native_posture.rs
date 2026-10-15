@@ -1,4 +1,4 @@
-//! Close classification follows native no-effect custody, never posture names alone.
+//! Close eligibility follows terminal custody; fresh retry requires separate no-effect proof.
 use super::*;
 use worth_query_execution::facade::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
@@ -18,23 +18,7 @@ pub(super) fn can_close<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(
         SourceState::Initial => true,
         SourceState::AdmissionStopped(denial) => pinned_source_moved(denial),
         SourceState::RetryableNoEffect(outcome) => fresh_retry_eligible::<S, I>(outcome),
-        SourceState::Stopped(outcome) => matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::DomainDenied(_)
-                | WorthQueryApplicationMutationOutcome::Cancelled
-                | WorthQueryApplicationMutationOutcome::DeadlineExceeded
-                | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
-                | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
-                | WorthQueryApplicationMutationOutcome::Commit(
-                    WorthQueryApplicationUncommitted::Denied(_)
-                        | WorthQueryApplicationUncommitted::Cancelled
-                        | WorthQueryApplicationUncommitted::TimedOut
-                        | WorthQueryApplicationUncommitted::Stale(_)
-                        // Both own no-effect observations, released by their native Drop owners.
-                        | WorthQueryApplicationUncommitted::ProductStale(_)
-                        | WorthQueryApplicationUncommitted::NoEffect(_)
-                )
-        ),
+        SourceState::Stopped(outcome) => super::super::close::terminal_outcome_can_close(outcome),
         _ => false,
     }
 }

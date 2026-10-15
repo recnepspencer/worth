@@ -41,6 +41,7 @@ mod discovered_delivery_handoff_contract;
 mod discovered_handoff_contract;
 mod fixed;
 mod fixed_advance;
+mod fixed_close;
 mod fixed_outputs;
 mod fixed_publication;
 mod fixed_recovery;

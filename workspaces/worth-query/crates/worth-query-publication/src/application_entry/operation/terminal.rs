@@ -58,7 +58,7 @@ where
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
-    operation: WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
+    pub(super) operation: WorthQueryFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
 }
 impl<'runtime, Schema, Intent, Program, Root, Action>
     WorthQueryTerminalFixedOperation<'runtime, Schema, Intent, Program, Root, Action>
@@ -79,8 +79,9 @@ where
     ) -> Self {
         // Before promotion, the partial is the sole owner of its prior cleanup.
         if let FixedState::Unpublished(partial) = &mut operation.state {
-            operation.cleanup =
-                WorthQueryOperationCleanup::from_failures(partial.take_prior_cleanup());
+            operation
+                .cleanup
+                .retain_original_failures(partial.take_prior_cleanup());
         }
         Self { operation }
     }
@@ -147,20 +148,11 @@ where
         {
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
-        let no_effect = matches!(
-            &self.operation.state,
-            FixedState::Initial
-                | FixedState::NotPerformed(
-                    WorthQueryApplicationMutationOutcome::Commit(
-                        WorthQueryApplicationUncommitted::ProductStale(_)
-                            | WorthQueryApplicationUncommitted::NoEffect(_)
-                    ) | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
-                        | WorthQueryApplicationMutationOutcome::DomainDenied(_)
-                        | WorthQueryApplicationMutationOutcome::Cancelled
-                        | WorthQueryApplicationMutationOutcome::DeadlineExceeded
-                        | WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-                )
-        );
+        let closable = match &self.operation.state {
+            FixedState::Initial => true,
+            FixedState::NotPerformed(outcome) => super::close::terminal_outcome_can_close(outcome),
+            _ => false,
+        };
         let result = self
             .operation
             .runtime
@@ -179,7 +171,7 @@ where
                     }
                     _ => false,
                 };
-                if !no_effect && !terminal_carrier {
+                if !closable && !terminal_carrier {
                     return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
                 }
                 let receipt = self

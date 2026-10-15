@@ -12,6 +12,7 @@ use super::*;
 
 mod connection;
 mod handler;
+mod required;
 pub use connection::PlanarInitialToOutputConnection;
 pub use handler::PlanarInitialAdjustmentHandler;
 

@@ -43,6 +43,7 @@ pub struct WorthQueryOperationCleanup {
     producer_outcome:
         Option<Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>>,
     failures: Vec<Failure>,
+    original_failures: Option<Vec<Failure>>,
     pending: Vec<
         worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery,
     >,
@@ -123,11 +124,14 @@ impl WorthQueryOperationCleanup {
             self.failures.push(failure);
         }
     }
-    pub(super) fn from_failures(failures: Vec<Failure>) -> Self {
-        Self {
-            failures,
-            ..Self::default()
-        }
+    /// One original partial transfers its vector exactly once, at promotion or terminality.
+    /// Keep an already absorbed managed failure and its runtime keepalive intact.
+    pub(super) fn retain_original_failures(&mut self, failures: Vec<Failure>) {
+        assert!(
+            self.original_failures.is_none(),
+            "one original partial cleanup transfer"
+        );
+        self.original_failures = Some(failures);
     }
     pub fn absorb_recovered(
         &mut self,
@@ -182,7 +186,12 @@ impl WorthQueryOperationCleanup {
                 }
             }
         }
-        while let Some(failure) = self.failures.pop() {
+        while let Some(failure) = self
+            .original_failures
+            .as_mut()
+            .and_then(Vec::pop)
+            .or_else(|| self.failures.pop())
+        {
             let outcome = match failure {
                 Failure::Recovery(failure) => runtime
                     .release_product_publication_recovery_in_advancement(

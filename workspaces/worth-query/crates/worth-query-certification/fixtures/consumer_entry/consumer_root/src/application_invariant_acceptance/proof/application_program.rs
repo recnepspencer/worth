@@ -345,3 +345,8 @@ mod fixed_managed_cleanup;
 
 #[cfg(test)]
 mod operation_cost;
+
+#[cfg(test)]
+mod fixed_cleanup;
+#[cfg(test)]
+mod fixed_readmission;

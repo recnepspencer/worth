@@ -20,6 +20,31 @@ pub struct WorthQueryClosedOperation {
     >,
     retired_component_count: usize,
 }
+/// Terminal disposal eligibility only: historical evidence grants no effect retry.
+/// Actual managed cleanup and partial publication custody still govern release.
+pub(super) fn terminal_outcome_can_close<D, R>(
+    outcome: &WorthQueryApplicationMutationOutcome<D, R>,
+) -> bool {
+    use worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted as Native;
+    matches!(
+        outcome,
+        WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
+            | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+            | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+            | WorthQueryApplicationMutationOutcome::DomainDenied(_)
+            | WorthQueryApplicationMutationOutcome::Cancelled
+            | WorthQueryApplicationMutationOutcome::DeadlineExceeded
+            | WorthQueryApplicationMutationOutcome::Commit(
+                Native::Denied(_)
+                    | Native::Cancelled
+                    | Native::TimedOut
+                    | Native::Stale(_)
+                    | Native::ProductStale(_)
+                    | Native::NoEffect(_)
+            )
+    )
+}
+
 impl WorthQueryClosedOperation {
     pub(super) fn from_cleanup(receipt: WorthQueryOperationCleanupReceipt) -> Self {
         Self {
