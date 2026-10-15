@@ -55,7 +55,7 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryOperationD
             != <I::Binding as ApplicationMutationBinding<S>>::Operation::IDENTIFIER
             || required.binding() != Some(I::Binding::IDENTITY)
             || required.workflow_execution_requirements()
-                != I::Binding::workflow_execution_requirements().as_ref()
+                != &I::Binding::workflow_execution_requirements()
             || !I::Binding::REQUIRES_WORKFLOW_AUTHORITY
             || required.input_type()
                 != <I::Binding as ApplicationMutationBinding<S>>::InputBinding::IDENTITY.as_str()
