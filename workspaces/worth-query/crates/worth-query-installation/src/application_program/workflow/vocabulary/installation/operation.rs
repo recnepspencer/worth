@@ -39,6 +39,15 @@ where
                     Binding::IDENTITY,
                 )
             })?;
+        if installed.operation().body().is_some_and(|body| {
+            body.creation()
+                .is_some_and(|creation| creation.enrollment().is_some())
+        }) {
+            return Err(denial(
+                WorthQueryApplicationWorkflowInstallationDenialKind::BirthBindingNotInstalled,
+                Binding::IDENTITY,
+            ));
+        }
         let supports_local_workflow_action = Binding::REQUIRES_APPLICATION_PROGRAM
             && Binding::REQUIRES_WORKFLOW_AUTHORITY
             && !Binding::WORKFLOW_CONTROL

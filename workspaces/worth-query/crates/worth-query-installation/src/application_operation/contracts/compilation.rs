@@ -66,6 +66,12 @@ impl WorthQueryCompiledApplicationOperationContracts {
             signing_lifecycle.publication_touches.scopes().to_vec(),
         );
         let decision_facts = application_decision_fact_contract(authorization_fact_count);
+        let candidate_demand = candidate_demand.with_workflow_birth(
+            body.as_ref()
+                .and_then(|body| body.creation())
+                .and_then(|creation| creation.enrollment())
+                .is_some(),
+        )?;
         let resources = application_resource_contract(authored_program_width, candidate_demand)?;
         Ok(Self {
             signing_lifecycle,

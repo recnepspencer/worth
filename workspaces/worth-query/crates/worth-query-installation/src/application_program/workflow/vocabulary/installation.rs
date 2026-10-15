@@ -20,7 +20,7 @@ use crate::application_schema::WorthQueryInstalledApplicationSchema;
 
 use super::{
     denial, InstalledWorkflowAdvanceCapability, InstalledWorkflowApproval,
-    InstalledWorkflowAssessment, InstalledWorkflowAuthoringCapability,
+    InstalledWorkflowAssessment, InstalledWorkflowAuthoringCapability, InstalledWorkflowBirth,
     InstalledWorkflowCapabilityBinding, InstalledWorkflowCondition,
     InstalledWorkflowInstanceStartCapability, InstalledWorkflowOperation,
     WorthQueryApplicationWorkflowInstallationDenial,
@@ -28,6 +28,7 @@ use super::{
     WorthQueryApplicationWorkflowResourceCeiling, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
+mod birth;
 #[path = "installation/capability_binding.rs"]
 mod capability_binding;
 mod operation;
@@ -43,6 +44,7 @@ where
     instance_start_capability: Option<InstalledWorkflowInstanceStartCapability>,
     advance_capability: Option<InstalledWorkflowAdvanceCapability>,
     operations: Vec<InstalledWorkflowOperation>,
+    births: Vec<InstalledWorkflowBirth>,
     assessments: Vec<InstalledWorkflowAssessment>,
     conditions: Vec<InstalledWorkflowCondition>,
     approvals: Vec<InstalledWorkflowApproval>,
@@ -69,6 +71,7 @@ where
             instance_start_capability: None,
             advance_capability: None,
             operations: Vec::new(),
+            births: Vec::new(),
             assessments: Vec::new(),
             conditions: Vec::new(),
             approvals: Vec::new(),
@@ -326,6 +329,7 @@ where
             )
         })?;
         if self.operations.is_empty()
+            && self.births.is_empty()
             && self.assessments.is_empty()
             && self.conditions.is_empty()
             && self.approvals.is_empty()
@@ -342,6 +346,7 @@ where
             &instance_start_capability,
             &advance_capability,
             &self.operations,
+            &self.births,
             &self.assessments,
             &self.conditions,
             &self.approvals,
@@ -355,6 +360,7 @@ where
             instance_start_capability,
             advance_capability,
             operations: self.operations.into_boxed_slice(),
+            births: self.births.into_boxed_slice(),
             assessments: self.assessments.into_boxed_slice(),
             conditions: self.conditions.into_boxed_slice(),
             approvals: self.approvals.into_boxed_slice(),

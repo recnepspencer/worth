@@ -104,13 +104,13 @@ pub(in crate::domain_computation) use retained_capability_support::{
 
 fn authorization_denial(
     subject: impl Into<String>,
-    _detail: &'static str,
+    detail: &'static str,
 ) -> WorthQueryOperationAuthorizationDenial {
     WorthQueryOperationAuthorizationDenial::new(
         WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::InvalidInstalledPolicy,
         ),
-        subject,
+        format!("{}: {detail}", subject.into()),
     )
 }
 

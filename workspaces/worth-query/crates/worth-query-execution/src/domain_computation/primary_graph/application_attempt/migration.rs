@@ -41,6 +41,22 @@ where
             ),
         );
     }
+    if program.read_set.workflow_birth_binding.is_some()
+        || program
+            .read_set
+            .admission
+            .allowed_graph_contract()
+            .body()
+            .and_then(|body| body.creation())
+            .and_then(|creation| creation.enrollment())
+            .is_some()
+    {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot publish workflow births",
+            ),
+        );
+    }
     if !program.read_set.lease.layout.signing_lifecycle.is_empty() && !program.effects.is_empty() {
         return Err(
             WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(

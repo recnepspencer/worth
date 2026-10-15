@@ -3,6 +3,8 @@ use crate::application_schema::{
     canonical_basis::ApplicationSchemaCanonicalBasis,
     ApplicationOperationBodyCreatedField as Field, ApplicationOperationBodyCreation,
 };
+#[cfg(test)]
+mod tests;
 
 pub(super) fn append(
     basis: &mut ApplicationSchemaCanonicalBasis,
@@ -20,6 +22,12 @@ pub(super) fn append(
     }
     basis.text(format!("{prefix}.created.entity"), creation.entity());
     basis.text(format!("{prefix}.created.key"), creation.key());
+    if let Some(enrollment) = creation.enrollment() {
+        basis.text(
+            format!("{prefix}.created.workflow-enrollment"),
+            &enrollment.canonical_record(),
+        );
+    }
     if let Some(lifecycle) = creation.signing_lifecycle() {
         basis.text(
             format!("{prefix}.created.signing-lifecycle"),

@@ -137,8 +137,30 @@ pub(in crate::domain_computation::primary_graph) fn register_relation(
     to_kind: KindId,
     integrity: ApplicationRelationIntegrity,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
+    register_relation_to_kinds(
+        registry,
+        schema_id,
+        schema_version_id,
+        relation,
+        kind_id,
+        from_kind,
+        vec![to_kind],
+        integrity,
+    )
+}
+
+pub(in crate::domain_computation::primary_graph) fn register_relation_to_kinds(
+    registry: RelationalSchemaRegistry,
+    schema_id: &SchemaId,
+    schema_version_id: SchemaVersionId,
+    relation: &str,
+    kind_id: KindId,
+    from_kind: KindId,
+    to_kinds: Vec<KindId>,
+    integrity: ApplicationRelationIntegrity,
+) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
     let cross_context_policy = lower_cross_context(integrity.cross_context_policy());
-    let relation_integrity = lower_relation_integrity(relation, from_kind, to_kind, integrity);
+    let relation_integrity = lower_relation_integrity(relation, from_kind, to_kinds, integrity);
     registry
         .register_relation_kind(RelationKindRegistration {
             kind_id,
@@ -175,13 +197,13 @@ fn lower_cascade_delete(value: ApplicationRelationDeletionPolicy) -> CascadeDele
 fn lower_relation_integrity(
     relation: &str,
     from_kind: KindId,
-    to_kind: KindId,
+    to_kinds: Vec<KindId>,
     integrity: ApplicationRelationIntegrity,
 ) -> RelationIntegrityDeclarations {
     let endpoints = vec![EndpointKindContractDeclaration {
         contract_id: ContractId::new(format!("{relation}:endpoints")),
         allowed_source_kinds: vec![from_kind],
-        allowed_target_kinds: vec![to_kind],
+        allowed_target_kinds: to_kinds,
         self_edges_allowed: integrity.endpoints.self_edges_allowed,
         cross_context_policy: lower_cross_context(integrity.endpoints.cross_context_policy),
     }];
@@ -282,7 +304,7 @@ mod tests {
             ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
         );
 
-        let lowered = lower_relation_integrity("Contains", KindId(11), KindId(12), declared);
+        let lowered = lower_relation_integrity("Contains", KindId(11), vec![KindId(12)], declared);
 
         let endpoints = &lowered.endpoint_kind_contracts[0];
         assert_eq!(endpoints.allowed_source_kinds, vec![KindId(11)]);
@@ -312,7 +334,7 @@ mod tests {
         let lowered = lower_relation_integrity(
             "Contains",
             KindId(11),
-            KindId(12),
+            vec![KindId(12)],
             ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
         );
 
@@ -327,7 +349,7 @@ mod tests {
         let lowered = lower_relation_integrity(
             "Contains",
             KindId(11),
-            KindId(11),
+            vec![KindId(11)],
             ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling(),
         );
 

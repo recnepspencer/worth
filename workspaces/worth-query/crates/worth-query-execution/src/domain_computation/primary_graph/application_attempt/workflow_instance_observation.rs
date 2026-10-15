@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) mod instan
 mod progression;
 mod settlement;
 mod step_budget;
+mod subject;
 use instance_binding::{adjacency, adjacency_with_kind, exact, exact_u64, text};
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph) use settlement::decode_field_revision_fact;
@@ -108,17 +109,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         entity_id: entity,
         kind,
     }];
-    exact(execution,
-        runtime,
-        snapshot,
-        entity,
-        kind,
-        &layout.instance.protocol_version,
-        AspectValue::UInt64(
-            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
-        ),
-        &mut facts,
-    )?;
     exact(
         execution,
         runtime,
@@ -152,28 +142,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         text(instance.definition_content_identity().to_string()),
         &mut facts,
     )?;
-    for (locator, expected) in [
-        (
-            &layout.instance.subject_partition,
-            u64::from(subject.partition_value()),
-        ),
-        (&layout.instance.subject_slot, subject.local_slot_value()),
-        (
-            &layout.instance.subject_generation,
-            u64::from(subject.generation_value()),
-        ),
-    ] {
-        exact(
-            execution,
-            runtime,
-            snapshot,
-            entity,
-            kind,
-            locator,
-            AspectValue::UInt64(expected),
-            &mut facts,
-        )?;
-    }
+    subject::observe_subject(
+        execution, runtime, snapshot, layout, entity, subject, &mut facts,
+    )?;
     instance_binding::resume_definition(
         execution, runtime, snapshot, layout, instance, compiled, &mut facts,
     )?;

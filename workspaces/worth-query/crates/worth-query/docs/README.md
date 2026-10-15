@@ -28,6 +28,7 @@ Executable journeys:
 - [Build an Application](../../../../../docs/build-an-application.md): declare features and a program, install the application graph, run it, author and run workflows, and adopt a new program on a branch. The centerpiece.
 - [Programs and Adoption](./foundations/programs-and-adoption.md): program revisions, rosters, branch adoption, migration, workflow dispositions, branch sets, and retirement.
 - [Workflows](./foundations/workflows.md): workflow specs, definitions, publication, instances, approvals, assessments, conditions, retries, and cancellation.
+- [Workflow-Enrolled Creations](./authoring/workflow-enrolled-creations.md): publish a new subject and fresh native instance in one authorized mutation.
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md): declare, install, admit, execute, commit, and recover one application request.
 - [Branches and Previews](./foundations/branches-and-previews.md): application product branches and branch-local programs; its Workspace preview section is internal.
 - [AI Agent Orientation](./AI_README.md): runtime, substrate, authority, facade, and support model for AI agents and contributors.

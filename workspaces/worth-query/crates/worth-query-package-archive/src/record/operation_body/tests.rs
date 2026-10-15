@@ -4,6 +4,8 @@ use crate::{binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits}
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 #[path = "tests/creation_links.rs"]
 mod creation_links;
+#[path = "tests/enrollment.rs"]
+mod enrollment;
 #[path = "tests/genesis.rs"]
 mod genesis;
 #[path = "tests/optional_input.rs"]

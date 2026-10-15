@@ -143,6 +143,7 @@ impl<Schema, Operation, Input, Scope, Phase>
             computation_facts,
             computation_fact_ordinals,
             workflow_authority_binding: None,
+            workflow_birth_binding: None,
             mutation_handler_binding: None,
             signed_creation: None,
             workflow_deadline: None,

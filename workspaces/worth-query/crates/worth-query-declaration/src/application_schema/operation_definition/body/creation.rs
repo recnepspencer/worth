@@ -22,6 +22,7 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
     pub(super) signing: Option<super::ApplicationOperationBodySigningSpec>,
     pub(super) signing_lifecycle: Option<super::ApplicationOperationBodySigningLifecycleSpec>,
+    pub(super) enrollment: Option<super::ApplicationOperationBodyEnrollment>,
     marker: PhantomData<fn() -> Entity>,
 }
 
@@ -50,6 +51,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             links: Vec::new(),
             signing: None,
             signing_lifecycle: None,
+            enrollment: None,
             marker: PhantomData,
         })
     }
@@ -214,12 +216,16 @@ impl<Schema, Operation, Input, Entity>
             links: self.links,
             signing: self.signing,
             signing_lifecycle: self.signing_lifecycle,
+            enrollment: self.enrollment,
         };
         super::classified_capture::validate_creation(&creation)?;
         if !super::signing_lifecycle::validation::validate_creation(&creation) {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidSigningLifecycle);
         }
         let body = self.parent.finish_with_creation(Some(creation))?;
+        if !super::enrollment::valid(&body.program) {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidWorkflowEnrollment);
+        }
         if !super::signing_lifecycle::validation::validate_subject_writes(&body.program) {
             return Err(ApplicationOperationBodyAuthoringDenial::InvalidSigningLifecycle);
         }

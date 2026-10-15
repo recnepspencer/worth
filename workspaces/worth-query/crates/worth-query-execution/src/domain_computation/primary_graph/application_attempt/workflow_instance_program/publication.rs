@@ -218,7 +218,34 @@ fn project(
     start_path: String,
     replayed: bool,
 ) -> WorkflowInstanceStartOutcome {
-    let expected = AspectValue::String(InternedString::Raw(instance_identity));
+    match project_instance(
+        &receipt,
+        &definition_content_identity,
+        definition,
+        program_revision,
+        &instance_identity,
+        &instance_identity_locator,
+        &start_path,
+    ) {
+        Some(instance) => WorkflowInstanceStartOutcome::Started(PerformedWorkflowInstanceStart {
+            instance,
+            receipt,
+            replayed,
+        }),
+        None => WorkflowInstanceStartOutcome::ProjectionDenied(receipt),
+    }
+}
+
+pub(super) fn project_instance(
+    receipt: &super::super::WorthQueryApplicationCommitReceipt,
+    definition_content_identity: &ApplicationWorkflowDefinitionContentIdentity,
+    definition: worth_relational::facade::identity::EntityId,
+    program_revision: ApplicationProgramRevision,
+    instance_identity: &str,
+    instance_identity_locator: &worth_foundational::facade::AspectFieldLocator,
+    start_path: &str,
+) -> Option<PublishedWorkflowInstanceRef> {
+    let expected = AspectValue::String(InternedString::Raw(instance_identity.to_owned()));
     let locator = &instance_identity_locator;
     let candidates = receipt
         .committed_changes()
@@ -235,20 +262,16 @@ fn project(
         })
         .collect::<Vec<_>>();
     let [entity_id] = candidates.as_slice() else {
-        return WorkflowInstanceStartOutcome::ProjectionDenied(receipt);
+        return None;
     };
-    WorkflowInstanceStartOutcome::Started(PerformedWorkflowInstanceStart {
-        instance: PublishedWorkflowInstanceRef {
-            branch: receipt.product_branch(),
-            started_on: receipt.product_branch(),
-            entity_id: *entity_id,
-            definition_content_identity,
-            definition,
-            program_revision,
-            start_path,
-        },
-        receipt,
-        replayed,
+    Some(PublishedWorkflowInstanceRef {
+        branch: receipt.product_branch(),
+        started_on: receipt.product_branch(),
+        entity_id: *entity_id,
+        definition_content_identity: definition_content_identity.clone(),
+        definition,
+        program_revision,
+        start_path: start_path.to_owned(),
     })
 }
 

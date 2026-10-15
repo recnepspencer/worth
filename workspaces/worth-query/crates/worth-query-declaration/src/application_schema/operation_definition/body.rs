@@ -6,6 +6,8 @@ mod created_field;
 mod creation;
 mod creation_link;
 mod creation_link_validation;
+mod enrollment;
+pub use enrollment::ApplicationOperationBodyEnrollment;
 mod output;
 mod output_validation;
 mod present_source;
@@ -68,6 +70,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     ForeignSourceEntity,
     IncompatibleOutput,
     InvalidCreationLink,
+    InvalidWorkflowEnrollment,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

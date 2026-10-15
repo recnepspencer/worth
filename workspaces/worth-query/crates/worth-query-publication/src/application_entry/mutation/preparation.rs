@@ -146,6 +146,18 @@ where
                 }
             };
         let (mut program, result) = completed.into_parts();
+        if self.workflow_birth_identity.is_some() {
+            let authority = self
+                .workflow_birth_authority
+                .as_ref()
+                .and_then(|slot| slot.take())
+                .ok_or(WorthQueryApplicationRequestMutationDenial::WorkflowAuthoritySpent)?;
+            program = program
+                .bind_workflow_birth_authority(phase, authority, allocation_policy)
+                .map_err(
+                    WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
+                )?;
+        }
         if let Some(authority) = workflow_authority.as_ref() {
             program = program
                 .bind_workflow_operation_authority(phase, authority, allocation_policy)

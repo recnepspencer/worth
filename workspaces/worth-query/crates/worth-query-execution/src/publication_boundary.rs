@@ -82,6 +82,13 @@ pub mod workflow_advance {
     };
 }
 
+pub mod workflow_birth {
+    pub use crate::domain_computation::primary_graph::application_attempt::{
+        RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
+        WorthQueryWorkflowBirthAdapter,
+    };
+}
+
 pub mod workflow_proposal {
     pub use crate::domain_computation::primary_graph::{
         PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowInstanceRef,

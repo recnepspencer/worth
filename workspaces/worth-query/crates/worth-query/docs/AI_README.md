@@ -1023,6 +1023,17 @@ capability; its guarded native body and kernel return/ending publish together.
 Do not implement a business mutation followed by a separate cursor/end call.
 See the workflows guide for retained exact retry and current support limits.
 
+When a new subject must be born enrolled, attach
+`creation.enroll_in_workflow::<Spec, Binding, Role>()` and install its
+`birth_operation::<Binding, Role>()`. The creator's own container-scoped
+capability and the current published definition prepare `RequiredWorkflowBirth`;
+`for_workflow_birth` binds its exact intent/key before the normal capability
+mutation funnel co-publishes the body creation and native instance. Never
+predict the subject ID, enroll a placeholder, reuse an ended instance's permit,
+or substitute two commits for that join. This is current-definition enrollment,
+not full Reopen or a restart-persistable authority. See
+[Workflow-Enrolled Creations](./authoring/workflow-enrolled-creations.md).
+
 Application workflows are in How WORTH Works
 [§13](../../../../../docs/how-it-works.md#13-workflows) and the full
 [workflows guide](foundations/workflows.md). Underneath, a

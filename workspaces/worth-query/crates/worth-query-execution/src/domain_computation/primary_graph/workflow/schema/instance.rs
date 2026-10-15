@@ -4,7 +4,8 @@ use worth_relational::facade::indexes::DerivedIndexId;
 use worth_relational::facade::schema::{RelationalSchemaRegistry, SchemaId, SchemaVersionId};
 
 use super::{
-    relations::register_platform_entity, WorkflowInstanceLayout, INSTANCE_ASPECT, INSTANCE_ENTITY,
+    relations::register_platform_entity_at_revision, WorkflowInstanceLayout, INSTANCE_ASPECT,
+    INSTANCE_ENTITY,
 };
 use crate::domain_computation::primary_graph::schema_layout::{
     invalid_member, planned_field_locator,
@@ -45,9 +46,11 @@ pub(super) fn lower_instance(
         .required("branch-occurrence", ScalarAspectType::UInt64)
         .required("program-revision", ScalarAspectType::String)
         .required("definition-content-identity", ScalarAspectType::String)
-        .required("subject-partition", ScalarAspectType::UInt64)
-        .required("subject-slot", ScalarAspectType::UInt64)
-        .required("subject-generation", ScalarAspectType::UInt64)
+        // Protocol 2 retains the exact coordinates; protocol 3 uses the
+        // native relation to a subject created in the same candidate.
+        .optional("subject-partition", ScalarAspectType::UInt64)
+        .optional("subject-slot", ScalarAspectType::UInt64)
+        .optional("subject-generation", ScalarAspectType::UInt64)
         .required("state", ScalarAspectType::UInt64)
         .optional("resume-node-path", ScalarAspectType::String)
         .optional("cancellation-identity", ScalarAspectType::String)
@@ -57,7 +60,7 @@ pub(super) fn lower_instance(
         .optional("inherited-evidence-bytes", ScalarAspectType::UInt64)
         .finish()
         .map_err(|_| invalid_member(INSTANCE_ASPECT))?;
-    let registry = register_platform_entity(
+    let registry = register_platform_entity_at_revision(
         registry,
         schema_id,
         version,
@@ -66,6 +69,7 @@ pub(super) fn lower_instance(
         INSTANCE_ASPECT,
         identity,
         shape,
+        2,
     )?;
     Ok((
         registry,

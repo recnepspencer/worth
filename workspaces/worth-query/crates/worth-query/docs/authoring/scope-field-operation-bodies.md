@@ -21,6 +21,9 @@ body needs no dummy business-field write.
 The creation may also link to/from that admitted scope through typed declared
 relations, so domain membership does not depend on a later host effect.
 This remains a bounded body form; it does not dispatch workflow commands.
+For one unsigned creation that must publish with its fresh native instance, use
+the explicit [workflow-enrollment attachment](./workflow-enrolled-creations.md).
+It does not replace a body with host-created workflow effects.
 For an immutable authenticated snapshot rather than unsigned attribution, use
 [Signed Operation Creations](./signed-operation-creations.md). Its signing handoff
 does not turn ordinary information gathering into mandatory workflow approval.

@@ -43,6 +43,7 @@ pub(super) fn lower_platform_entities(
     schema_version_id: SchemaVersionId,
     native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
     first_kind: KindId,
+    subject_kinds: Vec<KindId>,
 ) -> Result<
     (RelationalSchemaRegistry, WorthQueryPlatformEntityLayouts),
     WorthQueryPrimaryGraphInstallationDenial,
@@ -98,6 +99,7 @@ pub(super) fn lower_platform_entities(
             identities[13],
             identities[14],
         ],
+        subject_kinds,
     )?;
     // Workflow owns 32 contiguous kinds; append the inbound kind so all
     // existing platform kind identities remain stable.

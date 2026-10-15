@@ -31,6 +31,46 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
     carry: WorkflowLineageCarry,
     mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
 ) -> Result<CreatedEntityRef, Error> {
+    visit_start_facts(
+        layout,
+        compiled,
+        instance_identity,
+        branch_occurrence,
+        EntityReference::Existing(subject),
+        carry,
+        &mut emit,
+    )
+}
+
+pub(in crate::domain_computation::primary_graph) fn visit_instance_birth_facts<Error>(
+    layout: &WorthQueryWorkflowLayout,
+    compiled: &CompiledWorkflowDefinition,
+    instance_identity: &str,
+    branch_occurrence: u64,
+    subject: CreatedEntityRef,
+    carry: WorkflowLineageCarry,
+    emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+) -> Result<CreatedEntityRef, Error> {
+    visit_start_facts(
+        layout,
+        compiled,
+        instance_identity,
+        branch_occurrence,
+        EntityReference::Created(subject),
+        carry,
+        emit,
+    )
+}
+
+fn visit_start_facts<Error>(
+    layout: &WorthQueryWorkflowLayout,
+    compiled: &CompiledWorkflowDefinition,
+    instance_identity: &str,
+    branch_occurrence: u64,
+    subject: EntityReference,
+    carry: WorkflowLineageCarry,
+    mut emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
+) -> Result<CreatedEntityRef, Error> {
     let partition = compiled.definition().partition_id;
     let instance = CreatedEntityRef {
         partition_id: partition,
@@ -41,9 +81,14 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
         (layout.instance.identity.clone(), text(instance_identity)),
         (
             layout.instance.protocol_version.clone(),
-            AspectValue::UInt64(
-                super::super::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION,
-            ),
+            AspectValue::UInt64(match &subject {
+                EntityReference::Existing(_) => {
+                    super::super::schema::version::WORKFLOW_INSTANCE_FACT_PROTOCOL_VERSION
+                }
+                EntityReference::Created(_) => {
+                    super::super::schema::version::WORKFLOW_BIRTH_FACT_PROTOCOL_VERSION
+                }
+            }),
         ),
         (
             layout.instance.branch_occurrence.clone(),
@@ -58,22 +103,26 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
             text(compiled.content_identity().to_string()),
         ),
         (
-            layout.instance.subject_partition.clone(),
-            AspectValue::UInt64(subject.partition_value_u64()),
-        ),
-        (
-            layout.instance.subject_slot.clone(),
-            AspectValue::UInt64(subject.local_slot_value()),
-        ),
-        (
-            layout.instance.subject_generation.clone(),
-            AspectValue::UInt64(u64::from(subject.generation_value())),
-        ),
-        (
             layout.instance.state.clone(),
             AspectValue::UInt64(super::state::WorkflowInstanceState::Ready.persisted_tag()),
         ),
     ]);
+    if let EntityReference::Existing(subject) = &subject {
+        fields.extend([
+            (
+                layout.instance.subject_partition.clone(),
+                AspectValue::UInt64(subject.partition_value_u64()),
+            ),
+            (
+                layout.instance.subject_slot.clone(),
+                AspectValue::UInt64(subject.local_slot_value()),
+            ),
+            (
+                layout.instance.subject_generation.clone(),
+                AspectValue::UInt64(u64::from(subject.generation_value())),
+            ),
+        ]);
+    }
     if let Some(path) = compiled.resumed_path() {
         fields.insert(layout.instance.resume_node_path.clone(), text(path));
     }
@@ -119,6 +168,14 @@ pub(in crate::domain_computation::primary_graph) fn visit_instance_start_facts<E
         from: EntityReference::Created(instance.clone()),
         to: EntityReference::Existing(compiled.definition()),
     })?;
+    if matches!(&subject, EntityReference::Created(_)) {
+        emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            kind: layout.instance_subject_relation,
+            key: "instance-subject".to_owned(),
+            from: EntityReference::Created(instance.clone()),
+            to: subject,
+        })?;
+    }
     Ok(instance)
 }
 

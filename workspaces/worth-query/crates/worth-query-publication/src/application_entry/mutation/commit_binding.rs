@@ -16,6 +16,7 @@ use worth_query_installation::facade::ApplicationSchema;
 pub(in crate::application_entry) struct WorthQueryCommitExtension {
     pub(super) source: Option<WorthQueryBoundSourceExpectation>,
     pub(super) workflow_transition: Option<[u8; 32]>,
+    pub(super) workflow_birth: Option<[u8; 32]>,
 }
 
 impl WorthQueryCommitExtension {
@@ -25,6 +26,10 @@ impl WorthQueryCommitExtension {
     ) -> WorthQueryApplicationIdempotencyBinding {
         let idempotency = match self.source {
             Some(source) => source.bind_idempotency(idempotency),
+            None => idempotency,
+        };
+        let idempotency = match self.workflow_birth {
+            Some(identity) => worth_query_execution::publication_boundary::workflow_birth::WorthQueryWorkflowBirthAdapter::bind_idempotency(idempotency, &identity),
             None => idempotency,
         };
         match self.workflow_transition {

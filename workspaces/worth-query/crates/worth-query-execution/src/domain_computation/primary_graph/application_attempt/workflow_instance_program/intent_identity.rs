@@ -113,6 +113,26 @@ fn digest(material: Vec<(&'static str, String)>) -> Result<(String, [u8; 32]), (
     Ok((text, identity))
 }
 
+pub(super) fn birth_identity(
+    compiled: &CompiledWorkflowDefinition,
+    scope: EntityId,
+    key: [u8; 32],
+    input: [u8; 32],
+    binding: &str,
+    role: &str,
+) -> Result<(String, [u8; 32]), ()> {
+    identity(
+        compiled,
+        scope,
+        key,
+        vec![
+            ("birth.binding", binding.to_owned()),
+            ("birth.role", role.to_owned()),
+            ("birth.input", encode(input)),
+        ],
+    )
+}
+
 fn encode(identity: [u8; 32]) -> String {
     let mut text = String::with_capacity(64);
     for byte in identity {

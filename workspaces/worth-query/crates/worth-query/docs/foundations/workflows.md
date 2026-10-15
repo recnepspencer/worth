@@ -415,6 +415,10 @@ preparation refusals are `WorthQueryWorkflowDefinitionRetirementPreparationDenia
 
 ## Start an instance
 
+For a subject that must be created and enrolled in the same publication, use
+[Workflow-Enrolled Creations](../authoring/workflow-enrolled-creations.md).
+The ordinary start below intentionally operates on an already existing subject.
+
 ```rust,ignore
 let started = runtime
     .request(&principal, &scope)

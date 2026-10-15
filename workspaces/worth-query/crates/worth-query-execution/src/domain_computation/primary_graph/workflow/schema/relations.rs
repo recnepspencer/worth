@@ -314,11 +314,27 @@ pub(super) fn register_platform_entity(
     identity: AspectIdentity,
     shape: StructAspectShape,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
+    register_platform_entity_at_revision(
+        registry, schema_id, version, name, kind, aspect, identity, shape, 1,
+    )
+}
+
+pub(super) fn register_platform_entity_at_revision(
+    registry: RelationalSchemaRegistry,
+    schema_id: &SchemaId,
+    version: SchemaVersionId,
+    name: &str,
+    kind: KindId,
+    aspect: &str,
+    identity: AspectIdentity,
+    shape: StructAspectShape,
+    revision: u64,
+) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
     let contract = aspects()
         .contract()
         .for_key(valid_aspect_key(aspect)?)
         .identified_by(identity)
-        .at_revision(aspects().vocabulary().revision(1))
+        .at_revision(aspects().vocabulary().revision(revision))
         .struct_aspect(shape);
     register_entity(
         registry,

@@ -13,6 +13,7 @@ use worth_query_declaration::facade::{
 
 mod adoption_coverage;
 mod approval_binding;
+mod birth;
 mod draft_vocabulary;
 mod installation;
 mod operation;
@@ -32,6 +33,7 @@ pub use resource_ceiling::{
 pub enum WorthQueryApplicationWorkflowInstallationDenialKind {
     OperationNotInProgram,
     OperationNotInstalled,
+    BirthBindingNotInstalled,
     AssessmentNotInstalled,
     ApprovalNotInstalled,
     AuthoringCapabilityNotInstalled,
@@ -87,6 +89,16 @@ pub(super) struct InstalledWorkflowOperation {
     pub(super) reference: ApplicationWorkflowOperationRef,
     pub(super) inbound_ref:
         Option<worth_query_declaration::facade::application_program::ApplicationWorkflowInboundRef>,
+}
+
+#[derive(Clone)]
+pub(super) struct InstalledWorkflowBirth {
+    binding_type: TypeId,
+    binding_identity: &'static str,
+    role_type: TypeId,
+    role_name: &'static str,
+    entity_name: &'static str,
+    capability: InstalledWorkflowCapabilityBinding,
 }
 
 #[derive(Clone)]
@@ -178,6 +190,7 @@ where
     pub(super) instance_start_capability: InstalledWorkflowInstanceStartCapability,
     pub(super) advance_capability: InstalledWorkflowAdvanceCapability,
     pub(super) operations: Box<[InstalledWorkflowOperation]>,
+    pub(super) births: Box<[InstalledWorkflowBirth]>,
     pub(super) assessments: Box<[InstalledWorkflowAssessment]>,
     pub(super) conditions: Box<[InstalledWorkflowCondition]>,
     pub(super) approvals: Box<[InstalledWorkflowApproval]>,

@@ -161,6 +161,8 @@ where
             || self.workflow_transition_identity.is_some()
             || self.workflow_input.is_some()
             || self.workflow_authority.is_some()
+            || self.workflow_birth_identity.is_some()
+            || self.workflow_birth_authority.is_some()
         {
             return Err(WorthQueryApplicationRecoveryRequestDenial::WorkflowUnsupported);
         }

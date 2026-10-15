@@ -1,3 +1,4 @@
+mod birth;
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
@@ -80,6 +81,8 @@ pub struct WorthQueryApplicationMutationRequestWithIdempotency<
     pub(super) unstaged: Option<super::staged::UnstagedMutation>,
     pub(super) key: &'key <Intent::Binding as ApplicationMutationBinding<Schema>>::IdempotencyKey,
     pub(super) workflow_transition_identity: Option<[u8; 32]>,
+    pub(super) workflow_birth_identity: Option<[u8; 32]>,
+    pub(super) workflow_birth_authority: Option<std::sync::Arc<worth_query_execution::publication_boundary::workflow_birth::WorkflowBirthAuthoritySlot>>,
     /// The input, encoded once when the request bound its workflow
     /// requirement, so the entry point encodes only the key beside it.
     pub(super) workflow_input: Option<
@@ -270,6 +273,8 @@ where
             key,
             unstaged: Some(super::staged::UnstagedMutation),
             workflow_transition_identity: None,
+            workflow_birth_identity: None,
+            workflow_birth_authority: None,
             workflow_input: None,
             workflow_authority: None,
         }

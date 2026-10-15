@@ -7,6 +7,7 @@ use super::{
 mod classified_capture;
 mod creation_fields;
 mod creation_links;
+mod enrollment;
 mod outputs;
 mod principal;
 mod requirements;
@@ -35,7 +36,9 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
+    let version = if body.creation().is_some_and(|creation| creation.enrollment().is_some()) {
+        17
+    } else if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
         matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::SignedEvidence(_))) {
         16
     } else if body
@@ -188,6 +191,12 @@ pub(super) fn write(
                 .and_then(|creation| creation.signing_lifecycle()),
         )?;
     }
+    if version >= 17 {
+        enrollment::write(
+            output,
+            body.creation().and_then(|creation| creation.enrollment()),
+        )?;
+    }
     Ok(())
 }
 
@@ -196,7 +205,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=16) {
+    if !matches!(version, 1..=17) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -308,14 +317,26 @@ pub(super) fn decode(
     } else {
         None
     };
+    let enrollment = if version >= 17 {
+        enrollment::decode(input)?
+    } else {
+        None
+    };
     let creation = match creation {
         Some(creation) => Some(
             creation
                 .with_untrusted_links(links)
                 .with_untrusted_signing(signing)
-                .with_untrusted_signing_lifecycle(signing_lifecycle),
+                .with_untrusted_signing_lifecycle(signing_lifecycle)
+                .with_untrusted_enrollment(enrollment),
         ),
-        None if links.is_empty() && signing.is_none() && signing_lifecycle.is_none() => None,
+        None if links.is_empty()
+            && signing.is_none()
+            && signing_lifecycle.is_none()
+            && enrollment.is_none() =>
+        {
+            None
+        }
         None => return Err(Denial::new(Kind::InvalidRecordShape)),
     };
     if let Some(scope) = scope {

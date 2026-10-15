@@ -28,6 +28,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryWorkflowLayout
     pub(in crate::domain_computation::primary_graph) instance_lineage_relation: KindId,
     pub(in crate::domain_computation::primary_graph) live_instance_lineage_relation: KindId,
     pub(in crate::domain_computation::primary_graph) instance_definition_relation: KindId,
+    pub(in crate::domain_computation::primary_graph) instance_subject_relation: KindId,
     pub(in crate::domain_computation::primary_graph) instance_transition_relation: KindId,
     pub(in crate::domain_computation::primary_graph) transition_node_relation: KindId,
     pub(in crate::domain_computation::primary_graph) transition_proposal_relation: KindId,

@@ -16,6 +16,11 @@ pub(super) fn append_body(
         prefix,
         if body
             .creation()
+            .is_some_and(|creation| creation.enrollment().is_some())
+        {
+            "operation-body-v10"
+        } else if body
+            .creation()
             .is_some_and(|creation| !creation.links().is_empty())
         {
             "operation-body-v9"

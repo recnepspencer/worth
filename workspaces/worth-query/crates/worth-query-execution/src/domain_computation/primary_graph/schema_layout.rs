@@ -62,7 +62,7 @@ use registry_lowering::{
     relational_schema_basis,
 };
 pub(in crate::domain_computation::primary_graph) use registry_lowering::{
-    register_entity, register_relation,
+    register_entity, register_relation, register_relation_to_kinds,
 };
 
 #[derive(Debug)]
@@ -173,6 +173,7 @@ impl WorthQueryPrimaryGraphLayout {
             schema_version_id,
             native_contracts,
             provider_kind,
+            entity_kinds.values().copied().collect(),
         )?;
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
