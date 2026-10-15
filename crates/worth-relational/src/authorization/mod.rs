@@ -16,8 +16,9 @@ pub use admission::{
 };
 pub use denial::{RelationalAuthorizationObservationDenial, RelationalAuthorizationPlanDenial};
 pub use durable_dependencies::{
-    RelationalAuthorizationDependencyDenial, RelationalAuthorizationDurableDependencies,
-    MAXIMUM_AUTHORIZATION_DEPENDENCIES, MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES,
+    RelationalAuthorizationDependencyDenial, RelationalAuthorizationDependencyWire,
+    RelationalAuthorizationDurableDependencies, MAXIMUM_AUTHORIZATION_DEPENDENCIES,
+    MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES,
 };
 pub use evidence::{
     RelationalAuthorizationAdjacencyDependency, RelationalAuthorizationObservationCounters,

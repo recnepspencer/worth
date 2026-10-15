@@ -67,9 +67,9 @@ fn source_native_stamp_survives_unrelated_publication_and_wire_roundtrip() {
 
     let fixture = authorization_fixture(execution);
     let before = stamp_now(execution, &fixture);
-    let wire = before.to_wire_string().expect("bounded stamp encodes");
+    let wire = before.to_wire(execution).expect("bounded stamp encodes");
     assert!(wire.len() <= MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES * 2);
-    let recovered = RelationalAuthorizationDurableDependencies::from_wire_string(&wire)
+    let recovered = RelationalAuthorizationDurableDependencies::from_wire(execution, &wire)
         .expect("canonical stamp decodes after restart");
     assert!(before.matches(&recovered));
     assert!(recovered
@@ -178,7 +178,7 @@ fn source_native_stamp_compares_after_checkpoint_recovery() {
     let wire = runtime
         .capture_authorization_durable_dependencies(&before_evidence, execution)
         .unwrap()
-        .to_wire_string()
+        .to_wire(execution)
         .unwrap();
     runtime.durability_authority().checkpoint().unwrap();
     let recovery = runtime
@@ -204,12 +204,12 @@ fn source_native_stamp_compares_after_checkpoint_recovery() {
         .capture_authorization_durable_dependencies(&fresh_evidence, execution)
         .unwrap();
     assert!(
-        RelationalAuthorizationDurableDependencies::from_wire_string(&wire)
+        RelationalAuthorizationDurableDependencies::from_wire(execution, &wire)
             .unwrap()
             .matches(&fresh)
     );
     assert!(
-        RelationalAuthorizationDurableDependencies::from_wire_string(&wire)
+        RelationalAuthorizationDurableDependencies::from_wire(execution, &wire)
             .unwrap()
             .source_revisions_match(
                 &recovered,
@@ -312,14 +312,15 @@ fn noncanonical_or_oversized_wire_is_denied() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let wire = stamp_now(execution, &fixture).to_wire_string().unwrap();
+    let wire = stamp_now(execution, &fixture).to_wire(execution).unwrap();
     assert_eq!(
-        RelationalAuthorizationDurableDependencies::from_wire_string(&wire.to_uppercase())
+        RelationalAuthorizationDurableDependencies::from_wire(execution, &wire.to_uppercase())
             .unwrap_err(),
         RelationalAuthorizationDependencyDenial::MalformedWire
     );
     assert_eq!(
-        RelationalAuthorizationDurableDependencies::from_wire_string(
+        RelationalAuthorizationDurableDependencies::from_wire(
+            execution,
             &"0".repeat(MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES * 2 + 2)
         )
         .unwrap_err(),
@@ -387,3 +388,5 @@ fn retarget(
         .unwrap();
     transaction.commit(execution, &fixture.runtime).unwrap();
 }
+
+mod funding;
