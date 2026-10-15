@@ -39,7 +39,7 @@ pub(super) fn write(
         writer.bytes(&accepted.idempotency_key)?;
         writer.bytes(&resources::encode_profile(accepted.resources))?;
         writer.length(accepted.roles.len())?;
-        for role in &accepted.roles {
+        for role in accepted.roles.iter() {
             writer.length(role.role.len())?;
             writer.bytes(role.role.as_bytes())?;
             writer.bytes(&[match role.posture {
@@ -51,7 +51,10 @@ pub(super) fn write(
             writer.bytes(role.entity_name.as_bytes())?;
             writer.entity(role.entity)?;
         }
-        let facts = accepted.producer_facts.as_deref().unwrap_or_default();
+        let facts = accepted
+            .producer_facts
+            .as_ref()
+            .map_or(&[][..], |bytes| bytes.as_slice());
         writer.bytes(&accepted.producer_fact_wire_version.to_be_bytes())?;
         writer.length(facts.len())?;
         writer.bytes(facts)?;

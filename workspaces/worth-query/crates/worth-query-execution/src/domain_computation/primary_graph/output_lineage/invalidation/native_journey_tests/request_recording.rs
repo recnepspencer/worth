@@ -230,14 +230,19 @@ pub(super) fn account_witness(
     let correspondence = WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
         TypeId::of::<()>(),
         TypeId::of::<()>(),
-        std::collections::BTreeSet::new(),
-        vec![WorthQueryCheckpointOutputRole {
+        std::iter::empty(),
+        &[WorthQueryCheckpointOutputRole {
             role: "account".to_owned(),
             posture: WorthQueryApplicationOutputPosture::Preserve,
             entity_name: "Account".to_owned(),
             entity,
         }],
         |_| Some(TypeId::of::<()>()),
+        &worth_execution::ExecutionRequest::serial(&worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        )),
     )
     .unwrap();
     SealedNativeOutputWitness::from_checkpoint_facts(

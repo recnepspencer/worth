@@ -35,7 +35,7 @@ impl WorthQueryOutputDemandRegistry {
                             == Some(key.source.runtime_idempotency_identity());
                         Some((
                             WorthQueryAcceptedOutputCheckpointIdentity {
-                                producer: key.producer.clone(),
+                                producer: (key.producer.clone()).into(),
                                 posture: WorthQueryAcceptedOutputCheckpointPosture::Performed,
                                 source: key.source.checkpoint_identity().bytes(),
                                 scope: receipt.principal_scope().scope(),
@@ -43,10 +43,11 @@ impl WorthQueryOutputDemandRegistry {
                                 producer_dependency: idempotency.producer_dependency_identity(),
                                 idempotency_key: *idempotency.key_identity(),
                                 resources: completion.resources,
-                                roles: receipt.output_correspondence().checkpoint_roles(),
+                                roles: (receipt.output_correspondence().checkpoint_roles()).into(),
                                 producer_facts: None,
                                 producer_fact_wire_version: 0,
-                            },
+ metadata: None,
+},
                             exact_source.then(|| AcceptedCheckpointFactSource::Committed(receipt.clone())),
                             receipt.output_correspondence().binding_type(),
                         ))
@@ -61,7 +62,7 @@ impl WorthQueryOutputDemandRegistry {
                             ));
                         Some((
                             WorthQueryAcceptedOutputCheckpointIdentity {
-                                producer: key.producer.clone(),
+                                producer: (key.producer.clone()).into(),
                                 posture: WorthQueryAcceptedOutputCheckpointPosture::StableReused,
                                 source: key.source.checkpoint_identity().bytes(),
                                 scope: stable.source_scope(),
@@ -69,10 +70,11 @@ impl WorthQueryOutputDemandRegistry {
                                 producer_dependency: stable.producer_dependency_identity(),
                                 idempotency_key: stable.idempotency_key_identity(),
                                 resources: completion.resources,
-                                roles: stable.output_correspondence().checkpoint_roles(),
+                                roles: (stable.output_correspondence().checkpoint_roles()).into(),
                                 producer_facts: None,
                                 producer_fact_wire_version: 0,
-                            },
+ metadata: None,
+},
                             exact_source.then(|| AcceptedCheckpointFactSource::Stable(stable.clone())),
                             stable.output_correspondence().binding_type(),
                         ))

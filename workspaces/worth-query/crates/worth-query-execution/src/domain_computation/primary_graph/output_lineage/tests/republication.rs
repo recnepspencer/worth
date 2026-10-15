@@ -121,17 +121,18 @@ fn staged(
     let owner = &handle.source_owner.invalidation_owner;
     let correspondence = Arc::new(
         WorthQueryApplicationOutputCorrespondence::from_checkpoint_roles(
-            TypeId::of::<()>(),
-            TypeId::of::<()>(),
-            std::collections::BTreeSet::new(),
-            vec![WorthQueryCheckpointOutputRole {
+TypeId::of::<()>(),
+TypeId::of::<()>(),
+std::iter::empty(),
+&[WorthQueryCheckpointOutputRole {
                 role: "account".to_owned(),
                 posture: WorthQueryApplicationOutputPosture::Preserve,
                 entity_name: "Account".to_owned(),
                 entity: output,
             }],
-            |_| Some(TypeId::of::<()>()),
-        )
+|_| Some(TypeId::of::<()>()),
+request_execution,
+)
         .unwrap(),
     );
     let (performed_witness, restored_witness, read_basis) = handle.with_runtime_mut(request_execution, |runtime| {

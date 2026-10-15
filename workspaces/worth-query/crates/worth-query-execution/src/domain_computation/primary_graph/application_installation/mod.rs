@@ -206,8 +206,9 @@ where
         relational_builder = relational_builder.publication(publication);
     }
     let relational_runtime = relational_builder.build();
+    let execution = phase.execution_request();
     let decoded_checkpoint = checkpoint
-        .map(super::WorthQueryApplicationCheckpoint::decode)
+        .map(|checkpoint| checkpoint.decode_with_execution(&execution))
         .transpose()
         .map_err(|cause| Denial::Graph(cause.into_installation_denial()))?;
     if checkpoint_transition.is_some()
@@ -346,33 +347,21 @@ where
             ),
         );
     }
-    application.recovered_outputs =
-        super::application_output_demand::WorthQueryRecoveredOutputs::from_records(
-            decoded_checkpoint
-                .map(|checkpoint| {
-                    checkpoint
-                        .accepted_outputs
-                        .into_iter()
-                        .map(|accepted| {
-                            let correspondence = application
-                                .installed_producers
-                                .readmit_checkpoint_output(&application.installed_schema, &accepted)
-                                .map_err(|detail| {
-                                    Denial::Graph(WorthQueryPrimaryGraphInstallationDenial::new(
-                                        super::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected,
-                                        detail,
-                                    ))
-                                })?;
-                            Ok(super::application_output_demand::WorthQueryReadmittedAcceptedOutput {
-                                checkpoint: accepted,
-                                correspondence,
-                            })
-                        })
-                        .collect::<Result<Vec<_>, Denial>>()
-                })
-                .transpose()?
-                .unwrap_or_default(),
-        );
-    checkpoint_lineage::restore(&application).map_err(Denial::Graph)?;
+    if let Some(checkpoint) = decoded_checkpoint {
+        application.recovered_outputs =
+            super::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
+                checkpoint,
+                &execution,
+                |accepted| {
+                    application.installed_producers.readmit_checkpoint_output(
+                        &application.installed_schema,
+                        accepted,
+                        &execution,
+                    )
+                },
+            )
+            .map_err(Denial::Graph)?;
+    }
+    checkpoint_lineage::restore(&application, &execution).map_err(Denial::Graph)?;
     Ok(application)
 }

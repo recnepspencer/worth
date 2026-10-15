@@ -69,7 +69,7 @@ fn restored_output(
 ) -> super::super::super::WorthQueryRestoredAcceptedOutput {
     super::super::super::WorthQueryRestoredAcceptedOutput {
         checkpoint: super::super::super::WorthQueryAcceptedOutputCheckpointIdentity {
-            producer: "restored".to_owned(),
+            producer: ("restored".to_owned()).into(),
             posture: super::super::super::WorthQueryAcceptedOutputCheckpointPosture::Performed,
             source: [0x55; 32],
             scope,
@@ -77,17 +77,18 @@ fn restored_output(
             producer_dependency: None,
             idempotency_key: [0x77; 32],
             resources: None,
-            roles: Vec::new(),
+            roles: (Vec::new()).into(),
             producer_facts: None,
             producer_fact_wire_version: 0,
-        },
+ metadata: None,
+},
         correspondence: Arc::new(
             crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence::default(),
         ),
         observation,
         source_scope: scope,
         source_identity: crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x55; 32]),
-        observed_source_facts: Arc::from([]),
+        observed_source_facts: Arc::<[_]>::from([]).into(),
         native_output_witness: None,
     }
 }

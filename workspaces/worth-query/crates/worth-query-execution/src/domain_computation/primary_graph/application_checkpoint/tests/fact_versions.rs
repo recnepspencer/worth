@@ -21,12 +21,7 @@ fn source_entity() -> Fact {
 fn body_with_facts(format: u16, fact_version: u16, bytes: &[u8]) -> Vec<u8> {
     let mut accepted = accepted_without_roles(b"producer", 0);
     accepted.truncate(accepted.len() - 10);
-    if format < 8 {
-        // No accepted-output posture before format 8.
-        accepted.remove(8 + b"producer".len());
-    } else {
-        accepted.extend_from_slice(&fact_version.to_be_bytes());
-    }
+    accepted.extend_from_slice(&fact_version.to_be_bytes());
     accepted.extend_from_slice(&(bytes.len() as u64).to_be_bytes());
     accepted.extend_from_slice(bytes);
     let mut body = checkpoint_body(1, accepted);
@@ -36,12 +31,42 @@ fn body_with_facts(format: u16, fact_version: u16, bytes: &[u8]) -> Vec<u8> {
 
 #[test]
 fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
-    let fact = source_entity();
-    let bytes = facts::encode(std::slice::from_ref(&fact)).unwrap();
+    use worth_foundational::facade::{
+        AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, LocatorAuthority,
+    };
+    let source = source_entity();
+    let Fact::SourceEntity { entity_id } = source else {
+        unreachable!()
+    };
+    let locator = AspectFieldLocator::new(
+        LocatorAuthority::Authoritative,
+        AspectKey::new("checkpoint.test").unwrap(),
+        CanonicalFieldPath::single(FieldKey::new("x").unwrap()),
+    );
+    // Exact native values and absence travel as themselves, never as invented
+    // source revisions. This is codec carriage, not an actor admission fixture.
+    let expected = vec![
+        Fact::SourceEntity { entity_id },
+        Fact::Field {
+            entity_id,
+            kind: worth_relational::facade::identity::KindId(14),
+            locator: locator.clone(),
+            value: AspectValue::UInt64(31),
+        },
+        Fact::AbsentField {
+            entity_id,
+            kind: worth_relational::facade::identity::KindId(14),
+            locator,
+        },
+    ];
+    let bytes = facts::encode(&expected).unwrap();
     let body = body_with_facts(super::super::FORMAT_VERSION, WIRE_VERSION, &bytes);
     let decoded = checkpoint_from_body(body.clone()).decode().unwrap();
     assert_eq!(
-        decoded.accepted_outputs[0].producer_facts.as_deref(),
+        decoded.accepted_outputs[0]
+            .producer_facts
+            .as_ref()
+            .map(|bytes| bytes.as_slice()),
         Some(bytes.as_slice())
     );
     assert_eq!(
@@ -57,7 +82,7 @@ fn current_facts_roundtrip_and_hostile_lengths_fail_before_allocation() {
         )
         .unwrap()
         .as_ref(),
-        &[fact]
+        expected.as_slice()
     );
 
     let mut hostile = body;
@@ -90,34 +115,34 @@ fn current_stable_posture_roundtrips_and_unknown_posture_is_rejected() {
     );
 }
 
-/// No earlier export can claim the current producer-fact exclusion rule.
+/// These are hostile current envelopes, not genuine predecessor artifacts.
 #[test]
-fn facts_of_an_older_wire_version_are_never_read() {
-    let bytes = facts::encode(&[source_entity()]).unwrap();
-    for version in 3..=9 {
-        assert_denied(
-            body_with_facts(version, version, &bytes),
-            &format!("Query application checkpoint format {version} is unsupported"),
+fn unsupported_fact_wire_refuses_before_interpreting_its_payload() {
+    use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind;
+    let mut invalid = facts::encode(&[source_entity()]).unwrap();
+    // Keep a valid count and minimum record width, changing only the fact tag.
+    invalid[4] = 255;
+    for observed in [WIRE_VERSION - 1, WIRE_VERSION + 1] {
+        // An invalid fact tag would fail differently if the reader entered it.
+        let checkpoint = checkpoint_from_body(body_with_facts(
+            super::super::FORMAT_VERSION,
+            observed,
+            &invalid,
+        ));
+        let retained = checkpoint.clone();
+        let original = checkpoint.bytes().to_vec();
+        let denial = checkpoint.decode().err().expect("unsupported inner wire");
+        assert_eq!(
+            denial.into_installation_denial().kind(),
+            Kind::UnsupportedCheckpointProducerFactVersion {
+                observed,
+                supported: WIRE_VERSION
+            }
         );
-    }
-    for fact_version in 5..=8 {
-        assert_denied(
-            body_with_facts(super::super::FORMAT_VERSION, fact_version, &bytes),
-            "checkpoint producer fact wire version is unsupported",
-        );
+        assert_eq!(retained.bytes(), original);
     }
     assert_denied(
-        body_with_facts(super::super::FORMAT_VERSION, WIRE_VERSION + 1, &bytes),
-        "checkpoint producer fact wire version is unsupported",
-    );
-}
-
-#[test]
-fn a_current_layout_checkpoint_with_a_version_eight_header_is_refused() {
-    let bytes = facts::encode(&[source_entity()]).unwrap();
-    let checkpoint = checkpoint_from_body(body_with_facts(8, 8, &bytes));
-    assert_eq!(
-        checkpoint.decode().err().as_deref(),
-        Some("Query application checkpoint format 8 is unsupported")
+        body_with_facts(super::super::FORMAT_VERSION, WIRE_VERSION, &invalid),
+        "checkpoint producer fact kind is unsupported",
     );
 }

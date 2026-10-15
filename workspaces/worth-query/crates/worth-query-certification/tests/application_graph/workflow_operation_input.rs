@@ -122,6 +122,6 @@ fn authentic_predecessor_draft_cannot_import_executable_meaning() {
     let denial = decode_workflow_definition_draft(bytes, WorthQueryPackageArchiveLimits::DEFAULT)
         .err()
         .expect("displaced authored format is refused before executable interpretation");
-    assert_eq!(denial.kind(), worth_query_package_archive::facade::WorthQueryWorkflowDefinitionDraftDenialKind::UnsupportedWorkflowDefinitionDraftVersion);
+    assert_eq!(denial.kind(), worth_query_package_archive::facade::WorthQueryPackageArchiveDenialKind::UnsupportedWorkflowDefinitionDraftVersion);
     assert_eq!(bytes.as_slice(), original);
 }

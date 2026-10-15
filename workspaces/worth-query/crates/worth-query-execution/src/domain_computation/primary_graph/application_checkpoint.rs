@@ -2,8 +2,11 @@ use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 mod capture;
+mod decode;
 mod header;
-use header::CheckpointDecodeDenial;
+mod metadata_funding;
+pub(in crate::domain_computation::primary_graph) use header::CheckpointDecodeDenial;
+pub(in crate::domain_computation::primary_graph) use metadata_funding::CheckpointMetadataFunding;
 mod denial;
 mod encode;
 pub(in crate::domain_computation::primary_graph) mod facts;
@@ -59,6 +62,7 @@ pub(in crate::domain_computation::primary_graph) struct DecodedApplicationCheckp
     pub(super) bootstrap_commit_id: worth_relational::facade::history::CommitId,
     pub(super) accepted_outputs:
         Vec<super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity>,
+    pub(super) metadata: CheckpointMetadataFunding,
 }
 
 impl WorthQueryApplicationCheckpoint {
@@ -93,175 +97,38 @@ impl WorthQueryApplicationCheckpoint {
         Self::from_untrusted_bytes(bytes.into_boxed_slice())
     }
 
-    pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
-        header::admit(self.bytes.bytes())?;
-        self.decode_current_body().map_err(Into::into)
+    pub(super) fn decode_with_execution(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
+        let (result, _) = execution
+            .in_scope(|lease| {
+                worth_execution::ExecutionWorkCeiling::new(execution.work_ceiling())
+                    .run_with_checkpoint(lease, None, |context| {
+                        let work = u64::try_from(self.bytes.len())
+                            .map_err(|_| CheckpointDecodeDenial::capacity())?;
+                        context.checkpoint_cost(work, work).map_err(|stop| {
+                            CheckpointDecodeDenial::execution(
+                                worth_execution::WorkCeilingDenial::Stopped(stop),
+                            )
+                        })?;
+                        header::admit(self.bytes.bytes())?;
+                        self.decode_current_body(execution)
+                    })
+            })
+            .map_err(CheckpointDecodeDenial::execution)?
+            .map_err(CheckpointDecodeDenial::execution)?;
+        result
     }
-    fn decode_current_body(self) -> Result<DecodedApplicationCheckpoint, String> {
-        let body_start = MAGIC.len() + CHECKSUM_BYTES;
-        let body = &self.bytes[body_start..];
-        let mut cursor = CheckpointCursor::new(&body[6..]);
-        let bootstrap_commit_id = worth_relational::facade::history::CommitId(cursor.next_u64()?);
-        let native_len = usize::try_from(cursor.next_u64()?)
-            .map_err(|_| "checkpoint payload length exceeds this host".to_owned())?;
-        let accepted_count = usize::try_from(cursor.next_u64()?)
-            .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
-        cursor.next_bytes(native_len)?;
-        let minimum = MINIMUM_ACCEPTED_OUTPUT_BYTES;
-        if accepted_count > cursor.remaining.len() / minimum {
-            return Err("checkpoint accepted-output count exceeds its payload".to_owned());
-        }
-        let mut accepted_outputs = Vec::with_capacity(accepted_count);
-        for _ in 0..accepted_count {
-            let producer_len = usize::try_from(cursor.next_u64()?)
-                .map_err(|_| "checkpoint producer identity length exceeds this host".to_owned())?;
-            if producer_len == 0 || producer_len > MAXIMUM_PRODUCER_IDENTITY_BYTES {
-                return Err("checkpoint producer identity length is invalid".to_owned());
-            }
-            let producer = std::str::from_utf8(cursor.next_bytes(producer_len)?)
-                .map_err(|_| "checkpoint producer identity is not UTF-8".to_owned())?
-                .to_owned();
-            let posture = match cursor.next_byte()? {
-                0 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::Performed,
-                1 => super::application_output_demand::WorthQueryAcceptedOutputCheckpointPosture::StableReused,
-                _ => return Err("checkpoint accepted output posture is invalid".to_owned()),
-            };
-            let source = cursor
-                .next_bytes(32)?
-                .try_into()
-                .expect("the checkpoint source identity length is exact");
-            let scope = cursor.next_scope()?;
-            let source_partition = cursor
-                .next_bytes(32)?
-                .try_into()
-                .expect("the checkpoint source-partition identity length is exact");
-            let producer_dependency = match cursor.next_byte()? {
-                0 => {
-                    let empty = cursor.next_bytes(32)?;
-                    if empty.iter().any(|byte| *byte != 0) {
-                        return Err(
-                            "checkpoint absent producer dependency contains data".to_owned()
-                        );
-                    }
-                    None
-                }
-                1 => Some(
-                    cursor
-                        .next_bytes(32)?
-                        .try_into()
-                        .expect("the checkpoint producer dependency length is exact"),
-                ),
-                _ => return Err("checkpoint producer dependency posture is invalid".to_owned()),
-            };
-            let idempotency_key = cursor
-                .next_bytes(32)?
-                .try_into()
-                .expect("the checkpoint idempotency identity length is exact");
-            let resources = resources::decode_profile(&mut cursor)?;
-            let role_count = usize::try_from(cursor.next_u64()?)
-                .map_err(|_| "checkpoint output-role count exceeds this host".to_owned())?;
-            if role_count > cursor.remaining.len() / (8 + 1 + 8 + 16) {
-                return Err("checkpoint output-role count exceeds its payload".to_owned());
-            }
-            let mut roles = Vec::with_capacity(role_count);
-            for _ in 0..role_count {
-                let role = cursor.next_bounded_text(
-                    MAXIMUM_ROLE_IDENTITY_BYTES,
-                    "checkpoint output-role identity",
-                )?;
-                let posture = match cursor.next_byte()? {
-                    0 => super::WorthQueryApplicationOutputPosture::Preserve,
-                    1 => super::WorthQueryApplicationOutputPosture::Create,
-                    2 => super::WorthQueryApplicationOutputPosture::Retire,
-                    _ => return Err("checkpoint output-role posture is invalid".to_owned()),
-                };
-                let entity_name = cursor.next_bounded_text(
-                    MAXIMUM_ENTITY_NAME_BYTES,
-                    "checkpoint output-role entity name",
-                )?;
-                roles.push(super::application_attempt::WorthQueryCheckpointOutputRole {
-                    role,
-                    posture,
-                    entity_name,
-                    entity: cursor.next_entity()?,
-                });
-            }
-            if roles.windows(2).any(|pair| pair[0].role >= pair[1].role) {
-                return Err("checkpoint output roles are duplicated or non-canonical".to_owned());
-            }
-            let fact_version = cursor.next_u16()?;
-            let fact_len = usize::try_from(cursor.next_u64()?)
-                .map_err(|_| "checkpoint producer fact length exceeds this host".to_owned())?;
-            if fact_len > facts::MAXIMUM_FACT_BYTES {
-                return Err("checkpoint producer fact payload length is invalid".to_owned());
-            }
-            let (producer_facts, producer_fact_wire_version) = if fact_len == 0 {
-                if fact_version != 0 {
-                    return Err("checkpoint empty producer facts carry a wire version".to_owned());
-                }
-                (None, 0)
-            } else {
-                if fact_version != facts::WIRE_VERSION {
-                    return Err("checkpoint producer fact wire version is unsupported".to_owned());
-                }
-                let bytes = cursor.next_bytes(fact_len)?;
-                facts::decode_for_wire_version(
-                    bytes,
-                    fact_version,
-                    None,
-                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .map_err(|denial| denial.to_string())?;
-                (Some(bytes.to_vec()), fact_version)
-            };
-            accepted_outputs.push(
-                super::application_output_demand::WorthQueryAcceptedOutputCheckpointIdentity {
-                    producer,
-                    posture,
-                    source,
-                    scope,
-                    source_partition,
-                    producer_dependency,
-                    idempotency_key,
-                    resources,
-                    roles,
-                    producer_facts,
-                    producer_fact_wire_version,
-                },
-            );
-        }
-        if accepted_outputs
-            .windows(2)
-            .any(|pair| pair[0].canonical_cmp(&pair[1]) != std::cmp::Ordering::Less)
-        {
-            return Err("checkpoint accepted outputs are duplicated or non-canonical".to_owned());
-        }
-        let mut slots = std::collections::BTreeSet::new();
-        if accepted_outputs.iter().any(|accepted| {
-            !slots.insert((
-                accepted.producer.as_str(),
-                accepted.scope,
-                accepted.source_partition,
-            ))
-        }) {
-            return Err("checkpoint output slots are duplicated".to_owned());
-        }
-        if !cursor.is_empty() {
-            return Err("Query application checkpoint payload length differs".to_owned());
-        }
-        let native_end = HEADER_BYTES
-            .checked_add(native_len)
-            .ok_or_else(|| "checkpoint native payload length overflows".to_owned())?;
-        let native = worth_relational::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes_region(
-            self.bytes,
-            HEADER_BYTES..native_end,
-        )
-        .map_err(str::to_owned)?;
-        Ok(DecodedApplicationCheckpoint {
-            native,
-            bootstrap_commit_id,
-            accepted_outputs,
-        })
+
+    #[cfg(test)]
+    pub(super) fn decode(self) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(64 << 20),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        self.decode_with_execution(&worth_execution::ExecutionRequest::serial(&host))
     }
 }
 
