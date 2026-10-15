@@ -1825,293 +1825,293 @@ handle, advances the original owner, observes source/output truth and closes.
 
 <!-- compiled: owning_fixed.rs -->
 ```rust
-use crate::application_program::{
-    composed_action::CatalogInputRequirement,
-    external_input::{NeutralExternalDenial, NeutralExternalProvider},
-};
-use worth_query_topology_entry::AdjustPlanarSource;
-let external = constructing
-    .installed_program()
-    .external_input_provider::<AdjustPlanarSource, NeutralExternalProvider>()
-    .unwrap();
-let provider = NeutralExternalProvider::new(7);
-let before_input_refusal = request
-    .retain_current_read()
-    .unwrap()
-    .selected_commit()
-    .clone();
-let captured = external.resolve(&provider, "replacement-y").unwrap();
-provider.change(2);
-assert_eq!(
-    captured.admit(&provider).err(),
-    Some(NeutralExternalDenial::Changed)
-);
-assert_eq!(
-    request.retain_current_read().unwrap().selected_commit(),
-    &before_input_refusal
-);
-let accepted = external
-    .resolve(&provider, "replacement-y")
-    .unwrap()
-    .admit(&provider)
-    .unwrap()
-    .into_resolution();
-assert_eq!(accepted.revision(), &2);
-let requirement = constructing
-    .installed_program()
-    .evaluated_requirement::<AdjustPlanarSource, CatalogInputRequirement>()
-    .unwrap()
-    .evaluate(accepted.revision());
-assert_eq!(
-    requirement.required_input_guidance(),
-    Some(&"catalog-value")
-);
-assert_eq!(
-    requirement.enforce_submission(false).unwrap_err().missing(),
-    &"catalog-value"
-);
-requirement.enforce_submission(true).unwrap();
-let primary_input = PlanarSourceAdjustment {
-    scope_key: "anchor-a".to_owned(),
-    replacement_y: length(*accepted.values()),
-};
-reset_planar_source_adjustment_contacts(&primary_input);
-let source = request
-    .query(PlanarRead {
-        body_key: primary_input.scope_key.clone(),
-    })
-    .execute()
-    .unwrap()
-    .observed_sources()[0]
-    .clone();
-let primary = request
-    .mutate(primary_input.clone())
-    .expect_source(source)
-    .idempotency_owned(10_193)
-    .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-    .retain_operation::<ActionInstanceProgram, ConsumerFixedAction>(&constructing)
-    .unwrap_or_else(|(_, denial)| panic!("primary exact contract: {denial:?}"));
-drop(constructing);
-assert_eq!(world.application.close_conditional_runtime().unwrap_err().kind(),
-    worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained);
-// Fresh requests come from the independently retained authentic allocation.
-let fresh_scope = authentication::request_scope();
-let fresh_principal = authentication::block_on(adapter.authenticate(
-    authentication::LocalCredential::issued_for_model_owner(),
-    &fresh_scope,
-))
-.unwrap();
-let request = world.application.request(&fresh_principal, &fresh_scope);
-let mut primary = Some(primary);
-let primary = (0..32)
-    .find_map(|_| match primary.take().unwrap().advance(&request) {
-        Advance::Progress { operation, .. } => {
-            primary = Some(operation);
-            None
-        }
-        Advance::Settled(settled) => Some(settled),
-        Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => {
-            panic!("native fixed advancement: {denial:?}")
-        }
-    })
-    .expect("the declared fixed graph settles");
-assert_eq!(primary.declared_action(), &primary_declaration);
-assert_eq!(
-    primary.declared_action().delivery().unwrap().identity(),
-    <ConsumerFixedDelivery as ApplicationActionDelivery<ConsumerSchema, Binding>>::IDENTITY
-);
-assert_eq!(primary.settlement().output_count(), 4);
-let output_delivery = primary.read_current(&request).unwrap();
-assert_eq!(output_delivery.rows()[0].body_key, "anchor-a");
-assert_eq!(output_delivery.rows()[0].value, length(3));
-assert_eq!(
-    request
+    use crate::application_program::{
+        composed_action::CatalogInputRequirement,
+        external_input::{NeutralExternalDenial, NeutralExternalProvider},
+    };
+    use worth_query_topology_entry::AdjustPlanarSource;
+    let external = constructing
+        .installed_program()
+        .external_input_provider::<AdjustPlanarSource, NeutralExternalProvider>()
+        .unwrap();
+    let provider = NeutralExternalProvider::new(7);
+    let before_input_refusal = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    let captured = external.resolve(&provider, "replacement-y").unwrap();
+    provider.change(2);
+    assert_eq!(
+        captured.admit(&provider).err(),
+        Some(NeutralExternalDenial::Changed)
+    );
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &before_input_refusal
+    );
+    let accepted = external
+        .resolve(&provider, "replacement-y")
+        .unwrap()
+        .admit(&provider)
+        .unwrap()
+        .into_resolution();
+    assert_eq!(accepted.revision(), &2);
+    let requirement = constructing
+        .installed_program()
+        .evaluated_requirement::<AdjustPlanarSource, CatalogInputRequirement>()
+        .unwrap()
+        .evaluate(accepted.revision());
+    assert_eq!(
+        requirement.required_input_guidance(),
+        Some(&"catalog-value")
+    );
+    assert_eq!(
+        requirement.enforce_submission(false).unwrap_err().missing(),
+        &"catalog-value"
+    );
+    requirement.enforce_submission(true).unwrap();
+    let primary_input = PlanarSourceAdjustment {
+        scope_key: "anchor-a".to_owned(),
+        replacement_y: length(*accepted.values()),
+    };
+    reset_planar_source_adjustment_contacts(&primary_input);
+    let source = request
         .query(PlanarRead {
-            body_key: primary_input.scope_key.clone()
+            body_key: primary_input.scope_key.clone(),
         })
         .execute()
         .unwrap()
-        .rows()[0]
-        .y,
-    length(*accepted.values())
-);
-assert_eq!(planar_source_adjustment_contacts(&primary_input), (1, 1));
-primary
-    .close(&request)
-    .unwrap_or_else(|(_, cause)| panic!("primary close: {cause:?}"));
-world.application.close_conditional_runtime().unwrap();
+        .observed_sources()[0]
+        .clone();
+    let primary = request
+        .mutate(primary_input.clone())
+        .expect_source(source)
+        .idempotency_owned(10_193)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+        .retain_operation::<ActionInstanceProgram, ConsumerFixedAction>(&constructing)
+        .unwrap_or_else(|(_, denial)| panic!("primary exact contract: {denial:?}"));
+    drop(constructing);
+    assert_eq!(world.application.close_conditional_runtime().unwrap_err().kind(),
+        worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained);
+    // Fresh requests come from the independently retained authentic allocation.
+    let fresh_scope = authentication::request_scope();
+    let fresh_principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &fresh_scope,
+    ))
+    .unwrap();
+    let request = world.application.request(&fresh_principal, &fresh_scope);
+    let mut primary = Some(primary);
+    let primary = (0..32)
+        .find_map(|_| match primary.take().unwrap().advance(&request) {
+            Advance::Progress { operation, .. } => {
+                primary = Some(operation);
+                None
+            }
+            Advance::Settled(settled) => Some(settled),
+            Advance::Refused { denial, .. } | Advance::Terminal { denial, .. } => {
+                panic!("native fixed advancement: {denial:?}")
+            }
+        })
+        .expect("the declared fixed graph settles");
+    assert_eq!(primary.declared_action(), &primary_declaration);
+    assert_eq!(
+        primary.declared_action().delivery().unwrap().identity(),
+        <ConsumerFixedDelivery as ApplicationActionDelivery<ConsumerSchema, Binding>>::IDENTITY
+    );
+    assert_eq!(primary.settlement().output_count(), 4);
+    let output_delivery = primary.read_current(&request).unwrap();
+    assert_eq!(output_delivery.rows()[0].body_key, "anchor-a");
+    assert_eq!(output_delivery.rows()[0].value, length(3));
+    assert_eq!(
+        request
+            .query(PlanarRead {
+                body_key: primary_input.scope_key.clone()
+            })
+            .execute()
+            .unwrap()
+            .rows()[0]
+            .y,
+        length(*accepted.values())
+    );
+    assert_eq!(planar_source_adjustment_contacts(&primary_input), (1, 1));
+    primary
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("primary close: {cause:?}"));
+    world.application.close_conditional_runtime().unwrap();
 ```
 
 Discovered: the existing public journey carries its original input through required-set settlement, guarded delivery and close.
 
 <!-- compiled: owning_discovered.rs -->
 ```rust
-let operation = request
-    .mutate(PlanarSourceAdjustment {
-        scope_key: "anchor-a".to_owned(),
-        replacement_y: length(2),
-    })
-    .expect_source(source)
-    .idempotency_owned(10_030)
-    .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-    .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
-    .unwrap_or_else(|(_, denial)| panic!("declared discovered construction: {denial:?}"));
-let mut operation = Some(operation);
-let settled = settle(|| match operation.take().unwrap().advance(&request) {
-    WorthQueryOperationAdvance::Progress {
-        operation: next, ..
-    } => {
-        operation = Some(next);
-        None
+    let operation = request
+        .mutate(PlanarSourceAdjustment {
+            scope_key: "anchor-a".to_owned(),
+            replacement_y: length(2),
+        })
+        .expect_source(source)
+        .idempotency_owned(10_030)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+        .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
+        .unwrap_or_else(|(_, denial)| panic!("declared discovered construction: {denial:?}"));
+    let mut operation = Some(operation);
+    let settled = settle(|| match operation.take().unwrap().advance(&request) {
+        WorthQueryOperationAdvance::Progress {
+            operation: next, ..
+        } => {
+            operation = Some(next);
+            None
+        }
+        WorthQueryOperationAdvance::Settled(settled) => Some(settled),
+        WorthQueryOperationAdvance::Refused { denial, .. }
+        | WorthQueryOperationAdvance::Terminal { denial, .. } => {
+            panic!("ordinary discovery: {denial:?}")
+        }
+    });
+    assert_eq!(
+        settled.read_current(&request).unwrap().rows()[0].value,
+        length(42)
+    );
+    let roots = settled.settlement().root_outputs().collect::<Vec<_>>();
+    assert_eq!(roots.len(), 3);
+    assert_eq!(
+        roots
+            .iter()
+            .map(|(demand, _)| demand.body_key())
+            .collect::<Vec<_>>(),
+        ["remote-b", "sibling-b", "sibling-c"]
+    );
+    assert_eq!(settled.settlement().output_count(), 6);
+    assert_eq!(
+        world.application.retained_source_custody_count_for_test(),
+        0,
+        "settling all discovered roots releases the performed source and observation"
+    );
+    for (key, expected) in [
+        ("sibling-b", length(22)),
+        ("sibling-c", length(31)),
+        ("remote-b", length(42)),
+    ] {
+        assert_eq!(
+            request
+                .at(settled.settlement().observation())
+                .query(PlanarOutputRead {
+                    body_key: key.to_owned()
+                })
+                .execute()
+                .expect("each settled output is readable")
+                .rows()[0]
+                .value,
+            expected
+        );
     }
-    WorthQueryOperationAdvance::Settled(settled) => Some(settled),
-    WorthQueryOperationAdvance::Refused { denial, .. }
-    | WorthQueryOperationAdvance::Terminal { denial, .. } => {
-        panic!("ordinary discovery: {denial:?}")
-    }
-});
-assert_eq!(
-    settled.read_current(&request).unwrap().rows()[0].value,
-    length(42)
-);
-let roots = settled.settlement().root_outputs().collect::<Vec<_>>();
-assert_eq!(roots.len(), 3);
-assert_eq!(
-    roots
-        .iter()
-        .map(|(demand, _)| demand.body_key())
-        .collect::<Vec<_>>(),
-    ["remote-b", "sibling-b", "sibling-c"]
-);
-assert_eq!(settled.settlement().output_count(), 6);
-assert_eq!(
-    world.application.retained_source_custody_count_for_test(),
-    0,
-    "settling all discovered roots releases the performed source and observation"
-);
-for (key, expected) in [
-    ("sibling-b", length(22)),
-    ("sibling-c", length(31)),
-    ("remote-b", length(42)),
-] {
     assert_eq!(
         request
-            .at(settled.settlement().observation())
-            .query(PlanarOutputRead {
-                body_key: key.to_owned()
+            .at(&prior)
+            .query(PlanarRead {
+                body_key: "anchor-a".to_owned(),
             })
             .execute()
-            .expect("each settled output is readable")
+            .expect("the prior authored source remains coherent")
             .rows()[0]
-            .value,
-        expected
+            .y,
+        length(1)
     );
-}
-assert_eq!(
-    request
-        .at(&prior)
-        .query(PlanarRead {
-            body_key: "anchor-a".to_owned(),
-        })
-        .execute()
-        .expect("the prior authored source remains coherent")
-        .rows()[0]
-        .y,
-    length(1)
-);
-settled
-    .close(&request)
-    .unwrap_or_else(|(_, denial)| panic!("lawful discovered close: {denial:?}"));
+    settled
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("lawful discovered close: {denial:?}"));
 ```
 
 Source-only: the runnable ordinary product example retains a no-output action, distinguishes real Fresh evidence from recovery and closes.
 
 <!-- compiled: owning_source_only.rs -->
 ```rust
-let operation = request
-    .mutate(AmendTemporalIntent {
-        identity: "intent-1".to_owned(),
-        amendment: AmendTemporalInput {
-            revision: 2,
-            due: 11,
-            lifecycle: "active".to_owned(),
-            input: "published-through-application-entry".to_owned(),
-            gate: "ready".to_owned(),
-        },
-    })
-    .without_source()
-    .idempotency_owned(0x51_u64).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-    .retain_operation::<product_workflow_support::program::TemporalExampleProgram,
-        product_workflow_support::program::AmendTemporalAction>(&application.runtime)
-    .unwrap_or_else(|(_, denial)| panic!("declared temporal action: {denial:?}"));
-let completed = match operation.advance(&request) {
-    WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
-    WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
-        panic!("fresh attempt refused: {denial:?}")
-    }
-    WorthQuerySourceOnlyAdvance::Progress(_) => {
-        panic!("this successful native attempt has no pending publication")
-    }
-    WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
-        panic!("native terminal: {:?}", terminal.native_outcome())
-    }
-};
-let committed_version = match completed.evidence() {
-    WorthQuerySourceCompletion::Fresh {
-        receipt, result, ..
-    } => {
-        assert_eq!(result.revision, 2);
-        receipt.commit_reference().version_id.as_u64()
-    }
-    WorthQuerySourceCompletion::Recovered { .. } => {
-        panic!("a new key must produce the actual handler result")
-    }
-};
-completed
-    .close(&request)
-    .unwrap_or_else(|(_, denial)| panic!("native cleanup refused: {denial:?}"));
+    let operation = request
+        .mutate(AmendTemporalIntent {
+            identity: "intent-1".to_owned(),
+            amendment: AmendTemporalInput {
+                revision: 2,
+                due: 11,
+                lifecycle: "active".to_owned(),
+                input: "published-through-application-entry".to_owned(),
+                gate: "ready".to_owned(),
+            },
+        })
+        .without_source()
+        .idempotency_owned(0x51_u64).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+        .retain_operation::<product_workflow_support::program::TemporalExampleProgram,
+            product_workflow_support::program::AmendTemporalAction>(&application.runtime)
+        .unwrap_or_else(|(_, denial)| panic!("declared temporal action: {denial:?}"));
+    let completed = match operation.advance(&request) {
+        WorthQuerySourceOnlyAdvance::Completed(completed) => completed,
+        WorthQuerySourceOnlyAdvance::Refused { denial, .. } => {
+            panic!("fresh attempt refused: {denial:?}")
+        }
+        WorthQuerySourceOnlyAdvance::Progress(_) => {
+            panic!("this successful native attempt has no pending publication")
+        }
+        WorthQuerySourceOnlyAdvance::Terminal(terminal) => {
+            panic!("native terminal: {:?}", terminal.native_outcome())
+        }
+    };
+    let committed_version = match completed.evidence() {
+        WorthQuerySourceCompletion::Fresh {
+            receipt, result, ..
+        } => {
+            assert_eq!(result.revision, 2);
+            receipt.commit_reference().version_id.as_u64()
+        }
+        WorthQuerySourceCompletion::Recovered { .. } => {
+            panic!("a new key must produce the actual handler result")
+        }
+    };
+    completed
+        .close(&request)
+        .unwrap_or_else(|(_, denial)| panic!("native cleanup refused: {denial:?}"));
 ```
 
 Workflow: the runnable authored example obtains the actual awaited slot, captures before binding it, advances the exact installed action and closes. A later workflow advance remains separate.
 
 <!-- compiled: owning_workflow.rs -->
 ```rust
-let required = match advance_instance(application, instance.clone(), key)
-    .expect("the approved effect requirement prepares")
-{
-    WorkflowProgressOutcome::AwaitingOperation(required) => required,
-    other => panic!("the approved effect must be awaited, got {other:?}"),
-};
-let runtime = application.runtime();
-let scope = request_scope();
-let principal = authenticate_operator(runtime.installed_schema(), &scope);
-let effect = runtime
-    .request(&principal, &scope)
-    .on_branch(instance.branch())
-    .mutate(ReviewedSetRetentionIntent {
-        input: SetRetentionInput {
-            identity: DOCUMENT_IDENTITY.to_owned(),
-            retention_days: days,
-        },
-    })
-    .without_source()
-    .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-    .for_workflow_operation(application, &required)
-    .unwrap_or_else(|_|panic!("exact original approved occurrence"))
-    .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
-    .unwrap_or_else(|_|panic!("installed approved effect action"));
-let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
-    worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
-    _=>panic!("lawful approved effect"),
-};
-effect
-    .close(
-        &runtime
-            .request(&principal, &scope)
-            .on_branch(instance.branch()),
-    )
-    .unwrap_or_else(|_| panic!("native effect cleanup"));
-assert_eq!(read_retention(runtime, instance.branch()), days);
+    let required = match advance_instance(application, instance.clone(), key)
+        .expect("the approved effect requirement prepares")
+    {
+        WorkflowProgressOutcome::AwaitingOperation(required) => required,
+        other => panic!("the approved effect must be awaited, got {other:?}"),
+    };
+    let runtime = application.runtime();
+    let scope = request_scope();
+    let principal = authenticate_operator(runtime.installed_schema(), &scope);
+    let effect = runtime
+        .request(&principal, &scope)
+        .on_branch(instance.branch())
+        .mutate(ReviewedSetRetentionIntent {
+            input: SetRetentionInput {
+                identity: DOCUMENT_IDENTITY.to_owned(),
+                retention_days: days,
+            },
+        })
+        .without_source()
+        .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+        .for_workflow_operation(application, &required)
+        .unwrap_or_else(|_|panic!("exact original approved occurrence"))
+        .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
+        .unwrap_or_else(|_|panic!("installed approved effect action"));
+    let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
+        _=>panic!("lawful approved effect"),
+    };
+    effect
+        .close(
+            &runtime
+                .request(&principal, &scope)
+                .on_branch(instance.branch()),
+        )
+        .unwrap_or_else(|_| panic!("native effect cleanup"));
+    assert_eq!(read_retention(runtime, instance.branch()), days);
 ```
 
 ### 5.4 Mutations with required outputs
