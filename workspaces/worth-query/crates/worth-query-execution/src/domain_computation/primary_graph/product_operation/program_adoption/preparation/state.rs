@@ -166,7 +166,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             maximum_work_units: maximum_selection_work.saturating_sub(selection.work_units),
         };
         let inventory = inventory_workflows(execution, view, &workflow_request)
-            .map_err(|denial| workflow_read_denial(denial))?;
+            .map_err(workflow_read_denial)?;
         Ok((selection, Some(inventory)))
     })?;
     let selected_entity_count = selection.entities.len();

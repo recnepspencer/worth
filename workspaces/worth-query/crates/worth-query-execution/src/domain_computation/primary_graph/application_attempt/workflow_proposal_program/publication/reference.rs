@@ -21,7 +21,7 @@ impl std::ops::Deref for ProposalText {
 }
 impl PartialEq for ProposalText {
     fn eq(&self, other: &Self) -> bool {
-        &**self == &**other
+        **self == **other
     }
 }
 impl Eq for ProposalText {}

@@ -7,7 +7,7 @@ use super::{
     RecordedSettlementIdentity, RecordedSourceIdentity, WorthQueryApplicationOutputCorrespondence,
 };
 use crate::domain_computation::primary_graph::{
-    application_attempt::{CompletedHandlerFactBoundary, WorthQueryApplicationObservedFact},
+    application_attempt::CompletedHandlerFactBoundary,
     application_contribution::WorthQueryProducerDemandResources,
     invariant_projection::ConsumedOutputEvidence,
 };

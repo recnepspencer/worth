@@ -14,9 +14,7 @@ mod staging;
 mod truth;
 
 mod request;
-pub(in crate::domain_computation::primary_graph) use choices::{
-    AdmittedWorkflowDispositions, WorthQueryWorkflowDispositionDenial,
-};
+pub(in crate::domain_computation::primary_graph) use choices::AdmittedWorkflowDispositions;
 pub(in crate::domain_computation::primary_graph) use coverage::WorkflowVocabularyCoverageRegistry;
 pub(in crate::domain_computation::primary_graph) use inventory::{
     inventory_workflows, WorkflowAdoptionInventoryRequest,
