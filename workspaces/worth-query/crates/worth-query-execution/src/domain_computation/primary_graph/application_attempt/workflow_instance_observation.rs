@@ -14,7 +14,6 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use actors
 pub(in crate::domain_computation::primary_graph::application_attempt) use transition_roles::observe as observe_transition_roles;
 pub(in crate::domain_computation::primary_graph) mod read_only;
 mod retained_history;
-pub(in crate::domain_computation::primary_graph::application_attempt) use read_only::observe_read_only_history;
 pub(in crate::domain_computation::primary_graph) use read_only::ReadOnlyWorkflowHistory;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::identity::{EntityId, RelationId};

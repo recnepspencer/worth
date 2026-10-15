@@ -9,7 +9,6 @@ pub(in crate::domain_computation) enum Door {
     Equality,
     Approval,
     Activation,
-    Discovery,
 }
 struct State {
     door: Door,

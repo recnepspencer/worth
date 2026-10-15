@@ -108,8 +108,8 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         {
             return Err(Denial::PolicyMismatch);
         }
-        if let Some(prior) = after {
-            if !prior
+        if let Some(prior) = after
+            && (!prior
                 .basis
                 .0
                 .belongs_to_selected_occurrence(self.application(), data.product().observation())
@@ -120,10 +120,9 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 || &prior.support != workflow.support_identity_bytes()
                 || prior.basis.selected_commit() != data.product().selected_commit()
                 || prior.basis.branch_identity() != data.product().branch_identity()
-                || prior.continuation().is_none()
-            {
-                return Err(Denial::ContinuationMismatch);
-            }
+                || prior.continuation().is_none())
+        {
+            return Err(Denial::ContinuationMismatch);
         }
         let execution = phase
             .execution_request_for(&self.application().product_runtime)
