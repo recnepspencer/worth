@@ -13,6 +13,7 @@ where
     WorthQueryProgramApplicationRuntime<S, P>: Send + Sync + 'static,
 {
     /// Advances original meaning using only this request's fresh native authority.
+    /// Pending managed cleanup must be released before further native progression.
     pub fn advance(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -64,6 +65,17 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<Step, WorthQueryCapabilityCommandDenial<D>> {
         use NativePublicationState as State;
+        if let Some(failure) = self.cleanup.managed_failure() {
+            let kind = failure.kind();
+            // The collector owns one managed run. No new native progression may
+            // create another until release_cleanup discharges this original run.
+            self.backend
+                .run(phase, request, NativeCommandAction::Validate)
+                .map_err(WorthQueryCapabilityCommandDenial::Native)?;
+            return Err(WorthQueryCapabilityCommandDenial::Cleanup(
+                WorthQueryOperationCloseDenial::ManagedCleanup(kind),
+            ));
+        }
         let action = match &self.state {
             State::Initial | State::RetryableNoEffect(_) => NativeCommandAction::Execute,
             State::Unpublished(recovery) => {
