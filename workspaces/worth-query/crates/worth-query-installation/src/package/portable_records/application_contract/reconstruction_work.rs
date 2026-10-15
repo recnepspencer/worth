@@ -145,6 +145,12 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                 }
             }
             if let Some(creation) = body.creation() {
+                for link in creation.links() {
+                    for text in [&link.relation, &link.from, &link.to, &link.key] {
+                        work.observe_text(text);
+                    }
+                    work.observe_fixed(2);
+                }
                 work.observe_text(creation.entity());
                 work.observe_text(creation.key());
                 for step in creation.fields() {

@@ -59,28 +59,55 @@ impl<Schema, Operation, Input, Scope>
     where
         Relation: OperationLinks<Operation>,
     {
-        self.validate_target(from, relation.from())?;
-        self.validate_target(to, relation.to())?;
-        self.admit_program_target(&ApplicationOperationProgramTarget::Link {
-            relation: relation.name().to_string(),
-            from: relation.from().to_string(),
-            to: relation.to().to_string(),
-        })?;
+        self.link_at_target(
+            &ApplicationOperationProgramTarget::Link {
+                relation: relation.name().to_string(),
+                from: relation.from().to_string(),
+                to: relation.to().to_string(),
+            },
+            key,
+            from,
+            to,
+        )
+    }
+
+    /// Typed writers and installed bodies share the same relation effect admission.
+    pub(in crate::domain_computation::primary_graph) fn link_at_target<From, To>(
+        &mut self,
+        target: &ApplicationOperationProgramTarget,
+        key: impl Into<String>,
+        from: &WorthQueryApplicationEffectEntity<Schema, From>,
+        to: &WorthQueryApplicationEffectEntity<Schema, To>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let ApplicationOperationProgramTarget::Link {
+            relation,
+            from: from_name,
+            to: to_name,
+        } = target
+        else {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
+                "relation link",
+            ));
+        };
+        self.validate_target(from, from_name)?;
+        self.validate_target(to, to_name)?;
+        self.admit_program_target(target)?;
         let kind = self
             .layout
-            .relation(relation.name())
+            .relation(relation)
             .map(|layout| layout.kind)
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationAttemptDenialKind::UndeclaredEffect,
-                    relation.name(),
+                    relation,
                 )
             })?;
-        let key = canonical_key(key.into(), relation.name())?;
+        let key = canonical_key(key.into(), relation)?;
         if self.keys.contains(&(kind, key.clone())) {
             return Err(denial(
                 WorthQueryApplicationAttemptDenialKind::DuplicateEffectKey,
-                relation.name(),
+                relation,
             ));
         }
         let retained_representation_bytes =
@@ -88,7 +115,7 @@ impl<Schema, Operation, Input, Scope>
                 .ok_or_else(|| {
                     denial(
                         WorthQueryApplicationAttemptDenialKind::CandidateReservationExceeded,
-                        relation.name(),
+                        relation,
                     )
                 })?;
         self.charge_candidate_representation(

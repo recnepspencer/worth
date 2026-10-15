@@ -433,8 +433,12 @@ Output-only scope preservation observes Entity membership and needs no dummy wri
 Portable output labels never grant native authority; mandatory uncovered roles
 and unsupported mandatory families deny. Producer/source/settlement currentness
 remain separate owners. Guidance and native
-submission share the installed requirements. General assignment expressions,
-multiple creations, links, signature consequences and multi-operation commands
+submission share the installed requirements. Creation `link_from_scope` and
+`link_to_scope` bind only the admitted scope and that body's actual created row,
+derive Link membership, and use the existing native relation-effect owner.
+Context alone is not domain membership; membership alone is not authorization
+and does not replace a capability's grant witness. General assignment expressions,
+multiple creations, arbitrary relation edits, signature consequences and multi-operation commands
 remain unsupported here; do not fill those missing joins with a host substitute
 and call it declarative.
 

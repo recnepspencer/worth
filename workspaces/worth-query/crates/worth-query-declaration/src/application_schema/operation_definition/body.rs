@@ -2,6 +2,8 @@
 
 mod builder;
 mod creation;
+mod creation_link;
+mod creation_link_validation;
 mod output;
 mod output_validation;
 mod program;
@@ -10,6 +12,9 @@ mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;
 pub use creation::ApplicationOperationBodyCreationBuilder;
+pub use creation_link::{
+    ApplicationOperationBodyCreationLink, ApplicationOperationBodyCreationLinkDirection,
+};
 pub use output::{ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget};
 pub use program::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
@@ -46,6 +51,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     IncompatibleSourceBinding,
     ForeignSourceEntity,
     IncompatibleOutput,
+    InvalidCreationLink,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

@@ -68,6 +68,17 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
                 });
             }
             if let Some(creation) = body.creation() {
+                for target in creation
+                    .links()
+                    .iter()
+                    .map(|link| link.program_target())
+                    .collect::<std::collections::BTreeSet<_>>()
+                {
+                    self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
+                        operation: operation.clone(),
+                        target,
+                    });
+                }
                 self.push_member_in_place(ApplicationSchemaMember::OperationProgram {
                     operation: operation.clone(),
                     target: super::super::ApplicationOperationProgramTarget::Create {

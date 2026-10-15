@@ -281,6 +281,11 @@ where
                     }
                 }
             }
+            for link in creation.links() {
+                if let Err(cause) = writer.body_creation_link(&target, &created, link) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
         }
         HandlerResult::Completed(())
     }

@@ -10,6 +10,28 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_creation_link<Entity>(
+        &mut self,
+        scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        created: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        use worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkDirection as Direction;
+        match link.direction {
+            Direction::FromScope => self.candidate.link_at_target(
+                &link.program_target(),
+                link.key.as_str(),
+                scope,
+                created,
+            ),
+            Direction::ToScope => self.candidate.link_at_target(
+                &link.program_target(),
+                link.key.as_str(),
+                created,
+                scope,
+            ),
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn body_output<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,

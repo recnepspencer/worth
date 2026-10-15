@@ -44,6 +44,8 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         let cardinality = Binding::CANDIDATES.cardinality();
         if cardinality.maximum_writes() < required_writes
             || cardinality.maximum_creates() < usize::from(body.creation().is_some())
+            || cardinality.maximum_links()
+                < body.creation().map_or(0, |creation| creation.links().len())
         {
             return Err(denied());
         }
@@ -84,6 +86,10 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             }
         }
         if let Some(creation) = body.creation() {
+            for link in creation.links() {
+                super::super::WorthQueryApplicationEntityKey::<Schema, ()>::new(&link.key)
+                    .map_err(|_| denied())?;
+            }
             super::super::WorthQueryApplicationEntityKey::<Schema, ()>::new(creation.key())
                 .map_err(|_| denied())?;
             for step in creation.fields() {

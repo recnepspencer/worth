@@ -11,6 +11,8 @@ mod body_only;
 mod conditional_requirement;
 #[path = "operation_body/creation.rs"]
 mod creation;
+#[path = "operation_body/creation_link.rs"]
+mod creation_link;
 #[path = "operation_body/draft.rs"]
 mod draft;
 #[path = "operation_body/draft_query.rs"]

@@ -151,6 +151,7 @@ pub use operation_definition::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
     ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
+    ApplicationOperationBodyCreationLink, ApplicationOperationBodyCreationLinkDirection,
     ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
     ApplicationOperationBodyProgram, ApplicationOperationBodyRequirement,
     ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,

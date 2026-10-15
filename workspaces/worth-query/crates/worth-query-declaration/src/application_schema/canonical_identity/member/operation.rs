@@ -15,7 +15,12 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if !body.outputs().is_empty() {
+        if body
+            .creation()
+            .is_some_and(|creation| !creation.links().is_empty())
+        {
+            "operation-body-v9"
+        } else if !body.outputs().is_empty() {
             "operation-body-v8"
         } else if body.has_optional_inputs() {
             "operation-body-v7"
@@ -117,6 +122,15 @@ pub(super) fn append_body(
         }
     }
     if let Some(creation) = body.creation() {
+        if !creation.links().is_empty() {
+            basis.usize(format!("{prefix}.created.links"), creation.links().len());
+            for (index, link) in creation.links().iter().enumerate() {
+                basis.text(
+                    format!("{prefix}.created.link[{index}]"),
+                    &link.canonical_record(),
+                );
+            }
+        }
         basis.text(format!("{prefix}.created.entity"), creation.entity());
         basis.text(format!("{prefix}.created.key"), creation.key());
         basis.usize(format!("{prefix}.created.fields"), creation.fields().len());

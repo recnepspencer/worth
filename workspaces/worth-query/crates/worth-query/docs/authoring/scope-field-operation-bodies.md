@@ -16,6 +16,8 @@ drive admission and authorized read-only guidance.
 Fixed typed output roles may preserve the admitted scope or identify the body's
 created row through Query's existing commit correspondence. A preservation-only
 body needs no dummy business-field write.
+The creation may also link to/from that admitted scope through typed declared
+relations, so domain membership does not depend on a later host effect.
 This remains a bounded body form; it does not dispatch workflow commands.
 
 ## Why You Use It
@@ -50,6 +52,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   `.initialize_from_scope(source_field, created_field)` and `.finish()`;
 - `creation.initialize_optional_input(optional_field, "member")` to initialize
   the new field for Some and leave it absent for None;
+- `creation.link_from_scope(relation, "link-slot")` and
+  `creation.link_to_scope(relation, "link-slot")` for links to the new row;
 - `body.preserve_scope_output::<Binding, Role>()` and
   `creation.create_output::<Binding, Role>()` for fixed typed output correspondence;
 - a completed operation definition's `with_body(body)`;
@@ -210,6 +214,17 @@ commit resolves a creation slot to its durable entity identity. No host manufact
 an output receipt. A preservation-only body observes scope Entity kind/liveness
 through the decision-read owner even though it has no scalar reads or writes.
 
+Creation links name typed relations with `OperationLinks<Operation>`. The created
+endpoint is fixed by the creation builder; finishing and fresh readmission bind
+the other endpoint to the body's admitted scope. The key is candidate-local, not
+a durable relation identifier. Multiple edges of one relation keep their distinct
+keys and effects while deriving one Link-membership target. Installation checks
+the link ceiling and native key validity. The native relation-effect owner still
+checks target/program provenance, kind, membership, key and resources; Relational
+enforces the relation's declared integrity and commits row, fields and links
+together. A stale candidate publishes none of them. Appending a creation link
+does not require pretending an existing edge was observed or absent.
+
 Publication uses ordinary currentness, authorization, invariant and commit
 machinery. A changed dependency can stale an already prepared candidate. A failed
 expectation returns `DomainDenied(SourceMismatch { entity, aspect, field })` before
@@ -334,6 +349,13 @@ Use the request's business identity in a governed query to read the committed
 document; the candidate-local `"document"` key is not its durable identifier.
 This example does not establish tenant-isolation policy or a uniqueness rule
 for the business identity; declare those contracts separately.
+If the schema has a `TenantDocuments` relation from Tenant to Document, declare
+its Link capability and add `.link_from_scope(TenantDocuments::reference(),
+"tenant-document")?` before `finish()`. A reverse relation from Document to Tenant
+uses `link_to_scope`. A governed query's root path can then traverse the committed
+membership. Do not infer ownership merely from the context partition or a copied
+tenant column, and do not equate membership with authorization. A capability
+still needs its declared grant witness and the ordinary policy/currentness checks.
 For an optional description on that new document, add
 `.initialize_optional_input(Description::reference(), "description")` before
 `finish()`. No dummy empty value needs to be initialized first.
@@ -410,6 +432,9 @@ Optional-input assignment and initialization use portable body record v9.
 Older versions reject those opcodes rather than reinterpret their intent.
 Fixed output uses select portable body record v10; valid no-output v1–v9 records
 retain their previous bytes. Their meaning enters both schema and program identity.
+Creation links select portable body record v11; valid no-link v1–v10 encodings
+retain their previous bytes. Direction, endpoints, relation and key enter both
+schema and program meaning, and fresh reconstruction keeps that exact linkage.
 
 Workflow occurrence authority and approval evidence remain separate. A source
 expectation is not an approval, signature or general evaluated requirement, and
@@ -448,13 +473,15 @@ initialization, operation-specific presence requirements,
 and Foundation Boolean requirements over scope scalar/presence and distinct
 incoming/outgoing related-item count operands, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage
-initializers, plus fixed Preserve-scope/Create-slot output uses. It requires
+initializers, links between that creation and its admitted scope, plus fixed
+Preserve-scope/Create-slot output uses. It requires
 at least one real creation, scope assignment or output use and unit results.
 Output roles are binding-affine; a body cannot silently reinterpret one binding's
 roles under another binding with matching names. Arbitrary target selection,
 Retire and role-family member uses are unsupported. Optional literal assignments,
 general input/source assignments, filtered collections, governed-query operands,
-custom expression kernels, multiple creations, links, signature consequences and command
+custom expression kernels, multiple creations, arbitrary existing-target relation
+edits, signature consequences and command
 continuation are not implemented here.
 Value operands support unitless Boolean, fixed-width integer, finite float,
 decimal and string families. Unsupported scalar interpretations and unit-bearing

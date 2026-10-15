@@ -2,6 +2,8 @@
 use super::*;
 use crate::{binary_output::BinaryOutput, limits::WorthQueryPackageArchiveLimits};
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
+#[path = "tests/creation_links.rs"]
+mod creation_links;
 #[path = "tests/genesis.rs"]
 mod genesis;
 #[path = "tests/optional_input.rs"]
@@ -34,7 +36,7 @@ fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {
     .unwrap();
     assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
     assert!(input.is_finished());
-    bytes[..2].copy_from_slice(&11_u16.to_be_bytes());
+    bytes[..2].copy_from_slice(&12_u16.to_be_bytes());
     let mut budget = RecordDecodeAttempt::begin(
         Default::default(),
         bytes.len() as u64,

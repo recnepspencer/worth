@@ -51,6 +51,9 @@ pub(super) fn body<const DESTINATION: u64>(
             .unwrap()
             .initialize(AuditRetentionField::reference(), authored_destination)
             .unwrap();
+        let creation = creation
+            .link_from_scope(DocumentMembers::reference(), "audit-owner")
+            .unwrap();
         let creation = if DESTINATION == 23 {
             creation
                 .initialize_from_scope(

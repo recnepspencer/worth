@@ -49,7 +49,7 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     const CANDIDATES: ApplicationCandidateRequirements = if matches!(DESTINATION, 20 | 21 | 23..=29)
     {
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 4, 0),
+            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 1, 0, 4, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
         )
     } else {

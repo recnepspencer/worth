@@ -146,6 +146,7 @@ pub struct ApplicationOperationBodyCreation {
     pub(super) entity: String,
     pub(super) key: String,
     pub(super) fields: Vec<ApplicationOperationBodyCreatedField>,
+    pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
 }
 
 impl ApplicationOperationBodyCreation {
@@ -158,10 +159,21 @@ impl ApplicationOperationBodyCreation {
             entity,
             key,
             fields,
+            links: Vec::new(),
         }
     }
     pub fn entity(&self) -> &str {
         &self.entity
+    }
+    pub fn with_untrusted_links(
+        mut self,
+        links: Vec<super::ApplicationOperationBodyCreationLink>,
+    ) -> Self {
+        self.links = links;
+        self
+    }
+    pub fn links(&self) -> &[super::ApplicationOperationBodyCreationLink] {
+        &self.links
     }
     pub fn key(&self) -> &str {
         &self.key

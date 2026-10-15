@@ -66,6 +66,17 @@ fn creation_only_body_survives_checkpoint_and_fresh_readmission() {
         .unwrap();
     assert_eq!(read.rows().len(), 1);
     assert_eq!(read.rows()[0].retention_days, 10);
+    let linked = restored
+        .request(&principal, &scope)
+        .query(super::super::creation_link::query::ReadTenant(
+            "restored-new-document".to_owned(),
+        ))
+        .execute()
+        .unwrap();
+    assert_eq!(
+        linked.rows(),
+        &[super::super::creation_link::query::TenantRow(1)]
+    );
     assert!(matches!(invoke(&restored, 305), Outcome::Committed { .. }));
     assert_eq!(read_retention(&restored), 30);
 }

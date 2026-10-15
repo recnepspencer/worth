@@ -78,6 +78,11 @@ fn authored_creation_publishes_state_and_audit_in_one_candidate() {
 #[test]
 fn stale_prepared_creation_cannot_publish_an_extra_audit() {
     let app = install::<20>();
+    // This body includes DocumentMembers -> the created audit. A stale native
+    // publication must discard the row, its fields and its relation together.
+    assert!(program::schema::<20>().erased().members().iter().any(|member| matches!(member,
+        worth_query_host::facade::declaration::application_schema::ApplicationSchemaMember::OperationBody { body, .. }
+            if body.creation().is_some_and(|creation| creation.links().len() == 1))));
     let scope = request_scope();
     let principal = authenticate_operator(app.runtime().installed_schema(), &scope);
     let key = 202_u64;

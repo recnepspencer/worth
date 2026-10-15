@@ -60,7 +60,7 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     const REQUIRES_APPLICATION_PROGRAM: bool = true;
     const CANDIDATES: ApplicationCandidateRequirements =
         ApplicationCandidateRequirements::fixed_shape(
-            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 0, 0, 4, 0),
+            ApplicationCandidateCardinalityCeiling::fixed(1, 0, 2, 0, 4, 0),
             ApplicationCandidateResourceCeiling::representation_bytes(4096),
         );
     fn scope_field() -> ApplicationFieldRef<

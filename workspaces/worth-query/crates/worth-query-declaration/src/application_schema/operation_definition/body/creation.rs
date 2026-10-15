@@ -19,6 +19,7 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     entity: String,
     pub(super) key: String,
     fields: Vec<ApplicationOperationBodyCreatedField>,
+    pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
     marker: PhantomData<fn() -> Entity>,
 }
 
@@ -44,6 +45,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             entity: entity.name().to_owned(),
             key: key.to_owned(),
             fields: Vec::new(),
+            links: Vec::new(),
             marker: PhantomData,
         })
     }
@@ -207,12 +209,27 @@ impl<Schema, Operation, Input, Entity>
                 entity: self.entity,
                 key: self.key,
                 fields: self.fields,
+                links: self.links,
             }))?;
         let scope = body
             .program
             .scope_entity()
             .expect("completed body has a scope");
         let mut fields = std::collections::BTreeSet::new();
+        if body
+            .program
+            .creation()
+            .expect("creation attached")
+            .links()
+            .iter()
+            .any(|link| {
+                link.scope_entity() != scope
+                    || link.created_entity()
+                        != body.program.creation().expect("creation attached").entity()
+            })
+        {
+            return Err(ApplicationOperationBodyAuthoringDenial::InvalidCreationLink);
+        }
         for step in body
             .program
             .creation()

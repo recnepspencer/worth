@@ -1,6 +1,8 @@
 mod body;
 mod builder;
 mod contract_slots;
+#[cfg(test)]
+mod creation_link_tests;
 mod definition;
 mod registration;
 
@@ -9,6 +11,7 @@ pub use body::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
     ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
+    ApplicationOperationBodyCreationLink, ApplicationOperationBodyCreationLinkDirection,
     ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
     ApplicationOperationBodyProgram, ApplicationOperationBodyRequirement,
     ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,

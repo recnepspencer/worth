@@ -4,6 +4,7 @@ use super::{
     sequence::{decode_sequence, write_sequence},
 };
 
+mod creation_links;
 mod outputs;
 mod requirements;
 #[cfg(test)]
@@ -29,7 +30,12 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if !body.outputs().is_empty() {
+    let version = if body
+        .creation()
+        .is_some_and(|creation| !creation.links().is_empty())
+    {
+        11
+    } else if !body.outputs().is_empty() {
         10
     } else if body.has_optional_inputs() {
         9
@@ -173,6 +179,12 @@ pub(super) fn write(
     if version >= 10 {
         outputs::write(output, body.outputs())?;
     }
+    if version >= 11 {
+        creation_links::write(
+            output,
+            body.creation().map_or(&[], |creation| creation.links()),
+        )?;
+    }
     Ok(())
 }
 
@@ -181,7 +193,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=10) {
+    if !matches!(version, 1..=11) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -324,6 +336,16 @@ pub(super) fn decode(
         outputs::decode(input, budget)?
     } else {
         Vec::new()
+    };
+    let links = if version >= 11 {
+        creation_links::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
+    let creation = match creation {
+        Some(creation) => Some(creation.with_untrusted_links(links)),
+        None if links.is_empty() => None,
+        None => return Err(Denial::new(Kind::InvalidRecordShape)),
     };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(

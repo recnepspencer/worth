@@ -6,6 +6,32 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let record = operation_body_output_record(body);
+    let Some(creation) = body
+        .creation()
+        .filter(|creation| !creation.links().is_empty())
+    else {
+        return record;
+    };
+    framed_record(
+        "operation-body-v10",
+        [
+            ("body", record),
+            (
+                "links",
+                framed_record(
+                    "creation-links-v1",
+                    creation
+                        .links()
+                        .iter()
+                        .map(|link| ("link", link.canonical_record())),
+                ),
+            ),
+        ],
+    )
+}
+
+fn operation_body_output_record(body: &ApplicationOperationBodyProgram) -> String {
     let record = operation_body_optional_record(body);
     if body.outputs().is_empty() {
         return record;
