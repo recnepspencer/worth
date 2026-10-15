@@ -105,15 +105,20 @@ jobs:
       # Admitted canonical preparation requires the audited std-sort implementation
       # selected by worth-foundational/build.rs. Other compilers remain refused.
       - uses: dtolnay/rust-toolchain@1.94.0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Record the audited compiler identity
         run: rustc --version --verbose
-      # Every court compiles in this build; each test owns its controls and observers.
+      # Isolate topology's process-wide controls while running independent courts
+      # concurrently; the same runner includes owning-consumer and parameter courts.
       - name: Prove restored accepted outputs avoid producer contact
+        run: python scripts/ci/query_gate.py fixture
+      - name: Prove public output-role documentation contracts
         run: >-
-          time cargo test
+          cargo test --doc
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-topology-entry
-          -- --test-threads=1
       # The external consumer journey: publication, reconstruction, output
       # preservation and optional output roles through the public facades.
       - name: Run the public consumer journey
@@ -121,3 +126,12 @@ jobs:
           time cargo run
           --manifest-path workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml
           -p worth-query-consumer-root
+      - name: Preserve failed court logs and results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: query-checkpoint-recovery-failure
+          path: |
+            target/query-gate/*.log
+            target/query-gate/*.json
+            target/query-gate/*.jsonl
