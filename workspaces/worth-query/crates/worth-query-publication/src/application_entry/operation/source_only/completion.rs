@@ -112,14 +112,14 @@ where
     }
     pub fn native_outcome(&self) -> Option<&NativeOutcome<S, I>> {
         match &self.operation.state {
-            SourceState::Stopped(outcome) => Some(outcome),
+            SourceState::<S, I>::Stopped(outcome) => Some(outcome),
             _ => None,
         }
     }
     /// Exact native preparation refusal retained without a manufactured commit outcome.
     pub fn native_admission_denial(&self) -> Option<&WorthQueryApplicationRequestMutationDenial> {
         match &self.operation.state {
-            SourceState::AdmissionStopped(denial) => Some(denial),
+            SourceState::<S, I>::AdmissionStopped(denial) => Some(denial),
             _ => None,
         }
     }
@@ -135,7 +135,7 @@ where
     ) -> Option<&worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial>
     {
         match &self.operation.state {
-            SourceState::UnresolvedAdvancement(failure) => Some(failure),
+            SourceState::<S, I>::UnresolvedAdvancement(failure) => Some(failure),
             _ => None,
         }
     }
@@ -143,7 +143,7 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
-        if !native_posture::can_close(&self.operation.state) {
+        if !native_posture::can_close::<S, I>(&self.operation.state) {
             return Err((
                 self,
                 WorthQueryOperationCloseDenial::NativeObligationRetained,
@@ -168,8 +168,8 @@ where
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
         if !matches!(
             self.state,
-            SourceState::Initial | SourceState::RetryableNoEffect(_)
-        ) || !native_posture::can_close(&self.state)
+            SourceState::<S, I>::Initial | SourceState::<S, I>::RetryableNoEffect(_)
+        ) || !native_posture::can_close::<S, I>(&self.state)
         {
             return Err((
                 self,
