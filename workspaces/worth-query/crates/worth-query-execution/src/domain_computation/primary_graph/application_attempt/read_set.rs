@@ -115,6 +115,7 @@ pub struct WorthQueryCompleteApplicationReadSet<
     pub(super) computation_fact_ordinals: Box<[usize]>,
     pub(super) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
     pub(super) mutation_handler_binding: Option<MutationHandlerBindingProof>,
+    pub(super) signed_creation: Option<super::signed_creation::SignedCreationState<Schema>>,
     /// The Unix-epoch millisecond the workflow instance this attempt steps
     /// must commit before; the provider checks it again at commit.
     pub(super) workflow_deadline: Option<u64>,

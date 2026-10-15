@@ -213,6 +213,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 | Kind::MutationBindingMismatch
                 | Kind::MutationInputMismatch
                 | Kind::OperationBodyExecutionRequired
+                | Kind::SignedCreationAuthentication { .. }
+                | Kind::SignedEntityImmutable
                 | Kind::ElevationTransitionRequired
                 | Kind::ElevationRequestProgramMismatch
                 | Kind::ElevationApprovalProgramMismatch

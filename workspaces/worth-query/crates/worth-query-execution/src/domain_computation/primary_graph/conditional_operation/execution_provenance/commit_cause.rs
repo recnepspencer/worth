@@ -30,6 +30,8 @@ pub(super) fn application_commit_cause(
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
         | Kind::OperationBodyExecutionRequired
+        | Kind::SignedCreationAuthentication { .. }
+        | Kind::SignedEntityImmutable
         | Kind::ElevationTransitionRequired
         | Kind::ElevationRequestProgramMismatch
         | Kind::ElevationApprovalProgramMismatch

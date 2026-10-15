@@ -32,6 +32,8 @@ use crate::authentication_event::intent::{
 pub struct WorthQueryAuthenticationEvent<Schema> {
     pub(super) owner_identity: Arc<()>,
     pub(super) event_id: u64,
+    pub(super) event_reference: [u8; 32],
+    pub(super) verification_configuration: String,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) principal: WorthQueryExternalPrincipalIdentity,
     pub(super) intent: WorthQueryAuthenticationEventIntent,
@@ -78,6 +80,8 @@ impl<Schema> WorthQueryAuthenticationEvent<Schema> {
 /// operation authority and must be moved into the approval owner's handoff.
 #[must_use]
 pub struct WorthQueryConsumedAuthenticationEvent<Schema> {
+    pub(super) event_reference: [u8; 32],
+    pub(super) verification_configuration: String,
     pub(super) owner_identity: Arc<()>,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
     pub(super) principal: WorthQueryExternalPrincipalIdentity,
@@ -94,6 +98,13 @@ pub struct WorthQueryConsumedAuthenticationEvent<Schema> {
 }
 
 impl<Schema> WorthQueryConsumedAuthenticationEvent<Schema> {
+    /// Opaque descriptive reference to the genuine verifier event; grants no authority.
+    pub const fn event_reference(&self) -> &[u8; 32] {
+        &self.event_reference
+    }
+    pub fn verification_configuration(&self) -> &str {
+        &self.verification_configuration
+    }
     pub const fn principal(&self) -> &WorthQueryExternalPrincipalIdentity {
         &self.principal
     }

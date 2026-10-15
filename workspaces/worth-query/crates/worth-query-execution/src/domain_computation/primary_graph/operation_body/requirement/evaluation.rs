@@ -86,7 +86,9 @@ fn finding_quote(
     }
     for requirement in body.requirements() {
         let target = match requirement.target() {
-            Source::Field { field, .. } => field_bytes(field),
+            Source::Field { field, .. } | Source::PrincipalIdentity { field, .. } => {
+                field_bytes(field)
+            }
             Source::RelatedItemCount {
                 relation, from, to, ..
             } => relation

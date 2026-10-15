@@ -30,7 +30,7 @@ where
     } = request;
     let WorthQueryApplicationEffectProgram {
         read_set,
-        effects,
+        mut effects,
         emission_retained_bytes,
         emission_retained_bytes_ceiling,
         conditional_definition,
@@ -44,6 +44,7 @@ where
     let workflow_settlement = read_set.workflow_authority_binding;
     let workflow_deadline = read_set.workflow_deadline;
     let new_commit_refusal = read_set.new_commit_refusal;
+    let signed_creation = read_set.signed_creation;
     let mutation_proof = read_set.mutation_handler_binding;
     let workflow_approval_authority = workflow_settlement
         .as_ref()
@@ -106,6 +107,19 @@ where
         Ok(lease) => lease,
         Err(outcome) => return terminal(outcome),
     };
+    if let Err(outcome) =
+        crate::domain_computation::primary_graph::application_attempt::signed_creation::publish(
+            signed_creation,
+            &mut effects,
+            phase
+                .execution_for(&application.product_runtime)
+                .expect("phase readmitted for this runtime"),
+            &lease,
+            &idempotency,
+        )
+    {
+        return terminal(outcome);
+    }
     prepare_authorized_application_commit(
         application,
         WorthQueryCurrentApplicationCommit {

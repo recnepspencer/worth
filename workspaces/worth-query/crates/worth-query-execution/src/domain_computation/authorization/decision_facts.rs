@@ -35,6 +35,13 @@ pub(in crate::domain_computation) enum WorthQueryRetainedAuthorizationDecisionFa
 }
 
 impl WorthQueryRetainedAuthorizationDecisionFacts {
+    pub(in crate::domain_computation) fn signing_principal(
+        &self,
+    ) -> &std::sync::Arc<
+        worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
+    > {
+        principal(self).external_identity()
+    }
     pub(in crate::domain_computation) const fn principal(
         principal: WorthQueryPrincipalCurrentnessDependency,
     ) -> Self {

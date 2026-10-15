@@ -51,6 +51,12 @@ mod references;
 mod relation_integrity;
 mod schema_identity;
 mod schema_member;
+mod signing_provenance;
+pub use signing_provenance::{
+    ApplicationSigningEntityCoordinates, ApplicationSigningProvenance,
+    ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceMetadata,
+    ApplicationSigningProvenanceParts,
+};
 mod value_binding;
 mod values;
 
@@ -158,7 +164,8 @@ pub use operation_definition::{
     ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
     ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
     ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
-    ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
+    ApplicationOperationBodySigningSpec, ApplicationOperationDefinition,
+    ApplicationOperationDefinitionBuilder,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{

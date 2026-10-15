@@ -3,6 +3,7 @@ mod authoring;
 mod encoding;
 mod expression;
 mod operands;
+mod principal;
 mod validation;
 
 pub use authoring::ApplicationOperationBodyRequirementOperands;

@@ -14,6 +14,8 @@ mod outputs;
 mod principal;
 #[path = "tests/requirements.rs"]
 mod requirements;
+#[path = "tests/signing.rs"]
+mod signing;
 
 #[test]
 fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {

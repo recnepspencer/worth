@@ -20,6 +20,7 @@ pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Ent
     pub(super) key: String,
     pub(super) fields: Vec<ApplicationOperationBodyCreatedField>,
     pub(super) links: Vec<super::ApplicationOperationBodyCreationLink>,
+    pub(super) signing: Option<super::ApplicationOperationBodySigningSpec>,
     marker: PhantomData<fn() -> Entity>,
 }
 
@@ -46,6 +47,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
             key: key.to_owned(),
             fields: Vec::new(),
             links: Vec::new(),
+            signing: None,
             marker: PhantomData,
         })
     }
@@ -210,6 +212,7 @@ impl<Schema, Operation, Input, Entity>
                 key: self.key,
                 fields: self.fields,
                 links: self.links,
+                signing: self.signing,
             }))?;
         let scope = body
             .program

@@ -4,10 +4,12 @@ use super::{
     sequence::{decode_sequence, write_sequence},
 };
 
+mod creation_fields;
 mod creation_links;
 mod outputs;
 mod principal;
 mod requirements;
+mod signing;
 #[cfg(test)]
 mod tests;
 use crate::{
@@ -31,7 +33,9 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.creation().is_some_and(|creation| {
+    let version = if signing::uses_signed_sources(body) {
+        13
+    } else if body.creation().is_some_and(|creation| {
         creation
             .fields()
             .iter()
@@ -138,52 +142,7 @@ pub(super) fn write(
         output.u16(u16::from(body.creation().is_some()))?;
     }
     if let Some(creation) = body.creation() {
-        output.text(creation.entity())?;
-        output.text(creation.key())?;
-        write_sequence(output, creation.fields(), |output, step| {
-            output.u16(match step {
-                ApplicationOperationBodyCreatedField::Literal { .. } => 1,
-                ApplicationOperationBodyCreatedField::Input { .. } => 2,
-                ApplicationOperationBodyCreatedField::ScopeField { .. } => 3,
-                ApplicationOperationBodyCreatedField::OptionalInput { .. } => 4,
-                ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => 5,
-            })?;
-            output.text(step.field().entity())?;
-            output.text(step.field().aspect())?;
-            output.text(step.field().field())?;
-            output.text(step.binding().as_str())?;
-            match step {
-                ApplicationOperationBodyCreatedField::Literal { value, .. } => {
-                    super::foundational_value::write_aspect_value(output, value)
-                }
-                ApplicationOperationBodyCreatedField::Input {
-                    member,
-                    scalar_family,
-                    ..
-                }
-                | ApplicationOperationBodyCreatedField::OptionalInput {
-                    member,
-                    scalar_family,
-                    ..
-                } => {
-                    super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
-                    output.text(member)
-                }
-                ApplicationOperationBodyCreatedField::ScopeField {
-                    source,
-                    scalar_family,
-                    ..
-                } => {
-                    super::foundational_aspect::write_scalar_type(output, *scalar_family)?;
-                    output.text(source.entity())?;
-                    output.text(source.aspect())?;
-                    output.text(source.field())
-                }
-                ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
-                    principal::write(output, step)
-                }
-            }
-        })?;
+        creation_fields::write(output, creation)?;
     }
     if version >= 7 {
         requirements::write(output, body.requirements())?;
@@ -197,6 +156,12 @@ pub(super) fn write(
             body.creation().map_or(&[], |creation| creation.links()),
         )?;
     }
+    if version >= 13 {
+        signing::write(
+            output,
+            body.creation().and_then(|creation| creation.signing()),
+        )?;
+    }
     Ok(())
 }
 
@@ -205,7 +170,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=12) {
+    if !matches!(version, 1..=13) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -291,61 +256,9 @@ pub(super) fn decode(
     } else {
         version >= 3
     };
-    let creation = if has_creation {
-        let entity = input.text()?.to_owned();
-        let key = input.text()?.to_owned();
-        let fields = decode_sequence(input, budget, 20, |input, _| {
-            let tag = input.u16()?;
-            if !matches!(tag, 1 | 2)
-                && !(version >= 4 && tag == 3)
-                && !(version >= 9 && tag == 4)
-                && !(version >= 12 && tag == 5)
-            {
-                return Err(Denial::new(Kind::UnsupportedRecordVariant));
-            }
-            let field =
-                ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-            let binding = WorthQueryPortableTypeIdentity::from_untrusted(input.text()?.to_owned());
-            Ok(match tag {
-                1 => ApplicationOperationBodyCreatedField::Literal {
-                    field,
-                    binding,
-                    value: super::foundational_value::decode_aspect_value(input)?,
-                },
-                2 => ApplicationOperationBodyCreatedField::Input {
-                    field,
-                    binding,
-                    scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
-                    member: input.text()?.to_owned(),
-                },
-                3 => ApplicationOperationBodyCreatedField::ScopeField {
-                    field,
-                    binding,
-                    scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
-                    source: ApplicationFieldBindingLocus::new(
-                        input.text()?,
-                        input.text()?,
-                        input.text()?,
-                    ),
-                },
-                4 => ApplicationOperationBodyCreatedField::OptionalInput {
-                    field,
-                    binding,
-                    scalar_family: super::foundational_aspect::decode_scalar_type(input)?,
-                    member: input.text()?.to_owned(),
-                },
-                5 => principal::decode(input, field, binding)?,
-                _ => unreachable!("creation opcode admitted before operands"),
-            })
-        })?;
-        Some(ApplicationOperationBodyCreation::from_untrusted(
-            entity, key, fields,
-        ))
-    } else {
-        None
-    };
+    let creation = creation_fields::decode(input, budget, version, has_creation)?;
     let requirements = if version >= 7 {
-        requirements::decode(input, budget)?
+        requirements::decode(input, budget, version)?
     } else {
         Vec::new()
     };
@@ -359,9 +272,18 @@ pub(super) fn decode(
     } else {
         Vec::new()
     };
+    let signing = if version >= 13 {
+        signing::decode(input)?
+    } else {
+        None
+    };
     let creation = match creation {
-        Some(creation) => Some(creation.with_untrusted_links(links)),
-        None if links.is_empty() => None,
+        Some(creation) => Some(
+            creation
+                .with_untrusted_links(links)
+                .with_untrusted_signing(signing),
+        ),
+        None if links.is_empty() && signing.is_none() => None,
         None => return Err(Denial::new(Kind::InvalidRecordShape)),
     };
     if let Some(scope) = scope {

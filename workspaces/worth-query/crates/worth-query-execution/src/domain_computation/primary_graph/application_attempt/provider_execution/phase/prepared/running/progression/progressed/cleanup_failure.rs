@@ -69,6 +69,8 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             | Kind::MutationBindingMismatch
             | Kind::MutationInputMismatch
             | Kind::OperationBodyExecutionRequired
+            | Kind::SignedCreationAuthentication { .. }
+            | Kind::SignedEntityImmutable
             | Kind::ElevationTransitionRequired
             | Kind::ElevationRequestProgramMismatch
             | Kind::ElevationApprovalProgramMismatch

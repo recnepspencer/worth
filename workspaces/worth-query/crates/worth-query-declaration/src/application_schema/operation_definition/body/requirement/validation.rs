@@ -30,6 +30,9 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
                 Source::RelatedItemCount { relation: name, from: source, to: target, .. } => members.iter().any(|member| {
                     matches!(member, Member::Relation { relation, from, to, .. } if relation == name && from == source && to == target)
                 }),
+                Source::PrincipalIdentity { scope, mutation_binding, principal_binding, field, binding, scalar_family } => {
+                    super::super::principal_validation::PrincipalSourceContract { scope, mutation_binding, principal_binding, field, binding, scalar_family: *scalar_family }.is_declared_for(operation, members)
+                },
             };
             if !bound || !operand.source().decision_reads().iter().all(|read| members.iter().any(|member| {
                 matches!(member, Member::OperationDecisionRead { operation: declared, target } if declared == operation && target == read)

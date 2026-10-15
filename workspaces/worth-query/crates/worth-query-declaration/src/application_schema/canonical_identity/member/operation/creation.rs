@@ -20,6 +20,12 @@ pub(super) fn append(
     }
     basis.text(format!("{prefix}.created.entity"), creation.entity());
     basis.text(format!("{prefix}.created.key"), creation.key());
+    if let Some(signing) = creation.signing() {
+        basis.text(
+            format!("{prefix}.created.signing"),
+            &signing.canonical_record(),
+        );
+    }
     basis.usize(format!("{prefix}.created.fields"), creation.fields().len());
     for (index, step) in creation.fields().iter().enumerate() {
         let field = format!("{prefix}.created.field[{index}]");
@@ -30,6 +36,8 @@ pub(super) fn append(
                 Field::Input { .. } => "input",
                 Field::OptionalInput { .. } => "optional-input",
                 Field::ScopeField { .. } => "scope-field",
+                Field::PresentScopeField { .. } => "present-scope-field",
+                Field::SigningProvenance { .. } => "signing-provenance",
                 Field::PrincipalIdentity { .. } => "principal-identity",
             },
         );
@@ -62,6 +70,11 @@ pub(super) fn append(
                 source,
                 scalar_family,
                 ..
+            }
+            | Field::PresentScopeField {
+                source,
+                scalar_family,
+                ..
             } => {
                 basis.text(format!("{field}.source.entity"), source.entity());
                 basis.text(format!("{field}.source.aspect"), source.aspect());
@@ -71,6 +84,7 @@ pub(super) fn append(
                     scalar_family.canonical_name(),
                 );
             }
+            Field::SigningProvenance { .. } => {}
             Field::PrincipalIdentity {
                 source,
                 scalar_family,

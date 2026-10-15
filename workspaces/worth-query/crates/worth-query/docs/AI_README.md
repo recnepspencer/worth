@@ -1223,6 +1223,7 @@ Application API guides:
 - [`worth-query-decl` README](../../worth-query-decl/README.md) and [`worth-query-host` README](../../worth-query-host/README.md)
 - [Ordinary Application Front Door](./foundations/ordinary-application-front-door.md)
 - [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md)
+- [Signed Operation Creations](./authoring/signed-operation-creations.md): immutable early attestation, not a replacement for workflow approval authority.
 - [Branches And Previews](./foundations/branches-and-previews.md)
 - [Application Authorization And Emergency Elevation](./capabilities/application-authorization-and-emergency-elevation.md)
 - [Application Aftermath, External Effects, And Recovery](./execution/application-aftermath-and-recovery.md)

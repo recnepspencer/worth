@@ -16,6 +16,7 @@ mod continuation_ordering;
 mod equality_fields;
 mod field_optionality;
 mod installation_primitives;
+mod native_outputs;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
 mod principal_binding;
@@ -25,6 +26,7 @@ mod provider_dispatch_outbox;
 mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
+mod signed_entities;
 mod support_admission;
 #[cfg(test)]
 mod tests;
@@ -68,6 +70,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     entity_kinds: BTreeMap<String, KindId>,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     application_entity_kinds: BTreeSet<KindId>,
+    signed_entity_kinds: BTreeSet<KindId>,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
@@ -105,29 +108,6 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryFieldLayout {
 }
 
 impl WorthQueryPrimaryGraphLayout {
-    /// The installed native contract inventory is the complete output-aspect
-    /// vocabulary for this application entity, including fields that were not
-    /// written by the performed operation.
-    pub(in crate::domain_computation::primary_graph) fn native_output_aspects<'a>(
-        &'a self,
-        entity: &'a str,
-    ) -> impl Iterator<Item = &'a AspectKey> + Clone {
-        self.aspect_contracts
-            .get(entity)
-            .into_iter()
-            .flat_map(|contracts| contracts.keys())
-    }
-
-    /// Both the native kind and its aspect inventory use entity-name B-trees.
-    /// The kind table contains every entity in the aspect table, so its bounded
-    /// descent also covers the aspect table without reading unrelated aspects.
-    pub(in crate::domain_computation::primary_graph) fn native_output_lookup_work(
-        &self,
-        entity: &str,
-    ) -> Option<u64> {
-        self.entity_kind_lookup_work(entity)?.checked_mul(2)
-    }
-
     pub(super) fn lower(
         schema: &ErasedApplicationSchemaDeclaration,
         native_contracts: &WorthQueryInstalledApplicationSchemaContractCatalog,
@@ -194,6 +174,7 @@ impl WorthQueryPrimaryGraphLayout {
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
         let application_entity_kinds = entity_kinds.values().copied().collect();
+        let signed_entity_kinds = signed_entities::lower(schema, &entity_kinds)?;
         let application_relation_kinds = relation_layouts
             .values()
             .map(|layout| layout.kind)
@@ -214,6 +195,7 @@ impl WorthQueryPrimaryGraphLayout {
                 entity_kinds,
                 relation_kinds: relation_layouts,
                 application_entity_kinds,
+                signed_entity_kinds,
                 application_relation_kinds,
                 fields,
                 unique_fields,

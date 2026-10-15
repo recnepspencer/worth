@@ -21,14 +21,17 @@ pub(in crate::domain_computation::primary_graph) fn field_value(
     source: &ApplicationOperationBodyRequirementSource,
     raw: Option<&AspectValue>,
 ) -> Result<ExpressionValue, HandlerExecutionDenial> {
-    let ApplicationOperationBodyRequirementSource::Field {
-        scalar_family,
-        presence,
-        presence_only,
-        ..
-    } = source
-    else {
-        unreachable!("field observer accepts a field source")
+    let (scalar_family, presence, presence_only) = match source {
+        ApplicationOperationBodyRequirementSource::Field {
+            scalar_family,
+            presence,
+            presence_only,
+            ..
+        } => (*scalar_family, *presence, *presence_only),
+        ApplicationOperationBodyRequirementSource::PrincipalIdentity { scalar_family, .. } => {
+            (*scalar_family, ApplicationFieldPresence::Required, false)
+        }
+        _ => unreachable!("field observer accepts a scalar source"),
     };
     let invalid = || {
         HandlerExecutionDenial::new(WorthQueryApplicationAttemptDenial::new(
@@ -36,7 +39,7 @@ pub(in crate::domain_computation::primary_graph) fn field_value(
             "requirement operand",
         ))
     };
-    if raw.is_none() && *presence == ApplicationFieldPresence::Required {
+    if raw.is_none() && presence == ApplicationFieldPresence::Required {
         return Err(HandlerExecutionDenial::new(
             WorthQueryApplicationAttemptDenial::new(
                 WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
@@ -44,10 +47,10 @@ pub(in crate::domain_computation::primary_graph) fn field_value(
             ),
         ));
     }
-    if raw.is_some_and(|raw| raw.value_family() != *scalar_family) {
+    if raw.is_some_and(|raw| raw.value_family() != scalar_family) {
         return Err(invalid());
     }
-    if *presence_only {
+    if presence_only {
         return Ok(ExpressionValue::bool(raw.is_some()));
     }
     let Some(raw) = raw else {
@@ -75,7 +78,7 @@ pub(in crate::domain_computation::primary_graph) fn field_value(
         AspectValue::String(InternedString::Raw(value)) => ExpressionValue::string(value.as_str()),
         _ => return Err(invalid()),
     };
-    Ok(if *presence == ApplicationFieldPresence::Optional {
+    Ok(if presence == ApplicationFieldPresence::Optional {
         ExpressionValue::some(value)
     } else {
         value

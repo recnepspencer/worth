@@ -264,6 +264,7 @@ where
                         std::borrow::Cow::Owned(value)
                     }
                     ApplicationOperationBodyCreatedField::ScopeField { .. }
+                    | ApplicationOperationBodyCreatedField::PresentScopeField { .. }
                     | ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
                         let (source, reservation) = source_values
                             .next()
@@ -272,6 +273,7 @@ where
                         source_reservation = Some(reservation);
                         std::borrow::Cow::Owned(source)
                     }
+                    ApplicationOperationBodyCreatedField::SigningProvenance { .. } => continue,
                 };
                 if let Err(cause) = writer.body_initialize_field(&created, step.field(), value) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
@@ -287,6 +289,11 @@ where
             }
             for link in creation.links() {
                 if let Err(cause) = writer.body_creation_link(&target, &created, link) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
+            if let Some(signing) = creation.signing() {
+                if let Err(cause) = writer.body_signing_slot(&created, signing) {
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
             }

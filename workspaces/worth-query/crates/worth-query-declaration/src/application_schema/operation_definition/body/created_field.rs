@@ -33,6 +33,16 @@ pub enum ApplicationOperationBodyCreatedField {
         scalar_family: ScalarAspectType,
         source: ApplicationFieldBindingLocus,
     },
+    PresentScopeField {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        source: ApplicationFieldBindingLocus,
+    },
+    SigningProvenance {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+    },
     PrincipalIdentity {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -49,6 +59,8 @@ impl ApplicationOperationBodyCreatedField {
             | Self::Input { field, .. }
             | Self::OptionalInput { field, .. }
             | Self::ScopeField { field, .. }
+            | Self::PresentScopeField { field, .. }
+            | Self::SigningProvenance { field, .. }
             | Self::PrincipalIdentity { field, .. } => field,
         }
     }
@@ -58,6 +70,8 @@ impl ApplicationOperationBodyCreatedField {
             | Self::Input { binding, .. }
             | Self::OptionalInput { binding, .. }
             | Self::ScopeField { binding, .. }
+            | Self::PresentScopeField { binding, .. }
+            | Self::SigningProvenance { binding, .. }
             | Self::PrincipalIdentity { binding, .. } => binding,
         }
     }
@@ -70,9 +84,11 @@ impl ApplicationOperationBodyCreatedField {
     pub fn scalar_family(&self) -> ScalarAspectType {
         match self {
             Self::Literal { value, .. } => value.value_family(),
+            Self::SigningProvenance { .. } => ScalarAspectType::String,
             Self::Input { scalar_family, .. }
             | Self::OptionalInput { scalar_family, .. }
             | Self::ScopeField { scalar_family, .. }
+            | Self::PresentScopeField { scalar_family, .. }
             | Self::PrincipalIdentity { scalar_family, .. } => *scalar_family,
         }
     }
@@ -84,13 +100,23 @@ impl ApplicationOperationBodyCreatedField {
     }
     pub fn source_field(&self) -> Option<&ApplicationFieldBindingLocus> {
         match self {
-            Self::ScopeField { source, .. } => Some(source),
+            Self::ScopeField { source, .. } | Self::PresentScopeField { source, .. } => {
+                Some(source)
+            }
             _ => None,
         }
     }
     pub fn principal_source(&self) -> Option<&ApplicationFieldBindingLocus> {
         match self {
             Self::PrincipalIdentity { source, .. } => Some(source),
+            _ => None,
+        }
+    }
+    pub fn source_presence(&self) -> Option<crate::application_schema::ApplicationFieldPresence> {
+        use crate::application_schema::ApplicationFieldPresence as Presence;
+        match self {
+            Self::ScopeField { .. } => Some(Presence::Required),
+            Self::PresentScopeField { .. } => Some(Presence::Optional),
             _ => None,
         }
     }

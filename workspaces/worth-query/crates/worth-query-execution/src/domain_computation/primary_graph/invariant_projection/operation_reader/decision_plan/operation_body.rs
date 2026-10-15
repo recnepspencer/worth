@@ -87,6 +87,14 @@ impl<Schema: ApplicationSchema, Operation>
         field: &ApplicationFieldBindingLocus,
         capture: impl FnOnce(&AspectValue) -> Result<PreparedBodySource, HandlerExecutionDenial>,
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
+        let identity = self.body_principal_identity(field)?;
+        self.body_value(&identity, field, capture)
+    }
+
+    pub(super) fn body_principal_identity(
+        &mut self,
+        field: &ApplicationFieldBindingLocus,
+    ) -> Result<WorthQueryInvariantEntityIdentity<Schema, ()>, HandlerExecutionDenial> {
         let refused = || {
             HandlerExecutionDenial::new(WorthQueryInvariantDecisionPlanDenial::new(
                 WorthQueryInvariantDecisionPlanDenialKind::ForeignIdentity,
@@ -108,7 +116,7 @@ impl<Schema: ApplicationSchema, Operation>
             _marker: std::marker::PhantomData,
         };
         self.reader.realized_scope.record(entity_id);
-        self.body_value(&identity, field, capture)
+        Ok(identity)
     }
 
     pub(super) fn tracked_body_locator<Entity>(

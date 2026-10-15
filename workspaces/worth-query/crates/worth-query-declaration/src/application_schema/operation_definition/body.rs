@@ -7,8 +7,12 @@ mod creation_link;
 mod creation_link_validation;
 mod output;
 mod output_validation;
+mod present_source;
 mod principal;
 mod principal_validation;
+mod signing;
+mod signing_validation;
+pub use signing::ApplicationOperationBodySigningSpec;
 mod program;
 mod requirement;
 mod validation;
@@ -52,6 +56,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     InvalidInputMember,
     InvalidCreationKey,
     IncompatibleSourceBinding,
+    InvalidSigningPurpose,
     ForeignSourceEntity,
     IncompatibleOutput,
     InvalidCreationLink,

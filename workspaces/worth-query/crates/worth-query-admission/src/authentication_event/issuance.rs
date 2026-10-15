@@ -36,6 +36,7 @@ use retention::{AuthenticationEventState, RetainedAuthenticationEvent};
 /// revocation, finite retention and atomic reuse accounting.
 pub struct WorthQueryInstalledAuthenticationEventOwner<Schema, Clock, Source, Verifier> {
     verifier: Verifier,
+    metadata: Arc<WorthQueryAuthenticationEventOwnerMetadata>,
     binding_identity: ApplicationSchemaBindingIdentity,
     owner_identity: Arc<()>,
     policy: WorthQueryAuthenticationEventPolicy,
@@ -44,65 +45,10 @@ pub struct WorthQueryInstalledAuthenticationEventOwner<Schema, Clock, Source, Ve
     marker: PhantomData<fn() -> Schema>,
 }
 
-/// A sealed signing capability retained by the installed workflow runtime.
-/// Callers cannot substitute a different verifier when submitting an approval.
-pub struct WorthQueryAuthenticationEventSigningOwner<Schema> {
-    binding_identity: ApplicationSchemaBindingIdentity,
-    consume: Arc<SigningConsumption<Schema>>,
-    readmit: Arc<SigningReadmission<Schema>>,
-}
-
-type SigningConsumption<Schema> = dyn Fn(
-        &WorthQueryAuthenticationEvent<Schema>,
-        &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        &WorthQueryAuthenticationEventIntent,
-        &WorthQueryRequestScope,
-    )
-        -> Result<WorthQueryConsumedAuthenticationEvent<Schema>, WorthQueryAuthenticationEventDenial>
-    + Send
-    + Sync;
-
-type SigningReadmission<Schema> = dyn Fn(
-        WorthQueryConsumedAuthenticationEvent<Schema>,
-    )
-        -> Result<WorthQueryConsumedAuthenticationEvent<Schema>, WorthQueryAuthenticationEventDenial>
-    + Send
-    + Sync;
-
-impl<Schema> WorthQueryAuthenticationEventSigningOwner<Schema> {
-    pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
-        &self.binding_identity
-    }
-
-    pub fn consume_for_signing(
-        &self,
-        event: &WorthQueryAuthenticationEvent<Schema>,
-        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
-        intent: &WorthQueryAuthenticationEventIntent,
-        scope: &WorthQueryRequestScope,
-    ) -> Result<WorthQueryConsumedAuthenticationEvent<Schema>, WorthQueryAuthenticationEventDenial>
-    {
-        (self.consume)(event, principal, intent, scope)
-    }
-
-    pub fn readmit_for_publication(
-        &self,
-        consumed: WorthQueryConsumedAuthenticationEvent<Schema>,
-    ) -> Result<WorthQueryConsumedAuthenticationEvent<Schema>, WorthQueryAuthenticationEventDenial>
-    {
-        (self.readmit)(consumed)
-    }
-}
-
-impl<Schema> Clone for WorthQueryAuthenticationEventSigningOwner<Schema> {
-    fn clone(&self) -> Self {
-        Self {
-            binding_identity: self.binding_identity.clone(),
-            consume: Arc::clone(&self.consume),
-            readmit: Arc::clone(&self.readmit),
-        }
-    }
-}
+mod signing_owner;
+pub use signing_owner::{
+    WorthQueryAuthenticationEventOwnerMetadata, WorthQueryAuthenticationEventSigningOwner,
+};
 
 /// Admission is reserved before external verification. Dropping a cancelled
 /// authentication future releases exactly its unfinished reservation.
@@ -141,17 +87,19 @@ where
     Source: WorthQueryNamedClockSource<Clock>,
     Verifier: WorthQueryAuthenticationEventVerifier,
 {
-    let identity = verifier.configuration_identity();
-    if identity.is_empty()
-        || identity.trim() != identity
-        || identity.len() > 512
-        || identity.chars().any(char::is_control)
-    {
-        return Err(WorthQueryAuthenticationEventDenial::InvalidInstallation);
-    }
+    let verification_configuration = verifier.configuration_identity();
+    worth_query_declaration::facade::authentication::WorthQueryAuthenticationVerifierIdentity::validate(verification_configuration)
+        .map_err(|_| WorthQueryAuthenticationEventDenial::InvalidInstallation)?;
+    let verification_configuration = verification_configuration.to_owned();
     let clock = AuthenticationEventClock::install(source)?;
+    let metadata = Arc::new(WorthQueryAuthenticationEventOwnerMetadata {
+        verification_configuration,
+        clock_source: clock.source_identity().as_str().to_owned(),
+        clock_timeline: clock.timeline_identity().as_str().to_owned(),
+    });
     Ok(WorthQueryInstalledAuthenticationEventOwner {
         verifier,
+        metadata,
         binding_identity: schema.binding_identity(),
         owner_identity: Arc::new(()),
         policy,
@@ -178,6 +126,8 @@ where
         let owner = Arc::clone(self);
         let readmission_owner = Arc::clone(self);
         WorthQueryAuthenticationEventSigningOwner {
+            owner_identity: Arc::clone(&self.owner_identity),
+            metadata: Arc::clone(&self.metadata),
             binding_identity: self.binding_identity.clone(),
             consume: Arc::new(move |event, principal, intent, scope| {
                 owner.consume_for_signing(event, principal, intent, scope)
@@ -236,6 +186,8 @@ where
         Ok(WorthQueryAuthenticationEvent {
             owner_identity: Arc::clone(&self.owner_identity),
             event_id,
+            event_reference: nonce,
+            verification_configuration: self.metadata.verification_configuration.clone(),
             binding_identity: self.binding_identity.clone(),
             principal: principal.identity().clone(),
             intent,
@@ -290,6 +242,8 @@ where
         Ok(WorthQueryConsumedAuthenticationEvent {
             owner_identity: Arc::clone(&self.owner_identity),
             binding_identity: self.binding_identity.clone(),
+            event_reference: event.event_reference,
+            verification_configuration: event.verification_configuration.clone(),
             principal: event.principal.clone(),
             intent: event.intent.clone(),
             source_identity: event.source_identity.clone(),

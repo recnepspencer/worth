@@ -10,6 +10,14 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_signing_slot(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        spec: &worth_query_declaration::facade::application_schema::ApplicationOperationBodySigningSpec,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.reserve_body_signing_slot(target, spec)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn body_creation_link<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,

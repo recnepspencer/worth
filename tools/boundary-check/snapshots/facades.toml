@@ -818,6 +818,7 @@ exports = [
     "WorthQuerySelectedProductOperation",
     "WorthQuerySelectedProgramInspection",
     "WorthQuerySelectedProgramInspectionDenial",
+    "WorthQuerySignedCreationPreparationDenial",
     "WorthQuerySourceExpectationDenial",
     "WorthQuerySourceExpectationDenialKind",
     "WorthQueryStoppedBranchSetAdoption",

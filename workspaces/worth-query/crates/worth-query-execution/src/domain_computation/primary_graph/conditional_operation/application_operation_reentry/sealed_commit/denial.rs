@@ -183,6 +183,8 @@ fn classify_kind(kind: Kind) -> Outcome {
         | Kind::MutationBindingMismatch
         | Kind::MutationInputMismatch
         | Kind::OperationBodyExecutionRequired
+        | Kind::SignedCreationAuthentication { .. }
+        | Kind::SignedEntityImmutable
         | Kind::ElevationTransitionRequired
         | Kind::ElevationRequestProgramMismatch
         | Kind::ElevationApprovalProgramMismatch

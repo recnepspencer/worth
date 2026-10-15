@@ -17,6 +17,7 @@ use worth_query_execution::facade::{
 };
 pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
     match denial {
+        Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),
         Request::ExecutionRequest(cause) => Some(*cause),
         Request::Authorization(cause) => authorization_interruption(cause.kind()),
         Request::PrincipalResolution(cause) => match cause.kind() {
@@ -64,7 +65,8 @@ pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
         | Request::RequiresWorkflowTransition
         | Request::WorkflowAuthoritySpent
         | Request::PreparationSpent
-        | Request::WorkflowTransitionCurrentness(..) => None,
+        | Request::WorkflowTransitionCurrentness(..)
+        | Request::SignedCreation(..) => None,
     }
 }
 pub(super) fn authorization_interruption(cause: Authorization) -> Option<Denial> {

@@ -48,6 +48,7 @@ mod provider_recomparison;
 mod read_phase;
 mod read_scope;
 mod read_set;
+pub(in crate::domain_computation::primary_graph) mod signed_creation;
 pub(in crate::domain_computation::primary_graph) use read_set::request_liveness::check_request_live;
 pub(in crate::domain_computation) use read_set::CompletedHandlerFactBoundary;
 #[cfg(test)]
@@ -55,6 +56,9 @@ pub(in crate::domain_computation::primary_graph) use read_set::ComputationFactRe
 pub(in crate::domain_computation::primary_graph) use read_set::{
     observe_admitted_fact, CompletedDecisionReuseProof, ComputationFactAttribution,
     ComputationRead, PreparedDecisionReuseContext, SealedComputationFacts,
+};
+pub use signed_creation::{
+    WorthQuerySignedCreationAdapter, WorthQuerySignedCreationPreparationDenial,
 };
 mod retained_commit;
 pub(in crate::domain_computation::primary_graph) mod retained_decision_facts;

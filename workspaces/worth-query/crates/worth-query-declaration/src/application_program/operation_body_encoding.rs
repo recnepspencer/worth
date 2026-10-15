@@ -6,6 +6,16 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let record = operation_body_link_record(body);
+    if let Some(signing) = body.creation().and_then(|creation| creation.signing()) {
+        return framed_record(
+            "operation-body-v11",
+            [("body", record), ("signing", signing.canonical_record())],
+        );
+    }
+    record
+}
+fn operation_body_link_record(body: &ApplicationOperationBodyProgram) -> String {
     let record = operation_body_output_record(body);
     let Some(creation) = body
         .creation()
@@ -254,8 +264,20 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
                 source,
                 scalar_family,
                 ..
+            }
+            | ApplicationOperationBodyCreatedField::PresentScopeField {
+                source,
+                scalar_family,
+                ..
             } => (
-                "scope-field",
+                if matches!(
+                    step,
+                    ApplicationOperationBodyCreatedField::PresentScopeField { .. }
+                ) {
+                    "present-scope-field"
+                } else {
+                    "scope-field"
+                },
                 framed_record(
                     "scope-source-v1",
                     [
@@ -285,6 +307,10 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
                         ("family", scalar_family.canonical_name().to_owned()),
                     ],
                 ),
+            ),
+            ApplicationOperationBodyCreatedField::SigningProvenance { .. } => (
+                "signing-provenance",
+                "native-deferred-provenance-v1".to_owned(),
             ),
         };
         framed_record(

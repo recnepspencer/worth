@@ -25,6 +25,24 @@ pub(super) fn write(
         write_sequence(output, requirement.operands(), |output, operand| {
             output.text(operand.name())?;
             match operand.source() {
+                Source::PrincipalIdentity {
+                    scope,
+                    mutation_binding,
+                    principal_binding,
+                    field,
+                    binding,
+                    scalar_family,
+                } => {
+                    output.u16(3)?;
+                    output.text(scope)?;
+                    output.text(mutation_binding)?;
+                    output.text(principal_binding)?;
+                    output.text(field.entity())?;
+                    output.text(field.aspect())?;
+                    output.text(field.field())?;
+                    output.text(binding.as_str())?;
+                    super::super::foundational_aspect::write_scalar_type(output, *scalar_family)
+                }
                 Source::Field {
                     field,
                     binding,
@@ -73,6 +91,7 @@ fn write_draft(output: &mut dyn BinaryEncodingSink, bytes: &[u8]) -> Result<(), 
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
+    version: u16,
 ) -> Result<Vec<Requirement>, Denial> {
     decode_sequence(input, budget, 16, |input, budget| {
         let identity = input.text()?.to_owned();
@@ -80,6 +99,20 @@ pub(super) fn decode(
         let operands = decode_sequence(input, budget, 12, |input, _| {
             let name = input.text()?.to_owned();
             let source = match input.u16()? {
+                3 if version >= 13 => Source::PrincipalIdentity {
+                    scope: input.text()?.to_owned(),
+                    mutation_binding: input.text()?.to_owned(),
+                    principal_binding: input.text()?.to_owned(),
+                    field: ApplicationFieldBindingLocus::new(
+                        input.text()?,
+                        input.text()?,
+                        input.text()?,
+                    ),
+                    binding: WorthQueryPortableTypeIdentity::from_untrusted(
+                        input.text()?.to_owned(),
+                    ),
+                    scalar_family: super::super::foundational_aspect::decode_scalar_type(input)?,
+                },
                 1 => {
                     let field = ApplicationFieldBindingLocus::new(
                         input.text()?,

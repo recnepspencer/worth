@@ -26,34 +26,24 @@ impl<Schema: ApplicationSchema, Operation>
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
         match source {
+            Source::PrincipalIdentity { field, .. } => {
+                let principal = self.body_principal_identity(field)?;
+                self.scalar_requirement_operand(
+                    &principal, source, field, false, execution, context,
+                )
+            }
             Source::Field {
                 field,
                 presence_only,
                 ..
-            } => {
-                let locator = self
-                    .tracked_body_locator(identity, field)
-                    .map_err(HandlerExecutionDenial::new)?;
-                self.reader.body_scalar_observe(identity, &locator, |raw| {
-                    let bytes = if *presence_only {
-                        0
-                    } else {
-                        raw.map_or(0, |raw| raw.semantic_byte_width())
-                    };
-                    let bytes = u64::try_from(bytes).map_err(|_| overflow())?;
-                    context
-                        .checkpoint(bytes.saturating_add(1))
-                        .map_err(stopped)?;
-                    let reservation = execution.reserve(bytes).map_err(|cause| {
-                        HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
-                    })?;
-                    let value = field_value(source, raw)?;
-                    Ok(PreparedRequirementOperand {
-                        value,
-                        _reservation: reservation,
-                    })
-                })
-            }
+            } => self.scalar_requirement_operand(
+                identity,
+                source,
+                field,
+                *presence_only,
+                execution,
+                context,
+            ),
             Source::RelatedItemCount {
                 relation,
                 from,
@@ -101,6 +91,38 @@ impl<Schema: ApplicationSchema, Operation>
                 })
             }
         }
+    }
+
+    fn scalar_requirement_operand<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        source: &Source,
+        field: &worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus,
+        presence_only: bool,
+        execution: &QueryRequestExecution<'_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
+        let locator = self
+            .tracked_body_locator(identity, field)
+            .map_err(HandlerExecutionDenial::new)?;
+        self.reader.body_scalar_observe(identity, &locator, |raw| {
+            let bytes = if presence_only {
+                0
+            } else {
+                raw.map_or(0, |raw| raw.semantic_byte_width())
+            };
+            let bytes = u64::try_from(bytes).map_err(|_| overflow())?;
+            context
+                .checkpoint(bytes.saturating_add(1))
+                .map_err(stopped)?;
+            let reservation = execution.reserve(bytes).map_err(|cause| {
+                HandlerExecutionDenial::new(WorthQueryAdvancementDenial::Resource(cause))
+            })?;
+            Ok(PreparedRequirementOperand {
+                value: field_value(source, raw)?,
+                _reservation: reservation,
+            })
+        })
     }
 }
 

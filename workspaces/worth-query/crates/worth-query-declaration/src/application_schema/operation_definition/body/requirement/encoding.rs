@@ -52,6 +52,28 @@ impl ApplicationOperationBodyRequirementProgram {
                         Direction::Incoming => "incoming",
                     });
                 }
+                Source::PrincipalIdentity {
+                    scope,
+                    mutation_binding,
+                    principal_binding,
+                    field,
+                    binding,
+                    scalar_family,
+                } => {
+                    part("admitted-principal-identity");
+                    for value in [
+                        scope.as_str(),
+                        mutation_binding.as_str(),
+                        principal_binding.as_str(),
+                        field.entity(),
+                        field.aspect(),
+                        field.field(),
+                        binding.as_str(),
+                        scalar_family.canonical_name(),
+                    ] {
+                        part(value);
+                    }
+                }
             }
         }
         part(if self.applicability().is_some() {

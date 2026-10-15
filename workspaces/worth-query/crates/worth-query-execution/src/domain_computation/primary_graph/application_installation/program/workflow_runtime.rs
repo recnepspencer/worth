@@ -56,6 +56,8 @@ where
         if workflow.program_revision() != self.program.revision() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
+        self.install_signing_owner(*workflow.program_revision(), authentication.clone())
+            .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
         self.runtime
             .workflow_coverage
             .register(workflow.adoption_coverage())
@@ -117,6 +119,7 @@ where
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowRuntimeBindingDenial {
+    SigningOwner(super::WorthQuerySigningOwnerInstallationDenial),
     ForeignSchema,
     ForeignProgram,
     ForeignAuthenticationOwner,

@@ -32,6 +32,15 @@ where
     ) {
         return Err(WorthQueryProgramMigrationPreparationDenial::ForeignCandidate);
     }
+    // Adoption lowers effects without ordinary signing publication. A signed
+    // body must never lose its deferred slot/proof by entering that lane.
+    if program.read_set.signed_creation.is_some() {
+        return Err(
+            WorthQueryProgramMigrationPreparationDenial::UnsupportedPosture(
+                "program migration cannot publish signed creations",
+            ),
+        );
+    }
     let WorthQueryApplicationEffectProgram {
         read_set,
         effects,

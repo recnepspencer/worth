@@ -99,11 +99,12 @@ pub(crate) fn validate_operation_bodies(
                         || !members.iter().any(|member| {
                             matches!(member, ApplicationSchemaMember::Field {
                                 entity, aspect, field, scalar_family, value_type,
-                                unit, presence: ApplicationFieldPresence::Required, ..
+                                unit, presence, ..
                             } if entity == source.entity() && aspect == source.aspect()
                                 && field == source.field()
                                 && value_type == step.binding().as_str()
                                 && *scalar_family == step.scalar_family()
+                                && Some(*presence) == step.source_presence()
                                 && target_unit == Some(unit))
                         })
                         || !members.iter().any(|member| {
@@ -112,6 +113,11 @@ pub(crate) fn validate_operation_bodies(
                             } if candidate == operation && Some(target.clone()) == step.source_read())
                         })
                     {
+                        return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
+                    }
+                    if matches!(step, super::ApplicationOperationBodyCreatedField::PresentScopeField { .. })
+                        && !members.iter().any(|member| matches!(member, ApplicationSchemaMember::Field { entity, aspect, field, presence: ApplicationFieldPresence::Required, .. }
+                            if entity == locus.entity() && aspect == locus.aspect() && field == locus.field())) {
                         return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
                     }
                 }
@@ -213,7 +219,7 @@ pub(crate) fn validate_operation_bodies(
             }
         }
     }
-    Ok(())
+    super::signing_validation::validate_signed_creations(members)
 }
 
 #[cfg(test)]

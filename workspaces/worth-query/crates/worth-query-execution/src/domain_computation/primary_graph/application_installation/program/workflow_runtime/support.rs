@@ -56,6 +56,9 @@ where
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignProgram);
         }
         self.runtime
+            .install_signing_owner(*revision, self.authentication.clone())
+            .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
+        self.runtime
             .runtime
             .workflow_coverage
             .register(workflow.adoption_coverage())

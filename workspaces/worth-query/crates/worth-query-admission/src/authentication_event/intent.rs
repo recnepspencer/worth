@@ -4,8 +4,6 @@ use std::time::Duration;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity;
 
-const MAX_PURPOSE_BYTES: usize = 256;
-
 /// Exact signing meaning supplied by the approval owner, not an authority token.
 /// The approval owner must derive both digests from its canonical proposal and
 /// subject/dependency coverage before comparing them at the signing handoff.
@@ -22,14 +20,12 @@ impl WorthQueryAuthenticationEventIntent {
         signing_intent: CanonicalDigestId,
         subject_coverage: CanonicalDigestId,
     ) -> Result<Self, WorthQueryAuthenticationEventPolicyDenial> {
-        let purpose = purpose.into();
-        if purpose.is_empty()
-            || purpose.trim() != purpose
-            || purpose.len() > MAX_PURPOSE_BYTES
-            || purpose.chars().any(char::is_control)
-        {
-            return Err(WorthQueryAuthenticationEventPolicyDenial::InvalidPurpose);
-        }
+        let purpose =
+            worth_query_declaration::facade::authentication::WorthQueryAuthenticationPurpose::new(
+                purpose,
+            )
+            .map_err(|_| WorthQueryAuthenticationEventPolicyDenial::InvalidPurpose)?
+            .into_string();
         Ok(Self {
             purpose,
             signing_intent,

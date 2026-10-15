@@ -18,6 +18,7 @@ pub use body::{
     ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
     ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
     ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
+    ApplicationOperationBodySigningSpec,
 };
 pub(crate) use builder::AftermathAssociationAuthority;
 pub use builder::ApplicationOperationDefinitionBuilder;

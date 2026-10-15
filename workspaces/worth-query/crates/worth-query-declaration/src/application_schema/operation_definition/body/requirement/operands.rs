@@ -35,6 +35,14 @@ pub enum ApplicationOperationBodyRequirementSource {
         to: String,
         direction: ApplicationOperationBodyRequirementDirection,
     },
+    PrincipalIdentity {
+        scope: String,
+        mutation_binding: String,
+        principal_binding: String,
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+    },
 }
 
 /// One named source in a requirement's Foundation operand schema.
@@ -60,6 +68,7 @@ impl ApplicationOperationBodyRequirementSource {
     pub fn scope_entity(&self) -> &str {
         match self {
             Self::Field { field, .. } => field.entity(),
+            Self::PrincipalIdentity { scope, .. } => scope,
             Self::RelatedItemCount {
                 from,
                 to,
@@ -73,11 +82,13 @@ impl ApplicationOperationBodyRequirementSource {
     }
     pub fn decision_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
         match self {
-            Self::Field { field, .. } => vec![ApplicationOperationDecisionReadTarget::Field {
-                entity: field.entity().to_owned(),
-                aspect: field.aspect().to_owned(),
-                field: field.field().to_owned(),
-            }],
+            Self::Field { field, .. } | Self::PrincipalIdentity { field, .. } => {
+                vec![ApplicationOperationDecisionReadTarget::Field {
+                    entity: field.entity().to_owned(),
+                    aspect: field.aspect().to_owned(),
+                    field: field.field().to_owned(),
+                }]
+            }
             Self::RelatedItemCount {
                 relation, from, to, ..
             } => vec![
@@ -97,16 +108,21 @@ impl ApplicationOperationBodyRequirementSource {
         &self,
     ) -> Result<ExpressionType, ApplicationOperationBodyRequirementDenial> {
         use ScalarAspectType as Scalar;
-        let Self::Field {
-            scalar_family,
-            presence,
-            presence_only,
-            ..
-        } = self
-        else {
-            return Ok(ExpressionType::Integer(IntegerType::UInt64));
+        let (scalar_family, presence, presence_only) = match self {
+            Self::Field {
+                scalar_family,
+                presence,
+                presence_only,
+                ..
+            } => (*scalar_family, *presence, *presence_only),
+            Self::PrincipalIdentity { scalar_family, .. } => {
+                (*scalar_family, ApplicationFieldPresence::Required, false)
+            }
+            Self::RelatedItemCount { .. } => {
+                return Ok(ExpressionType::Integer(IntegerType::UInt64))
+            }
         };
-        if *presence_only {
+        if presence_only {
             return Ok(ExpressionType::Bool);
         }
         let ty = match scalar_family {
@@ -125,7 +141,7 @@ impl ApplicationOperationBodyRequirementSource {
             Scalar::String => ExpressionType::String,
             _ => return Err(ApplicationOperationBodyRequirementDenial::UnsupportedScalar),
         };
-        Ok(if *presence == ApplicationFieldPresence::Optional {
+        Ok(if presence == ApplicationFieldPresence::Optional {
             ExpressionType::option(ty)
         } else {
             ty

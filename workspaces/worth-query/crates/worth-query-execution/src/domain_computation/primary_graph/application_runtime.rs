@@ -170,6 +170,7 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) workflow_guarded_operations: std::collections::HashSet<TypeId>,
     pub(super) program_support:
         Option<super::program_occurrence::WorthQueryInstalledProgramSupport<Schema>>,
+    pub(super) signing_owners: std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:

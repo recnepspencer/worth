@@ -135,7 +135,7 @@ impl<Schema, Operation> ApplicationOperationBodyRequirementOperands<Schema, Oper
         )
     }
 
-    fn push(mut self, name: &str, source: Source) -> Result<Self, Denial> {
+    pub(super) fn push(mut self, name: &str, source: Source) -> Result<Self, Denial> {
         source.expression_type()?;
         if self.operands.iter().any(|operand| operand.name() == name) {
             return Err(Denial::DuplicateOperand);

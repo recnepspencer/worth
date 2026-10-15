@@ -56,9 +56,58 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .flat_map(|requirement| requirement.operands())
             .map(|operand| operand.source())
         {
-            if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::Field { field, binding, scalar_family, .. } = source {
-                let installed_binding = schema.value_bindings().field(field.entity(), field.aspect(), field.field()).ok_or_else(denied)?;
-                if installed_binding.identity() != binding || installed_binding.scalar_family() != *scalar_family { return Err(denied()); }
+            use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;
+            if let Source::PrincipalIdentity {
+                scope,
+                mutation_binding,
+                principal_binding,
+                field,
+                binding,
+                scalar_family,
+            } = source
+            {
+                let principal = Binding::principal_binding();
+                if scope != Binding::scope_field().entity()
+                    || mutation_binding != Binding::IDENTITY
+                    || principal_binding != principal.name()
+                    || field.entity() != principal.principal_entity()
+                    || field.aspect() != principal.principal_identity_aspect()
+                    || field.field() != principal.principal_identity_field()
+                    || binding.as_str() != principal.principal_identity_value_type()
+                    || *scalar_family != principal.principal_identity_scalar_family()
+                {
+                    return Err(denied());
+                }
+                let installed_binding = schema
+                    .value_bindings()
+                    .field(field.entity(), field.aspect(), field.field())
+                    .ok_or_else(denied)?;
+                if installed_binding.unit().is_some() {
+                    return Err(denied());
+                }
+            }
+            if let Source::Field {
+                field,
+                binding,
+                scalar_family,
+                ..
+            }
+            | Source::PrincipalIdentity {
+                field,
+                binding,
+                scalar_family,
+                ..
+            } = source
+            {
+                let installed_binding = schema
+                    .value_bindings()
+                    .field(field.entity(), field.aspect(), field.field())
+                    .ok_or_else(denied)?;
+                if installed_binding.identity() != binding
+                    || installed_binding.scalar_family() != *scalar_family
+                {
+                    return Err(denied());
+                }
             }
         }
         for step in body.scope_fields() {

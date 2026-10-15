@@ -27,13 +27,17 @@ use super::super::{
 
 /// The rostered program one occurrence resolved to, together with the exact
 /// stored rendering the attempt observed.
-pub(super) struct WorthQueryOccurrenceProgram<'support> {
+pub(in crate::domain_computation::primary_graph::application_attempt) struct WorthQueryOccurrenceProgram<
+    'support,
+> {
     entry: &'support WorthQueryProgramSupportEntry,
     rendering: AspectValue,
 }
 
 impl<'support> WorthQueryOccurrenceProgram<'support> {
-    pub(super) const fn entry(&self) -> &'support WorthQueryProgramSupportEntry {
+    pub(in crate::domain_computation::primary_graph::application_attempt) const fn entry(
+        &self,
+    ) -> &'support WorthQueryProgramSupportEntry {
         self.entry
     }
 
@@ -90,7 +94,13 @@ pub(super) fn require_occurrence_acts_through<Operation: 'static>(
 /// published, cannot be read, or names no rostered program is refused, each
 /// under its own named cause: a host that cannot attribute work to admitted
 /// meaning must not perform it.
-pub(super) fn resolve_occurrence_program<'support, Schema, Operation, Input, Scope>(
+pub(in crate::domain_computation::primary_graph::application_attempt) fn resolve_occurrence_program<
+    'support,
+    Schema,
+    Operation,
+    Input,
+    Scope,
+>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     support: &'support WorthQueryInstalledProgramSupport<Schema>,
     program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,

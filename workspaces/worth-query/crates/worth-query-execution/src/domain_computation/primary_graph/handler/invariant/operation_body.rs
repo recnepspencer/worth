@@ -134,6 +134,9 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     > {
         self.checkpoint().map_err(HandlerExecutionDenial::new)?;
         self.context_use.set(self.context_use.get().scope());
+        if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand| matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::PrincipalIdentity { .. })) {
+            let _ = self.principal_identity();
+        }
         super::super::super::operation_body::evaluate_requirements(
             self.reader,
             self.scope,

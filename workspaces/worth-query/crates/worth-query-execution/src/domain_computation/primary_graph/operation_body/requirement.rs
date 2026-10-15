@@ -82,7 +82,8 @@ impl WorthQueryOperationBodyRequirementFinding {
         status: WorthQueryOperationBodyRequirementStatus,
     ) -> Self {
         let target = match requirement.target() {
-            ApplicationOperationBodyRequirementSource::Field { field, .. } => {
+            ApplicationOperationBodyRequirementSource::Field { field, .. }
+            | ApplicationOperationBodyRequirementSource::PrincipalIdentity { field, .. } => {
                 WorthQueryOperationBodyRequirementTarget::Field(field.clone())
             }
             ApplicationOperationBodyRequirementSource::RelatedItemCount {

@@ -295,6 +295,7 @@ where
                 identities,
                 extension,
                 decision_work: _,
+                principal: _,
             } = candidate;
             let commit_binding = WorthQueryMutationCommitBinding::new(&identities, extension);
             Ok(
