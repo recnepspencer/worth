@@ -38,7 +38,7 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
     type Decision = WorthQueryOperationBodyDecision<DocumentRetentionSchema<MODE>, Tenant>;
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = BodyDenialBinding;
-    type Output = NoApplicationMutationOutputs;
+    type Output = super::super::output::CreatedOutputs<MODE>;
     type ScopeBinding = ApplicationMutationFieldScope<
         DocumentRetentionSchema<MODE>,
         Tenant,
@@ -88,14 +88,14 @@ impl<const MODE: u64> ApplicationMutationBinding<DocumentRetentionSchema<MODE>>
 }
 #[derive(Clone)]
 pub struct CreateIntent(pub CreateInput);
-impl ApplicationMutationIntent<DocumentRetentionSchema<30>> for CreateIntent {
-    type Binding = CreateBinding<30>;
+impl<const MODE: u64> ApplicationMutationIntent<DocumentRetentionSchema<MODE>> for CreateIntent {
+    type Binding = CreateBinding<MODE>;
     fn input(&self) -> &CreateInput {
         &self.0
     }
     fn scope_binding(
         &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<DocumentRetentionSchema<30>>>::ScopeBinding
+    ) -> <Self::Binding as ApplicationMutationBinding<DocumentRetentionSchema<MODE>>>::ScopeBinding
     {
         ApplicationMutationFieldScope::new(TenantIdentity::reference(), self.0.tenant)
     }

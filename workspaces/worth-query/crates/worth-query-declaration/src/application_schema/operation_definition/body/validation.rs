@@ -31,6 +31,7 @@ pub(crate) fn validate_operation_bodies(
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
         }
         super::requirement::validate_requirements(operation, body, members)?;
+        super::output_validation::validate_outputs(operation, body, members)?;
         let mut writes = BTreeSet::new();
         for step in body.scope_fields() {
             if step.field().entity() != scope {
@@ -148,7 +149,7 @@ pub(crate) fn validate_operation_bodies(
                 }
             }
         }
-        if writes.is_empty() && body.creation().is_none() {
+        if writes.is_empty() && body.creation().is_none() && body.outputs().is_empty() {
             return Err(ApplicationSchemaDeclarationDenial::MissingOperationProgramDependency);
         }
         if !members.iter().any(|member| {

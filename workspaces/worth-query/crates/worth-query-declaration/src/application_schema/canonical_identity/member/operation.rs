@@ -15,7 +15,9 @@ pub(super) fn append_body(
     append_operation_header(
         basis,
         prefix,
-        if body.has_optional_inputs() {
+        if !body.outputs().is_empty() {
+            "operation-body-v8"
+        } else if body.has_optional_inputs() {
             "operation-body-v7"
         } else if body.explicit_scope_entity().is_some() || body.is_creation_only() {
             "operation-body-v6"
@@ -43,6 +45,15 @@ pub(super) fn append_body(
         },
         operation,
     );
+    if !body.outputs().is_empty() {
+        basis.usize(format!("{prefix}.outputs"), body.outputs().len());
+        for (index, output) in body.outputs().iter().enumerate() {
+            basis.text(
+                format!("{prefix}.output[{index}]"),
+                &output.canonical_record(),
+            );
+        }
+    }
     if body.explicit_scope_entity().is_some() || body.is_creation_only() {
         basis.text(
             format!("{prefix}.scope-entity"),

@@ -23,6 +23,8 @@ mod input;
 mod input_selection;
 #[path = "operation_body/optional_input.rs"]
 mod optional_input;
+#[path = "operation_body/output.rs"]
+mod output;
 #[path = "operation_body/persistence.rs"]
 mod persistence;
 #[path = "operation_body/program.rs"]
@@ -35,6 +37,8 @@ mod replacement;
 mod requirement;
 #[path = "operation_body/requirement_control.rs"]
 mod requirement_control;
+#[path = "operation_body/retention_body.rs"]
+mod retention_body;
 #[path = "operation_body/schema.rs"]
 mod schema;
 
@@ -92,7 +96,7 @@ fn install_with_projection<const DESTINATION: u64>() -> (
                 operator_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
-            if DESTINATION == 30 {
+            if matches!(DESTINATION, 30 | 31) {
                 graph.bind_entity(
                     WorthQueryApplicationEntitySeed::new(
                         genesis::declaration::Tenant::reference(),

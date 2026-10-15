@@ -13,6 +13,9 @@ values; the host does not choose a handler that independently restates them.
 An operation may declare presence requirements or Boolean Foundation expressions
 over typed scope fields and related-item counts. The same installed requirements
 drive admission and authorized read-only guidance.
+Fixed typed output roles may preserve the admitted scope or identify the body's
+created row through Query's existing commit correspondence. A preservation-only
+body needs no dummy business-field write.
 This remains a bounded body form; it does not dispatch workflow commands.
 
 ## Why You Use It
@@ -47,6 +50,8 @@ Declare through `worth_query_decl::facade::application_schema`:
   `.initialize_from_scope(source_field, created_field)` and `.finish()`;
 - `creation.initialize_optional_input(optional_field, "member")` to initialize
   the new field for Some and leave it absent for None;
+- `body.preserve_scope_output::<Binding, Role>()` and
+  `creation.create_output::<Binding, Role>()` for fixed typed output correspondence;
 - a completed operation definition's `with_body(body)`;
 - `ApplicationProgramAuthoring::begin().with_schema(&schema).validated_program()`.
 
@@ -184,7 +189,7 @@ in the existing admitted scope's context, checks that all required created
 fields are initialized, and charges creation and initializers to the same
 candidate. An operation's candidate ceiling must admit that creation and its
 writes. Creation is attached before the complete body is validated: a bare scope,
-expectations, or requirements without a creation or scope assignment cannot
+expectations, or requirements without a creation, scope assignment or output use cannot
 finish. `initialize_from_scope` requires a required scalar source field in the
 admitted scope with `OperationReads<Operation>`, a target with the same Rust value,
 unit, exact installed codec and scalar family, and an admitted tracked decision
@@ -192,6 +197,18 @@ read. Query captures the source at the decision snapshot before any candidate
 write, reserves its retained value on the request, and holds that reservation
 through candidate initialization. Missing source or changed source dependency
 denies/stales through the ordinary owners; the host cannot supply a before-image.
+
+An output use names a role of the exact binding's `Output` contract. The compiler
+checks operation/input, schema, contract, entity and posture, including the role's
+declared inventory. Fresh readmission checks the complete binding/role tuple and
+target slot. Installation rebinds contract identity from the typed binding and
+entity identity from installed marker provenance; portable labels grant nothing.
+Every required fixed role must be supplied. Optional fixed roles may remain absent;
+mandatory role families are refused because this body form cannot produce members.
+The existing candidate owner binds and validates the role, and Relational's actual
+commit resolves a creation slot to its durable entity identity. No host manufactures
+an output receipt. A preservation-only body observes scope Entity kind/liveness
+through the decision-read owner even though it has no scalar reads or writes.
 
 Publication uses ordinary currentness, authorization, invariant and commit
 machinery. A changed dependency can stale an already prepared candidate. A failed
@@ -321,6 +338,32 @@ For an optional description on that new document, add
 `.initialize_optional_input(Description::reference(), "description")` before
 `finish()`. No dummy empty value needs to be initialized first.
 
+To expose its actual committed identity, give `CreateDocumentBinding::Output` a
+fixed role whose Entity is Document and Action is `WorthQueryCreateOutput`, then
+add `.create_output::<CreateDocumentBinding, CreatedDocument>()?` to that creation
+builder. On the real commit receipt, read
+`receipt.outputs_of::<CreateOutputs>()?.entity::<CreatedDocument>()?`.
+ExactlyOne yields the typed entity directly; AtMostOne yields Option. Neither a
+business identity nor the symbolic creation slot substitutes for this reference.
+
+A conditional assessment publisher can keep its pure producer kernel and native
+source/settlement contract while declaring the effect itself:
+
+```rust
+let body = PublishAssessment::reference().body()
+    .set_optional_input(DescriptionPresent::reference(), "description_present")?
+    .preserve_scope_output::<PublishBinding, FindingOutput>()?
+    .finish()?;
+```
+
+Here `FindingOutput` belongs to `PublishBinding::Output`, names its scope entity,
+and has Action `WorthQueryPreserveOutput`. The producer computes the input, not
+the effects. The body publishes through Query; the existing demand settlement
+owns currentness and reuse. A stored finding or a preserved entity reference
+alone is not settled/current assessment evidence. For correspondence alone,
+use `.in_scope(Document::reference())?.preserve_scope_output::<Binding, Role>()?`
+without a scalar assignment; do not manufacture a counter increment.
+
 For a conditional collection minimum, assume an optional Boolean
 `ReviewEnabledField` and a `Validators` relation from the admitted document.
 Declare their normal `OperationReads` capabilities, then author:
@@ -365,6 +408,8 @@ carriage keeps its previous bytes; an older record cannot silently acquire the
 new creation-only semantics.
 Optional-input assignment and initialization use portable body record v9.
 Older versions reject those opcodes rather than reinterpret their intent.
+Fixed output uses select portable body record v10; valid no-output v1–v9 records
+retain their previous bytes. Their meaning enters both schema and program identity.
 
 Workflow occurrence authority and approval evidence remain separate. A source
 expectation is not an approval, signature or general evaluated requirement, and
@@ -403,8 +448,11 @@ initialization, operation-specific presence requirements,
 and Foundation Boolean requirements over scope scalar/presence and distinct
 incoming/outgoing related-item count operands, plus
 one in-context created entity with literal, flat-input, or tracked scope-preimage
-initializers. It requires
-at least one real creation or scope assignment and unit results. Optional literal assignments,
+initializers, plus fixed Preserve-scope/Create-slot output uses. It requires
+at least one real creation, scope assignment or output use and unit results.
+Output roles are binding-affine; a body cannot silently reinterpret one binding's
+roles under another binding with matching names. Arbitrary target selection,
+Retire and role-family member uses are unsupported. Optional literal assignments,
 general input/source assignments, filtered collections, governed-query operands,
 custom expression kernels, multiple creations, links, signature consequences and command
 continuation are not implemented here.

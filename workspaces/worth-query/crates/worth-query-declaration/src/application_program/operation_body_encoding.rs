@@ -6,6 +6,28 @@ use crate::application_schema::{
 };
 
 pub(super) fn operation_body_record(body: &ApplicationOperationBodyProgram) -> String {
+    let record = operation_body_optional_record(body);
+    if body.outputs().is_empty() {
+        return record;
+    }
+    framed_record(
+        "operation-body-v9",
+        [
+            ("body", record),
+            (
+                "outputs",
+                framed_record(
+                    "outputs-v1",
+                    body.outputs()
+                        .iter()
+                        .map(|output| ("output", output.canonical_record())),
+                ),
+            ),
+        ],
+    )
+}
+
+fn operation_body_optional_record(body: &ApplicationOperationBodyProgram) -> String {
     let record = operation_body_scope_record(body);
     if body.has_optional_inputs() {
         framed_record("operation-body-v8", [("body", record)])

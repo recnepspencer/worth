@@ -137,6 +137,7 @@ pub struct ApplicationOperationBodyProgram {
     pub(super) scope_fields: Vec<ApplicationOperationBodyScopeField>,
     pub(super) creation: Option<ApplicationOperationBodyCreation>,
     pub(super) requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
+    pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
 }
 
 /// One typed, candidate-local creation site in the admitted scope's context.
@@ -271,6 +272,7 @@ impl ApplicationOperationBodyProgram {
             scope_fields,
             creation: None,
             requirements: Vec::new(),
+            outputs: Vec::new(),
         }
     }
     pub fn from_untrusted_with_creation(
@@ -282,6 +284,7 @@ impl ApplicationOperationBodyProgram {
             scope_fields,
             creation,
             requirements: Vec::new(),
+            outputs: Vec::new(),
         }
     }
     pub fn from_untrusted_with_requirements(
@@ -294,6 +297,7 @@ impl ApplicationOperationBodyProgram {
             scope_fields,
             creation,
             requirements,
+            outputs: Vec::new(),
         }
     }
     /// Authority-free scope-bound description. Fresh readmission checks the scope
@@ -312,10 +316,22 @@ impl ApplicationOperationBodyProgram {
             scope_fields,
             creation,
             requirements,
+            outputs: Vec::new(),
         }
     }
     pub fn explicit_scope_entity(&self) -> Option<&str> {
         self.explicit_scope.as_deref()
+    }
+    /// Untrusted output descriptions must be admitted with their mutation contract.
+    pub fn with_untrusted_outputs(
+        mut self,
+        outputs: Vec<super::ApplicationOperationBodyOutput>,
+    ) -> Self {
+        self.outputs = outputs;
+        self
+    }
+    pub fn outputs(&self) -> &[super::ApplicationOperationBodyOutput] {
+        &self.outputs
     }
     /// Creation changes no existing scope field; guards and requirements may read it.
     pub fn is_creation_only(&self) -> bool {

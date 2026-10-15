@@ -9,6 +9,7 @@ pub use body::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
     ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
     ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
+    ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
     ApplicationOperationBodyProgram, ApplicationOperationBodyRequirement,
     ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
     ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,

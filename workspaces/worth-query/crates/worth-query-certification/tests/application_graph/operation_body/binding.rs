@@ -26,7 +26,7 @@ impl<const DESTINATION: u64> ApplicationMutationBinding<DocumentRetentionSchema<
     type Decision = WorthQueryOperationBodyDecision<DocumentRetentionSchema<DESTINATION>, Document>;
     type Denial = WorthQueryOperationBodyDenial;
     type DenialBinding = BodyDenialBinding;
-    type Output = NoApplicationMutationOutputs;
+    type Output = super::output::ScopeOutputs<DESTINATION>;
     type ScopeBinding = ApplicationMutationFieldScope<
         DocumentRetentionSchema<DESTINATION>,
         Document,

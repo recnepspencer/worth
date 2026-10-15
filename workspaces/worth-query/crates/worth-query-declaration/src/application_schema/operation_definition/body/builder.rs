@@ -18,6 +18,7 @@ pub struct ApplicationOperationBodyBuilder<Schema, Operation, Input> {
     scope: Option<String>,
     steps: Vec<ApplicationOperationBodyScopeField>,
     requirements: Vec<super::ApplicationOperationBodyRequirementProgram>,
+    pub(super) outputs: Vec<super::ApplicationOperationBodyOutput>,
     marker: PhantomData<fn(Input) -> (Schema, Operation)>,
 }
 
@@ -29,6 +30,7 @@ impl<Schema, Operation, Input> ApplicationOperationRef<Schema, Operation, Input>
             scope: None,
             steps: Vec::new(),
             requirements: Vec::new(),
+            outputs: Vec::new(),
             marker: PhantomData,
         }
     }
@@ -134,7 +136,7 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
         {
             return Err(ApplicationOperationBodyAuthoringDenial::MultipleScopeEntities);
         }
-        if writes.is_empty() && creation.is_none() {
+        if writes.is_empty() && creation.is_none() && self.outputs.is_empty() {
             return Err(ApplicationOperationBodyAuthoringDenial::Empty);
         }
         Ok(ApplicationOperationBody {
@@ -143,7 +145,8 @@ impl<Schema, Operation, Input> ApplicationOperationBodyBuilder<Schema, Operation
                 self.steps,
                 creation,
                 self.requirements,
-            ),
+            )
+            .with_untrusted_outputs(self.outputs),
             marker: PhantomData,
         })
     }

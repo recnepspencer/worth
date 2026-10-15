@@ -130,6 +130,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             }
         }
         Ok(Self {
+            outputs: super::output::install_outputs::<Schema, Binding>(schema, body)?,
             body: body.clone(),
             marker: PhantomData,
             input_bindings,

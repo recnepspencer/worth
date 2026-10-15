@@ -2,12 +2,15 @@
 
 mod builder;
 mod creation;
+mod output;
+mod output_validation;
 mod program;
 mod requirement;
 mod validation;
 
 pub use builder::ApplicationOperationBodyBuilder;
 pub use creation::ApplicationOperationBodyCreationBuilder;
+pub use output::{ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget};
 pub use program::{
     ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
     ApplicationOperationBodyProgram, ApplicationOperationBodyScopeField,
@@ -42,6 +45,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     InvalidCreationKey,
     IncompatibleSourceBinding,
     ForeignSourceEntity,
+    IncompatibleOutput,
     Requirement(ApplicationOperationBodyRequirementDenial),
 }
 

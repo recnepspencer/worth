@@ -1,4 +1,5 @@
 //! Execution-only native body write into the existing candidate owner.
+use super::OutputRoleUse;
 use super::{
     ApplicationMutationBinding, ApplicationSchema, CandidateWriter,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectEntity,
@@ -9,6 +10,13 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>
 {
+    pub(in crate::domain_computation::primary_graph) fn body_output<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        role: OutputRoleUse,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.bind_output(role, target)
+    }
     pub(in crate::domain_computation::primary_graph) fn body_input_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,

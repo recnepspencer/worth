@@ -6,6 +6,8 @@ use worth_foundational::facade::{AspectValue, ScalarAspectType};
 mod genesis;
 #[path = "tests/optional_input.rs"]
 mod optional_input;
+#[path = "tests/outputs.rs"]
+mod outputs;
 #[path = "tests/requirements.rs"]
 mod requirements;
 
@@ -32,7 +34,7 @@ fn operation_body_false_literal_roundtrips_and_unknown_version_is_refused() {
     .unwrap();
     assert_eq!(decode(&mut input, &mut budget).unwrap(), body);
     assert!(input.is_finished());
-    bytes[..2].copy_from_slice(&10_u16.to_be_bytes());
+    bytes[..2].copy_from_slice(&11_u16.to_be_bytes());
     let mut budget = RecordDecodeAttempt::begin(
         Default::default(),
         bytes.len() as u64,

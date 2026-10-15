@@ -19,7 +19,7 @@ worth_query_operation_writes!(CreateDocument => [DocumentIdentityField, Document
 pub(in super::super) fn declare<const MODE: u64>(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<MODE>>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<MODE>> {
-    if MODE != 30 {
+    if !matches!(MODE, 30 | 31) {
         return schema;
     }
     let body = CreateDocument::reference()
@@ -35,9 +35,13 @@ pub(in super::super) fn declare<const MODE: u64>(
         .initialize_input(DocumentRetentionField::reference(), "retention_days")
         .unwrap()
         .initialize(DocumentAuditSourceField::reference(), 7)
-        .unwrap()
-        .finish()
         .unwrap();
+    let body = if MODE == 31 {
+        body.create_output::<super::binding::CreateBinding<MODE>, super::super::output::CreatedOutput<MODE>>().unwrap()
+    } else {
+        body
+    };
+    let body = body.finish().unwrap();
     schema
         .entity(Tenant::reference())
         .aspect(Tenant::reference(), TenantFacts::reference())

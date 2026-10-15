@@ -426,7 +426,13 @@ Option-valued replacement/initialization, tracked
 preimage initializers and field/count expression requirements enter canonical
 schema/program meaning and drive native tracked execution. A replacement handler
 is denied. A creation-only body declares `in_scope(Entity::reference())`; it does
-not need a dummy scope write or bootstrapped business entity. Guidance and native
+not need a dummy scope write or bootstrapped business entity. Fixed output uses
+`preserve_scope_output::<Binding, Role>()` and creation `create_output::<Binding, Role>()`
+bind the exact typed output contract through the existing candidate/commit owner.
+Output-only scope preservation observes Entity membership and needs no dummy write.
+Portable output labels never grant native authority; mandatory uncovered roles
+and unsupported mandatory families deny. Producer/source/settlement currentness
+remain separate owners. Guidance and native
 submission share the installed requirements. General assignment expressions,
 multiple creations, links, signature consequences and multi-operation commands
 remain unsupported here; do not fill those missing joins with a host substitute

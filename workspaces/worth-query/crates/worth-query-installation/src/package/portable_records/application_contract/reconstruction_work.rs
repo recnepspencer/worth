@@ -83,6 +83,15 @@ impl WorthQueryPortableApplicationOperationContractRecord {
             work.observe_text(reconciliation.procedure_slot());
         }
         if let Some(body) = &self.body {
+            for output in body.outputs() {
+                work.observe_text(&output.binding);
+                work.observe_text(&output.role.name);
+                work.observe_text(&output.role.entity);
+                work.observe_fixed(6);
+                if let worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { key } = &output.target {
+                    work.observe_text(key);
+                }
+            }
             if let Some(scope) = body.explicit_scope_entity() {
                 work.observe_text(scope);
             }

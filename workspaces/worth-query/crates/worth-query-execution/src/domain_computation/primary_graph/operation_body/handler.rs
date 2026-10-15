@@ -21,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) struct OperationBodyHandler<Sch
     pub(super) marker: PhantomData<fn() -> (Schema, Binding)>,
     pub(super) input_bindings:
         Vec<worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding>,
+    pub(super) outputs: Vec<super::output::InstalledBodyOutput>,
 }
 
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding> {
@@ -132,7 +133,7 @@ where
                                 aspect: source.aspect().to_owned(),
                                 field: source.field().to_owned(),
                             },
-                        )
+                        );
                     }
                     Err(cause) => return HandlerResult::ExecutionDenied(cause),
                 }
@@ -172,7 +173,7 @@ where
         let target = match writer.projected_entity(&decision.target) {
             Ok(target) => target,
             Err(cause) => {
-                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+                return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
             }
         };
         let mut prepared_inputs = decision.inputs;
@@ -221,12 +222,19 @@ where
                 }
             }
         }
+        for output in &self.outputs {
+            if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Scope) {
+                if let Err(cause) = writer.body_output(&target, output.role.clone()) {
+                    return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                }
+            }
+        }
         if let Some(creation) = self.body.creation() {
             let created =
                 match writer.body_create_in_scope(&target, creation.entity(), creation.key()) {
                     Ok(created) => created,
                     Err(cause) => {
-                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause))
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                     }
                 };
             for step in creation.fields() {
@@ -265,6 +273,13 @@ where
                     return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
                 }
                 drop(source_reservation);
+            }
+            for output in &self.outputs {
+                if matches!(output.target, worth_query_declaration::facade::application_schema::ApplicationOperationBodyOutputTarget::Creation { .. }) {
+                    if let Err(cause) = writer.body_output(&created, output.role.clone()) {
+                        return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause));
+                    }
+                }
             }
         }
         HandlerResult::Completed(())

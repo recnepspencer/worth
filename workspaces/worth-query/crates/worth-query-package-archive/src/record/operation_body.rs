@@ -4,6 +4,7 @@ use super::{
     sequence::{decode_sequence, write_sequence},
 };
 
+mod outputs;
 mod requirements;
 #[cfg(test)]
 mod tests;
@@ -28,7 +29,9 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body.has_optional_inputs() {
+    let version = if !body.outputs().is_empty() {
+        10
+    } else if body.has_optional_inputs() {
         9
     } else if scoped {
         8
@@ -167,6 +170,9 @@ pub(super) fn write(
     if version >= 7 {
         requirements::write(output, body.requirements())?;
     }
+    if version >= 10 {
+        outputs::write(output, body.outputs())?;
+    }
     Ok(())
 }
 
@@ -175,7 +181,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=9) {
+    if !matches!(version, 1..=10) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {
@@ -314,13 +320,19 @@ pub(super) fn decode(
     } else {
         Vec::new()
     };
+    let outputs = if version >= 10 {
+        outputs::decode(input, budget)?
+    } else {
+        Vec::new()
+    };
     if let Some(scope) = scope {
         Ok(ApplicationOperationBodyProgram::from_untrusted_in_scope(
             scope,
             steps,
             creation,
             requirements,
-        ))
+        )
+        .with_untrusted_outputs(outputs))
     } else {
         let body = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
             steps,

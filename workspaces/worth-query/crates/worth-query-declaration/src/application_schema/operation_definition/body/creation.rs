@@ -15,9 +15,9 @@ use super::{
 };
 
 pub struct ApplicationOperationBodyCreationBuilder<Schema, Operation, Input, Entity> {
-    parent: ApplicationOperationBodyBuilder<Schema, Operation, Input>,
+    pub(super) parent: ApplicationOperationBodyBuilder<Schema, Operation, Input>,
     entity: String,
-    key: String,
+    pub(super) key: String,
     fields: Vec<ApplicationOperationBodyCreatedField>,
     marker: PhantomData<fn() -> Entity>,
 }

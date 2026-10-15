@@ -26,61 +26,7 @@ impl<const DESTINATION: u64> ApplicationSchemaContribution<DocumentRetentionSche
     fn register_members(
         schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>>,
     ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<DESTINATION>> {
-        let authored_destination = if matches!(DESTINATION, 24..=29) {
-            20
-        } else {
-            DESTINATION
-        };
-        let body = SetRetention::reference::<DocumentRetentionSchema<DESTINATION>>()
-            .body()
-            .expect(DocumentRetentionField::reference(), 7)
-            .unwrap();
-        let body = if DESTINATION == 30 {
-            body.in_scope(Document::reference()).unwrap()
-        } else {
-            body
-        };
-        let body = if DESTINATION >= 100 {
-            body.assign_input(
-                DocumentRetentionField::reference(),
-                match DESTINATION {
-                    101 => "identity",
-                    102 => "missing",
-                    _ => "retention_days",
-                },
-            )
-            .unwrap()
-        } else {
-            body.assign(DocumentRetentionField::reference(), authored_destination)
-                .unwrap()
-        };
-        let body = if matches!(DESTINATION, 20 | 21 | 23..=29) {
-            let creation = body
-                .create_in_scope(Audit::reference(), "audit")
-                .unwrap()
-                .initialize_input(AuditIdentityField::reference(), "identity")
-                .unwrap()
-                .initialize(AuditRetentionField::reference(), authored_destination)
-                .unwrap();
-            let creation = if DESTINATION == 23 {
-                creation
-                    .initialize_from_scope(
-                        DocumentAuditSourceField::reference(),
-                        AuditPriorRetentionField::reference(),
-                    )
-                    .unwrap()
-            } else {
-                creation
-                    .initialize_from_scope(
-                        DocumentRetentionField::reference(),
-                        AuditPriorRetentionField::reference(),
-                    )
-                    .unwrap()
-            };
-            creation.finish().unwrap()
-        } else {
-            body.finish().unwrap()
-        };
+        let body = super::retention_body::body::<DESTINATION>();
         let schema = schema
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())
@@ -311,7 +257,7 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         match install {
             Installation::Native => {
-                if DESTINATION == 30 {
+                if matches!(DESTINATION, 30 | 31) {
                     setup
                         .operation_body::<super::genesis::binding::CreateBinding<DESTINATION>>()?;
                 }
@@ -358,7 +304,7 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
                 .mutation::<DraftBinding<DESTINATION, ClearDraftNote>>()
                 .mutation::<DraftBinding<DESTINATION, RequireDraftNote>>()
                 .mutation::<super::requirement_control::UnlinkBinding<DESTINATION>>();
-        let feature = if DESTINATION == 30 {
+        let feature = if matches!(DESTINATION, 30 | 31) {
             feature.mutation::<super::genesis::binding::CreateBinding<DESTINATION>>()
         } else {
             feature
