@@ -176,5 +176,8 @@ fn live_native_preparation_uses_the_active_appearance_and_cutover_protocol() {
 }
 
 fn parse(manifest: &str) -> toml::Value {
-    manifest.parse().expect("profile manifest parses")
+    manifest
+        .parse::<toml::Table>()
+        .map(toml::Value::Table)
+        .expect("profile manifest parses")
 }
