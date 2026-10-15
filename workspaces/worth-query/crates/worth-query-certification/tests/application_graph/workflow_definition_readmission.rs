@@ -2,8 +2,9 @@
 
 use super::document_retention_model::{
     host::{publish_workflow_on_first_program, restore_on_first_program, DocumentWorkflowRuntime},
-    programs::validated_second_program,
+    programs::{validated_second_program, OccurrenceAction, WorkflowOwnerProgram},
     retention_entry::OccurrenceSetRetentionBinding,
+    schema::DocumentRetentionSchema,
     workflow::{
         advance_instance, propose_authoring_instance_with_retention, publish_definition,
         retain_workflow, start_instance,
@@ -20,7 +21,13 @@ use worth_query_host::facade::{
     },
 };
 
-fn capture(application: &DocumentWorkflowRuntime) -> Vec<u8> {
+fn capture(
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            DocumentRetentionSchema,
+        >,
+    >,
+) -> Vec<u8> {
     application
         .with_host_advancement(|phase| {
             application
@@ -36,9 +43,17 @@ fn capture(application: &DocumentWorkflowRuntime) -> Vec<u8> {
         .unwrap()
 }
 
-fn restore(bytes: Vec<u8>) -> DocumentWorkflowRuntime {
+fn restore(bytes: Vec<u8>) -> DocumentWorkflowRuntime<WorkflowOwnerProgram> {
+    let program =
+        worth_query_host::facade::declaration::application_program::ApplicationProgramAuthoring::<
+            DocumentRetentionSchema,
+            WorkflowOwnerProgram,
+        >::begin()
+        .validated_program()
+        .unwrap();
     retain_workflow(
-        restore_on_first_program(
+        super::document_retention_model::host::restore(
+            program,
             WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
             WorthQueryApplicationProgramRoster::new().support(validated_second_program()),
         )
@@ -84,7 +99,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_authority_layou
     // is left intact and must not acquire the new workflow interpretation.
     let mut body = Vec::from(10u16.to_be_bytes());
     body.extend_from_slice(&2u16.to_be_bytes());
-    body.extend_from_slice(&3u16.to_be_bytes());
+    body.extend_from_slice(&4u16.to_be_bytes());
     body.extend_from_slice(&original[42..]);
     let mut bytes = original[..8].to_vec();
     bytes.extend_from_slice(&Sha256::digest(&body));
@@ -113,7 +128,9 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_authority_layou
 
 #[test]
 fn current_contract_restores_original_identity_and_issues_fresh_operation_authority() {
-    let application = publish_workflow_on_first_program();
+    // This existing program declares the owning occurrence action; canonical P0
+    // and its retained predecessor artifact keep their original meaning.
+    let application = super::document_retention_model::host::publish_owner_workflow();
     use worth_query_package_archive::facade::{
         decode_workflow_definition_draft, encode_workflow_definition_draft,
         WorthQueryPackageArchiveLimits,
@@ -207,35 +224,39 @@ fn current_contract_restores_original_identity_and_issues_fresh_operation_author
         retention_entry::DOCUMENT_IDENTITY,
         schema::SetRetentionInput,
     };
-    use worth_query_host::facade::{
-        application_entry::{
-            WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
-        },
-        runtime::ExecutionAllocationPolicy,
+    use worth_query_host::facade::application_entry::{
+        WorthQueryApplicationRequestExt, WorthQuerySourceCompletion,
+        WorthQueryWorkflowOperationAdvance,
     };
     let runtime = restored.runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
-    let outcome = runtime
+    let request = runtime
         .request(&principal, &scope)
-        .on_branch(instance.branch())
+        .on_branch(instance.branch());
+    let operation = request
         .mutate(SetRetentionInput {
             identity: DOCUMENT_IDENTITY.to_owned(),
             retention_days: 8,
         })
         .without_source()
-        .idempotency(&94015u64)
+        .idempotency_owned(94015u64)
+        .unwrap_or_else(|(_, _, cause)| panic!("restored original input capture: {cause:?}"))
         .for_workflow_operation(&restored, &required)
-        .unwrap()
-        .execute_in_program(
-            restored.program_runtime(),
-            ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .unwrap();
+        .unwrap_or_else(|_| panic!("restored occurrence must bind the actual original input"))
+        .retain_operation::<WorkflowOwnerProgram, OccurrenceAction>(restored.program_runtime())
+        .unwrap_or_else(|_| panic!("the restored installed owning action must retain custody"));
+    let completed = match operation.advance(&request) {
+        WorthQueryWorkflowOperationAdvance::Completed(completed) => completed,
+        _ => panic!("the fresh restored operation must really complete"),
+    };
     assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
+        completed.evidence(),
+        WorthQuerySourceCompletion::Fresh { .. }
     ));
+    completed
+        .close(&request)
+        .unwrap_or_else(|(_, cause)| panic!("actual restored operation cleanup: {cause:?}"));
     assert_eq!(read_retention(runtime, instance.branch()), 8);
     let performed_restore = restore(capture(&restored));
     assert_eq!(
@@ -311,7 +332,7 @@ fn current_checkpoint_refusal_preserves_source_and_existing_application() {
             bytes[8..40].copy_from_slice(&checksum);
             Kind::UnsupportedCheckpointWorkflowContract {
                 facts: 1,
-                instances: 3,
+                instances: 4,
             }
         } else {
             *bytes.last_mut().unwrap() ^= 1;
