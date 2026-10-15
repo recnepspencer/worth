@@ -21,35 +21,7 @@ impl ApplicationScalarValueBinding for ApplicationSigningProvenanceBinding {
         Some(ApplicationNativeInputDecodeProfile::new(512, 32, 1024, 6));
 
     fn validate(value: &Value) -> Result<(), ApplicationValueValidationDenial> {
-        let parts = value.parts();
-        let metadata = &parts.metadata;
-        for text in [
-            metadata.program_revision.as_str(),
-            metadata.operation.as_str(),
-            metadata.binding.as_str(),
-            metadata.clock_source.as_str(),
-            metadata.clock_timeline.as_str(),
-        ] {
-            if text.is_empty() {
-                return Err(rejected());
-            }
-        }
-        if crate::authentication::WorthQueryAuthenticationPurpose::validate(&metadata.purpose)
-            .is_err()
-            || crate::authentication::WorthQueryExternalPrincipalIdentity::validate_components(
-                &metadata.signer_issuer,
-                &metadata.signer_subject,
-            )
-            .is_err()
-            || crate::authentication::WorthQueryAuthenticationVerifierIdentity::validate(
-                &metadata.verification_configuration,
-            )
-            .is_err()
-            || parts.observed_at_nanoseconds < parts.issued_at_nanoseconds
-        {
-            return Err(rejected());
-        }
-        Ok(())
+        validate_parts(value.parts())
     }
     fn encode(value: &Value) -> Result<AspectValue, ApplicationValueEncodeDenial> {
         Self::validate(value)?;
@@ -90,4 +62,36 @@ fn rejected() -> ApplicationValueValidationDenial {
         ApplicationSigningProvenanceBinding::IDENTITY,
         "invalid signing provenance",
     )
+}
+
+pub(super) fn validate_parts(
+    parts: &ApplicationSigningProvenanceParts,
+) -> Result<(), ApplicationValueValidationDenial> {
+    let metadata = &parts.metadata;
+    for text in [
+        metadata.program_revision.as_str(),
+        metadata.operation.as_str(),
+        metadata.binding.as_str(),
+        metadata.clock_source.as_str(),
+        metadata.clock_timeline.as_str(),
+    ] {
+        if text.is_empty() {
+            return Err(rejected());
+        }
+    }
+    if crate::authentication::WorthQueryAuthenticationPurpose::validate(&metadata.purpose).is_err()
+        || crate::authentication::WorthQueryExternalPrincipalIdentity::validate_components(
+            &metadata.signer_issuer,
+            &metadata.signer_subject,
+        )
+        .is_err()
+        || crate::authentication::WorthQueryAuthenticationVerifierIdentity::validate(
+            &metadata.verification_configuration,
+        )
+        .is_err()
+        || parts.observed_at_nanoseconds < parts.issued_at_nanoseconds
+    {
+        return Err(rejected());
+    }
+    Ok(())
 }

@@ -21,6 +21,7 @@ pub(super) fn write(
             ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => 5,
             ApplicationOperationBodyCreatedField::PresentScopeField { .. } => 6,
             ApplicationOperationBodyCreatedField::SigningProvenance { .. } => 7,
+            ApplicationOperationBodyCreatedField::CapturedScopeField { .. } => 8,
         })?;
         output.text(step.field().entity())?;
         output.text(step.field().aspect())?;
@@ -62,6 +63,9 @@ pub(super) fn write(
                 super::principal::write(output, step)
             }
             ApplicationOperationBodyCreatedField::SigningProvenance { .. } => Ok(()),
+            ApplicationOperationBodyCreatedField::CapturedScopeField { .. } => {
+                super::classified_capture::write(output, step)
+            }
         }
     })?;
     Ok(())
@@ -83,6 +87,7 @@ pub(super) fn decode(
                 && !(version >= 9 && tag == 4)
                 && !(version >= 12 && tag == 5)
                 && !(version >= 13 && matches!(tag, 6 | 7))
+                && !(version >= 14 && tag == 8)
             {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
@@ -129,6 +134,7 @@ pub(super) fn decode(
                     ),
                 },
                 7 => ApplicationOperationBodyCreatedField::SigningProvenance { field, binding },
+                8 => super::classified_capture::decode(input, field, binding)?,
                 _ => unreachable!("creation opcode admitted before operands"),
             })
         })?;

@@ -1,9 +1,18 @@
 //! Immutable descriptive signing provenance. Decoding it never grants signing or approval authority.
 mod binding;
+mod encoding;
+mod subject;
 #[cfg(test)]
 mod tests;
 pub use binding::ApplicationSigningProvenanceBinding;
+pub use encoding::{
+    ApplicationSigningProvenanceEncoding, ApplicationSigningProvenanceValueBinding,
+};
 use serde::{Deserialize, Serialize};
+pub use subject::{
+    ApplicationSigningSubjectDependency, ApplicationSigningSubjectProvenance,
+    ApplicationSigningSubjectProvenanceBinding, ApplicationSigningSubjectProvenanceParts,
+};
 
 /// Coordinates, not a live graph reference or a principal permit.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]

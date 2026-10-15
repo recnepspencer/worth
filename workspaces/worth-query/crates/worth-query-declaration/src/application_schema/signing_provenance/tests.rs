@@ -8,7 +8,7 @@ use crate::application_schema::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding,
 };
 
-fn parts() -> Parts {
+pub(super) fn parts() -> Parts {
     let coordinate = Coordinates {
         partition: 0,
         slot: 1,

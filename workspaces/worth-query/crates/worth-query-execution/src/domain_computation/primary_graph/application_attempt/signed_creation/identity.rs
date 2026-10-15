@@ -10,6 +10,8 @@ use worth_foundational::facade::{
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 use worth_relational::facade::{identity::EntityId, transactions::EntityReference};
 const DOMAIN: CanonicalBasisDomain = CanonicalBasisDomain::Future("worth-query.signed-creation");
+mod subject;
+pub(super) use subject::certified_subject;
 
 pub(super) struct IdentityEntries(Vec<CanonicalBasisEntry>);
 impl IdentityEntries {

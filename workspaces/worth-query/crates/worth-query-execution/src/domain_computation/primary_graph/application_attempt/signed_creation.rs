@@ -15,6 +15,7 @@ mod dependencies;
 mod identity;
 mod publication;
 mod sealing;
+mod subject_binding;
 pub(super) use publication::publish;
 pub use sealing::WorthQuerySignedCreationPreparationDenial;
 mod adapter;
@@ -40,6 +41,12 @@ pub(super) struct SignedCreationState<Schema> {
 
 pub(super) struct SealedSigningContext<Schema> {
     canonical_byte_capacity: usize,
+    provenance_bytes: usize,
+    encoding:
+        worth_query_declaration::facade::application_schema::ApplicationSigningProvenanceEncoding,
+    certified_dependencies: Vec<
+        worth_query_declaration::facade::application_schema::ApplicationSigningSubjectDependency,
+    >,
     _dependencies_memory:
         crate::domain_computation::primary_graph::application_contribution::QueryMemoryReservation,
     _metadata_memory:

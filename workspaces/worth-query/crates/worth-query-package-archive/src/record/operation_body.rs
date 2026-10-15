@@ -4,6 +4,7 @@ use super::{
     sequence::{decode_sequence, write_sequence},
 };
 
+mod classified_capture;
 mod creation_fields;
 mod creation_links;
 mod outputs;
@@ -33,7 +34,16 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if signing::uses_signed_sources(body) {
+    let version = if body.creation().is_some_and(|creation| {
+        creation.fields().iter().any(|step| {
+            matches!(
+                step,
+                ApplicationOperationBodyCreatedField::CapturedScopeField { .. }
+            )
+        })
+    }) {
+        14
+    } else if signing::uses_signed_sources(body) {
         13
     } else if body.creation().is_some_and(|creation| {
         creation
@@ -170,7 +180,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=13) {
+    if !matches!(version, 1..=14) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {

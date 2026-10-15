@@ -7,9 +7,8 @@ use crate::{
     application_operation::ApplicationMutationBinding,
     application_schema::{
         ApplicationFieldBindingLocus as Locus, ApplicationFieldPresence, ApplicationFieldRef,
-        ApplicationScalarValueBinding, ApplicationSchema, ApplicationSigningProvenance,
-        ApplicationSigningProvenanceBinding, DeclaredApplicationFieldValue, NoApplicationUnit,
-        OperationWrites, ReadOnly,
+        ApplicationScalarValueBinding, ApplicationSchema, ApplicationSigningProvenanceValueBinding,
+        DeclaredApplicationFieldValue, NoApplicationUnit, OperationWrites, ReadOnly,
     },
     authentication::WorthQueryAuthenticationPurpose,
 };
@@ -88,7 +87,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Entity>
             Entity,
             ProvenanceAspect,
             ProvenanceField,
-            ApplicationSigningProvenance,
+            <ProvenanceField as DeclaredApplicationFieldValue>::Value,
             ReadOnly,
             ProvenanceEquality,
             NoApplicationUnit,
@@ -104,15 +103,18 @@ impl<Schema: ApplicationSchema, Operation, Input, Entity>
             PrincipalIdentityBinding = ActorField::Binding,
         >,
         ActorField: OperationWrites<Operation> + DeclaredApplicationFieldValue<Value = ActorValue>,
-        ProvenanceField: OperationWrites<Operation>
-            + DeclaredApplicationFieldValue<
-                Value = ApplicationSigningProvenance,
-                Binding = ApplicationSigningProvenanceBinding,
-            >,
+        ProvenanceField: OperationWrites<Operation> + DeclaredApplicationFieldValue,
+        ProvenanceField::Binding: ApplicationSigningProvenanceValueBinding,
     {
         if self.signing.is_some() {
             return Err(Denial::DuplicateAttachment);
         }
+        super::classified_capture::validate_roles(
+            &self.fields,
+            crate::application_schema::ApplicationSigningProvenanceEncoding::for_binding(
+                &ProvenanceField::Binding::IDENTITY,
+            ),
+        )?;
         if !Binding::REQUIRES_APPLICATION_PROGRAM
             || ActorField::PRESENCE != ApplicationFieldPresence::Required
             || ProvenanceField::PRESENCE != ApplicationFieldPresence::Required
@@ -129,7 +131,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Entity>
             self.initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)?;
         creation.fields.push(Step::SigningProvenance {
             field: provenance_locus.clone(),
-            binding: ApplicationSigningProvenanceBinding::IDENTITY,
+            binding: ProvenanceField::Binding::IDENTITY,
         });
         creation.signing = Some(ApplicationOperationBodySigningSpec::from_untrusted(
             purpose,

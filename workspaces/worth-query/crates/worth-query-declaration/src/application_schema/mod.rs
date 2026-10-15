@@ -54,8 +54,11 @@ mod schema_member;
 mod signing_provenance;
 pub use signing_provenance::{
     ApplicationSigningEntityCoordinates, ApplicationSigningProvenance,
-    ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceMetadata,
-    ApplicationSigningProvenanceParts,
+    ApplicationSigningProvenanceBinding, ApplicationSigningProvenanceEncoding,
+    ApplicationSigningProvenanceMetadata, ApplicationSigningProvenanceParts,
+    ApplicationSigningProvenanceValueBinding, ApplicationSigningSubjectDependency,
+    ApplicationSigningSubjectProvenance, ApplicationSigningSubjectProvenanceBinding,
+    ApplicationSigningSubjectProvenanceParts,
 };
 mod value_binding;
 mod values;
@@ -155,17 +158,17 @@ pub use mutation_precondition::{
 };
 pub use operation_definition::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
-    ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
-    ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
-    ApplicationOperationBodyCreationLink, ApplicationOperationBodyCreationLinkDirection,
-    ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
-    ApplicationOperationBodyProgram, ApplicationOperationBodyRequirement,
-    ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
-    ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
-    ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
-    ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
-    ApplicationOperationBodySigningSpec, ApplicationOperationDefinition,
-    ApplicationOperationDefinitionBuilder,
+    ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
+    ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
+    ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
+    ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyOutput,
+    ApplicationOperationBodyOutputTarget, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyRequirement, ApplicationOperationBodyRequirementDenial,
+    ApplicationOperationBodyRequirementDirection, ApplicationOperationBodyRequirementExpression,
+    ApplicationOperationBodyRequirementOperand, ApplicationOperationBodyRequirementOperands,
+    ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
+    ApplicationOperationBodyScopeField, ApplicationOperationBodySigningSpec,
+    ApplicationOperationDefinition, ApplicationOperationDefinitionBuilder,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{

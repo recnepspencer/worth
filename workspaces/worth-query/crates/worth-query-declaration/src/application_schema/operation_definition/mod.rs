@@ -9,16 +9,16 @@ mod registration;
 pub(crate) use body::validate_operation_bodies;
 pub use body::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,
-    ApplicationOperationBodyBuilder, ApplicationOperationBodyCreatedField,
-    ApplicationOperationBodyCreation, ApplicationOperationBodyCreationBuilder,
-    ApplicationOperationBodyCreationLink, ApplicationOperationBodyCreationLinkDirection,
-    ApplicationOperationBodyOutput, ApplicationOperationBodyOutputTarget,
-    ApplicationOperationBodyProgram, ApplicationOperationBodyRequirement,
-    ApplicationOperationBodyRequirementDenial, ApplicationOperationBodyRequirementDirection,
-    ApplicationOperationBodyRequirementExpression, ApplicationOperationBodyRequirementOperand,
-    ApplicationOperationBodyRequirementOperands, ApplicationOperationBodyRequirementProgram,
-    ApplicationOperationBodyRequirementSource, ApplicationOperationBodyScopeField,
-    ApplicationOperationBodySigningSpec,
+    ApplicationOperationBodyBuilder, ApplicationOperationBodyCaptureRole,
+    ApplicationOperationBodyCreatedField, ApplicationOperationBodyCreation,
+    ApplicationOperationBodyCreationBuilder, ApplicationOperationBodyCreationLink,
+    ApplicationOperationBodyCreationLinkDirection, ApplicationOperationBodyOutput,
+    ApplicationOperationBodyOutputTarget, ApplicationOperationBodyProgram,
+    ApplicationOperationBodyRequirement, ApplicationOperationBodyRequirementDenial,
+    ApplicationOperationBodyRequirementDirection, ApplicationOperationBodyRequirementExpression,
+    ApplicationOperationBodyRequirementOperand, ApplicationOperationBodyRequirementOperands,
+    ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
+    ApplicationOperationBodyScopeField, ApplicationOperationBodySigningSpec,
 };
 pub(crate) use builder::AftermathAssociationAuthority;
 pub use builder::ApplicationOperationDefinitionBuilder;

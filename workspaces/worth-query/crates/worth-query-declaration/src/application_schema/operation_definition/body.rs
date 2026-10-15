@@ -1,6 +1,7 @@
 //! Typed values in an operation body, distinct from its derived effect ceiling.
 
 mod builder;
+mod classified_capture;
 mod created_field;
 mod creation;
 mod creation_link;
@@ -8,6 +9,7 @@ mod creation_link_validation;
 mod output;
 mod output_validation;
 mod present_source;
+pub use created_field::ApplicationOperationBodyCaptureRole;
 mod principal;
 mod principal_validation;
 mod signing;
@@ -57,6 +59,7 @@ pub enum ApplicationOperationBodyAuthoringDenial {
     InvalidCreationKey,
     IncompatibleSourceBinding,
     InvalidSigningPurpose,
+    UnclassifiedSignedCapture,
     ForeignSourceEntity,
     IncompatibleOutput,
     InvalidCreationLink,

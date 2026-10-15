@@ -265,6 +265,7 @@ where
                     }
                     ApplicationOperationBodyCreatedField::ScopeField { .. }
                     | ApplicationOperationBodyCreatedField::PresentScopeField { .. }
+                    | ApplicationOperationBodyCreatedField::CapturedScopeField { .. }
                     | ApplicationOperationBodyCreatedField::PrincipalIdentity { .. } => {
                         let (source, reservation) = source_values
                             .next()

@@ -115,7 +115,7 @@ pub(crate) fn validate_operation_bodies(
                     {
                         return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);
                     }
-                    if matches!(step, super::ApplicationOperationBodyCreatedField::PresentScopeField { .. })
+                    if matches!(step, super::ApplicationOperationBodyCreatedField::PresentScopeField { .. } | super::ApplicationOperationBodyCreatedField::CapturedScopeField { .. })
                         && !members.iter().any(|member| matches!(member, ApplicationSchemaMember::Field { entity, aspect, field, presence: ApplicationFieldPresence::Required, .. }
                             if entity == locus.entity() && aspect == locus.aspect() && field == locus.field())) {
                         return Err(ApplicationSchemaDeclarationDenial::MissingOperationDecisionReadDependency);

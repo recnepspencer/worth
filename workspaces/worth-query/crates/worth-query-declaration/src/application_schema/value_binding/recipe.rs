@@ -17,7 +17,8 @@ pub type ErasedApplicationValueValidation =
 pub type ErasedApplicationValueEncode =
     fn(&dyn Any) -> Result<AspectValue, ApplicationValueEncodeDenial>;
 
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ApplicationFieldBindingLocus {
     entity: String,
     aspect: String,

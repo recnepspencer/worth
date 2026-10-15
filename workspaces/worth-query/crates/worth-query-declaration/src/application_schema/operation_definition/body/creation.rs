@@ -205,15 +205,15 @@ impl<Schema, Operation, Input, Entity>
         ApplicationOperationBody<Schema, Operation, Input>,
         ApplicationOperationBodyAuthoringDenial,
     > {
-        let body = self
-            .parent
-            .finish_with_creation(Some(ApplicationOperationBodyCreation {
-                entity: self.entity,
-                key: self.key,
-                fields: self.fields,
-                links: self.links,
-                signing: self.signing,
-            }))?;
+        let creation = ApplicationOperationBodyCreation {
+            entity: self.entity,
+            key: self.key,
+            fields: self.fields,
+            links: self.links,
+            signing: self.signing,
+        };
+        super::classified_capture::validate_creation(&creation)?;
+        let body = self.parent.finish_with_creation(Some(creation))?;
         let scope = body
             .program
             .scope_entity()

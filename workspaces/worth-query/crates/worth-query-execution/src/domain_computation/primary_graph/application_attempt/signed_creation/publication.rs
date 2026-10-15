@@ -9,7 +9,9 @@ use worth_query_admission::facade::authentication_event::WorthQueryAuthenticatio
 use worth_query_declaration::facade::application_schema::{
     ApplicationScalarValueBinding, ApplicationSigningEntityCoordinates,
     ApplicationSigningProvenance, ApplicationSigningProvenanceBinding,
-    ApplicationSigningProvenanceParts,
+    ApplicationSigningProvenanceEncoding as Encoding, ApplicationSigningProvenanceParts,
+    ApplicationSigningSubjectProvenance, ApplicationSigningSubjectProvenanceBinding,
+    ApplicationSigningSubjectProvenanceParts,
 };
 
 pub(in crate::domain_computation::primary_graph::application_attempt) fn publish<Schema>(
@@ -26,9 +28,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn publish
             sealed
                 .canonical_byte_capacity
                 .checked_mul(6)
-                .and_then(|bytes| {
-                    bytes.checked_add(sealed.metadata.maximum_encoded_bytes()?.checked_mul(2)?)
-                })
+                .and_then(|bytes| bytes.checked_add(sealed.provenance_bytes.checked_mul(2)?))
         })
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or_else(|| Outcome::Denied(refused(AuthenticationDenial::CapacityExceeded)))?;
@@ -103,7 +103,7 @@ fn publish_prepared<Schema>(
     {
         return Err(refused(AuthenticationDenial::WrongOwner).into());
     }
-    let value = ApplicationSigningProvenance::from_parts(ApplicationSigningProvenanceParts {
+    let parts = ApplicationSigningProvenanceParts {
         metadata: sealed.metadata,
         operation_meaning: sealed.operation_meaning,
         logical_request: sealed.logical_request,
@@ -115,10 +115,27 @@ fn publish_prepared<Schema>(
         event_reference: *consumed.event_reference(),
         issued_at_nanoseconds: consumed.issued_at_nanoseconds(),
         observed_at_nanoseconds: consumed.observed_at_nanoseconds(),
-    })
+    };
+    let encoded = match sealed.encoding {
+        Encoding::AuthenticationV1 => ApplicationSigningProvenance::from_parts(parts)
+            .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
+            .and_then(|value| {
+                ApplicationSigningProvenanceBinding::encode(&value)
+                    .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
+            }),
+        Encoding::CertifiedSubjectV2 => ApplicationSigningSubjectProvenance::from_parts(
+            ApplicationSigningSubjectProvenanceParts {
+                authentication: parts,
+                dependencies: sealed.certified_dependencies,
+            },
+        )
+        .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
+        .and_then(|value| {
+            ApplicationSigningSubjectProvenanceBinding::encode(&value)
+                .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))
+        }),
+    }
     .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))?;
-    let encoded = ApplicationSigningProvenanceBinding::encode(&value)
-        .map_err(|_| refused(AuthenticationDenial::MissingSigningProof))?;
     let retained = encoded
         .owned_allocation_capacity_bytes()
         .checked_add(state.slot.field.owned_allocation_capacity_bytes())

@@ -18,7 +18,11 @@ Declare through `worth_query_decl::facade::application_schema`:
 
 - `creation.signed_by::<Binding, _, _, _, _, _, _, _>(actor, provenance, purpose)`;
 - `ApplicationSigningProvenance` and `ApplicationSigningProvenanceBinding`;
+- `ApplicationSigningSubjectProvenance` and
+  `ApplicationSigningSubjectProvenanceBinding` for the v2 certified footprint;
 - `creation.initialize_from_present_scope(optional_source, required_snapshot)`;
+- `creation.capture_from_scope(source, snapshot, ApplicationOperationBodyCaptureRole)`
+  and `capture_from_present_scope` for explicitly classified v2 captures;
 - `operation.requirement_operands().principal_identity::<Binding>(name)`.
 
 Install the body through the usual contribution's `operation_body::<Binding>()`.
@@ -49,6 +53,25 @@ not by a verifier selected by the person submitting the request.
 
 Provenance is descriptive persisted data. Deserializing it cannot reconstruct an
 authentication event, a consumed proof, a workflow approval or commit authority.
+
+V2 also records the exact source entity, source field, captured snapshot field,
+value binding and native revision for each explicitly classified `Subject` capture. Query derives
+that association from the same installed body; the caller supplies no dependency
+list. Repeated use of one source retains each distinct capture. Principal/permission
+and lookup facts are not added to this certified footprint. They still participate
+in full authorization and candidate-currentness checks.
+
+Choose `AuditContext` for copied context that must be authenticated but does not
+determine continued signature validity, such as the document revision or stage
+at signing. Both roles use the same tracked initializer and stale checks; audit
+values remain in the immutable signed snapshot but not in `dependencies()`.
+V2 rejects unclassified scope captures. Classified captures require v2 signing;
+they cannot be silently interpreted by an unsigned creation or the legacy profile.
+
+This persisted correspondence is not a supersession event or an effectiveness
+decision. A no-op, a dependency edit, and a later restored value need the separate
+authoritative business consequence contract; comparing these revisions or digests
+in the host cannot implement it.
 
 ## How It Executes
 
@@ -83,7 +106,11 @@ let body = Verify::reference().body()
 ```
 
 `VerifiedActor` uses the binding's exact principal identity codec. The required,
-unitless, read-only provenance field uses `ApplicationSigningProvenanceBinding`.
+unitless, read-only provenance field uses `ApplicationSigningProvenanceBinding`
+for authentication-only v1, or `ApplicationSigningSubjectProvenanceBinding` for
+the certified-subject v2 record. The example above uses the v1 initializer;
+with v2, use explicit capture roles as below. Both use the same `signed_by` call. Ordinary
+supplier codecs cannot implement its sealed native provenance-binding contract.
 The binding requires an application program and admits the creation plus every
 initializer, including actor and provenance, in its normal candidate ceilings.
 
@@ -94,9 +121,25 @@ equality requirement. Bind the stored assignment with `field(...)` and the actua
 admitted identity with `principal_identity::<VerifyBinding>(...)`; combine them
 in the usual typed Foundation equality expression. Capture description,
 assignment and round into the immutable row. If description is optional source
-data, use `initialize_from_present_scope` rather than weakening the existing
+data, use `capture_from_present_scope` rather than weakening the existing
 required-source initializer. Link the new row to the document and declare its
 typed created output using the usual body methods.
+
+```rust,ignore
+creation
+    .capture_from_present_scope(
+        Description::reference(), VerifiedDescription::reference(),
+        ApplicationOperationBodyCaptureRole::Subject,
+    )?
+    .capture_from_scope(
+        CurrentStage::reference(), VerifiedStage::reference(),
+        ApplicationOperationBodyCaptureRole::AuditContext,
+    )?
+    .signed_by::<VerifyBinding, _, _, _, _, _, _, _>(
+        VerifiedActor::reference(), V2Provenance::reference(), "verification",
+    )?
+    .finish()?;
+```
 
 The caller performs the actual authentication handoff:
 
@@ -115,6 +158,10 @@ match request.prepare_capability_in_program(program, allocation)? {
 Keep the same prepared handle and logical request key. A mismatched event is not
 consumed; denial does not permit replacing the request's original signer.
 
+With v2, the governed result's `provenance.dependencies()` exposes the installed
+source-to-snapshot correspondence. `provenance.authentication()` exposes the
+authentication metadata. These are inspection data, not reusable authority.
+
 ## How It Relates To Other Features
 
 Workflow operation authority and workflow approval remain separate native
@@ -130,6 +177,11 @@ denials and the governed persisted history. Provenance names the operation,
 program revision, binding, external signer, purpose, verifier configuration,
 subject/signer coordinates, intent and coverage digests, event reference and
 named-clock observations. Clock coordinates are not UTC timestamps.
+V2 coverage includes the certified correspondence and immutable snapshot; v1
+keeps its original coverage semantics. Coverage authenticates audit context too:
+it is not a future validity predicate. Only the declared certified dependencies
+describe that footprint. The two typed codecs reject each other's
+bytes: a v1 record is never silently interpreted as an empty v2 footprint.
 
 ## Anti-Patterns
 
@@ -145,7 +197,11 @@ discard their signing state and publish them as ordinary migration effects.
 This body form admits one signed creation per candidate. It uses the existing
 bounded scalar body and canonicalization support; unsupported encoding, resource
 or compiler profiles fail closed. Old portable body versions remain unchanged;
-the new signed form and principal operand use body record v13.
+the original signed form and principal operand use body record v13. Explicit
+capture role and source presence use body record v14; earlier versions cannot
+reinterpret its new opcode. The v2 provenance binding has a distinct codec
+identity; it does not reinterpret v1 records or require a build-counter
+schema revision. Unsupported codecs fail installation rather than falling back.
 
 Checkpoint restoration preserves signed data and durable idempotency facts, not
 live event or receipt authority. Permanent business supersession, approval-round

@@ -288,6 +288,26 @@ fn operation_body_base_record(body: &ApplicationOperationBodyProgram) -> String 
                     ],
                 ),
             ),
+            ApplicationOperationBodyCreatedField::CapturedScopeField {
+                source,
+                scalar_family,
+                source_presence,
+                role,
+                ..
+            } => (
+                "classified-scope-field",
+                framed_record(
+                    "classified-scope-source-v1",
+                    [
+                        ("entity", source.entity().to_owned()),
+                        ("aspect", source.aspect().to_owned()),
+                        ("field", source.field().to_owned()),
+                        ("family", scalar_family.canonical_name().to_owned()),
+                        ("presence", source_presence.canonical_name().to_owned()),
+                        ("role", role.canonical_name().to_owned()),
+                    ],
+                ),
+            ),
             ApplicationOperationBodyCreatedField::PrincipalIdentity {
                 source,
                 scalar_family,

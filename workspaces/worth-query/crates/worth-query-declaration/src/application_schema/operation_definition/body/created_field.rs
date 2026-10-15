@@ -8,6 +8,21 @@ use crate::{
 };
 use worth_foundational::facade::{AspectValue, ScalarAspectType};
 
+/// Whether a captured source certifies business content or only records signing context.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ApplicationOperationBodyCaptureRole {
+    Subject,
+    AuditContext,
+}
+impl ApplicationOperationBodyCaptureRole {
+    pub fn canonical_name(self) -> &'static str {
+        match self {
+            Self::Subject => "subject",
+            Self::AuditContext => "audit-context",
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationOperationBodyCreatedField {
     Literal {
@@ -43,6 +58,14 @@ pub enum ApplicationOperationBodyCreatedField {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
     },
+    CapturedScopeField {
+        field: ApplicationFieldBindingLocus,
+        binding: WorthQueryPortableTypeIdentity,
+        scalar_family: ScalarAspectType,
+        source: ApplicationFieldBindingLocus,
+        source_presence: crate::application_schema::ApplicationFieldPresence,
+        role: ApplicationOperationBodyCaptureRole,
+    },
     PrincipalIdentity {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -60,6 +83,7 @@ impl ApplicationOperationBodyCreatedField {
             | Self::OptionalInput { field, .. }
             | Self::ScopeField { field, .. }
             | Self::PresentScopeField { field, .. }
+            | Self::CapturedScopeField { field, .. }
             | Self::SigningProvenance { field, .. }
             | Self::PrincipalIdentity { field, .. } => field,
         }
@@ -71,6 +95,7 @@ impl ApplicationOperationBodyCreatedField {
             | Self::OptionalInput { binding, .. }
             | Self::ScopeField { binding, .. }
             | Self::PresentScopeField { binding, .. }
+            | Self::CapturedScopeField { binding, .. }
             | Self::SigningProvenance { binding, .. }
             | Self::PrincipalIdentity { binding, .. } => binding,
         }
@@ -89,6 +114,7 @@ impl ApplicationOperationBodyCreatedField {
             | Self::OptionalInput { scalar_family, .. }
             | Self::ScopeField { scalar_family, .. }
             | Self::PresentScopeField { scalar_family, .. }
+            | Self::CapturedScopeField { scalar_family, .. }
             | Self::PrincipalIdentity { scalar_family, .. } => *scalar_family,
         }
     }
@@ -100,9 +126,9 @@ impl ApplicationOperationBodyCreatedField {
     }
     pub fn source_field(&self) -> Option<&ApplicationFieldBindingLocus> {
         match self {
-            Self::ScopeField { source, .. } | Self::PresentScopeField { source, .. } => {
-                Some(source)
-            }
+            Self::ScopeField { source, .. }
+            | Self::PresentScopeField { source, .. }
+            | Self::CapturedScopeField { source, .. } => Some(source),
             _ => None,
         }
     }
@@ -117,6 +143,9 @@ impl ApplicationOperationBodyCreatedField {
         match self {
             Self::ScopeField { .. } => Some(Presence::Required),
             Self::PresentScopeField { .. } => Some(Presence::Optional),
+            Self::CapturedScopeField {
+                source_presence, ..
+            } => Some(*source_presence),
             _ => None,
         }
     }

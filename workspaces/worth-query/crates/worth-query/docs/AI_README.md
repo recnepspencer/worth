@@ -440,6 +440,15 @@ Creation `initialize_from_principal_identity::<Binding, _, _, _, _, _>(actor)`
 binds a unitless actor field to the exact mutation/principal identity codec and
 captures admission's actual principal through the tracked decision observation.
 It records unsigned actor attribution, not a signing event or approval grant.
+For authenticated creation, use the same body's
+[`signed_by` handoff](./authoring/signed-operation-creations.md). The v2 native
+subject-provenance codec also persists source-to-snapshot dependencies from the
+installed `capture_from_scope`/`capture_from_present_scope` initializers explicitly
+classified `Subject`. `AuditContext` values are authenticated, immutable and
+tracked for publication, but excluded from the certified dependency footprint.
+V2 refuses unclassified captures; role and source presence travel in body v14
+without reinterpreting v1–v13. Admission facts remain separate. Neither that descriptive
+carrier nor a coverage digest grants approval or implements business supersession.
 Context alone is not domain membership; membership alone is not authorization
 and does not replace a capability's grant witness. General assignment expressions,
 multiple creations, arbitrary relation edits, signature consequences and multi-operation commands

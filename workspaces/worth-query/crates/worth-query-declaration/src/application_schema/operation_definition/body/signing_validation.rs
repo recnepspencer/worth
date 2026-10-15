@@ -4,8 +4,8 @@ use super::{
 };
 use crate::application_schema::{
     ApplicationFieldPresence as Presence, ApplicationOperationProgramTarget as Target,
-    ApplicationScalarValueBinding, ApplicationSchemaDeclarationDenial as Denial,
-    ApplicationSchemaMember as Member, ApplicationSigningProvenanceBinding,
+    ApplicationSchemaDeclarationDenial as Denial, ApplicationSchemaMember as Member,
+    ApplicationSigningProvenanceEncoding,
 };
 #[cfg(test)]
 mod tests;
@@ -18,6 +18,7 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
         let Some(creation) = body.creation() else {
             continue;
         };
+        super::classified_capture::validate_creation(creation).map_err(|_| denied())?;
         let provenance_count = creation
             .fields()
             .iter()
@@ -33,7 +34,7 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
             || signing.actor().entity() != creation.entity() || signing.provenance().entity() != creation.entity()
             || provenance_count != 1 || actor(creation).is_none()
             || !creation.fields().iter().any(|field| matches!(field, Step::SigningProvenance { field, binding }
-                if field == signing.provenance() && *binding == ApplicationSigningProvenanceBinding::IDENTITY)) {
+                if field == signing.provenance() && ApplicationSigningProvenanceEncoding::for_binding(binding).is_some())) {
             return Err(denied());
         }
         for target in [signing.actor(), signing.provenance()] {

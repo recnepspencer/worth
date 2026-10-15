@@ -70,6 +70,8 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .signed_creation
         .as_ref()
         .expect("retained native signing slot");
+    let (creation, encoding) = super::subject_binding::creation::<Schema, Binding>(&candidate)?;
+    let subject_bytes = super::subject_binding::quote(creation, encoding)?;
     let request = phase
         .execution_request_for(&application.product_runtime)
         .map_err(|_| Denial::CandidateMismatch)?;
@@ -121,7 +123,10 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         total.checked_add(text.len().checked_mul(6)?)
     })
     .ok_or(Denial::RepresentationCapacity)?;
-    let retained = metadata_bytes
+    let provenance_bytes = metadata_bytes
+        .checked_add(subject_bytes)
+        .ok_or(Denial::RepresentationCapacity)?;
+    let retained = provenance_bytes
         .checked_add(state.slot.field.owned_allocation_capacity_bytes())
         .ok_or(Denial::RepresentationCapacity)?;
     if retained > state.slot.representation_capacity {
@@ -133,7 +138,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     let metadata_memory = execution
         .reserve(
             u64::try_from(
-                metadata_bytes
+                provenance_bytes
                     .checked_mul(3)
                     .ok_or(Denial::RepresentationCapacity)?,
             )
@@ -176,17 +181,24 @@ pub(in crate::domain_computation::primary_graph) fn seal<
     }
     let subject = candidate.read_set.admission.scope_entity_id();
     let signer = candidate.read_set.admission.graph_work().principal();
+    let certified_dependencies = execution
+        .decision_stage(|context| {
+            super::subject_binding::capture::<Schema, Binding>(&candidate, context)
+        })
+        .map_err(Denial::Execution)??;
     let (coverage, coverage_work) = execution
         .decision_stage(|context| {
             context.checkpoint(1).map_err(stopped)?;
-            identity::subject(
+            if encoding == worth_query_declaration::facade::application_schema::ApplicationSigningProvenanceEncoding::CertifiedSubjectV2 {
+                identity::certified_subject(fields, subject, &certified_dependencies, maximum_bytes, &request, context)
+            } else { identity::subject(
                 fields,
                 subject,
                 &candidate.read_set.facts,
                 maximum_bytes,
                 &request,
                 context,
-            )
+            ) }
         })
         .map_err(Denial::Execution)??;
     let (effect_identity, candidate_work) = execution
@@ -241,6 +253,9 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .expect("retained native slot")
         .sealed = Some(SealedSigningContext {
         canonical_byte_capacity: maximum_bytes,
+        provenance_bytes,
+        encoding,
+        certified_dependencies,
         _dependencies_memory: dependencies_memory,
         _metadata_memory: metadata_memory,
         owner,

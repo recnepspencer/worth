@@ -37,6 +37,7 @@ pub(super) fn append(
                 Field::OptionalInput { .. } => "optional-input",
                 Field::ScopeField { .. } => "scope-field",
                 Field::PresentScopeField { .. } => "present-scope-field",
+                Field::CapturedScopeField { .. } => "classified-scope-field",
                 Field::SigningProvenance { .. } => "signing-provenance",
                 Field::PrincipalIdentity { .. } => "principal-identity",
             },
@@ -75,6 +76,11 @@ pub(super) fn append(
                 source,
                 scalar_family,
                 ..
+            }
+            | Field::CapturedScopeField {
+                source,
+                scalar_family,
+                ..
             } => {
                 basis.text(format!("{field}.source.entity"), source.entity());
                 basis.text(format!("{field}.source.aspect"), source.aspect());
@@ -83,6 +89,18 @@ pub(super) fn append(
                     format!("{field}.source-family"),
                     scalar_family.canonical_name(),
                 );
+                if let Field::CapturedScopeField {
+                    source_presence,
+                    role,
+                    ..
+                } = step
+                {
+                    basis.text(
+                        format!("{field}.source-presence"),
+                        source_presence.canonical_name(),
+                    );
+                    basis.text(format!("{field}.capture-role"), role.canonical_name());
+                }
             }
             Field::SigningProvenance { .. } => {}
             Field::PrincipalIdentity {
