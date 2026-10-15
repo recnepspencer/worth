@@ -141,6 +141,12 @@ macro_rules! payment_workflow_control {
             }
         }
 
+        impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
+            for $binding
+        {
+            type Admission = worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<$capability>;
+        }
+
         impl ApplicationCapabilityMutationBinding<BankSchema> for $binding {
             type Capability = $capability;
         }
