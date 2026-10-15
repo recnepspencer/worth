@@ -76,6 +76,7 @@ impl<'a> PersistedCheckpointCommitRef<'a> {
 }
 
 impl PersistedCanonicalCommit {
+    #[cfg(test)]
     pub(crate) fn from_positioned(commit: &PositionedCanonicalCommit) -> Self {
         Self {
             canonical_protocol_version: 4,

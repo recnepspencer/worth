@@ -39,7 +39,7 @@ impl<'bytes, 'scope, 'authority> FactDecoder<'bytes, 'scope, 'authority> {
         let control = StorageControl::new(policy, request);
         control.check_live().map_err(FactDecodeDenial::Retention)?;
         let quote = super::payload::parse_quote(bytes.len(), count)
-            .ok_or_else(|| FactDecodeDenial::Retention(
+            .ok_or(FactDecodeDenial::Retention(
                 crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability))?;
         let funding = CodecPayloadReservation::admit(control, quote)?;
         Ok(Self {

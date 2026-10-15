@@ -3,7 +3,9 @@ use super::*;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionMemoryReservation, ExecutionRequest};
 
 #[derive(Debug)]
-pub(super) struct DependencyStorage(Option<ExecutionMemoryReservation>);
+pub(super) struct DependencyStorage {
+    _funding: Option<ExecutionMemoryReservation>,
+}
 
 #[derive(Default)]
 pub(super) struct StorageQuote {
@@ -77,7 +79,7 @@ impl StorageQuote {
         execution
             .check_live()
             .map_err(|stop| Denial::Execution(stop.into()))?;
-        Ok(DependencyStorage(held))
+        Ok(DependencyStorage { _funding: held })
     }
 }
 
