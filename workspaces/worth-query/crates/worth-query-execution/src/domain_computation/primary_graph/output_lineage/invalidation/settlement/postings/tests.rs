@@ -1,5 +1,7 @@
 //! Exact local posting grouping and reverse-index witnesses.
 
+mod bounded_ordering;
+
 use std::sync::Arc;
 
 use worth_relational::facade::{
