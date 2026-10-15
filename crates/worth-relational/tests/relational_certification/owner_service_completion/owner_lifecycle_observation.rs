@@ -14,7 +14,9 @@ const OWNER_CLOSE_START_FAIL_SAFE: Duration = Duration::from_secs(6);
 
 #[test]
 fn descriptive_owner_lifecycle_observes_open_closing_and_closed_without_authority() {
-    let host_request = std::sync::Arc::new(crate::shared_relational_certification_test_execution_policy::serial_request());
+    let host_request = std::sync::Arc::new(
+        crate::shared_relational_certification_test_execution_policy::serial_request(),
+    );
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = empty_runtime();

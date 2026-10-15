@@ -25,7 +25,8 @@ const DIVERGENT_CALL_SIGN: &str = "BRANCH-DIVERGENCE";
 
 #[test]
 fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = CompiledSupplyChainProgram::compile(
@@ -106,7 +107,8 @@ fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
 
 #[test]
 fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = CompiledSupplyChainProgram::compile(
@@ -177,7 +179,8 @@ fn global_uniqueness_rejects_duplicate_on_one_branch_without_residue() {
 
 #[test]
 fn global_uniqueness_rejects_two_colliding_creates_in_one_proposal_without_residue() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let program = CompiledSupplyChainProgram::compile(

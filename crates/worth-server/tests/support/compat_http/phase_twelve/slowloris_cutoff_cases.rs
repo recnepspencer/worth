@@ -1,9 +1,14 @@
 use worth_proof::TransitionOutcome;
 use worth_server::{WorthServerCompatHttpRouteFamily, WorthServerTransferByteClass};
 
-use {crate::shared_support_compat_http_phase_twelve_assertions::{
+use {
+    crate::shared_support_compat_http_phase_twelve_assertions::{
         assert_binary_counter, assert_budget_receipt, assert_budget_scope,
-    }, crate::shared_support_compat_http_phase_twelve_runtime::{build_phase_twelve_server, drip_fed_upload, upload_input}};
+    },
+    crate::shared_support_compat_http_phase_twelve_runtime::{
+        build_phase_twelve_server, drip_fed_upload, upload_input,
+    },
+};
 
 #[test]
 fn compat_http_phase_twelve_drip_feed_cutoffs_emit_typed_budget_denials_without_truth_drift() {

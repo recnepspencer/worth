@@ -33,7 +33,8 @@ const DUPLICATE_CALL_SIGN: &str = "AURORA";
 #[test]
 #[ignore = "mandatory scheduled Scale certification; too expensive for the ordinary lane"]
 fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::scale())

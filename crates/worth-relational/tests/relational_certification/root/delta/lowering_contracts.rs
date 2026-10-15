@@ -15,7 +15,8 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn phase5_lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -65,7 +66,8 @@ fn phase5_lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
 
 #[test]
 fn phase5_lowering_rejects_wrong_branch_and_duplicate_delta_preconditions() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -105,7 +107,8 @@ fn phase5_lowering_rejects_wrong_branch_and_duplicate_delta_preconditions() {
 
 #[test]
 fn maintenance_rewire_and_medical_lower_from_each_actual_branch_pre_state() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     prove_number_prestate(

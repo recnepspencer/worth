@@ -3,7 +3,8 @@ use worth_relational::facade::branch::RelationalBranchBasisDenial;
 
 #[test]
 fn basis_and_external_retention_work_is_counted_exactly() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -59,7 +60,8 @@ fn basis_and_external_retention_work_is_counted_exactly() {
 
 #[test]
 fn immutable_component_basis_future_holder_fanout_is_exact_through_1024() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for holder_count in [1_u64, 64, 1_024] {

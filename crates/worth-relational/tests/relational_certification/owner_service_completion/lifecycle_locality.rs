@@ -12,7 +12,9 @@ const LOCALITY_TIMEOUT: Duration = Duration::from_secs(2);
 
 #[test]
 fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
-    let host_request = std::sync::Arc::new(crate::shared_relational_certification_test_execution_policy::serial_request());
+    let host_request = std::sync::Arc::new(
+        crate::shared_relational_certification_test_execution_policy::serial_request(),
+    );
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (runtime, services, parked_identity) = committed_fork(execution, "parked-lifecycle");

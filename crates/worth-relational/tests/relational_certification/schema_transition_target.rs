@@ -19,7 +19,8 @@ use worth_relational::facade::schema::{
 
 #[test]
 fn branch_schema_target_admission_is_typed_and_never_moves_a_branch() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -116,7 +117,8 @@ fn branch_schema_target_admission_is_typed_and_never_moves_a_branch() {
 
 #[test]
 fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -281,7 +283,8 @@ fn two_v1_siblings_transition_independently_and_retained_v1_truth_stays_exact() 
 
 #[test]
 fn stale_schema_transition_basis_cannot_install_target_authority() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

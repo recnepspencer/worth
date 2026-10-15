@@ -3,17 +3,23 @@ use std::sync::atomic::Ordering;
 use worth_foundational::facade::DiagnosticRichnessProfile;
 use worth_server::WorthServerQueryHandoffDenialCode;
 
-use {crate::shared_support_compat_http_phase_thirteen_assertions::{
+use {
+    crate::shared_support_compat_http_phase_thirteen_assertions::{
         assert_bundle_digests_equal, assert_bundle_digests_not_equal, assert_denial_contains,
-    }, crate::shared_support_compat_http_phase_thirteen_bundle::{
+    },
+    crate::shared_support_compat_http_phase_thirteen_bundle::{
         WorthServerPhaseThirteenBundle, AUDIT_EVIDENCE_DIGEST, BASIS_DIGEST, DECLARATION_DIGEST,
         FAILURE_DIGEST, MUTATION_RESULT_DIGEST, POLICY_DIGEST, PROVENANCE_DIGEST, RESPONSE_DIGEST,
         SUPPORT_POSTURE_DIGEST,
-    }, crate::shared_support_compat_http_phase_thirteen_runtime::{
+    },
+    crate::shared_support_compat_http_phase_thirteen_runtime::{
         buffered_export, compat_read_with_diagnostics, direct_and_compat_mutation,
         direct_and_compat_read, finished_incremental_export, idempotent_mutation,
         phase_thirteen_counting_server, phase_thirteen_server,
-    }, crate::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime, crate::shared_support_worth_native_assertions as worth_native_assertions};
+    },
+    crate::shared_support_compat_http_phase_two_runtime as compat_http_phase_two_runtime,
+    crate::shared_support_worth_native_assertions as worth_native_assertions,
+};
 
 #[test]
 fn compat_http_phase_thirteen_cross_surface_parity_matrix_stays_narrow_and_retry_honest() {

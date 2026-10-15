@@ -12,7 +12,8 @@ use worth_relational::facade::runtime::ProjectionAspectScope;
 
 #[test]
 fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());

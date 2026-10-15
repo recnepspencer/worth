@@ -4,7 +4,8 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn phase4_reference_cost_probe_separates_setup_and_operation_work() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     for fanout in [1usize, 64, 512] {

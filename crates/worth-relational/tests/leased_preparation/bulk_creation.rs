@@ -2,7 +2,8 @@ use super::*;
 
 #[test]
 fn leased_bulk_creation_matches_serial_canonical_patch() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();

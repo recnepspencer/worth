@@ -6,12 +6,15 @@ use worth_server::{
     WorthServerTransferByteClass,
 };
 
-use {crate::shared_support_compat_http_phase_twelve_assertions::{
+use {
+    crate::shared_support_compat_http_phase_twelve_assertions::{
         assert_binary_counter, assert_budget_receipt, assert_budget_scope, assert_external_counter,
-    }, crate::shared_support_compat_http_phase_twelve_runtime::{
+    },
+    crate::shared_support_compat_http_phase_twelve_runtime::{
         build_phase_twelve_budget_limited_server, build_phase_twelve_server, download_input,
         head_read_request, prepared_request, read_request, upload_input,
-    }};
+    },
+};
 
 #[test]
 fn compat_http_phase_twelve_budget_posture_stays_exact_for_structured_binary_and_metadata_lanes() {

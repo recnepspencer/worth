@@ -4,7 +4,8 @@ use worth_relational::facade::history::BranchId;
 
 #[test]
 fn phase5_fork_observation_reports_shared_root_and_distinct_cells() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -53,7 +54,8 @@ fn phase5_fork_observation_reports_shared_root_and_distinct_cells() {
 #[test]
 #[ignore = "scheduled maximum-scale fork slope"]
 fn phase5_standard_fork_copy_slope_is_flat_through_4096_forks() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let samples = standard_fanout_samples(execution, &[1, 64, 4_096]);

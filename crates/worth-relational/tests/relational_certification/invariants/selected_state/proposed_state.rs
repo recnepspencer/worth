@@ -53,7 +53,8 @@ impl ProbeEvidence {
 
 #[test]
 fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_state() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())
@@ -135,7 +136,8 @@ fn proposed_candidate_receipt_identifies_rule_that_read_proposed_and_committed_s
 
 #[test]
 fn malformed_proposal_denial_preserves_custom_rule_identity() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let definition = SupplyChainWorldDefinition::operating(SupplyChainScale::court())

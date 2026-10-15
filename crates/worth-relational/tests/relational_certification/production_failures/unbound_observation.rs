@@ -2,7 +2,8 @@ use super::*;
 
 #[test]
 fn observation_rejects_missing_snapshot_and_unbound_record_identities() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let missing_snapshot =

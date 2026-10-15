@@ -2,111 +2,6 @@
 //! scenario files, which stay in tests/ with their own module trees.
 //! Support modules several scenarios share are compiled once here.
 
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_eight/assertions.rs"]
-pub mod shared_support_compat_http_phase_eight_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_eight/runtime.rs"]
-pub mod shared_support_compat_http_phase_eight_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_four_assertions.rs"]
-pub mod shared_support_compat_http_phase_four_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_four_runtime.rs"]
-pub mod shared_support_compat_http_phase_four_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_nine/assertions.rs"]
-pub mod shared_support_compat_http_phase_nine_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_nine/runtime.rs"]
-pub mod shared_support_compat_http_phase_nine_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_seven/assertions.rs"]
-pub mod shared_support_compat_http_phase_seven_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_seven/runtime.rs"]
-pub mod shared_support_compat_http_phase_seven_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_six_runtime.rs"]
-pub mod shared_support_compat_http_phase_six_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_ten/assertions.rs"]
-pub mod shared_support_compat_http_phase_ten_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_ten/runtime.rs"]
-pub mod shared_support_compat_http_phase_ten_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_thirteen/assertions.rs"]
-pub mod shared_support_compat_http_phase_thirteen_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_thirteen/bundle.rs"]
-pub mod shared_support_compat_http_phase_thirteen_bundle;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_thirteen/runtime.rs"]
-pub mod shared_support_compat_http_phase_thirteen_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_three_runtime.rs"]
-pub mod shared_support_compat_http_phase_three_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_twelve/assertions.rs"]
-pub mod shared_support_compat_http_phase_twelve_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_twelve/runtime.rs"]
-pub mod shared_support_compat_http_phase_twelve_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/compat_http/phase_two_runtime.rs"]
-pub mod shared_support_compat_http_phase_two_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/direct_context_runtime.rs"]
-pub mod shared_support_direct_context_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/durable_product_mutation/mod.rs"]
-pub mod shared_support_durable_product_mutation;
-#[allow(dead_code, unused_imports)]
-#[path = "support/operation_request/runtime.rs"]
-pub mod shared_support_operation_request_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/product_adapter_phase_nine/fixture.rs"]
-pub mod shared_support_product_adapter_phase_nine_fixture;
-#[allow(dead_code, unused_imports)]
-#[path = "support/product_operation_phase_eleven/backend.rs"]
-pub mod shared_support_product_operation_phase_eleven_backend;
-#[allow(dead_code, unused_imports)]
-#[path = "support/product_operation_phase_thirteen/fixture.rs"]
-pub mod shared_support_product_operation_phase_thirteen_fixture;
-#[allow(dead_code, unused_imports)]
-#[path = "support/product_operation_phase_thirteen/parity_driver.rs"]
-pub mod shared_support_product_operation_phase_thirteen_parity_driver;
-#[allow(dead_code, unused_imports)]
-#[path = "support/product_result/schema_bound_json.rs"]
-pub mod shared_support_product_result_schema_bound_json;
-#[allow(dead_code, unused_imports)]
-#[path = "support/product_session_phase_ten/fixture.rs"]
-pub mod shared_support_product_session_phase_ten_fixture;
-#[allow(dead_code, unused_imports)]
-#[path = "support/query_handoff/fixture.rs"]
-pub mod shared_support_query_handoff_fixture;
-#[allow(dead_code, unused_imports)]
-#[path = "support/query_handoff/runtime.rs"]
-pub mod shared_support_query_handoff_runtime;
-#[allow(dead_code, unused_imports)]
-#[path = "support/response_fixture.rs"]
-pub mod shared_support_response_fixture;
-#[allow(dead_code, unused_imports)]
-#[path = "support/route_assembly_phase_twelve/fixture.rs"]
-pub mod shared_support_route_assembly_phase_twelve_fixture;
-#[allow(dead_code, unused_imports)]
-#[path = "support/route_assembly_phase_twelve/request_driver.rs"]
-pub mod shared_support_route_assembly_phase_twelve_request_driver;
-#[allow(dead_code, unused_imports)]
-#[path = "support/test_bootstrap_policy.rs"]
-pub mod shared_support_test_bootstrap_policy;
-#[allow(dead_code, unused_imports)]
-#[path = "support/worth_native/assertions.rs"]
-pub mod shared_support_worth_native_assertions;
-#[allow(dead_code, unused_imports)]
-#[path = "support/worth_native/runtime.rs"]
-pub mod shared_support_worth_native_runtime;
 #[path = "certification_suite.rs"]
 mod certification_suite;
 #[path = "compat_http_admission.rs"]
@@ -233,6 +128,111 @@ mod request_context_resolution;
 mod route_assembly_phase_twelve;
 #[path = "route_assembly_phase_twelve_boundary.rs"]
 mod route_assembly_phase_twelve_boundary;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_eight/assertions.rs"]
+pub mod shared_support_compat_http_phase_eight_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_eight/runtime.rs"]
+pub mod shared_support_compat_http_phase_eight_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_four_assertions.rs"]
+pub mod shared_support_compat_http_phase_four_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_four_runtime.rs"]
+pub mod shared_support_compat_http_phase_four_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_nine/assertions.rs"]
+pub mod shared_support_compat_http_phase_nine_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_nine/runtime.rs"]
+pub mod shared_support_compat_http_phase_nine_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_seven/assertions.rs"]
+pub mod shared_support_compat_http_phase_seven_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_seven/runtime.rs"]
+pub mod shared_support_compat_http_phase_seven_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_six_runtime.rs"]
+pub mod shared_support_compat_http_phase_six_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_ten/assertions.rs"]
+pub mod shared_support_compat_http_phase_ten_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_ten/runtime.rs"]
+pub mod shared_support_compat_http_phase_ten_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_thirteen/assertions.rs"]
+pub mod shared_support_compat_http_phase_thirteen_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_thirteen/bundle.rs"]
+pub mod shared_support_compat_http_phase_thirteen_bundle;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_thirteen/runtime.rs"]
+pub mod shared_support_compat_http_phase_thirteen_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_three_runtime.rs"]
+pub mod shared_support_compat_http_phase_three_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_twelve/assertions.rs"]
+pub mod shared_support_compat_http_phase_twelve_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_twelve/runtime.rs"]
+pub mod shared_support_compat_http_phase_twelve_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/compat_http/phase_two_runtime.rs"]
+pub mod shared_support_compat_http_phase_two_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/direct_context_runtime.rs"]
+pub mod shared_support_direct_context_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/durable_product_mutation/mod.rs"]
+pub mod shared_support_durable_product_mutation;
+#[allow(dead_code, unused_imports)]
+#[path = "support/operation_request/runtime.rs"]
+pub mod shared_support_operation_request_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/product_adapter_phase_nine/fixture.rs"]
+pub mod shared_support_product_adapter_phase_nine_fixture;
+#[allow(dead_code, unused_imports)]
+#[path = "support/product_operation_phase_eleven/backend.rs"]
+pub mod shared_support_product_operation_phase_eleven_backend;
+#[allow(dead_code, unused_imports)]
+#[path = "support/product_operation_phase_thirteen/fixture.rs"]
+pub mod shared_support_product_operation_phase_thirteen_fixture;
+#[allow(dead_code, unused_imports)]
+#[path = "support/product_operation_phase_thirteen/parity_driver.rs"]
+pub mod shared_support_product_operation_phase_thirteen_parity_driver;
+#[allow(dead_code, unused_imports)]
+#[path = "support/product_result/schema_bound_json.rs"]
+pub mod shared_support_product_result_schema_bound_json;
+#[allow(dead_code, unused_imports)]
+#[path = "support/product_session_phase_ten/fixture.rs"]
+pub mod shared_support_product_session_phase_ten_fixture;
+#[allow(dead_code, unused_imports)]
+#[path = "support/query_handoff/fixture.rs"]
+pub mod shared_support_query_handoff_fixture;
+#[allow(dead_code, unused_imports)]
+#[path = "support/query_handoff/runtime.rs"]
+pub mod shared_support_query_handoff_runtime;
+#[allow(dead_code, unused_imports)]
+#[path = "support/response_fixture.rs"]
+pub mod shared_support_response_fixture;
+#[allow(dead_code, unused_imports)]
+#[path = "support/route_assembly_phase_twelve/fixture.rs"]
+pub mod shared_support_route_assembly_phase_twelve_fixture;
+#[allow(dead_code, unused_imports)]
+#[path = "support/route_assembly_phase_twelve/request_driver.rs"]
+pub mod shared_support_route_assembly_phase_twelve_request_driver;
+#[allow(dead_code, unused_imports)]
+#[path = "support/test_bootstrap_policy.rs"]
+pub mod shared_support_test_bootstrap_policy;
+#[allow(dead_code, unused_imports)]
+#[path = "support/worth_native/assertions.rs"]
+pub mod shared_support_worth_native_assertions;
+#[allow(dead_code, unused_imports)]
+#[path = "support/worth_native/runtime.rs"]
+pub mod shared_support_worth_native_runtime;
 #[path = "surface_family_isolation.rs"]
 mod surface_family_isolation;
 #[path = "surface_registration.rs"]

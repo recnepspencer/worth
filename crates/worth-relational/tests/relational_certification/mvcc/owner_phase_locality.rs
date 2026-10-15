@@ -32,7 +32,9 @@ use worth_relational::facade::mvcc::{
 
 #[test]
 fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked() {
-    let host_request = std::sync::Arc::new(crate::shared_relational_certification_test_execution_policy::serial_request());
+    let host_request = std::sync::Arc::new(
+        crate::shared_relational_certification_test_execution_policy::serial_request(),
+    );
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) =
@@ -61,7 +63,9 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
     );
     let preparation = world.runtime.preparation_port();
     let storm_worker = std::thread::spawn(move || {
-        let host_request = std::sync::Arc::new(crate::shared_relational_certification_test_execution_policy::serial_request());
+        let host_request = std::sync::Arc::new(
+            crate::shared_relational_certification_test_execution_policy::serial_request(),
+        );
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
         preparation.prepare_branch_transaction(request_execution, storm_transaction)
     });
@@ -101,7 +105,9 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
 
 #[test]
 fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked() {
-    let host_request = std::sync::Arc::new(crate::shared_relational_certification_test_execution_policy::serial_request());
+    let host_request = std::sync::Arc::new(
+        crate::shared_relational_certification_test_execution_policy::serial_request(),
+    );
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) =
@@ -199,7 +205,9 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
 
 #[test]
 fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() {
-    let host_request = std::sync::Arc::new(crate::shared_relational_certification_test_execution_policy::serial_request());
+    let host_request = std::sync::Arc::new(
+        crate::shared_relational_certification_test_execution_policy::serial_request(),
+    );
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) =

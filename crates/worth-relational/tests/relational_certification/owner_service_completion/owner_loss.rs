@@ -7,7 +7,8 @@ use worth_relational::facade::mvcc::RelationalOperationControl;
 
 #[test]
 fn surviving_bundle_is_weak_and_reports_exact_owner_unavailable_postures() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = empty_runtime();

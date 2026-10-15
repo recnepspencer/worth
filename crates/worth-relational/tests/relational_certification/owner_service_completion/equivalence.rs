@@ -101,7 +101,8 @@ fn basis_port_matches_every_direct_basis_operation_on_separate_worlds() {
 
 #[test]
 fn direct_and_service_routes_have_equivalent_semantics_on_separate_worlds() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut direct = empty_runtime();
@@ -198,7 +199,8 @@ fn direct_and_service_routes_have_equivalent_semantics_on_separate_worlds() {
 
 #[test]
 fn movement_through_either_route_is_immediately_visible_through_the_other() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = empty_runtime();
@@ -229,7 +231,8 @@ fn movement_through_either_route_is_immediately_visible_through_the_other() {
 
 #[test]
 fn basis_and_lifecycle_routes_share_exact_artifacts_on_one_owner() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     use super::super::world::supply_chain::{certified_supply_chain_world, SupplyChainScale};

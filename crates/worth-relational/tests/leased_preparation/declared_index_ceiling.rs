@@ -2,7 +2,8 @@ use super::*;
 
 #[test]
 fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();

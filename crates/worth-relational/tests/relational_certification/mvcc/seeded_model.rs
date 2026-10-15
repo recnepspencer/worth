@@ -117,7 +117,8 @@ fn assert_standard_sequence_replayable_and_shrinkable(
 
 #[test]
 fn generated_standard_seed_91711200_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 0);
@@ -125,7 +126,8 @@ fn generated_standard_seed_91711200_is_replayable_and_shrinkable() {
 
 #[test]
 fn generated_standard_seed_12fa88bb9_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 1);
@@ -133,7 +135,8 @@ fn generated_standard_seed_12fa88bb9_is_replayable_and_shrinkable() {
 
 #[test]
 fn generated_standard_seed_1cde00572_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 2);
@@ -141,7 +144,8 @@ fn generated_standard_seed_1cde00572_is_replayable_and_shrinkable() {
 
 #[test]
 fn generated_standard_seed_26c177f2b_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 3);
@@ -149,7 +153,8 @@ fn generated_standard_seed_26c177f2b_is_replayable_and_shrinkable() {
 
 #[test]
 fn generated_standard_seed_30a4ef8e4_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 4);
@@ -157,7 +162,8 @@ fn generated_standard_seed_30a4ef8e4_is_replayable_and_shrinkable() {
 
 #[test]
 fn generated_standard_seed_3a886729d_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 5);
@@ -165,7 +171,8 @@ fn generated_standard_seed_3a886729d_is_replayable_and_shrinkable() {
 
 #[test]
 fn generated_standard_seed_446bdec56_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 6);
@@ -173,7 +180,8 @@ fn generated_standard_seed_446bdec56_is_replayable_and_shrinkable() {
 
 #[test]
 fn generated_standard_seed_4e4f5660f_is_replayable_and_shrinkable() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_standard_sequence_replayable_and_shrinkable(execution, 7);

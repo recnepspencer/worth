@@ -10,7 +10,8 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn phase5_cost_scope_excludes_prior_target_work_and_later_sibling_work() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -28,7 +29,8 @@ fn phase5_cost_scope_excludes_prior_target_work_and_later_sibling_work() {
 
 #[test]
 fn phase5_selected_publication_tuple_is_stable_across_target_history_lengths() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut observed_costs = Vec::new();
@@ -92,7 +94,8 @@ fn phase5_selected_publication_tuple_is_stable_across_target_history_lengths() {
 
 #[test]
 fn phase5_selected_publication_tuple_ignores_unrelated_population_reads_and_validation() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut observed_costs = Vec::new();

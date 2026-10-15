@@ -10,7 +10,8 @@ use worth_relational::facade::publication::PatchStreamRequest;
 
 #[test]
 fn cancellation_before_observation_or_transaction_acquires_no_obligation() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -74,7 +75,8 @@ fn cancellation_before_observation_or_transaction_acquires_no_obligation() {
 
 #[test]
 fn cancellation_during_preparation_releases_the_transaction_once() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -125,7 +127,8 @@ fn cancellation_during_preparation_releases_the_transaction_once() {
 
 #[test]
 fn cancellation_after_candidate_creation_wins_before_branch_movement() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -198,7 +201,8 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
 
 #[test]
 fn cancellation_after_snapshot_pin_preserves_and_releases_the_exact_observation() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -238,7 +242,8 @@ fn cancellation_after_snapshot_pin_preserves_and_releases_the_exact_observation(
 
 #[test]
 fn cancellation_after_linearization_preserves_performed_commit_and_settles_once() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -302,7 +307,8 @@ fn cancellation_after_linearization_preserves_performed_commit_and_settles_once(
 
 #[test]
 fn elapsed_deadline_is_distinct_from_cancellation() {
-    let host_request = crate::shared_relational_certification_test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
