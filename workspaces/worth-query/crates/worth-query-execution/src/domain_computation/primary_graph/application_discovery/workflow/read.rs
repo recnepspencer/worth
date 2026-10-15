@@ -84,7 +84,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         )?
         else {
             return Ok(WorthQueryWorkflowInstanceRead::Missing {
-                basis: WorthQueryWorkflowReadBasis::retained(data.retain_application_read()),
+                basis: WorthQueryWorkflowReadBasis::retained(data),
             });
         };
         let execution = phase
@@ -151,7 +151,7 @@ pub(super) fn project_record<Schema: ApplicationSchema>(
     };
     let live = record.reference.take();
     let observation = WorthQueryWorkflowObservation {
-        basis: WorthQueryWorkflowReadBasis::retained(data.retain_application_read()),
+        basis: WorthQueryWorkflowReadBasis::retained(data),
         state: record.state,
         history: record.history,
         audit,

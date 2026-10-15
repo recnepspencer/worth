@@ -80,8 +80,18 @@ pub enum WorthQueryWorkflowInstanceRead {
 /// Owns the exact data basis even when no instance exists; carries no admission.
 pub struct WorthQueryWorkflowReadBasis(Arc<WorthQueryApplicationReadObservation>);
 impl WorthQueryWorkflowReadBasis {
-    pub(super) fn retained(basis: Arc<WorthQueryApplicationReadObservation>) -> Self {
-        Self(basis)
+    pub(super) fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
+    ) -> Self {
+        // Retain only the native read lease for the result's observer lifetime.
+        // The selected operation's publication source and fresh admission stay private.
+        Self(WorthQueryApplicationReadObservation::from_product(
+            selected.application(),
+            selected.product().read_lease(),
+        ))
     }
     pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
         self.0.selected_commit()

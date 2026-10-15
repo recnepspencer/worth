@@ -27,7 +27,7 @@ use worth_relational::facade::identity::EntityId;
 
 use super::super::application_attempt::{
     observe_adjacency, observe_field_value, PublishedWorkflowDefinitionRef,
-    WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationObservedFact,
+    WorthQueryApplicationAdjacencyDirection,
 };
 use super::super::workflow::schema::WorthQueryWorkflowLayout;
 

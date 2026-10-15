@@ -157,7 +157,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 Ok(definition)
             })?;
         Ok(WorthQueryWorkflowDefinitionRead {
-            basis: super::WorthQueryWorkflowReadBasis::retained(data.retain_application_read()),
+            basis: super::WorthQueryWorkflowReadBasis::retained(data),
             definition: result,
         })
     }

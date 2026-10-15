@@ -91,7 +91,7 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
             kind,
             &layout.instance.program_revision,
         )
-        .map_err(Denial::Execution)?;
+        .map_err(Denial::Relational)?;
         if recorded != Some(text(revision.to_string())) {
             return Err(Denial::PolicyMismatch);
         }
@@ -103,7 +103,7 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
             kind,
             &layout.instance.definition_content_identity,
         )
-        .map_err(Denial::Execution)?;
+        .map_err(Denial::Relational)?;
         let Some(AspectValue::String(worth_foundational::facade::InternedString::Raw(content))) =
             content
         else {
@@ -149,7 +149,7 @@ pub(in crate::domain_computation::primary_graph) fn observe<Schema>(
             layout.definition.entity_kind,
             &layout.definition.content_identity,
         )
-        .map_err(Denial::Execution)?;
+        .map_err(Denial::Relational)?;
         if recorded_content != Some(text(content.to_string())) {
             return Err(Denial::Corrupt);
         }
