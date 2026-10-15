@@ -23,6 +23,7 @@ mod definition;
 mod enumeration;
 mod provenance;
 mod publication;
+mod reacquisition;
 use publication::{prepare, publish, revoke};
 
 #[test]
