@@ -1,4 +1,9 @@
 //! Move-only native cleanup and business evidence; the native issuer decides release.
+#![allow(
+    clippy::result_large_err,
+    reason = "Native cleanup refusal returns the original move-only owner and business evidence without allocation"
+)]
+
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
     application_contribution::{WorthQueryAdvancementDenial, WorthQueryAdvancementPhase},

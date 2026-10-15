@@ -67,7 +67,7 @@ impl CrossGateWorld {
     }
 
     pub(crate) fn commit_second_notification(&self, identity: u8) -> BankCommitReceipt {
-        let outcome = {
+        {
             let source_actor = &self.fixture.authenticate_specialist();
             let source_scope = &request_scope();
             let source_key = &idempotency(identity);
@@ -110,13 +110,11 @@ impl CrossGateWorld {
                 .close_with_evidence(&source_request)
                 .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
             bank_server::BankCommitReceipt::from_closed_source(closed_source)
-        };
-        let receipt = outcome;
-        receipt
+        }
     }
 
     pub(crate) fn commit_with(&self, binding: BankIdempotencyKey) -> BankCommitReceipt {
-        let outcome = {
+        {
             let source_actor = &self.fixture.authenticate_specialist();
             let source_scope = &request_scope();
             let source_key = &binding;
@@ -156,9 +154,7 @@ impl CrossGateWorld {
                 .close_with_evidence(&source_request)
                 .unwrap_or_else(|(_, cause)| panic!("lawful native source close: {cause:?}"));
             bank_server::BankCommitReceipt::from_closed_source(closed_source)
-        };
-        let receipt = outcome;
-        receipt
+        }
     }
 
     /// Independent balance oracle — accounting revision of the estate account.

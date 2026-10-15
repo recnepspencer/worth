@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::RuntimeOutcomeProjectionRegistry`
- --> tests/ui/facade/runtime_outcome_projection/facade/runtime_outcome_projection_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::RuntimeOutcomeProjectionRegistry;
-  |     ^^^^^^^^^^^^^^^^^^--------------------------------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `RuntimeOutcomeProjectionKey`
-  |     no `RuntimeOutcomeProjectionRegistry` in `facade`

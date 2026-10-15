@@ -16,7 +16,7 @@ impl RelationalPublicationCompanion for HeldReservationCompanion {
 fn register(
     runtime: &RelationalRuntime,
     participant: Arc<dyn RelationalPublicationCompanion>,
-) -> impl Sized {
+) -> impl Sized + use<> {
     runtime
         .publication_companion_port()
         .begin_required_registration()

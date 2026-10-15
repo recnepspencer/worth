@@ -1,3 +1,8 @@
+#![allow(
+    clippy::result_large_err,
+    reason = "Authorization courts preserve complete native workflow refusal evidence"
+)]
+
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 #[path = "business_authorization/fixture.rs"]
 mod business_authorization_fixture;

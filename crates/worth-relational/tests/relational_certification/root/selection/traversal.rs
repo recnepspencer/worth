@@ -21,7 +21,8 @@ use worth_relational::facade::transactions::{
 
 #[test]
 fn branch_traversal_enumerates_edges_from_the_selected_immutable_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());

@@ -60,15 +60,14 @@ impl BridgeDiagnosticsState {
         );
         self.merge_records.push_back(record);
         while self.merge_records.len() > limit.max(1) {
-            if let Some(evicted) = self.merge_records.pop_front() {
-                if self
+            if let Some(evicted) = self.merge_records.pop_front()
+                && self
                     .latest_merge_by_record_identity
                     .get(evicted.record_identity().as_str())
                     .is_some_and(|current| Arc::ptr_eq(current, &evicted))
-                {
-                    self.latest_merge_by_record_identity
-                        .remove(evicted.record_identity().as_str());
-                }
+            {
+                self.latest_merge_by_record_identity
+                    .remove(evicted.record_identity().as_str());
             }
         }
     }

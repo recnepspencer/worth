@@ -92,10 +92,10 @@ impl RelationalBranchRetentionBinding {
             .owner
             .upgrade()
             .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
-        if let Some(operation_branch) = operation_branch.as_ref() {
-            if self.lane.identity.as_ref() != Some(operation_branch) {
-                return Err(RelationalRetentionAcquisitionDenial::OwnerUnavailable);
-            }
+        if let Some(operation_branch) = operation_branch.as_ref()
+            && self.lane.identity.as_ref() != Some(operation_branch)
+        {
+            return Err(RelationalRetentionAcquisitionDenial::OwnerUnavailable);
         }
         reserve_live_obligation_capacity(&owner)?;
         let mut state = lock_lane(&self.lane);

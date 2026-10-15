@@ -26,7 +26,7 @@ impl BankHttpMutationContinuation {
         let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let slot = match Arc::clone(&self.transport.queue_slots).try_acquire_owned() {
             Ok(slot) => slot,
             Err(_) => return inspection_denied(id, BankHttpDenialKind::Saturated),
@@ -34,6 +34,10 @@ impl BankHttpMutationContinuation {
         let index =
             super::mutation_executor::routing_slot(&request.token, self.transport.senders.len());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel = cancellation_guard;
         if let Err(error) = self.transport.senders[index].try_send(WorkerCommand::RecoveryInspect {
             request,
             queued_slot: slot,
@@ -42,7 +46,7 @@ impl BankHttpMutationContinuation {
         }) {
             return inspection_denied(id, unavailable_or_full(error));
         }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => inspection_denied(id, BankHttpDenialKind::Unavailable),
         }
@@ -65,13 +69,17 @@ impl BankHttpMutationContinuation {
         let token = request.token.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let slot = match Arc::clone(&self.transport.queue_slots).try_acquire_owned() {
             Ok(slot) => slot,
             Err(_) => return retry_denied(id, BankHttpDenialKind::Saturated),
         };
         let index = super::mutation_executor::routing_slot(&token, self.transport.senders.len());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel = cancellation_guard;
         if let Err(error) = self.transport.senders[index].try_send(WorkerCommand::RecoveryRetry {
             request,
             queued_slot: slot,
@@ -80,7 +88,7 @@ impl BankHttpMutationContinuation {
         }) {
             return retry_denied(id, unavailable_or_full(error));
         }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpRecoverySafeRetryOutcome::OutcomeUnknown {
                 request_id: id,

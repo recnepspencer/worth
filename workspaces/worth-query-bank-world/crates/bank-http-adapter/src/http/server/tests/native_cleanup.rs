@@ -40,7 +40,7 @@ async fn notification_unpublished_cleanup_lost_reply_releases_on_original_thread
         .runtime
         .schedule_next_managed_cleanup_on_worker_for_test()
         .unwrap();
-    let registry = Arc::clone(&continuation.transport.recovery);
+    let registry = Arc::clone(&continuation.transport._recovery_registry);
     let (response, lost) = oneshot::channel();
     drop(lost);
     let (observation, observed) = oneshot::channel();

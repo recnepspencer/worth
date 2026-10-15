@@ -113,21 +113,20 @@ impl SourceInvalidationOwner {
         // A full window may have dropped the step that produced its oldest
         // retained position. That step is lost exactly when it lies after the
         // cursor and within the selected ceiling.
-        if let Some((oldest, row)) = past.get_min() {
-            if past.len() >= self.resources.installation().maximum_retained_positions
-                && *oldest > cursor
-                && within_ceiling(row.commit_id)
-            {
-                // Each key is the position its own row's commit produced.
-                let resume_after = past
-                    .iter()
-                    .map(|(position, row)| (*position, row.commit_id))
-                    .chain(std::iter::once((image.position(), image.commit_id())))
-                    .take_while(|(_, commit)| within_ceiling(*commit))
-                    .last()
-                    .and_then(|(position, _)| position);
-                return Err(CommitTouchesStop::RequiresReconstruction { resume_after });
-            }
+        if let Some((oldest, row)) = past.get_min()
+            && past.len() >= self.resources.installation().maximum_retained_positions
+            && *oldest > cursor
+            && within_ceiling(row.commit_id)
+        {
+            // Each key is the position its own row's commit produced.
+            let resume_after = past
+                .iter()
+                .map(|(position, row)| (*position, row.commit_id))
+                .chain(std::iter::once((image.position(), image.commit_id())))
+                .take_while(|(_, commit)| within_ceiling(*commit))
+                .last()
+                .and_then(|(position, _)| position);
+            return Err(CommitTouchesStop::RequiresReconstruction { resume_after });
         }
         // past[p] holds the delivery that moved the branch from p to the next
         // retained position, or to the image's own position for the last row.

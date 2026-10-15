@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 use serde_json::json;
 use worth_server::{
     request_context::DiagnosticRichnessProfile, WorthServerProductIdempotencyKey,
@@ -7,10 +7,10 @@ use worth_server::{
     WorthServerWorthNativeSession, WorthServerWorthNativeSessionInput,
 };
 
-#[path = "support/durable_product_mutation/mod.rs"]
-mod durable_support;
-#[path = "support/route_assembly_phase_twelve/request_driver.rs"]
-mod request_driver;
+#[allow(unused_imports)]
+use crate::shared_support_durable_product_mutation as durable_support;
+#[allow(unused_imports)]
+use crate::shared_support_route_assembly_phase_twelve_request_driver as request_driver;
 
 #[tokio::test]
 async fn worth_native_and_http_project_identical_result_and_completion_artifacts() {

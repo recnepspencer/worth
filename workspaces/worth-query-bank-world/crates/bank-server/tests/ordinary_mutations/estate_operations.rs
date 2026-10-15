@@ -52,3 +52,29 @@ mod program_adoption_authorization;
 
 #[path = "estate_operations/owning_sources.rs"]
 mod owning_sources;
+
+// Estate sources retain the native original across progress, completion and refusal.
+type EstateSourceAdvance<Intent, Action> =
+    worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
+        worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
+            bank_domain::schema::BankSchema,
+            Intent,
+            bank_server::BankApplication,
+            Action,
+            worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+        >,
+        worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
+            bank_domain::schema::BankSchema,
+            Intent,
+            bank_server::BankApplication,
+            Action,
+            worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+        >,
+        worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
+            bank_domain::schema::BankSchema,
+            Intent,
+            bank_server::BankApplication,
+            Action,
+            worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
+        >,
+    >;

@@ -192,7 +192,7 @@ worth_query_declaration::worth_query_structured_value_binding!(pub ComposedCapab
 worth_query_operation!(pub ComposedCapabilityTouchOperation for IdentityExecutionSchema, input ComposedCapabilityTouchOperationInputBinding);
 worth_query_operation_reads!(CapabilityTouchOperation => [AccountLabel, AccountIdentity]);
 worth_query_operation_writes!(CapabilityTouchOperation => [AccountLabel]);
-worth_query_operation_reads!(ComposedCapabilityTouchOperation => [AccountLabel]);
+worth_query_operation_reads!(ComposedCapabilityTouchOperation => [AccountLabel, AccountIdentity, CapabilityActionRecordIdentity]);
 worth_query_operation_writes!(ComposedCapabilityTouchOperation => [AccountLabel]);
 
 impl ApplicationCapabilityRequest<IdentityExecutionSchema, TouchAccountCapability>

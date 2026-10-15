@@ -1,6 +1,11 @@
 //! Real retained settlement checks typed phase outcomes and the independent journal.
 //! The focused assessment protocol model is unit-tested separately; it does not
 //! judges each actual advancement and its owner-applied order.
+#![allow(
+    clippy::result_large_err,
+    reason = "Assessment history exercises complete native workflow refusals without narrowing their evidence"
+)]
+
 use super::journal_model;
 use bank_domain::schema::ApprovePayment;
 use bank_server::{BankApprovedPaymentAssessmentProgress, BankPaymentAssessmentSettlement};
@@ -78,7 +83,7 @@ fn assessment_history_settles_at_each_request_width() {
     };
     let mut trace = super::assessment_trace::Trace::default();
     macro_rules! judged {
-        ($name:literal,$body:expr) => {
+        ($name:literal,$body:expr_2021) => {
             trace.phase($name, width, || $body)
         };
     }

@@ -36,8 +36,12 @@ impl BankHttpExecutionQueue {
         let request_id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _guard = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _guard = cancellation_guard;
         if self
             .sender
             .try_send(AccountSummaryJob {
@@ -49,7 +53,7 @@ impl BankHttpExecutionQueue {
         {
             return denied(request_id, BankHttpDenialKind::Saturated);
         }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             Ok(Err(_)) => denied(request_id, BankHttpDenialKind::Unavailable),
             Err(_) => denied(request_id, BankHttpDenialKind::DeadlineExceeded),
@@ -97,3 +101,7 @@ fn denied(request_id: String, kind: BankHttpDenialKind) -> BankHttpAccountSummar
         denial: BankHttpDenial::new(kind, BankHttpNextAction::Retry),
     }
 }
+
+#[cfg(test)]
+#[path = "queue/cancellation_tests.rs"]
+mod cancellation_tests;

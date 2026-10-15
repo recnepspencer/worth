@@ -5,7 +5,7 @@ use worth_foundational::{
 use worth_proof::TransitionOutcome;
 
 use super::patch_fixtures::admitted_state;
-use crate::foundational_vocabulary::{identity, key, revision, validated_scalar};
+use crate::certification::foundational_vocabulary::{identity, key, revision, validated_scalar};
 
 #[test]
 fn whole_aspect_patch_set_dominates_overlapping_clear_and_applies_canonically() {

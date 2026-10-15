@@ -3,7 +3,7 @@ use worth_foundational::{
     BoundaryEpoch, BoundaryHandle, CanonicalDigestId, EquivalenceBasisId, LocatorAuthority,
 };
 
-use crate::foundational_vocabulary::key;
+use crate::certification::foundational_vocabulary::key;
 
 #[test]
 fn identity_and_locator_golden_keeps_equal_storage_meanings_distinct() {

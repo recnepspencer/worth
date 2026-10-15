@@ -103,7 +103,7 @@ impl ApplicationOutputPort<DocumentRetentionSchema, DocumentRetentionFeature>
 }
 
 macro_rules! retention_artifact {
-    ($artifact:ty, $work:expr, $bytes:expr) => {
+    ($artifact:ty, $work:expr_2021, $bytes:expr_2021) => {
         impl ApplicationDerivedArtifact<DocumentRetentionSchema, DocumentRetentionFeature>
             for $artifact
         {
@@ -379,6 +379,5 @@ fn retention_feature_specs() -> Vec<ApplicationFeatureSpec> {
 #[path = "programs/workflow_owner.rs"]
 mod workflow_owner;
 pub use workflow_owner::{
-    GrantStatusAction, OccurrenceAction, ReviewedAction, ReviewedEffectDelivery, SavedSourceAction,
-    SavedSourceDelivery, WorkflowEffectDelivery, WorkflowOwnerProgram,
+    GrantStatusAction, OccurrenceAction, ReviewedAction, SavedSourceAction, WorkflowOwnerProgram,
 };

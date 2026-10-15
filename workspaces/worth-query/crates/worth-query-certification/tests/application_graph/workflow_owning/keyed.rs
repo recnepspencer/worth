@@ -45,20 +45,22 @@ fn workflow_owning_indeterminate_resolves_original_key_without_handler_retry() {
     let runtime = host.workflow.runtime();
     let scope = request_scope();
     let actor = authenticate_operator(runtime.installed_schema(), &scope);
-    let request = runtime.request(&actor, &scope).on_branch(instance.branch());
-    let guard = runtime
-        .hold_post_commit_snapshot_failure_for_test()
-        .unwrap();
-    let owner = match owner.advance(&request) {
-        WorthQueryWorkflowOperationAdvance::Progress(owner) => owner,
-        _ => panic!("real indeterminate outcome"),
+    let owner = {
+        let request = runtime.request(&actor, &scope).on_branch(instance.branch());
+        let guard = runtime
+            .hold_post_commit_snapshot_failure_for_test()
+            .unwrap();
+        let owner = match owner.advance(&request) {
+            WorthQueryWorkflowOperationAdvance::Progress(owner) => owner,
+            _ => panic!("real indeterminate outcome"),
+        };
+        let owner = match owner.advance(&request) {
+            WorthQueryWorkflowOperationAdvance::Refused { operation, .. } => operation,
+            _ => panic!("held native boundary refuses exact keyed resolution"),
+        };
+        drop(guard);
+        owner
     };
-    let owner = match owner.advance(&request) {
-        WorthQueryWorkflowOperationAdvance::Refused { operation, .. } => operation,
-        _ => panic!("held native boundary refuses exact keyed resolution"),
-    };
-    drop(guard);
-    drop(request);
     drop(actor);
     drop(scope);
     let scope = request_scope();

@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-budgets"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 1 admission control and resource budget contracts."

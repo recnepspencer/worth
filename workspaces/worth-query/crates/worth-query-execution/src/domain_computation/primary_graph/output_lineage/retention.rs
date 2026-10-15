@@ -15,10 +15,9 @@ impl WorthQueryApplicationOutputLineage {
                 .origins
                 .get(&child)
                 .map(|coordinate| coordinate.occurrence)
+                && retained.insert(parent)
             {
-                if retained.insert(parent) {
-                    frontier.push(parent);
-                }
+                frontier.push(parent);
             }
         }
         let cancelled = &self.cancelled_slots;

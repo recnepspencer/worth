@@ -155,7 +155,19 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
         retained_basis.get_or_insert_with(|| scalar.receipt().inspect().basis().clone());
         works.push(scalar.receipt().inspect().read_work().total_work_units());
     }
-    let policy = WorthQueryOperationDeliveryPolicy::currentness(NonZeroUsize::new(4096).unwrap());
+    // Fund currentness independently so these refusals reach aggregate batch
+    // admission rather than exhausting an unrelated earlier proof allowance.
+    let policy = WorthQueryOperationDeliveryPolicy::currentness(
+        NonZeroUsize::new(
+            world
+                .application
+                .runtime()
+                .output_demand_resource_profile()
+                .limits()
+                .source_currentness_work(),
+        )
+        .expect("installed finite positive currentness allowance"),
+    );
     let cap = works.iter().copied().max().unwrap();
     assert!(cap < works.iter().sum::<usize>());
     let limits = WorthQueryApplicationQueryBatchLimits::new(
@@ -172,18 +184,26 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
         NonZeroUsize::new(1).unwrap(),
         NonZeroUsize::MAX,
     );
-    assert!(matches!(
-        settled.read_batch_current_with_policy::<2>(&request, policy.batch(custody_cap)),
-        Err(WorthQueryOperationDeliveryDenial::Batch(
-            WorthQueryApplicationQueryBatchDenial::Resource {
-                item: None,
-                denial: WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit {
-                    maximum: 1,
-                    ..
+    let memory_refusal =
+        match settled.read_batch_current_with_policy::<2>(&request, policy.batch(custody_cap)) {
+            Err(denial) => denial,
+            Ok(_) => panic!("one byte cannot retain both batch result slots"),
+        };
+    assert!(
+        matches!(
+            memory_refusal,
+            WorthQueryOperationDeliveryDenial::Batch(
+                WorthQueryApplicationQueryBatchDenial::Resource {
+                    item: None,
+                    denial: WorthQueryApplicationQueryBatchResourceDenial::MemoryLimit {
+                        maximum: 1,
+                        ..
+                    }
                 }
-            }
-        ))
-    ));
+            )
+        ),
+        "actual aggregate custody refusal: {memory_refusal:?}",
+    );
     let refusal = match settled.read_batch_current_with_policy::<2>(&request, policy.batch(limits))
     {
         Err(denial) => denial,

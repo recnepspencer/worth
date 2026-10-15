@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::delta_batches::*;
-use crate::world::supply_chain::{
+use crate::relational_certification::world::supply_chain::{
     observe_supply_chain_observation, BranchLabel, DeltaId, DeltaPrecondition, EntityKey,
     EntityRecord, ObservationError, ObservedSupplyChainState, RelationKey, SchemaVersion,
     SupplyChainSemanticHandles,
@@ -35,7 +35,7 @@ pub(crate) enum SupplyChainProductionDeltaLoweringError {
 pub(crate) fn lower_supply_chain_production_delta(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
-    program: &crate::world::supply_chain::CompiledSupplyChainProgram,
+    program: &crate::relational_certification::world::supply_chain::CompiledSupplyChainProgram,
     handles: &SupplyChainSemanticHandles,
     branch_id: &BranchId,
     previously_applied: &BTreeSet<DeltaId>,

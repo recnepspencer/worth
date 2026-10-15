@@ -180,10 +180,14 @@ impl BankHttpRecoveryExecutor {
         let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel_on_drop = cancellation_guard;
         (self.notify)(request, cancellation, response);
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpEstateNotificationOutcome::Owning {
                 outcome: super::super::protocol::BankHttpMutationOutcome::OutcomeUnknown {
@@ -201,8 +205,12 @@ impl BankHttpRecoveryExecutor {
         let request_id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel_on_drop = cancellation_guard;
         if self
             .sender
             .try_send(RecoveryCommand::Inspect {
@@ -214,7 +222,7 @@ impl BankHttpRecoveryExecutor {
         {
             return inspection_denied(Some(request_id), saturated());
         }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             Ok(Err(_)) => inspection_denied(Some(request_id), unavailable()),
             Err(_) => inspection_denied(Some(request_id), deadline_exceeded()),
@@ -229,8 +237,12 @@ impl BankHttpRecoveryExecutor {
         let recovery = request.token.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel_on_drop = cancellation_guard;
         if self
             .sender
             .try_send(RecoveryCommand::SafeRetry {
@@ -242,7 +254,7 @@ impl BankHttpRecoveryExecutor {
         {
             return safe_retry_denied(Some(request_id), saturated());
         }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpRecoverySafeRetryOutcome::OutcomeUnknown {
                 request_id,
@@ -258,10 +270,14 @@ impl BankHttpRecoveryExecutor {
         let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel_on_drop = cancellation_guard;
         (self.disburse)(request, cancellation, response);
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpEstateDisbursementOutcome::Owning {
                 outcome: super::super::protocol::BankHttpMutationOutcome::OutcomeUnknown {

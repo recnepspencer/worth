@@ -27,17 +27,15 @@ fn equal_version_snapshot_from_another_relational_runtime_is_rejected() {
             let first_product = first.selected_product(
                 &(host_custody.phase_for_application(&first.application)).test_host_request(),
             );
-            let first_version =
-                first_graph
-                    .integration_handle()
-                    .with_runtime_mut(&borrowed_execution, |_| {
-                        first_product
-                            .application_basis()
-                            .snapshot_handle()
-                            .version_id()
-                    });
 
-            first_version
+            first_graph
+                .integration_handle()
+                .with_runtime_mut(&borrowed_execution, |_| {
+                    first_product
+                        .application_basis()
+                        .snapshot_handle()
+                        .version_id()
+                })
         })
         .expect("the source version read owns its host call");
     second

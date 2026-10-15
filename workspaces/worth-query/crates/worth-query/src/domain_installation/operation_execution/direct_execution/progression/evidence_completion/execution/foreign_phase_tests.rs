@@ -21,11 +21,11 @@ fn direct_executor_refuses_foreign_phase_with_accumulated_counters() {
                 Ok(value) => value,
                 Err(_) => panic!("honest preparation"),
             };
-            let completed = match prepared.invoke_graphs(&phase) {
+
+            match prepared.invoke_graphs(&phase) {
                 Ok(value) => value,
                 Err(_) => panic!("honest graph execution"),
-            };
-            completed
+            }
         })
         .unwrap();
     let counters = completed.prepared.counters;

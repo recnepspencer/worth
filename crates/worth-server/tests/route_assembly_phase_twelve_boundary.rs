@@ -1,12 +1,12 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use axum::http::StatusCode;
 
-#[path = "support/route_assembly_phase_twelve/fixture.rs"]
-mod fixture;
-#[path = "support/route_assembly_phase_twelve/request_driver.rs"]
-mod request_driver;
+#[allow(unused_imports)]
+use crate::shared_support_route_assembly_phase_twelve_fixture as fixture;
+#[allow(unused_imports)]
+use crate::shared_support_route_assembly_phase_twelve_request_driver as request_driver;
 
 use fixture::build_server;
 use request_driver::WorthServerRouteHttpTestDriver;

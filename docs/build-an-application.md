@@ -1696,6 +1696,10 @@ survive process loss.
 
 <!-- compiled: owning_entry.rs -->
 ```rust
+#[allow(
+    clippy::result_large_err,
+    reason = "The example returns the complete original builder and key without allocation"
+)]
 pub fn capture_original<'a, 'p, 's, S, I>(
     request: &WorthQueryApplicationRequest<'a, 'p, 's, S>,
     intent: I,

@@ -1,5 +1,5 @@
-use crate::support::compile_fail::{CompileFailBundle, CompileFailCase};
-use crate::support::compile_pass::{CompilePassBundle, CompilePassCase};
+use crate::shared_support::compile_fail::{CompileFailBundle, CompileFailCase};
+use crate::shared_support::compile_pass::{CompilePassBundle, CompilePassCase};
 
 pub fn compile_fail_bundle() -> CompileFailBundle {
     CompileFailBundle::new(

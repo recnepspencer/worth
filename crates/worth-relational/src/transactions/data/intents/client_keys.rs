@@ -141,10 +141,10 @@ fn collect_entity_reference_raw_client_key(
     entity_reference: &EntityReference,
     raw_values: &mut BTreeSet<String>,
 ) {
-    if let EntityReference::Created(created) = entity_reference {
-        if let Some(raw) = created.client_key.as_raw_str() {
-            raw_values.insert(raw.to_string());
-        }
+    if let EntityReference::Created(created) = entity_reference
+        && let Some(raw) = created.client_key.as_raw_str()
+    {
+        raw_values.insert(raw.to_string());
     }
 }
 

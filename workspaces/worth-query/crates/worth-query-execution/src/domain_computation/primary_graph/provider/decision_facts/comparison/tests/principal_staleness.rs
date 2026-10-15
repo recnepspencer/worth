@@ -74,14 +74,13 @@ impl WorthQueryPrimaryGraphProvider {
                         .graph
                         .with_runtime(reader, |runtime| {
                             if evidence.locator().identity() == "application-principal-currentness"
+                                && let Some(source) = cancellation.cloned()
                             {
-                                if let Some(source) = cancellation.cloned() {
-                                    return crate::test_read_stops::cancelled_at_consult_for_test(
-                                        2,
-                                        source,
-                                        || fact.remains_equal_in(reader, runtime, &snapshot),
-                                    );
-                                }
+                                return crate::test_read_stops::cancelled_at_consult_for_test(
+                                    2,
+                                    source,
+                                    || fact.remains_equal_in(reader, runtime, &snapshot),
+                                );
                             }
                             fact.remains_equal_in(reader, runtime, &snapshot)
                         })

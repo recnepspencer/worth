@@ -246,13 +246,12 @@ fn ready(
         Ok(PhysicalWorkReadiness::Blocked(blocked)) => {
             let identity = blocked.intent().identity();
             let route = blocked.authority().binding();
-            let cancelled = if let Some((_, request)) = blocked.into_revalidation_parts() {
-                cancel(
+            let cancelled = match blocked.into_revalidation_parts() {
+                Some((_, request)) => cancel(
                     coordination,
                     PhysicalWorkConsumerHandle::new(identity, request, route),
-                )
-            } else {
-                coordination.submission.cancel_before_dispatch(identity)
+                ),
+                _ => coordination.submission.cancel_before_dispatch(identity),
             };
             Err(PhysicalRecoveryCleanupAdmissionDenial::after_submission(
                 PhysicalRecoveryCleanupAdmissionDenialKind::PreEffect(

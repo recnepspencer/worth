@@ -208,26 +208,24 @@ impl RelationalOperationControl {
         &self,
         boundary: RelationalInterruptionBoundary,
     ) -> Option<RelationalInterruptionEvent> {
-        if let Some(pause) = &self.boundary_pause {
-            if pause.boundary == boundary
-                && pause
-                    .used
-                    .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-                    .is_ok()
-            {
-                pause.reached.wait();
-                pause.release.wait();
-            }
+        if let Some(pause) = &self.boundary_pause
+            && pause.boundary == boundary
+            && pause
+                .used
+                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                .is_ok()
+        {
+            pause.reached.wait();
+            pause.release.wait();
         }
-        if let Some(injected) = &self.injected_interruption {
-            if injected.boundary == boundary
-                && injected.visits.fetch_add(1, Ordering::AcqRel) + 1 == injected.trigger_on_visit
-            {
-                return Some(RelationalInterruptionEvent {
-                    interruption: injected.interruption,
-                    boundary,
-                });
-            }
+        if let Some(injected) = &self.injected_interruption
+            && injected.boundary == boundary
+            && injected.visits.fetch_add(1, Ordering::AcqRel) + 1 == injected.trigger_on_visit
+        {
+            return Some(RelationalInterruptionEvent {
+                interruption: injected.interruption,
+                boundary,
+            });
         }
         self.interruption()
             .map(|interruption| RelationalInterruptionEvent {

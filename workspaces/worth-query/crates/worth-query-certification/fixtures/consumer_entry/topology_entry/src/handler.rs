@@ -117,10 +117,10 @@ where
                     let _ = reader.reader().version();
                 } else if output.body_key == "anchor-island" {
                     let _ = reader.key_identity();
-                } else if output.body_key.starts_with(SURVEYED_BODY_KEY_PREFIX) {
-                    if let Err(error) = survey_standing_length(reader, output.value) {
-                        return HandlerResult::ExecutionDenied(error);
-                    }
+                } else if output.body_key.starts_with(SURVEYED_BODY_KEY_PREFIX)
+                    && let Err(error) = survey_standing_length(reader, output.value)
+                {
+                    return HandlerResult::ExecutionDenied(error);
                 }
                 let entity =
                     match reader.resolve_entity(BodyKey::reference(), output.body_key.clone()) {

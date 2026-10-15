@@ -198,10 +198,10 @@ fn journey(case: Case) {
                             ApplicationQueryParameterSet::new(), current_controls(local_scope), &foreign_batch,
                         ).unwrap()
                     } else {
-                    let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
+
+                        selected.retain_selection(&issued).unwrap().admit_application_query(
                         &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), current_controls(local_scope),
-                    ).unwrap();
-                        plan
+                    ).unwrap()
                     };
                     if failure && case == Case::Cancelled { cancellation.cancel(); }
                     let result = read.execute(plan)?;

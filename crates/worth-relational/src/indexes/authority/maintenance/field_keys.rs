@@ -151,20 +151,20 @@ fn value(
     let Some(state) = state else { return Ok(None) };
     let aspect = locator.aspect().aspect_key();
     work.lookup(state.aspects().len(), aspect.as_str().len() + 1)?;
-    if let Some(value) = state.get(aspect) {
-        if let ContractValidatedAspectValueView::Struct(value) = value.view() {
-            let fields = value
-                .fields()
-                .size_hint()
-                .1
-                .ok_or(Denial::WorkBudgetExceeded)?;
-            let width = locator
-                .field_path()
-                .fields()
-                .first()
-                .map_or(1, |field| field.as_str().len() + 1);
-            work.lookup(fields, width)?;
-        }
+    if let Some(value) = state.get(aspect)
+        && let ContractValidatedAspectValueView::Struct(value) = value.view()
+    {
+        let fields = value
+            .fields()
+            .size_hint()
+            .1
+            .ok_or(Denial::WorkBudgetExceeded)?;
+        let width = locator
+            .field_path()
+            .fields()
+            .first()
+            .map_or(1, |field| field.as_str().len() + 1);
+        work.lookup(fields, width)?;
     }
     // The original projection remains the value authority. Its repeated
     // aspect navigation is separately prepaid.

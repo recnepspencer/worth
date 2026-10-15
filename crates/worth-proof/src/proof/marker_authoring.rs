@@ -110,16 +110,13 @@ mod tests {
     crate::authority_marker!(pub SealedAuthority);
     crate::capability_marker!(pub SealedCapability);
 
-    #[test]
-    fn sealed_markers_and_their_witnesses_stay_zero_sized() {
-        // The seal must cost nothing: a marker carrying a private PhantomData
-        // is still a ZST, so sealing does not trade away the crate's
-        // static-first guarantee.
-        assert_eq!(size_of::<SealedAuthority>(), 0);
-        assert_eq!(size_of::<SealedCapability>(), 0);
-        assert_eq!(size_of::<crate::AuthorityWitness<SealedAuthority>>(), 0);
-        assert_eq!(size_of::<crate::CapabilityWitness<SealedCapability>>(), 0);
-    }
+    // The seal must cost nothing: a marker carrying a private PhantomData
+    // is still a ZST, so sealing does not trade away the crate's
+    // static-first guarantee.
+    const _: () = assert!(size_of::<SealedAuthority>() == 0);
+    const _: () = assert!(size_of::<SealedCapability>() == 0);
+    const _: () = assert!(size_of::<crate::AuthorityWitness<SealedAuthority>>() == 0);
+    const _: () = assert!(size_of::<crate::CapabilityWitness<SealedCapability>>() == 0);
 
     #[test]
     fn declaring_module_can_mint_through_the_seal() {

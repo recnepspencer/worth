@@ -25,29 +25,30 @@ pub(super) fn stale_owner(
 ) -> fixture::Operation {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let mut conditions = worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions::new().expect_fact(
-        super::super::schema::DocumentIdentityField::reference(),
-        worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue::try_new(super::super::schema::DOCUMENT_IDENTITY.to_owned()).unwrap(),
-    );
-    if let Some(days) = expected_retention {
-        conditions = conditions.expect_fact(super::super::schema::DocumentRetentionField::reference(),
-            worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue::try_new(days).unwrap());
-    }
-    let original = request
-        .mutate(fixture::OriginalRetention {
-            input: super::super::schema::SetRetentionInput {
-                identity: super::super::schema::DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 19,
-            },
-        })
-        .without_source()
-        .preconditions(conditions)
-        .idempotency_owned(0x9176_5019)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<fixture::SourceOnlyRetentionProgram, fixture::RetentionAction>(host)
-        .unwrap_or_else(|(_, cause)| panic!("original typed conditions construct: {cause:?}"));
-    drop(request);
+    let original = {
+        let request = host.runtime().request(&principal, &scope);
+        let mut conditions = worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions::new().expect_fact(
+            super::super::schema::DocumentIdentityField::reference(),
+            worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue::try_new(super::super::schema::DOCUMENT_IDENTITY.to_owned()).unwrap(),
+        );
+        if let Some(days) = expected_retention {
+            conditions = conditions.expect_fact(super::super::schema::DocumentRetentionField::reference(),
+                worth_query_host::facade::declaration::application_schema::ApplicationEncodedScalarValue::try_new(days).unwrap());
+        }
+        request
+            .mutate(fixture::OriginalRetention {
+                input: super::super::schema::SetRetentionInput {
+                    identity: super::super::schema::DOCUMENT_IDENTITY.to_owned(),
+                    retention_days: 19,
+                },
+            })
+            .without_source()
+            .preconditions(conditions)
+            .idempotency_owned(0x9176_5019)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<fixture::SourceOnlyRetentionProgram, fixture::RetentionAction>(host)
+            .unwrap_or_else(|(_, cause)| panic!("original typed conditions construct: {cause:?}"))
+    };
     drop(principal);
     drop(scope);
     let pause = host

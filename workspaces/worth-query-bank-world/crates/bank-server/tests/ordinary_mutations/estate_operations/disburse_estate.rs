@@ -24,10 +24,7 @@ fn public_progression_disburses_through_a_distinct_authoritative_journal() {
     let outcome = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = disburse(&fixture, &specialist, fixture.action(250), key.clone())
@@ -65,10 +62,7 @@ fn idempotency_rejects_a_different_authorized_disbursement_input() {
     let committed = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = disburse(&fixture, &specialist, action, key.clone())
@@ -89,10 +83,7 @@ fn idempotency_rejects_a_different_authorized_disbursement_input() {
     let _drift = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
             done,
         ) = disburse(&fixture, &specialist, fixture.action(251), key)
@@ -116,7 +107,7 @@ fn malformed_postings_and_insufficient_journal_funds_deny_before_commit() {
     let malformed_denial = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&malformed_fixture)
+        let closing_request = malformed_fixture
             .world
             .runtime
             .request(closing_actor, &closing_scope);
@@ -148,7 +139,7 @@ fn malformed_postings_and_insufficient_journal_funds_deny_before_commit() {
     let denial = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&poor_fixture)
+        let closing_request = poor_fixture
             .world
             .runtime
             .request(closing_actor, &closing_scope);
@@ -181,28 +172,9 @@ fn disburse(
     specialist: &BankAuthenticatedPrincipal,
     action: EstateAction,
     key: BankIdempotencyKey,
-) -> worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
-    worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::DisburseEstate,
-        bank_server::BankApplication,
-        bank_server::EstateDisbursementAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::DisburseEstate,
-        bank_server::BankApplication,
-        bank_server::EstateDisbursementAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::DisburseEstate,
-        bank_server::BankApplication,
-        bank_server::EstateDisbursementAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
+) -> super::EstateSourceAdvance<
+    bank_domain::schema::DisburseEstate,
+    bank_server::EstateDisbursementAction,
 > {
     {
         let source_actor = specialist;

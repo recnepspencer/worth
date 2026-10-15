@@ -1,18 +1,18 @@
-#[path = "support/direct_context_runtime.rs"]
-mod direct_context_runtime;
-#[path = "support/query_handoff/fixture.rs"]
-mod query_handoff_fixture;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
-#[path = "support/response_fixture.rs"]
-mod response_fixture;
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_direct_context_runtime as direct_context_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_fixture as query_handoff_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_response_fixture as response_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
-#[path = "support/worth_native/assertions.rs"]
-mod worth_native_assertions;
-#[path = "support/worth_native/runtime.rs"]
-mod worth_native_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_worth_native_assertions as worth_native_assertions;
+#[allow(unused_imports)]
+use crate::shared_support_worth_native_runtime as worth_native_runtime;
 
 #[path = "support/certification/bundle.rs"]
 mod certification_bundle;

@@ -112,11 +112,11 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         let Some(entry) = entry else {
             return Vec::new();
         };
-        let pending = lock(&entry.record)
+
+        lock(&entry.record)
             .as_ref()
             .map(WorthQueryProductBranchOwnerCleanupRecord::described_work)
-            .unwrap_or_default();
-        pending
+            .unwrap_or_default()
     }
 
     pub(super) fn pending_signal_references(
@@ -127,7 +127,8 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
         let Some(entry) = entry else {
             return Vec::new();
         };
-        let references = lock(&entry.record)
+
+        lock(&entry.record)
             .as_ref()
             .map(|record| {
                 record
@@ -144,8 +145,7 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
                     })
                     .collect()
             })
-            .unwrap_or_default();
-        references
+            .unwrap_or_default()
     }
 
     pub(super) fn release_history(

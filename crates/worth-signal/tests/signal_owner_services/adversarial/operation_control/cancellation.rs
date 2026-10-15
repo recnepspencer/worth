@@ -34,7 +34,7 @@ fn pre_movement_cancellation_denies_every_cancellable_public_operation() {
     assert!(matches!(
         world.mutation.advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request()
+                &crate::signal_owner_services::execution_custody::operational_serial_request()
             ),
             &world.root_basis,
             &mut (),
@@ -112,7 +112,7 @@ fn pre_movement_cancellation_denies_every_cancellable_public_operation() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),
@@ -144,7 +144,7 @@ fn cancellation_at_the_pre_movement_park_is_still_effect_free() {
             let result = mutation
                 .advance_exact(
                     worth_execution::ExecutionRequest::serial(
-                        &crate::execution_custody::operational_serial_request(),
+                        &crate::signal_owner_services::execution_custody::operational_serial_request(),
                     ),
                     &basis,
                     &mut (),
@@ -168,7 +168,7 @@ fn cancellation_at_the_pre_movement_park_is_still_effect_free() {
         .mutation
         .advance_exact(
             worth_execution::ExecutionRequest::serial(
-                &crate::execution_custody::operational_serial_request(),
+                &crate::signal_owner_services::execution_custody::operational_serial_request(),
             ),
             &world.root_basis,
             &mut (),
@@ -200,7 +200,7 @@ fn cancellation_after_canonical_movement_keeps_the_performed_advance() {
             let result = mutation
                 .advance_exact(
                     worth_execution::ExecutionRequest::serial(
-                        &crate::execution_custody::operational_serial_request(),
+                        &crate::signal_owner_services::execution_custody::operational_serial_request(),
                     ),
                     &basis,
                     &mut (),

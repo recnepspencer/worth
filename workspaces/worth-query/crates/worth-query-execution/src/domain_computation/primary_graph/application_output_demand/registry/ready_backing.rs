@@ -62,10 +62,10 @@ impl<Schema>
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let held = state.records.iter().any(|(key, record)| {
+
+        state.records.iter().any(|(key, record)| {
             key.source.root_entity_for_test() == root && !record.settlements.is_empty()
-        });
-        held
+        })
     }
 
     /// The required-retained bytes this runtime's demand registry holds now:

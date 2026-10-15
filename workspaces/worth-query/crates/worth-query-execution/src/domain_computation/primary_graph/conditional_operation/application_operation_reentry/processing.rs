@@ -282,10 +282,7 @@ where
             | WorthQueryRetainedConditionalDecision::OperationIndeterminate(evidence, _) => {
                 evidence
             }
-            WorthQueryRetainedConditionalDecision::OperationCleanupRequired(
-                evidence,
-                mut cleanup,
-            ) => {
+            WorthQueryRetainedConditionalDecision::OperationCleanupRequired(evidence, cleanup) => {
                 wake.decision = WorthQueryRetainedConditionalDecision::OperationCleanupRequired(
                     evidence, cleanup,
                 );

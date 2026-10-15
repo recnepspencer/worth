@@ -132,14 +132,14 @@ where
     } else {
         None
     };
-    if let Some(held) = custody.taken.as_mut() {
-        if let Err(denial) = held.take_over(lease, limits.serial_memory(), memory_bytes) {
-            // The caller still covers every input. Close the zero-byte entry
-            // before refused inputs can clean up otherwise empty ledger nodes.
-            drop(custody.reservation.take());
-            let outcome = denied(denial);
-            return custody.finish(outcome, batch, charge_parent);
-        }
+    if let Some(held) = custody.taken.as_mut()
+        && let Err(denial) = held.take_over(lease, limits.serial_memory(), memory_bytes)
+    {
+        // The caller still covers every input. Close the zero-byte entry
+        // before refused inputs can clean up otherwise empty ledger nodes.
+        drop(custody.reservation.take());
+        let outcome = denied(denial);
+        return custody.finish(outcome, batch, charge_parent);
     }
     custody.serial_reservation = match (lease, limits.serial_memory(), &custody.taken) {
         (None, Some(budget), None) => match budget.reserve(memory_bytes) {

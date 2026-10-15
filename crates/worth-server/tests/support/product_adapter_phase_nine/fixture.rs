@@ -25,11 +25,11 @@ use worth_server::{
     WorthServerWorthNativeSessionInput,
 };
 
-#[path = "../product_result/schema_bound_json.rs"]
-pub(crate) mod schema_bound_json;
+#[allow(unused_imports)]
+pub(crate) use crate::shared_support_product_result_schema_bound_json as schema_bound_json;
 
-#[path = "../query_handoff/runtime.rs"]
-mod query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
 
 pub fn build_server(
     registrations: Vec<WorthServerProductApplicationAdapterRegistration>,

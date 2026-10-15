@@ -56,10 +56,10 @@ impl<'a> CanonicalMaterialWriter<'a> {
             .len()
             .checked_add(value.len())
             .ok_or(CanonicalDigestPreparationStop::AccountingOverflow)?;
-        if let Some(maximum) = self.maximum_encoded_bytes {
-            if attempted > maximum {
-                return Err(self.byte_limit(maximum, attempted));
-            }
+        if let Some(maximum) = self.maximum_encoded_bytes
+            && attempted > maximum
+        {
+            return Err(self.byte_limit(maximum, attempted));
         }
         let growth = attempted > self.material.capacity();
         if self.admission.is_some() {

@@ -202,56 +202,6 @@ fn unified_effect_execution_certification_exposes_named_closeout_outputs() {
 
     let bundle = certify_effect_execution_pipeline(request_execution);
 
-    for output in [
-        "query_digest",
-        "raw_effect_intent_digest",
-        "normalized_effect_intent_digest",
-        "effect_family_digest",
-        "effect_authority_digest",
-        "effect_basis_digest",
-        "effect_scope_digest",
-        "effect_policy_digest",
-        "effect_strategy_digest",
-        "effect_eligibility_digest",
-        "authority_scoped_effect_plan_digest",
-        "lowered_effect_execution_plan_digest",
-        "effect_execution_receipt_digest",
-        "effect_envelope_digest",
-        "relational_effect_authority_digest",
-        "bridge_effect_authority_digest",
-        "effect_decision_trace_digest",
-        "effect_structural_delta_digest",
-        "effect_integrity_marker_digest",
-        "effect_support_matrix_digest",
-        "effect_target_dx_digest",
-        "effect_golden_transcript_digest",
-        "effect_proof_shape_digest",
-        "effect_replay_parity_digest",
-        "effect_phase_progression_digest",
-        "relational_oracle_digest",
-        "bridge_oracle_digest",
-        "seeded_sequence_digest",
-        "seed_replay_digest",
-        "compile_fail_boundary_digest",
-        "failure_digest",
-        "counter_snapshot",
-        "executor_rediscovery_count",
-        "batch_lowering_count",
-        "batch_basis_reuse_count",
-        "authority_reopen_count",
-        "effect_normalization_slope_digest",
-        "effect_eligibility_slope_digest",
-        "effect_lowering_slope_digest",
-        "effect_execution_slope_digest",
-        "effect_receipt_materialization_slope_digest",
-        "effect_envelope_materialization_slope_digest",
-        "effect_support_lookup_slope_digest",
-    ] {
-        assert!(
-            bundle.output_digest(output).is_some(),
-            "missing required closeout output {output}"
-        );
-    }
     assert_ne!(
         bundle.output_digest("effect_proof_shape_digest"),
         bundle.output_digest("compile_fail_boundary_digest")

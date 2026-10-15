@@ -3,6 +3,9 @@
 mod input;
 pub(crate) use input::output_with_payload;
 
+#[path = "../query_ordinary_entry_fixture/mod.rs"]
+mod query_ordinary_entry_fixture;
+
 use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -92,6 +95,7 @@ pub fn hostile_workspace() -> PathBuf {
         &root().join("tools/boundary-check/tests/fixtures/schema_query_import"),
         &path,
     );
+    query_ordinary_entry_fixture::write(&path);
     fs::create_dir_all(path.join(".claude")).unwrap();
     fs::create_dir(path.join(".git")).unwrap();
     fs::copy(

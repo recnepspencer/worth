@@ -32,7 +32,7 @@ where
     }
     let _execution = phase
         .checked_execution_request_for(runtime.product_runtime())
-        .map_err(|cause| WorthQueryApplicationOutputDemandDenial::advancement(cause.into()))?;
+        .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?;
     for _ in 0..controls
         .resolve(runtime.output_demand_resource_profile())
         .settlement_attempts()

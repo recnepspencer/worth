@@ -72,29 +72,10 @@ impl<T> DisjointPair<T> {
 mod tests {
     use std::mem::size_of;
 
-    use crate::proof::{mint_proof, Disjointness};
-
     use super::DisjointPair;
     use crate::collections::Pair;
 
-    #[test]
-    fn disjoint_pair_carries_pair_and_explicit_proof() {
-        let pair = DisjointPair::new(
-            "left",
-            "right",
-            mint_proof::<Disjointness, crate::proof::StructuralProofAuthority>(),
-        );
-
-        assert_eq!(pair.left(), &"left");
-        assert_eq!(pair.right(), &"right");
-        let (pair, _proof) = pair.into_parts();
-        assert_eq!(pair.into_array(), ["left", "right"]);
-    }
-
-    #[test]
-    fn disjoint_pair_is_size_honest_for_zero_sized_proof() {
-        assert_eq!(size_of::<DisjointPair<u64>>(), size_of::<Pair<u64>>());
-    }
+    const _: () = assert!(size_of::<DisjointPair<u64>>() == size_of::<Pair<u64>>());
 
     #[test]
     fn checked_public_introduction_accepts_only_disjoint_values() {

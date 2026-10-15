@@ -12,7 +12,8 @@ use worth_relational::facade::history::BranchId;
 /// handle, fresh-process, or durable-owner lifecycle contract.
 #[test]
 fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let scale = SupplyChainScale::court();

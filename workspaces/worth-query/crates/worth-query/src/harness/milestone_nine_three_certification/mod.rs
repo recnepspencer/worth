@@ -113,39 +113,6 @@ pub struct MilestoneNineThreeCertificationBundle {
 }
 
 impl MilestoneNineThreeCertificationBundle {
-    pub(super) fn has_required_outputs(&self) -> bool {
-        is_present(&self.query_family_label)
-            && is_present(&self.declaration_family_label)
-            && is_present(&self.bridge_family_label)
-            && is_present(&self.support_class_label)
-            && is_present(&self.support_resolution_posture_label)
-            && is_present(&self.coverage_resolution_posture_label)
-            && is_present(&self.query_digest)
-            && is_present(&self.subscription_family_digest)
-            && is_present(&self.subscription_declaration_digest)
-            && is_present(&self.subscription_equivalence_digest)
-            && is_present(&self.bridge_declaration_digest)
-            && is_present(&self.bridge_basis_digest)
-            && is_present(&self.signal_strategy_digest)
-            && is_present(&self.support_report_digest)
-            && is_present(&self.support_matrix_digest)
-            && is_present(&self.support_lookup_receipt_digest)
-            && is_present(&self.manual_bridge_witness_digest)
-            && is_present(&self.bridge_parity_digest)
-            && is_present(&self.bridge_parity_receipt_digest)
-            && is_present(&self.diagnostic_trace_digest)
-            && is_present(&self.admitted_diagnostic_bundle_digest)
-            && is_present(&self.diagnostic_assembly_receipt_digest)
-            && is_present(&self.lifecycle_certification_digest)
-            && is_present(&self.runtime_certification_bundle_digest)
-            && is_present(&self.certification_coverage_receipt_digest)
-            && !self.continuation_digest.is_empty()
-            && !self.preview_isolation_digest.is_empty()
-            && !self.failure_digest.is_empty()
-            && is_present(&self.counter_snapshot)
-            && is_present(&self.compile_fail_boundary_digest)
-    }
-
     pub(super) fn semantic_signature(&self) -> String {
         digest_parts(&[
             format!("query_family:{}", self.query_family_label),
@@ -188,10 +155,6 @@ impl MilestoneNineThreeCertificationBundle {
     }
 }
 
-fn is_present(value: &str) -> bool {
-    !value.is_empty() && value != "none"
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MilestoneNineThreeRejectionBundle {
     pub failure_class: MilestoneNineThreeFailureClass,
@@ -212,34 +175,9 @@ pub type MilestoneNineThreeCertificationMatrix = CertificationMatrix<
     MilestoneNineThreeRejectionBundle,
 >;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MilestoneNineThreeCertificationArtifact {
-    pub suite_name: &'static str,
-    pub certification_bundle_digest: String,
-    pub coverage_matrix_digest: String,
-    pub matrix: MilestoneNineThreeCertificationMatrix,
-}
-
-impl MilestoneNineThreeCertificationMatrix {
-    pub fn into_milestone_nine_three_artifact(self) -> MilestoneNineThreeCertificationArtifact {
-        MilestoneNineThreeCertificationArtifact {
-            suite_name: self.suite_name,
-            certification_bundle_digest: digest_parts(&builders::bundle_digest_parts(&self)),
-            coverage_matrix_digest: digest_parts(&builders::coverage_digest_parts(&self)),
-            matrix: self,
-        }
-    }
-}
-
 pub struct MilestoneNineThreeCertificationAdapter;
 
 impl MilestoneNineThreeCertificationAdapter {
-    pub fn query_subscription_bridge_parity_and_diagnostic_sufficiency_artifact(
-    ) -> MilestoneNineThreeCertificationArtifact {
-        Self::query_subscription_bridge_parity_and_diagnostic_sufficiency_test()
-            .into_milestone_nine_three_artifact()
-    }
-
     pub fn query_subscription_bridge_parity_and_diagnostic_sufficiency_test(
     ) -> MilestoneNineThreeCertificationMatrix {
         MilestoneNineThreeCertificationMatrix {

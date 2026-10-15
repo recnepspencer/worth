@@ -1,4 +1,9 @@
 //! Pure owning construction; recorded issuer authority is admitted freshly on advance.
+#![allow(
+    clippy::result_large_err,
+    reason = "Deployment revocation refusal preserves the complete original native operation description"
+)]
+
 use crate::{
     BankApplication, BankAuthenticatedPrincipal, BankIdentityRuntime,
     ProgramDeploymentRevocationAction,

@@ -73,8 +73,5 @@ mod tests {
         assert_eq!(mapped.as_slice(), &[10, 20, 30]);
     }
 
-    #[test]
-    fn non_empty_is_size_honest() {
-        assert_eq!(size_of::<NonEmpty<u64>>(), size_of::<Vec<u64>>());
-    }
+    const _: () = assert!(size_of::<NonEmpty<u64>>() == size_of::<Vec<u64>>());
 }

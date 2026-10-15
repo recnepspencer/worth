@@ -1,25 +1,39 @@
 //! Fresh processes preserve binding inputs; every row is accounted for.
 use super::cases::{self, Cell};
 use std::collections::BTreeMap;
+mod execution;
 mod price;
 use price::cell;
+fn is_runnable(row: &Cell) -> bool {
+    !(row.family == 0 && (1..10).contains(&row.fault))
+}
 fn matrix(rows: Vec<Cell>) -> [[usize; 3]; 8] {
+    matrix_with(rows, |runnable| {
+        runnable.iter().copied().map(cell).collect()
+    })
+}
+fn matrix_with(
+    rows: Vec<Cell>,
+    execute: impl FnOnce(&[Cell]) -> Vec<execution::CellResult>,
+) -> [[usize; 3]; 8] {
     let mut counts = [[0usize; 3]; super::FAMILIES.len()];
     let mut anchors = BTreeMap::new();
     let mut red = Vec::new();
     let mut remainders = BTreeMap::new();
     let declared = rows.len();
-    let expected_not_run = rows
-        .iter()
-        .filter(|row| row.family == 0 && (1..10).contains(&row.fault))
-        .count();
+    let expected_not_run = rows.iter().filter(|row| !is_runnable(row)).count();
+    let runnable: Vec<_> = rows.iter().copied().filter(is_runnable).collect();
+    let mut observations = execute(&runnable).into_iter();
     for row in rows {
-        if row.family == 0 && (1..10).contains(&row.fault) {
+        if !is_runnable(&row) {
             counts[row.family][1] += 1;
             println!("NOT_RUN:{row:?}:empty family has no member at which a preparation, compute or completion failure can be placed");
         } else {
             counts[row.family][0] += 1;
-            match cell(row) {
+            match observations
+                .next()
+                .expect("every runnable row has its own observation")
+            {
                 Err(error) => {
                     counts[row.family][2] += 1;
                     red.push(format!("{row:?}: {error}"));
@@ -49,6 +63,7 @@ fn matrix(rows: Vec<Cell>) -> [[usize; 3]; 8] {
             }
         }
     }
+    assert!(observations.next().is_none(), "no undeclared observations");
     for (family, count) in counts.iter().enumerate() {
         println!("MATRIX_FAMILY:{}:{count:?}", super::FAMILY_NAMES[family]);
     }
@@ -91,7 +106,7 @@ fn required_wave_full_declared_matrix() {
             "declared product per family"
         );
     }
-    assert_full_counts(matrix(rows));
+    assert_full_counts(matrix_with(rows, execution::parallel));
 }
 
 #[test]

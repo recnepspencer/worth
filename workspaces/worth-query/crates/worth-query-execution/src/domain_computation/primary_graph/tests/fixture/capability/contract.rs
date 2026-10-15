@@ -195,6 +195,14 @@ fn install_capability_operations(
         .operation_projection_work_budget(ComposedCapabilityTouchOperation::reference(), 32)
         .operation_read_field(
             ComposedCapabilityTouchOperation::reference(),
+            AccountIdentity::reference(),
+        )
+        .operation_read_field(
+            ComposedCapabilityTouchOperation::reference(),
+            CapabilityActionRecordIdentity::reference(),
+        )
+        .operation_read_field(
+            ComposedCapabilityTouchOperation::reference(),
             AccountLabel::reference(),
         )
         .operation_write(

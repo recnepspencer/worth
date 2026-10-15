@@ -1,4 +1,4 @@
-use crate::world::supply_chain::*;
+use crate::relational_certification::world::supply_chain::*;
 
 #[test]
 fn comparator_reports_missing_write_and_sibling_leak_separately() {

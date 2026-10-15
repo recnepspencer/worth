@@ -64,10 +64,10 @@ impl DispatchWitness {
         }
     }
     pub(in crate::domain_computation::primary_graph) fn release_native_snapshot_for_test(&self) {
-        if let Some(gate) = self.native_reads.lock().unwrap().clone() {
-            if let Some(snapshot) = gate.read_snapshot.lock().unwrap().pop() {
-                gate.owner.release_snapshot_for_test(&snapshot);
-            }
+        if let Some(gate) = self.native_reads.lock().unwrap().clone()
+            && let Some(snapshot) = gate.read_snapshot.lock().unwrap().pop()
+        {
+            gate.owner.release_snapshot_for_test(&snapshot);
         }
     }
     pub(in crate::domain_computation::primary_graph::application_query) fn native_read_exit(

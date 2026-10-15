@@ -4,7 +4,7 @@ use worth_foundational::{
 };
 
 use super::readiness_fixtures::ready_mask;
-use crate::foundational_vocabulary::{field, key};
+use crate::certification::foundational_vocabulary::{field, key};
 
 #[test]
 fn mask_digest_preparation_basis_canonicalizes_paths_and_preserves_mode() {

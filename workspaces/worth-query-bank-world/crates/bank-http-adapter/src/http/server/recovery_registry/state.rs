@@ -77,11 +77,7 @@ pub(in crate::http::server) enum BankHttpRecoveryRetry {
 
 pub(in crate::http::server) enum BankHttpCommitReplay {
     Missing,
-    Applied {
-        commit: BankHttpCommitDescription,
-        recovery: String,
-        completed: bool,
-    },
+    Applied { recovery: String, completed: bool },
     Conflicting,
 }
 

@@ -97,10 +97,10 @@ fn reachable_target_count_for_connectivity(
             if !visited.insert(next.clone()) {
                 continue;
             }
-            if let Some(kind_id) = entity_reference_kind(context, traversal.class, &next)? {
-                if contract_candidate_kind_matches(kind_id, target_kind_ids) {
-                    reachable_targets.insert(next.clone());
-                }
+            if let Some(kind_id) = entity_reference_kind(context, traversal.class, &next)?
+                && contract_candidate_kind_matches(kind_id, target_kind_ids)
+            {
+                reachable_targets.insert(next.clone());
             }
             frontier.push(next);
         }

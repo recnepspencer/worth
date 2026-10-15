@@ -20,7 +20,8 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 #[test]
 fn phase6_selection_lane_is_independent_of_live_owner_storage() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let court = observe_seeded_main(execution, SupplyChainScale::court());
@@ -54,7 +55,8 @@ fn phase6_selection_lane_is_independent_of_live_owner_storage() {
 
 #[test]
 fn phase6_recorded_cost_lane_is_not_substitutable_for_the_live_lane() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
@@ -118,7 +120,8 @@ fn phase6_recorded_cost_lane_is_not_substitutable_for_the_live_lane() {
 
 #[test]
 fn phase6_coordination_lane_stays_branch_local_under_a_shared_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());

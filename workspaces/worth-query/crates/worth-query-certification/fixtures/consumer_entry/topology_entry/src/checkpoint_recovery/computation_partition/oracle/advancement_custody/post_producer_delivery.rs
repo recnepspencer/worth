@@ -1,7 +1,10 @@
 //! Output settlement funds delivery from the same request that ran its producer.
 use super::*;
 use worth_query_host::facade::{
-    application_contribution::WorthQueryAdvancementDenial as Denial,
+    application_contribution::{
+        WorthQueryAdvancementDenial as Denial,
+        WorthQueryManagedComputationResourceDenial as Resource,
+    },
     application_entry::WorthQueryApplicationOutputDemandDenial as OutputDenial,
 };
 
@@ -57,7 +60,9 @@ fn refused_delivery(placement: Placement) {
     };
     assert_eq!(
         denial.kind(),
-        WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::NestedStopped,)
+        WorthQueryOutputDemandDenialKind::ExecutionRequest(Denial::Resource(
+            Resource::WorkExhausted
+        ))
     );
     assert!(
         room().first().unwrap().outcome.is_ok(),

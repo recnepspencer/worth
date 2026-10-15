@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "topology_entry",
     "parameter_entry",
@@ -10,7 +10,8 @@ default-members = ["consumer_root"]
 
 [workspace.package]
 version = "0.0.0"
-edition = "2021"
+edition = "2024"
+rust-version = "1.94"
 publish = false
 
 [workspace.dependencies]

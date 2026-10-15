@@ -14,6 +14,10 @@ mod program;
 use program::{DemandProgram, DemandRoot, RequiredProgram, UngovernedProgram};
 
 #[test]
+#[allow(
+    clippy::result_large_err,
+    reason = "The checkpoint boundary preserves its native capture refusal without allocation"
+)]
 fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     let _guard = checkpoint_recovery_test_guard();
     super::super::producer::reset_provider_contacts();
@@ -175,7 +179,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     let current = request.retain_current_read().unwrap();
     request
         .at(&current)
-        .require_current_program_output(&settled, NonZeroUsize::new(4096).unwrap())
+        .require_current_program_output(&settled, support::currentness_work_limit())
         .unwrap();
     let mut repeated = request
         .advanced()

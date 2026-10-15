@@ -19,7 +19,7 @@ where
 {
     /// Reads the installed ordered batch at one checked current observation.
     /// A refusal publishes no partial collection and retains this owner.
-    pub fn read_batch_current<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query, <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial>
+    pub fn read_batch_current<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<DeliveredProjectionBatch<Schema, BatchRead<Schema, Intent, Action, N>>, WorthQueryOperationDeliveryDenial>
     where
     Delivery<Schema, Intent, Action>: ApplicationFixedBatchDelivery<Schema, Binding<Schema, Intent>, N, Root = Root>,
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = BatchRead<Schema, Intent, Action, N>>,
@@ -41,7 +41,7 @@ where
         )
     }
     /// Narrows native batch ceilings for a fresh delivery attempt.
-    pub fn read_batch_current_with_policy<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query, <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial>
+    pub fn read_batch_current_with_policy<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<DeliveredProjectionBatch<Schema, BatchRead<Schema, Intent, Action, N>>, WorthQueryOperationDeliveryDenial>
     where
     Delivery<Schema, Intent, Action>: ApplicationFixedBatchDelivery<Schema, Binding<Schema, Intent>, N, Root = Root>,
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = BatchRead<Schema, Intent, Action, N>>,
@@ -73,7 +73,7 @@ where
     }
     /// Reads original declared selectors at the retained settlement basis with
     /// fresh authority, without claiming currentness or advancing outputs.
-    pub fn read_batch_historical<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Query, <<BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial>
+    pub fn read_batch_historical<const N: usize>(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<DeliveredProjectionBatch<Schema, BatchRead<Schema, Intent, Action, N>>, WorthQueryOperationDeliveryDenial>
     where
     Delivery<Schema, Intent, Action>: ApplicationFixedBatchDelivery<Schema, Binding<Schema, Intent>, N, Root = Root>,
     <BatchRead<Schema, Intent, Action, N> as ApplicationQueryBinding<Schema>>::Input: ApplicationQueryIntent<Schema, Binding = BatchRead<Schema, Intent, Action, N>>,

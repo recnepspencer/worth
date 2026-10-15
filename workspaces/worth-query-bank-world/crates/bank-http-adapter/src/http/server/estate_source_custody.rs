@@ -1,4 +1,8 @@
 //! Native source-completion owners for the two estate effects; no host phase engine.
+#![allow(
+    clippy::result_large_err,
+    reason = "Close refusal returns the complete native owner without a wrapper allocation"
+)]
 use super::super::protocol::{BankHttpDenial, BankHttpMutationOutcome};
 use bank_domain::schema::{BankSchema, DisburseEstate, NotifyEstateDeath};
 use bank_server::{

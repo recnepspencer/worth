@@ -38,63 +38,63 @@ fn common_operation_handoff_borrows_capability_preconditions_and_cleanup() {
             correction_grant::seed(graph, SCOPE);
         },
     );
-    let (scope, principal) = authenticate(&application);
-    let request = application.request(&principal, &scope);
-    let conditions = TypedMutationPreconditions::new().expect_fact(
-        BodyKey::reference::<CheckpointSchema>(),
-        ApplicationEncodedScalarValue::try_new(SCOPE.to_owned()).unwrap(),
-    );
-    let input = EntryCorrection {
-        scope_key: SCOPE.to_owned(),
-        entry: 1,
-        mask: 2.0_f64.to_bits() ^ 3.0_f64.to_bits(),
-    };
-    let operation = request
-        .mutate(OriginalCorrection(input))
-        .without_source()
-        .preconditions(conditions)
-        .idempotency_owned(0x9176_4001)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
-        .unwrap_or_else(|(_, denial)| panic!("exact source completion: {denial:?}"));
-    let wrong = request
-        .mutate(OriginalCorrection(EntryCorrection {
+    let (operation, _refused) = {
+        let (scope, principal) = authenticate(&application);
+        let request = application.request(&principal, &scope);
+        let conditions = TypedMutationPreconditions::new().expect_fact(
+            BodyKey::reference::<CheckpointSchema>(),
+            ApplicationEncodedScalarValue::try_new(SCOPE.to_owned()).unwrap(),
+        );
+        let input = EntryCorrection {
             scope_key: SCOPE.to_owned(),
             entry: 1,
-            mask: 1,
-        }))
-        .without_source()
-        .preconditions(TypedMutationPreconditions::new().expect_fact(
-            BodyKey::reference::<CheckpointSchema>(),
-            ApplicationEncodedScalarValue::try_new("wrong-original-fact".to_owned()).unwrap(),
-        ))
-        .idempotency_owned(0x9176_4003)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
-        .unwrap_or_else(|(_, denial)| {
-            panic!("wrong fact is a native admission question: {denial:?}")
-        });
-    let refused = wrong.advance(&request);
-    assert!(
-        !matches!(refused, WorthQuerySourceOnlyAdvance::Completed(_)),
-        "dropping borrowed original preconditions would falsely commit"
-    );
-    application
-        .with_host_advancement(|phase| {
-            application.fail_next_durable_append_for_test(
-                &phase
-                    .checked_execution_request_for(application.product_runtime())
-                    .unwrap(),
-            )
-        })
-        .unwrap();
-    let WorthQuerySourceOnlyAdvance::Progress(operation) = operation.advance(&request) else {
-        panic!("the real fault leaves unpublished source custody");
+            mask: 2.0_f64.to_bits() ^ 3.0_f64.to_bits(),
+        };
+        let operation = request
+            .mutate(OriginalCorrection(input))
+            .without_source()
+            .preconditions(conditions)
+            .idempotency_owned(0x9176_4001)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
+            .unwrap_or_else(|(_, denial)| panic!("exact source completion: {denial:?}"));
+        let wrong = request
+            .mutate(OriginalCorrection(EntryCorrection {
+                scope_key: SCOPE.to_owned(),
+                entry: 1,
+                mask: 1,
+            }))
+            .without_source()
+            .preconditions(TypedMutationPreconditions::new().expect_fact(
+                BodyKey::reference::<CheckpointSchema>(),
+                ApplicationEncodedScalarValue::try_new("wrong-original-fact".to_owned()).unwrap(),
+            ))
+            .idempotency_owned(0x9176_4003)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<OracleProgram, CorrectEntryAction>(&application)
+            .unwrap_or_else(|(_, denial)| {
+                panic!("wrong fact is a native admission question: {denial:?}")
+            });
+        let refused = wrong.advance(&request);
+        assert!(
+            !matches!(refused, WorthQuerySourceOnlyAdvance::Completed(_)),
+            "dropping borrowed original preconditions would falsely commit"
+        );
+        application
+            .with_host_advancement(|phase| {
+                application.fail_next_durable_append_for_test(
+                    &phase
+                        .checked_execution_request_for(application.product_runtime())
+                        .unwrap(),
+                )
+            })
+            .unwrap();
+        let WorthQuerySourceOnlyAdvance::Progress(operation) = operation.advance(&request) else {
+            panic!("the real fault leaves unpublished source custody");
+        };
+        assert_eq!(operation.posture(), worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::ProductUnpublished);
+        (operation, refused)
     };
-    assert_eq!(operation.posture(), worth_query_host::facade::application_entry::WorthQuerySourceOnlyPosture::ProductUnpublished);
-    drop(request);
-    drop(principal);
-    drop(scope);
     let (fresh_scope, fresh_principal) = authenticate(&application);
     let fresh = application.request(&fresh_principal, &fresh_scope);
     let operation = match operation.advance(&fresh) {

@@ -205,13 +205,12 @@ fn check_request(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), CompanionPreflightStop> {
     if let Err(stop) = execution.consult() {
-        if let worth_execution::WorkCeilingDenial::Stopped(stopped) = stop {
-            if let Ok(event) = worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
+        if let worth_execution::WorkCeilingDenial::Stopped(stopped) = stop
+            && let Ok(event) = worth_relational::facade::mvcc::RelationalInterruptionEvent::from_request_stop(
                 stopped, worth_relational::facade::mvcc::RelationalInterruptionBoundary::ObservationAdmission,
             ) {
                 return Err(CompanionPreflightStop::Interrupted(event));
             }
-        }
         return Err(CompanionPreflightStop::Execution(stop.into()));
     }
     Ok(())

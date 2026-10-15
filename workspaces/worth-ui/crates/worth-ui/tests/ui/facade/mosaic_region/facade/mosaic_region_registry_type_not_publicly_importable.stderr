@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::MosaicRegionRegistry`
- --> tests/ui/facade/mosaic_region/facade/mosaic_region_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::MosaicRegionRegistry;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `MosaicRegionRegistry` in `facade`

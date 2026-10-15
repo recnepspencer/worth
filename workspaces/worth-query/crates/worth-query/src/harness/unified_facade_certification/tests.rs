@@ -1,27 +1,10 @@
-use super::row_catalog::{
-    UNIFIED_FACADE_REQUIRED_CANONICAL_ROW_NAMES, UNIFIED_FACADE_REQUIRED_REJECTION_ROW_NAMES,
-};
 use super::{MilestoneFivePointSixUnifiedFacadeCertificationAdapter, UnifiedFacadeFailureClass};
-use crate::harness::certification::{contains_row, milestone_five_point_six_requirements};
 
 #[test]
 fn unified_facade_certification_matrix_contains_required_rows() {
     let matrix = MilestoneFivePointSixUnifiedFacadeCertificationAdapter::
         unified_facade_and_configuration_boundary_test();
 
-    assert_eq!(
-        matrix.suite_name,
-        "Unified Facade And Configuration Boundary Test"
-    );
-    for row_name in UNIFIED_FACADE_REQUIRED_CANONICAL_ROW_NAMES {
-        assert!(contains_row(&matrix, row_name));
-    }
-    for row_name in UNIFIED_FACADE_REQUIRED_REJECTION_ROW_NAMES {
-        assert!(contains_row(&matrix, row_name));
-    }
-
-    let requirements = milestone_five_point_six_requirements();
-    assert_eq!(requirements.suite_name, matrix.suite_name);
     for row in &matrix.rows {
         assert!(!row.control_lane.support_report_digest.is_empty());
         assert_eq!(

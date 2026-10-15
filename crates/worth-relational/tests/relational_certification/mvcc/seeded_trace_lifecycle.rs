@@ -1,5 +1,5 @@
 use super::{trace_panic, BranchModelState, ProductionModelTrace};
-use crate::world::supply_chain::{
+use crate::relational_certification::world::supply_chain::{
     observe_supply_chain_snapshot, ObservedSupplyChainState, OracleBranch, OracleState,
     ProductionSeededSupplyChainWorld,
 };

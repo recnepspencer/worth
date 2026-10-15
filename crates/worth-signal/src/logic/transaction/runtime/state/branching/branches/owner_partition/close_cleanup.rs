@@ -46,14 +46,19 @@ where
         let mut lineages = Vec::new();
         let mut cleaned_entries = 0;
         while cleaned_entries < maximum_batch_size {
-            if let Some((_key, snapshot)) = self.snapshots.pop_first() {
-                snapshots.push(snapshot);
-            } else if let Some((_branch_id, children)) = self.children_by_parent.pop_first() {
-                lineages.push(children);
-            } else if let Some(branch_id) = self.active_merge_participants.pop_first() {
-                let _ = branch_id;
-            } else {
-                break;
+            match self.snapshots.pop_first() {
+                Some((_key, snapshot)) => {
+                    snapshots.push(snapshot);
+                }
+                _ => {
+                    if let Some((_branch_id, children)) = self.children_by_parent.pop_first() {
+                        lineages.push(children);
+                    } else if let Some(branch_id) = self.active_merge_participants.pop_first() {
+                        let _ = branch_id;
+                    } else {
+                        break;
+                    }
+                }
             }
             cleaned_entries += 1;
         }

@@ -67,8 +67,7 @@ fn fixed_adoption_requires_an_explicit_source_revision_grant() {
             .owned_revision();
         match programs
             .compare(&target)
-            .err()
-            .expect("absent source deployment grant must refuse compare")
+            .expect_err("absent source deployment grant must refuse compare")
         {
             WorthQueryApplicationProgramAdoptionPreparationDenial::Authorization(
                 WorthQueryProgramAdoptionAuthorizationDenial::Authorization(denial),

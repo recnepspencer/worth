@@ -17,33 +17,6 @@ pub struct IdentityEvolutionRejectionRowSpec {
     pub failure_class: IdentityEvolutionCertificationFailureClass,
 }
 
-pub const IDENTITY_EVOLUTION_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-    "replacement-continuity-explicitness",
-    "split-successor-explicitness",
-    "branch-local-divergence-explicitness",
-    "ambiguous-correspondence-explicitness",
-    "identity-break-explicitness",
-    "identity-aware-inspector-consumption-parity",
-    "lineage-versus-structural-disagreement-explicitness",
-    "lineage-replay-parity",
-    "lineage-replay-preserves-classification",
-    "preview-to-authoritative-identity-comparison",
-    "identity-evolution-width-drift-explicitness",
-    "lineage-complexity-contract-parity",
-    "correspondence-complexity-contract-parity",
-    "complexity-status-honesty",
-];
-
-pub const IDENTITY_EVOLUTION_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-    "unsupported-lineage-traversal-family",
-    "unsupported-correspondence-family",
-    "advisory-as-authoritative-forbidden",
-    "lineage-to-correspondence-fallback-forbidden",
-    "branch-crossing-lineage-forbidden",
-    "broad-lineage-scan-forbidden",
-    "complexity-contract-violation-denied",
-];
-
 pub const IDENTITY_EVOLUTION_CANONICAL_ROW_SPECS: &[IdentityEvolutionCanonicalRowSpec] = &[
     IdentityEvolutionCanonicalRowSpec {
         row_name: "replacement-continuity-explicitness",

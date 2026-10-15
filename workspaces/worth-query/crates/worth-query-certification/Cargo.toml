@@ -2,6 +2,7 @@
 name = "worth-query-certification"
 autotests = false
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Bounded hostile and replay certification for WORTH Query."

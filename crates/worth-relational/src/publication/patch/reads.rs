@@ -18,16 +18,15 @@ pub(crate) fn read_patch_stream(
     let latest_position = runtime.history().latest_patch_stream_position();
     let latest_commit_id = runtime.history().latest_canonical_commit_id();
 
-    if let Some(after_position) = request.after_position {
-        if !runtime
+    if let Some(after_position) = request.after_position
+        && !runtime
             .history()
             .contains_patch_stream_position(after_position)
-        {
-            return Err(PatchStreamReadError {
-                class: PatchStreamReadErrorClass::UnknownResumePosition,
-                detail: format!("unknown patch stream resume position {}", after_position.0),
-            });
-        }
+    {
+        return Err(PatchStreamReadError {
+            class: PatchStreamReadErrorClass::UnknownResumePosition,
+            detail: format!("unknown patch stream resume position {}", after_position.0),
+        });
     }
 
     let patches: Vec<_> =

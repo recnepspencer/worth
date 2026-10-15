@@ -89,7 +89,6 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         ProductUnpublishedCause::SettlementPending
     );
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
-    drop(request);
     drop(principal);
     drop(scope);
     let scope = authentication::request_scope();
@@ -113,8 +112,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
     for changed in [Conditions::new(), conditions("anchor-b")] {
         let denial = original_request!(changed, &key)
             .recover_unpublished_required_in_program(&mut recovery, &world.application)
-            .err()
-            .expect("changed or omitted original conditions must refuse");
+            .expect_err("changed or omitted original conditions must refuse");
         assert!(
             matches!(
                 denial,
@@ -137,8 +135,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
     let wrong_key = key + 1;
     let denial = original_request!(conditions("anchor-a"), &wrong_key)
         .recover_unpublished_required_in_program(&mut recovery, &world.application)
-        .err()
-        .expect("a replacement key must not take original custody");
+        .expect_err("a replacement key must not take original custody");
     assert!(
         matches!(denial, Denial::Recovery(WorthQueryManagedApplicationRecoveryDenial::Demand(ref cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::ForeignSource),
         "native keyed refusal: {denial:?}"
@@ -150,8 +147,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         .expect_source(original_row)
         .idempotency(&key)
         .recover_unpublished_required_in_program(&mut recovery, &world.application)
-        .err()
-        .expect("a row cannot approximate the completed set");
+        .expect_err("a row cannot approximate the completed set");
     assert!(
         matches!(denial, Denial::Recovery(WorthQueryManagedApplicationRecoveryDenial::Demand(ref cause)) if cause.kind() == WorthQueryOutputDemandDenialKind::ForeignSource),
         "native form refusal: {denial:?}"
@@ -163,8 +159,7 @@ fn advanced_result_set_substitutions_preserve_original_partial() {
         .expect_result_set(substituted_set)
         .idempotency(&key)
         .recover_unpublished_required_in_program(&mut recovery, &world.application)
-        .err()
-        .expect("another genuine selection cannot replace the original set");
+        .expect_err("another genuine selection cannot replace the original set");
     assert!(
         matches!(denial, Denial::Request(WorthQueryApplicationRequestMutationDenial::SourceExpectation(ref cause)) if cause.kind() == WorthQuerySourceExpectationDenialKind::ForeignModel),
         "real selected-model refusal: {denial:?}"

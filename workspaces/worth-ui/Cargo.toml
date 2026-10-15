@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "apps/platform-pulse",
     "crates/worth-ui-dsl",
@@ -18,7 +18,7 @@ members = [
 ]
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 version = "0.1.0"
 license = "BUSL-1.1"
 # The minimum supported toolchain. Every member inherits it so

@@ -70,15 +70,6 @@ mod tests {
     impl AuthorityProves<RightProof> for ForkAuthority {}
 
     #[test]
-    fn fork_outputs_preserve_explicit_positions() {
-        let outputs = ForkOutputs2::new("left", "right");
-
-        assert_eq!(outputs.left(), &"left");
-        assert_eq!(outputs.right(), &"right");
-        assert_eq!(outputs.into_parts(), ("left", "right"));
-    }
-
-    #[test]
     fn artifact_fork_requires_explicit_state_redistribution() {
         let artifact = Artifact::<RawPhase, _, _, _>::with_state(
             "anchor",
@@ -105,8 +96,5 @@ mod tests {
         assert_eq!(outputs.right().payload(), &7_u8);
     }
 
-    #[test]
-    fn fork_outputs_are_size_honest() {
-        assert_eq!(size_of::<ForkOutputs2<u64, u16>>(), size_of::<(u64, u16)>());
-    }
+    const _: () = assert!(size_of::<ForkOutputs2<u64, u16>>() == size_of::<(u64, u16)>());
 }

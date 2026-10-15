@@ -345,12 +345,11 @@ where
                 if let Some(event) = live_event(
                     &request_id,
                     lease.poll(&principal, &delivery_scope),
-                ) {
-                    if !send_live_event(&events, &mut terminal, event, &request_id) {
+                )
+                    && !send_live_event(&events, &mut terminal, event, &request_id) {
                         cancellation.cancel();
                         return close_live_lease(lease);
                     }
-                }
             }
         }
     }

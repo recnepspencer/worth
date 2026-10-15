@@ -140,6 +140,10 @@ where
 
 // This body is typechecked: capture refusal returns the complete move-only original
 // builder and key, while successful freeze returns a persistent original descriptor.
+#[allow(
+    clippy::type_complexity,
+    reason = "Compiler-only witness keeps the exact move-only success and refusal owners visible"
+)]
 pub(super) fn capture_retains_non_clone_original<'a, 'p, 's, S, I>(
     builder: crate::application_entry::WorthQueryOperationBuilder<
         'a,

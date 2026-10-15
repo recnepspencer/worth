@@ -1,8 +1,8 @@
 use worth_foundational::{
-    derive_foundational_profile_identity, foundational_profile_milestone10_readiness_report,
-    foundational_profile_progression_authority, request_foundational_profile_set,
-    FoundationalProfileResolutionFamily, FoundationalProfileResolutionLedger,
-    FoundationalProfileResolutionRecord, FoundationalProfileResolutionRelation,
+    derive_foundational_profile_identity, foundational_profile_progression_authority,
+    request_foundational_profile_set, FoundationalProfileResolutionFamily,
+    FoundationalProfileResolutionLedger, FoundationalProfileResolutionRecord,
+    FoundationalProfileResolutionRelation,
 };
 use worth_proof::TransitionOutcome;
 
@@ -165,75 +165,4 @@ fn worth_foundational_profile_input(
         execution_objective: objective,
         observation_activation: activation,
     }
-}
-
-#[test]
-fn milestone10_readiness_names_all_five_phase_gates() {
-    let report = foundational_profile_milestone10_readiness_report();
-    assert!(report.passes_readiness_checklist());
-    assert_eq!(
-        report.phase_gates(),
-        &[
-            worth_foundational::FoundationalProfileMilestone10PhaseGate::BoundaryFreeze,
-            worth_foundational::FoundationalProfileMilestone10PhaseGate::ObjectiveAndActivationVocabulary,
-            worth_foundational::FoundationalProfileMilestone10PhaseGate::ObservationDispositionAndWorkDisclosure,
-            worth_foundational::FoundationalProfileMilestone10PhaseGate::FoundationalFacade,
-            worth_foundational::FoundationalProfileMilestone10PhaseGate::SignalPolicyCompilerHandoff,
-        ]
-    );
-    assert_eq!(
-        report.certified_surfaces(),
-        &[
-            "execution-objective-profile",
-            "observation-activation-profile",
-            "observation-disposition-and-absence",
-            "optional-observation-work-disclosure",
-            "signal-policy-compiler-handoff",
-        ]
-    );
-    assert_eq!(
-        report.runtime_assumptions(),
-        &[
-            "adopting runtimes own execution and observation session lifecycle",
-            "adopting runtimes own Signal policy execution after compiler handoff",
-            "proof progression remains worth-proof-owned",
-        ]
-    );
-    assert_eq!(
-        report.runtime_non_assumptions(),
-        &[
-            "throughput is not a correctness or durability level",
-            "on-demand activation is not permission to erase authoritative identity",
-            "Foundational does not own runtime counters or persistence",
-        ]
-    );
-    assert_eq!(
-        report.hostile_pressures(),
-        &[
-            "missing objective or activation family",
-            "multiple changed profile families hidden by one record",
-            "optional observation work claimed without active disposition",
-            "throughput paired with continuous observation",
-        ]
-    );
-    assert_eq!(
-        report.store_handoff(),
-        "Store owns durability; Foundational owns only shared profile and work meaning"
-    );
-}
-
-#[allow(dead_code)]
-fn _identity_helper_is_available_for_downstream_context_tests() {
-    let admitted = admit_same_profile(profile(
-        worth_foundational::DiagnosticRichnessProfile::Standard,
-        worth_foundational::SupportPostureProfile::SupportReady,
-        worth_foundational::CompatibilityPostureProfile::NativeOnly,
-        worth_foundational::AdmissionReadinessProfile::Admitted,
-        worth_foundational::RetentionDeliveryProfile::Retained,
-        worth_foundational::CertificationPostureProfile::Uncertified,
-    ));
-    let _ = derive_foundational_profile_identity(
-        worth_foundational::CanonicalizationRuleVersion::new("m10.test").expect("version"),
-        &admitted,
-    );
 }

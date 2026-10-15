@@ -36,7 +36,7 @@ wgpu = { version = "=29.0.4", default-features = false, features = ["std", "park
 
 [dev-dependencies]
 sha2 = "=0.10.9"
-toml = "=0.8.23"
+toml = "=1.1.8"
 
 [package.metadata.worth-ui-qualified-dependencies]
 winit = "0.30.13"

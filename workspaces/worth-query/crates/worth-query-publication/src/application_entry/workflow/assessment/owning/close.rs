@@ -35,7 +35,7 @@ where
                 Ok(WorthQueryClosedAssessmentObservation {
                     cleanup,
                     runtime: self.runtime,
-                    observation: self.continuation,
+                    _observation: self.continuation,
                 })
             }
             Err(cause) => Err((self, cause)),

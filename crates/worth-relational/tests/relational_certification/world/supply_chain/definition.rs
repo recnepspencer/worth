@@ -125,10 +125,10 @@ impl SupplyChainWorldDefinition {
 
     fn validate_voyage_times(&self) -> Result<(), DefinitionError> {
         for (key, record) in &self.entities {
-            if let EntityRecord::Voyage(voyage) = record {
-                if voyage.arrival < voyage.departure {
-                    return Err(DefinitionError::ArrivalBeforeDeparture(*key));
-                }
+            if let EntityRecord::Voyage(voyage) = record
+                && voyage.arrival < voyage.departure
+            {
+                return Err(DefinitionError::ArrivalBeforeDeparture(*key));
             }
         }
         Ok(())

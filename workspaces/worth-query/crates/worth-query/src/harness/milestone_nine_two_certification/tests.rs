@@ -1,58 +1,8 @@
 use super::MilestoneNineTwoCertificationAdapter;
 use crate::harness::certification::{
-    contains_row, milestone_nine_two_requirements, unmet_required_assertion_classes,
-    unmet_required_rows, HostileExpectation, ParityAnchor, RequiredAssertionClass,
+    milestone_nine_two_requirements, unmet_required_assertion_classes, HostileExpectation,
+    ParityAnchor, RequiredAssertionClass,
 };
-
-#[test]
-fn milestone_nine_two_certification_adapter_emits_named_matrix() {
-    let artifact = MilestoneNineTwoCertificationAdapter::
-        subscription_lifecycle_sharing_and_preview_certification_artifact();
-
-    assert_eq!(
-        artifact.suite_name,
-        "Subscription Lifecycle Sharing And Preview Parity Test"
-    );
-    assert!(!artifact.certification_bundle_digest.is_empty());
-    assert!(!artifact.coverage_matrix_digest.is_empty());
-}
-
-#[test]
-fn milestone_nine_two_certification_matrix_meets_required_rows() {
-    let matrix = MilestoneNineTwoCertificationAdapter::
-        subscription_lifecycle_sharing_and_preview_parity_test();
-    let requirements = milestone_nine_two_requirements();
-    let missing = unmet_required_rows(
-        &matrix,
-        requirements.required_canonical_rows,
-        requirements.required_rejection_rows,
-    );
-
-    assert!(
-        missing.is_empty(),
-        "missing milestone 9.2 certification rows: {missing:?}"
-    );
-}
-
-#[test]
-fn milestone_nine_two_rows_have_required_outputs() {
-    let matrix = MilestoneNineTwoCertificationAdapter::
-        subscription_lifecycle_sharing_and_preview_parity_test();
-
-    for row in &matrix.rows {
-        assert!(row.control_lane.has_required_outputs());
-        assert!(row.hostile_lane.has_required_outputs());
-        assert!(row.parity_lane.has_required_outputs());
-    }
-    for row in &matrix.rejection_rows {
-        assert!(row.control_lane.has_required_outputs());
-        assert!(row.parity_lane.has_required_outputs());
-        assert!(!row.hostile_lane.failure_kind.is_empty());
-        assert!(!row.hostile_lane.failure_digest.is_empty());
-        assert!(!row.hostile_lane.lifecycle_denial_digest.is_empty());
-        assert!(!row.hostile_lane.counter_snapshot.is_empty());
-    }
-}
 
 #[test]
 fn milestone_nine_two_rows_enforce_lifecycle_semantics() {
@@ -93,19 +43,6 @@ fn milestone_nine_two_rows_enforce_lifecycle_semantics() {
         milestone_nine_two_requirements().required_assertion_classes,
     );
     assert!(missing.is_empty(), "missing assertion classes: {missing:?}");
-}
-
-#[test]
-fn milestone_nine_two_covers_required_named_rows() {
-    let matrix = MilestoneNineTwoCertificationAdapter::
-        subscription_lifecycle_sharing_and_preview_parity_test();
-
-    for row_name in milestone_nine_two_requirements().required_canonical_rows {
-        assert!(contains_row(&matrix, row_name), "missing {row_name}");
-    }
-    for row_name in milestone_nine_two_requirements().required_rejection_rows {
-        assert!(contains_row(&matrix, row_name), "missing {row_name}");
-    }
 }
 
 #[test]

@@ -30,18 +30,18 @@ while IFS= read -r name; do
 done < scripts/ci/signal_owner_service_operation_control_roster.txt
 
 bash scripts/ci/run_signal_owner_service_selection.sh \
-  --test signal_owner_services \
+  --test signal_contracts \
   "${CONTROL_FEATURE_ARGS[@]}" \
-  --selection adversarial::operation_control:: \
+  --selection signal_owner_services::adversarial::operation_control:: \
   "${ROSTER_ARGS[@]}"
 
 if [[ "$CONFIGURATION" == "default" || "$CONFIGURATION" == "profile-extended" ]]; then
   bash scripts/ci/run_signal_owner_service_selection.sh \
-    --test signal_owner_services \
+    --test signal_contracts \
     "${CONTROL_FEATURE_ARGS[@]}" \
-    --selection adversarial::capacity_cleanup:: \
+    --selection signal_owner_services::adversarial::capacity_cleanup:: \
     --ignored \
-    --expect-name adversarial::capacity_cleanup::live_branch_capacity_denies_then_retirement_restores_one_slot \
-    --expect-name adversarial::capacity_cleanup::operation_capacity_denies_the_65th_and_restores_after_release \
-    --expect-name adversarial::capacity_cleanup::retention_capacity_denies_then_all_releases_restore_one_lease
+    --expect-name signal_owner_services::adversarial::capacity_cleanup::live_branch_capacity_denies_then_retirement_restores_one_slot \
+    --expect-name signal_owner_services::adversarial::capacity_cleanup::operation_capacity_denies_the_65th_and_restores_after_release \
+    --expect-name signal_owner_services::adversarial::capacity_cleanup::retention_capacity_denies_then_all_releases_restore_one_lease
 fi

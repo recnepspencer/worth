@@ -5,7 +5,7 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::foundational_vocabulary::{field, identity, key, revision};
+use crate::certification::foundational_vocabulary::{field, identity, key, revision};
 
 #[test]
 fn struct_contract_validation_is_canonical_and_hostile_to_unknown_fields() {

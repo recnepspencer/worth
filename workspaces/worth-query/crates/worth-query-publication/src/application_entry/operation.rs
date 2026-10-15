@@ -37,8 +37,16 @@ pub use discovered::{
     WorthQueryTerminalDiscoveredOperation,
 };
 #[cfg(test)]
+#[expect(
+    dead_code,
+    reason = "Compiler-only bodies certify move-only delivery handoffs"
+)]
 mod discovered_delivery_handoff_contract;
 #[cfg(test)]
+#[expect(
+    dead_code,
+    reason = "Compiler-only bodies certify move-only intake and recovery handoffs"
+)]
 mod discovered_handoff_contract;
 mod fixed;
 mod fixed_advance;
@@ -126,3 +134,13 @@ type FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> = WorthQueryO
 >;
 
 pub use worth_query_execution::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial;
+
+// Delivery derives its query identity and value from the same installed binding.
+type DeliveredProjection<Schema, ReadBinding> = crate::domain_computation::WorthQueryPublishedApplicationResult<
+    <ReadBinding as ApplicationQueryBinding<Schema>>::Query,
+    <<ReadBinding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+>;
+type DeliveredProjectionBatch<Schema, ReadBinding> = crate::domain_computation::WorthQueryPublishedApplicationQueryBatch<
+    <ReadBinding as ApplicationQueryBinding<Schema>>::Query,
+    <<ReadBinding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
+>;

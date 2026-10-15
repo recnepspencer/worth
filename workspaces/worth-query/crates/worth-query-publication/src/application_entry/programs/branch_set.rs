@@ -31,7 +31,7 @@ where
     ) -> Self {
         Self {
             application,
-            principal: principal,
+            principal,
             scope,
             coverage,
         }

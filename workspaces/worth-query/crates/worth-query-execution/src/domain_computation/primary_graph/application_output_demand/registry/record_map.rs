@@ -191,7 +191,7 @@ impl DemandRecords {
     pub(super) fn source_occurrence_rows<'a>(
         &'a self,
         source: &super::SourceEpoch,
-    ) -> impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> {
+    ) -> impl Iterator<Item = (&'a WorthQueryOutputDemandKey, &'a DemandRecord)> + use<'a> {
         self.1
             .get(&source.occurrence_coordinate())
             .into_iter()

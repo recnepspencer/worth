@@ -79,7 +79,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
     /// still holds. This is Theta(all slots in the substrate) in the worst
     /// case, which is why the copies it performs are counted individually
     /// rather than summarized as one event.
-    pub(crate) fn partitions_mut(&mut self) -> impl Iterator<Item = &mut PartitionState> {
+    pub(crate) fn partitions_mut(&mut self) -> impl Iterator<Item = &mut PartitionState> + use<'_> {
         let Self {
             edition, copies, ..
         } = self;

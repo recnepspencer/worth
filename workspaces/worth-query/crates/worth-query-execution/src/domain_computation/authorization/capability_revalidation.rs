@@ -214,31 +214,30 @@ where
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
-                let result = self
-                    .validate_active_capability_currentness(
-                        execution,
+
+                self.validate_active_capability_currentness(
+                    execution,
+                    runtime,
+                    snapshot,
+                    authorization,
+                    refresh,
+                )
+                .and_then(|()| {
+                    WorthQueryCapabilityRevalidationObservation::new(
+                        refresh.session,
                         runtime,
                         snapshot,
-                        authorization,
-                        refresh,
+                        self.authorization.bridge(),
+                        refresh.installed,
+                        authorization.request(),
+                        &refresh.sample,
                     )
-                    .and_then(|()| {
-                        WorthQueryCapabilityRevalidationObservation::new(
-                            refresh.session,
-                            runtime,
-                            snapshot,
-                            self.authorization.bridge(),
-                            refresh.installed,
-                            authorization.request(),
-                            &refresh.sample,
-                        )
-                        .observe_active_capability(
-                            execution,
-                            Some(authorization.grant()),
-                            Some(authorization.decision()),
-                        )
-                    });
-                result
+                    .observe_active_capability(
+                        execution,
+                        Some(authorization.grant()),
+                        Some(authorization.decision()),
+                    )
+                })
             })?;
         Ok(observed)
     }
@@ -378,7 +377,8 @@ where
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
-                let result = WorthQueryCapabilityRevalidationObservation::new(
+
+                WorthQueryCapabilityRevalidationObservation::new(
                     refresh.session,
                     runtime,
                     snapshot,
@@ -392,8 +392,7 @@ where
                     supporting.posture(),
                     supporting.grant(),
                     Some(supporting.decision()),
-                );
-                result
+                )
             })
     }
 }

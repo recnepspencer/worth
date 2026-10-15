@@ -66,14 +66,14 @@ where
             .integration_handle()
             .with_runtime_mut(execution, |runtime| {
                 let snapshot = security.snapshot_handle();
-                let current = validate_retained_currentness(
+
+                validate_retained_currentness(
                     execution,
                     authorization,
                     runtime,
                     snapshot,
                     self.authorization.bridge(),
-                );
-                current
+                )
             })
     }
 

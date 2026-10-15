@@ -190,19 +190,17 @@ where
             .workload
             .as_ref()
             .and_then(|workload| workload.phase)
+            && !capabilities.supports_execution_phase(phase)
         {
-            if !capabilities.supports_execution_phase(phase) {
-                return Err(HarnessError::UnsupportedExecutionPhase(phase));
-            }
+            return Err(HarnessError::UnsupportedExecutionPhase(phase));
         }
         if let Some(phase) = request
             .feed_batch
             .as_ref()
             .and_then(|feed_batch| feed_batch.phase)
+            && !capabilities.supports_execution_phase(phase)
         {
-            if !capabilities.supports_execution_phase(phase) {
-                return Err(HarnessError::UnsupportedExecutionPhase(phase));
-            }
+            return Err(HarnessError::UnsupportedExecutionPhase(phase));
         }
         if (profile.workload.is_some() || profile.work_budget.is_some())
             && !matches!(

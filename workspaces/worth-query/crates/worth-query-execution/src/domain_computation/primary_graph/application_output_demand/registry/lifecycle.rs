@@ -73,16 +73,14 @@ impl WorthQueryOutputDemandRegistry {
         if let Some(custody) = state
             .source_custody
             .get_mut(receipt.committed_product_publication().composite_commit())
-        {
-            if custody
+            && custody
                 .source
                 .as_ref()
                 .is_some_and(|source| source.receipt.same_retained_output_source_as(receipt))
-            {
-                custody.completed = true;
-                custody.source = None;
-                custody.discovery = None;
-            }
+        {
+            custody.completed = true;
+            custody.source = None;
+            custody.discovery = None;
         }
         state.note_custody(receipt.committed_product_publication().composite_commit());
     }

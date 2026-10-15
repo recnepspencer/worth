@@ -2,6 +2,11 @@
 //! cancellation, migration or program adoption disposes of it before the
 //! owner settles.
 
+#![allow(
+    clippy::result_large_err,
+    reason = "Custody courts retain the original native workflow refusal and cleanup owner"
+)]
+
 use bank_external_rail::test_control::FaultScript;
 use bank_server::{BankApplicationP1, BankApprovedPaymentWorkflowError};
 use worth_query_host::facade::application_entry::{

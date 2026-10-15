@@ -51,31 +51,29 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
     }
 
     pub(crate) fn with_created_endpoint_scope(mut self, kind: KindId) -> Self {
-        if let (Some(scopes), Some(plan)) = (&self.relation_integrity_scopes, self.merged_plan) {
-            if let Some(scope) = scopes.scope_for(kind) {
-                let count = scopes.created_key_count() as u64;
-                let levels = u64::from(u64::BITS - count.max(1).leading_zeros());
-                let unique = scope.created_source_keys.max(scope.created_target_keys) as u64;
-                // Distinct successful linear searches cost at least 1+...+U.
-                // Index only when its whole construction and all lookup bounds
-                // fit that lower bound, so it cannot add a work refusal.
-                let old_minimum = unique.saturating_mul(unique + 1) / 2;
-                let new_maximum = (plan.merged_intents.len() as u64)
-                    .saturating_add(count.saturating_mul(levels + 1))
-                    .saturating_add(
-                        (scope.created_endpoint_count as u64).saturating_mul(levels + 1),
-                    );
-                let bytes = count.saturating_mul(std::mem::size_of::<(
-                    crate::identity::data::PartitionId,
-                    KindId,
-                    &crate::symbols::data::ClientKey,
-                )>() as u64);
-                let room = self
-                    .budget
-                    .map_or(u64::MAX, InvariantBudget::remaining_scratch);
-                self.created_lookup_profitable =
-                    count > 32 && new_maximum <= old_minimum && bytes <= room;
-            }
+        if let (Some(scopes), Some(plan)) = (&self.relation_integrity_scopes, self.merged_plan)
+            && let Some(scope) = scopes.scope_for(kind)
+        {
+            let count = scopes.created_key_count() as u64;
+            let levels = u64::from(u64::BITS - count.max(1).leading_zeros());
+            let unique = scope.created_source_keys.max(scope.created_target_keys) as u64;
+            // Distinct successful linear searches cost at least 1+...+U.
+            // Index only when its whole construction and all lookup bounds
+            // fit that lower bound, so it cannot add a work refusal.
+            let old_minimum = unique.saturating_mul(unique + 1) / 2;
+            let new_maximum = (plan.merged_intents.len() as u64)
+                .saturating_add(count.saturating_mul(levels + 1))
+                .saturating_add((scope.created_endpoint_count as u64).saturating_mul(levels + 1));
+            let bytes = count.saturating_mul(std::mem::size_of::<(
+                crate::identity::data::PartitionId,
+                KindId,
+                &crate::symbols::data::ClientKey,
+            )>() as u64);
+            let room = self
+                .budget
+                .map_or(u64::MAX, InvariantBudget::remaining_scratch);
+            self.created_lookup_profitable =
+                count > 32 && new_maximum <= old_minimum && bytes <= room;
         }
         self
     }

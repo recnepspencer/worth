@@ -43,12 +43,13 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
         .retain_operation()
         .unwrap_or_else(|cause| panic!("grant construction: {cause:?}"));
     let scope = fresh_scope();
-    let request = application.runtime.request(&owner, &scope);
-    let WorthQuerySourceOnlyAdvance::Completed(granted) = granted.advance(&request) else {
-        panic!("native grant completion")
-    };
-    assert!(granted.close(&request).is_ok());
-    drop(request);
+    {
+        let request = application.runtime.request(&owner, &scope);
+        let WorthQuerySourceOnlyAdvance::Completed(granted) = granted.advance(&request) else {
+            panic!("native grant completion")
+        };
+        assert!(granted.close(&request).is_ok());
+    }
 
     let (server, _mutation_continuation) = bind_application(
         application.clone(),
@@ -118,12 +119,13 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
         .retain_operation()
         .unwrap_or_else(|cause| panic!("revoke construction: {cause:?}"));
     let scope = fresh_scope();
-    let request = application.runtime.request(&owner, &scope);
-    let WorthQuerySourceOnlyAdvance::Completed(revoked) = revoked.advance(&request) else {
-        panic!("native revoke completion")
-    };
-    assert!(revoked.close(&request).is_ok());
-    drop(request);
+    {
+        let request = application.runtime.request(&owner, &scope);
+        let WorthQuerySourceOnlyAdvance::Completed(revoked) = revoked.advance(&request) else {
+            panic!("native revoke completion")
+        };
+        assert!(revoked.close(&request).is_ok());
+    }
 
     for (endpoint, request) in [
         (&page_endpoint, &first_request),

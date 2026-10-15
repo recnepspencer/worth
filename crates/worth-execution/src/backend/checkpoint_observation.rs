@@ -34,10 +34,10 @@ impl Drop for ExecutionCheckpointObservationForTest {
 pub(super) fn record(units: u64) {
     if units > 0 {
         LISTENER.with(|slot| {
-            if let Ok(mut slot) = slot.try_borrow_mut() {
-                if let Some(listener) = slot.as_mut() {
-                    super::meter::visit_active_meter_for_test(|context| listener(context));
-                }
+            if let Ok(mut slot) = slot.try_borrow_mut()
+                && let Some(listener) = slot.as_mut()
+            {
+                super::meter::visit_active_meter_for_test(|context| listener(context));
             }
         });
     }

@@ -1,4 +1,4 @@
-use crate::world::supply_chain::{
+use crate::relational_certification::world::supply_chain::{
     hazard_v2_transition, CompiledSupplyChainProgram, DeltaId, SchemaVersion,
 };
 use worth_relational::facade::branch::RelationalBranchIdentity;

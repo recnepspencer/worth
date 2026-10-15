@@ -4,7 +4,7 @@ use super::{
     branch_id, trace_panic, BranchModelState, BranchScenario, OutcomeProbe, ProbeOutcome,
     ProductionModelTrace, ScenarioLifecycle,
 };
-use crate::world::supply_chain::{
+use crate::relational_certification::world::supply_chain::{
     commit_branch_batch_with_result, commit_supply_chain_delta,
     lower_supply_chain_production_delta, OracleBranch, OracleState,
     ProductionSeededSupplyChainWorld, SupplyChainProductionDeltaLoweringError,
@@ -104,11 +104,11 @@ pub(super) fn execute_trace(
 }
 
 fn validate_trace(trace: &ProductionModelTrace) {
-    let shape_is_valid = trace.profile == crate::world::supply_chain::ScaleName::Standard
+    let shape_is_valid = trace.profile == crate::relational_certification::world::supply_chain::ScaleName::Standard
         && trace.seed != 0
         && trace.scenarios.len() >= 2
         && trace.scenarios.last().map(|scenario| scenario.delta)
-            == Some(crate::world::supply_chain::DeltaId::AdoptHazardClassificationV2)
+            == Some(crate::relational_certification::world::supply_chain::DeltaId::AdoptHazardClassificationV2)
         && trace.scenarios.first().map(|scenario| scenario.lifecycle)
             == Some(ScenarioLifecycle::RetainArchiveObserveRelease)
         && trace.scenarios.last().map(|scenario| scenario.lifecycle)
@@ -292,7 +292,7 @@ fn run_expected_probe(
     branch: &BranchId,
     identity: &worth_relational::facade::branch::RelationalBranchIdentity,
     stale_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    prior_applied: &BTreeSet<crate::world::supply_chain::DeltaId>,
+    prior_applied: &BTreeSet<crate::relational_certification::world::supply_chain::DeltaId>,
     expected: &OracleBranch,
 ) {
     match scenario.probe {

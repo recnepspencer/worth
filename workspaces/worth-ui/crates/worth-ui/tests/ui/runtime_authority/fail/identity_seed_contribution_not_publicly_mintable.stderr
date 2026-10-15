@@ -1,5 +1,0 @@
-error[E0599]: no function or associated item named `from_admitted_seed` found for struct `WorthUiIdentitySeedContribution` in the current scope
- --> tests/ui/runtime_authority/fail/identity_seed_contribution_not_publicly_mintable.rs:4:46
-  |
-4 |     let _ = WorthUiIdentitySeedContribution::from_admitted_seed(
-  |                                              ^^^^^^^^^^^^^^^^^^ function or associated item not found in `WorthUiIdentitySeedContribution`

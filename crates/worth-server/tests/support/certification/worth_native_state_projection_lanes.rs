@@ -1,8 +1,8 @@
 use worth_server::WorthServer;
 
-use crate::worth_native_assertions::admitted_named_read;
+use crate::shared_support_worth_native_assertions::admitted_named_read;
 
-use crate::certification_bundle::{
+use crate::certification_suite::certification_bundle::{
     WorthServerCertificationBundle, WorthServerCertificationOutputDigest as Output,
 };
 

@@ -348,24 +348,24 @@ fn node_change<'a>(
     let lookup = ordered_lookup_steps(nodes.len()).saturating_mul(2);
     work.reserve_visits(lookup)
         .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
-    if !nodes.contains_key(&node) {
-        if let Some(budget) = budget {
-            let before = btree_structure_charge::<NodeId, EpochNodeChange>(nodes.len())
-                .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
-            let next = nodes
-                .len()
-                .checked_add(1)
-                .ok_or_else(|| SignalError::invalid_input("epoch node count overflow"))?;
-            let after = btree_structure_charge::<NodeId, EpochNodeChange>(next)
-                .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
-            let growth = after
-                .checked_sub(before)
-                .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
-            if nodes.is_empty() {
-                budget.claim(before.bytes())?;
-            }
-            budget.claim(growth.bytes())?;
+    if !nodes.contains_key(&node)
+        && let Some(budget) = budget
+    {
+        let before = btree_structure_charge::<NodeId, EpochNodeChange>(nodes.len())
+            .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
+        let next = nodes
+            .len()
+            .checked_add(1)
+            .ok_or_else(|| SignalError::invalid_input("epoch node count overflow"))?;
+        let after = btree_structure_charge::<NodeId, EpochNodeChange>(next)
+            .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
+        let growth = after
+            .checked_sub(before)
+            .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?;
+        if nodes.is_empty() {
+            budget.claim(before.bytes())?;
         }
+        budget.claim(growth.bytes())?;
     }
     Ok(nodes.entry(node).or_default())
 }

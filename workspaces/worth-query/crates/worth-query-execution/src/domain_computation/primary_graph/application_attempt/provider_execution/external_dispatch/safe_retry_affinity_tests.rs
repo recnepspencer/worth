@@ -83,7 +83,8 @@ fn real_handle_under(seed: u8, label: &str, request: WorthQueryRequestScope) -> 
                 .installed_schema()
                 .installed_operation(ExactStatusRetentionOperation::reference())
                 .unwrap();
-            let admission = world
+
+            world
                 .selected_product(&host)
                 .authorize_operation(
                     &phase,
@@ -93,8 +94,7 @@ fn real_handle_under(seed: u8, label: &str, request: WorthQueryRequestScope) -> 
                     TypedMutationPreconditions::new(),
                     &request,
                 )
-                .expect("the committed product admits the current recovery operation");
-            admission
+                .expect("the committed product admits the current recovery operation")
         })
         .expect("the recovery fixture opens its admission call");
     (world, receipt, handle, admission)

@@ -66,7 +66,8 @@ pub(super) enum WorkerCommand {
 }
 pub(super) struct MutationTransport {
     application: Arc<dyn super::inbound_completion::BankRailCompletionRuntime>,
-    pub(super) recovery: Arc<Mutex<super::recovery_registry::BankHttpRecoveryRegistry>>,
+    // Native recovery custody outlives worker shutdown while this transport is retained.
+    pub(super) _recovery_registry: Arc<Mutex<super::recovery_registry::BankHttpRecoveryRegistry>>,
     pub(super) senders: Vec<mpsc::Sender<WorkerCommand>>,
     workers: Mutex<Vec<JoinHandle<std::io::Result<()>>>>,
     pub(super) queue_slots: Arc<Semaphore>,
@@ -125,7 +126,7 @@ impl BankHttpMutationContinuation {
         Ok(Self {
             transport: Arc::new(MutationTransport {
                 application,
-                recovery,
+                _recovery_registry: recovery,
                 senders,
                 workers: Mutex::new(workers),
                 queue_slots: Arc::new(Semaphore::new(queue_capacity.get())),
@@ -177,12 +178,16 @@ impl BankHttpMutationContinuation {
         let custody_id = command.custody_id.clone();
         let deadline = command.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel_on_drop = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let queued_slot = match Arc::clone(&self.transport.queue_slots).try_acquire_owned() {
             Ok(slot) => slot,
             Err(_) => return reject(Some(request_id), BankHttpDenialKind::Saturated),
         };
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel_on_drop = cancellation_guard;
         let slot = routing_slot(&custody_id, self.transport.senders.len());
         if let Err(error) = self.transport.senders[slot].try_send(WorkerCommand::Execute {
             command,
@@ -199,7 +204,7 @@ impl BankHttpMutationContinuation {
                 }
             }
         }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpMutationOutcome::OutcomeUnknown {
                 request_id,

@@ -115,15 +115,15 @@ pub(super) fn replace_support_grantor_with_custodian(
     let selected = world.selected_product(&(phase_custody).test_host_request());
     let grantor = handle.with_runtime_mut(execution, |runtime| {
         let snapshot = selected.application_basis().snapshot_handle();
-        let grantor = runtime
+
+        runtime
             .read_truth()
             .visible_relations_of_kind(execution, grantor_kind, snapshot.version_id())
             .expect("fixture read request remains live")
             .into_iter()
             .find(|record| record.source == principal && record.target == grant.entity_id())
             .expect("the request support has one current grantor path")
-            .relation_id;
-        grantor
+            .relation_id
     });
     super::super::super::fixture::publish_relational_mutation(
         execution,

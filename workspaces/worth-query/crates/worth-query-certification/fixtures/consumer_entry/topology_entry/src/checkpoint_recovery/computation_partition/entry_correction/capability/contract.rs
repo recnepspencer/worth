@@ -94,7 +94,7 @@ where
             .forward(CorrectionGrantee::reference::<Schema>())
             .forward(CorrectionResource::reference::<Schema>())
             .allow(Body::reference::<Schema>());
-    let contract = ApplicationCapabilityContractBuilder::new(
+    ApplicationCapabilityContractBuilder::new(
         capability,
         operation,
         CorrectionGrant::reference::<Schema>(),
@@ -170,6 +170,5 @@ where
         ),
     ))
     .elevation(ApplicationCapabilityElevationRule::not_applicable())
-    .build();
-    contract
+    .build()
 }

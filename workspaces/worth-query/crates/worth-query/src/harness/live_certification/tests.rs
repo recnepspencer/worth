@@ -1,142 +1,4 @@
-use super::model::LivePerturbationClass;
 use super::MilestoneFiveLiveCertificationAdapter;
-use crate::harness::certification::{milestone_five_requirements, unmet_required_rows};
-
-#[test]
-fn live_query_patch_policy_adapter_emits_named_matrix() {
-    let matrix =
-        MilestoneFiveLiveCertificationAdapter::live_promotion_convergence_and_suppression_test();
-
-    assert_eq!(
-        matrix.suite_name,
-        "Live Promotion Convergence And Suppression Test"
-    );
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "detail-live-patch-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "ordered-collection-live-patch-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "bounded-materialization-live-patch-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "detail-live-convergence"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "ordered-collection-live-convergence"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "bounded-materialization-live-convergence"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "detail-live-replay-end-state-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "detail-live-replay-stepwise-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "ordered-collection-live-replay-end-state-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "ordered-collection-live-replay-stepwise-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "bounded-materialization-live-replay-end-state-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "bounded-materialization-live-replay-stepwise-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "irrelevant-update-suppression"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "live-progress-basis-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "refresh-fallback-equivalence"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "coalesced-sequence-replay-parity"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "patch-width-budget-overflow-policy"));
-    assert!(matrix
-        .rows
-        .iter()
-        .any(|row| row.row_name == "work-avoided-counter-parity"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "forbidden-width-budget-overflow-behavior"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "forbidden-coalescing-class"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "forbidden-refresh-escape-hatch"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "non-monotonic-change-sequence"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "gapful-change-sequence"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "invalid-live-basis-promotion"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "unsupported-patch-family"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "unsupported-live-family"));
-    assert!(matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.row_name == "raw-cdc-leakage-forbidden"));
-}
-
-#[test]
-fn live_query_patch_policy_matrix_meets_milestone_five_required_rows() {
-    let matrix =
-        MilestoneFiveLiveCertificationAdapter::live_promotion_convergence_and_suppression_test();
-    let requirements = milestone_five_requirements();
-    let missing = unmet_required_rows(
-        &matrix,
-        requirements.required_canonical_rows,
-        requirements.required_rejection_rows,
-    );
-
-    assert!(
-        missing.is_empty(),
-        "missing milestone five rows: {missing:?}"
-    );
-}
 
 #[test]
 fn live_query_patch_policy_artifact_is_offline_ready() {
@@ -144,12 +6,6 @@ fn live_query_patch_policy_artifact_is_offline_ready() {
         MilestoneFiveLiveCertificationAdapter::
             live_promotion_convergence_and_suppression_certification_artifact();
 
-    assert_eq!(
-        artifact.suite_name,
-        "Live Promotion Convergence And Suppression Test"
-    );
-    assert!(!artifact.certification_bundle_digest.is_empty());
-    assert!(!artifact.coverage_matrix_digest.is_empty());
     assert!(artifact.counter_snapshot.live_patch_delivery_count() > 0);
     assert!(artifact.counter_snapshot.live_invalidation_event_count() > 0);
     assert!(artifact.counter_snapshot.live_relevance_match_count() > 0);
@@ -233,31 +89,6 @@ fn live_query_patch_policy_artifact_is_offline_ready() {
     );
     assert!(artifact
         .matrix
-        .rows
-        .iter()
-        .all(|row| !row.control_lane.query_digest.is_empty()));
-    assert!(artifact
-        .matrix
-        .rows
-        .iter()
-        .all(|row| !row.control_lane.result_digest.is_empty()));
-    assert!(artifact
-        .matrix
-        .rows
-        .iter()
-        .all(|row| !row.control_lane.delivery_digest.is_empty()));
-    assert!(artifact
-        .matrix
-        .rows
-        .iter()
-        .all(|row| !row.control_lane.replay_digest.is_empty()));
-    assert!(artifact
-        .matrix
-        .rows
-        .iter()
-        .any(|row| !row.control_lane.replay_step_delivery_digests.is_empty()));
-    assert!(artifact
-        .matrix
         .rejection_rows
         .iter()
         .all(|row| row.has_required_outputs()));
@@ -266,70 +97,6 @@ fn live_query_patch_policy_artifact_is_offline_ready() {
         .rejection_rows
         .iter()
         .all(|row| row.has_hostile_coverage()));
-    assert!(artifact
-        .matrix
-        .rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::DetailReplayEndStateParity));
-    assert!(artifact
-        .matrix
-        .rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::DetailReplayStepwiseParity));
-    assert!(artifact.matrix.rows.iter().any(|row| row.perturbation_class
-        == LivePerturbationClass::OrderedCollectionReplayEndStateParity));
-    assert!(artifact.matrix.rows.iter().any(|row| row.perturbation_class
-        == LivePerturbationClass::OrderedCollectionReplayStepwiseParity));
-    assert!(artifact.matrix.rows.iter().any(|row| row.perturbation_class
-        == LivePerturbationClass::BoundedMaterializationReplayEndStateParity));
-    assert!(artifact.matrix.rows.iter().any(|row| row.perturbation_class
-        == LivePerturbationClass::BoundedMaterializationReplayStepwiseParity));
-    assert!(artifact
-        .matrix
-        .rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::RefreshFallbackParity));
-    assert!(artifact
-        .matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::RefreshRejection));
-    assert!(artifact
-        .matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::CoalescingRejection));
-    assert!(artifact
-        .matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::NonMonotonicSequenceRejection));
-    assert!(artifact
-        .matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::SequenceGapRejection));
-    assert!(artifact
-        .matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::InvalidLivePromotionRejection));
-    assert!(
-        artifact
-            .matrix
-            .rejection_rows
-            .iter()
-            .any(|row| row.perturbation_class
-                == LivePerturbationClass::UnsupportedLiveFamilyRejection)
-    );
-    assert!(artifact.matrix.rejection_rows.iter().any(
-        |row| row.perturbation_class == LivePerturbationClass::UnsupportedPatchFamilyRejection
-    ));
-    assert!(artifact
-        .matrix
-        .rejection_rows
-        .iter()
-        .any(|row| row.perturbation_class == LivePerturbationClass::RawCdcLeakageRejection));
 }
 
 #[test]

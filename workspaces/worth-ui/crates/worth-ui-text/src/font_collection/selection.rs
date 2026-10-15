@@ -26,7 +26,7 @@ impl UiGlobalFontCollection {
         &self,
         rgi_emoji: bool,
         style: &crate::UiTextStyle,
-    ) -> impl Iterator<Item = usize> {
+    ) -> impl Iterator<Item = usize> + use<> {
         let emoji = self.faces.iter().position(UiQualifiedFontFace::is_emoji);
         let mut slots = Vec::with_capacity(self.faces.len());
         let mut selected = vec![false; self.faces.len()];

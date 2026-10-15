@@ -9,9 +9,8 @@ use crate::runtime::{
 };
 
 use super::{
-    transcripts, RuntimeApiStabilizationBundle, RuntimeApiStabilizationCertificationMatrix,
-    RuntimeApiStabilizationFailureClass, RuntimeApiStabilizationPerturbationClass,
-    RuntimeApiStabilizationRejectionBundle,
+    transcripts, RuntimeApiStabilizationBundle, RuntimeApiStabilizationFailureClass,
+    RuntimeApiStabilizationPerturbationClass, RuntimeApiStabilizationRejectionBundle,
 };
 
 pub(super) fn canonical_rows(
@@ -95,45 +94,6 @@ pub(super) fn rejection_rows(
             RuntimeApiStabilizationFailureClass::DeferredStoreDurableGate,
         ),
     ]
-}
-
-pub(super) fn bundle_digest_parts(
-    matrix: &RuntimeApiStabilizationCertificationMatrix,
-) -> Vec<String> {
-    matrix
-        .rows
-        .iter()
-        .flat_map(|row| {
-            [
-                row.control_lane.semantic_signature(),
-                row.hostile_lane.semantic_signature(),
-                row.parity_lane.semantic_signature(),
-            ]
-        })
-        .chain(matrix.rejection_rows.iter().map(|row| {
-            digest_parts(&[
-                row.row_name.to_string(),
-                row.hostile_lane.failure_digest.clone(),
-                row.hostile_lane.deferred_temporal_async_gate_digest.clone(),
-            ])
-        }))
-        .collect()
-}
-
-pub(super) fn coverage_digest_parts(
-    matrix: &RuntimeApiStabilizationCertificationMatrix,
-) -> Vec<String> {
-    matrix
-        .rows
-        .iter()
-        .map(|row| format!("canonical:{}", row.row_name))
-        .chain(
-            matrix
-                .rejection_rows
-                .iter()
-                .map(|row| format!("rejection:{}", row.row_name)),
-        )
-        .collect()
 }
 
 fn canonical_row(

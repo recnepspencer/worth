@@ -184,28 +184,9 @@ fn recognize(
     fixture: &RecognitionFixture,
     executor: bank_domain::model::BankPrincipalId,
     identity: u8,
-) -> worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
-    worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::RecognizeEstateExecutor,
-        bank_server::BankApplication,
-        bank_server::ExecutorRecognitionAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::RecognizeEstateExecutor,
-        bank_server::BankApplication,
-        bank_server::ExecutorRecognitionAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::RecognizeEstateExecutor,
-        bank_server::BankApplication,
-        bank_server::ExecutorRecognitionAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
+) -> super::EstateSourceAdvance<
+    bank_domain::schema::RecognizeEstateExecutor,
+    bank_server::ExecutorRecognitionAction,
 > {
     let key = idempotency(identity);
     {

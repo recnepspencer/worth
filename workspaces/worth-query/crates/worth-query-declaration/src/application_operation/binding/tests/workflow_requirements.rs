@@ -82,10 +82,7 @@ fn evidence_floor_changes_canonical_program_revision_and_operation_comparison() 
             ApplicationProgramAuthoring::<MutationSchema, EvidenceProgram<Binding>>::begin()
                 .validated_program()
                 .unwrap();
-        (
-            program.revision().clone(),
-            program.semantic_description().clone(),
-        )
+        (*program.revision(), program.semantic_description().clone())
     }
     let ordinary = meaning::<RenameBinding>();
     let empty = meaning::<OccurrenceBinding>();

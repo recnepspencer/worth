@@ -33,10 +33,10 @@ impl WorthQueryPrimaryGraphProvider {
                 _ => Err(Denial::Missing),
             };
         };
-        if let Some(OutstandingDispatchPosture::Committed(expected)) = outstanding {
-            if committed.commit_reference().commit_id != expected {
-                return Err(Denial::CommitMismatch);
-            }
+        if let Some(OutstandingDispatchPosture::Committed(expected)) = outstanding
+            && committed.commit_reference().commit_id != expected
+        {
+            return Err(Denial::CommitMismatch);
         }
         let binding = committed
             .commit_evidence()

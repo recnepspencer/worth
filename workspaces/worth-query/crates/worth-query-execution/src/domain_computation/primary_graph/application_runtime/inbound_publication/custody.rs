@@ -147,13 +147,13 @@ impl InstalledTransportCompletionCustody {
         let Some(entry) = self.entries.remove(correlation) else {
             return;
         };
-        if let Some(operation) = entry.operation {
-            if let Some(pending) = self.pending_by_operation.get_mut(&operation) {
-                pending.remove(correlation);
-                if pending.is_empty() {
-                    self.pending_by_operation.remove(&operation);
-                    self.maintenance_cursor_by_operation.remove(&operation);
-                }
+        if let Some(operation) = entry.operation
+            && let Some(pending) = self.pending_by_operation.get_mut(&operation)
+        {
+            pending.remove(correlation);
+            if pending.is_empty() {
+                self.pending_by_operation.remove(&operation);
+                self.maintenance_cursor_by_operation.remove(&operation);
             }
         }
     }
@@ -217,11 +217,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     return Resume::Pending(Pending::ConcurrentContinuation);
                 }
                 RetainedCompletion::Unpublished(evidence, recovery, prior) => {
-                    if let Some(release) = prior.take() {
-                        if let Err(failed) = self.finish_recovery_release(release) {
-                            *prior = Some(failed);
-                            return Resume::Pending(Pending::ProductRecoveryRequired);
-                        }
+                    if let Some(release) = prior.take()
+                        && let Err(failed) = self.finish_recovery_release(release)
+                    {
+                        *prior = Some(failed);
+                        return Resume::Pending(Pending::ProductRecoveryRequired);
                     }
                     let evidence = Arc::clone(evidence);
                     let recovery = recovery.clone();
@@ -335,11 +335,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             RetainedCompletion::PerformedPending(performed, prior) => (performed, prior),
             _ => return Resume::Pending(Pending::ConcurrentContinuation),
         };
-        if let Some(release) = prior.take() {
-            if let Err(failed) = self.finish_recovery_release(release) {
-                *prior = Some(failed);
-                return Resume::Pending(Pending::ProductRecoveryRequired);
-            }
+        if let Some(release) = prior.take()
+            && let Err(failed) = self.finish_recovery_release(release)
+        {
+            *prior = Some(failed);
+            return Resume::Pending(Pending::ProductRecoveryRequired);
         }
         if !performed.settle_fresh_delivery() {
             return Resume::Pending(Pending::TerminalReleaseUnavailable);

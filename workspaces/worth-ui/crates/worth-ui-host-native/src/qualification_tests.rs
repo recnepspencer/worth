@@ -322,7 +322,9 @@ fn assert_exact_manifest(
 }
 
 fn manifest(text: &str) -> toml::Value {
-    text.parse().expect("qualified manifest parses")
+    text.parse::<toml::Table>()
+        .map(toml::Value::Table)
+        .expect("qualified manifest parses")
 }
 
 fn integer(manifest: &toml::Value, key: &str) -> i64 {

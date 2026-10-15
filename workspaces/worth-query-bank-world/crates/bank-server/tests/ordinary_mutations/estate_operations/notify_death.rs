@@ -228,28 +228,9 @@ fn notify(
     notice: bank_domain::estate::DeathNoticeId,
     subject: BankPrincipalId,
     identity: u8,
-) -> worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
-    worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::NotifyEstateDeath,
-        bank_server::BankApplication,
-        bank_server::DeathNotificationAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::NotifyEstateDeath,
-        bank_server::BankApplication,
-        bank_server::DeathNotificationAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::NotifyEstateDeath,
-        bank_server::BankApplication,
-        bank_server::DeathNotificationAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
+) -> super::EstateSourceAdvance<
+    bank_domain::schema::NotifyEstateDeath,
+    bank_server::DeathNotificationAction,
 > {
     let key = idempotency(identity);
     {

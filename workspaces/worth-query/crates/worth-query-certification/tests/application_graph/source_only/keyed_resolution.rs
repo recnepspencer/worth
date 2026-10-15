@@ -13,37 +13,39 @@ fn held_snapshot_failure_resolves_original_key_without_source_reexecution() {
     let contacts = &host.contacts;
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let before = observe_head(host.runtime(), host.current_world())
-        .selected_commit()
-        .clone();
-    let guard = host
-        .runtime()
-        .hold_post_commit_snapshot_failure_for_test()
-        .unwrap();
-    assert!(host
-        .runtime()
-        .reject_next_commit_before_transaction_for_test()
-        .is_err());
-    let operation = fixture::progress(
-        fixture::operation(&host, &request, 19, 0x9176_4019),
-        &request,
-    );
-    assert_eq!(
-        operation.posture(),
-        WorthQuerySourceOnlyPosture::Indeterminate
-    );
-    // World has published, unlike the independent ProductUnpublished court.
-    assert_ne!(
-        observe_head(host.runtime(), host.current_world()).selected_commit(),
-        &before
-    );
-    let operation = match operation.advance(&request) {
-        WorthQuerySourceOnlyAdvance::Refused { operation, .. } => operation,
-        _ => panic!("the held native publication boundary must refuse keyed resolution"),
+    let operation = {
+        let request = host.runtime().request(&principal, &scope);
+        let before = observe_head(host.runtime(), host.current_world())
+            .selected_commit()
+            .clone();
+        let guard = host
+            .runtime()
+            .hold_post_commit_snapshot_failure_for_test()
+            .unwrap();
+        assert!(host
+            .runtime()
+            .reject_next_commit_before_transaction_for_test()
+            .is_err());
+        let operation = fixture::progress(
+            fixture::operation(&host, &request, 19, 0x9176_4019),
+            &request,
+        );
+        assert_eq!(
+            operation.posture(),
+            WorthQuerySourceOnlyPosture::Indeterminate
+        );
+        // World has published, unlike the independent ProductUnpublished court.
+        assert_ne!(
+            observe_head(host.runtime(), host.current_world()).selected_commit(),
+            &before
+        );
+        let operation = match operation.advance(&request) {
+            WorthQuerySourceOnlyAdvance::Refused { operation, .. } => operation,
+            _ => panic!("the held native publication boundary must refuse keyed resolution"),
+        };
+        drop(guard);
+        operation
     };
-    drop(guard);
-    drop(request);
     drop(principal);
     let fresh_scope = request_scope();
     let fresh_principal = authenticate_operator(host.installed_schema(), &fresh_scope);

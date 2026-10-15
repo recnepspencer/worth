@@ -48,7 +48,6 @@ fn source_only_pinned_commit_time_staleness_retains_terminal_original_loan() {
         .retain_operation::<PinnedSourceProgram, PinnedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("actual original row constructs: {cause:?}"));
     drop(observed);
-    drop(request);
     drop(principal);
     drop(scope);
     let pause = world

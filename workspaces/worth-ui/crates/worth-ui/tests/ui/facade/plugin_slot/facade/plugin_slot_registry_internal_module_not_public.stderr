@@ -1,5 +1,0 @@
-error[E0433]: failed to resolve: could not find `capability` in `worth_ui`
- --> tests/ui/facade/plugin_slot/facade/plugin_slot_registry_internal_module_not_public.rs:2:23
-  |
-2 |     let _ = worth_ui::capability::registry::plugin_slot::PluginSlotRegistry::empty();
-  |                       ^^^^^^^^^^ could not find `capability` in `worth_ui`

@@ -71,10 +71,8 @@ mod authoring_world;
 mod bridge;
 mod bundles;
 mod classifications;
-mod digests;
 mod grouped_world;
 mod matrix;
-mod requirements;
 mod rows;
 mod scenarios;
 
@@ -83,11 +81,7 @@ use bridge::*;
 use bundles::*;
 pub use classifications::MilestoneEightFailureClass;
 use classifications::MilestoneEightPerturbationClass;
-use digests::*;
 use grouped_world::*;
 pub use matrix::MilestoneEightCertificationAdapter;
-pub use requirements::{
-    MILESTONE_EIGHT_REQUIRED_CANONICAL_ROW_NAMES, MILESTONE_EIGHT_REQUIRED_REJECTION_ROW_NAMES,
-};
 use rows::*;
 use scenarios::*;

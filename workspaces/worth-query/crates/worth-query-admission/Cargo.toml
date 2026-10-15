@@ -1,13 +1,14 @@
 [package]
 name = "worth-query-admission"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Query basis, policy, support, and execution admission authority."
 publish = false
 
 [dependencies]
-getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom = { version = "0.4", features = ["wasm_js"] }
 sha2 = "0.10"
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }

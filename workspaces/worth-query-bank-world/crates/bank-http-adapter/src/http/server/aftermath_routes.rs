@@ -30,6 +30,10 @@ pub(super) async fn disburse(
     response(state.recovery.disburse(admitted).await)
 }
 
+#[allow(
+    clippy::result_large_err,
+    reason = "Admission preserves the by-value protocol refusal without a wrapper allocation"
+)]
 fn admit_disbursement(
     request: BankHttpEstateDisbursementRequest,
     maximum_deadline: Duration,

@@ -1,5 +1,5 @@
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use worth_server::{
     WorthServer, WorthServerLoweredOperationPlan, WorthServerOperationFamily,
@@ -11,10 +11,10 @@ use worth_server::{
 #[path = "support/operation_scheduler/phase_eight_helpers.rs"]
 mod phase_eight_helpers;
 
-#[path = "support/query_handoff/fixture.rs"]
-mod query_handoff_fixture;
-#[path = "support/query_handoff/runtime.rs"]
-mod query_handoff_runtime;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_fixture as query_handoff_fixture;
+#[allow(unused_imports)]
+use crate::shared_support_query_handoff_runtime as query_handoff_runtime;
 
 use phase_eight_helpers::{insert_task, worth_native_request_input};
 use query_handoff_fixture::resolve_request_context;

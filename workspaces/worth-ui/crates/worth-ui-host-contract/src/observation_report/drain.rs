@@ -152,20 +152,19 @@ impl UiHostObservationRetention {
         if !state.active_sessions.contains(&host_session) {
             return Err(UiHostObservationRetentionDenial::InactiveSession);
         }
-        if coalesce_pointer {
-            if let Some(merged) = state
+        if coalesce_pointer
+            && let Some(merged) = state
                 .batches
                 .back()
                 .and_then(|previous| pointer_motion::merge(previous, &batch))
-            {
-                // Compatible motion has identical payload shape and attribution.
-                // Replacing its position/time therefore changes no retained size.
-                *state
-                    .batches
-                    .back_mut()
-                    .expect("merged retained predecessor") = merged;
-                return Ok(UiHostObservationRetentionOutcome::ReplacedPointerMotion);
-            }
+        {
+            // Compatible motion has identical payload shape and attribution.
+            // Replacing its position/time therefore changes no retained size.
+            *state
+                .batches
+                .back_mut()
+                .expect("merged retained predecessor") = merged;
+            return Ok(UiHostObservationRetentionOutcome::ReplacedPointerMotion);
         }
         if state.batches.len() == UI_HOST_OBSERVATION_DRAIN_BATCH_LIMIT {
             return Err(UiHostObservationRetentionDenial::Capacity(

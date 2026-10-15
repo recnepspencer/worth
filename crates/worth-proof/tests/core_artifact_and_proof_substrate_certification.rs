@@ -1,4 +1,5 @@
-mod support;
+#[allow(unused_imports)]
+use crate::shared_support as support;
 
 use std::any::type_name;
 

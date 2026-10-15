@@ -87,6 +87,7 @@ where
     }
 
     /// Retains the refused start and every native field under the same binding.
+    #[cfg(test)]
     pub(in crate::application_entry) fn into_same_binding_intent<Original>(
         self,
     ) -> WorthQueryDiscoveredOutputStartFailure<Schema, Original, Program, Root>

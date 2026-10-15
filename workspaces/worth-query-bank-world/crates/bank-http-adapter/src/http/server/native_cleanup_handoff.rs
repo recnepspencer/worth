@@ -31,11 +31,15 @@ impl super::mutation_executor::BankHttpMutationContinuation {
         let custody_id = command.custody_id.clone();
         let deadline = command.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let slot = Arc::clone(&self.transport.queue_slots)
             .try_acquire_owned()
             .map_err(|_| reject(Some(request_id.clone()), BankHttpDenialKind::Saturated))?;
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel = cancellation_guard;
         let index =
             super::mutation_executor::routing_slot(&custody_id, self.transport.senders.len());
         if let Err(error) = self.transport.senders[index].try_send(
@@ -55,7 +59,7 @@ impl super::mutation_executor::BankHttpMutationContinuation {
             };
             return Err(reject(Some(request_id), kind));
         }
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(result)) => result.map(super::native_cleanup_delivery::CleanupDelivery::receive),
             _ => Err(BankHttpMutationOutcome::OutcomeUnknown {
                 request_id,

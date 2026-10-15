@@ -202,8 +202,8 @@ impl CompositeHistoryCatalog {
     #[cfg(test)]
     pub(crate) fn counters(&self) -> HistoryCatalogCounters {
         let state = lock_state(&self.state);
-        let counters = *counters::lock_counters(&state.counters);
-        counters
+
+        *counters::lock_counters(&state.counters)
     }
 
     fn protect_exact(

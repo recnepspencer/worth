@@ -168,7 +168,7 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         // A caller cannot force an unbounded descriptor allocation: metadata
         // traversal is admitted before exact backing. Refusal borrows all parts.
         let refused = selected.combine_query_dependencies(&phase, &crate::publication_boundary::program_publication_access(),
-            std::iter::repeat(&dependencies).take(usize::MAX));
+            std::iter::repeat_n(&dependencies, usize::MAX));
         assert!(matches!(refused, Err(crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(ref cause))
             if cause.kind() == WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded));
         selected.require_current_required_set(&phase, &crate::publication_boundary::program_publication_access(), &request,

@@ -1,11 +1,13 @@
 use worth_proof::TransitionOutcome;
 use worth_server::{WorthServerCompatHttpRouteFamily, WorthServerTransferByteClass};
 
-use crate::{
-    compat_http_phase_twelve_assertions::{
+use {
+    crate::shared_support_compat_http_phase_twelve_assertions::{
         assert_binary_counter, assert_budget_receipt, assert_budget_scope,
     },
-    compat_http_phase_twelve_runtime::{build_phase_twelve_server, drip_fed_upload, upload_input},
+    crate::shared_support_compat_http_phase_twelve_runtime::{
+        build_phase_twelve_server, drip_fed_upload, upload_input,
+    },
 };
 
 #[test]

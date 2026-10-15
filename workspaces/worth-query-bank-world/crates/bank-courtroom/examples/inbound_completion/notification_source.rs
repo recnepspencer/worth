@@ -36,10 +36,7 @@ type Advance = WorthQuerySourceOnlyAdvance<Operation, Completed, Terminal>;
 
 pub(super) enum NotificationCustody {
     WrongInput(EstateAction),
-    Construction {
-        description: WorthQueryOperationDescription<BankSchema, NotifyEstateDeath>,
-        denial: WorthQueryOperationConstructionDenial,
-    },
+    Construction(bank_server::BankOperationConstructionRefusal<NotifyEstateDeath>),
     Native(Advance),
     Recovered(Completed),
     CloseRefused {
@@ -88,11 +85,8 @@ impl std::fmt::Debug for ExampleFailure {
                         let _ = action;
                         "wrong original input"
                     }
-                    NotificationCustody::Construction {
-                        description,
-                        denial,
-                    } => {
-                        let _ = (description, denial);
+                    NotificationCustody::Construction(refusal) => {
+                        let _ = refusal;
                         "construction refusal"
                     }
                     NotificationCustody::Native(advance) => {
@@ -131,12 +125,7 @@ pub(super) fn issue(
             BankIdempotencyKey::new("public-inbound-example").unwrap(),
         ))
         .retain_operation()
-        .map_err(|(description, denial)| {
-            fail(NotificationCustody::Construction {
-                description,
-                denial,
-            })
-        })?;
+        .map_err(|refusal| fail(NotificationCustody::Construction(refusal)))?;
     let advance = operation.advance(&runtime.request(principal, &scope));
     let WorthQuerySourceOnlyAdvance::Completed(completed) = advance else {
         return Err(fail(NotificationCustody::Native(advance)));

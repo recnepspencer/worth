@@ -16,7 +16,8 @@ use worth_relational::facade::transactions::planned_single_field_locator;
 
 #[test]
 fn populated_derived_index_cache_stays_outside_owner_authority_accounting() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let empty_cache_growth = empty_entity_field_cache_growth(execution);

@@ -4,13 +4,15 @@ use worth_server::{
     WorthServerSurfaceFamily, WorthServerTransportClass,
 };
 
-use crate::{
-    certification_bundle::WorthServerCertificationOutputDigest as Output,
-    query_handoff_fixture::{admit_read_posture, request_input, resolve_request_context, success},
-    worth_native_assertions::{admitted_named_read, family_contract_digest},
+use {
+    crate::certification_suite::certification_bundle::WorthServerCertificationOutputDigest as Output,
+    crate::shared_support_query_handoff_fixture::{
+        admit_read_posture, request_input, resolve_request_context, success,
+    },
+    crate::shared_support_worth_native_assertions::{admitted_named_read, family_contract_digest},
 };
 
-use crate::certification_bundle::WorthServerCertificationBundle;
+use crate::certification_suite::certification_bundle::WorthServerCertificationBundle;
 
 use super::worth_native_common::{
     direct_bundle, direct_read_denied, direct_read_success, request_context_digest,
@@ -128,7 +130,7 @@ pub fn compatibility_overlap_bundle(
     WorthServerCertificationBundle::from_response_and_evidence(
         request_context_digest,
         response.clone(),
-        crate::worth_native_assertions::operator_evidence_record(server, response),
+        crate::shared_support_worth_native_assertions::operator_evidence_record(server, response),
     )
     .with_output_digest(Output::SurfaceContract, surface_contract_digest)
     .with_output_digest(Output::Declaration, declaration.declaration_digest())
@@ -158,7 +160,7 @@ pub fn retained_artifact_denial_bundle(
     WorthServerCertificationBundle::from_response_and_evidence(
         request_context_digest(session.resolved_request_context().request_context()),
         response.clone(),
-        crate::worth_native_assertions::operator_evidence_record(server, response),
+        crate::shared_support_worth_native_assertions::operator_evidence_record(server, response),
     )
 }
 

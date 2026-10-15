@@ -83,11 +83,11 @@ pub(super) fn consume_first_if_armed<Schema: ApplicationSchema>(
         .active
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if let Some(state) = active.as_ref() {
-        if state.get().is_none() {
-            // The receiver registration lock serializes first consumption. The
-            // immutable capture lets observation coexist with later recovery.
-            let _ = state.set(take());
-        }
+    if let Some(state) = active.as_ref()
+        && state.get().is_none()
+    {
+        // The receiver registration lock serializes first consumption. The
+        // immutable capture lets observation coexist with later recovery.
+        let _ = state.set(take());
     }
 }

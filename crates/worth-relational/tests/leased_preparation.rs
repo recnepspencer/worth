@@ -203,7 +203,8 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
 
 #[test]
 fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publication() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let _serial = serial();
@@ -343,5 +344,5 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
 #[path = "leased_preparation/bulk_creation.rs"]
 mod bulk_creation;
 
-#[path = "relational_certification/test_execution_policy.rs"]
-mod test_execution_policy;
+#[allow(unused_imports)]
+use crate::shared_relational_certification_test_execution_policy as test_execution_policy;

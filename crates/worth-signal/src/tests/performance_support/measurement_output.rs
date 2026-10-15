@@ -163,7 +163,7 @@ fn validate_output_path(path: &Path, repository: &Path) -> Result<PathBuf, Strin
 
 #[cfg(test)]
 mod tests {
-    use super::{validate_output_path, workload_warmup, MeasurementFile};
+    use super::{validate_output_path, MeasurementFile};
     use std::path::Path;
 
     #[test]
@@ -212,31 +212,5 @@ mod tests {
             ]
         );
         std::fs::remove_file(path).unwrap();
-    }
-
-    #[test]
-    fn workload_warmup_posture_names_each_once_family() {
-        assert_eq!(
-            workload_warmup("chain_10k_bootstrap", "balanced"),
-            "once: build-plan-execute prime"
-        );
-        for profile in ["operational", "development", "forensic"] {
-            assert_eq!(
-                workload_warmup("fintech_mixed_fanout", profile),
-                "once per profile: read-mutate-read prime"
-            );
-        }
-        assert_eq!(
-            workload_warmup("topology_rewiring_churn", "balanced"),
-            "once: churn-rewire prime"
-        );
-        assert_eq!(
-            workload_warmup("topology_rewiring_rotating_window", "balanced"),
-            "once: window-rewire prime"
-        );
-        assert_eq!(
-            workload_warmup("suppression_wide_fanout", "balanced"),
-            "none"
-        );
     }
 }

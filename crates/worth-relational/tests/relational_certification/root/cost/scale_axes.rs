@@ -10,7 +10,8 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn production_write_footprints_report_exact_records_and_local_publication_cost() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let small_copy = single_record_copy_cost(execution, SupplyChainScale::court());
@@ -137,7 +138,8 @@ fn single_record_copy_cost(
 
 #[test]
 fn selected_publication_cost_is_flat_through_ordinary_retained_histories() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     assert_flat_history_samples(execution, &[1, 64, 1_024]);
@@ -146,7 +148,8 @@ fn selected_publication_cost_is_flat_through_ordinary_retained_histories() {
 #[test]
 #[ignore = "scheduled retained-root ceiling"]
 fn selected_publication_cost_is_flat_through_documented_retention_ceiling() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     // The owner caps all simultaneously retained retired roots at 4,096, and

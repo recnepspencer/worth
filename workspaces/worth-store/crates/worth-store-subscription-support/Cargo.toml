@@ -2,6 +2,7 @@
 workspace = "../.."
 name = "worth-store-subscription-support"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Roadmap 1 durable subscription-support artifacts and accuracy certification."

@@ -20,40 +20,41 @@ fn owning_source_only_unpublished_recovery_and_close() {
     ));
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let operation = fixture::operation(&host, &request, 18, 0x9176_4018);
-    let before = observe_head(host.runtime(), host.current_world())
-        .selected_commit()
-        .clone();
-    let policy = crate::test_request_policy::serial_request();
-    host.runtime()
-        .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
-    let operation = fixture::progress(operation, &request);
-    assert_eq!(
-        operation.posture(),
-        WorthQuerySourceOnlyPosture::ProductUnpublished
-    );
-    assert_eq!(
-        observe_head(host.runtime(), host.current_world()).selected_commit(),
-        &before
-    );
-    assert_eq!(contacts.counts(), (1, 1));
-    let (operation, denial) = operation
-        .close(&request)
-        .err()
-        .expect("live close does not discharge unpublished custody");
-    assert!(matches!(
-        denial,
-        WorthQueryOperationCloseDenial::NativeObligationRetained
-    ));
-    let stop = WorthQueryCancellationSource::new();
-    stop.cancel();
-    let stopped_scope = WorthQueryRequestScope::new(None, stop.token());
-    let operation = match operation.advance(&host.runtime().request(&principal, &stopped_scope)) {
-        WorthQuerySourceOnlyAdvance::Refused { operation, .. } => operation,
-        _ => panic!("interrupted admission must return original custody"),
+    let operation = {
+        let request = host.runtime().request(&principal, &scope);
+        let operation = fixture::operation(&host, &request, 18, 0x9176_4018);
+        let before = observe_head(host.runtime(), host.current_world())
+            .selected_commit()
+            .clone();
+        let policy = crate::test_request_policy::serial_request();
+        host.runtime()
+            .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
+        let operation = fixture::progress(operation, &request);
+        assert_eq!(
+            operation.posture(),
+            WorthQuerySourceOnlyPosture::ProductUnpublished
+        );
+        assert_eq!(
+            observe_head(host.runtime(), host.current_world()).selected_commit(),
+            &before
+        );
+        assert_eq!(contacts.counts(), (1, 1));
+        let (operation, denial) = operation
+            .close(&request)
+            .err()
+            .expect("live close does not discharge unpublished custody");
+        assert!(matches!(
+            denial,
+            WorthQueryOperationCloseDenial::NativeObligationRetained
+        ));
+        let stop = WorthQueryCancellationSource::new();
+        stop.cancel();
+        let stopped_scope = WorthQueryRequestScope::new(None, stop.token());
+        match operation.advance(&host.runtime().request(&principal, &stopped_scope)) {
+            WorthQuerySourceOnlyAdvance::Refused { operation, .. } => operation,
+            _ => panic!("interrupted admission must return original custody"),
+        }
     };
-    drop(request);
     drop(principal);
     drop(scope);
     drop(host);
@@ -61,47 +62,49 @@ fn owning_source_only_unpublished_recovery_and_close() {
     assert_eq!(denial.kind(), worth_query_host::facade::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained);
     let fresh_scope = request_scope();
     let fresh_principal = authenticate_operator(keepalive.installed_schema(), &fresh_scope);
-    let fresh = keepalive.runtime().request(&fresh_principal, &fresh_scope);
-    let operation = fixture::progress(operation, &fresh);
-    let completed = fixture::completed(operation, &fresh);
-    assert!(matches!(
-        completed.evidence(),
-        WorthQuerySourceCompletion::Recovered { .. }
-    ));
-    assert_eq!(
-        read_retention(keepalive.runtime(), keepalive.current_world()),
-        18
-    );
-    assert_eq!(contacts.counts(), (1, 1));
-    let catalog = keepalive
-        .runtime()
-        .product_publication_recovery_page(None, std::num::NonZeroUsize::new(8).unwrap())
-        .unwrap();
-    assert_eq!(catalog.rows().len(), 1);
-    let inspector = keepalive
-        .runtime()
-        .readmit_product_publication_recovery(catalog.rows()[0].handle())
-        .unwrap();
-    let held = inspector.inspect().unwrap();
-    let (completed, denial) = completed
-        .close(&fresh)
-        .err()
-        .expect("a live native inspector refuses release");
-    assert!(matches!(
-        denial,
-        WorthQueryOperationCloseDenial::Recovery(_)
-    ));
-    drop(held);
-    completed
-        .close(&fresh)
-        .unwrap_or_else(|(_, denial)| panic!("fresh cleanup succeeds: {denial:?}"));
-    assert!(keepalive
-        .runtime()
-        .product_publication_recovery_page(None, std::num::NonZeroUsize::new(8).unwrap())
-        .unwrap()
-        .rows()
-        .is_empty());
-    drop(fresh);
+    let inspector = {
+        let fresh = keepalive.runtime().request(&fresh_principal, &fresh_scope);
+        let operation = fixture::progress(operation, &fresh);
+        let completed = fixture::completed(operation, &fresh);
+        assert!(matches!(
+            completed.evidence(),
+            WorthQuerySourceCompletion::Recovered { .. }
+        ));
+        assert_eq!(
+            read_retention(keepalive.runtime(), keepalive.current_world()),
+            18
+        );
+        assert_eq!(contacts.counts(), (1, 1));
+        let catalog = keepalive
+            .runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::new(8).unwrap())
+            .unwrap();
+        assert_eq!(catalog.rows().len(), 1);
+        let inspector = keepalive
+            .runtime()
+            .readmit_product_publication_recovery(catalog.rows()[0].handle())
+            .unwrap();
+        let held = inspector.inspect().unwrap();
+        let (completed, denial) = completed
+            .close(&fresh)
+            .err()
+            .expect("a live native inspector refuses release");
+        assert!(matches!(
+            denial,
+            WorthQueryOperationCloseDenial::Recovery(_)
+        ));
+        drop(held);
+        completed
+            .close(&fresh)
+            .unwrap_or_else(|(_, denial)| panic!("fresh cleanup succeeds: {denial:?}"));
+        assert!(keepalive
+            .runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::new(8).unwrap())
+            .unwrap()
+            .rows()
+            .is_empty());
+        inspector
+    };
     drop(inspector);
     keepalive.close_conditional_runtime().unwrap();
 }
@@ -145,21 +148,22 @@ fn dropped_ordinary_completion_leaves_independent_native_cleanup() {
     let contacts = host.contacts.clone();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let operation = fixture::operation(&host, &request, 18, 0x9176_4218);
-    let policy = crate::test_request_policy::serial_request();
-    host.runtime()
-        .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
-    let operation = fixture::progress(operation, &request);
-    assert_eq!(
-        operation.posture(),
-        WorthQuerySourceOnlyPosture::ProductUnpublished
-    );
-    let operation = fixture::progress(operation, &request);
-    let completed = fixture::completed(operation, &request);
-    assert_eq!(contacts.counts(), (1, 1));
-    drop(completed);
-    drop(request);
+    {
+        let request = host.runtime().request(&principal, &scope);
+        let operation = fixture::operation(&host, &request, 18, 0x9176_4218);
+        let policy = crate::test_request_policy::serial_request();
+        host.runtime()
+            .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
+        let operation = fixture::progress(operation, &request);
+        assert_eq!(
+            operation.posture(),
+            WorthQuerySourceOnlyPosture::ProductUnpublished
+        );
+        let operation = fixture::progress(operation, &request);
+        let completed = fixture::completed(operation, &request);
+        assert_eq!(contacts.counts(), (1, 1));
+        drop(completed);
+    }
     drop(principal);
     drop(scope);
     drop(host);
@@ -181,8 +185,7 @@ fn dropped_ordinary_completion_leaves_independent_native_cleanup() {
             runtime.release_product_publication_recovery_in_advancement(&phase, recovery, 0)
         })
         .unwrap()
-        .err()
-        .expect("held inspector retains the actual record");
+        .expect_err("held inspector retains the actual record");
     let recovery = match failure {
         worth_query_host::facade::primary_graph::WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure) => failure.into_recovery(),
         _ => panic!("release refusal retains native recovery, not a fabricated cleanup"),
@@ -225,21 +228,23 @@ fn explicit_partial_abandonment_keeps_unsettled_native_record() {
     let contacts = host.contacts.clone();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let operation = fixture::operation(&host, &request, 18, 0x9176_4318);
-    let before = observe_head(host.runtime(), host.current_world())
-        .selected_commit()
-        .clone();
-    let policy = crate::test_request_policy::serial_request();
-    host.runtime()
-        .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
-    let operation = fixture::progress(operation, &request);
-    assert_eq!(
-        operation.posture(),
-        WorthQuerySourceOnlyPosture::ProductUnpublished
-    );
-    let (runtime, _cleanup) = operation.into_runtime_for_cleanup();
-    drop(request);
+    let (runtime, _cleanup, before) = {
+        let request = host.runtime().request(&principal, &scope);
+        let operation = fixture::operation(&host, &request, 18, 0x9176_4318);
+        let before = observe_head(host.runtime(), host.current_world())
+            .selected_commit()
+            .clone();
+        let policy = crate::test_request_policy::serial_request();
+        host.runtime()
+            .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
+        let operation = fixture::progress(operation, &request);
+        assert_eq!(
+            operation.posture(),
+            WorthQuerySourceOnlyPosture::ProductUnpublished
+        );
+        let (runtime, _cleanup) = operation.into_runtime_for_cleanup();
+        (runtime, _cleanup, before)
+    };
     drop(principal);
     drop(scope);
     drop(host);
@@ -256,8 +261,7 @@ fn explicit_partial_abandonment_keeps_unsettled_native_record() {
             runtime.release_product_publication_recovery_in_advancement(&phase, recovery, 0)
         })
         .unwrap()
-        .err()
-        .expect("unsettled source effects are not implicitly disposed");
+        .expect_err("unsettled source effects are not implicitly disposed");
     let recovery = match failure {
         WorthQueryProductUnpublishedRecoveryReleaseFailure::Recovery(failure) => {
             assert_eq!(

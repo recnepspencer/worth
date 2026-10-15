@@ -147,12 +147,11 @@ impl Drop for ProductCurrentnessHoldForTest {
     fn drop(&mut self) {
         self.latch.state.lock().unwrap_or_else(|e| e.into_inner()).2 = true;
         self.latch.changed.notify_all();
-        if let Some(worker) = self.worker.take() {
-            if let Err(payload) = worker.join() {
-                if !std::thread::panicking() {
-                    std::panic::resume_unwind(payload);
-                }
-            }
+        if let Some(worker) = self.worker.take()
+            && let Err(payload) = worker.join()
+            && !std::thread::panicking()
+        {
+            std::panic::resume_unwind(payload);
         }
     }
 }

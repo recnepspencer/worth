@@ -143,10 +143,8 @@ impl RequiredWorkMembership {
             state.active = required;
             required && state.marked
         };
-        if should_enqueue {
-            if let Some(queue) = self.queue.upgrade() {
-                queue.enqueue(self);
-            }
+        if should_enqueue && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
         }
     }
 
@@ -167,10 +165,8 @@ impl RequiredWorkMembership {
             state.native_hints = Some(hint);
             state.active
         };
-        if active {
-            if let Some(queue) = self.queue.upgrade() {
-                queue.enqueue(self);
-            }
+        if active && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
         }
     }
 
@@ -191,10 +187,8 @@ impl RequiredWorkMembership {
             };
             (prior, state.active)
         };
-        if active {
-            if let Some(queue) = self.queue.upgrade() {
-                queue.enqueue(self);
-            }
+        if active && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
         }
         prior
     }
@@ -210,10 +204,8 @@ impl RequiredWorkMembership {
             state.marked = true;
             state.active
         };
-        if active {
-            if let Some(queue) = self.queue.upgrade() {
-                queue.enqueue(self);
-            }
+        if active && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
         }
     }
 
@@ -341,10 +333,10 @@ fn bump_version(state: &mut MembershipState) {
 
 impl Drop for SelectedRequiredWork {
     fn drop(&mut self) {
-        if self.armed {
-            if let Some(queue) = self.membership.queue.upgrade() {
-                queue.enqueue(&self.membership);
-            }
+        if self.armed
+            && let Some(queue) = self.membership.queue.upgrade()
+        {
+            queue.enqueue(&self.membership);
         }
     }
 }

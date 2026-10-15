@@ -8,8 +8,8 @@ impl PlatformPulseApplicationRuntime {
         &mut self,
     ) -> Option<worth_ui::facade::app::WorthUiNativeApplicationShutdownReceipt> {
         self.pending_native_publications.clear();
-        let theme_watch_released = if let Some(watch) = self.theme_watch.take() {
-            match watch.shutdown() {
+        let theme_watch_released = match self.theme_watch.take() {
+            Some(watch) => match watch.shutdown() {
                 Ok(()) => true,
                 Err(denial) => {
                     self.fail(
@@ -18,9 +18,8 @@ impl PlatformPulseApplicationRuntime {
                     );
                     false
                 }
-            }
-        } else {
-            false
+            },
+            _ => false,
         };
         let visual_shutdown = self
             .shell

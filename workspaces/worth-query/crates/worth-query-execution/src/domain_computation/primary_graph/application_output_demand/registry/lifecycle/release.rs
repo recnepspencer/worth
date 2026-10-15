@@ -86,12 +86,10 @@ impl WorthQueryOutputDemandRegistry {
             .is_some_and(|row| row.closed_cleanup.queued());
         let released_prerequisites = (terminal && !queued)
             .then(|| infallible(state.release_record_prerequisites(&interest.key, &mut charge)));
-        if remove {
-            if let Some(record) = state.remove_record(&interest.key) {
-                released_bytes += record.obligation_reserved_bytes();
-                if record.unpublished_new_key() {
-                    infallible(state.revive_replaced_ready(&interest.key, &mut charge));
-                }
+        if remove && let Some(record) = state.remove_record(&interest.key) {
+            released_bytes += record.obligation_reserved_bytes();
+            if record.unpublished_new_key() {
+                infallible(state.revive_replaced_ready(&interest.key, &mut charge));
             }
         }
         // Cached Ready membership is occurrence-local cleanup even while its
@@ -121,30 +119,29 @@ impl WorthQueryOutputDemandRegistry {
                 .records
                 .get(&interest.key)
                 .is_some_and(|row| row.closed_cleanup.queued())
-        {
-            if let Some(newest) = infallible(refreshed_rejoin::newest_of_occurrence(
+            && let Some(newest) = infallible(refreshed_rejoin::newest_of_occurrence(
                 &state.records,
                 &interest.key,
                 &mut charge,
-            )) {
-                state.note_record_custody(&newest);
-                infallible(state.remove_required_member_if_released(&newest, &mut charge));
-                finished = finished.or_else(|| state.take_finished_successor(&newest, &mut charge));
-                let awaited = infallible(refreshed_rejoin::awaited_by_stale_owner(
-                    &state.records,
-                    &newest,
-                    &mut charge,
-                ));
-                let abandoned = state.records.get(&newest).is_some_and(|row| {
-                    matches!(
-                        row.idle_disposition(awaited),
-                        IdleRowDisposition::Retired(RowRetirement::AbandonedPublication)
-                    ) && !super::closed_retirement::held_by_row(row)
-                });
-                if abandoned {
-                    newest_claims =
-                        infallible(state.retire_row(&newest, &mut retired_newest, &mut charge));
-                }
+            ))
+        {
+            state.note_record_custody(&newest);
+            infallible(state.remove_required_member_if_released(&newest, &mut charge));
+            finished = finished.or_else(|| state.take_finished_successor(&newest, &mut charge));
+            let awaited = infallible(refreshed_rejoin::awaited_by_stale_owner(
+                &state.records,
+                &newest,
+                &mut charge,
+            ));
+            let abandoned = state.records.get(&newest).is_some_and(|row| {
+                matches!(
+                    row.idle_disposition(awaited),
+                    IdleRowDisposition::Retired(RowRetirement::AbandonedPublication)
+                ) && !super::closed_retirement::held_by_row(row)
+            });
+            if abandoned {
+                newest_claims =
+                    infallible(state.retire_row(&newest, &mut retired_newest, &mut charge));
             }
         }
         state.obligation_reserved_bytes = state

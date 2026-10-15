@@ -184,13 +184,11 @@ where
                             | MemberState::WaitingDeclaration(_)
                             | MemberState::Held(_)
                     )
+                    && let MemberInput::Queued { ready, .. } = &mut member.ready
+                    && let Some(index) = member.queued
                 {
-                    if let MemberInput::Queued { ready, .. } = &mut member.ready {
-                        if let Some(index) = member.queued {
-                            queue.discard_selection(index);
-                            *ready = None;
-                        }
-                    }
+                    queue.discard_selection(index);
+                    *ready = None;
                 }
             }
         }

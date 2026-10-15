@@ -63,18 +63,18 @@ mod tests {
         assert_eq!(joined.basis().right().basis().value(), &5_u16);
     }
 
-    #[test]
-    fn ready_recipe_join_is_size_honest_for_pair_payload_and_basis() {
+    const _: () = {
         type LeftBasis = FreshnessScopedBasis<CurrentValidity, AssumptionBasis<u8>>;
         type RightBasis = FreshnessScopedBasis<CurrentValidity, AssumptionBasis<u16>>;
 
-        assert_eq!(
+        assert!(
             size_of::<
                 ExecutionReadyRecipe<JoinInputs2<u64, u16>, JoinInputs2<LeftBasis, RightBasis>>,
-            >(),
-            size_of::<Recipe<Lowered, JoinInputs2<u64, u16>, JoinInputs2<LeftBasis, RightBasis>>>(),
+            >() == size_of::<
+                Recipe<Lowered, JoinInputs2<u64, u16>, JoinInputs2<LeftBasis, RightBasis>>,
+            >()
         );
-    }
+    };
 
     #[test]
     fn ready_recipe_join_composition_short_circuits_and_preserves_success_shape() {

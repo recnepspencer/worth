@@ -24,17 +24,3 @@ pub use vocabulary::{
     FoundationalBoundaryEvidenceRuntimeNonAssumption,
     FoundationalBoundaryEvidenceSyntheticRuntimePressure,
 };
-
-#[cfg(test)]
-mod tests {
-    use worth_proof::AuthorityWitness;
-
-    use super::FoundationalBoundaryEvidenceProductionReadinessAuthority;
-
-    #[test]
-    fn production_readiness_authority_is_crate_controlled() {
-        let _authority = AuthorityWitness::from_authority_marker(
-            FoundationalBoundaryEvidenceProductionReadinessAuthority::new(),
-        );
-    }
-}

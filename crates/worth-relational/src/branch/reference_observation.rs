@@ -35,15 +35,15 @@ pub fn relational_branch_observation(
     if branch_name.trim().is_empty() {
         return Err(RelationalBranchObservationConstructionDenial::EmptyBranchName);
     }
-    if let FoundationalBranchTarget::Basis(target) = &target {
-        if target.runtime_instance_id() != runtime_instance_id {
-            return Err(
-                RelationalBranchObservationConstructionDenial::RuntimeInstanceMismatch {
-                    observation_runtime_instance_id: runtime_instance_id,
-                    target_runtime_instance_id: target.runtime_instance_id(),
-                },
-            );
-        }
+    if let FoundationalBranchTarget::Basis(target) = &target
+        && target.runtime_instance_id() != runtime_instance_id
+    {
+        return Err(
+            RelationalBranchObservationConstructionDenial::RuntimeInstanceMismatch {
+                observation_runtime_instance_id: runtime_instance_id,
+                target_runtime_instance_id: target.runtime_instance_id(),
+            },
+        );
     }
     let branch_id =
         FoundationalBranchId::new(format!("relational/{runtime_instance_id}/{branch_name}"))?;

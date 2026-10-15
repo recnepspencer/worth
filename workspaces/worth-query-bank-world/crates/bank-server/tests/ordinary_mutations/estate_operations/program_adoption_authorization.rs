@@ -184,7 +184,7 @@ fn a_non_issuer_cannot_revoke_the_deployment_grant() {
     let result = {
         let actor = &actor;
         let scope = &scope;
-        let operation=runtime.retain_program_deployment_revocation(actor,bank_domain::schema::ProgramDeploymentRevocationInput { grant_identity: ("specialist-p0-deployment").into() },*(&91764012_u64),worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions::new(),scope).unwrap_or_else(|cause| panic!("declared issuer revocation: {cause:?}"));
+        let operation=runtime.retain_program_deployment_revocation(actor,bank_domain::schema::ProgramDeploymentRevocationInput { grant_identity: ("specialist-p0-deployment").into() },91764012_u64,worth_query_host::facade::declaration::application_schema::TypedMutationPreconditions::new(),scope).unwrap_or_else(|cause| panic!("declared issuer revocation: {cause:?}"));
         operation.advance(&runtime.request(actor, scope))
     };
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: _original_revocation, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(denial)) } = result else { panic!("recorded issuer permission must refuse before effect") };

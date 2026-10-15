@@ -79,10 +79,10 @@ pub(crate) fn reconcile_edge_cause(
     preparation_work::admit_scope_copy(edge_scope, work)?;
     preparation_work::claim_scope_copy(edge_scope, preparation.as_deref_mut())?;
     preparation_work::claim_scope_copy(edge_scope, preparation.as_deref_mut())?;
-    if causes.len() == causes.capacity() {
-        if let Some(budget) = preparation {
-            budget.claim_vec::<ResolvedDependencyCause>(causes.len().saturating_mul(2).max(4))?;
-        }
+    if causes.len() == causes.capacity()
+        && let Some(budget) = preparation
+    {
+        budget.claim_vec::<ResolvedDependencyCause>(causes.len().saturating_mul(2).max(4))?;
     }
     causes.push(ResolvedDependencyCause::new(
         context.graph_instance,

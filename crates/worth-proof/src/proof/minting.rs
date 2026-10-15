@@ -16,23 +16,11 @@ where
 mod tests {
     use std::mem::size_of;
 
-    use crate::proof::{
-        mint_proof, AuthorityMarker, AuthorityProves, CanonicalOrder, Disjointness, Proof,
-    };
+    use crate::proof::{AuthorityMarker, AuthorityProves, CanonicalOrder, Proof};
 
-    #[derive(Debug, PartialEq, Eq)]
     struct TestAuthority;
     impl AuthorityMarker for TestAuthority {}
     impl AuthorityProves<CanonicalOrder> for TestAuthority {}
-    impl AuthorityProves<Disjointness> for TestAuthority {}
 
-    #[test]
-    fn crate_internal_minting_produces_zero_sized_proofs() {
-        let canonical = mint_proof::<CanonicalOrder, TestAuthority>();
-        let disjoint = mint_proof::<Disjointness, TestAuthority>();
-
-        assert_eq!(canonical, Proof::<CanonicalOrder, TestAuthority>::mint());
-        assert_eq!(disjoint, Proof::<Disjointness, TestAuthority>::mint());
-        assert_eq!(size_of::<Proof<CanonicalOrder, TestAuthority>>(), 0);
-    }
+    const _: () = assert!(size_of::<Proof<CanonicalOrder, TestAuthority>>() == 0);
 }

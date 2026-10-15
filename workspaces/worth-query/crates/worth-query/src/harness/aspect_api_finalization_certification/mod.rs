@@ -9,18 +9,6 @@ use crate::harness::certification::{digest_parts, CertificationMatrix};
 use crate::runtime::WorthQueryAspectTouch;
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath, FieldKey};
 
-pub const ASPECT_API_FINALIZATION_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-    "authoritative-insert-update-delete-surface",
-    "typed-clear-narrows-by-touched-meaning",
-    "preview-batch-lane-isolation",
-    "mutation-surface-closeout-contract-sync",
-];
-
-pub const ASPECT_API_FINALIZATION_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-    "unsupported-intent-family-fails-typed-and-early",
-    "duplicate-clear-and-set-denied-before-routing",
-];
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum AspectApiFinalizationPerturbationClass {
     AuthoritativeCrudSurface,
@@ -57,19 +45,6 @@ pub struct AspectApiFinalizationCertificationBundle {
 }
 
 impl AspectApiFinalizationCertificationBundle {
-    pub(super) fn has_required_outputs(&self) -> bool {
-        !self.mutation_surface_label.is_empty()
-            && !self.authority_lane_label.is_empty()
-            && !self.mutation_family_label.is_empty()
-            && !self.support_matrix_digest.is_empty()
-            && !self.mutation_surface_report_digest.is_empty()
-            && !self.closeout_digest.is_empty()
-            && !self.receipt_digest.is_empty()
-            && !self.state_digest.is_empty()
-            && !self.inspection_digest.is_empty()
-            && !self.touched_aspect_digest.is_empty()
-    }
-
     pub(super) fn semantic_signature(&self) -> String {
         digest_parts(&[
             format!("surface:{}", self.mutation_surface_label),
@@ -101,34 +76,9 @@ pub type AspectApiFinalizationCertificationMatrix = CertificationMatrix<
     AspectApiFinalizationRejectionBundle,
 >;
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AspectApiFinalizationCertificationArtifact {
-    pub suite_name: &'static str,
-    pub certification_bundle_digest: String,
-    pub coverage_matrix_digest: String,
-    pub matrix: AspectApiFinalizationCertificationMatrix,
-}
-
-impl AspectApiFinalizationCertificationMatrix {
-    pub fn into_artifact(self) -> AspectApiFinalizationCertificationArtifact {
-        AspectApiFinalizationCertificationArtifact {
-            suite_name: self.suite_name,
-            certification_bundle_digest: digest_parts(&digests::bundle_digest_parts(&self)),
-            coverage_matrix_digest: digest_parts(&digests::coverage_digest_parts(&self)),
-            matrix: self,
-        }
-    }
-}
-
 pub struct AspectApiFinalizationCertificationAdapter;
 
 impl AspectApiFinalizationCertificationAdapter {
-    pub fn public_aspect_api_finalization_artifact(
-        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> AspectApiFinalizationCertificationArtifact {
-        Self::public_aspect_api_finalization_test(request_execution).into_artifact()
-    }
-
     pub fn public_aspect_api_finalization_test(
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> AspectApiFinalizationCertificationMatrix {

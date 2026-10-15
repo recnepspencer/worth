@@ -124,10 +124,10 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 ) -> Result<ProducerCommitReceipt, WorthQueryOutputDemandDenial> {
     // A request refused authorization at commit time stops as that request
     // does anywhere else; the producer did not fail.
-    if let WorthQueryApplicationCommitOutcome::Denied(commit_denial) = &outcome {
-        if let Some(authority) = commit_denial.request_authority() {
-            return Err(request_authority_stop(identity, authority));
-        }
+    if let WorthQueryApplicationCommitOutcome::Denied(commit_denial) = &outcome
+        && let Some(authority) = commit_denial.request_authority()
+    {
+        return Err(request_authority_stop(identity, authority));
     }
     // A companion with no room for this commit met a budget of the advance
     // that ran it; the producer did not fail, and its row stays claimable.

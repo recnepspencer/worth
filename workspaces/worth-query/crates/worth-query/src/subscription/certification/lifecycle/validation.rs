@@ -254,26 +254,26 @@ pub(super) fn validate_lifecycle_sources(
         ));
     }
 
-    if let Some(report) = continuation {
-        if typed_identity_drift(
+    if let Some(report) = continuation
+        && typed_identity_drift(
             report.active_lane_digest().evidence_identity(),
             active_lane_handle.lane_digest().evidence_identity(),
-        ) {
-            return Err(SubscriptionLifecycleCertificationError::new(
-                SubscriptionLifecycleCertificationDenialKind::ContinuationSourceMismatch,
-                "continuation report must belong to the certified active lane",
-                &[
-                    validation_role_evidence_identity(
-                        "continuation_lane",
-                        report.active_lane_digest().evidence_identity(),
-                    ),
-                    validation_role_evidence_identity(
-                        "handle_lane",
-                        active_lane_handle.lane_digest().evidence_identity(),
-                    ),
-                ],
-            ));
-        }
+        )
+    {
+        return Err(SubscriptionLifecycleCertificationError::new(
+            SubscriptionLifecycleCertificationDenialKind::ContinuationSourceMismatch,
+            "continuation report must belong to the certified active lane",
+            &[
+                validation_role_evidence_identity(
+                    "continuation_lane",
+                    report.active_lane_digest().evidence_identity(),
+                ),
+                validation_role_evidence_identity(
+                    "handle_lane",
+                    active_lane_handle.lane_digest().evidence_identity(),
+                ),
+            ],
+        ));
     }
 
     let preview_evidence = preview_certification_evidence(

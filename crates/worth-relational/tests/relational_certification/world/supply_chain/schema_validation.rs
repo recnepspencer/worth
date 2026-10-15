@@ -225,14 +225,14 @@ impl SupplyChainSchema {
                 if sequence != index as u16 {
                     return Err(SchemaError::OrderedRouteViolation(edge.key));
                 }
-                if let Some(next) = ordered.get(index + 1) {
-                    if !links.contains(&(edge.target, next.target)) {
-                        return Err(SchemaError::MissingRouteLink {
-                            voyage,
-                            source: edge.target,
-                            target: next.target,
-                        });
-                    }
+                if let Some(next) = ordered.get(index + 1)
+                    && !links.contains(&(edge.target, next.target))
+                {
+                    return Err(SchemaError::MissingRouteLink {
+                        voyage,
+                        source: edge.target,
+                        target: next.target,
+                    });
                 }
             }
         }

@@ -74,13 +74,10 @@ pub(super) fn validate(
         }
     }
     for mechanic in fragment.work.successor().mechanics() {
-        if let UiMountedAppearanceMechanic::TextForeground(text) = mechanic {
-            if !candidate_spans.contains(&(text.command(), text.node_receipt(), text.paint_span()))
-            {
-                return Err(
-                    UiUnpublishedAppearanceFrameProjectionDenial::TextCandidateSpanMismatch,
-                );
-            }
+        if let UiMountedAppearanceMechanic::TextForeground(text) = mechanic
+            && !candidate_spans.contains(&(text.command(), text.node_receipt(), text.paint_span()))
+        {
+            return Err(UiUnpublishedAppearanceFrameProjectionDenial::TextCandidateSpanMismatch);
         }
     }
     Ok(())

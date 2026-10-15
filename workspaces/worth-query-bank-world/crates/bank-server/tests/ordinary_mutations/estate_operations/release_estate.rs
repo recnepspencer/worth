@@ -24,10 +24,7 @@ fn public_progression_releases_the_exact_ready_estate_and_recovers_retry() {
     let outcome = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = release(&fixture, &specialist, binding.clone())
@@ -81,10 +78,7 @@ fn four_lawful_executors_and_many_unrelated_reviews_preserve_bounded_readiness()
     let outcome = {
         let closing_actor = &specialist;
         let closing_scope = crate::support::request_scope();
-        let closing_request = (&fixture)
-            .world
-            .runtime
-            .request(closing_actor, &closing_scope);
+        let closing_request = fixture.world.runtime.request(closing_actor, &closing_scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = release(&fixture, &specialist, idempotency(21))
@@ -109,29 +103,8 @@ fn release(
     fixture: &ReleaseFixture,
     specialist: &BankAuthenticatedPrincipal,
     idempotency: BankIdempotencyKey,
-) -> worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance<
-    worth_query_host::facade::application_entry::WorthQuerySourceOnlyOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::ReleaseEstate,
-        bank_server::BankApplication,
-        bank_server::EstateReleaseAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryCompletedSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::ReleaseEstate,
-        bank_server::BankApplication,
-        bank_server::EstateReleaseAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-    worth_query_host::facade::application_entry::WorthQueryTerminalSourceOperation<
-        bank_domain::schema::BankSchema,
-        bank_domain::schema::ReleaseEstate,
-        bank_server::BankApplication,
-        bank_server::EstateReleaseAction,
-        worth_query_host::facade::declaration::application_program::ApplicationSourceCompletion,
-    >,
-> {
+) -> super::EstateSourceAdvance<bank_domain::schema::ReleaseEstate, bank_server::EstateReleaseAction>
+{
     {
         let source_actor = specialist;
         let source_scope = &request_scope();

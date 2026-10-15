@@ -119,15 +119,15 @@ impl AdmittedTemporalBridgeSubscription {
                 &temporal_basis,
             ));
         }
-        if let Some(branch_identity) = subscription_basis.branch_identity() {
-            if branch_identity != temporal_truth_basis.branch_identity() {
-                return Err(BridgeTemporalSubscriptionAdmissionRejection::new(
-                    BridgeTemporalSubscriptionAdmissionRejectionKind::BranchIdentityMismatch,
-                    family_kind,
-                    admitted,
-                    &temporal_basis,
-                ));
-            }
+        if let Some(branch_identity) = subscription_basis.branch_identity()
+            && branch_identity != temporal_truth_basis.branch_identity()
+        {
+            return Err(BridgeTemporalSubscriptionAdmissionRejection::new(
+                BridgeTemporalSubscriptionAdmissionRejectionKind::BranchIdentityMismatch,
+                family_kind,
+                admitted,
+                &temporal_basis,
+            ));
         }
 
         let canonical_basis = Arc::<str>::from(format!(

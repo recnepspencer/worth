@@ -45,11 +45,11 @@ impl Drop for PinControlGuardForTest {
 pub(super) fn snapshot() -> Option<SnapshotHandle> {
     ARMED.with(|slot| {
         let mut slot = slot.borrow_mut();
-        if let Some(armed) = slot.as_mut() {
-            if armed.skip != 0 {
-                armed.skip -= 1;
-                return None;
-            }
+        if let Some(armed) = slot.as_mut()
+            && armed.skip != 0
+        {
+            armed.skip -= 1;
+            return None;
         }
         match slot.take().map(|armed| armed.action) {
             Some(Action::Snapshot(snapshot)) => Some(snapshot),

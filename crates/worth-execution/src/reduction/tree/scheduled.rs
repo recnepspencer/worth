@@ -118,7 +118,8 @@ where
             },
             false,
         );
-        let settled = (|| {
+
+        (|| {
             let failed = match outcomes.stop {
                 Some(BatchStop::Admission(denial)) => {
                     return Err(ScheduledReductionError::Admission(denial));
@@ -213,8 +214,7 @@ where
                     )
                 })?;
             Ok((tree, metrics))
-        })();
-        settled
+        })()
     }
 }
 

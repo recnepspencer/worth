@@ -1,7 +1,0 @@
-error[E0451]: field `tier` of struct `WorthUiDiagnosticRichnessPolicy` is private
- --> tests/ui/runtime_diagnostics/fail/richness_policy_fields_not_public.rs:5:9
-  |
-4 |     let _ = WorthUiDiagnosticRichnessPolicy {
-  |             ------------------------------- in this type
-5 |         tier: WorthUiDiagnosticRichnessTier::Support,
-  |         ^^^^ private field

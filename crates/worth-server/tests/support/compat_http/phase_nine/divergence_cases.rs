@@ -11,13 +11,13 @@ use worth_server::{
     WorthServerUploadCleanupReason,
 };
 
-use crate::compat_http_phase_nine_assertions::assert_denial;
-use crate::compat_http_phase_nine_runtime::{
+use crate::shared_support_compat_http_phase_nine_assertions::assert_denial;
+use crate::shared_support_compat_http_phase_nine_runtime::{
     build_phase_nine_server_with_workspace_provider, canonical_upload, compat_download_denied,
     compat_download_execution_input, compat_upload_denied, compat_upload_execution_input,
     malformed_upload,
 };
-use crate::query_handoff_runtime::ProfiledCountingTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::ProfiledCountingTestWorkspaceProvider;
 
 #[test]
 fn compat_http_denied_authorization_and_malformed_metadata_do_not_create_truth_transfer_fog() {

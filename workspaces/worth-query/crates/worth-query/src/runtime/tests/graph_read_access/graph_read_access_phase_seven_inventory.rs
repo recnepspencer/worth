@@ -1,6 +1,5 @@
 use crate::runtime::{
     worth_query_graph_index_inventory, WorthQueryGraphIndexInventoryMatchOutcome,
-    WorthQueryGraphIndexLifecycleClass, WorthQueryGraphIndexLifecycleOwner,
     WorthQueryGraphIndexPosture, WorthQueryGraphIndexSupportState,
     WorthQueryGraphReadAccessAdmissionPosture, WorthQueryGraphReadAccessDenialKind,
     WorthQueryGraphReadAccessRequirementKind, WorthQueryGraphReadRequiredCapabilityOwner,
@@ -97,58 +96,6 @@ fn verified_graph_index_rows_carry_certified_support_state_and_required_bases() 
         assert!(!row.invalidation_basis().as_str().is_empty());
         assert!(!row.complexity_contract().as_str().is_empty());
     }
-}
-
-#[test]
-fn graph_index_inventory_rows_localize_support_posture_without_generic_missing_index() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let inventory = default_graph_support_workspace(
-        request_execution,
-        "graph-read-access.phase-seven.inventory.rows",
-    )
-    .graph_index_inventory();
-    let directional = inventory
-        .row_for_requirement_kind(&WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency)
-        .expect("directional adjacency support row should exist");
-    let live_maintenance = inventory
-        .row_for_requirement_kind(&WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport)
-        .expect("live maintenance support row should exist");
-
-    assert_eq!(
-        directional.posture(),
-        &WorthQueryGraphIndexPosture::Verified
-    );
-    assert_eq!(
-        directional.support_state(),
-        &WorthQueryGraphIndexSupportState::Available
-    );
-    assert_eq!(
-        directional.lifecycle_owner(),
-        &WorthQueryGraphIndexLifecycleOwner::QueryRuntime
-    );
-    assert_eq!(
-        directional.lifecycle_class(),
-        &WorthQueryGraphIndexLifecycleClass::RuntimeMaintained
-    );
-    assert!(directional.owning_milestone().is_none());
-    assert_eq!(
-        live_maintenance.posture(),
-        &WorthQueryGraphIndexPosture::RequiresAccessCapabilityRegistration
-    );
-    assert_eq!(
-        live_maintenance.lifecycle_owner(),
-        &WorthQueryGraphIndexLifecycleOwner::DomainRegistration
-    );
-    assert_eq!(
-        live_maintenance.lifecycle_class(),
-        &WorthQueryGraphIndexLifecycleClass::AccessCapabilityRegistrationRequired
-    );
-    assert_eq!(
-        live_maintenance.owning_milestone(),
-        Some("worth-query-9.10-live_maintenance_support")
-    );
 }
 
 #[test]

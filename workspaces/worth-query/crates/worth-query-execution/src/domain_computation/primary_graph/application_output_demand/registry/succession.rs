@@ -159,14 +159,14 @@ impl super::DemandRegistryState {
         // stopped, unless claims on the row itself held it then; those stay
         // with it. Either way its next refresh certifies its upstreams again
         // and its publication replaces whatever claims it kept.
-        if let DemandState::Output(output) = &mut record.state {
-            if matches!(
+        if let DemandState::Output(output) = &mut record.state
+            && matches!(
                 output.advancement(),
                 WorthQueryOutputAdvancement::Stopped { .. }
-            ) {
-                output.reopen();
-                record.wake.notify();
-            }
+            )
+        {
+            output.reopen();
+            record.wake.notify();
         }
         true
     }

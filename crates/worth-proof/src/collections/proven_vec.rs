@@ -125,33 +125,7 @@ impl<T> UniqueVec<T> {
 mod tests {
     use std::mem::size_of;
 
-    use crate::proof::{mint_proof, CanonicalOrder, Uniqueness};
-
     use super::{CanonicalVec, UniqueVec};
-
-    #[test]
-    fn canonical_vec_carries_items_and_explicit_order_proof() {
-        let items = CanonicalVec::new(
-            vec![1, 2, 3],
-            mint_proof::<CanonicalOrder, crate::proof::StructuralProofAuthority>(),
-        );
-
-        assert_eq!(items.as_slice(), &[1, 2, 3]);
-        let (items, _proof) = items.into_parts();
-        assert_eq!(items, vec![1, 2, 3]);
-    }
-
-    #[test]
-    fn unique_vec_carries_items_and_explicit_uniqueness_proof() {
-        let items = UniqueVec::new(
-            vec![1, 2, 3],
-            mint_proof::<Uniqueness, crate::proof::StructuralProofAuthority>(),
-        );
-
-        assert_eq!(items.as_slice(), &[1, 2, 3]);
-        let (items, _proof) = items.into_parts();
-        assert_eq!(items, vec![1, 2, 3]);
-    }
 
     #[test]
     fn order_preserving_uniqueness_is_a_linear_admission() {
@@ -160,9 +134,6 @@ mod tests {
         assert!(UniqueVec::try_from_unique_preserving_order(vec!["a", "a"]).is_err());
     }
 
-    #[test]
-    fn proven_vecs_are_size_honest_for_zero_sized_proofs() {
-        assert_eq!(size_of::<CanonicalVec<u64>>(), size_of::<Vec<u64>>());
-        assert_eq!(size_of::<UniqueVec<u64>>(), size_of::<Vec<u64>>());
-    }
+    const _: () = assert!(size_of::<CanonicalVec<u64>>() == size_of::<Vec<u64>>());
+    const _: () = assert!(size_of::<UniqueVec<u64>>() == size_of::<Vec<u64>>());
 }

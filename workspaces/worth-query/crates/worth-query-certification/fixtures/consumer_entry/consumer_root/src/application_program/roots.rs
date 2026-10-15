@@ -15,10 +15,9 @@ use super::{
 };
 
 mod initial;
-pub use initial::{
-    ConsumerInitialDiscoveredProgramRoot, ConsumerInitialFixedProgramRoot,
-    InitialDiscoveredPlanarRoot,
-};
+#[cfg(test)]
+pub use initial::ConsumerInitialFixedProgramRoot;
+pub use initial::{ConsumerInitialDiscoveredProgramRoot, InitialDiscoveredPlanarRoot};
 
 pub struct SecondaryPlanarRoot;
 pub struct DiscoveredPlanarRoot;

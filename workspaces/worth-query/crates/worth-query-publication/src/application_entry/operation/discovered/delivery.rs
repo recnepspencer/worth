@@ -14,14 +14,14 @@ where
     <ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ScopeBinding: ApplicationQueryScopeResolution<Schema, <ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::PrincipalIdentity>,
     <<ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value: WorthQueryApplicationProjection<Schema, <ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query> + Clone,
 {
-    pub fn read_current(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<crate::domain_computation::WorthQueryPublishedApplicationResult<<ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query, <<ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial> {
+    pub fn read_current(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<DeliveredProjection<Schema, ProjectedRead<Schema, Intent, Action>>, WorthQueryOperationDeliveryDenial> {
         self.read_current_with_policy(request, WorthQueryOperationDeliveryPolicy::currentness(
             std::num::NonZeroUsize::new(self.runtime.runtime().output_demand_resource_profile().limits().source_currentness_work()).expect("installed finite positive currentness policy")))
     }
 
     /// Attempts delivery under fresh authority and narrower finite native ceilings.
     /// Refusal leaves this settled owner and its cleanup custody unchanged.
-    pub fn read_current_with_policy(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<crate::domain_computation::WorthQueryPublishedApplicationResult<<ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query, <<ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial> {
+    pub fn read_current_with_policy(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, policy: WorthQueryOperationDeliveryPolicy) -> Result<DeliveredProjection<Schema, ProjectedRead<Schema, Intent, Action>>, WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application) || self.description.branch != request.branch { return Err(Denial::FreshRequestMismatch); }
         self.runtime.runtime().with_application_advancement(request.scope, |phase| {
@@ -34,7 +34,7 @@ where
     }
     /// Reads the original declared projection at its retained settlement basis with fresh authority.
     /// This does not advance outputs or claim that their consumed facts are current.
-    pub fn read_historical(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<crate::domain_computation::WorthQueryPublishedApplicationResult<<ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::Query, <<ProjectedRead<Schema, Intent, Action> as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value>, WorthQueryOperationDeliveryDenial> {
+    pub fn read_historical(&self, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>) -> Result<DeliveredProjection<Schema, ProjectedRead<Schema, Intent, Action>>, WorthQueryOperationDeliveryDenial> {
         use WorthQueryOperationDeliveryDenial as Denial;
         if !std::ptr::eq(self.runtime.runtime(), request.application) || self.description.branch != request.branch { return Err(Denial::FreshRequestMismatch); }
         self.runtime.runtime().with_application_advancement(request.scope, |phase| {

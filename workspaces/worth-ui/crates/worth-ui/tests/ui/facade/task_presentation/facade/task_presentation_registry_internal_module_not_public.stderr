@@ -1,5 +1,0 @@
-error[E0433]: failed to resolve: could not find `capability` in `worth_ui`
- --> tests/ui/facade/task_presentation/facade/task_presentation_registry_internal_module_not_public.rs:1:15
-  |
-1 | use worth_ui::capability::registry::task_presentation;
-  |               ^^^^^^^^^^ could not find `capability` in `worth_ui`

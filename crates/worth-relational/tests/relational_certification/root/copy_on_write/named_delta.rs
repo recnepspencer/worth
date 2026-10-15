@@ -17,7 +17,8 @@ use worth_relational::facade::runtime::RelationalRuntime;
 
 #[test]
 fn every_supply_chain_delta_shares_payloads_within_its_declared_partition_footprint() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let scenarios = [

@@ -238,16 +238,16 @@ where
                 .get(&identity)
                 .filter(|_| retained.routing.digest(identity) == routing.digest(identity));
             let unmoved = !moved.contains(&identity) && !self.marked.contains(&identity);
-            if let Some(prior) = prior.filter(|_| unmoved) {
-                if reader.carry(&COMPARATOR, &prior.gather) {
-                    enter(
-                        reader,
-                        self.partitions.get(&identity).into_iter().flatten(),
-                        read,
-                    );
-                    prepared.carried(identity, prior);
-                    continue;
-                }
+            if let Some(prior) = prior.filter(|_| unmoved)
+                && reader.carry(&COMPARATOR, &prior.gather)
+            {
+                enter(
+                    reader,
+                    self.partitions.get(&identity).into_iter().flatten(),
+                    read,
+                );
+                prepared.carried(identity, prior);
+                continue;
             }
             // A partition with the same full digest keeps its key. Any other
             // partition holds

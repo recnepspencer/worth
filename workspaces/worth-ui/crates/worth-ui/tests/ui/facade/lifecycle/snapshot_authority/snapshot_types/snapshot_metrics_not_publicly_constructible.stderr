@@ -1,9 +1,0 @@
-error[E0451]: fields `registered_family_count` and `total_width` of struct `SnapshotMetrics` are private
- --> tests/ui/facade/lifecycle/snapshot_authority/snapshot_types/snapshot_metrics_not_publicly_constructible.rs:5:9
-  |
-4 |     let _ = SnapshotMetrics {
-  |             --------------- in this type
-5 |         registered_family_count: 1,
-  |         ^^^^^^^^^^^^^^^^^^^^^^^ private field
-6 |         total_width: 0,
-  |         ^^^^^^^^^^^ private field

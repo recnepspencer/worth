@@ -4,6 +4,11 @@
 //! adapter. The callback crosses a separate OS process and the production HTTP
 //! verifier; this court does not claim an OIDC payment entry route.
 
+#![allow(
+    clippy::result_large_err,
+    reason = "Transport payment courts retain complete native workflow and cleanup refusal owners"
+)]
+
 use std::time::{Duration, Instant};
 use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
@@ -156,15 +161,14 @@ async fn completed_payment_callback_waits_for_fresh_workflow_advance() {
 
     let terminal = tokio::time::timeout(Duration::from_secs(25), async {
         loop {
-            if let Some(terminal) = bank.observe_rail_completion(token) {
-                if inquire_completion_delivery_posture(rail.local_addr(), TIMEOUT)
+            if let Some(terminal) = bank.observe_rail_completion(token)
+                && inquire_completion_delivery_posture(rail.local_addr(), TIMEOUT)
                     .await
                     .expect("rail reports callback custody")
                     .pending
                     == 0
-                {
-                    break terminal;
-                }
+            {
+                break terminal;
             }
             tokio::time::sleep(Duration::from_millis(25)).await;
         }

@@ -4,7 +4,7 @@ use worth_server::{
     WorthServerDirectDeclarationDenialCode,
 };
 
-use crate::worth_native_runtime::{
+use crate::shared_support_worth_native_runtime::{
     build_server, build_server_with_failing_workspace_provider, worth_native_session_input_builder,
 };
 

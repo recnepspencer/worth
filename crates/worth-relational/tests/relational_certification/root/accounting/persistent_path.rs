@@ -14,7 +14,8 @@ use worth_relational::facade::transactions::WorkerIntentBatch;
 
 #[test]
 fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     const EXPECTED_TOUCHED_REGIONS: u64 = 1;

@@ -12,50 +12,53 @@ fn source_only_product_stale_terminal_preserves_original_meaning_and_close() {
     let branch = host.current_world();
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host.runtime().request(&principal, &scope);
-    let original_head = request.retain_current_read().unwrap();
-    let record = host
-        .runtime()
-        .with_host_advancement(|phase| {
-            host.runtime()
-                .on_branch(branch)
-                .select(&phase)
-                .unwrap()
-                .resolve_entity(
-                    &phase,
-                    DocumentIdentityField::reference(),
-                    DOCUMENT_IDENTITY.to_owned(),
-                    &scope,
-                    WorthQueryPrincipalResolutionMode::Certification,
-                )
-                .unwrap()
-                .relational_record_identity_parts()
-        })
-        .unwrap();
-    let original = request
-        .mutate(OriginalRetention {
-            input: SetRetentionInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: 19,
-            },
-        })
-        .without_source()
-        .preconditions(
-            TypedMutationPreconditions::new()
-                .expect_fact(
-                    DocumentIdentityField::reference(),
-                    ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
-                )
-                .expect_fact(
-                    DocumentRetentionField::reference(),
-                    ApplicationEncodedScalarValue::try_new(7_u64).unwrap(),
-                ),
-        )
-        .idempotency_owned(0x9176_6019)
-        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
-        .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(&host)
-        .unwrap_or_else(|(_, cause)| panic!("original descriptor: {cause:?}"));
-    drop(request);
+    let (original_head, record, original) = {
+        let request = host.runtime().request(&principal, &scope);
+        let original_head = request.retain_current_read().unwrap();
+        let record = host
+            .runtime()
+            .with_host_advancement(|phase| {
+                host.runtime()
+                    .on_branch(branch)
+                    .select(&phase)
+                    .unwrap()
+                    .resolve_entity(
+                        &phase,
+                        DocumentIdentityField::reference(),
+                        DOCUMENT_IDENTITY.to_owned(),
+                        &scope,
+                        WorthQueryPrincipalResolutionMode::Certification,
+                    )
+                    .unwrap()
+                    .relational_record_identity_parts()
+            })
+            .unwrap();
+        let original = request
+            .mutate(OriginalRetention {
+                input: SetRetentionInput {
+                    identity: DOCUMENT_IDENTITY.to_owned(),
+                    retention_days: 19,
+                },
+            })
+            .without_source()
+            .preconditions(
+                TypedMutationPreconditions::new()
+                    .expect_fact(
+                        DocumentIdentityField::reference(),
+                        ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned())
+                            .unwrap(),
+                    )
+                    .expect_fact(
+                        DocumentRetentionField::reference(),
+                        ApplicationEncodedScalarValue::try_new(7_u64).unwrap(),
+                    ),
+            )
+            .idempotency_owned(0x9176_6019)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
+            .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(&host)
+            .unwrap_or_else(|(_, cause)| panic!("original descriptor: {cause:?}"));
+        (original_head, record, original)
+    };
     let pause = host
         .runtime()
         .pause_after_application_candidate_preparation_for_test(NonZeroUsize::MIN);
@@ -114,22 +117,24 @@ fn source_only_product_stale_terminal_preserves_original_meaning_and_close() {
             None,
             cancellation.token(),
         );
-    let request = host.runtime().request(&principal, &stopped);
-    let (terminal, cause) = terminal
-        .close(&request)
-        .err()
-        .expect("close cannot bypass a stopped scope");
-    assert!(matches!(
-        cause,
-        WorthQueryOperationCloseDenial::Execution(_)
-    ));
-    assert!(matches!(
-        terminal.native_outcome(),
-        Some(WorthQueryApplicationMutationOutcome::Commit(
-            WorthQueryApplicationUncommitted::ProductStale(_)
-        ))
-    ));
-    drop(request);
+    let terminal = {
+        let request = host.runtime().request(&principal, &stopped);
+        let (terminal, cause) = terminal
+            .close(&request)
+            .err()
+            .expect("close cannot bypass a stopped scope");
+        assert!(matches!(
+            cause,
+            WorthQueryOperationCloseDenial::Execution(_)
+        ));
+        assert!(matches!(
+            terminal.native_outcome(),
+            Some(WorthQueryApplicationMutationOutcome::Commit(
+                WorthQueryApplicationUncommitted::ProductStale(_)
+            ))
+        ));
+        terminal
+    };
     drop(principal);
     drop(scope);
     let fresh_scope = request_scope();

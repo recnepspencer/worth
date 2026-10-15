@@ -183,10 +183,10 @@ impl InstalledBatchPlan {
             {
                 return Err(ForeignPlan);
             }
-            if let Some(old) = self.slots.get(&read.query) {
-                if old.binding != read.binding {
-                    return Err(ForeignPlan);
-                }
+            if let Some(old) = self.slots.get(&read.query)
+                && old.binding != read.binding
+            {
+                return Err(ForeignPlan);
             }
             items = items.checked_add(read.count).ok_or(CounterOverflow)?;
             work = work

@@ -149,10 +149,13 @@ impl ClosedOrder {
         }
         links.queued = true;
         links.previous = self.last.clone();
-        if let Some(last) = self.last.upgrade() {
-            last.closed_note.lock().unwrap().next = Some(Arc::clone(&node));
-        } else {
-            self.first = Some(Arc::clone(&node));
+        match self.last.upgrade() {
+            Some(last) => {
+                last.closed_note.lock().unwrap().next = Some(Arc::clone(&node));
+            }
+            _ => {
+                self.first = Some(Arc::clone(&node));
+            }
         }
         self.last = Arc::downgrade(&node);
         self.len += 1;
@@ -163,10 +166,13 @@ impl ClosedOrder {
         let previous = std::mem::take(&mut links.previous);
         let next = links.next.take();
         links.queued = false;
-        if let Some(prior) = previous.upgrade() {
-            prior.closed_note.lock().unwrap().next = next.clone();
-        } else {
-            self.first = next.clone();
+        match previous.upgrade() {
+            Some(prior) => {
+                prior.closed_note.lock().unwrap().next = next.clone();
+            }
+            _ => {
+                self.first = next.clone();
+            }
         }
         if let Some(next) = next {
             next.closed_note.lock().unwrap().previous = previous;
@@ -219,12 +225,11 @@ impl DemandRegistryState {
             super::super::IdleRowDisposition::Retired(
                 super::super::RowRetirement::AbandonedPublication
             )
-        ) {
-            if let Some(scope) = row.source_scope {
-                for commit in &row.source_commits {
-                    if let Some(custody) = self.source_custody.get_mut(commit) {
-                        custody.return_undelivered_root(&key.source, scope);
-                    }
+        ) && let Some(scope) = row.source_scope
+        {
+            for commit in &row.source_commits {
+                if let Some(custody) = self.source_custody.get_mut(commit) {
+                    custody.return_undelivered_root(&key.source, scope);
                 }
             }
         }

@@ -44,7 +44,8 @@ fn discover_nested(root: &Path, directory: &Path, roots: &mut Vec<String>) -> Re
     if manifest.is_file()
         && crate::source_documents::read_to_string(&manifest)
             .map_err(|e| e.to_string())?
-            .parse::<toml::Value>()
+            .parse::<toml::Table>()
+            .map(toml::Value::Table)
             .map_err(|e| e.to_string())?
             .get("package")
             .is_some()

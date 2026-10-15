@@ -1,9 +1,9 @@
-#[path = "support/product_operation_phase_thirteen/fixture.rs"]
-mod fixture;
+#[allow(unused_imports)]
+use crate::shared_support_product_operation_phase_thirteen_fixture as fixture;
 #[path = "support/product_operation_phase_thirteen/proof_builders.rs"]
 mod proof_builders;
-#[path = "support/test_bootstrap_policy.rs"]
-mod test_bootstrap_policy;
+#[allow(unused_imports)]
+use crate::shared_support_test_bootstrap_policy as test_bootstrap_policy;
 
 use fixture::{build_server, StatefulEditorLikeBackend};
 use proof_builders::{blocked_editor_like_fixture, complete_editor_like_fixture};

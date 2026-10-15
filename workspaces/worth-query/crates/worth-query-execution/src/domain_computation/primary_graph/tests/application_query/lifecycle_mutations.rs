@@ -67,15 +67,15 @@ pub(super) fn revoke_account_ownership(
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
             let snapshot = selected.application_basis().snapshot_handle();
-            let relation = runtime
+
+            runtime
                 .read_truth()
                 .visible_relations_of_kind(execution, relation_kind, snapshot.version_id())
                 .expect("fixture read request remains live")
                 .into_iter()
                 .find(|record| record.target == account)
                 .expect("the admitted account has one ownership edge")
-                .relation_id;
-            relation
+                .relation_id
         });
     drop(selected);
     super::super::fixture::publish_relational_mutation(

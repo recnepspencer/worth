@@ -1,4 +1,8 @@
 //! Transport records contain actual native owners, never a replacement phase engine.
+#![allow(
+    clippy::result_large_err,
+    reason = "Close refusal returns the complete native owner without a wrapper allocation"
+)]
 use super::super::protocol::{BankHttpCommitDescription, BankHttpDenial};
 use super::mutation_refusal::source_denial;
 use bank_domain::{

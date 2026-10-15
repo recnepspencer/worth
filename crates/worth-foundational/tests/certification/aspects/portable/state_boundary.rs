@@ -6,10 +6,10 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::aspects::patches::patch_fixtures::{
+use crate::certification::aspects::patches::patch_fixtures::{
     admitted_state, task_summary_contract, validated_task_summary,
 };
-use crate::foundational_vocabulary::{identity, key, revision};
+use crate::certification::foundational_vocabulary::{identity, key, revision};
 
 #[test]
 fn serialized_state_is_only_a_candidate_until_every_entry_readmits() {

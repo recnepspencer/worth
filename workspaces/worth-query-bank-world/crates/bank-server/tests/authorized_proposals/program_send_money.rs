@@ -94,7 +94,7 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
     assert_eq!(
         outcomes
             .iter()
-            .filter(|outcome| { matches!(outcome, Ok(_)) })
+            .filter(|outcome| { outcome.is_ok() })
             .count(),
         1
     );

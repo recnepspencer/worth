@@ -242,10 +242,14 @@ impl BankHttpElevationExecutor {
         let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel = cancellation_guard;
         (self.request)(request, cancellation, response);
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpElevationRequestOutcome::OutcomeUnknown {
                 request_id: id.clone(),
@@ -260,10 +264,14 @@ impl BankHttpElevationExecutor {
         let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel = cancellation_guard;
         (self.approve)(request, cancellation, response);
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpElevationApprovalOutcome::OutcomeUnknown {
                 request_id: id.clone(),
@@ -278,10 +286,14 @@ impl BankHttpElevationExecutor {
         let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel = cancellation_guard;
         (self.revoke)(request, cancellation, response);
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpElevationRevocationOutcome::OutcomeUnknown {
                 request_id: id.clone(),
@@ -296,10 +308,14 @@ impl BankHttpElevationExecutor {
         let id = request.request_id.clone();
         let deadline = request.deadline;
         let cancellation = WorthQueryCancellationSource::new();
-        let _cancel = CancelOnDrop(cancellation.clone());
+        let cancellation_guard = CancelOnDrop(cancellation.clone());
         let (response, receiver) = oneshot::channel();
+        let response_wait = tokio::time::timeout_at(deadline.into(), receiver);
+        tokio::pin!(response_wait);
+        // Cancellation must precede disposal of the response future in every edition.
+        let _cancel = cancellation_guard;
         (self.review)(request, cancellation, response);
-        match tokio::time::timeout_at(deadline.into(), receiver).await {
+        match response_wait.await {
             Ok(Ok(outcome)) => outcome,
             _ => BankHttpMandatoryReviewOutcome::OutcomeUnknown {
                 request_id: id.clone(),

@@ -19,10 +19,9 @@ fn read_once<K: Eq + Hash, V: Clone>(
     physical_reads: &AtomicUsize,
     reuse_hits: &AtomicUsize,
 ) -> V {
-    let cell = if let Some(entry) = map.get(&key) {
-        Arc::clone(entry.value())
-    } else {
-        map.entry(key).or_default().clone()
+    let cell = match map.get(&key) {
+        Some(entry) => Arc::clone(entry.value()),
+        _ => map.entry(key).or_default().clone(),
     };
     let mut initialized = false;
     let value = cell

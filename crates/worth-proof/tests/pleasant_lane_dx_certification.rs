@@ -1,4 +1,5 @@
-mod support;
+#[allow(unused_imports)]
+use crate::shared_support as support;
 
 use support::compile_fail::run_compile_fail_bundle;
 use support::compile_pass::run_compile_pass_bundle;

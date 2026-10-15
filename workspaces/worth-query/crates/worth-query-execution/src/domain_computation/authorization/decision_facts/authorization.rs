@@ -205,20 +205,20 @@ impl WorthQueryAuthorizationDecisionFact {
         {
             return Ok(false);
         }
-        if let Some(recorded) = &self.recorded_actor {
-            if !recorded.remains_current(execution, runtime, snapshot)? {
-                return Ok(false);
-            }
+        if let Some(recorded) = &self.recorded_actor
+            && !recorded.remains_current(execution, runtime, snapshot)?
+        {
+            return Ok(false);
         }
-        if let Some(delegation) = &self.delegation {
-            if !delegation.remains_current_in(execution, runtime, snapshot, bridge)? {
-                return Ok(false);
-            }
+        if let Some(delegation) = &self.delegation
+            && !delegation.remains_current_in(execution, runtime, snapshot, bridge)?
+        {
+            return Ok(false);
         }
-        if let Some(activation) = &self.delegation_activation {
-            if !activation.remains_current_in(execution, runtime, snapshot, bridge)? {
-                return Ok(false);
-            }
+        if let Some(activation) = &self.delegation_activation
+            && !activation.remains_current_in(execution, runtime, snapshot, bridge)?
+        {
+            return Ok(false);
         }
         Ok(true)
     }
@@ -237,20 +237,20 @@ impl WorthQueryAuthorizationDecisionFact {
         {
             return Ok(false);
         }
-        if let Some(recorded) = &self.recorded_actor {
-            if !recorded.remains_current(execution, runtime, snapshot)? {
-                return Ok(false);
-            }
+        if let Some(recorded) = &self.recorded_actor
+            && !recorded.remains_current(execution, runtime, snapshot)?
+        {
+            return Ok(false);
         }
-        if let Some(delegation) = &self.delegation {
-            if !delegation.remains_equal_in(execution, runtime, snapshot)? {
-                return Ok(false);
-            }
+        if let Some(delegation) = &self.delegation
+            && !delegation.remains_equal_in(execution, runtime, snapshot)?
+        {
+            return Ok(false);
         }
-        if let Some(activation) = &self.delegation_activation {
-            if !activation.remains_equal_in(execution, runtime, snapshot)? {
-                return Ok(false);
-            }
+        if let Some(activation) = &self.delegation_activation
+            && !activation.remains_equal_in(execution, runtime, snapshot)?
+        {
+            return Ok(false);
         }
         Ok(true)
     }

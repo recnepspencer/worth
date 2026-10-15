@@ -2,16 +2,16 @@ use worth_foundational::facade::DiagnosticRichnessProfile;
 use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;
 use worth_server::WorthServerBinaryDownloadRequest;
 
-use crate::compat_http_phase_nine_assertions::{
+use crate::shared_support_compat_http_phase_nine_assertions::{
     assert_policy_alignment, assert_same_metadata_identity, assert_transfer_disposition,
 };
-use crate::compat_http_phase_nine_runtime::{
+use crate::shared_support_compat_http_phase_nine_runtime::{
     build_phase_nine_server_with_workspace_provider, canonical_upload,
     compat_download_execution_input, compat_download_success, compat_inspection_execution_input,
     compat_inspection_success, compat_read_execution_input, compat_read_success,
     compat_upload_execution_input, compat_upload_success,
 };
-use crate::query_handoff_runtime::ProfiledTestWorkspaceProvider;
+use crate::shared_support_query_handoff_runtime::ProfiledTestWorkspaceProvider;
 
 #[test]
 fn compat_http_file_metadata_truth_linkage_stays_canonical_across_upload_read_inspect_and_download()
@@ -110,7 +110,7 @@ fn compat_http_head_downloads_do_not_claim_byte_motion_in_file_transfer_provenan
         server
             .compat_http()
             .download(worth_server::WorthServerBinaryDownloadExecutionInput::new(
-                crate::compat_http_phase_nine_runtime::prepared_request(
+                crate::shared_support_compat_http_phase_nine_runtime::prepared_request(
                     &server,
                     worth_server::WorthServerCompatibilityRequestInput::builder()
                         .with_authenticated_principal_id("principal-9")

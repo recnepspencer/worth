@@ -34,6 +34,10 @@ pub(super) struct AdmittedMoneyCommand {
     pub(super) deadline: Instant,
     pub(super) command: MoneyCommand,
 }
+#[allow(
+    clippy::result_large_err,
+    reason = "Admission preserves the by-value protocol refusal without a wrapper allocation"
+)]
 pub(super) fn admit(
     request: BankHttpMutationRequest,
     maximum_deadline: Duration,

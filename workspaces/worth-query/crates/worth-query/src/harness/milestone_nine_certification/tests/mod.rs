@@ -21,7 +21,3 @@ fn semantic_signature(bundle: &MilestoneNineCertificationBundle) -> String {
         format!("delivery:{}", bundle.delivery_digest),
     ])
 }
-
-fn is_sha256_digest(value: &str) -> bool {
-    value.len() == 64 && value.chars().all(|ch| ch.is_ascii_hexdigit())
-}

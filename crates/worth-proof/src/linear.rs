@@ -226,14 +226,11 @@ mod tests {
         LinearResource::mint(id, &RecoveryAuthority::witness())
     }
 
-    #[test]
-    fn the_authority_is_carried_in_the_type_and_costs_nothing() {
-        assert_eq!(size_of::<Recovery>(), size_of::<u64>());
-        assert_eq!(
-            size_of::<TerminalReceipt<u64, RecoveryEnd, RecoveryAuthority>>(),
-            size_of::<(u64, RecoveryEnd)>()
-        );
-    }
+    const _: () = assert!(size_of::<Recovery>() == size_of::<u64>());
+    const _: () = assert!(
+        size_of::<TerminalReceipt<u64, RecoveryEnd, RecoveryAuthority>>()
+            == size_of::<(u64, RecoveryEnd)>()
+    );
 
     #[test]
     fn terminating_names_the_terminal_it_reached() {

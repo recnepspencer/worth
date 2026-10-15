@@ -3,6 +3,10 @@ use worth_query_decl::facade::{application_operation::*, application_schema::*};
 use worth_query_host::facade::{application_entry::*, primary_graph::WorthQueryObservedResultSet};
 
 // compiled-example: begin
+#[allow(
+    clippy::result_large_err,
+    reason = "The example returns the complete original builder and key without allocation"
+)]
 pub fn capture_original<'a, 'p, 's, S, I>(
     request: &WorthQueryApplicationRequest<'a, 'p, 's, S>,
     intent: I,

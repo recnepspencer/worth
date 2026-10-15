@@ -67,7 +67,7 @@ impl DemandRegistryState {
         &self,
         upstream: &WorthQueryOutputDemandKey,
         charge: &mut C,
-    ) -> Result<impl Iterator<Item = WorthQueryOutputDemandKey>, C::Refusal> {
+    ) -> Result<impl Iterator<Item = WorthQueryOutputDemandKey> + use<C>, C::Refusal> {
         let newest =
             super::refreshed_rejoin::newest_of_occurrence(&self.records, upstream, charge)?;
         Ok(std::iter::once(upstream.clone()).chain(newest))

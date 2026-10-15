@@ -55,10 +55,10 @@ impl ResourceRuntimeState {
         if !retry_plan.admits_attempt(next_attempt) {
             return Err(ResourceRetryDenialClass::RetryAttemptLimitReached);
         }
-        if retry_plan.max_jitter().is_some() {
-            if let Some(telemetry) = telemetry {
-                telemetry.resource_retry_jitter_decision_count += 1;
-            }
+        if retry_plan.max_jitter().is_some()
+            && let Some(telemetry) = telemetry
+        {
+            telemetry.resource_retry_jitter_decision_count += 1;
         }
         let retry_budget_charge = self.retry_budget_ledger.charge_for(
             &in_flight,
@@ -85,10 +85,10 @@ impl ResourceRuntimeState {
         if let Some(scheduled) = self.pending_retry_by_request.get(&request_id) {
             return scheduled.policy_decision_digest().clone();
         }
-        if let Some(in_flight) = self.in_flight_by_request.get(&request_id) {
-            if let Some(descriptor) = self.descriptors.get(&in_flight.descriptor_id()) {
-                return descriptor.retry_decision_plan().decision_digest().clone();
-            }
+        if let Some(in_flight) = self.in_flight_by_request.get(&request_id)
+            && let Some(descriptor) = self.descriptors.get(&in_flight.descriptor_id())
+        {
+            return descriptor.retry_decision_plan().decision_digest().clone();
         }
         ResourcePolicyDigest::new("resource-retry-policy-unavailable")
     }

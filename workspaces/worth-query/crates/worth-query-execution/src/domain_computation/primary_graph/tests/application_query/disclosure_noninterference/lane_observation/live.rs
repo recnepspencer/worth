@@ -40,7 +40,8 @@ pub(super) fn observe(
                 context.request,
             )
             .unwrap();
-            let lease = context
+
+            context
         .world
         .selected_product(&(phase_custody).test_host_request(), )
         .open_governed_application_query_live::<
@@ -69,8 +70,7 @@ pub(super) fn observe(
             )
             .unwrap(),
         )
-        .unwrap();
-            lease
+        .unwrap()
         })
         .expect("the fixture owns its live opening call");
     let committed =

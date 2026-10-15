@@ -30,7 +30,7 @@ impl QuarantineRecordObservation {
         false
     }
 
-    pub fn states(&self) -> impl Iterator<Item = QuarantineReadmissionState> {
+    pub fn states(&self) -> impl Iterator<Item = QuarantineReadmissionState> + use<> {
         [
             QuarantineReadmissionState::Proposed,
             QuarantineReadmissionState::Sealed,

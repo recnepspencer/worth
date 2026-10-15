@@ -121,14 +121,14 @@ fn admit_policy_context(
 ) -> Result<AdmittedContextParts, WorthQueryReadContextDenial> {
     let admitted =
         admit_policy_tenant_authority(intent.canonical_query_digest(), context, counters)?;
-    if let Some(proofs) = relationship_proofs.as_ref() {
-        if let Err(error) = validate_relationship_proof_topology(intent, proofs) {
-            counters.record_relationship_proof_admission_attempt();
-            return Err(WorthQueryReadContextDenial::relationship_proof(
-                error,
-                counters.clone(),
-            ));
-        }
+    if let Some(proofs) = relationship_proofs.as_ref()
+        && let Err(error) = validate_relationship_proof_topology(intent, proofs)
+    {
+        counters.record_relationship_proof_admission_attempt();
+        return Err(WorthQueryReadContextDenial::relationship_proof(
+            error,
+            counters.clone(),
+        ));
     }
     if admitted.bundle().admission_disposition() == PolicyAdmissionDisposition::AdmittedUnchanged {
         return match relationship_proofs {

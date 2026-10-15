@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::ViewBindingRegistry`
- --> tests/ui/facade/view_binding/facade/view_binding_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::ViewBindingRegistry;
-  |     ^^^^^^^^^^^^^^^^^^-------------------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `ViewBindingFamily`
-  |     no `ViewBindingRegistry` in `facade`

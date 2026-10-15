@@ -13,7 +13,7 @@ use worth_foundational::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::foundational_vocabulary::scalar_contract;
+use crate::certification::foundational_vocabulary::scalar_contract;
 
 fn version() -> lower_basis::CanonicalizationRuleVersion {
     lower_basis::CanonicalizationRuleVersion::new("m2.dx.grouped-surface").expect("valid version")

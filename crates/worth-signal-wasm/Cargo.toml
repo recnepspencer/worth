@@ -1,6 +1,7 @@
 [package]
 name = "worth-signal-wasm"
 edition.workspace = true
+rust-version.workspace = true
 version = "1.5.0"
 description = "WebAssembly facade for Worth Signal"
 repository = "https://github.com/recnepspencer/forge"

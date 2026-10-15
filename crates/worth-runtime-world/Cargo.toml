@@ -1,6 +1,7 @@
 [package]
 name = "worth-runtime-world"
 edition.workspace = true
+rust-version.workspace = true
 version.workspace = true
 license.workspace = true
 description = "Memory-resident composition authority for exact Relational and Signal runtime worlds."

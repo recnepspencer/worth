@@ -117,7 +117,7 @@ impl WorthQueryComputedDependencyIndex {
     pub(in crate::runtime) fn dependents(
         &self,
         computed_target: &WorthQueryDerivedMaterializationTarget,
-    ) -> impl Iterator<Item = WorthQueryDerivedMaterializationTarget> + '_ {
+    ) -> impl Iterator<Item = WorthQueryDerivedMaterializationTarget> + '_ + use<'_> {
         self.computed_to_dependents
             .get(computed_target)
             .into_iter()

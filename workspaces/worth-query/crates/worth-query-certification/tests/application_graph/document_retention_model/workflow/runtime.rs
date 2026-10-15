@@ -8,7 +8,6 @@ use worth_query_host::facade::domain::{
 
 use super::super::{
     host::{DocumentRetentionRuntime, DocumentWorkflowRuntime},
-    programs::RetentionProgramP0,
     retention_days::DocumentRetentionDaysQueryBinding,
     retention_entry::{
         DocumentRetentionConditionQueryBinding, DocumentRetentionQueryBinding,

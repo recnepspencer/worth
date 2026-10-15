@@ -61,7 +61,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     let at_commit = saved_view
         .as_principal(&owner)
         .retained(
-            &retained,
+            retained,
             BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
         )
         .expect("fresh security should admit read-after at the performed product");
@@ -69,7 +69,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     let allowed_viewer = saved_view
         .as_principal(&viewer)
         .retained(
-            &retained,
+            retained,
             BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
         )
         .expect("the currently authorized viewer can read the retained publication");
@@ -126,7 +126,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     let still_exact = saved_view
         .as_principal(&owner)
         .retained(
-            &retained,
+            retained,
             BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
         )
         .expect("later publication cannot retarget the retained read");
@@ -198,7 +198,7 @@ fn owning_deposit_and_replay_deliver_the_original_retained_commit() {
     done.close(&request)
         .unwrap_or_else(|(_, cause)| panic!("revoke close: {cause:?}"));
     let denied = saved_view.as_principal(&viewer).retained(
-        &retained,
+        retained,
         BankReadControls::current(request_scope(), 128, 8_192).unwrap(),
     );
     assert!(matches!(
