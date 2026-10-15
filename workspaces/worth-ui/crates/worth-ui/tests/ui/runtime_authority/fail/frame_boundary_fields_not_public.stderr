@@ -1,9 +1,0 @@
-error[E0451]: fields `frame_epoch` and `posture` of struct `WorthUiFrameBoundary` are private
- --> tests/ui/runtime_authority/fail/frame_boundary_fields_not_public.rs:5:9
-  |
-4 |     let _boundary = WorthUiFrameBoundary {
-  |                     -------------------- in this type
-5 |         frame_epoch: WorthUiRuntimeFrameEpoch::initial(),
-  |         ^^^^^^^^^^^ private field
-6 |         posture: WorthUiFrameBoundaryPosture::SafeToActivate,
-  |         ^^^^^^^ private field

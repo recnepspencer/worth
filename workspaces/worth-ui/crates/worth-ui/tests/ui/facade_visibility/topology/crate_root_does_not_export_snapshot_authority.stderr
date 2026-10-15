@@ -1,8 +1,0 @@
-error[E0432]: unresolved imports `worth_ui::CapabilitySnapshotBuilder`, `worth_ui::CapabilitySnapshotFreezeInput`, `worth_ui::CapabilitySnapshotIndexParts`
- --> tests/ui/facade_visibility/topology/crate_root_does_not_export_snapshot_authority.rs:2:5
-  |
-2 |     CapabilitySnapshotBuilder, CapabilitySnapshotFreezeInput, CapabilitySnapshotIndexParts,
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `CapabilitySnapshotIndexParts` in the root
-  |     |                          |
-  |     |                          no `CapabilitySnapshotFreezeInput` in the root
-  |     no `CapabilitySnapshotBuilder` in the root

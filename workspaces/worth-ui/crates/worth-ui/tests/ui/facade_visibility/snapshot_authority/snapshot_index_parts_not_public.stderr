@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::CapabilitySnapshotIndexParts`
- --> tests/ui/facade_visibility/snapshot_authority/snapshot_index_parts_not_public.rs:1:5
-  |
-1 | use worth_ui::facade::CapabilitySnapshotIndexParts;
-  |     ^^^^^^^^^^^^^^^^^^----------------------------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `CapabilitySnapshotIndex`
-  |     no `CapabilitySnapshotIndexParts` in `facade`

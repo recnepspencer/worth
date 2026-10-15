@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::declaration::UiDeclarationLowering`
- --> tests/ui/declaration/facade_does_not_export_declaration_lowering.rs:1:5
-  |
-1 | use worth_ui::facade::declaration::UiDeclarationLowering;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^---------------------
-  |     |                              |
-  |     |                              help: a similar name exists in the module: `UiDeclarationFamily`
-  |     no `UiDeclarationLowering` in `facade::declaration`

@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::obligations::UiObligationDispatchBoundary`
- --> tests/ui/obligation_dispatch/external_callers_cannot_import_dispatch_boundary.rs:1:5
-  |
-1 | use worth_ui::facade::obligations::UiObligationDispatchBoundary;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^----------------------------
-  |     |                              |
-  |     |                              help: a similar name exists in the module: `UiObligationDispatchEntry`
-  |     no `UiObligationDispatchBoundary` in `facade::obligations`

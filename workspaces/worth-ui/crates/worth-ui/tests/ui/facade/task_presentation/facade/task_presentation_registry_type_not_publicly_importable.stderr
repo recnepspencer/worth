@@ -1,8 +1,0 @@
-error[E0432]: unresolved import `worth_ui::facade::TaskPresentationRegistry`
- --> tests/ui/facade/task_presentation/facade/task_presentation_registry_type_not_publicly_importable.rs:1:5
-  |
-1 | use worth_ui::facade::TaskPresentationRegistry;
-  |     ^^^^^^^^^^^^^^^^^^------------------------
-  |     |                 |
-  |     |                 help: a similar name exists in the module: `TaskPresentationFamily`
-  |     no `TaskPresentationRegistry` in `facade`

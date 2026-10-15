@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui_runtime::facade::certify_activation_boundary_suite`
- --> tests/ui/facade_export/runtime_facade_root_does_not_export_certify_suites.rs:1:5
-  |
-1 | use worth_ui_runtime::facade::certify_activation_boundary_suite;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `certify_activation_boundary_suite` in `facade`

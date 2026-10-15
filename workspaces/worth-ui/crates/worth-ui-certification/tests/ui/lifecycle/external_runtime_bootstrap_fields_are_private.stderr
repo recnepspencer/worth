@@ -1,5 +1,0 @@
-error[E0432]: unresolved import `worth_ui_runtime::WorthUiRuntimeBootstrapFields`
- --> tests/ui/lifecycle/external_runtime_bootstrap_fields_are_private.rs:1:5
-  |
-1 | use worth_ui_runtime::WorthUiRuntimeBootstrapFields;
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `WorthUiRuntimeBootstrapFields` in the root

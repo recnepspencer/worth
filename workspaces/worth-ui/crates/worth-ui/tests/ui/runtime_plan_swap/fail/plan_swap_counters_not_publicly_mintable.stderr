@@ -1,8 +1,0 @@
-error[E0599]: no function or associated item named `new` found for struct `UiCommittedAllocationActivationCounters` in the current scope
- --> tests/ui/runtime_plan_swap/fail/plan_swap_counters_not_publicly_mintable.rs:4:54
-  |
-4 |     let _ = UiCommittedAllocationActivationCounters::new();
-  |                                                      ^^^ function or associated item not found in `UiCommittedAllocationActivationCounters`
-  |
-help: there is a method `ne` with a similar name, but with different arguments
- --> $RUST/core/src/cmp.rs

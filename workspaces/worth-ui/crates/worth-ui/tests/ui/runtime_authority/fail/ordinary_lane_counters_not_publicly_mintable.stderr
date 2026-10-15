@@ -1,5 +1,0 @@
-error[E0599]: no method named `record_full_plan_scan` found for struct `WorthUiOrdinaryLaneCounters` in the current scope
- --> tests/ui/runtime_authority/fail/ordinary_lane_counters_not_publicly_mintable.rs:5:14
-  |
-5 |     counters.record_full_plan_scan();
-  |              ^^^^^^^^^^^^^^^^^^^^^ method not found in `WorthUiOrdinaryLaneCounters`
