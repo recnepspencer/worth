@@ -266,11 +266,14 @@ where
         .expect("the authored document-retention program must validate")
 }
 
+#[path = "programs/completion.rs"]
 mod completion;
 #[path = "programs/workflow_owner.rs"]
 mod workflow_owner;
 pub use completion::RetentionCompletion;
+#[path = "programs/features.rs"]
 mod features;
+#[path = "programs/successors.rs"]
 mod successors;
 use features::retention_feature_specs;
 pub use workflow_owner::{
