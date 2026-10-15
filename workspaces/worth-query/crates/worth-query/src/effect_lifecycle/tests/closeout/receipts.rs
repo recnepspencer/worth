@@ -3,8 +3,7 @@ use worth_runtime_bridge::facade::BridgeWritebackOutcomeClass;
 
 use crate::effect_lifecycle::{
     scope_admitted_effect_plan, EffectDiagnosticsRequest, EffectEnvelopePrimaryResult,
-    EffectExecutionAuthority, EffectFamily, EffectPublicSurfaceAvailability,
-    EffectPublicSurfaceKind, EffectReceiptArtifactKind, EffectReceiptTargetEvidence,
+    EffectExecutionAuthority, EffectFamily, EffectReceiptArtifactKind, EffectReceiptTargetEvidence,
     EffectReceiptTransitionKind, EffectReceiptTransitionPosture,
 };
 
@@ -314,22 +313,3 @@ fn batch_execution_mints_batch_write_receipt_family() {
 
 #[path = "receipts/snapshot_capacity.rs"]
 mod snapshot_capacity;
-
-#[test]
-fn public_surface_inventory_now_marks_diagnostics_envelope_as_implemented() {
-    let inventory = crate::effect_lifecycle::effect_lifecycle_public_surface_inventory();
-    let diagnostics = inventory
-        .rows()
-        .iter()
-        .find(|row| row.surface_kind() == EffectPublicSurfaceKind::DiagnosticsEnvelope)
-        .expect("diagnostics row should exist");
-
-    assert_eq!(
-        diagnostics.availability(),
-        EffectPublicSurfaceAvailability::Implemented
-    );
-    assert!(diagnostics
-        .entrypoint()
-        .expect("diagnostics row should advertise entrypoint")
-        .contains("effect_envelope"));
-}

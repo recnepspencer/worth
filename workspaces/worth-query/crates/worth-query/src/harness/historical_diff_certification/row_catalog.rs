@@ -15,31 +15,6 @@ pub struct HistoricalDiffRejectionRowSpec {
     pub failure_class: HistoricalDiffFailureClass,
 }
 
-pub const HISTORICAL_DIFF_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-    "current-vs-branch-basis-explicitness",
-    "current-vs-historical-basis-explicitness",
-    "historical-materialization-path-explicitness",
-    "runtime-vs-store-historical-parity",
-    "diff-comparison-family-explicitness",
-    "branch-to-branch-diff-shaped",
-    "current-to-historical-diff-shaped",
-    "result-shape-parity-across-basis-variants",
-    "preview-derived-historical-basis-explicitness",
-    "admitted-diff-cost-class-explicitness",
-    "prediction-versus-realization-explicitness",
-];
-
-pub const HISTORICAL_DIFF_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-    "unsupported-historical-basis",
-    "ambiguous-comparison-basis",
-    "diff-scope-mismatch",
-    "forbidden-basis-substitution",
-    "raw-storage-delta-leakage-forbidden",
-    "historical-broadening-denied",
-    "broadening-required-comparison-denial",
-    "declared-result-shape-mismatch",
-];
-
 pub const HISTORICAL_DIFF_CANONICAL_ROW_SPECS: &[HistoricalDiffCanonicalRowSpec] = &[
     HistoricalDiffCanonicalRowSpec {
         row_name: "current-vs-branch-basis-explicitness",

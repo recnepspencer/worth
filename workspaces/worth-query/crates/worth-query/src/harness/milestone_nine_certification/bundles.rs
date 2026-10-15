@@ -85,11 +85,3 @@ pub type MilestoneNineCertificationMatrix = CertificationMatrix<
     MilestoneNineCertificationBundle,
     MilestoneNineRejectionBundle,
 >;
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct MilestoneNineCertificationArtifact {
-    pub suite_name: &'static str,
-    pub certification_bundle_digest: String,
-    pub coverage_matrix_digest: String,
-    pub matrix: MilestoneNineCertificationMatrix,
-}

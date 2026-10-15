@@ -76,10 +76,6 @@ macro_rules! canonical_row_specs {
                 },
             )+
         ];
-
-        pub(crate) const REGION_LIVE_REQUIRED_CANONICAL_ROW_NAMES: &[&str] = &[
-            $($row_name,)+
-        ];
     };
 }
 
@@ -109,10 +105,6 @@ macro_rules! rejection_row_specs {
                     failure_digest_fragment: $failure_digest_fragment,
                 },
             )+
-        ];
-
-        pub(crate) const REGION_LIVE_REQUIRED_REJECTION_ROW_NAMES: &[&str] = &[
-            $($row_name,)+
         ];
     };
 }

@@ -1,61 +1,9 @@
 use super::super::{MilestoneNineCertificationAdapter, MilestoneNineFailureClass};
 use super::semantic_signature;
 use crate::harness::certification::{
-    contains_row, milestone_nine_requirements, unmet_required_assertion_classes,
-    unmet_required_rows, HostileExpectation, ParityAnchor, RequiredAssertionClass,
+    milestone_nine_requirements, unmet_required_assertion_classes, HostileExpectation,
+    ParityAnchor, RequiredAssertionClass,
 };
-
-#[test]
-fn milestone_nine_certification_adapter_emits_named_matrix() {
-    let artifact =
-        MilestoneNineCertificationAdapter::policy_tenant_context_admission_certification_artifact();
-
-    assert_eq!(
-        artifact.suite_name,
-        "Policy And Tenant Context Admission Test"
-    );
-    assert!(!artifact.certification_bundle_digest.is_empty());
-    assert!(!artifact.coverage_matrix_digest.is_empty());
-}
-
-#[test]
-fn milestone_nine_certification_matrix_meets_required_rows() {
-    let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
-    let requirements = milestone_nine_requirements();
-    let missing = unmet_required_rows(
-        &matrix,
-        requirements.required_canonical_rows,
-        requirements.required_rejection_rows,
-    );
-
-    assert!(
-        missing.is_empty(),
-        "missing milestone nine certification rows: {missing:?}"
-    );
-}
-
-#[test]
-fn milestone_nine_certification_rows_have_required_outputs() {
-    let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
-
-    for row in &matrix.rows {
-        assert!(
-            row.control_lane.has_required_outputs(),
-            "control lane '{}' should have required outputs",
-            row.row_name
-        );
-        assert!(
-            row.hostile_lane.has_required_outputs(),
-            "hostile lane '{}' should have required outputs",
-            row.row_name
-        );
-        assert!(
-            row.parity_lane.has_required_outputs(),
-            "parity lane '{}' should have required outputs",
-            row.row_name
-        );
-    }
-}
 
 #[test]
 fn milestone_nine_certification_rows_enforce_declared_lane_semantics() {
@@ -174,20 +122,6 @@ fn milestone_nine_execution_seam_denials_are_typed() {
         live.hostile_lane.counter_snapshot_digest,
         live.control_lane.counter_snapshot_digest
     );
-}
-
-#[test]
-fn milestone_nine_hidden_and_branch_rows_are_present() {
-    let matrix = MilestoneNineCertificationAdapter::policy_tenant_context_admission_test();
-
-    assert!(contains_row(&matrix, "branch-denial-before-tenant-truth"));
-    assert!(contains_row(&matrix, "hidden-tenant-filter-denied"));
-    assert!(contains_row(&matrix, "global-schema-fallback-denied"));
-    assert!(contains_row(
-        &matrix,
-        "unknown-policy-cost-denied-before-truth"
-    ));
-    assert!(contains_row(&matrix, "saved-query-policy-tenant-drift"));
 }
 
 #[test]

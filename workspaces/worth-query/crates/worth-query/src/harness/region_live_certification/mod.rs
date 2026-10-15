@@ -6,9 +6,6 @@ mod row_catalog;
 mod tests;
 
 use super::live_certification::{LiveCertificationMatrix, MilestoneFiveLiveCertificationArtifact};
-pub(crate) use row_catalog::{
-    REGION_LIVE_REQUIRED_CANONICAL_ROW_NAMES, REGION_LIVE_REQUIRED_REJECTION_ROW_NAMES,
-};
 
 pub struct MilestoneFivePointOneLiveCertificationAdapter;
 

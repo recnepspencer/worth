@@ -1,77 +1,7 @@
 use super::{
-    MilestoneNineTwoCertificationMatrix, MilestoneNineTwoCertificationRow,
-    MilestoneNineTwoRejectionRow, SubscriptionLifecycleCertificationBundle,
-    MILESTONE_NINE_TWO_REQUIRED_COMPILE_FAIL_TARGETS,
+    SubscriptionLifecycleCertificationBundle, MILESTONE_NINE_TWO_REQUIRED_COMPILE_FAIL_TARGETS,
 };
 use crate::harness::certification::digest_parts;
-
-pub(super) fn bundle_digest_parts(matrix: &MilestoneNineTwoCertificationMatrix) -> Vec<String> {
-    matrix
-        .rows
-        .iter()
-        .flat_map(|row: &MilestoneNineTwoCertificationRow| {
-            [
-                format!(
-                    "{}:control:{}",
-                    row.row_name,
-                    row.control_lane.lifecycle_signature()
-                ),
-                format!(
-                    "{}:hostile:{}",
-                    row.row_name,
-                    row.hostile_lane.lifecycle_signature()
-                ),
-                format!(
-                    "{}:parity:{}",
-                    row.row_name,
-                    row.parity_lane.lifecycle_signature()
-                ),
-            ]
-        })
-        .chain(
-            matrix
-                .rejection_rows
-                .iter()
-                .flat_map(|row: &MilestoneNineTwoRejectionRow| {
-                    [
-                        format!(
-                            "{}:control:{}",
-                            row.row_name,
-                            row.control_lane.lifecycle_signature()
-                        ),
-                        format!(
-                            "{}:hostile:{}",
-                            row.row_name, row.hostile_lane.failure_digest
-                        ),
-                        format!(
-                            "{}:parity:{}",
-                            row.row_name,
-                            row.parity_lane.lifecycle_signature()
-                        ),
-                    ]
-                }),
-        )
-        .collect()
-}
-
-pub(super) fn coverage_digest_parts(matrix: &MilestoneNineTwoCertificationMatrix) -> Vec<String> {
-    matrix
-        .rows
-        .iter()
-        .map(|row| {
-            format!(
-                "canonical:{}:{:?}:{:?}:{:?}",
-                row.row_name, row.perturbation_class, row.hostile_expectation, row.parity_anchor
-            )
-        })
-        .chain(
-            matrix
-                .rejection_rows
-                .iter()
-                .map(|row| format!("rejection:{}:{:?}", row.row_name, row.perturbation_class)),
-        )
-        .collect()
-}
 
 pub(super) fn shipped_bundle(
     bundle: crate::subscription::SubscriptionLifecycleCertificationBundle,

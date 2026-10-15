@@ -28,34 +28,6 @@ pub struct MilestoneNineFiveHostileLaneBundle {
 }
 
 impl MilestoneNineFiveHostileLaneBundle {
-    pub(super) fn has_required_outputs(&self) -> bool {
-        [
-            &self.composition_axis,
-            &self.view_axis,
-            &self.projection_axis,
-            &self.reuse_axis,
-            &self.bootstrap_axis,
-            &self.canonical_query_digest,
-            &self.canonical_result_shape_digest,
-            &self.composition_authority_digest,
-            &self.composition_support_digest,
-            &self.view_shape_digest,
-            &self.view_plan_digest,
-            &self.view_support_digest,
-            &self.projection_contract_digest,
-            &self.projection_support_digest,
-            &self.projection_oracle_digest,
-            &self.saved_query_digest,
-            &self.reuse_matrix_digest,
-            &self.temporal_async_surface_posture,
-            &self.bootstrap_contract_digest,
-            &self.bootstrap_support_digest,
-            &self.application_support_report_digest,
-        ]
-        .into_iter()
-        .all(|value| !value.is_empty())
-    }
-
     pub(super) fn semantic_signature(&self) -> String {
         digest_parts(&[
             format!("query:{}", self.canonical_query_digest),

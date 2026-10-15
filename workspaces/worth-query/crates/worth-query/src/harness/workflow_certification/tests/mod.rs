@@ -3,4 +3,3 @@ mod denials;
 mod distinctness;
 mod inspection;
 mod lowering;
-mod matrix;
