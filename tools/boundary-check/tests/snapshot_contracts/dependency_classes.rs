@@ -47,6 +47,7 @@ impl Repository {
         );
         create_crate(&root, "worth-schema-core", "CoreThing");
         create_crate(&root, "worth-schema-graph", "GraphThing");
+        super::query_ordinary_entry_fixture::write(&root);
         Self { root }
     }
 
