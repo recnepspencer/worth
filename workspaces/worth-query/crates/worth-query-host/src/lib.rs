@@ -1,5 +1,8 @@
 //! Query host audience facade.
 //!
+//! Start with [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md)
+//! and the [Capability Index](https://github.com/recnepspencer/worth/blob/master/docs/capability-index.md).
+//!
 //! Admission, lowering, execution, and publication consumers depend on this
 //! crate instead of importing Query's internal authority packages directly.
 //! The read-only [`facade::domain`] surface exposes an installed schema's

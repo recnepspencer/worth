@@ -1,0 +1,4 @@
+interface:
+  display_name: "Spec Designer"
+  short_description: "Design proof-driven WORTH milestone specifications"
+  default_prompt: "Use $spec-designer to design a WORTH milestone specification from its roadmap position and real implementation boundary."

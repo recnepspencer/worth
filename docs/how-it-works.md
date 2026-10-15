@@ -2035,9 +2035,7 @@ to see the two facades used end to end.
   binding declares none. Always pass an idempotency key.
 - Match every outcome variant. Treat `Indeterminate` and `SettlementDeferred`
   as recovery, never as failure. Treat `Stale` as "re-read, then retry".
-- Never pass a program to a mutation. The branch decides which program runs.
-- Never treat a report, token, digest, receipt clone, or discovery answer as
-  authority.
+- Follow the [canonical consumer prohibitions](capability-index.md#consumer-prohibitions).
 - Read touched records, external dispatch posture, and aftermath from the
   receipt. Do not infer them. Touched records sit behind
   `receipt.mutation_work()`, which is an `Option`.

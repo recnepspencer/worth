@@ -246,7 +246,9 @@ A branch whose program has no installed vocabulary is refused before any effect.
 
 ## Node kinds
 
-`ApplicationWorkflowNodeKind` has seven kinds:
+`ApplicationWorkflowNodeKind` supplies the current variants listed in
+[Source-derived vocabulary](#source-derived-vocabulary). The builder table below
+explains their authored use:
 
 | Kind | Builder method | What it does | Outgoing control outcomes |
 |---|---|---|---|
@@ -1317,3 +1319,88 @@ payment approval as a workflow. Its control bindings declare `WORKFLOW_CONTROL`.
 - [programs-and-adoption.md](programs-and-adoption.md): programs per branch and adoption, including the workflow inventory.
 - [how-it-works.md](../../../../../../docs/how-it-works.md): platform machinery, including the workflow kernel.
 - [glossary.md](../../../../../../docs/glossary.md): platform terms.
+
+## Source-derived vocabulary
+
+These regions list the current declared variants and their Rust form. They do
+not grant authority or replace the lifecycle explanations above.
+
+### Workflow node kinds
+
+<!-- source-facts: workflow-node-kinds begin -->
+<!-- Derived from `facade::application_program::ApplicationWorkflowNodeKind`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `Operation` | named { operation: ApplicationWorkflowOperationRef, requires_workflow_authority: bool } |
+| `Assessment` | tuple (ApplicationWorkflowAssessmentRef) |
+| `AwaitInbound` | tuple (ApplicationWorkflowAwaitInbound) |
+| `Condition` | tuple (ApplicationWorkflowCondition) |
+| `Approval` | tuple (ApplicationWorkflowApprovalRef) |
+| `EvidenceJoin` | tuple (ApplicationWorkflowEvidenceJoinPolicy) |
+| `Terminal` | unit |
+<!-- source-facts: workflow-node-kinds end -->
+
+### Workflow progress
+
+<!-- source-facts: workflow-progress begin -->
+<!-- Derived from `facade::application_entry::WorkflowProgressOutcome`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `AwaitingActor` | tuple (RequiredWorkflowActor) |
+| `AwaitingAssessment` | tuple (RequiredWorkflowAssessment) |
+| `AwaitingCondition` | tuple (RequiredWorkflowCondition) |
+| `AwaitingOperation` | tuple (RequiredWorkflowOperation) |
+| `AwaitingEvidence` | tuple (RequiredWorkflowEvidence) |
+| `AwaitingApproval` | tuple (RequiredWorkflowApproval) |
+| `Completed` | tuple (PerformedWorkflowTransition) |
+| `Application` | tuple (WorthQueryApplicationUncommitted) |
+| `ProjectionDenied` | tuple (WorthQueryApplicationCommitReceipt) |
+| `ProjectionReadStopped` | named { receipt: WorthQueryApplicationCommitReceipt, cause: RelationalExecutionDenialCause } |
+| `PreparationDenied` | tuple (WorthQueryApplicationAttemptDenial) |
+| `AuthenticationDenied` | tuple (worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial) |
+| `IdempotencyDenied` | tuple (WorthQueryApplicationIdempotencyResolutionDenial) |
+<!-- source-facts: workflow-progress end -->
+
+### Workflow validation denials
+
+<!-- source-facts: workflow-validation-denials begin -->
+<!-- Derived from `facade::application_program::ApplicationWorkflowValidationDenialKind`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `MissingStart` | unit |
+| `UnknownStart` | unit |
+| `NodeLimitExceeded` | unit |
+| `ConnectionLimitExceeded` | unit |
+| `EffectLimitExceeded` | unit |
+| `ComponentOccurrenceLimitExceeded` | unit |
+| `ComponentDepthExceeded` | unit |
+| `NodeProvenanceLimitExceeded` | unit |
+| `ConnectionProvenanceLimitExceeded` | unit |
+| `PortProvenanceLimitExceeded` | unit |
+| `UnknownConnectionEndpoint` | unit |
+| `DuplicateConnection` | unit |
+| `InvalidDataFlow` | unit |
+| `IncompatibleOperationInput` | unit |
+| `UnavailableDataFlow` | unit |
+| `MissingInboundOrigin` | unit |
+| `UnavailableInboundOrigin` | unit |
+| `MissingInboundDeadline` | unit |
+| `MissingAssessmentSubject` | unit |
+| `MissingConditionSubject` | unit |
+| `IncompleteEvidenceJoin` | unit |
+| `IncompleteApproval` | unit |
+| `MissingWorkflowAuthority` | unit |
+| `MissingOperationInput` | unit |
+| `UnexpectedWorkflowAuthority` | unit |
+| `MissingControlOutcome` | unit |
+| `AmbiguousControlOutcome` | unit |
+| `UnexpectedControlOutcome` | unit |
+| `TerminalHasSuccessor` | unit |
+| `UnreachableNode` | unit |
+| `ControlCycle` | unit |
+| `MissingTerminal` | unit |
+| `CanonicalBudgetExceeded` | unit |
+<!-- source-facts: workflow-validation-denials end -->

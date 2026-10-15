@@ -997,20 +997,8 @@ hardware; an absolute seconds threshold is not a portable Query contract.
 
 ## Anti-Patterns
 
-- importing internal Query authority crates from application code;
-- treating a role, relationship, token claim, or Signal decision as permission;
-- executing a provider or operation callback directly;
-- reading protected fields and redacting them after projection;
-- rebuilding cursors, continuation, or recovery authority from wire values;
-- maintaining a local temporal scheduler or conditional wake registry;
-- retrying an indeterminate mutation as though it definitely failed;
-- teaching provisional undo or redo as an accepted application contract.
-
-Before concluding that the platform lacks a capability, follow the
-missing-capability procedure in the
-[Capability Index](../../../../../../docs/capability-index.md). Do not build a
-substitute: no parallel registry, copied authority, host executor, host
-scheduler, or host persistence of platform truth.
+Use the
+[canonical consumer prohibitions](../../../../../../docs/capability-index.md#consumer-prohibitions).
 
 ## Current Limits
 

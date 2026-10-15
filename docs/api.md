@@ -450,3 +450,25 @@ Use `--document-private-items` only when you are maintaining the platform.
 - [How WORTH Works](how-it-works.md): what happens behind these facades.
 - [Glossary](glossary.md): exact meanings of every term used here.
 - [Documentation index](README.md).
+
+## Source-derived mutation outcomes
+
+These are the current public mutation outcome variants. Their lifecycle meaning
+remains with the mutation owner and the linked application guide.
+
+### Mutation outcomes
+
+<!-- source-facts: mutation-outcomes begin -->
+<!-- Derived from `facade::application_entry::WorthQueryApplicationMutationOutcome`; edit its source, then --write-guidance. -->
+
+| Variant | Shape |
+| --- | --- |
+| `Committed` | named { receipt: WorthQueryApplicationCommitReceipt, result: Result } |
+| `AlreadyCommitted` | tuple (WorthQueryApplicationCommitReceipt) |
+| `PreviouslyCommitted` | tuple (WorthQueryHistoricalApplicationCommit) |
+| `IdempotencyIntentDrift` | unit |
+| `DomainDenied` | tuple (Denial) |
+| `Cancelled` | unit |
+| `DeadlineExceeded` | unit |
+| `Commit` | tuple (WorthQueryApplicationUncommitted) |
+<!-- source-facts: mutation-outcomes end -->

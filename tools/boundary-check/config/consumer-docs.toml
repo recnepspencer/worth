@@ -1,3 +1,5 @@
+derive_skills = true
+
 # Exact consumer inventory. Doctest roots also drive query_gate.py doc.
 documents = [
   "docs/build-an-application.md",
@@ -22,3 +24,32 @@ packages = ["worth-query-host", "worth-query-decl", "worth-query", "worth-query-
 [[doctests]]
 manifest = "workspaces/worth-query-bank-world/Cargo.toml"
 packages = ["bank-estate-certification"]
+
+[[facts]]
+id = "workflow-node-kinds"
+manifest = "workspaces/worth-query/crates/worth-query-decl/Cargo.toml"
+item = "facade::application_program::ApplicationWorkflowNodeKind"
+document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+
+[[facts]]
+id = "workflow-progress"
+manifest = "workspaces/worth-query/crates/worth-query-host/Cargo.toml"
+item = "facade::application_entry::WorkflowProgressOutcome"
+document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+
+[[facts]]
+id = "workflow-validation-denials"
+manifest = "workspaces/worth-query/crates/worth-query-decl/Cargo.toml"
+item = "facade::application_program::ApplicationWorkflowValidationDenialKind"
+document = "workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md"
+
+[[facts]]
+id = "mutation-outcomes"
+manifest = "workspaces/worth-query/crates/worth-query-host/Cargo.toml"
+item = "facade::application_entry::WorthQueryApplicationMutationOutcome"
+document = "docs/api.md"
+
+[navigation]
+index = "docs/capability-index.md"
+guides = ["docs/build-an-application.md", "docs/how-it-works.md", "workspaces/worth-query/crates/worth-query-host/README.md", "workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md"]
+crate_roots = ["workspaces/worth-query/crates/worth-query-decl/src/lib.rs", "workspaces/worth-query/crates/worth-query-host/src/lib.rs"]

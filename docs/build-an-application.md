@@ -2312,7 +2312,7 @@ Ok(builder.finish()?.validate()?)
 carry `with_total_deadline` (without one, validation refuses with
 `MissingInboundDeadline`).
 
-**Node kinds.** There are exactly seven (`ApplicationWorkflowNodeKind`):
+**Node authoring.** The [source-derived node inventory](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#source-derived-vocabulary) owns the complete `ApplicationWorkflowNodeKind` list. The following table explains builder usage:
 
 | Builder method | Node | Notes |
 |---|---|---|
@@ -3015,35 +3015,9 @@ but did not publish is recovered with
   `Completed(t)` with `t.terminal() == true`. `Completed` alone means one step
   was recorded.
 
-**Do not:**
+Consumer constraints are maintained in the
+[canonical consumer prohibitions](capability-index.md#consumer-prohibitions).
 
-- Do not import `worth_query_declaration`, `worth_query_installation`,
-  `worth_query_admission`, `worth_query_execution`, `worth_query_publication`,
-  or `worth_query`. Their consumer names are re-exported through the two
-  facades (for example `worth_query_host::facade::domain` and
-  `worth_query_host::facade::admission`).
-- Do not install a program-less runtime as an ordinary application or coordinate
-  fixed/discovered/source-only retries manually. Deliberate native control is described under
-  [Advanced](#advanced-native-mutation-control).
-- Do not substitute an action or program meaning on retry. Native admission compares the retained action with the branch's selected program.
-- Do not expect adoption to change sibling branches, or a branch set to adopt
-  atomically.
-- Do not register a handler for a workflow control binding.
-- Do not wait for a background scheduler to run work for you. There is none,
-  and no timer or callback advances a workflow instance: the caller pumps.
-  Time- and signal-driven work is declared with `conditional_operation`: the
-  host submits clock or predicate observations, Signal decides whether a wake
-  is eligible, and Query freshly admits the installed operation. Do not build
-  a host scheduler or wake registry.
-- Do not treat a validated program or validated workflow definition as
-  permission to do anything.
-- Do not treat names found only in `plans/` as real. Check §9.
-- Do not build a substitute for a capability you could not find: no parallel
-  registry, copied authority, host executor or scheduler, or host persistence
-  of platform truth. Follow the missing-capability procedure in the
-  [Capability Index](capability-index.md).
-- Do not present `compare_and_commit_program_undo` / `_redo` as an accepted
-  correction contract. They are provisional ([§5.2](#52-mutations-intent-binding-handler)).
 
 ---
 

@@ -1,12 +1,17 @@
 //! Consumer documentation classification, compilation ownership and link contracts.
+mod absence_claims;
 mod compiled_regions;
 mod configuration;
 mod debt;
 mod doctest_coverage;
 mod fences;
+mod generated_regions;
+pub(crate) mod guidance_write;
 mod links;
 mod native_test_cfg;
+mod navigation;
 mod region_compilation;
+mod source_facts;
 #[cfg(test)]
 mod tests;
 
@@ -52,6 +57,7 @@ pub(crate) fn validate(root: &Path) -> Vec<Diagnostic> {
         diagnostics.extend(targets.validate(root, document, &text));
     }
     diagnostics.extend(debt::compare(root, &observed));
+    diagnostics.extend(guidance_diagnostics(root, &config));
     diagnostics
 }
 
@@ -90,4 +96,50 @@ fn classify(
 
 fn invalid(subject: &str, reason: String) -> Diagnostic {
     Diagnostic::new(DiagnosticCode::Bc8008ConsumerDocMarker, subject, reason)
+}
+
+fn guidance_diagnostics(root: &Path, config: &configuration::Configuration) -> Vec<Diagnostic> {
+    let mut diagnostics = Vec::new();
+    if config.derive_skills {
+        if let Err(error) = crate::derived_skills::check(root) {
+            diagnostics.push(invalid(".grok/skills", error));
+        }
+    }
+    match generated_regions::planned(root, config) {
+        Ok(planned) => {
+            for (path, expected) in planned {
+                match crate::source_documents::read_to_string(&path) {
+                    Ok(actual) if actual == expected => {}
+                    _ => diagnostics.push(invalid(
+                        &path.display().to_string(),
+                        "source facts drift; run --write-guidance".into(),
+                    )),
+                }
+            }
+        }
+        Err(error) => diagnostics.push(invalid(configuration::CONFIG, error)),
+    }
+    for result in [
+        absence_claims::validate(root, config),
+        navigation::validate(root, config),
+    ] {
+        if let Err(error) = result {
+            diagnostics.push(invalid(configuration::CONFIG, error));
+        }
+    }
+    diagnostics
+}
+
+/// Complete validation/planning precedes writes; no debt or source is generated.
+pub(crate) fn write_guidance(root: &Path) -> Result<(), String> {
+    let config = configuration::load(root)?;
+    let regions = generated_regions::planned(root, &config)?;
+    let skills = if config.derive_skills {
+        Some(crate::derived_skills::planned(root)?)
+    } else {
+        None
+    };
+    absence_claims::validate(root, &config)?;
+    navigation::validate(root, &config)?;
+    guidance_write::Plan::new(root, regions, skills)?.apply()
 }
