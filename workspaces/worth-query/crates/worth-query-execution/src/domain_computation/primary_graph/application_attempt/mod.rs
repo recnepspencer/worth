@@ -184,6 +184,7 @@ pub use workflow_instance_program::{
     SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
     WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceAdapter,
+    WorthQueryWorkflowInstanceDiscoveryIntent,
 };
 pub use workflow_proposal_program::{
     PerformedWorkflowProposal, PreparedWorkflowProposal, PublishedWorkflowProposalRef,

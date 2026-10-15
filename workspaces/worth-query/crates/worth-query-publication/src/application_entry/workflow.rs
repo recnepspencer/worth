@@ -76,7 +76,7 @@ pub use worth_query_execution::publication_boundary::workflow_instance::{
     PublishedWorkflowInstanceRef, RetiredWorkflowDefinitionStart,
     SupersededWorkflowDefinitionStart, WorkflowInstanceBindingDenial,
     WorkflowInstanceCancellationOutcome, WorkflowInstancePreparationDenial,
-    WorkflowInstanceStartOutcome,
+    WorkflowInstanceStartOutcome, WorthQueryWorkflowInstanceDiscoveryIntent,
 };
 pub use worth_query_execution::publication_boundary::workflow_proposal::{
     PerformedWorkflowProposal, PublishedWorkflowProposalRef, WorkflowProposalBindingDenial,

@@ -17,8 +17,7 @@ pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
     pub(super) program_revision: ApplicationProgramRevision,
     pub(super) definition: worth_relational::facade::identity::EntityId,
     pub(super) definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
-    pub(super) instance_identity: String,
-    pub(super) instance_intent_identity: [u8; 32],
+    pub(super) discovery_intent: super::WorthQueryWorkflowInstanceDiscoveryIntent<Schema>,
     pub(super) instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
     pub(super) start_path: String,
     pub(super) supersession: Option<super::supersession::WorkflowStartSupersession>,
@@ -158,8 +157,7 @@ where
             program_revision,
             definition,
             definition_content_identity,
-            instance_identity,
-            instance_intent_identity,
+            discovery_intent,
             instance_identity_locator,
             start_path,
             supersession,
@@ -183,7 +181,7 @@ where
             phase,
             &presented,
             program,
-            idempotency.bind_workflow_instance(&instance_intent_identity),
+            idempotency.bind_workflow_instance(discovery_intent.intent_identity()),
             crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         );
@@ -193,7 +191,7 @@ where
                 definition_content_identity,
                 definition,
                 program_revision,
-                instance_identity,
+                discovery_intent.lookup_identity(),
                 instance_identity_locator,
                 start_path,
                 replayed,
@@ -213,12 +211,12 @@ fn project(
     definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
     definition: worth_relational::facade::identity::EntityId,
     program_revision: ApplicationProgramRevision,
-    instance_identity: String,
+    instance_identity: &str,
     instance_identity_locator: worth_foundational::facade::AspectFieldLocator,
     start_path: String,
     replayed: bool,
 ) -> WorkflowInstanceStartOutcome {
-    let expected = AspectValue::String(InternedString::Raw(instance_identity));
+    let expected = AspectValue::String(InternedString::Raw(instance_identity.to_owned()));
     let locator = &instance_identity_locator;
     let candidates = receipt
         .committed_changes()
@@ -255,6 +253,11 @@ fn project(
 impl<Schema, Operation, Input, Scope>
     PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>
 {
+    /// Owns original creation intent without retaining this attempt or granting a read.
+    pub fn discovery_intent(&self) -> super::WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
+        self.discovery_intent.clone()
+    }
+
     /// Controls retained as facts; each host call obtains fresh execution admission.
     pub fn request_scope(
         &self,
