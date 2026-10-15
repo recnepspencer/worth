@@ -1023,6 +1023,24 @@ hardware; an absolute seconds threshold is not a portable Query contract.
 Use the
 [canonical consumer prohibitions](../../../../../../docs/capability-index.md#consumer-prohibitions).
 
+## Observable workflows through ordinary requests
+
+Use `request.retain_current_read()` to pin data, then `request.at(&basis)` for
+freshly governed workflow discovery and history. The no-argument receiver owns
+its native admission; examples need no internal control or fabricated phase.
+Subject read and actor audit are independent. `found.target()` and
+`observation.target()` return data locators, not approval needs or grants.
+History marks never auto-refresh the retained basis: explicitly retain a fresh
+read and reacquire a target. `subscription.close()` releases subscription custody;
+original owning operation settlement and cleanup still use their own receivers.
+
+The [neutral mixed workflow](../../../../../../docs/build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+shows proposal waiting, occurrence capture, conditional distinct approval,
+real local archive ingress and the complete owning caller loop, with marker-bound
+excerpts. Its new history receivers and example remain source-prepared pending
+joined compilation/runtime certification. The [workflow guide](workflows.md)
+owns the detailed read policies and outcomes.
+
 ## Current Limits
 
 - The synchronous M0 contribution, request, handler, candidate, invariant,

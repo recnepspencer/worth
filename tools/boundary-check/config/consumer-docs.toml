@@ -48,6 +48,24 @@ name = "owning_workflow.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "examples/authored_workflow/main.rs"
 source = "examples/authored_workflow/main.rs"
+[[compiled_sources]]
+name = "observable_proposal.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "examples/observable_workflow.rs"
+source = "examples/observable_workflow/journey.rs"
+
+[[compiled_sources]]
+name = "observable_operation.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "examples/observable_workflow.rs"
+source = "examples/observable_workflow/operations.rs"
+
+[[compiled_sources]]
+name = "observable_history.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "examples/observable_workflow.rs"
+source = "examples/observable_workflow/history.rs"
+
 [[facts]]
 id = "workflow-node-kinds"
 manifest = "workspaces/worth-query/crates/worth-query-decl/Cargo.toml"

@@ -1721,9 +1721,8 @@ The calls, with real code:
 Full guide:
 [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
 
-A workflow is a branch-local, versioned graph of steps. It has seven node
-kinds: operations, assessments, inbound waits (`AwaitInbound`), conditions,
-approvals, evidence joins, and terminals. There is no
+A workflow is a branch-local, versioned graph of steps. Its node kinds are defined by the
+[source-derived workflow vocabulary](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md). There is no
 read-only node kind; a read that feeds a decision is an assessment or a
 condition. A workflow is authored against an installed vocabulary. A purchase
 request, for example, goes from draft, through budget and vendor checks, to a
@@ -1755,7 +1754,7 @@ workflow runtime value, `WorthQueryWorkflowApplicationRuntime`):
 - **Advance names what it waits for.** `WorkflowProgressOutcome` returns
   `Completed` when a step was recorded, or one of `AwaitingActor`,
   `AwaitingAssessment`, `AwaitingCondition`, `AwaitingOperation`,
-  `AwaitingEvidence`, and `AwaitingApproval` for what the instance needs next.
+  `AwaitingEvidence`, `AwaitingProposal`, and `AwaitingApproval` for what the instance needs next.
   A request that recorded no step says why: `Application` (the commit did not
   land), `PreparationDenied`, `AuthenticationDenied`, or `IdempotencyDenied`.
   `ProjectionDenied` is different: the commit landed, carries its receipt,
@@ -1776,6 +1775,29 @@ workflow runtime value, `WorthQueryWorkflowApplicationRuntime`):
   instance and the instances it was migrated or continued from), live
   instances per definition lineage, and an optional total deadline on the
   trusted clock.
+
+### Recorded actors and exact-basis observation
+
+The workflow record owns canonical proposer, advancer, performed-operation
+executor and approver identity. Admission authors each role using the complete
+native principal identity; a later settler does not replace the original actor.
+Positive recorded-actor requirements extend the existing capability pipeline:
+the exact required occurrence must be present and satisfy its declared comparison.
+A graph prohibition alone cannot establish positive presence. Current grants,
+scope and revocation still decide whether the acting request may proceed.
+
+Observation selects an exact retained data basis and separately admits the current
+reader. Subject disclosure and actor audit have independent rules. A withheld
+audit does not erase an approval or an incomplete owner obligation. Read targets,
+pages and original-start intents carry data rather than permission. They do not
+convert to an operation need or approval authority.
+
+Live marking reuses the native envelope/touched-fact subscription. A relevant
+change marks the subscription without replacing the old retained basis. Refresh
+requires a new retained read and reacquisition. Releasing a subscription is
+separate from settlement and cleanup of the original operation. The
+[mixed workflow journey](build-an-application.md#67-capture-approve-archive-and-observe-one-workflow)
+shows these source-prepared receivers, pending joined runtime acceptance.
 
 ### 13.1 Who may run a guarded operation
 

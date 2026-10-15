@@ -772,9 +772,9 @@ explained). Rust names are given where a type embodies the term.
 
 **Workflow**
 : A branch-local, versioned graph of steps, authored against an installed
-  vocabulary (*spec*). Its seven node kinds are operations, assessments,
-  inbound waits (`AwaitInbound`), conditions, approvals, evidence joins, and
-  terminals. A *definition* is one published revision. An
+  vocabulary (*spec*). Its node vocabulary is
+  [source-derived in the workflow guide](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md).
+  A *definition* is one published revision. An
   *instance* is one run of a pinned definition revision. *Control steps*
   (publish or retire a definition; start, cancel, migrate, or continue an
   instance on a fork; advance or navigate back; approve) are governed
@@ -787,6 +787,35 @@ explained). Rust names are given where a type embodies the term.
   and `worth-query-host`.
   **See** [Build an Application §6](build-an-application.md#6-author-publish-and-run-workflows)
   and [How WORTH Works §13](how-it-works.md#13-workflows).
+
+**Workflow discovery intent**
+: Typed original-start material retained from `prepared.discovery_intent()`.
+  It keeps the native start-time definition/program identity for later-request
+  lookup, including current-format restore reacquisition. It is ordinary intent
+  data, not a live reference, grant or application-maintained instance registry.
+
+**Workflow historical result**
+: A disclosed view of native workflow truth at the selected exact basis that
+  cannot supply a live instance locator for advancement. Migration and fork
+  relationships remain native; callers do not manufacture successor identities.
+
+**Workflow live locator**
+: An opaque `PublishedWorkflowInstanceRef` returned by live discovery. It locates
+  native truth and grants no operation, approval or disclosure permission.
+  Fresh admission remains necessary; it is not serialized as a live capability.
+
+**Workflow observation**
+: A read-only derivation of state or bounded history at an exact retained basis,
+  under fresh current disclosure. Actor identities require the independent audit
+  rule; `Withheld` is not actor absence. A history subscription marks relevant
+  change through native envelope custody without refreshing retained data.
+
+**Workflow recorded actors**
+: Canonical admitted roles on an exact occurrence: proposer publishes a proposal;
+  advancer causes a transition; executor performs its recorded operation;
+  approver publishes an approval decision. Full partition/slot/generation
+  identity is compared. Historical attribution never reauthorizes that actor or
+  transfers the role to a later settler.
 
 **Workflow frontier**
 : A declared set of independent stages in an installed domain operation's
