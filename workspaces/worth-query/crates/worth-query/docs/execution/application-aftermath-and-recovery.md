@@ -99,6 +99,32 @@ for covered actions. Exact native unpublished/keyed/fixed recovery remains under
 cannot reconstruct unregistered custody. Workflow/discovered recovery retain
 their own native owners until their adapters land.
 
+### Committed discovered retention
+
+A real committed source can return
+`WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied(failure)`.
+The opaque `WorthQueryDiscoveredOutputRetentionFailure` retains the original
+handler result, discovery and unregistered native carrier. Keep that owner;
+its borrowed receipt and denial do not reconstruct the carrier.
+
+A fresh native request with the original intent, key and conditions calls
+`request.advanced().mutate(intent)` and then
+`retry_discovered_output_retention(failure, application)`. Refusal returns the
+same failure alongside the current typed denial. Successful retry returns the
+performed discovered source; its existing `start_required_outputs` preserves
+that owner if starting fails. A terminal native posture is not permission for
+an endless retry. Keep independent managed cleanup and partial-recovery
+obligations; registering or settling outputs does not discharge them.
+
+Registered `recover_discovered_required_outputs` uses an existing registration
+and returns no original handler result. It cannot replace committed-retention
+retry or recreate missing one-shot delivery. These deliberate native controls
+are native substrate; they do not supply an ordinary owning discovered action.
+
+The sealed certification control exercises controlled reservation-capacity
+refusal on the actual abandoned-source vector. It does not claim ordinary
+allocator OOM resilience or enforcement of an execution-memory quota.
+
 ## Authenticated Inbound Completion
 
 An operation with an external dispatch can declare one inbound source, protocol,

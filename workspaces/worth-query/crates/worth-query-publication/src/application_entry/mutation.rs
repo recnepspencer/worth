@@ -22,11 +22,12 @@ mod staged;
 pub use attempt::WorthQueryApplicationMutationAttemptReport;
 pub use authorization_assessment::WorthQueryCurrentAuthorizationAssessment;
 pub use discovered::{
-    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputStartFailure,
-    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
-    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryDiscoveredRecoveryProgress,
-    WorthQueryPerformedDiscoveredApplicationMutation, WorthQueryRecoveredDiscoveredOutputs,
-    WorthQueryStartedDiscoveredOutputs, WorthQueryUnpublishedDiscoveredApplicationMutation,
+    WorthQueryApplicationDiscoveredMutationOutcome, WorthQueryDiscoveredOutputRetentionFailure,
+    WorthQueryDiscoveredOutputStartFailure, WorthQueryDiscoveredProgramOutputHandle,
+    WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
+    WorthQueryDiscoveredRecoveryProgress, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryRecoveredDiscoveredOutputs, WorthQueryStartedDiscoveredOutputs,
+    WorthQueryUnpublishedDiscoveredApplicationMutation,
 };
 pub use execution::{
     WorthQueryApplicationProgramMigrationPreparationDenial,

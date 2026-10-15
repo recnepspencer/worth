@@ -11,9 +11,11 @@ pub(super) fn discovered(
         }
         Outcome::ProductUnpublished(_) => "ProductUnpublished".into(),
         Outcome::Performed(performed) => format!("Performed({:?})", performed.receipt()),
-        Outcome::RequiredOutputDenied {
-            receipt, denial, ..
-        } => format!("RequiredOutputDenied({receipt:?}, {denial:?})"),
+        Outcome::RequiredOutputDenied(failure) => format!(
+            "RequiredOutputDenied({:?}, {:?})",
+            failure.receipt(),
+            failure.denial()
+        ),
         Outcome::Blocked(blocked) => format!("Blocked({:?})", blocked.outcome()),
         Outcome::NotPerformed(outcome) => format!("NotPerformed({outcome:?})"),
     }

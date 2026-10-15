@@ -19,6 +19,10 @@ mod batch_delivery;
 mod current_delivery;
 mod delivery_policy;
 mod descriptor;
+#[cfg(test)]
+mod discovered_delivery_handoff_contract;
+#[cfg(test)]
+mod discovered_handoff_contract;
 mod fixed;
 mod fixed_advance;
 mod fixed_outputs;
