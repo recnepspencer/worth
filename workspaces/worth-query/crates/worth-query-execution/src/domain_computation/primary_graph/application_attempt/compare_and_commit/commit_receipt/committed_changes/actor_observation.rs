@@ -93,16 +93,7 @@ impl WorthQueryApplicationCommittedChanges {
         Option<EntityId>,
         crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     > {
-        use crate::domain_computation::primary_graph::{
-            WorthQueryApplicationAttemptDenial as Denial,
-            WorthQueryApplicationAttemptDenialKind as Kind,
-        };
-        let invalid = || {
-            Denial::new(
-                Kind::InvalidAuthoritativeValue,
-                "current workflow actor record is malformed",
-            )
-        };
+        let invalid = crate::domain_computation::primary_graph::workflow::actor::record::actor_record_corruption;
         let original = self
             .workflow_actor_fields_for_test(entity, role)
             .map_err(|_| invalid())?;
@@ -133,6 +124,5 @@ impl WorthQueryApplicationCommittedChanges {
             _ => true,
         };
         crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability(actor, required)
-            .map_err(|_| invalid())
     }
 }

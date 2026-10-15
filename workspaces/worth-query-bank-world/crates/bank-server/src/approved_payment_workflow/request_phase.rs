@@ -199,17 +199,44 @@ fn committed_owner_custody_is_accepted_in_one_request() {
     let _observation = worth_query_host::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));
-        let ready = ReadyPaymentWorld::new("workflow-committed-custody", FaultScript::Succeed);
+        let ready = ReadyPaymentWorld::with_two_approvers(
+            "workflow-committed-custody",
+            FaultScript::Succeed,
+        );
         let route = ready
             .fixture
             .world
             .runtime
             .install_payment_rail_completion_verifier(std::sync::Arc::new(PaymentRailSource))
             .expect("the payment completion source installs before dispatch");
-        ready
-            .perform()
-            .into_performed()
-            .expect("the real rail completes this payment");
+        let runtime = &ready.fixture.world.runtime;
+        let vocabulary = runtime.approved_payment_workflow_runtime();
+        let perform_key = key("approved-payment:operation:perform");
+        // Retain the actual native performed receipt, rather than reconstructing
+        // executor identity from a business-input principal or a later command.
+        let effect = runtime
+            .request(&ready.principal, &ready.scope)
+            .on_branch(ready.operation.branch())
+            .mutate(ApprovedBusinessPaymentApplyIntent {
+                input: ready.authority.clone(),
+            })
+            .idempotency(&perform_key)
+            .for_workflow_operation(vocabulary, &ready.operation)
+            .unwrap()
+            .execute_in_program(
+                vocabulary.program_runtime(),
+                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .expect("the real native payment executes");
+        let worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome::Committed {
+            receipt: original_receipt, ..
+        } = effect else { panic!("the real rail payment must newly commit: {effect:?}"); };
+        let original = original_receipt.principal_scope().principal();
+        let executor = (
+            original.partition_id(),
+            original.local_slot(),
+            original.generation(),
+        );
 
         let token = ready.rail.attempts()[0]
             .token()
@@ -221,9 +248,11 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             .runtime
             .observe_payment_rail_completion(&route, token)
             .expect("the synchronous transport completion entered the installed terminal owner");
-        let runtime = &ready.fixture.world.runtime;
-        let vocabulary = runtime.approved_payment_workflow_runtime();
-        let perform_key = key("approved-payment:operation:perform");
+        let later_actor = ready.fixture.authenticate(fixture::STRANGER);
+        let later_authority = bank_domain::schema::ApprovePayment {
+            payment: ready.fixture.payment,
+            approver: fixture::principal_id(fixture::STRANGER),
+        };
         let command_key = key("approved-payment:operation:committed-custody");
         let mutation = runtime
             .request(&ready.principal, &ready.scope)
@@ -235,9 +264,9 @@ fn committed_owner_custody_is_accepted_in_one_request() {
             .for_workflow_operation_recovery(vocabulary, &ready.operation)
             .unwrap();
         let prepared = runtime
-            .request(&ready.principal, &ready.scope)
+            .request(&later_actor, &ready.scope)
             .mutate(ApprovedBusinessPaymentAdvanceIntent {
-                input: ready.authority.clone(),
+                input: later_authority,
             })
             .without_source()
             .idempotency(&command_key)
@@ -246,17 +275,45 @@ fn committed_owner_custody_is_accepted_in_one_request() {
         reports();
         let before = reads();
         let outcome = prepared.accept_operation_from_owner(&ready.operation, mutation);
-        assert!(
-            matches!(
-                outcome,
-                Ok(
-                    worth_query_host::facade::application_entry::WorkflowProgressOutcome::Completed(
-                        _
-                    )
-                )
-            ),
-            "committed custody completes acceptance: {outcome:?}"
+        let completed = match outcome {
+            Ok(
+                worth_query_host::facade::application_entry::WorkflowProgressOutcome::Completed(
+                    completed,
+                ),
+            ) => completed,
+            other => panic!("committed custody completes acceptance: {other:?}"),
+        };
+        let later = completed.receipt().principal_scope().principal();
+        let advancer = (later.partition_id(), later.local_slot(), later.generation());
+        assert_ne!(
+            executor, advancer,
+            "distinct real admitted actors are essential"
         );
+        use worth_query_host::facade::declaration::application_capability::ApplicationWorkflowRecordedRole as Role;
+        let changes = completed.receipt().committed_changes();
+        assert_eq!(
+            changes
+                .workflow_actor_fields_for_test(completed.transition(), Role::Executor)
+                .unwrap()
+                .map(|actor| (
+                    actor.partition_value(),
+                    actor.local_slot_value(),
+                    actor.generation_value()
+                )),
+            Some(executor)
+        );
+        assert_eq!(
+            changes
+                .workflow_actor_fields_for_test(completed.transition(), Role::Advancer)
+                .unwrap()
+                .map(|actor| (
+                    actor.partition_value(),
+                    actor.local_slot_value(),
+                    actor.generation_value()
+                )),
+            Some(advancer)
+        );
+        assert_eq!(ready.rail.completed_effect_count(), 1);
         admitted(before);
     }
 }
