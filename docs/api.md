@@ -471,3 +471,15 @@ remains with the mutation owner and the linked application guide.
 | `DeadlineExceeded` | unit |
 | `Commit` | tuple (WorthQueryApplicationUncommitted) |
 <!-- source-facts: mutation-outcomes end -->
+
+### Retained capability commands
+
+Delegation and revocation enter through
+`WorthQueryApplicationRequest::retain_capability_delegation_in_program` and
+`retain_capability_revocation_in_program`, returning move-only
+`WorthQueryCapabilityCommand` owners. `advance(&fresh_request)` preserves
+original intent and custody through progress/refusal, native Fresh/Recovered
+completion and terminal posture. Completed `close_with_evidence` transfers the
+original receipt after native cleanup; close refusal returns the same owner.
+These commands reuse the native publication owner, without a mutation binding
+or fabricated handler result. See [owning command usage](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#owning-capability-commands).

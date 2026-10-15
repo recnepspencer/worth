@@ -28,18 +28,10 @@ pub(super) fn can_close<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(
 pub(super) fn fresh_retry_eligible<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(
     outcome: &NativeOutcome<S, I>,
 ) -> bool {
-    use worth_query_execution::facade::primary_graph::{
-        WorthQueryApplicationCommitDenialKind as Kind,
-        WorthQueryApplicationCommitDenialStage as Stage,
-    };
     match outcome {
-        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Stale(_)) => true,
-        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(cause)) =>
-            cause.kind() == Kind::ProductBasisStale
-                && cause.stage() == Stage::InvariantExecution
-                && cause.invariant_execution_failure().is_some_and(|failure| {
-                    failure.kind() == worth_query_execution::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::ProductBasisStale
-                }),
+        WorthQueryApplicationMutationOutcome::Commit(posture) => {
+            super::super::native_publication::native_retry_eligible(posture)
+        }
         _ => false,
     }
 }

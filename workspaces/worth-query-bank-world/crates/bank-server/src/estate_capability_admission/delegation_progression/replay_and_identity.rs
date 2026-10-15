@@ -11,26 +11,24 @@ fn two_principals_can_delegate_with_the_same_client_key() {
     let key = idempotency(89);
 
     assert_committed(
-        fixture
-            .runtime
-            .delegate_estate_capability_with_key(
-                &specialist,
-                delegated_action(DelegationLimit::generations(1)),
-                &key,
-                &request_scope(),
-            )
-            .expect("the specialist should activate the first child"),
+        crate::estate_progression::delegation::command_courts::complete_delegation(
+            &fixture.runtime,
+            &specialist,
+            delegated_action(DelegationLimit::generations(1)),
+            &key,
+            &request_scope(),
+        )
+        .expect("the specialist should activate the first child"),
     );
     assert_committed(
-        fixture
-            .runtime
-            .delegate_estate_capability_with_key(
-                &approver,
-                delegated_action_from(CHILD, GRANDCHILD, REVIEWER, DelegationLimit::generations(0)),
-                &key,
-                &request_scope(),
-            )
-            .expect("a second authorized principal should use the same client key independently"),
+        crate::estate_progression::delegation::command_courts::complete_delegation(
+            &fixture.runtime,
+            &approver,
+            delegated_action_from(CHILD, GRANDCHILD, REVIEWER, DelegationLimit::generations(0)),
+            &key,
+            &request_scope(),
+        )
+        .expect("a second authorized principal should use the same client key independently"),
     );
     let visible = governance_readback(&fixture, &fixture.authenticate_reviewer());
     assert!(capability_if_present(&visible, GRANDCHILD).is_some());
@@ -44,32 +42,30 @@ fn two_principals_can_revoke_with_the_same_client_key() {
     let key = idempotency(90);
 
     assert_committed(
-        fixture
-            .runtime
-            .revoke_estate_capability_with_key(
-                &specialist,
-                EstateAction::RevokeCapability {
-                    estate: ESTATE,
-                    grant: GRANT,
-                },
-                &key,
-                &request_scope(),
-            )
-            .expect("the specialist should revoke the first grant"),
+        crate::estate_progression::delegation::command_courts::complete_revocation(
+            &fixture.runtime,
+            &specialist,
+            EstateAction::RevokeCapability {
+                estate: ESTATE,
+                grant: GRANT,
+            },
+            &key,
+            &request_scope(),
+        )
+        .expect("the specialist should revoke the first grant"),
     );
     assert_committed(
-        fixture
-            .runtime
-            .revoke_estate_capability_with_key(
-                &approver,
-                EstateAction::RevokeCapability {
-                    estate: ESTATE,
-                    grant: UNRELATED_GOVERNANCE_GRANT,
-                },
-                &key,
-                &request_scope(),
-            )
-            .expect("a second authorized principal should use the same client key independently"),
+        crate::estate_progression::delegation::command_courts::complete_revocation(
+            &fixture.runtime,
+            &approver,
+            EstateAction::RevokeCapability {
+                estate: ESTATE,
+                grant: UNRELATED_GOVERNANCE_GRANT,
+            },
+            &key,
+            &request_scope(),
+        )
+        .expect("a second authorized principal should use the same client key independently"),
     );
 }
 

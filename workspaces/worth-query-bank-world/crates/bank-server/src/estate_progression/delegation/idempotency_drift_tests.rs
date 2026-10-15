@@ -23,10 +23,14 @@ fn delegation_retry_rejects_each_changed_optional_scope_and_validity_field() {
     let specialist = fixture.authenticate();
     let key = idempotency("delegate-scope-drift");
     let action = delegation_action(40_000, 0, u64::MAX - 1);
-    let first = fixture
-        .runtime
-        .delegate_estate_capability_with_key(&specialist, action, &key, &request_scope())
-        .expect("the first exact delegation should execute");
+    let first = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &specialist,
+        action,
+        &key,
+        &request_scope(),
+    )
+    .expect("the first exact delegation should execute");
     assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
 
     for (axis, retry) in [
@@ -35,7 +39,8 @@ fn delegation_retry_rejects_each_changed_optional_scope_and_validity_field() {
         ("not-after", delegation_action(40_000, 0, u64::MAX - 2)),
     ] {
         assert_intent_drift(
-            fixture.runtime.delegate_estate_capability_with_key(
+            crate::estate_progression::delegation::command_courts::complete_delegation(
+                &fixture.runtime,
                 &specialist,
                 retry,
                 &key,
@@ -51,21 +56,21 @@ fn revocation_retry_rejects_a_different_grant_target() {
     let fixture = delegation_world("revocation-idempotency-target-drift");
     let specialist = fixture.authenticate();
     let key = idempotency("revoke-target-drift");
-    let first = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: UNRELATED_GOVERNANCE_GRANT,
-            },
-            &key,
-            &request_scope(),
-        )
-        .expect("the first exact revocation should execute");
+    let first = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        EstateAction::RevokeCapability {
+            estate: ESTATE,
+            grant: UNRELATED_GOVERNANCE_GRANT,
+        },
+        &key,
+        &request_scope(),
+    )
+    .expect("the first exact revocation should execute");
     assert!(matches!(first, BankMutationCommitOutcome::Committed(_)));
 
-    let drift = fixture.runtime.revoke_estate_capability_with_key(
+    let drift = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
         &specialist,
         EstateAction::RevokeCapability {
             estate: ESTATE,

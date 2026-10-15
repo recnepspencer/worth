@@ -21,7 +21,7 @@ pub(in crate::domain_computation) use application_output_demand::{
 mod application_program;
 pub(crate) mod application_query;
 mod application_runtime;
-mod authenticated_principal;
+pub(crate) mod authenticated_principal;
 mod authentication_clock;
 mod bootstrap;
 mod bootstrap_publication;
@@ -76,7 +76,7 @@ mod resolution;
 mod resolution_denial;
 mod root;
 mod schema_layout;
-mod settlement_repair;
+pub(crate) mod settlement_repair;
 mod typed_bootstrap;
 pub(in crate::domain_computation) mod workflow;
 

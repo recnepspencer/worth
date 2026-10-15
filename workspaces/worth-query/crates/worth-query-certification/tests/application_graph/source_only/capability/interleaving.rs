@@ -11,9 +11,15 @@ fn authorized_revocation_without_partial_is_a_real_published_transition() {
     let issuer = host::authenticate(&host, 2, &scope);
     let actor = host::authenticate(&host, 1, &scope);
     let unauthorized = grant_commands::revoke(&host, &actor, &scope, 0x91765101);
-    let Err(WorthQueryApplicationCapabilityRevocationDenial::Authorization(denial)) = unauthorized
+    let WorthQueryCapabilityCommandAdvance::Refused {
+        command: unauthorized_owner,
+        denial:
+            WorthQueryCapabilityCommandDenial::Native(
+                WorthQueryApplicationCapabilityRevocationDenial::Authorization(denial),
+            ),
+    } = unauthorized
     else {
-        panic!("issuer permission is native: {unauthorized:?}")
+        panic!("issuer permission must refuse through native authorization")
     };
     assert_eq!(
         denial.kind(),
@@ -23,13 +29,26 @@ fn authorized_revocation_without_partial_is_a_real_published_transition() {
     );
     assert_eq!(super::readback::grant_status(&host), 1);
     let outcome = grant_commands::revoke(&host, &issuer, &scope, 0x91765102);
-    assert!(
-        matches!(
-            outcome,
-            Ok(WorthQueryApplicationCommitOutcome::Committed(_))
-        ),
-        "healthy lifecycle twin must publish: {outcome:?}"
-    );
+    let WorthQueryCapabilityCommandAdvance::Completed(completed) = outcome else {
+        panic!("healthy lifecycle twin must publish")
+    };
+    assert!(matches!(
+        completed.evidence(),
+        WorthQueryCapabilityCommandCompletion::Fresh { .. }
+    ));
+    let request = host.application.runtime().request(&issuer, &scope);
+    let (_, evidence) = completed
+        .close_with_evidence(&request)
+        .unwrap_or_else(|(_, denial)| panic!("native command cleanup: {denial:?}"));
+    assert!(matches!(
+        evidence,
+        WorthQueryCapabilityCommandCompletion::Fresh { .. }
+    ));
+    let denied_request = host.application.runtime().request(&actor, &scope);
+    // Native no-effect custody may close without granting this actor revocation authority.
+    unauthorized_owner
+        .close(&denied_request)
+        .unwrap_or_else(|(_, denial)| panic!("no-effect command cleanup: {denial:?}"));
     assert_eq!(super::readback::grant_status(&host), 0);
     let fresh_scope = request_scope();
     let actor = host::authenticate(&host, 1, &fresh_scope);
@@ -172,9 +191,20 @@ fn unpublished_source_refuses_revocation_before_projection_and_retains_recovery(
         .unwrap();
     assert_eq!(super::readback::grant_status(&host), 1);
     let outcome = grant_commands::revoke(&host, &issuer, &scope, 0x91765002);
-    let Err(WorthQueryApplicationCapabilityRevocationDenial::Idempotency(denial)) = outcome else {
-        panic!("retain the actual publication prerequisite refusal: {outcome:?}")
+    let WorthQueryCapabilityCommandAdvance::Refused {
+        command: retained_revocation,
+        denial:
+            WorthQueryCapabilityCommandDenial::Native(
+                WorthQueryApplicationCapabilityRevocationDenial::Idempotency(denial),
+            ),
+    } = outcome
+    else {
+        panic!("retain the actual publication prerequisite refusal")
     };
+    let close_request = host.application.runtime().request(&issuer, &scope);
+    retained_revocation
+        .close(&close_request)
+        .unwrap_or_else(|(_, denial)| panic!("unperformed command cleanup: {denial:?}"));
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationIdempotencyResolutionDenialKind::ProviderUnavailable

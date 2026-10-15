@@ -1,7 +1,6 @@
 //! A no-output operation owns original meaning and every native publication obligation.
 use super::*;
 use worth_query_declaration::facade::application_program::ApplicationAction;
-use worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationUncommitted,
     WorthQueryManagedApplicationRecoveryPerformed,
@@ -49,21 +48,11 @@ where
     >,
 }
 
-enum SourceState<S: ApplicationSchema, I: ApplicationMutationIntent<S>> {
-    Initial,
-    Unpublished(WorthQueryProductUnpublishedRecovery),
-    Performed(WorthQueryManagedApplicationRecoveryPerformed),
-    Keyed(WorthQueryApplicationUncommitted),
-    UnresolvedAdvancement(
-        worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
-    ),
-    RetryableNoEffect(NativeOutcome<S, I>),
-    Stopped(NativeOutcome<S, I>),
-    AdmissionStopped(WorthQueryApplicationRequestMutationDenial),
-    RetainedPending(
-        WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
-    ),
-}
+type SourceState<S, I> = super::native_publication::NativePublicationState<
+    NativeOutcome<S, I>,
+    WorthQuerySourceCompletion<<Binding<S, I> as ApplicationMutationBinding<S>>::Result>,
+    WorthQueryApplicationRequestMutationDenial,
+>;
 
 /// Fresh results and recovered receipt evidence never imply the same result provenance.
 pub enum WorthQuerySourceCompletion<Result> {
@@ -217,7 +206,6 @@ impl<
         &mut self,
         denial:worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
     ) {
-        if matches!(denial,worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Panicked)
-            && matches!(self.state,SourceState::Initial|SourceState::RetryableNoEffect(_)) {self.state=SourceState::UnresolvedAdvancement(denial);}
+        self.state.record_unresolved_advancement(denial);
     }
 }

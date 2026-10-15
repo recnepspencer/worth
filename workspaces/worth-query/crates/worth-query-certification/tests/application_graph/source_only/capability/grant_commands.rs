@@ -5,31 +5,47 @@ use worth_query_host::facade::{
     admission::authenticated_principal::*, application_entry::*,
     declaration::application_schema::*, primary_graph::*,
 };
-pub fn revoke(
-    host: &Host,
+pub fn revoke<'a>(
+    host: &'a Host,
     principal: &WorthQueryAuthenticatedExternalPrincipal<CapabilitySchema>,
     scope: &WorthQueryRequestScope,
     key: u64,
-) -> Result<
-    WorthQueryApplicationCommitOutcome,
+) -> WorthQueryCapabilityCommandAdvance<
+    WorthQueryCapabilityCommand<
+        'a,
+        CapabilitySchema,
+        super::program::Program,
+        WorthQueryApplicationCapabilityRevocationDenial<String>,
+    >,
+    WorthQueryCompletedCapabilityCommand<
+        'a,
+        CapabilitySchema,
+        super::program::Program,
+        WorthQueryApplicationCapabilityRevocationDenial<String>,
+    >,
+    WorthQueryTerminalCapabilityCommand<
+        'a,
+        CapabilitySchema,
+        super::program::Program,
+        WorthQueryApplicationCapabilityRevocationDenial<String>,
+    >,
     WorthQueryApplicationCapabilityRevocationDenial<String>,
 > {
     let input = RevokeInput {
         identity: DOCUMENT_IDENTITY.to_owned(),
         grant: "source-child".to_owned(),
     };
-    host.application
-        .runtime()
-        .request(principal, scope)
-        .execute_capability_revocation_in_program(
+    let request = host.application.runtime().request(principal, scope);
+    let mut command = request
+        .retain_capability_revocation_in_program(
             &host.application,
             DocumentPrincipalBinding::reference(),
             RevocationCapability::reference(),
             RevokeGrant::reference(),
             input,
-            &key,
+            key,
             TypedMutationPreconditions::default(),
-            |phase, admission| {
+            move |phase, admission| {
                 let projected = host
                     .projection
                     .project_admitted_operation(
@@ -82,4 +98,11 @@ pub fn revoke(
                     .map_err(|cause| format!("{cause:?}"))
             },
         )
+        .unwrap_or_else(|(_, _, _, denial)| panic!("fixture command capture: {denial:?}"));
+    loop {
+        match command.advance(&request) {
+            WorthQueryCapabilityCommandAdvance::Progress(retained) => command = retained,
+            completed_or_refused => return completed_or_refused,
+        }
+    }
 }

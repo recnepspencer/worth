@@ -1,6 +1,6 @@
 mod approval;
 mod close;
-mod delegation;
+pub(crate) mod delegation;
 mod denial;
 mod disburse_estate;
 mod elevation_lifecycle;
@@ -20,6 +20,8 @@ mod review;
 
 pub use delegation::{
     BankCapabilityDelegationProjectionDenial, BankCapabilityRevocationProjectionDenial,
+    BankDelegationCaptureFailure, BankDelegationCommand, BankDelegationPreparation,
+    BankRevocationCaptureFailure, BankRevocationCommand, BankRevocationPreparation,
 };
 pub use denial::{
     BankEstateIdempotencyResolutionDenial, BankEstateLifecycleProjectionDenial,

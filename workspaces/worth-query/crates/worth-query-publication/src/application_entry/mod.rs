@@ -7,7 +7,13 @@ pub mod advanced {
         WorthQueryApplicationMutationRequest, WorthQueryApplicationMutationRequestWithIdempotency,
     };
 }
+mod capability_command;
 mod capability_delegation;
+pub use capability_command::{
+    WorthQueryCapabilityCommand, WorthQueryCapabilityCommandAdvance,
+    WorthQueryCapabilityCommandCompletion, WorthQueryCapabilityCommandDenial,
+    WorthQueryCompletedCapabilityCommand, WorthQueryTerminalCapabilityCommand,
+};
 mod capability_revocation;
 mod demand;
 mod denial;

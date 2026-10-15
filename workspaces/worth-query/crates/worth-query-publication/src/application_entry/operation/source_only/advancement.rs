@@ -1,10 +1,7 @@
 //! Each call enters one native phase and delegates one genuine source handoff.
 use super::*;
 use worth_query_declaration::facade::application_operation::ApplicationMutationAdmissionBinding;
-use worth_query_execution::facade::primary_graph::{
-    WorthQueryApplicationIdempotencyResolution as Resolution,
-    WorthQueryManagedApplicationRecoveryOutcome as Recovery,
-};
+use worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution as Resolution;
 
 pub(super) type Advance<S, I, P, A, M> = WorthQuerySourceOnlyAdvance<
     WorthQuerySourceOnlyOperation<S, I, P, A, M>,
@@ -102,26 +99,14 @@ where
                 self.cleanup
                     .reserve_release_failure()
                     .map_err(WorthQuerySourceOnlyDenial::Cleanup)?;
-                match self
+                let outcome = self
                     .admission
                     .recover_in_advancement(phase, request, recovery)
-                    .map_err(WorthQuerySourceOnlyDenial::Recovery)?
-                {
-                    Recovery::NoEffect => Ok(Step::Progress),
-                    Recovery::ProductUnpublished {
-                        next,
-                        prior_cleanup_failure,
-                    } => {
-                        self.cleanup.absorb_release_failure(prior_cleanup_failure);
-                        self.state = SourceState::Unpublished(next);
-                        Ok(Step::Progress)
-                    }
-                    Recovery::Performed(performed) => {
-                        self.state = SourceState::Performed(performed);
-                        Ok(Step::Progress)
-                    }
-                }
+                    .map_err(WorthQuerySourceOnlyDenial::Recovery)?;
+                self.state.accept_recovery(outcome, &mut self.cleanup);
+                Ok(Step::Progress)
             }
+
             SourceState::Performed(performed) => {
                 self.cleanup
                     .absorb_recovered(performed)
@@ -205,17 +190,22 @@ where
                     initial_advancement_failure: None,
                 }))
             }
-            O::Commit(WorthQueryApplicationUncommitted::ProductUnpublished(partial)) => {
-                self.state = SourceState::Unpublished(partial.into_recovery());
-                Ok(Step::Progress)
-            }
-            O::Commit(
-                posture @ (WorthQueryApplicationUncommitted::Aborted
-                | WorthQueryApplicationUncommitted::Indeterminate(_)),
-            ) => {
-                self.state = SourceState::Keyed(posture);
-                Ok(Step::Progress)
-            }
+            O::Commit(posture) => match self.state.accept_uncommitted(posture) {
+                Ok(()) => Ok(Step::Progress),
+                Err(posture) => self.accept_no_effect_or_terminal(O::Commit(posture)),
+            },
+            other => self.accept_no_effect_or_terminal(other),
+        }
+    }
+
+    fn accept_no_effect_or_terminal(
+        &mut self,
+        outcome: NativeOutcome<S, I>,
+    ) -> Result<
+        Step<<I::Binding as ApplicationMutationBinding<S>>::Result>,
+        WorthQuerySourceOnlyDenial,
+    > {
+        match outcome {
             other
                 if self.admission.description.source.is_none()
                     && native_posture::fresh_retry_eligible::<S, I>(&other) =>
@@ -237,23 +227,19 @@ where
         Step<<I::Binding as ApplicationMutationBinding<S>>::Result>,
         WorthQuerySourceOnlyDenial,
     > {
-        match resolution {
-            Resolution::AlreadyCommitted(receipt) => {
-                let state = std::mem::replace(&mut self.state, SourceState::Initial);
-                let (publication, initial_posture, initial_advancement_failure) = match state {
-                    SourceState::Performed(performed) => (Some(performed), None, None),
-                    SourceState::Keyed(posture) => (None, Some(posture), None),
-                    SourceState::UnresolvedAdvancement(failure) => (None, None, Some(failure)),
-                    _ => unreachable!(
-                        "only native performed or unresolved custody reaches keyed resolution"
-                    ),
-                };
+        use super::super::native_publication::NativeKeyedProgress;
+        match self
+            .state
+            .accept_keyed(resolution, &self.cleanup)
+            .map_err(WorthQuerySourceOnlyDenial::Cleanup)?
+        {
+            NativeKeyedProgress::Completed(recovered) => {
                 let evidence = WorthQuerySourceCompletion::Recovered {
                     retained: None,
-                    receipt,
-                    publication,
-                    initial_posture,
-                    initial_advancement_failure,
+                    receipt: recovered.receipt,
+                    publication: recovered.publication,
+                    initial_posture: recovered.initial_posture,
+                    initial_advancement_failure: recovered.initial_advancement_failure,
                 };
                 if M::RETAIN_COMMIT {
                     self.state = SourceState::RetainedPending(evidence);
@@ -262,29 +248,13 @@ where
                     Ok(Step::Completed(evidence))
                 }
             }
-            Resolution::Unseen
-                if matches!(
-                    self.state,
-                    SourceState::Keyed(WorthQueryApplicationUncommitted::Aborted)
-                ) =>
-            {
-                if self.cleanup.managed_failure().is_some() {
-                    return Err(WorthQuerySourceOnlyDenial::Cleanup(
-                        WorthQueryOperationCloseDenial::NativeObligationRetained,
-                    ));
-                }
-                // The native Aborted outcome proves no effect; Unseen alone never does.
-                let prior = std::mem::replace(&mut self.state, SourceState::Initial);
-                if self.admission.workflow.is_some() {
-                    let SourceState::Keyed(posture) = prior else {
-                        unreachable!("actual abort guarded by native state match")
-                    };
-                    self.guarded_abort = Some(posture);
+            NativeKeyedProgress::Progress { proved_abort } => {
+                if self.admission.workflow.is_some() && proved_abort.is_some() {
+                    self.guarded_abort = proved_abort;
                 }
                 Ok(Step::Progress)
             }
-            Resolution::Unseen => Ok(Step::Progress),
-            resolution @ Resolution::IntentDrift => {
+            NativeKeyedProgress::Terminal(resolution) => {
                 self.keyed_terminal = Some(resolution);
                 Ok(Step::Terminal)
             }

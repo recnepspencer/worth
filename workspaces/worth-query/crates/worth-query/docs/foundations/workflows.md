@@ -1566,3 +1566,40 @@ not grant authority or replace the lifecycle explanations above.
 | `MissingTerminal` | unit |
 | `CanonicalBudgetExceeded` | unit |
 <!-- source-facts: workflow-validation-denials end -->
+
+## Owning capability commands
+
+Delegation and revocation are kernel commands, separate from domain mutation
+handlers and workflow operation slots. The application request exposes
+`retain_capability_delegation_in_program` and
+`retain_capability_revocation_in_program`. Each captures the original input,
+owned idempotency key, conditions, program/branch and admitted principal
+association. Capture refusal returns the original input, key and preparation
+closure alongside its typed denial. No command retains a request or grant.
+
+The preparation closure is repeatable projection/materialization under the
+fresh native admission; it must not execute an effect. Native command commit
+and the same private publication progression used by SourceOnly own execution,
+ambiguous recovery, settlement and cleanup. Supply a fresh request for every
+`advance` and retain `Progress(command)` or `Refused { command, denial }`.
+`Completed(done)` distinguishes `Fresh` from `Recovered` evidence. Borrowing
+`done.evidence().receipt()` neither releases cleanup nor transfers performed
+custody. `done.close_with_evidence(&fresh_request)` returns the original evidence
+only after lawful native cleanup, and returns the same owner on refusal.
+`Terminal(owner)` retains its native posture and may still refuse close.
+Dropping any owner is not evidence of cleanup or settlement.
+
+Fresh command authority is required even for completed replay. Delegation's
+native exact completed replay can remain lawful after its parent expires or is
+revoked; that does not authorize a fresh child. Revocation's poststate can be
+recovered without re-materializing an Active-to-Revoked effect. Separate
+principals scope the same client key separately, but a retained owner cannot be
+retargeted to another principal, runtime or branch. Workflow/audit views grant
+no command authority. Use a new, freshly admitted command for different intent;
+never implement an ordinary flat reissue or manual recovery loop.
+
+The owning command compiler examples live in the Host audience's
+`src/capability_command_contract.rs`; the genuine Bank command
+courts and Query SourceOnly revocation interleaving use native receipts and
+readbacks. These sources await the grouped receiving build and runtime proof;
+they do not establish the complete mixed-workflow or hardening portfolio.

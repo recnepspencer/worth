@@ -1,4 +1,5 @@
 mod advancement_custody;
+mod owning_commands;
 use bank_domain::estate::{
     CapabilityGrantId, CapabilityGrantStatus, CapabilityValidity, DelegationLimit, EstateAction,
     EstateCapabilityDelegationRequest, EstateCapabilityOperation, EstateCapabilityPurpose,
@@ -43,10 +44,14 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
     let action = delegated_action(DelegationLimit::generations(1));
     let idempotency = idempotency(91);
 
-    let first = fixture
-        .runtime
-        .delegate_estate_capability_with_key(&principal, action, &idempotency, &request_scope())
-        .expect("Query must activate the exact narrowed child");
+    let first = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &principal,
+        action,
+        &idempotency,
+        &request_scope(),
+    )
+    .expect("Query must activate the exact narrowed child");
     let BankMutationCommitOutcome::Committed(receipt) = &first else {
         panic!("unexpected delegation outcome: {first:?}");
     };
@@ -59,24 +64,27 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
     assert_eq!(canonical.execution().digest_derivations(), 1);
     assert_eq!(canonical.execution().canonical_entries(), 61);
 
-    let retry = fixture
-        .runtime
-        .delegate_estate_capability_with_key(&principal, action, &idempotency, &request_scope())
-        .expect("the exact delegation retry must recover the first commit");
+    let retry = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &principal,
+        action,
+        &idempotency,
+        &request_scope(),
+    )
+    .expect("the exact delegation retry must recover the first commit");
     let BankMutationCommitOutcome::AlreadyCommitted(recovered) = &retry else {
         panic!("the exact delegation retry must recover the first commit: {retry:?}");
     };
     assert_admission_derives_the_request_identities_once(recovered.canonical_work().admission());
 
-    let drift = fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &principal,
-            delegated_action_for(DRIFTED_CHILD, DelegationLimit::generations(1)),
-            &idempotency,
-            &request_scope(),
-        )
-        .expect("proposal drift is a typed commit outcome");
+    let drift = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &principal,
+        delegated_action_for(DRIFTED_CHILD, DelegationLimit::generations(1)),
+        &idempotency,
+        &request_scope(),
+    )
+    .expect("proposal drift is a typed commit outcome");
     assert!(matches!(
         drift,
         BankMutationCommitOutcome::Denied {
@@ -109,15 +117,14 @@ fn public_delegation_creates_the_exact_narrowed_child_and_retries_idempotently()
 fn equal_or_wider_delegation_limit_is_denied_before_child_creation() {
     let fixture = delegation_world("capability-delegation-widening");
     let principal = fixture.authenticate();
-    let denial = fixture
-        .runtime
-        .delegate_estate_capability_with_key(
-            &principal,
-            delegated_action(DelegationLimit::generations(2)),
-            &idempotency(93),
-            &request_scope(),
-        )
-        .expect_err("a child must strictly reduce its downstream delegation limit");
+    let denial = crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
+        &principal,
+        delegated_action(DelegationLimit::generations(2)),
+        &idempotency(93),
+        &request_scope(),
+    )
+    .expect_err("a child must strictly reduce its downstream delegation limit");
     assert!(matches!(
         denial,
         crate::estate_progression::BankEstateProgressionDenial::Authorization(_)
@@ -155,18 +162,17 @@ fn revoking_the_exact_root_immediately_cuts_active_children_and_grandchildren() 
     governance_readback(&fixture, &approver);
     governance_readback(&fixture, &reviewer);
 
-    let revoked = fixture
-        .runtime
-        .revoke_estate_capability_with_key(
-            &specialist,
-            EstateAction::RevokeCapability {
-                estate: ESTATE,
-                grant: GRANT,
-            },
-            &idempotency(105),
-            &request_scope(),
-        )
-        .expect("the exact active root must revoke through the public Bank command");
+    let revoked = crate::estate_progression::delegation::command_courts::complete_revocation(
+        &fixture.runtime,
+        &specialist,
+        EstateAction::RevokeCapability {
+            estate: ESTATE,
+            grant: GRANT,
+        },
+        &idempotency(105),
+        &request_scope(),
+    )
+    .expect("the exact active root must revoke through the public Bank command");
     assert_committed(revoked);
 
     let replay = delegate(
@@ -277,7 +283,8 @@ fn delegate(
     action: EstateAction,
     idempotency: BankIdempotencyKey,
 ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-    fixture.runtime.delegate_estate_capability_with_key(
+    crate::estate_progression::delegation::command_courts::complete_delegation(
+        &fixture.runtime,
         principal,
         action,
         &idempotency,

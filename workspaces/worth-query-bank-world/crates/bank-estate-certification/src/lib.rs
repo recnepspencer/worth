@@ -5,7 +5,9 @@
 )]
 #![forbid(unsafe_code)]
 
+mod capability_command_outcome;
 mod estate_commands;
+pub use capability_command_outcome::EstateCapabilityCommandOutcome;
 mod estate_queries;
 mod estate_source_commands;
 mod estate_source_outcome;

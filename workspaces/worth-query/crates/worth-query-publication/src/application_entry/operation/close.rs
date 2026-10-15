@@ -25,28 +25,24 @@ pub struct WorthQueryClosedOperation {
 pub(super) fn terminal_outcome_can_close<D, R>(
     outcome: &WorthQueryApplicationMutationOutcome<D, R>,
 ) -> bool {
-    use worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted as Native;
-    matches!(
-        outcome,
+    match outcome {
+        WorthQueryApplicationMutationOutcome::Commit(posture) => {
+            super::native_publication::native_terminal_can_close(posture)
+        }
         WorthQueryApplicationMutationOutcome::AlreadyCommitted(_)
-            | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
-            | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
-            | WorthQueryApplicationMutationOutcome::DomainDenied(_)
-            | WorthQueryApplicationMutationOutcome::Cancelled
-            | WorthQueryApplicationMutationOutcome::DeadlineExceeded
-            | WorthQueryApplicationMutationOutcome::Commit(
-                Native::Denied(_)
-                    | Native::Cancelled
-                    | Native::TimedOut
-                    | Native::Stale(_)
-                    | Native::ProductStale(_)
-                    | Native::NoEffect(_)
-            )
-    )
+        | WorthQueryApplicationMutationOutcome::PreviouslyCommitted(_)
+        | WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift
+        | WorthQueryApplicationMutationOutcome::DomainDenied(_)
+        | WorthQueryApplicationMutationOutcome::Cancelled
+        | WorthQueryApplicationMutationOutcome::DeadlineExceeded => true,
+        _ => false,
+    }
 }
 
 impl WorthQueryClosedOperation {
-    pub(super) fn from_cleanup(receipt: WorthQueryOperationCleanupReceipt) -> Self {
+    pub(in crate::application_entry) fn from_cleanup(
+        receipt: WorthQueryOperationCleanupReceipt,
+    ) -> Self {
         Self {
             retired_component_count: receipt.retired_component_count(),
             managed: receipt.into_managed_receipt(),

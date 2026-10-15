@@ -21,10 +21,7 @@ use worth_query_host::facade::{
 };
 
 use super::BankEstateProgressionDenial;
-use crate::{
-    BankAuthenticatedPrincipal, BankCommitDenialKind, BankCommitDenialStage, BankIdentityRuntime,
-    BankMutationCommitOutcome,
-};
+use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 
 type AdmittedCapabilityRevocation = WorthQueryAdmittedApplicationOperation<
     BankSchema,
@@ -72,41 +69,31 @@ impl std::fmt::Display for BankCapabilityRevocationProjectionDenial {
 impl std::error::Error for BankCapabilityRevocationProjectionDenial {}
 
 impl BankIdentityRuntime {
-    pub fn revoke_estate_capability_with_key(
-        &self,
-
+    /// Retains one exact revocation command, including its original key and principal.
+    pub fn retain_estate_capability_revocation<'runtime>(
+        &'runtime self,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
-        key: &BankIdempotencyKey,
+        key: BankIdempotencyKey,
         request: &WorthQueryRequestScope,
-    ) -> Result<BankMutationCommitOutcome, BankEstateProgressionDenial> {
-        let grant = revocation_target_grant(action)?;
-        match self
-            .request(principal, request)
-            .execute_capability_revocation_in_program(
+    ) -> Result<super::BankRevocationCommand<'runtime>, super::BankRevocationCaptureFailure<'runtime>>
+    {
+        let prepare: super::BankRevocationPreparation<'runtime> =
+            Box::new(move |phase, admission| {
+                let grant = revocation_target_grant(action)?;
+                self.materialize_capability_revocation(phase, admission, grant)
+            });
+        self.request(principal, request)
+            .retain_capability_revocation_in_program(
                 self.application_program(),
                 BankPrincipalBinding::reference(),
                 RevokeEstateCapability::reference(),
                 RevokeEstateCapabilityOperation::reference(),
                 action,
                 key,
-                TypedMutationPreconditions::<
-                    BankSchema,
-                    RevokeEstateCapabilityOperation,
-                    EstateCase,
-                >::default(),
-                |phase, admission| self.materialize_capability_revocation(phase, admission, grant),
+                TypedMutationPreconditions::<BankSchema, RevokeEstateCapabilityOperation, EstateCase>::default(),
+                prepare,
             )
-        {
-            Ok(outcome) => Ok(outcome.into()),
-            Err(WorthQueryApplicationCapabilityRevocationDenial::IdempotencyIntentDrift) => {
-                Ok(BankMutationCommitOutcome::Denied {
-                    kind: BankCommitDenialKind::IdempotencyIntentDrift,
-                    stage: BankCommitDenialStage::Idempotency,
-                })
-            }
-            Err(denial) => Err(map_revocation_denial(denial)),
-        }
     }
 
     #[cfg(test)]
@@ -250,38 +237,5 @@ impl From<WorthQueryInvariantProjectionTraversalDenial>
         Self::Traversal(crate::BankInvariantProjectionTraversalDenial::from_query(
             denial.kind(),
         ))
-    }
-}
-
-fn map_revocation_denial(
-    denial: WorthQueryApplicationCapabilityRevocationDenial<BankEstateProgressionDenial>,
-) -> BankEstateProgressionDenial {
-    use WorthQueryApplicationCapabilityRevocationDenial as Query;
-    match denial {
-        Query::ExecutionRequest(cause) => BankEstateProgressionDenial::ApplicationEntry(
-            worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause),
-        ),
-        Query::Program(denial) => BankEstateProgressionDenial::ProgramAction(denial),
-        Query::ProgramMismatch => BankEstateProgressionDenial::ProgramMismatch,
-        Query::PrincipalBindingInstallation(denial) => {
-            BankEstateProgressionDenial::PrincipalBindingInstallation(denial)
-        }
-        Query::CapabilityInstallation(denial) => {
-            BankEstateProgressionDenial::from_capability_installation(denial)
-        }
-        Query::OperationInstallation(denial) => {
-            BankEstateProgressionDenial::from_operation_installation(denial)
-        }
-        Query::ProductSelection(denial) => {
-            BankEstateProgressionDenial::from_product_selection(denial)
-        }
-        Query::PrincipalResolution(denial) => {
-            BankEstateProgressionDenial::PrincipalResolution(denial)
-        }
-        Query::IdentityEncoding(denial) => BankEstateProgressionDenial::IdentityEncoding(denial),
-        Query::Authorization(denial) => BankEstateProgressionDenial::from_authorization(denial),
-        Query::Idempotency(denial) => BankEstateProgressionDenial::from_idempotency(denial),
-        Query::IdempotencyIntentDrift => BankEstateProgressionDenial::IdempotencyIntentDrift,
-        Query::Preparation(denial) => denial,
     }
 }
