@@ -909,16 +909,65 @@ an unchanged subject or a caller-supplied actor field.
 
 Every workflow spec explicitly declares `observation_policy()` and
 `actor_policy()`. `ApplicationWorkflowObservationPolicy::disabled()` closes the
-public discovery route. A governed read declaration currently receives
-`ObservationNotImplemented`; read/disclosure owners must be implemented before
-that declaration can grant an observable route. Actor capability enforcement is
-independent of this read gap. Public workflow views never serve as permission.
+public discovery route. Governed original-intent reads enter through the
+principal-bearing retained request described below. The older definition-discovery
+entrance remains closed with `ObservationNotImplemented`; a declaration alone
+cannot open it. Actor capability enforcement is independent of read disclosure.
+Public workflow views never serve as permission.
 
 Current workflow layouts and portable definitions admit only their current
 actor and policy contracts. Unsupported predecessors are refused intact before
 old native authority is interpreted; callers cannot supply actor backfill or
 select an old condition decoder.
 
+
+## Governed original-intent reads
+
+The unreleased original-intent read surface owns one exact data observation while
+using fresh current read authority. Its source is implemented; joined compilation,
+runtime certification and the remaining discovery routes are still pending.
+
+Retain `prepared.discovery_intent()` before executing an authentic workflow start.
+The opaque value is original creation intent, so keeping it across requests does
+not retain an actor, credential or read grant. Choose the data explicitly with
+`request.at(&observation)`; supply actual domain inputs to the installed subject
+and audit bindings.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let original = prepared.discovery_intent();
+let started = prepared.execute();
+let data = runtime.request(&principal, &scope).retain_current_read()?;
+let found = runtime.request(&fresh_principal, &fresh_scope).at(&data)
+    .read_original_workflow::<ReviewWorkflow, SubjectRead, AuditRead>(
+        workflow.vocabulary(), &original, subject_input, audit_input,
+    )?;
+```
+
+`Live` carries a freshly located `PublishedWorkflowInstanceRef` and a view.
+`Historical` carries the recorded state and a historical posture, without a live
+command locator. Authorized `Missing` still owns its exact read basis. None of
+these outcomes authorizes an advance or approval. Those commands admit afresh.
+
+For a reviewer reopening an older observation after an audit grant is revoked,
+the base subject read can still report the old state and recorded paths. Audit
+returns `Withheld` under a genuine permission refusal. Revoking the subject grant
+refuses the entire read, even though the application still owns the old data
+observation. Cancellation, unavailable bases and resource failures remain typed
+errors; they are not converted to missing records or audit withholding.
+
+The isolated Document Retention governed-read court exercises the real original
+start, separate subject/audit grants and native grant revocation. It also asserts
+that read-only history does not change the workflow progress cache or branch
+head, and that an unrelated cold equality index stays unpublished. This authored
+court has not yet run. Full definition enumeration, proposal/approval views,
+paging, live marking and broader lifecycle certification remain unfinished.
+
+Actor values are historical identities with full generations, disclosed only
+after the separate audit gate. No authorization snapshot or external identity
+credential is returned. Keep discovery intent rather than rebuilding private
+start digests or treating an application status table as native workflow truth.
 
 ## Navigate back
 
@@ -976,9 +1025,9 @@ until a row is removed, its "Do not" rule stands and no substitute may be built.
 
 | Gap | What exists today | Do not |
 |---|---|---|
-| No facade read of a workflow instance's state or history (current node, transitions, proposals, approvals) | Only the typed outcomes your own requests return: `PerformedWorkflowTransition`, `PerformedWorkflowApproval` (`approver()`), `Awaiting*`; idempotent replay of the same key returns the recorded outcome | Do not mirror kernel state into your schema as truth or use a status table to decide whether to advance. Advance and match the typed outcome. |
-| Instance and proposal references cannot be rebuilt in another process (`PublishedWorkflowInstanceRef` / `PublishedWorkflowProposalRef` have no public constructor or serialization; no instance discovery) | Keep the references in the process that owns the instance | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
-| Proposal and transition records do not retain the acting principal (approvals do retain the approver) | Capability separation-of-duty / distinct-actor rules exist but cannot see the proposer | Do not treat a caller-supplied "actor" field in input as admitted identity. |
+| Broader workflow discovery and state/history views | The unreleased original-intent retained-read surface above exposes native state and recorded paths, with independent audit withholding; its joined compilation/runtime certification is pending. Enumeration, proposals/approvals and live views remain unfinished. | Views never authorize advancement. Do not mirror kernel state into your schema as authority; use fresh native command admission. |
+| Proposal reacquisition and subject/definition enumeration remain unfinished (published references have no public constructor or serialization) | Keep the original native discovery intent for exact governed instance lookup; preserve proposal references until their governed reacquisition lands | Do not serialize, forge, or re-derive references; do not build an instance registry and treat it as authority. |
+| Full proposal/approval audit observation and recorded-role certification remain unfinished | The original-intent read uses canonical native actor fields under a separate audit grant; the new source surface still awaits joined certification | Do not supply an actor field or resolve a current logical identity to replace the historical native actor. |
 | No outcome names "awaiting a proposal" | `PreparationDenied(WorkflowTransitionNodeUnsupported)` with the node path | Do not treat it as a fault to retry blindly. |
 
 ## Cancellation

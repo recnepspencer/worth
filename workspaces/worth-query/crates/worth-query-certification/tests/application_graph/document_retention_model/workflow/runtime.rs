@@ -63,9 +63,23 @@ pub fn install_workflow_spec<Program>(
 where
     Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
 {
+    install_workflow_spec_for::<Program, ReviewedDocumentWorkflow>(schema, program, resources)
+}
+
+pub(super) fn install_workflow_spec_for<Program, Spec>(
+    schema: &WorthQueryInstalledApplicationSchema<DocumentRetentionSchema>,
+    program: &WorthQueryInstalledApplicationProgram<DocumentRetentionSchema, Program>,
+    resources: WorthQueryApplicationWorkflowResourceCeiling,
+) -> WorthQueryInstalledApplicationWorkflowSpec<DocumentRetentionSchema, Spec>
+where
+    Program: ApplicationProgramDefinition<DocumentRetentionSchema>,
+    Spec: worth_query_host::facade::declaration::application_program::ApplicationWorkflowSpec<
+        Schema = DocumentRetentionSchema,
+    >,
+{
     WorthQueryApplicationWorkflowSpecInstallation::<
         DocumentRetentionSchema,
-        ReviewedDocumentWorkflow,
+        Spec,
         Program,
     >::begin(schema, program, resources)
     .operation::<WorkflowDefinitionAuthoringBinding>()
@@ -114,7 +128,7 @@ where
         .expect("the vocabulary belongs to a rostered program");
 }
 
-fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
+pub(super) fn workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling {
     WorthQueryApplicationWorkflowResourceCeiling::new(
         32,
         64,

@@ -11,7 +11,11 @@ pub(in crate::domain_computation::primary_graph) use workflow::{
     current_definition, WorkflowDefinitionCurrentness,
 };
 pub use workflow::{
-    WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial,
+    WorthQueryWorkflowAudit, WorthQueryWorkflowDefinitionDiscovery,
+    WorthQueryWorkflowDefinitionDiscoveryDenial, WorthQueryWorkflowHistoricalPosture,
+    WorthQueryWorkflowInstanceRead, WorthQueryWorkflowObservation, WorthQueryWorkflowObservedState,
+    WorthQueryWorkflowReadBasis, WorthQueryWorkflowReadDenial, WorthQueryWorkflowRecordedActor,
+    WorthQueryWorkflowTransitionActors,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaMember,

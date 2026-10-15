@@ -12,6 +12,7 @@ pub(super) fn instance_identity<Schema>(
 ) -> Result<WorthQueryWorkflowInstanceDiscoveryIntent<Schema>, ()> {
     WorthQueryWorkflowInstanceDiscoveryIntent::from_canonical(
         subject,
+        *compiled.program_revision(),
         identity(compiled, subject, start_key_identity, Vec::new())?,
     )
 }
@@ -43,6 +44,7 @@ pub(super) fn migration_identity<Schema>(
     material.extend(fork.map(|occurrence| ("continuation.fork", occurrence.to_string())));
     WorthQueryWorkflowInstanceDiscoveryIntent::from_canonical(
         subject,
+        *resumed.program_revision(),
         identity(resumed, subject, start_key_identity, material)?,
     )
 }

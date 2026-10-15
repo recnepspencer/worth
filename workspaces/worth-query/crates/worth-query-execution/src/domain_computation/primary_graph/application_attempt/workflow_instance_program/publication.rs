@@ -40,6 +40,27 @@ pub struct PublishedWorkflowInstanceRef {
 }
 
 impl PublishedWorkflowInstanceRef {
+    /// Native governed reader validates occurrence/definition/current admission separately.
+    /// The original native intent supplies the immutable start revision.
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn observed_current(
+        branch: crate::basis::WorthQueryProductBranch,
+        entity_id: worth_relational::facade::identity::EntityId,
+        definition: worth_relational::facade::identity::EntityId,
+        definition_content_identity: ApplicationWorkflowDefinitionContentIdentity,
+        program_revision: ApplicationProgramRevision,
+        start_path: String,
+    ) -> Self {
+        Self {
+            branch,
+            started_on: branch,
+            entity_id,
+            definition,
+            definition_content_identity,
+            program_revision,
+            start_path,
+        }
+    }
+
     pub const fn branch(&self) -> crate::basis::WorthQueryProductBranch {
         self.branch
     }

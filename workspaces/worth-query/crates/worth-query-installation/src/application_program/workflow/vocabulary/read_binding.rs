@@ -77,6 +77,17 @@ where
                 ApplicationOperationRef::<Schema, B::Operation, B::Input>::from_declaration(),
             )
             .map_err(|_| invalid())?;
+        // This read entrance supplies independent domain context, never a command role binding.
+        if capability
+            .contract()
+            .composition()
+            .actors()
+            .recorded_actor()
+            .requirement()
+            .is_some()
+        {
+            return Err(invalid());
+        }
         Ok(WorthQueryInstalledWorkflowReadBinding {
             workflow: self,
             route,

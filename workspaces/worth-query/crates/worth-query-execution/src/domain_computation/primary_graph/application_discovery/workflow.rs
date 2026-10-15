@@ -5,10 +5,14 @@
 
 mod admission;
 pub(in crate::domain_computation::primary_graph) use admission::{
-    admit as admit_workflow_read, WorkflowReadAdmissionDenial,
+    admit as admit_workflow_read, WorthQueryWorkflowReadDenial as WorkflowReadAdmissionDenial,
 };
 mod audit;
 mod original_intent;
+mod read;
+mod view;
+pub use admission::WorthQueryWorkflowReadDenial;
+pub use view::*;
 
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_declaration::facade::application_program::{

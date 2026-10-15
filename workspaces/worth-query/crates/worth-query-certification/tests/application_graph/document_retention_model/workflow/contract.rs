@@ -313,7 +313,7 @@ fn contract() -> ApplicationCapabilityContract<
     .build()
 }
 
-fn composition() -> ApplicationCapabilityComposition {
+pub(super) fn composition() -> ApplicationCapabilityComposition {
     let allow = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(WorkflowDocumentOwner::reference())
         .allow(Document::reference());

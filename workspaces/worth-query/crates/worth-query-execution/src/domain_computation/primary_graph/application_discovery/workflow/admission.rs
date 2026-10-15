@@ -18,8 +18,10 @@ use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 
 /// No absence/status payload is carried by an admission refusal.
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) enum WorkflowReadAdmissionDenial {
+pub enum WorthQueryWorkflowReadDenial {
     PolicyMismatch,
+    Installation(worth_query_installation::facade::WorthQueryApplicationWorkflowInstallationDenial),
+    Allocation(worth_execution::ExecutionAllocationDenial),
     Preparation(worth_relational::facade::mvcc::CompanionPreflightStop),
     Index(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind),
     SelectedIndexUnavailable,
@@ -43,14 +45,14 @@ pub(in crate::domain_computation::primary_graph) fn admit<Schema, Spec, B>(
     admission: &mut InvalidationEditAdmission,
 ) -> Result<
     WorthQueryAdmittedApplicationCapabilityAccess<Schema, B::Capability, B::Operation, B::Input>,
-    WorkflowReadAdmissionDenial,
+    WorthQueryWorkflowReadDenial,
 >
 where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
     B: ApplicationWorkflowReadBinding<Schema>,
 {
-    use WorkflowReadAdmissionDenial as Denial;
+    use WorthQueryWorkflowReadDenial as Denial;
     // This inspects installed activation metadata only, never workflow instances or indexes.
     let program = selected
         .inspect_selected_program()

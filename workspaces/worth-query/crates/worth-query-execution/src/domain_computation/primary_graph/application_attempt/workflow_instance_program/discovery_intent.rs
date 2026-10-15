@@ -28,7 +28,7 @@ mod committed_observation;
 /// ```compile_fail,E0624
 /// use worth_query_execution::publication_boundary::workflow_instance::WorthQueryWorkflowInstanceDiscoveryIntent;
 /// fn forge<S>() -> WorthQueryWorkflowInstanceDiscoveryIntent<S> {
-///     WorthQueryWorkflowInstanceDiscoveryIntent::from_canonical(todo!(), todo!()).unwrap()
+///     WorthQueryWorkflowInstanceDiscoveryIntent::from_canonical(todo!(), todo!(), todo!()).unwrap()
 /// }
 /// ```
 /// Distinct schema identities cannot be substituted.
@@ -42,12 +42,15 @@ pub struct WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
     identity_text: [u8; 64],
     intent_identity: [u8; 32],
     subject: EntityId,
+    original_start_revision:
+        worth_query_declaration::facade::application_program::ApplicationProgramRevision,
     schema: PhantomData<fn() -> Schema>,
 }
 
 impl<Schema> WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
     pub(super) fn from_canonical(
         subject: EntityId,
+        original_start_revision: worth_query_declaration::facade::application_program::ApplicationProgramRevision,
         (text, intent_identity): (String, [u8; 32]),
     ) -> Result<Self, ()> {
         let identity_text: [u8; 64] = text.as_bytes().try_into().map_err(|_| ())?;
@@ -61,6 +64,7 @@ impl<Schema> WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
             identity_text,
             intent_identity,
             subject,
+            original_start_revision,
             schema: PhantomData,
         })
     }
@@ -71,6 +75,13 @@ impl<Schema> WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
 
     pub(in crate::domain_computation::primary_graph) const fn subject_entity_id(&self) -> EntityId {
         self.subject
+    }
+
+    /// Native producer metadata already bound into the unchanged canonical digest.
+    pub(in crate::domain_computation::primary_graph) const fn original_start_revision(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramRevision {
+        &self.original_start_revision
     }
 
     pub(super) const fn intent_identity(&self) -> &[u8; 32] {
@@ -84,6 +95,7 @@ impl<Schema> Clone for WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
             identity_text: self.identity_text,
             intent_identity: self.intent_identity,
             subject: self.subject,
+            original_start_revision: self.original_start_revision,
             schema: PhantomData,
         }
     }
@@ -94,6 +106,7 @@ impl<Schema> PartialEq for WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
         self.identity_text == other.identity_text
             && self.intent_identity == other.intent_identity
             && self.subject == other.subject
+            && self.original_start_revision == other.original_start_revision
     }
 }
 

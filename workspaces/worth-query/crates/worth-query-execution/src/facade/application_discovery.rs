@@ -2,6 +2,10 @@
 pub use crate::domain_computation::primary_graph::application_discovery::{
     WorthQueryApplicationCallablePosture, WorthQueryApplicationDiscovery,
     WorthQueryApplicationFieldDescription, WorthQueryApplicationMutationDescription,
-    WorthQueryApplicationQueryDescription, WorthQueryWorkflowDefinitionDiscovery,
-    WorthQueryWorkflowDefinitionDiscoveryDenial,
+    WorthQueryApplicationQueryDescription, WorthQueryWorkflowAudit,
+    WorthQueryWorkflowDefinitionDiscovery, WorthQueryWorkflowDefinitionDiscoveryDenial,
+    WorthQueryWorkflowHistoricalPosture, WorthQueryWorkflowInstanceRead,
+    WorthQueryWorkflowObservation, WorthQueryWorkflowObservedState, WorthQueryWorkflowReadBasis,
+    WorthQueryWorkflowReadDenial, WorthQueryWorkflowRecordedActor,
+    WorthQueryWorkflowTransitionActors,
 };

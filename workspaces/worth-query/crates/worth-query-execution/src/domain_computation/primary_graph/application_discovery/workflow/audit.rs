@@ -13,6 +13,9 @@ pub(super) fn permission_withheld(cause: &Denial) -> bool {
                 Kind::Refused(
                     Refusal::PermissionDenied
                         | Refusal::CapabilityGrantMissing
+                        | Refusal::CapabilityExpired
+                        | Refusal::PurposeMismatch
+                        | Refusal::ScopeMismatch
                         | Refusal::ExplicitDenyRuleMatched
                         | Refusal::ConflictRuleMatched
                         | Refusal::SeparationOfDutyRuleMatched
@@ -22,7 +25,7 @@ pub(super) fn permission_withheld(cause: &Denial) -> bool {
         })
 }
 
-use super::admission::{admit, WorkflowReadAdmissionDenial};
+use super::admission::{admit, WorthQueryWorkflowReadDenial as WorkflowReadAdmissionDenial};
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::InvalidationEditAdmission;
 use crate::domain_computation::primary_graph::{
@@ -107,4 +110,62 @@ where
         return Err(WorkflowReadAdmissionDenial::PolicyMismatch);
     }
     Ok(Some(audit))
+}
+
+/// No actor reader is reachable before the matched independent audit gate.
+pub(super) fn observe<Schema, Spec, Subject, Audit>(
+    current: &WorthQuerySelectedProductOperation<'_, Schema>,
+    target: &super::original_intent::OriginalWorkflowCandidate<'_, '_, Schema>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    subject_binding: &WorthQueryInstalledWorkflowReadBinding<'_, Schema, Spec, Subject>,
+    subject: &WorthQueryAdmittedApplicationCapabilityAccess<
+        Schema,
+        Subject::Capability,
+        Subject::Operation,
+        Subject::Input,
+    >,
+    audit_binding: Option<&WorthQueryInstalledWorkflowReadBinding<'_, Schema, Spec, Audit>>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    input: Audit::Input,
+    request: &WorthQueryRequestScope,
+    admission: &mut InvalidationEditAdmission,
+    history:&crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ReadOnlyWorkflowHistory,
+) -> Result<super::view::WorthQueryWorkflowAudit, WorkflowReadAdmissionDenial>
+where
+    Schema: ApplicationSchema,
+    Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    Subject: ApplicationWorkflowReadBinding<Schema>,
+    Audit: ApplicationWorkflowReadBinding<Schema>,
+{
+    use super::view::WorthQueryWorkflowAudit;
+    let Some(binding) = audit_binding else {
+        return Ok(WorthQueryWorkflowAudit::Withheld);
+    };
+    let Some(_audit) = admit_audit(
+        current,
+        target,
+        phase,
+        subject_binding,
+        subject,
+        binding,
+        principal,
+        input,
+        request,
+        admission,
+    )?
+    else {
+        return Ok(WorthQueryWorkflowAudit::Withheld);
+    };
+    let execution = phase
+        .execution_request_for(&current.application().product_runtime)
+        .map_err(WorkflowReadAdmissionDenial::Phase)?;
+    let graph = current
+        .application()
+        .runtime
+        .primary_graph()
+        .ok_or(WorkflowReadAdmissionDenial::BasisUnavailable)?;
+    graph.integration_handle().with_runtime(&execution,|runtime| {
+        crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::audit::observe(
+            &execution,runtime,target.data.application_basis().snapshot_handle(),graph.layout().workflow(),target.instance,history)
+    })
 }
