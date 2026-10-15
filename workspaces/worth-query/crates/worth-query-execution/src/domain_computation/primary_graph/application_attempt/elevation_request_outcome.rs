@@ -66,23 +66,23 @@ impl WorthQueryRequestedElevation {
         self.binding.grant()
     }
 
-    pub const fn action(&self) -> &AspectValue {
+    pub fn action(&self) -> &AspectValue {
         self.binding.upper_bound().action()
     }
 
-    pub const fn purpose(&self) -> &AspectValue {
+    pub fn purpose(&self) -> &AspectValue {
         self.binding.upper_bound().purpose()
     }
 
-    pub const fn field(&self) -> Option<&AspectValue> {
+    pub fn field(&self) -> Option<&AspectValue> {
         self.binding.upper_bound().field()
     }
 
-    pub const fn magnitude(&self) -> Option<&AspectValue> {
+    pub fn magnitude(&self) -> Option<&AspectValue> {
         self.binding.upper_bound().magnitude()
     }
 
-    pub const fn cardinality(&self) -> u32 {
+    pub fn cardinality(&self) -> u32 {
         self.binding.upper_bound().cardinality()
     }
 
