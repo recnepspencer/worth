@@ -69,3 +69,21 @@ where
         action
     }
 }
+
+/// Sealed typed occurrence whose declared output root is genuinely discovered.
+pub trait ApplicationDiscoveredAction<S, B>: ApplicationAction<S, B>
+where
+    S: ApplicationSchema,
+    B: ApplicationMutationBinding<S>,
+    Self::Delivery: super::ApplicationDiscoveredActionDelivery<S, B>,
+{
+}
+impl<S, I, F, B, D> ApplicationDiscoveredAction<S, B> for ApplicationActionReference<S, I, F, B, D>
+where
+    S: ApplicationSchema,
+    I: ApplicationCompositionInstance,
+    F: ApplicationFeature<S>,
+    B: ApplicationMutationBinding<S>,
+    D: super::ApplicationDiscoveredActionDelivery<S, B>,
+{
+}

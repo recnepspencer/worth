@@ -14,7 +14,7 @@ pub use source_only::{
 };
 mod construction;
 mod projection_installation;
-pub use projection_installation::WorthQueryFixedProjectionInstallation;
+pub use projection_installation::WorthQueryOutputProjectionInstallation;
 mod batch_delivery;
 mod current_delivery;
 mod delivery_policy;

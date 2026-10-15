@@ -1,4 +1,4 @@
-//! Closed fixed delivery projection shapes derive installed read meaning.
+//! Closed output delivery projection shapes derive installed read meaning.
 use crate::{
     application_query::{ApplicationQueryBinding, ApplicationQueryBindingDescriptor},
     application_schema::ApplicationSchema,
@@ -17,14 +17,14 @@ impl sealed::Projection for ApplicationNoProjection {}
 impl<Q> sealed::Projection for ApplicationQueryProjection<Q> {}
 impl<Q, const N: usize> sealed::Projection for ApplicationQueryBatchProjection<Q, N> {}
 /// Sealed projection shapes contribute their actual query descriptor, if any.
-pub trait ApplicationFixedProjection<S: ApplicationSchema>: sealed::Projection + 'static {
+pub trait ApplicationOutputProjection<S: ApplicationSchema>: sealed::Projection + 'static {
     fn descriptor() -> Option<ApplicationQueryBindingDescriptor>;
     fn batch_items() -> Option<usize> {
         None
     }
 }
 impl<S: ApplicationSchema, Q: ApplicationQueryBinding<S> + 'static, const N: usize>
-    ApplicationFixedProjection<S> for ApplicationQueryBatchProjection<Q, N>
+    ApplicationOutputProjection<S> for ApplicationQueryBatchProjection<Q, N>
 {
     fn descriptor() -> Option<ApplicationQueryBindingDescriptor> {
         Some(Q::descriptor())
@@ -33,12 +33,12 @@ impl<S: ApplicationSchema, Q: ApplicationQueryBinding<S> + 'static, const N: usi
         Some(N)
     }
 }
-impl<S: ApplicationSchema> ApplicationFixedProjection<S> for ApplicationNoProjection {
+impl<S: ApplicationSchema> ApplicationOutputProjection<S> for ApplicationNoProjection {
     fn descriptor() -> Option<ApplicationQueryBindingDescriptor> {
         None
     }
 }
-impl<S: ApplicationSchema, Q: ApplicationQueryBinding<S> + 'static> ApplicationFixedProjection<S>
+impl<S: ApplicationSchema, Q: ApplicationQueryBinding<S> + 'static> ApplicationOutputProjection<S>
     for ApplicationQueryProjection<Q>
 {
     fn descriptor() -> Option<ApplicationQueryBindingDescriptor> {
