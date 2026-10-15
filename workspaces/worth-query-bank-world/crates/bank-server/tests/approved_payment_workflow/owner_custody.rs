@@ -60,7 +60,8 @@ fn owner_remains_pending(ready: &ReadyPaymentWorld, command_key: &str) {
         .runtime
         .approved_business_payment(&ready.principal, &ready.scope);
     let denied = workflow
-        .accept_applied(
+        .advanced()
+        .accept_native_effect(
             ready.instance.clone(),
             &ready.operation,
             ready.authority.clone(),

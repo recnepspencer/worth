@@ -74,7 +74,8 @@ impl ReadyPaymentWorld {
             .world
             .runtime
             .approved_business_payment(&self.principal, &self.scope)
-            .perform_apply(
+            .advanced()
+            .execute_operation(
                 self.instance.clone(),
                 &self.operation,
                 self.authority.clone(),

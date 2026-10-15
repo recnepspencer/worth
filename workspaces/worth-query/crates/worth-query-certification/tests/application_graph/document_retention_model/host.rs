@@ -362,3 +362,9 @@ pub fn host_limits() -> WorthQueryInMemoryApplicationLimits {
         primary_graph::SignalConditionalEvaluationBudget::development(),
     )
 }
+
+#[path = "host/owning_workflow.rs"]
+mod owning_workflow;
+pub use owning_workflow::{
+    publish_owner_workflow, publish_owner_workflow_with_projection, read_owner_approval_grant,
+};

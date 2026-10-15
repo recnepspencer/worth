@@ -11,7 +11,11 @@ use super::super::{
 use super::{WorkflowAdvanceInput, WorkflowAdvanceIntent};
 
 pub fn run_instance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     instance: PublishedWorkflowInstanceRef,
     keys: &[u64],
 ) -> WorthQueryOrdinaryWorkflowRunProgress {

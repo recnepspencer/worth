@@ -69,11 +69,11 @@ pub use recovery_progression::{
     safe_retry_recovery_handle, WorthQueryAdmittedIdempotencyRead,
     WorthQueryPerformedExternalRedispatch, WorthQueryRecoveryCompensateAdmission,
     WorthQueryRecoveryCurrentDecision, WorthQueryRecoveryDisclosureAdmission,
-    WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryEffectAuthority,
-    WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation,
-    WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryInspectionView,
-    WorthQueryRecoveryReconcileAdmission, WorthQueryRecoverySafeRetryAdmission,
-    WorthQueryRecoverySafeRetryDenial,
+    WorthQueryRecoveryDisposalDenial, WorthQueryRecoveryDisposalReceipt,
+    WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryExpiryDecision,
+    WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryInspectAuthority,
+    WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
+    WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
 };
 pub use redo_admission::WorthQueryRedoAdmission;
 pub use redo_denial::{WorthQueryRedoDenial, WorthQueryRedoDenialKind};

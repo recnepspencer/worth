@@ -32,7 +32,11 @@ worth_query_application_contribution! {
                 .operation_read_field(SetRetention::reference(), DocumentRetentionField::reference())
                 .operation_write(SetRetention::reference(), DocumentRetentionField::reference())
                 .operation_expected_fact(SetRetention::reference(), DocumentIdentityField::reference())
-                .application_mutation_binding::<SetRetentionBinding>().application_query_binding::<super::readback::ReadBinding>()
+                .application_mutation_binding::<SetRetentionBinding>()
+                .application_mutation_binding::<super::workflow::bindings::GuardedBinding>()
+                .application_mutation_binding::<super::workflow::bindings::ControlBinding>()
+                .application_mutation_binding::<super::workflow::bindings::StartBinding>()
+                .application_mutation_binding::<super::workflow::bindings::AdvanceBinding>().application_query_binding::<super::readback::ReadBinding>()
                 .application_query(super::readback::definition())
         }
     }

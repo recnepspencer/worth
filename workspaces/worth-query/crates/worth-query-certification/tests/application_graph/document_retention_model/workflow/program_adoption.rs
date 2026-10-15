@@ -25,7 +25,11 @@ pub type WorkflowDecision<'decide> =
     &'decide dyn Fn(&WorthQueryWorkflowAdoptionInventory) -> WorthQueryWorkflowDispositions;
 
 pub fn second_program_workflow_inventory(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     branch: WorthQueryProductBranch,
 ) -> WorthQueryWorkflowAdoptionInventory {
     let target = second_revision(application);
@@ -46,7 +50,11 @@ pub fn second_program_workflow_inventory(
 
 /// Prepares the move to P1, deciding the fresh inventory when `decide` is set.
 pub fn prepare_second_program_adoption(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     branch: WorthQueryProductBranch,
     decide: Option<WorkflowDecision<'_>>,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryApplicationProgramAdoptionPreparationDenial>
@@ -76,7 +84,11 @@ pub fn prepare_second_program_adoption(
 }
 
 pub fn publish_adoption(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
     prepared: Result<
         WorthQueryPreparedBranchAdoption,
         WorthQueryApplicationProgramAdoptionPreparationDenial,
@@ -94,7 +106,13 @@ pub fn publish_adoption(
     }
 }
 
-pub fn second_revision(application: &DocumentWorkflowRuntime) -> ApplicationProgramRevision {
+pub fn second_revision(
+    application: &DocumentWorkflowRuntime<
+        impl worth_query_host::facade::declaration::application_program::ApplicationProgramDefinition<
+            crate::document_retention_model::schema::DocumentRetentionSchema,
+        >,
+    >,
+) -> ApplicationProgramRevision {
     *application
         .supported_program::<RetentionProgramP1>()
         .expect("P1 is rostered")

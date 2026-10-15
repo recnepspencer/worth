@@ -19,11 +19,21 @@ impl Contacts {
     }
 }
 pub struct RetentionHandler(pub Arc<Contacts>);
-impl OperationHandler<CapabilitySchema, SetRetentionBinding> for RetentionHandler {
+impl<B> OperationHandler<CapabilitySchema, B> for RetentionHandler
+where
+    B: ApplicationMutationBinding<
+        CapabilitySchema,
+        Input = SetRetentionInput,
+        Decision = WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
+        Denial = SetRetentionDenial,
+        Result = DocumentRetentionWritten,
+        Operation = SetRetention,
+    >,
+{
     fn decide(
         &self,
         input: &SetRetentionInput,
-        reader: &mut DecisionReader<'_, '_, '_, CapabilitySchema, SetRetentionBinding>,
+        reader: &mut DecisionReader<'_, '_, '_, CapabilitySchema, B>,
     ) -> HandlerResult<
         WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
         SetRetentionDenial,
@@ -55,13 +65,13 @@ impl OperationHandler<CapabilitySchema, SetRetentionBinding> for RetentionHandle
         _: &SetRetentionInput,
         _: &WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
     ) -> ApplicationCandidateRequirements {
-        SetRetentionBinding::CANDIDATES
+        B::CANDIDATES
     }
     fn build_candidate(
         &self,
         input: &SetRetentionInput,
         target: WorthQueryInvariantMutationTarget<CapabilitySchema, Document>,
-        writer: &mut CandidateWriter<'_, CapabilitySchema, SetRetentionBinding>,
+        writer: &mut CandidateWriter<'_, CapabilitySchema, B>,
     ) -> HandlerResult<DocumentRetentionWritten, SetRetentionDenial> {
         self.0.candidate.fetch_add(1, Ordering::Relaxed);
         let document = match writer.projected_entity(&target) {

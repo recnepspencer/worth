@@ -1,8 +1,8 @@
-//! Restricted ordinary delegation to the existing native recovery owner.
+//! Explicit advanced control of the existing native recovery owner.
 use super::*;
 
 impl<'application, 'principal, 'scope, 'key, Schema, Intent, SourcePreparation>
-    super::super::WorthQueryBoundWorkflowOperation<
+    super::super::WorthQueryAdvancedWorkflowOperation<
         'application,
         'principal,
         'scope,

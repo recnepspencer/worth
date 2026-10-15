@@ -24,3 +24,6 @@ pub use payment_actions::*;
 
 pub use deployment_actions::*;
 pub use estate_actions::*;
+
+mod workflow_actions;
+pub use workflow_actions::*;

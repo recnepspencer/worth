@@ -40,6 +40,7 @@ fn a_workflow_operation_encodes_its_input_once_whether_it_commits_or_replays() {
             .idempotency(&2_312_u64)
             .for_workflow_operation(&application, &required)
             .expect("the exact proposed operation binds")
+            .advanced()
             .execute_in_program(
                 application.program_runtime(),
                 worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

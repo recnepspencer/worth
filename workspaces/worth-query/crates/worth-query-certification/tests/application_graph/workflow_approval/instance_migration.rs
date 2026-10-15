@@ -275,6 +275,7 @@ pub(super) fn perform_approved_effect(
         .idempotency(&(key + 1))
         .for_workflow_operation(application, &required)
         .expect("the effect request matches the operation requirement")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

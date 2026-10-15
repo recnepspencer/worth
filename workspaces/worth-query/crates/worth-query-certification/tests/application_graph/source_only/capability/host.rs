@@ -14,8 +14,8 @@ use worth_query_host::facade::{
     application_installation::*, declaration::application_program::*,
     declaration::authentication::*, primary_graph::*,
 };
-pub struct Host {
-    pub application: WorthQueryProgramApplicationRuntime<CapabilitySchema, Program>,
+pub struct Host<P = Program> {
+    pub application: WorthQueryProgramApplicationRuntime<CapabilitySchema, P>,
     pub contacts: Arc<Contacts>,
     pub projection: WorthQueryApplicationInvariantProjectionAuthority<CapabilitySchema>,
 }
@@ -25,7 +25,8 @@ impl WorthQueryApplicationContribution<CapabilitySchema> for CapabilityContribut
         contacts: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, CapabilitySchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<SetRetentionBinding, _>(RetentionHandler(contacts))
+        setup.handler::<SetRetentionBinding, _>(RetentionHandler(contacts.clone()))?;
+        setup.handler::<super::workflow::bindings::GuardedBinding, _>(RetentionHandler(contacts))
     }
 }
 struct Adapter;
@@ -64,8 +65,8 @@ impl WorthQueryAuthenticationAdapter for Adapter {
         })
     }
 }
-pub fn authenticate(
-    host: &Host,
+pub fn authenticate<P>(
+    host: &Host<P>,
     actor: u64,
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<CapabilitySchema> {
@@ -82,10 +83,21 @@ pub fn authenticate(
         .unwrap()
 }
 pub fn install() -> Host {
+    install_program::<Program>(false)
+}
+pub fn install_program<
+    P: ApplicationProgramDefinition<
+        CapabilitySchema,
+        Contributions = (CapabilityContribution,),
+        Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>,
+    >,
+>(
+    workflow: bool,
+) -> Host<P> {
     let contacts = Arc::new(Contacts::default());
     let mut projection = None;
     let application = in_memory_rostered_program(
-        ApplicationProgramAuthoring::<CapabilitySchema, Program>::begin()
+        ApplicationProgramAuthoring::<CapabilitySchema, P>::begin()
             .validated_program()
             .unwrap(),
         WorthQueryApplicationProgramRoster::new(),
@@ -119,6 +131,9 @@ pub fn install() -> Host {
             )?;
             seed_grant(graph, "source-child", 1, 1)?;
             seed_grant(graph, "issuer-revoke", 2, 2)?;
+            if workflow {
+                seed_grant(graph, "workflow-advancer", 1, 2)?;
+            }
             Ok(())
         },
     )

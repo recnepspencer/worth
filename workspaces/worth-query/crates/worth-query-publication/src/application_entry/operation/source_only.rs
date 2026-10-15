@@ -8,6 +8,7 @@ use worth_query_execution::facade::primary_graph::{
 };
 
 mod advancement;
+pub(super) use advancement::Step as SourceStep;
 mod completion;
 mod entrance;
 mod native_posture;
@@ -38,9 +39,11 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    admission: WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
+    pub(in crate::application_entry) admission:
+        WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
     cleanup: WorthQueryOperationCleanup,
     state: SourceState<S, I>,
+    guarded_abort: Option<WorthQueryApplicationUncommitted>,
     keyed_terminal: Option<
         worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
     >,
@@ -194,6 +197,27 @@ where
             cleanup: Default::default(),
             state: SourceState::Initial,
             keyed_terminal: None,
+            guarded_abort: None,
         })
+    }
+}
+
+impl<
+        S: ApplicationSchema,
+        I: ApplicationMutationIntent<S>,
+        P: ApplicationProgramDefinition<S>,
+        A,
+        M,
+    > WorthQuerySourceOnlyOperation<S, I, P, A, M>
+{
+    pub(super) fn guarded_abort(&self) -> Option<&WorthQueryApplicationUncommitted> {
+        self.guarded_abort.as_ref()
+    }
+    pub(super) fn record_unresolved_advancement(
+        &mut self,
+        denial:worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    ) {
+        if matches!(denial,worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Panicked)
+            && matches!(self.state,SourceState::Initial|SourceState::RetryableNoEffect(_)) {self.state=SourceState::UnresolvedAdvancement(denial);}
     }
 }

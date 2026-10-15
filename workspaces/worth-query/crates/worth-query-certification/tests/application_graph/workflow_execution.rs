@@ -133,6 +133,7 @@ fn execute(
         .idempotency(&key)
         .for_workflow_operation(application, required)
         .unwrap()
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             ExecutionAllocationPolicy::SystemAllocation,

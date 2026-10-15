@@ -99,6 +99,7 @@ pub struct WorthQueryWorkflowAssessmentDemandRequest<
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
+    branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     required: RequiredWorkflowAssessment,
     workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     demand:
@@ -132,6 +133,7 @@ where
             return Err(WorthQueryWorkflowAssessmentDemandPreparationDenial::contract_mismatch());
         }
         Ok(Self {
+            branch,
             required,
             workflow,
             demand: WorthQueryApplicationOutputDemandRequest::new(
@@ -178,7 +180,7 @@ where
             <SourceBinding<Schema, Demand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
         >,
 {
-    pub fn start(
+    fn start_native(
         self,
     ) -> Result<
         WorthQueryWorkflowAssessmentDemandHandle<'application, Schema, Spec, Demand>,
@@ -186,6 +188,7 @@ where
     > {
         let (admitted, demand, controls) = self.demand.start_for_workflow(self.workflow)?;
         Ok(WorthQueryWorkflowAssessmentDemandHandle {
+            branch: self.branch,
             required: self.required,
             workflow: self.workflow,
             admitted,
@@ -202,6 +205,7 @@ where
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
     Demand: WorthQueryApplicationOutputDemand<Schema>,
 {
+    branch: worth_query_execution::facade::product::WorthQueryProductBranch,
     required: RequiredWorkflowAssessment,
     workflow: WorthQueryWorkflowVocabulary<'application, Schema, Spec>,
     admitted: WorthQueryAdmittedOutputDemand<Schema, Family<Schema, Demand>>,
@@ -262,7 +266,7 @@ where
         &self.required
     }
 
-    pub fn settle(
+    fn settle_native(
         &mut self,
         fresh_request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> Result<
@@ -272,52 +276,16 @@ where
         self.workflow
             .runtime()
             .with_application_advancement(fresh_request.scope, |phase| {
-                for _ in 0..self
-                    .controls
-                    .resolve(self.workflow.runtime().output_demand_resource_profile())
-                    .settlement_attempts()
-                {
-                    let disclosure = fresh_request
-                        .query(self.demand.source_intent())
-                        .execute_in_advancement(&phase)
-                        .map_err(WorthQueryApplicationOutputDemandDenial::Source)?
-                        .into_output_demand_source();
-                    let posture = (disclosure.rows().len() == 1).then(|| {
-                        Family::<Schema, Demand>::assessment_posture(&disclosure.rows()[0])
-                    });
-                    let progress = self
-                .workflow
-                .advance_workflow_assessment_output(
+                advance_assessment_in_advancement(
+                    self.workflow.runtime(),
+                    self.branch,
                     &phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
                     &mut self.admitted,
-                    fresh_request.principal,
-                    fresh_request.scope,
-                    fresh_request.branch,
-                    disclosure,
+                    &self.demand,
+                    self.controls,
+                    &self.required,
+                    fresh_request,
                 )
-                .map_err(map_progress_denial)?;
-                    if let WorthQueryOutputDemandAdvance::Settled(retained) = progress {
-                        let settlement = WorthQueryApplicationOutputDemandSettlement::new(
-                            retained,
-                            self.admitted.observed_source().clone(),
-                            self.admitted.checkpoint_readmission_work_units(),
-                            self.admitted.checkpoint_readmission_work_bound(),
-                            self.admitted
-                                .checkpoint_readmission_charged_preparation_bytes(),
-                        );
-                        return Ok(WorthQueryWorkflowAssessmentDemandProgress::Settled(
-                            WorthQueryWorkflowAssessmentDemandSettlement {
-                                required: self.required.clone(),
-                                posture: posture.expect(
-                                    "a settled output demand has one exact typed source row",
-                                ),
-                                settlement,
-                            },
-                        ));
-                    }
-                }
-                Ok(WorthQueryWorkflowAssessmentDemandProgress::Pending)
             })
             .map_err(WorthQueryApplicationOutputDemandDenial::advancement)?
     }
@@ -356,3 +324,12 @@ where
         && required.result_type() == SourceQuery::<Schema, Demand>::RESULT_TYPE_IDENTITY.as_str()
         && required.binding() == SourceBinding::<Schema, Demand>::IDENTITY
 }
+
+mod owning;
+pub use owning::{WorthQueryClosedAssessmentObservation, WorthQueryWorkflowAssessmentOperation};
+
+mod advancement;
+use advancement::advance_assessment_in_advancement;
+
+mod advanced;
+pub use advanced::{WorthQueryAdvancedAssessmentObservation, WorthQueryAdvancedAssessmentRequest};

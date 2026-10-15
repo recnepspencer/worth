@@ -237,6 +237,7 @@ fn overdue_operation(
         .idempotency(&(key + 12))
         .for_workflow_operation(&application, &operation)
         .expect("the request matches the requirement it was issued")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

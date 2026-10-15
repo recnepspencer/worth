@@ -4,8 +4,10 @@ Ordinary fixed and source-only actions use the [owning entry](../foundations/ord
 Each advance accepts fresh authority and delegates one admitted native phase.
 Provider managed runs remain the resource/execution owners; application ownership
 adds no polling, budgets or second scheduler. Delivery and cleanup remain separate;
-refusal retains custody. Bound workflow execution keeps its native funnel until
-Phase C; discovered ownership lands in Phase B.
+refusal retains custody. Guarded no-output workflows retain their original issued
+operation with `for_workflow_operation(..)?.retain_operation(..)` and advance
+under fresh authority. Assessment owns a separate admitted demand. Native workflow
+execution is explicit advanced control; discovered ownership is a separate lane.
 
 
 ## What This Feature Is

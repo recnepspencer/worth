@@ -226,6 +226,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&815_u64)
         .for_workflow_operation(&application, &required)
         .expect("the effect request matches the durable operation requirement")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
@@ -278,6 +279,7 @@ fn approved_operation_requires_and_consumes_the_exact_performed_effect() {
         .idempotency(&820_u64)
         .for_workflow_operation(&application, &required)
         .expect("the descriptor still identifies the old operation")
+        .advanced()
         .execute_in_program(
             application.program_runtime(),
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,

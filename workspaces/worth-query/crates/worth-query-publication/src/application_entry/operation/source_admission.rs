@@ -72,6 +72,9 @@ where
     pub(in crate::application_entry) description: WorthQueryOperationDescription<S, I>,
     pub(in crate::application_entry) installed_action:
         worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
+    pub(super) workflow: Option<
+        worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowOperation,
+    >,
     marker: std::marker::PhantomData<fn() -> (A, Mode)>,
 }
 impl<S, I, P, A, Mode> WorthQuerySourceOperationAdmission<S, I, P, A, Mode>
@@ -126,10 +129,11 @@ where
             runtime: runtime.clone(),
             description,
             installed_action: installed_action.clone(),
+            workflow: None,
             marker: std::marker::PhantomData,
         })
     }
-    fn select<'runtime>(
+    pub(super) fn select<'runtime>(
         &'runtime self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -192,9 +196,10 @@ where
         WorthQueryApplicationRequestMutationDenial,
     > {
         let (selected, owner) = self.select(phase, request)?;
-        let native = self
+        let mut native = self
             .description
             .request_view(request, &self.installed_action);
+        self.bind_workflow_view(&mut native, true);
         let execution = phase
             .checked_execution_request_for(self.runtime.runtime().product_runtime())
             .map_err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest)?;
@@ -247,7 +252,7 @@ where
         let mut native = self
             .description
             .request_view(request, &self.installed_action);
-        let prepared = native.authorize_owning_recovery(phase, &self.runtime)?;
+        let prepared = self.authorize_recovery_view(phase, request, &mut native)?;
         self.runtime
             .runtime()
             .recover_admitted_unpublished_source_operation(
@@ -271,7 +276,10 @@ where
         let mut native = self
             .description
             .request_view(request, &self.installed_action);
-        let prepared = native.authorize_owning_recovery(phase, &self.runtime)?;
+        let prepared = self.authorize_recovery_view(phase, request, &mut native)?;
         native.read_recovery_idempotency(phase, &prepared)
     }
 }
+
+#[path = "workflow/admission.rs"]
+mod workflow_admission;

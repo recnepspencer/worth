@@ -158,3 +158,8 @@ pub use application_definition::{
 };
 
 pub use operation_commit::{BankManagedCleanup, BankReleasedManagedCleanup};
+
+pub use application_definition::ApprovedPaymentEffectAction;
+pub use approved_payment_workflow::BankAdvancedApprovedPaymentWorkflow;
+
+pub use approved_payment_workflow::BankCompletedApprovedPayment;

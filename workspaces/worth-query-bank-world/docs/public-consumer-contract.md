@@ -496,3 +496,21 @@ with an exact installed-runtime keeper after lawful physical release. Reply loss
 before host receipt returns the evidence through a reserved transport slot.
 See [owning HTTP commands](http-owning-money.md#estate-and-native-cleanup-custody)
 for current wire and host usage. Abandonment has no disposal or crash-durability promise.
+
+
+## Guarded payment operation ownership
+
+`approved_business_payment(..).retain_apply(&required, input, owned_key)`
+constructs the original declared no-output action without an effect. Its Query
+owner accepts a fresh request on every `advance`, retaining actual source,
+unpublished or dispatch custody on refusal. `Fresh` includes the real handler
+result; `Recovered` reports native evidence without inventing that result.
+`accept_owned_applied` returns the same completed owner on refusal and retains it
+alongside native workflow progression on success. Close that owner explicitly.
+
+`retain_payment_assessment` owns a separate admitted observation and
+`advance_payment_assessment` supplies the current authenticated request. Closing
+that observer may release actual failed producer cleanup; it does not accept
+assessment evidence, approve payment or complete the workflow. Deliberate native
+payment operation controls are available through `advanced()`, not an ordinary
+manual pump wrapper.

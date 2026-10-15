@@ -55,11 +55,7 @@ where
                 denial,
             },
             Err(denial) => {
-                if matches!(denial, worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Panicked)
-                    && matches!(self.state, SourceState::Initial | SourceState::RetryableNoEffect(_))
-                {
-                    self.state = SourceState::UnresolvedAdvancement(denial);
-                }
+                self.record_unresolved_advancement(denial);
                 WorthQuerySourceOnlyAdvance::Refused {
                     operation: self,
                     denial: WorthQuerySourceOnlyDenial::Execution(denial),
@@ -68,7 +64,7 @@ where
         }
     }
 
-    fn step(
+    pub(in crate::application_entry::operation) fn step(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -278,7 +274,13 @@ where
                     ));
                 }
                 // The native Aborted outcome proves no effect; Unseen alone never does.
-                self.state = SourceState::Initial;
+                let prior = std::mem::replace(&mut self.state, SourceState::Initial);
+                if self.admission.workflow.is_some() {
+                    let SourceState::Keyed(posture) = prior else {
+                        unreachable!("actual abort guarded by native state match")
+                    };
+                    self.guarded_abort = Some(posture);
+                }
                 Ok(Step::Progress)
             }
             Resolution::Unseen => Ok(Step::Progress),
@@ -290,7 +292,7 @@ where
     }
 }
 
-enum Step<Result> {
+pub(in crate::application_entry::operation) enum Step<Result> {
     Progress,
     Completed(WorthQuerySourceCompletion<Result>),
     Terminal,
