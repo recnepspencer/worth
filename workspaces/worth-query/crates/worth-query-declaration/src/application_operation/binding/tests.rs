@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+mod action_authoring;
 mod output_cardinality;
 mod output_role;
 mod workflow_requirements;

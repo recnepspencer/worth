@@ -30,7 +30,7 @@ pub use program::{
     WorthQuerySelectedProgramOwnerDenial, WorthQuerySettledProgramOutput,
     WorthQuerySupportedProgramHandle, WorthQueryUnpublishedProgramOutputSource,
     WorthQueryWorkflowApplicationRuntime, WorthQueryWorkflowRuntimeBindingDenial,
-    WorthQueryWorkflowVocabulary,
+    WorthQueryWorkflowRuntimeBindingRefusal, WorthQueryWorkflowVocabulary,
 };
 use program_admission::WorthQueryProgramAdmissionStep;
 

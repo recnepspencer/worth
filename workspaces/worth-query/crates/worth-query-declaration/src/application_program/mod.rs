@@ -34,7 +34,8 @@ mod program_tests;
 
 pub use action::{
     ApplicationAction, ApplicationActionDelivery, ApplicationActionDeliveryMode,
-    ApplicationDiscoveredAction, ApplicationDiscoveredActionDelivery,
+    ApplicationActionSpecBuilder,
+    ApplicationDiscoveredActionDelivery,
     ApplicationDiscoveredBatchDelivery, ApplicationDiscoveredDeliveryMode,
     ApplicationDiscoveredQueryDelivery, ApplicationFixedDeliveryMode,
     ApplicationOutputActionDeliveryDeclaration, ApplicationRetainedCommit,
@@ -42,7 +43,7 @@ pub use action::{
 };
 pub use action::{
     ApplicationActionCorrespondenceDeclaration, ApplicationActionDeclaration,
-    ApplicationActionDeliveryDeclaration, ApplicationActionReference, ApplicationFixedAction,
+    ApplicationActionDeliveryDeclaration, ApplicationActionReference, ApplicationActionSelector,
     ApplicationFixedActionDelivery, ApplicationFixedBatchDelivery, ApplicationFixedQueryDelivery,
     ApplicationNoProjection, ApplicationOutputProjection, ApplicationQueryBatchProjection,
     ApplicationQueryProjection,

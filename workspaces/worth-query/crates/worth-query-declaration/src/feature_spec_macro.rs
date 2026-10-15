@@ -1,4 +1,27 @@
 /// Declares one flat application feature capsule without restating builder plumbing.
+///
+/// Action blocks lower through the same once-only typed progression.
+/// ```compile_fail,E0599
+/// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema};
+/// fn repeated<S, I, F, B, P>()
+/// where S: ApplicationSchema + 'static, I: ApplicationCompositionInstance, F: ApplicationFeature<S>,
+/// B: ApplicationMutationBinding<S>, P: ApplicationExternalInputProvider<S, B::Operation> {
+///     let _ = worth_query_declaration::worth_query_feature_spec!(
+///         at(S, I, F); native_action(B) { external_input(P); external_input(P); };
+///     );
+/// }
+/// ```
+/// Unsupported clauses, including native output overrides, are rejected.
+/// ```compile_fail
+/// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationBinding, application_schema::ApplicationSchema};
+/// fn unsupported<S, I, F, B>()
+/// where S: ApplicationSchema + 'static, I: ApplicationCompositionInstance, F: ApplicationFeature<S>,
+/// B: ApplicationMutationBinding<S> {
+///     let _ = worth_query_declaration::worth_query_feature_spec!(
+///         at(S, I, F); native_action(B) { required_output_source(); };
+///     );
+/// }
+/// ```
 #[macro_export]
 macro_rules! worth_query_feature_spec {
     (root($schema:ty, $feature:ty); $($members:tt)*) => {
@@ -28,41 +51,45 @@ macro_rules! worth_query_feature_spec {
     (@members $builder:expr; managed_computation($computation:ty); $($rest:tt)*) => {
         $crate::worth_query_feature_spec!(@members $builder.managed_computation::<$computation>(); $($rest)*)
     };
-    (@members $builder:expr; mutation($binding:ty); $($rest:tt)*) => {
-        $crate::worth_query_feature_spec!(@members $builder.mutation::<$binding>(); $($rest)*)
-    };
-    (@members $builder:expr; mutation_with_locality_and_change(
-        $binding:ty, $locality:ty, $change:ty
-    ); $($rest:tt)*) => {
+    (@members $builder:expr; action($binding:ty, $delivery:ty) {
+        $($clauses:tt)*
+    }; $($rest:tt)*) => {
         $crate::worth_query_feature_spec!(@members
-            $builder.mutation_with_locality_and_change::<$binding, $locality, $change>();
+            $crate::worth_query_feature_spec!(@action
+                $builder.action::<$binding, $delivery>(); $($clauses)*
+            );
             $($rest)*
         )
     };
-    (@members $builder:expr; mutation_with_external_input(
-        $binding:ty, $provider:ty
-    ); $($rest:tt)*) => {
+    (@members $builder:expr; native_action($binding:ty) {
+        $($clauses:tt)*
+    }; $($rest:tt)*) => {
         $crate::worth_query_feature_spec!(@members
-            $builder.mutation_with_external_input::<$binding, $provider>();
+            $crate::worth_query_feature_spec!(@action
+                $builder.native_action::<$binding>(); $($clauses)*
+            );
             $($rest)*
         )
     };
-    (@members $builder:expr; mutation_with_requirement_and_external_input(
-        $binding:ty, $rule:ty, $provider:ty
-    ); $($rest:tt)*) => {
-        $crate::worth_query_feature_spec!(@members
-            $builder.mutation_with_requirement_and_external_input::<$binding, $rule, $provider>();
-            $($rest)*
+    (@action $builder:expr;) => { $builder.finish_action() };
+    (@action $builder:expr; locality_and_change($scope:ty, $shape:ty); $($rest:tt)*) => {
+        $crate::worth_query_feature_spec!(@action
+            $builder.locality_and_change::<$scope, $shape>(); $($rest)*
         )
     };
-    (@members $builder:expr; repeated_optional_member_output_with_locality_and_change(
-        $binding:ty, $correspondence:ty, $locality:ty, $change:ty
-    ); $($rest:tt)*) => {
-        $crate::worth_query_feature_spec!(@members
-            $builder.repeated_optional_member_output_with_locality_and_change::<
-                $binding, $correspondence, $locality, $change
-            >();
-            $($rest)*
+    (@action $builder:expr; correspondence($correspondence:ty); $($rest:tt)*) => {
+        $crate::worth_query_feature_spec!(@action
+            $builder.correspondence::<$correspondence>(); $($rest)*
+        )
+    };
+    (@action $builder:expr; evaluated_requirement($rule:ty); $($rest:tt)*) => {
+        $crate::worth_query_feature_spec!(@action
+            $builder.evaluated_requirement::<$rule>(); $($rest)*
+        )
+    };
+    (@action $builder:expr; external_input($provider:ty); $($rest:tt)*) => {
+        $crate::worth_query_feature_spec!(@action
+            $builder.external_input::<$provider>(); $($rest)*
         )
     };
     (@members $builder:expr; conditional_operation($operation:ty); $($rest:tt)*) => {

@@ -69,7 +69,8 @@ impl<Binding: ApplicationMutationBinding<MutationSchema>>
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<MutationSchema, EvidenceFeature>()
-                .mutation::<Binding>()
+                .native_action::<Binding>()
+                .finish_action()
                 .finish(),
         ]
     }

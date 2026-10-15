@@ -6,17 +6,15 @@ use crate::{
 };
 
 use crate::application_program::action::{
-    ApplicationActionInstanceRef, ApplicationActionShape,
-    ApplicationConditionalOperationActionInstanceRef, ApplicationOperationActionRef,
+    ApplicationActionShape, ApplicationConditionalOperationActionInstanceRef,
+    ApplicationOperationActionRef,
 };
 use crate::application_program::{
-    ApplicationActionDeclaration, ApplicationChangeShape, ApplicationCompositionInstance,
-    ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration,
+    ApplicationActionDeclaration, ApplicationActionDelivery, ApplicationActionSpecBuilder,
+    ApplicationCompositionInstance, ApplicationDerivedArtifact, ApplicationDerivedArtifactDeclaration,
     ApplicationDerivedCollection, ApplicationDerivedCollectionDeclaration,
     ApplicationEvaluatedRequirementRule, ApplicationExternalInputProvider,
-    ApplicationLocalityScope, ApplicationManagedComputation,
-    ApplicationManagedComputationDeclaration, ApplicationRepeatedOptionalMemberCorrespondence,
-    ApplicationRootComposition,
+    ApplicationManagedComputation, ApplicationManagedComputationDeclaration, ApplicationRootComposition,
 };
 
 use super::super::{
@@ -102,133 +100,32 @@ where
         }
     }
 
-    pub fn mutation<Binding>(mut self) -> Self
+    /// Begin one ordinary action with explicit owning delivery.
+    pub fn action<Binding, Delivery>(
+        self,
+    ) -> ApplicationActionSpecBuilder<Schema, Instance, Feature, Binding>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Delivery: ApplicationActionDelivery<Schema, Binding>,
+    {
+        ApplicationActionSpecBuilder::ordinary::<Delivery>(self)
+    }
+
+    /// Begin a deliberately specialized native action, without owning delivery.
+    /// Required native output membership is derived from declared program roots.
+    pub fn native_action<Binding>(
+        self,
+    ) -> ApplicationActionSpecBuilder<Schema, Instance, Feature, Binding>
     where
         Binding: ApplicationMutationBinding<Schema>,
     {
-        self.actions.push(ApplicationActionInstanceRef::<
-            Schema,
-            Instance,
-            Feature,
-            Binding,
-        >::declaration());
-        self
+        ApplicationActionSpecBuilder::native(self)
     }
 
-    /// Attach an external source contract without inventing an evaluated requirement.
-    pub fn mutation_with_external_input<Binding, Provider>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Provider: ApplicationExternalInputProvider<Schema, Binding::Operation>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_external_input::<Provider>(Provider::IDENTITY);
-        self.actions.push(action);
-        self
-    }
-
-    pub fn mutation_with_requirement_and_external_input<Binding, Rule, Provider>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Rule: ApplicationEvaluatedRequirementRule<Schema, Binding::Operation>,
-        Provider: ApplicationExternalInputProvider<Schema, Binding::Operation>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_evaluated_requirement::<Rule>(Rule::IDENTITY);
-        action.attach_external_input::<Provider>(Provider::IDENTITY);
-        self.actions.push(action);
-        self
-    }
-
-    pub fn mutation_with_locality_and_change<Binding, Scope, Shape>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Scope: ApplicationLocalityScope,
-        Shape: ApplicationChangeShape,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_locality_and_change::<Scope, Shape>();
-        self.actions.push(action);
-        self
-    }
-
-    pub fn repeated_optional_member<Binding, Correspondence>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
-        self.actions.push(action);
-        self
-    }
-
-    pub fn repeated_optional_member_with_external_input<Binding, Correspondence, Provider>(
+    pub(in crate::application_program) fn append_action(
         mut self,
-    ) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
-        Provider: ApplicationExternalInputProvider<Schema, Binding::Operation>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
-        action.attach_external_input::<Provider>(Provider::IDENTITY);
-        self.actions.push(action);
-        self
-    }
-
-    pub fn repeated_optional_member_output_with_locality_and_change<
-        Binding,
-        Correspondence,
-        Scope,
-        Shape,
-    >(
-        mut self,
-    ) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Correspondence: ApplicationRepeatedOptionalMemberCorrespondence<Schema, Binding>,
-        Scope: ApplicationLocalityScope,
-        Shape: ApplicationChangeShape,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_correspondence::<Correspondence>(Correspondence::IDENTITY);
-        action.attach_locality_and_change::<Scope, Shape>();
-        action.mark_required_output_source();
-        self.actions.push(action);
-        self
-    }
-
-    /// Declares an exact source action whose fixed outputs and read own delivery.
-    pub fn fixed_output_action<Binding, Delivery>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Delivery: crate::application_program::ApplicationFixedActionDelivery<Schema, Binding>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.mark_required_output_source();
-        action.attach_fixed_delivery::<Schema, Binding, Delivery>();
-        self.actions.push(action);
-        self
-    }
-
-    /// Installs one explicit owning delivery on this exact action occurrence.
-    pub fn operation_action<Binding, Delivery>(mut self) -> Self
-    where
-        Binding: ApplicationMutationBinding<Schema>,
-        Delivery: crate::application_program::ApplicationActionDelivery<Schema, Binding>,
-    {
-        let mut action =
-            ApplicationActionInstanceRef::<Schema, Instance, Feature, Binding>::declaration();
-        action.attach_delivery::<Schema, Binding, Delivery>();
+        action: ApplicationActionDeclaration,
+    ) -> Self {
         self.actions.push(action);
         self
     }
