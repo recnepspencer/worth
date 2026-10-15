@@ -21,6 +21,7 @@ pub(in crate::application_schema::operation_definition::body) fn validate_requir
                 return Err(Denial::MissingOperationDecisionReadDependency);
             }
             let bound = match operand.source() {
+                Source::SignedEvidence(source) => source.is_declared(members),
                 Source::Field { field: locus, binding, scalar_family: family, presence: posture, presence_only, .. } => members.iter().any(|member| {
                     matches!(member, Member::Field { entity, aspect, field, scalar_family, value_type, presence, unit, .. }
                         if entity == locus.entity() && aspect == locus.aspect() && field == locus.field()

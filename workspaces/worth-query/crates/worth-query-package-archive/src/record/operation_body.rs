@@ -35,7 +35,10 @@ pub(super) fn write(
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
     let scoped = body.explicit_scope_entity().is_some() || body.is_creation_only();
-    let version = if body
+    let version = if body.requirements().iter().flat_map(|requirement| requirement.operands()).any(|operand|
+        matches!(operand.source(), worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource::SignedEvidence(_))) {
+        16
+    } else if body
         .creation()
         .is_some_and(|creation| creation.signing_lifecycle().is_some())
     {
@@ -193,7 +196,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationOperationBodyProgram, Denial> {
     let version = input.u16()?;
-    if !matches!(version, 1..=15) {
+    if !matches!(version, 1..=16) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let scope = if version >= 8 {

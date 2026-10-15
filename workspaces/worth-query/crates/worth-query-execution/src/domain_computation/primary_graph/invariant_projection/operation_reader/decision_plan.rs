@@ -16,6 +16,7 @@ mod body_requirement;
 mod field_presence;
 mod operation_body;
 mod predecode_admission;
+mod signed_evidence;
 use crate::domain_computation::application_contract_admission::graph_reads_admit_target;
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey},

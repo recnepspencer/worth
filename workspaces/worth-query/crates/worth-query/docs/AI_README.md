@@ -461,9 +461,19 @@ Retained replay precedes this work; stale/refused batches publish neither half.
 Lifecycle declarations use body v15 without changing older versions. The host
 must not author changed-field maps, relationship repairs or supersession effects.
 Effectful program migration for such a schema currently fails closed.
+For a later business requirement over early attestation, derive
+`completed_signing_body.signed_evidence::<Binding>()` once and bind it with
+`operation.requirement_operands().signed_evidence(name, &reference)`. The native
+Boolean observes matching Current membership, exact producer-body meaning,
+binding/purpose/subject and the same canonical active program revision. Guidance
+and admission use the same evaluator and retained native observation. Healthy
+other attestations do not match; unavailable/malformed observations deny. Do not
+reconstruct approval authority, compare field stamps for continued validity,
+or duplicate evidence selectors in the host. Body v16 carries this operand;
+cross-program-revision compatibility is not inferred and mismatch does not supersede history.
 Context alone is not domain membership; membership alone is not authorization
 and does not replace a capability's grant witness. General assignment expressions,
-multiple creations, arbitrary relation edits, later approval consumption and multi-operation commands
+multiple creations, arbitrary relation edits, conversion into kernel approval authority and multi-operation commands
 remain unsupported here; do not fill those missing joins with a host substitute
 and call it declarative.
 

@@ -1,4 +1,5 @@
 //! V7 carries exact Foundation drafts and their native source bindings.
+mod signed_evidence;
 use super::{BinaryEncodingSink, BinaryInput, Denial, Kind, RecordDecodeAttempt};
 use crate::record::{
     decode_budget,
@@ -25,6 +26,10 @@ pub(super) fn write(
         write_sequence(output, requirement.operands(), |output, operand| {
             output.text(operand.name())?;
             match operand.source() {
+                Source::SignedEvidence(source) => {
+                    output.u16(4)?;
+                    signed_evidence::write(output, source)
+                }
                 Source::PrincipalIdentity {
                     scope,
                     mutation_binding,
@@ -99,6 +104,7 @@ pub(super) fn decode(
         let operands = decode_sequence(input, budget, 12, |input, _| {
             let name = input.text()?.to_owned();
             let source = match input.u16()? {
+                4 if version >= 16 => Source::SignedEvidence(signed_evidence::decode(input)?),
                 3 if version >= 13 => Source::PrincipalIdentity {
                     scope: input.text()?.to_owned(),
                     mutation_binding: input.text()?.to_owned(),

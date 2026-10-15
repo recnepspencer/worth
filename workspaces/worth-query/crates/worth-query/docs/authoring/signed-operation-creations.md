@@ -28,6 +28,9 @@ Declare through `worth_query_decl::facade::application_schema`:
   for native dependency-scoped permanent supersession.
 - `ApplicationSigningSupersession` and `ApplicationSigningSupersessionBinding`
   for the immutable, descriptive consequence payload.
+- `completed_body.signed_evidence::<Binding>()` derives a typed descriptive
+  producer reference; `operation.requirement_operands().signed_evidence(name, &reference)`
+  binds its current-evidence existence as a Boolean in the normal requirement evaluator.
 
 Install the body through the usual contribution's `operation_body::<Binding>()`.
 Install a genuine authentication-event owner using
@@ -86,6 +89,18 @@ No-op/unrelated edits preserve evidence, and restoring a previous value never
 removes a supersession or revives the old row. `AuditContext` changes alone do not
 supersede it. The declared limit bounds current fan-out, not lifetime history.
 
+A later business requirement can consume this current attestation without
+converting it into a workflow approval grant. Derive its reference from the
+completed signing body once, then register that same body. The reference pins
+the binding, operation, scope, native provenance, purpose, lifecycle and complete
+canonical producer-body meaning. Cold readmission rejects a reference from a
+different body even when its operation and purpose labels match.
+The Boolean means at least one matching current row. Other healthy attestations
+do not satisfy it; coexistence does not make a valid match ambiguous. Query also
+requires the row's sealed canonical program revision to equal the native active
+revision observed at the consumer's snapshot. Cross-revision compatibility is
+not inferred. Revision mismatch is nonmatching evidence, not a supersession event.
+
 ## How It Executes
 
 1. Ordinary authorization, capability policy and body requirements admit the
@@ -108,6 +123,18 @@ neither its source write nor its consequence publishes. Refusals never publish
 one half of the batch. Exact retained replay precedes consequence discovery.
 
 Missing proof, stale dependencies or owner refusal publish no partial snapshot.
+
+Current-evidence requirements use the same bounded native collection and scalar
+observers as other body operands. Adjacency, endpoint liveness and provenance
+reads are retained for publication; native program readmission and Product CAS
+fence activation movement. Unavailable or malformed authoritative observations
+remain typed denials, not a fabricated false finding. Consumer guidance and
+execution use the same expression. Guidance grants neither occurrence authority
+nor permission. A prepared completion becomes stale if a concurrent dependency
+edit supersedes the evidence. Acquire a fresh native operation need after a spent
+or stale attempt; never automatically reuse its move-only authority.
+Do not compare saved dependency revisions with today's field stamps to decide
+validity: a no-op write may move a native stamp while preserving Current membership.
 An unrelated source edit need not stale the candidate. Exact logical replay
 resolves before asking for another event. Deferred and indeterminate outcomes
 retain their usual native recovery meanings; do not rerun effects on them.
@@ -185,6 +212,34 @@ match request.prepare_capability_in_program(program, allocation)? {
 Keep the same prepared handle and logical request key. A mismatched event is not
 consumed; denial does not permit replacing the request's original signer.
 
+To require that early verification on a later operation:
+
+```rust,ignore
+let verification = completed_verify_body.signed_evidence::<VerifyBinding>()?;
+// Register completed_verify_body itself, not a newly reconstructed body.
+let operation = CompleteReview::reference();
+let operands = operation.requirement_operands().signed_evidence("verified", &verification)?;
+let expression = worth_foundational::expression_api::expressions()
+    .reading_within(ApplicationOperationBodyRequirementExpression::PROFILE)
+    .parse("verified")?;
+let requirement = ApplicationOperationBodyRequirement::admit(
+    "current-verification", operands, None, expression, "verified",
+)?;
+let completion = operation.body()
+    .expect(CurrentStage::reference(), Stage::Review)?
+    .requirement(requirement)?
+    .assign(CurrentStage::reference(), Stage::Approved)?;
+// Add the normal native audit creation, finish and register this body.
+```
+
+The operation still declares its own ordinary permission, capability policy,
+candidate ceilings and any occurrence requirement. The supplier example's
+information-gathering EnterReview remains unsigned; a distinct later
+CompleteReview requires current verification and an exact operation need.
+A genuine acknowledgement can share the evidence kind and lifecycle but have a
+different purpose and certified footprint. It neither satisfies this reference
+nor becomes superseded by an edit outside its own `Subject` dependencies.
+
 With v2, the governed result's `provenance.dependencies()` exposes the installed
 source-to-snapshot correspondence. `provenance.authentication()` exposes the
 authentication metadata. These are inspection data, not reusable authority.
@@ -237,6 +292,9 @@ Program-adoption migration also refuses signed creations explicitly; it cannot
 discard their signing state and publish them as ordinary migration effects.
 Do not treat an evictable invalidation index or current-value/digest comparison as
 permanent supersession. Do not scan or rewrite all historical evidence on each edit.
+Do not restate the producer's evidence paths or purpose in the host, default a
+missing match to another attestation, or turn decoded provenance into approval
+authority. Do not substitute current-value equality for Current lifecycle membership.
 
 ## Current Limits
 
@@ -255,8 +313,11 @@ Effectful program-adoption migration for a lifecycle schema is explicitly
 unsupported until it has a native consequence join; it cannot bypass this law.
 
 Checkpoint restoration preserves signed data and durable idempotency facts, not
-live event or receipt authority. Approval-round selection, automatic consumption
-of early evidence by later approval, regulatory
+live event or receipt authority. The current-evidence requirement uses body v16;
+v1–v15 records are unchanged and cannot silently acquire the new operand. It
+requires v2 provenance and the declared native lifecycle, and matches only the
+same canonical active program revision. Approval-round selection, automatic
+conversion of early evidence into kernel approval, regulatory
 signature manifestation and UTC evidence are not supplied by this feature.
 
 ## Related Docs

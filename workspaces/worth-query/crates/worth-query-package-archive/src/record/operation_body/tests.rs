@@ -14,6 +14,8 @@ mod outputs;
 mod principal;
 #[path = "tests/requirements.rs"]
 mod requirements;
+#[path = "tests/signed_evidence.rs"]
+mod signed_evidence;
 #[path = "tests/signing.rs"]
 mod signing;
 

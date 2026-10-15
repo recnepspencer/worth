@@ -18,6 +18,10 @@ impl ApplicationOperationBodyRequirementProgram {
         for operand in self.operands() {
             part(operand.name());
             match operand.source() {
+                Source::SignedEvidence(source) => {
+                    part("current-signed-evidence");
+                    part(&source.canonical_record());
+                }
                 Source::Field {
                     field,
                     binding,

@@ -13,6 +13,8 @@ pub use created_field::ApplicationOperationBodyCaptureRole;
 mod principal;
 mod principal_validation;
 mod signing;
+mod signing_evidence;
+pub use signing_evidence::{ApplicationSigningEvidenceRef, ApplicationSigningEvidenceSource};
 mod signing_lifecycle;
 mod signing_validation;
 pub use signing::ApplicationOperationBodySigningSpec;

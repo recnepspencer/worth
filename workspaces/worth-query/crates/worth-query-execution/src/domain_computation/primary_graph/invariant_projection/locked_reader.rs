@@ -27,6 +27,7 @@ mod operation_body;
 #[path = "locked_reader/predecode_admission.rs"]
 mod predecode_admission;
 mod requirement_collection;
+pub(super) use requirement_collection::ObservedRequirementItems;
 #[path = "locked_reader/traversal_denial.rs"]
 mod traversal_denial;
 pub use traversal_denial::{
@@ -46,6 +47,8 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
     pub(super) observation: worth_relational::facade::mvcc::RelationalBranchObservation,
     pub(super) authority_identity: u64,
+    pub(super) program_activation:
+        Option<&'runtime super::super::program_occurrence::WorthQueryProgramActivationCell>,
     pub(super) work: WorthQueryInvariantProjectionWork,
     pub(super) work_budget: WorthQueryInvariantProjectionWorkBudget,
     /// A read found no capacity to retain its evidence. The projection then
@@ -204,6 +207,7 @@ where
                     output_lineage: Arc::clone(&self.graph.output_lineage),
                     invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
                     selected_product_occurrence: None,
+                    program_activation: self.program_activation.as_ref(),
                     selected_product_generation: None,
                     selected_source_partition_identity: None,
                     prior_output_bindings: HashMap::new(),

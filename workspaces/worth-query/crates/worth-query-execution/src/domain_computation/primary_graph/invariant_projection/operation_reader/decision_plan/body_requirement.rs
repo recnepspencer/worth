@@ -26,6 +26,9 @@ impl<Schema: ApplicationSchema, Operation>
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<PreparedRequirementOperand, HandlerExecutionDenial> {
         match source {
+            Source::SignedEvidence(source) => {
+                self.signed_evidence_operand(identity, source, execution, context)
+            }
             Source::PrincipalIdentity { field, .. } => {
                 let principal = self.body_principal_identity(field)?;
                 self.scalar_requirement_operand(
@@ -44,46 +47,9 @@ impl<Schema: ApplicationSchema, Operation>
                 execution,
                 context,
             ),
-            Source::RelatedItemCount {
-                relation,
-                from,
-                to,
-                direction,
-            } => {
-                for target in source.decision_reads() {
-                    self.admit_decision_target(&target)
-                        .map_err(HandlerExecutionDenial::new)?;
-                }
-                let target = ApplicationOperationDecisionReadTarget::Relation {
-                    relation: relation.clone(),
-                    from: from.clone(),
-                    to: to.clone(),
-                };
-                let adjacency = match direction { Direction::Outgoing => crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection::Outgoing, Direction::Incoming => crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection::Incoming };
+            Source::RelatedItemCount { .. } => {
                 let observed =
-                    self.recorded_adjacency(&target, identity.entity_id, adjacency, |reader| {
-                        reader.body_related_items(identity, source, execution, context)
-                    })?;
-                self.decision_facts.record(
-                    WorthQueryApplicationFactKey::Entity {
-                        entity: source.scope_entity().to_owned(),
-                        entity_id: identity.entity_id,
-                    },
-                    DecisionReadOutcome::Observed,
-                );
-                let endpoint_name = match direction {
-                    Direction::Outgoing => to,
-                    Direction::Incoming => from,
-                };
-                for endpoint in &observed.ids {
-                    self.decision_facts.record(
-                        WorthQueryApplicationFactKey::Entity {
-                            entity: endpoint_name.clone(),
-                            entity_id: *endpoint,
-                        },
-                        DecisionReadOutcome::Observed,
-                    );
-                }
+                    self.observed_requirement_collection(identity, source, execution, context)?;
                 let count = u64::try_from(observed.ids.len()).map_err(|_| overflow())?;
                 Ok(PreparedRequirementOperand {
                     value: ExpressionValue::integer(i128::from(count)),
@@ -91,6 +57,64 @@ impl<Schema: ApplicationSchema, Operation>
                 })
             }
         }
+    }
+
+    pub(super) fn observed_requirement_collection<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        source: &Source,
+        execution: &QueryRequestExecution<'_>,
+        context: &mut worth_execution::MapKernelContext<'_, '_>,
+    ) -> Result<super::super::super::locked_reader::ObservedRequirementItems, HandlerExecutionDenial>
+    {
+        let Source::RelatedItemCount {
+            relation,
+            from,
+            to,
+            direction,
+        } = source
+        else {
+            unreachable!("collection source")
+        };
+        for target in source.decision_reads() {
+            self.admit_decision_target(&target)
+                .map_err(HandlerExecutionDenial::new)?;
+        }
+        let target = ApplicationOperationDecisionReadTarget::Relation {
+            relation: relation.clone(),
+            from: from.clone(),
+            to: to.clone(),
+        };
+        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection as Adjacency;
+        let adjacency = match direction {
+            Direction::Outgoing => Adjacency::Outgoing,
+            Direction::Incoming => Adjacency::Incoming,
+        };
+        let observed =
+            self.recorded_adjacency(&target, identity.entity_id, adjacency, |reader| {
+                reader.body_related_items(identity, source, execution, context)
+            })?;
+        self.decision_facts.record(
+            WorthQueryApplicationFactKey::Entity {
+                entity: source.scope_entity().to_owned(),
+                entity_id: identity.entity_id,
+            },
+            DecisionReadOutcome::Observed,
+        );
+        let endpoint = match direction {
+            Direction::Outgoing => to,
+            Direction::Incoming => from,
+        };
+        for entity_id in &observed.ids {
+            self.decision_facts.record(
+                WorthQueryApplicationFactKey::Entity {
+                    entity: endpoint.clone(),
+                    entity_id: *entity_id,
+                },
+                DecisionReadOutcome::Observed,
+            );
+        }
+        Ok(observed)
     }
 
     fn scalar_requirement_operand<Entity>(

@@ -626,6 +626,13 @@ Approval refusals surface as attempt denial kinds: `WorkflowApprovalPrincipalSta
 
 ## Operations
 
+Early domain attestation is separate from the approval control step above. A
+later operation can require a native current signed-evidence operand derived
+from the completed signing body. This checks current business evidence; it does
+not mint an approval grant or replace occurrence authority or ordinary policy.
+See [Signed Operation Creations](../authoring/signed-operation-creations.md)
+for the producer reference, bounded observation and same-program-revision policy.
+
 ### Declare evidence, not authorization modes
 
 A guarded operation needs both ordinary operation permission and a binding to

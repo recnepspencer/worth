@@ -249,6 +249,9 @@ where
     }
     .map_err(Denial::Graph)?;
     graph.mutation_handlers = handlers;
+    graph.program_activation = admitted_program_support
+        .as_ref()
+        .map(|_| activation.clone());
     if restoring {
         if let Some(support) = &admitted_program_support {
             if let Some(transition) = checkpoint_transition {

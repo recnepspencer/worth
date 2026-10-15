@@ -174,7 +174,8 @@ pub use operation_definition::{
     ApplicationOperationBodyRequirementProgram, ApplicationOperationBodyRequirementSource,
     ApplicationOperationBodyScopeField, ApplicationOperationBodySigningLifecycleSpec,
     ApplicationOperationBodySigningSpec, ApplicationOperationDefinition,
-    ApplicationOperationDefinitionBuilder,
+    ApplicationOperationDefinitionBuilder, ApplicationSigningEvidenceRef,
+    ApplicationSigningEvidenceSource,
 };
 pub use operation_marker_identity::ApplicationOperationMarkerIdentity;
 pub use portable_schema::{

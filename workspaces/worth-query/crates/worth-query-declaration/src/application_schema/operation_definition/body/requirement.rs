@@ -4,6 +4,7 @@ mod encoding;
 mod expression;
 mod operands;
 mod principal;
+mod signing_evidence;
 mod validation;
 
 pub use authoring::ApplicationOperationBodyRequirementOperands;

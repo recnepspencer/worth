@@ -102,6 +102,28 @@ impl WorthQueryPortableApplicationOperationContractRecord {
                     use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementSource as Source;
                     work.observe_text(operand.name());
                     match operand.source() {
+                        Source::SignedEvidence(source) => {
+                            for text in [
+                                &source.mutation_binding,
+                                &source.operation,
+                                &source.evidence_entity,
+                                source.provenance.entity(),
+                                source.provenance.aspect(),
+                                source.provenance.field(),
+                                &source.purpose,
+                                &source.producer_meaning,
+                                &source.lifecycle.history_relation,
+                                &source.lifecycle.current_relation,
+                                &source.lifecycle.source_entity,
+                                &source.lifecycle.consequence_relation,
+                                source.lifecycle.consequence_field.entity(),
+                                source.lifecycle.consequence_field.aspect(),
+                                source.lifecycle.consequence_field.field(),
+                            ] {
+                                work.observe_text(text);
+                            }
+                            work.observe_fixed(1);
+                        }
                         Source::PrincipalIdentity {
                             scope,
                             mutation_binding,

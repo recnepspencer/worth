@@ -22,6 +22,8 @@ pub enum ApplicationOperationBodyRequirementDirection {
 /// A field observation or distinct related-item count, never a caller value.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationOperationBodyRequirementSource {
+    /// True when at least one current native attestation matches this exact producer.
+    SignedEvidence(crate::application_schema::ApplicationSigningEvidenceSource),
     Field {
         field: ApplicationFieldBindingLocus,
         binding: WorthQueryPortableTypeIdentity,
@@ -67,6 +69,7 @@ impl ApplicationOperationBodyRequirementOperand {
 impl ApplicationOperationBodyRequirementSource {
     pub fn scope_entity(&self) -> &str {
         match self {
+            Self::SignedEvidence(source) => &source.lifecycle.source_entity,
             Self::Field { field, .. } => field.entity(),
             Self::PrincipalIdentity { scope, .. } => scope,
             Self::RelatedItemCount {
@@ -82,6 +85,7 @@ impl ApplicationOperationBodyRequirementSource {
     }
     pub fn decision_reads(&self) -> Vec<ApplicationOperationDecisionReadTarget> {
         match self {
+            Self::SignedEvidence(source) => source.decision_reads(),
             Self::Field { field, .. } | Self::PrincipalIdentity { field, .. } => {
                 vec![ApplicationOperationDecisionReadTarget::Field {
                     entity: field.entity().to_owned(),
@@ -109,6 +113,7 @@ impl ApplicationOperationBodyRequirementSource {
     ) -> Result<ExpressionType, ApplicationOperationBodyRequirementDenial> {
         use ScalarAspectType as Scalar;
         let (scalar_family, presence, presence_only) = match self {
+            Self::SignedEvidence(_) => return Ok(ExpressionType::Bool),
             Self::Field {
                 scalar_family,
                 presence,
