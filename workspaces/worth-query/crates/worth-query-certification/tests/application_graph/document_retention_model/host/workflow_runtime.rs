@@ -15,17 +15,17 @@ use super::super::{
     },
 };
 
-pub struct DocumentWorkflowRuntime {
+pub struct DocumentWorkflowRuntime<Program = RetentionProgramP0> {
     pub(in super::super) workflow: WorthQueryWorkflowApplicationRuntime<
         DocumentRetentionSchema,
         ReviewedDocumentWorkflow,
-        RetentionProgramP0,
+        Program,
     >,
     pub(in super::super) authentication: CertificationAuthenticationOwner,
     pub(in super::super) authentication_clock: CertificationAuthenticationClockSource,
 }
 
-impl DocumentWorkflowRuntime {
+impl<Program> DocumentWorkflowRuntime<Program> {
     pub fn authentication(&self) -> &CertificationAuthenticationOwner {
         &self.authentication
     }
@@ -36,7 +36,7 @@ impl DocumentWorkflowRuntime {
     ) -> &mut WorthQueryWorkflowApplicationRuntime<
         DocumentRetentionSchema,
         ReviewedDocumentWorkflow,
-        RetentionProgramP0,
+        Program,
     > {
         &mut self.workflow
     }
@@ -46,11 +46,11 @@ impl DocumentWorkflowRuntime {
     }
 }
 
-impl std::ops::Deref for DocumentWorkflowRuntime {
+impl<Program> std::ops::Deref for DocumentWorkflowRuntime<Program> {
     type Target = WorthQueryWorkflowApplicationRuntime<
         DocumentRetentionSchema,
         ReviewedDocumentWorkflow,
-        RetentionProgramP0,
+        Program,
     >;
 
     fn deref(&self) -> &Self::Target {
@@ -60,14 +60,14 @@ impl std::ops::Deref for DocumentWorkflowRuntime {
 
 /// Every workflow entry names its vocabulary; this host's initial one is the
 /// P0 vocabulary its workflow runtime retained at installation.
-impl<'application> From<&'application DocumentWorkflowRuntime>
+impl<'application, Program> From<&'application DocumentWorkflowRuntime<Program>>
     for WorthQueryWorkflowVocabulary<
         'application,
         DocumentRetentionSchema,
         ReviewedDocumentWorkflow,
     >
 {
-    fn from(application: &'application DocumentWorkflowRuntime) -> Self {
+    fn from(application: &'application DocumentWorkflowRuntime<Program>) -> Self {
         application.workflow.vocabulary()
     }
 }

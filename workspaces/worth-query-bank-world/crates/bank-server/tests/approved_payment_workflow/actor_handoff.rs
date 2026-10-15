@@ -148,7 +148,7 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
         )) => required.clone(),
         other => panic!("expected the payment operation wait, got {other:?}"),
     };
-    let spoofed = actor_workflow.perform_apply(
+    let spoofed = actor_workflow.advanced().execute_operation(
         instance.clone(),
         &operation,
         starter_authority,
@@ -165,7 +165,8 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
     );
     assert!(settlement_rail.attempts().is_empty());
     let performed = actor_workflow
-        .perform_apply(
+        .advanced()
+        .execute_operation(
             instance.clone(),
             &operation,
             actor_authority,

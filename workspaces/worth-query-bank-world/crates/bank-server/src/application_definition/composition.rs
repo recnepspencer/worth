@@ -75,7 +75,7 @@ fn bank_feature_specs_with_optional_effects(
         .mutation::<ApprovedBusinessPaymentAdvanceBinding>()
         .conditional_operation::<PublishApprovedPaymentAssessment>();
     let payments = if include_ordinary_payment_approval {
-        payments.mutation::<ApprovePaymentMutationBinding>()
+        payments.operation_action::<ApprovePaymentMutationBinding, super::workflow_actions::ApprovedPaymentEffectDelivery>()
     } else {
         payments
     };

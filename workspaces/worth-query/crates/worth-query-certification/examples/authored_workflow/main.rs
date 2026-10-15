@@ -15,7 +15,7 @@ mod information;
 mod review;
 
 use document_retention_model::{
-    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
+    host::{publish_owner_workflow, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     readback::read_retention,
     retention_entry::{ReviewedSetRetentionBinding, ReviewedSetRetentionIntent, DOCUMENT_IDENTITY},
@@ -146,7 +146,7 @@ fn run() {
         None,
     );
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
-    let application = publish_workflow_on_first_program();
+    let application = publish_owner_workflow();
     let review = review();
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
@@ -241,7 +241,7 @@ fn run() {
 }
 
 fn publish(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     predecessor: WorkflowDefinitionExpectedPredecessor,
     key: u64,
@@ -258,7 +258,7 @@ fn publish(
 
 fn discover(
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) -> WorthQueryWorkflowDefinitionDiscovery {
     application
@@ -286,7 +286,7 @@ struct Reviewed {
 /// review until it awaits approval, collecting evidence wherever a review
 /// demands it. Uses keys from `key` upward.
 fn review_proposal(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
@@ -326,7 +326,7 @@ fn review_proposal(
 /// Applies the approved retention through the requirement the instance
 /// awaits; the change's commit also settles the `apply` step.
 fn apply_approved_retention(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
@@ -350,24 +350,28 @@ fn apply_approved_retention(
             },
         })
         .without_source()
-        .idempotency(&(key + 1))
+        .idempotency_owned(key + 1)
         .for_workflow_operation(application, &required)
-        .expect("the effect matches the approved requirement")
-        .execute_in_program(
-            application.program_runtime(),
-            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        .unwrap_or_else(|_|panic!("exact original approved occurrence"))
+        .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
+        .unwrap_or_else(|_|panic!("installed approved effect action"));
+    let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
+        _=>panic!("lawful approved effect"),
+    };
+    effect
+        .close(
+            &runtime
+                .request(&principal, &scope)
+                .on_branch(instance.branch()),
         )
-        .expect("the approved effect executes");
-    assert!(matches!(
-        effect,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+        .unwrap_or_else(|_| panic!("native effect cleanup"));
     assert_eq!(read_retention(runtime, instance.branch()), days);
 }
 
 /// Advances one step and names the node it completed.
 fn advance(
-    application: &DocumentWorkflowRuntime,
+    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) -> String {

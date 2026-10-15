@@ -1,7 +1,7 @@
-//! Information gathering uses the same native operation funnel without signing.
+//! Information gathering retains its native occurrence without requesting a signature.
 
 use super::document_retention_model::{
-    host::publish_workflow_on_first_program,
+    host::publish_owner_workflow,
     operator_identity::{authenticate_operator, request_scope},
     readback::read_retention,
     retention_entry::{OccurrenceSetRetentionBinding, DOCUMENT_IDENTITY},
@@ -25,7 +25,7 @@ use worth_query_host::facade::{
 };
 
 pub(super) fn run() {
-    let application = publish_workflow_on_first_program();
+    let application = publish_owner_workflow();
     let mut definition = ApplicationWorkflowDefinitionBuilder::<ReviewedDocumentWorkflow>::new(
         "record-information",
         definition_limits(),
@@ -85,18 +85,22 @@ pub(super) fn run() {
             retention_days: 8,
         })
         .without_source()
-        .idempotency(&30005_u64)
+        .idempotency_owned(30005_u64)
         .for_workflow_operation(&application, &required)
-        .unwrap()
-        .execute_in_program(
-            application.program_runtime(),
-            ExecutionAllocationPolicy::SystemAllocation,
+        .unwrap_or_else(|_|panic!("exact original occurrence"))
+        .retain_operation::<super::document_retention_model::programs::WorkflowOwnerProgram,super::document_retention_model::programs::OccurrenceAction>(application.program_runtime())
+        .unwrap_or_else(|_|panic!("installed owning action"));
+    let outcome=match outcome.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
+        worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
+        _=>panic!("lawful information effect"),
+    };
+    outcome
+        .close(
+            &runtime
+                .request(&principal, &scope)
+                .on_branch(instance.branch()),
         )
-        .unwrap();
-    assert!(matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+        .unwrap_or_else(|_| panic!("native effect cleanup"));
     assert_eq!(read_retention(runtime, instance.branch()), 8);
     match advance_instance(&application, instance, 30006).unwrap() {
         WorkflowProgressOutcome::Completed(performed) => assert_eq!(performed.node_path(), "done"),

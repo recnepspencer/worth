@@ -126,7 +126,7 @@
 //! }
 //! ```
 //!
-//! Matching native controls and the constrained interim workflow funnel.
+//! Matching advanced native controls and workflow bindings.
 //! ```
 //! use worth_query_host::facade::{application_entry::{advanced::WorthQueryApplicationMutationRequestWithIdempotency, WorthQueryMutationSourcePrepared},
 //!     application_installation::WorthQueryProgramApplicationRuntime, domain::ApplicationSchema,
@@ -229,5 +229,5 @@
 //!     <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
 //!     <I::Binding as ApplicationMutationBinding<S>>::ScopeBinding:
 //!         ApplicationMutationScopeResolution<S, <I::Binding as ApplicationMutationBinding<S>>::PrincipalIdentity>,
-//! { let _ = keyed.execute_in_program(program, todo!()); }
+//! { let _ = keyed.advanced().execute_in_program(program, todo!()); }
 //! ```

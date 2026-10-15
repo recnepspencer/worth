@@ -31,6 +31,9 @@ pub enum BankApprovedPaymentWorkflowError {
     AssessmentAcceptance(WorthQueryWorkflowAssessmentAcceptanceDenial),
     ConditionRead(Box<WorthQueryApplicationRequestQueryDenial>),
     ConditionAcceptance(WorthQueryWorkflowConditionAcceptanceDenial),
+    OperationConstruction(
+        worth_query_host::facade::application_entry::WorthQueryOperationConstructionDenial,
+    ),
     OperationBinding(WorthQueryWorkflowOperationBindingDenial),
     OperationMutation(WorthQueryApplicationRequestMutationDenial),
     OperationOwnerAcceptance(Box<WorthQueryWorkflowOperationOwnerAcceptanceDenial>),
@@ -51,6 +54,9 @@ impl std::fmt::Display for BankApprovedPaymentWorkflowError {
         match self {
             Self::Authentication(denial) => denial.fmt(formatter),
             Self::Definition(denial) => denial.fmt(formatter),
+            Self::OperationConstruction(denial) => {
+                write!(formatter, "workflow operation construction: {denial:?}")
+            }
             Self::OperationBinding(denial) => denial.fmt(formatter),
             Self::DefinitionBinding(denial) => denial.fmt(formatter),
             Self::DefinitionPublication(denial) => denial.fmt(formatter),
@@ -76,6 +82,7 @@ impl std::error::Error for BankApprovedPaymentWorkflowError {
         match self {
             Self::Authentication(denial) => Some(denial),
             Self::Definition(denial) => Some(denial),
+            Self::OperationConstruction(_) => None,
             Self::OperationBinding(denial) => Some(denial),
             Self::DefinitionBinding(denial) => Some(denial),
             Self::DefinitionPublication(denial) => Some(denial),

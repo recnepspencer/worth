@@ -20,7 +20,8 @@ pub use authority::{
 pub use compensate::{compensate_recovery_handle, WorthQueryRecoveryCompensateAdmission};
 pub use disclose::WorthQueryRecoveryDisclosureAdmission;
 pub use dispose::{
-    dispose_recovery_handle, expire_recovery_handle, WorthQueryRecoveryDisposalReceipt,
+    dispose_recovery_handle, expire_recovery_handle, WorthQueryRecoveryDisposalDenial,
+    WorthQueryRecoveryDisposalReceipt,
 };
 pub use expiry::{
     WorthQueryRecoveryCurrentDecision, WorthQueryRecoveryExpiryDecision,

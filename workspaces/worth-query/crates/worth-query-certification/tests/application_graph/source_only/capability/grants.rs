@@ -30,6 +30,32 @@ impl RetentionCapability {
         ApplicationCapabilityRef::from_declaration()
     }
 }
+pub struct WorkflowInstanceStartCapability;
+impl declaration::portable_identity::WorthQueryPortableType for WorkflowInstanceStartCapability {
+    const PORTABLE_TYPE_NAME: &'static str = "capability-retention.WorkflowInstanceStartCapability";
+}
+impl ApplicationCapabilityMarkerIdentity for WorkflowInstanceStartCapability {
+    type Schema = CapabilitySchema;
+    const IDENTIFIER: &'static str = "WorkflowInstanceStartCapability";
+}
+impl WorkflowInstanceStartCapability {
+    pub fn reference() -> ApplicationCapabilityRef<CapabilitySchema, Self> {
+        ApplicationCapabilityRef::from_declaration()
+    }
+}
+pub struct WorkflowAdvanceCapability;
+impl declaration::portable_identity::WorthQueryPortableType for WorkflowAdvanceCapability {
+    const PORTABLE_TYPE_NAME: &'static str = "capability-retention.WorkflowAdvanceCapability";
+}
+impl ApplicationCapabilityMarkerIdentity for WorkflowAdvanceCapability {
+    type Schema = CapabilitySchema;
+    const IDENTIFIER: &'static str = "WorkflowAdvanceCapability";
+}
+impl WorkflowAdvanceCapability {
+    pub fn reference() -> ApplicationCapabilityRef<CapabilitySchema, Self> {
+        ApplicationCapabilityRef::from_declaration()
+    }
+}
 pub struct RevocationCapability;
 impl declaration::portable_identity::WorthQueryPortableType for RevocationCapability {
     const PORTABLE_TYPE_NAME: &'static str = "capability-retention.RevocationCapability";
@@ -101,6 +127,34 @@ impl ApplicationCapabilityRequest<CapabilitySchema, RetentionCapability> for Set
         ApplicationCapabilityRequestProjectionDenial,
     > {
         Ok(projection(1, &self.identity))
+    }
+}
+impl ApplicationCapabilityRequest<CapabilitySchema, WorkflowInstanceStartCapability>
+    for SetRetentionInput
+{
+    type Scope = Document;
+    type Context = GrantContext;
+    fn capability_request(
+        &self,
+    ) -> Result<
+        ApplicationCapabilityRequestProjection<CapabilitySchema, Document, GrantContext>,
+        ApplicationCapabilityRequestProjectionDenial,
+    > {
+        Ok(projection(1, &self.identity))
+    }
+}
+impl ApplicationCapabilityRequest<CapabilitySchema, WorkflowAdvanceCapability>
+    for SetRetentionInput
+{
+    type Scope = Document;
+    type Context = GrantContext;
+    fn capability_request(
+        &self,
+    ) -> Result<
+        ApplicationCapabilityRequestProjection<CapabilitySchema, Document, GrantContext>,
+        ApplicationCapabilityRequestProjectionDenial,
+    > {
+        Ok(projection(2, &self.identity))
     }
 }
 impl ApplicationCapabilityRequest<CapabilitySchema, RevocationCapability> for RevokeInput {
@@ -182,6 +236,18 @@ pub fn declare(
             SetRetention::reference(),
             1,
             1,
+        ))
+        .capability(grant_contract(
+            WorkflowInstanceStartCapability::reference(),
+            SetRetention::reference(),
+            1,
+            1,
+        ))
+        .capability(grant_contract(
+            WorkflowAdvanceCapability::reference(),
+            SetRetention::reference(),
+            2,
+            2,
         ))
         .capability(grant_contract(
             RevocationCapability::reference(),

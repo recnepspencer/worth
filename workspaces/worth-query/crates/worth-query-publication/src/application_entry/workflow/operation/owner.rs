@@ -92,6 +92,8 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     /// Consumes the exact constrained workflow binding and admits fresh owner inspection.
+    /// Local atomic settlement is confirmed as original replay without another command commit;
+    /// external custody still follows native recovery/inbound settlement requirements.
     pub fn accept_operation_from_owner<Intent, SourcePreparation>(
         self,
         required: &RequiredWorkflowOperation,
@@ -272,7 +274,7 @@ where
     Ok((prepared, custody))
 }
 
-pub(super) fn other_custody(
+pub(in crate::application_entry) fn other_custody(
     custody: WorthQueryGuardedWorkflowOperationCustody,
 ) -> WorthQueryWorkflowOperationOwnerPosture {
     use WorthQueryGuardedWorkflowOperationCustody as Custody;
@@ -288,3 +290,6 @@ pub(super) fn other_custody(
         }
     }
 }
+
+#[path = "owner/owning.rs"]
+mod owning;

@@ -28,7 +28,7 @@ fn one_source_reading_settles_and_a_later_call_answers_the_same_demand() {
     let authority = authority(&fixture);
     let instance = awaiting_payment_assessment(&workflow, &authority);
     let mut demand = workflow
-        .begin_payment_assessment(
+        .retain_payment_assessment(
             instance.clone(),
             authority.clone(),
             policy(1, 1),
@@ -37,12 +37,12 @@ fn one_source_reading_settles_and_a_later_call_answers_the_same_demand() {
         .expect("the payment assessment demand starts");
     assert!(
         matches!(
-            workflow.settle_payment_assessment(&mut demand),
+            workflow.advance_payment_assessment(&mut demand),
             Ok(BankApprovedPaymentAssessmentProgress::Settled(_))
         ),
         "one round of one source reading settles the assessment"
     );
-    let assessment = match workflow.settle_payment_assessment(&mut demand) {
+    let assessment = match workflow.advance_payment_assessment(&mut demand) {
         Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => settled,
         Ok(BankApprovedPaymentAssessmentProgress::Pending) => {
             panic!("a settled demand answers its settlement again")
@@ -69,7 +69,7 @@ fn an_undelivered_readiness_reports_pending_and_a_later_call_resumes_the_same_de
     let authority = authority(&fixture);
     let instance = awaiting_payment_assessment(&workflow, &authority);
     let mut demand = workflow
-        .begin_payment_assessment(
+        .retain_payment_assessment(
             instance.clone(),
             authority.clone(),
             policy(1, 1),
@@ -82,12 +82,12 @@ fn an_undelivered_readiness_reports_pending_and_a_later_call_resumes_the_same_de
         .delay_next_output_readiness_delivery_for_test();
     assert!(
         matches!(
-            workflow.settle_payment_assessment(&mut demand),
+            workflow.advance_payment_assessment(&mut demand),
             Ok(BankApprovedPaymentAssessmentProgress::Pending)
         ),
         "a readiness delivery that has not arrived is a wait outside the call"
     );
-    let assessment = match workflow.settle_payment_assessment(&mut demand) {
+    let assessment = match workflow.advance_payment_assessment(&mut demand) {
         Ok(BankApprovedPaymentAssessmentProgress::Settled(settled)) => settled,
         Ok(BankApprovedPaymentAssessmentProgress::Pending) => {
             panic!("the delivered readiness settles the resumed demand")
@@ -114,7 +114,7 @@ fn notified_rounds_carry_one_call_to_settlement() {
     let authority = authority(&fixture);
     let instance = awaiting_payment_assessment(&workflow, &authority);
     let mut demand = workflow
-        .begin_payment_assessment(
+        .retain_payment_assessment(
             instance,
             authority,
             policy(1, 16),
@@ -127,7 +127,7 @@ fn notified_rounds_carry_one_call_to_settlement() {
         .delay_next_output_readiness_delivery_for_test();
     assert!(
         matches!(
-            workflow.settle_payment_assessment(&mut demand),
+            workflow.advance_payment_assessment(&mut demand),
             Ok(BankApprovedPaymentAssessmentProgress::Settled(_))
         ),
         "the round the delivery interrupts notifies the demand, so the next round runs"

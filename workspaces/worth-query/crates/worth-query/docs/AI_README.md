@@ -679,11 +679,13 @@ and [Policy, Tenant, And Relationship-Proof Narrowing](./foundations/policy-tena
 
 #### Workflow-bound operations: three independent checks
 
-The bound `for_workflow_operation(..).execute_in_program(..)` funnel remains
-ordinary until Phase C lands its operation adapter. The existing native owner
-retains the issued transition authority and performs admission/approval rechecks.
-Do not add a consumer continuation or request-rebuilding retry owner around it.
-
+Retain the original guarded no-output operation through
+`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+Every `advance(&fresh_request)` rechecks current action/binding authority. Native
+unpublished and dispatch custody stay in the same owner, without retaining a
+principal or prepared admission. Completed effect cleanup is retained separately
+from workflow acceptance; an assessment owns its actual admitted demand.
+Explicit native workflow execution uses `.advanced().execute_in_program(..)`.
 
 A workflow-bound business operation passes up to three checks. They answer
 different questions, are declared in different places, and none grants another.

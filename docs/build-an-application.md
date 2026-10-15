@@ -1695,11 +1695,12 @@ Use the [ordinary owning entry](#53-execute-through-the-program) for fixed and
 source-only actions. Deliberate native callers select `request.advanced().mutate(intent)`.
 Only that type exposes manual fixed/source-only execute, two-phase prepare,
 unpublished recovery, keyed resolution and fixed output start/recovery.
-The interim ordinary workflow binding returns `WorthQueryBoundWorkflowOperation`:
-it permits the designated `execute_in_program` funnel and owner-derived workflow
-recovery, with no manual preparation, retained execution or generic recovery.
-Phase C replaces that funnel with the owning workflow adapter; callers must not
-introduce their own continuation or effect retry owner. A runtime installed without a
+The ordinary workflow binding retains `WorthQueryWorkflowOperation` through
+`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+Advance it with a fresh request; retain the returned owner on refusal or progress.
+The original slot, native recovery and cleanup remain owned by Query. Deliberate
+native workflow execution requires `.advanced().execute_in_program(..)`.
+A runtime installed without a
 program (`application_installation::in_memory`) is advanced native control;
 its `execute` cannot be an ordinary application default. On a program runtime
 non-program execution refuses with `ApplicationProgramRequired`.
@@ -2051,11 +2052,14 @@ The following fixture deliberately coordinates native output custody through
 
 ## 6. Author, publish, and run workflows
 
-Until Phase C supplies the workflow operation adapter, the bound
-`for_workflow_operation(..).execute_in_program(..)` funnel remains ordinary.
-Its issued transition slot, admission and approval rechecks remain native.
-Do not wrap it in a consumer continuation or retry owner.
-
+Guarded no-output effects use the original descriptor and issued requirement:
+`for_workflow_operation(..)?.retain_operation::<Program, Action>(program)`.
+Every `advance(&fresh_request)` rechecks current native authority. Effect
+completion retains native cleanup; workflow acceptance returns that completed
+owner on refusal and keeps it alongside successful native progression.
+Assessment has a separate retained demand: `into_assessment_demand(..)?`
+`.controls(controls).retain_operation(program)?`, then `advance(&fresh_request)`.
+Observer close, producer cleanup, evidence acceptance and approval are distinct.
 
 A workflow is a branch-local, versioned graph of governed steps. The host
 installs a **vocabulary** once: which operations, assessments, conditions,
@@ -2669,20 +2673,48 @@ approval ([§6.5](#65-who-may-run-a-guarded-operation)).
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.
-// bank-server/src/approved_payment_workflow.rs (`perform_apply`, error mapping removed)
-workflow_runtime
-    .request(&principal, &scope)
+// Exact original meaning is retained once; construction performs no effect.
+let owner = workflow_runtime.request(&principal, &scope)
     .on_branch(instance.branch())
     .mutate(ApprovedBusinessPaymentApplyIntent { input: operation })
-    .idempotency(&operation_key)
-    // `required` is the RequiredWorkflowOperation from
-    // WorkflowProgressOutcome::AwaitingOperation(required).
+    .without_source()
+    .preconditions(original_conditions)
+    .idempotency_owned(operation_key)
     .for_workflow_operation(&workflow_runtime, &required)?
-    .execute_in_program(
-        workflow_runtime.program_runtime(),
-        worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-    )?
+    .retain_operation::<BankApplication, ApprovedPaymentEffectAction>(workflow_runtime.program_runtime())?;
+let fresh = workflow_runtime.request(&fresh_principal, &fresh_scope)
+    .on_branch(instance.branch());
+match owner.advance(&fresh) {
+    WorthQueryWorkflowOperationAdvance::Progress(owner) => retain_for_next_request(owner),
+    WorthQueryWorkflowOperationAdvance::Refused { operation: owner, denial } => {
+        report_refusal(denial);
+        retain_for_next_request(owner);
+    }
+    WorthQueryWorkflowOperationAdvance::Completed(completed) => {
+        // Native Fresh result and Recovered evidence remain distinguishable.
+        let accepted = fresh.mutate(ApprovedBusinessPaymentAdvanceIntent { input: authority })
+            .without_source().idempotency(&accept_key)
+            .prepare_workflow_advance(&workflow_runtime, instance)?
+            .accept_owned_operation(completed)?;
+        record_native_progress(accepted.progress);
+        // Refusal returns the actual completed owner, never a replacement receipt.
+        accepted.operation.close(&fresh)?;
+    }
+    WorthQueryWorkflowOperationAdvance::Terminal(terminal) => {
+        record_native_stop(&terminal);
+        terminal.close(&fresh)?;
+    }
+}
 ```
+
+Local guarded completion already includes the operation settlement in its business
+commit. A caller may close that actual completed owner and freshly advance the
+successor directly. Optional completed-owner acceptance authenticates and projects
+the original node/receipt as replay; it does not perform another settlement or
+execute the successor, and it does not record a new confirmation command key.
+For external effects, genuine native recovery/authenticated inbound custody must
+first permit the existing settlement path. Closing source cleanup or disposing a
+dispatch handle does not substitute for that evidence, assessment acceptance or approval.
 
 **Everything else in the lifecycle:**
 
@@ -2693,7 +2725,9 @@ workflow_runtime
 | `prepare_workflow_instance_migration(workflow, instance, target, resume_at)` | Continues an instance on a later definition from a named node |
 | `prepare_workflow_fork_continuation` | Continues an instance on a forked branch |
 | `prepare_workflow_definition_retirement` | Retires a definition lineage |
-| `accept_operation_from_owner`, `for_workflow_operation_recovery` | Owner receipts and recovery for external effects |
+| `accept_owned_operation(completed)` | Fresh selected admission confirms original local atomic settlement as replay without a new commit/key write; external settlement requires actual recovery/inbound evidence. Success and refusal retain the same completed owner and cleanup. |
+| `operation.advance(&fresh_request)` | Continues original native unpublished/keyed/dispatch custody without reconstructing input, key, authority or recovery handle. |
+| `completed.close(&fresh_request)` | Releases actual cleanup; refusal returns the same owner. Physical release does not make the workflow terminal. |
 | `mutate(i).workflow(&phase, workflow, authored)…`, `start_workflow`, `run_workflow` | The ordinary convenience lane, which validates, binds, publishes, starts, and runs in fewer calls. `phase` is the `WorthQueryAdvancementPhase` of an open advancement, such as the one `with_host_advancement` passes its closure. |
 
 **Observing an instance.** There is no instance-status query. You learn state
@@ -2991,8 +3025,10 @@ but did not publish is recovered with
   `retain_operation::<Program, Action>(&runtime)`, then supply fresh ordinary
   requests for advancement, delivery and close. Native admission checks the
   original runtime, branch and full action meaning on every attempt.
-- Keep the existing discovered and bound workflow entrances until their Phase B
-  and Phase C owners land; do not add a consumer retry engine around them.
+- Retain guarded workflow effects with their original issued requirement; use a
+  separate owning assessment demand for observation. Neither replaces evidence
+  acceptance or approval. Keep discovered work on its native entrance until its
+  owner lands; do not add a consumer retry engine.
 - Match every outcome variant. Treat `NoEffect`, `ProductUnpublished`,
   `Awaiting*`, and `Commit(..)` as states to handle, not errors to retry.
 - `compare` before `adopt`, and pass the requirements you got.
