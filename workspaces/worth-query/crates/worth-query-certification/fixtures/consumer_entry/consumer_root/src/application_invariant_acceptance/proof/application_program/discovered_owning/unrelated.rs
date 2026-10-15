@@ -131,9 +131,37 @@ fn discovered_ordinary_unrelated_progress_is_current_and_consumed_fact_keeps_his
             &before
         );
         if key == "isolated-a" {
+            let delivered = settled.read_current(&request).unwrap();
+            assert_eq!(delivered.rows()[0].value, length(42));
+            let current = request.retain_current_read().unwrap();
+            let independent = request
+                .at(&current)
+                .query(worth_query_topology_entry::PlanarOutputRead {
+                    body_key: "remote-b".to_owned(),
+                })
+                .execute()
+                .unwrap();
+            let actual = delivered.receipt().inspect().basis().clone();
+            let expected = independent.receipt().inspect().basis().clone();
             assert_eq!(
-                settled.read_current(&request).unwrap().rows()[0].value,
-                length(42)
+                (
+                    actual.runtime_instance(),
+                    actual.branch(),
+                    actual.version(),
+                    actual.posture()
+                ),
+                (
+                    expected.runtime_instance(),
+                    expected.branch(),
+                    expected.version(),
+                    expected.posture()
+                ),
+                "current delivery queries the independently current declared observation"
+            );
+            assert_ne!(
+                actual.version(),
+                original_basis.version(),
+                "unrelated progress separates current from original history"
             );
         }
     }

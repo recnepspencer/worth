@@ -73,6 +73,76 @@ fn discovered_currentness_all_retained_dependent_settlements() {
         .rows()[0]
         .value;
     assert_eq!(final_value, length(43));
+    assert_eq!(
+        aggregate.output_count(),
+        3,
+        "one root, one middle, one final leaf"
+    );
+    let leaf_key = "final:final:remote-b:c";
+    let leaf_source = request
+        .query(PlanarRead {
+            body_key: leaf_key.to_owned(),
+        })
+        .execute()
+        .unwrap();
+    assert_eq!(leaf_source.rows()[0].y, length(46));
+    let leaf_expectation = leaf_source.observed_sources()[0].clone();
+    drop(leaf_source);
+    assert!(matches!(
+        request
+            .advanced()
+            .mutate(PlanarEdit(PlanarMutation {
+                scope_key: leaf_key.to_owned(),
+                operation: PlanarOperation::Adjust(vec![PlanarAdjustment {
+                    body_key: leaf_key.to_owned(),
+                    replacement_y: length(47),
+                }]),
+            }))
+            .expect_source(leaf_expectation)
+            .idempotency(&10_221u64)
+            .execute_in_program(
+                &world.application,
+                ExecutionAllocationPolicy::SystemAllocation
+            )
+            .unwrap(),
+        WorthQueryApplicationMutationOutcome::Committed { .. }
+    ));
+    let leaf_current = request.retain_current_read().unwrap();
+    for (_, root) in aggregate.root_outputs() {
+        request
+            .at(&leaf_current)
+            .require_current_output_demand(root, comparison_work(&world.application))
+            .unwrap();
+    }
+    let (_, middle) = aggregate
+        .outputs_for::<MembershipSchema, PlanarOutputToMembershipConnection>()
+        .next()
+        .unwrap();
+    request
+        .at(&leaf_current)
+        .require_current_output_demand(middle, comparison_work(&world.application))
+        .unwrap();
+    let (_, leaf) = aggregate
+        .outputs_for::<MembershipSchema, PlanarFinalToSummaryConnection>()
+        .next()
+        .unwrap();
+    stale(
+        request
+            .at(&leaf_current)
+            .require_current_output_demand(leaf, comparison_work(&world.application)),
+    );
+    stale(
+        request
+            .at(&leaf_current)
+            .require_current_discovered_program_outputs(
+                &aggregate,
+                comparison_work(&world.application),
+            ),
+    );
+    request
+        .at(historical)
+        .require_current_discovered_program_outputs(&aggregate, comparison_work(&world.application))
+        .unwrap();
     let source = request
         .query(PlanarRead {
             body_key: "remote-b".to_owned(),
