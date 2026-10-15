@@ -3,10 +3,7 @@ use super::super::mutations;
 use crate::{BankApplication, BankReadyMutation, SendMoneyAction};
 use bank_domain::schema::{Account, BankSchema, SendMoney, SendMoneyOperation};
 use worth_query_host::facade::{
-    application_entry::{
-        WorthQueryOperationConstructionDenial, WorthQueryOperationDescription,
-        WorthQuerySourceOnlyOperation,
-    },
+    application_entry::WorthQuerySourceOnlyOperation,
     declaration::application_program::ApplicationRetainedCommit,
 };
 
@@ -36,10 +33,7 @@ impl<'runtime>
             SendMoneyAction,
             ApplicationRetainedCommit,
         >,
-        (
-            WorthQueryOperationDescription<BankSchema, SendMoney>,
-            WorthQueryOperationConstructionDenial,
-        ),
+        crate::BankOperationConstructionRefusal<SendMoney>,
     > {
         let (scope, key) = self.controls.into_parts();
         self.runtime
@@ -48,8 +42,19 @@ impl<'runtime>
             .without_source()
             .preconditions(self.preconditions)
             .idempotency_owned(key)
+            .map_err(|(builder, key, denial)| {
+                crate::BankOperationConstructionRefusal::Capture(
+                    builder.into_capture_refusal(key, denial),
+                )
+            })?
             .retain_operation::<BankApplication, SendMoneyAction>(
                 self.runtime.application_program(),
+            )
+            .map_err(
+                |(description, denial)| crate::BankOperationConstructionRefusal::Declaration {
+                    description,
+                    denial,
+                },
             )
     }
 }

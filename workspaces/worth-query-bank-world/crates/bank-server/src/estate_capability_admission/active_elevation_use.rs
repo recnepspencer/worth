@@ -258,7 +258,7 @@ fn real_approved_elevation_cannot_enter_the_bank_disbursement_operation() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         source_operation.advance(&source_request)
     };
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: _ordinary_source, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Authorization(_)) } = ordinary else { panic!("approved elevation cannot substitute ordinary disbursement capability") };

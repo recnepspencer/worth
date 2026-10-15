@@ -45,6 +45,7 @@ fn workflow_owning_approval_revoked_after_construction_spends_no_business_effect
         })
         .without_source()
         .idempotency_owned(0x9176c411_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(&host.workflow, &required)
         .unwrap_or_else(|_| panic!("owner BEFORE revocation"))
         .retain_operation::<WorkflowOwnerProgram, ReviewedAction>(host.workflow.program_runtime())
@@ -59,6 +60,7 @@ fn workflow_owning_approval_revoked_after_construction_spends_no_business_effect
         })
         .without_source()
         .idempotency_owned(0x9176c412_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<WorkflowOwnerProgram, GrantStatusAction>(
             host.workflow.program_runtime(),
         )

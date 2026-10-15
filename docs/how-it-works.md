@@ -1811,13 +1811,15 @@ Assessments and conditions take their subject from the proposal
 (`proposal_for_assessment`, `condition_subject`) and read that subject's
 current state on the branch, never the proposed value. At a guarded node (`workflow_authority required`), an advance returns
 `AwaitingOperation` carrying single-use authority for that occurrence; nothing
-is committed. The caller then runs the business operation with
-`for_workflow_operation(..)` and `execute_in_program(..)`. That runs ordinary
-admission (check 1), requires the input to hash to the proposal's digest, and
-commits the business write together with the node's settlement. If the handler
-denies, nothing commits and the node still waits; the authority was spent at
-admission, so advance again for fresh authority before retrying. After a
-commit, advance again to move to the successor.
+is committed. The ordinary caller captures the original input fallibly with
+`idempotency_owned`, binds the description with `for_workflow_operation`, and
+retains the installed declared action. Each owning `advance` takes a fresh
+request and delegates the existing native admission, proposal-input matching
+and atomic business-write/node-settlement funnel. Refusal and pending results
+return the original owner; close releases its native cleanup separately.
+Manual `execute_in_program` uses the explicit advanced entrance. A subsequent
+workflow advance selects the successor; source completion alone is not that
+workflow advance.
 
 Full rules:
 [Workflows, Operations](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md#operations).

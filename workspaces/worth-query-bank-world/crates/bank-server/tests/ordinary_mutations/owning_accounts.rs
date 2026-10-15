@@ -25,7 +25,7 @@ fn owning_personal_account_partial_refuses_recovers_reads_and_closes_once() {
             key("owning-personal-partial"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared account action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared account action: {cause:?}"));
     fixture.world.runtime.fail_next_durable_append_for_test();
     let request = fixture.world.runtime.request(&teller, &scope);
     let Advance::Progress(operation) = operation.advance(&request) else {

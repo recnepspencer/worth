@@ -99,7 +99,8 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
         let description = request
             .mutate(OriginalAdjustment(contact_identity.clone()))
             .expect_source(source)
-            .idempotency_owned(10_062);
+            .idempotency_owned(10_062)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
         let (description, denial) = description
             .retain_operation::<crate::ConsumerProgram, MissingFixedAction>(&world.application)
             .err()

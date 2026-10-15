@@ -41,6 +41,7 @@ fn run() {
         .expect("the application entry must read the initial row");
     assert_eq!(initial.rows()[0].input, "payload");
 
+    // compiled-example: begin
     let operation = request
         .mutate(AmendTemporalIntent {
             identity: "intent-1".to_owned(),
@@ -53,7 +54,7 @@ fn run() {
             },
         })
         .without_source()
-        .idempotency_owned(0x51_u64)
+        .idempotency_owned(0x51_u64).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<product_workflow_support::program::TemporalExampleProgram,
             product_workflow_support::program::AmendTemporalAction>(&application.runtime)
         .unwrap_or_else(|(_, denial)| panic!("declared temporal action: {denial:?}"));
@@ -83,6 +84,7 @@ fn run() {
     completed
         .close(&request)
         .unwrap_or_else(|(_, denial)| panic!("native cleanup refused: {denial:?}"));
+    // compiled-example: end
 
     let current = application
         .runtime

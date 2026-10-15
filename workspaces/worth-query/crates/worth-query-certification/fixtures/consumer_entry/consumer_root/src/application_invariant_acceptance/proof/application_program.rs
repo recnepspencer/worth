@@ -342,3 +342,6 @@ mod fixed_replay;
 mod fixed_missing_carrier;
 
 mod fixed_managed_cleanup;
+
+#[cfg(test)]
+mod operation_cost;

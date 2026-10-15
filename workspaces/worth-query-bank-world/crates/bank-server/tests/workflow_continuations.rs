@@ -56,7 +56,7 @@ fn initiation_recovers_one_continuation_and_a_fresh_approver_starts_its_workflow
             .as_principal(&owner)
             .controls(controls("initiate-workflow"))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared initiation: {cause:?}"))
+            .unwrap_or_else(|cause| panic!("declared initiation: {cause:?}"))
     };
     let scope = request_scope();
     let request = fixture.world.runtime.request(&owner, &scope);
@@ -182,7 +182,7 @@ fn pending_read_mints_no_authority_and_decided_continuation_cannot_be_decided_ag
         .as_principal(&approver)
         .controls(controls("approver-can-reject"))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared rejection: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared rejection: {cause:?}"));
     let Advance::Completed(rejection) = operation.advance(&request) else {
         panic!("fresh rejection completes")
     };
@@ -200,7 +200,7 @@ fn pending_read_mints_no_authority_and_decided_continuation_cannot_be_decided_ag
         .as_principal(&approver)
         .controls(controls("cannot-decide-twice"))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared rejection: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared rejection: {cause:?}"));
     let Advance::Terminal(stale_decision) = operation.advance(&request) else {
         panic!("decided payment remains terminal")
     };
@@ -230,7 +230,7 @@ fn a_fresh_authorized_rejector_can_reject_the_read_derived_continuation() {
         .as_principal(&approver)
         .controls(controls("reject-pending"))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared rejection: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared rejection: {cause:?}"));
     let Advance::Completed(rejection) = operation.advance(&request) else {
         panic!("fresh rejection completes")
     };
@@ -294,7 +294,7 @@ fn pending_decision_crosses_adoption_only_through_fresh_p1_admission() {
         .as_principal(&approver)
         .controls(controls("reject-after-adoption"))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared rejection: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared rejection: {cause:?}"));
     let Advance::Completed(rejection) = operation.advance(&request) else {
         panic!("fresh rejection completes")
     };
@@ -309,7 +309,6 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
     let fixture = ordinary_read_world("cancelled-continuation", 0);
     let owner = fixture.authenticate(OWNER);
     let cancellation = WorthQueryCancellationSource::new();
-    cancellation.cancel();
     let input = InitiateBusinessPayment {
         business: BusinessId::new(1).unwrap(),
         from: fixture.business_account,
@@ -331,7 +330,8 @@ fn cancelled_initiation_cannot_mint_a_continuation() {
             BankIdempotencyKey::new("cancelled-initiation").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("construction retains meaning: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("construction retains meaning: {cause:?}"));
+    cancellation.cancel();
     let Advance::Refused {
         operation: _operation,
         denial:

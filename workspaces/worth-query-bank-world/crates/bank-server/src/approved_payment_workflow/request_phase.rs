@@ -144,6 +144,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         zero_work();
         let before = reads();
         let denied = mutation
+            .advanced()
             .prepare_workflow_operation_recovery_from_owner(&ready.operation)
             .err()
             .unwrap();
@@ -155,6 +156,7 @@ fn owner_acceptance_and_recovery_doors_open_before_their_first_reader() {
         reports();
         let before = reads();
         let prepared = mutation
+            .advanced()
             .prepare_workflow_operation_recovery_from_owner(&ready.operation)
             .expect("the genuine unresolved outbox admits recovery");
         admitted(before);

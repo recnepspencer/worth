@@ -88,7 +88,8 @@ fn counterfeit_delivery_selector_refuses_and_installed_twin_constructs() {
     let description = request
         .mutate(input.clone())
         .expect_source(source)
-        .idempotency_owned(10_063);
+        .idempotency_owned(10_063)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
     let (description, denial) = match description
         .retain_operation::<crate::ConsumerProgram, CounterfeitAction>(&world.application)
     {
@@ -172,7 +173,8 @@ fn common_operation_handoff_required_output_cannot_select_source_completion() {
     let description = request
         .mutate(input.clone())
         .expect_source(source)
-        .idempotency_owned(10_064);
+        .idempotency_owned(10_064)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
     let (description, denial) = match description
         .retain_operation::<crate::ConsumerProgram, SourceRequestedAction>(&world.application)
     {

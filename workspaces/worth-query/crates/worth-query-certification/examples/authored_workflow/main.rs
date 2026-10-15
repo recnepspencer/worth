@@ -34,8 +34,7 @@ use worth_query_host::facade::{
         PublishedWorkflowDefinitionRef, PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
         RequiredWorkflowApproval, WorkflowApprovalDecision, WorkflowDefinitionExpectedPredecessor,
         WorkflowDefinitionPublicationOutcome, WorkflowInstanceStartOutcome,
-        WorkflowProgressOutcome, WorkflowProposalOutcome, WorthQueryApplicationMutationOutcome,
-        WorthQueryApplicationRequestExt,
+        WorkflowProgressOutcome, WorkflowProposalOutcome, WorthQueryApplicationRequestExt,
     },
     declaration::application_program::{
         ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
@@ -331,6 +330,7 @@ fn apply_approved_retention(
     days: u64,
     key: u64,
 ) {
+    // compiled-example: begin
     let required = match advance_instance(application, instance.clone(), key)
         .expect("the approved effect requirement prepares")
     {
@@ -350,7 +350,7 @@ fn apply_approved_retention(
             },
         })
         .without_source()
-        .idempotency_owned(key + 1)
+        .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_|panic!("exact original approved occurrence"))
         .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
@@ -367,6 +367,7 @@ fn apply_approved_retention(
         )
         .unwrap_or_else(|_| panic!("native effect cleanup"));
     assert_eq!(read_retention(runtime, instance.branch()), days);
+    // compiled-example: end
 }
 
 /// Advances one step and names the node it completed.

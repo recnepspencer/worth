@@ -87,7 +87,7 @@
 //! }
 //! ```
 //!
-//! A valid native control actually executes through the explicit advanced type.
+//! This valid native counterpart compile-checks the explicit advanced call.
 //! ```
 //! use worth_query_host::facade::{application_entry::WorthQueryApplicationRequest,
 //!     application_installation::WorthQueryProgramApplicationRuntime, domain::ApplicationSchema,
@@ -121,8 +121,8 @@
 //! fn original<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(builder: WorthQueryOperationBuilder<'_, '_, '_, S, I>,
 //!     key: <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey) -> WorthQueryOperationDescription<S, I>
 //! where I::Binding: ApplicationMutationBinding<S, SourceExpectation = NoApplicationMutationSource>,
-//!     <I::Binding as ApplicationMutationBinding<S>>::Input: Clone {
-//!     builder.without_source().idempotency_owned(key)
+//!     <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync {
+//!     builder.without_source().idempotency_owned(key).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
 //! }
 //! ```
 //!

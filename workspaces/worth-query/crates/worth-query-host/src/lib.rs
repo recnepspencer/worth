@@ -328,3 +328,5 @@ mod ordinary_contract;
 mod workflow_owner_contract;
 
 mod discovered_currentness_contract;
+
+mod funded_input_contract;

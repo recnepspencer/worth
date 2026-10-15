@@ -47,12 +47,10 @@ pub(super) async fn execute_disbursement<A: BankHttpApplicationAuthenticator>(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err(_cause) => {
+        Err(refusal) => {
             return disbursement_denied(
                 Some(request.request_id),
-                super::super::mutation_refusal::denial(
-                    super::super::super::protocol::BankHttpDenialKind::InternalDenied,
-                ),
+                super::super::construction_denial::construction(refusal),
             )
             .into()
         }

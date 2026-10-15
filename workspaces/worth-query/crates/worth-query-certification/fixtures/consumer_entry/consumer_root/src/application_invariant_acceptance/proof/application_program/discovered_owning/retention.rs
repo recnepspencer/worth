@@ -46,6 +46,7 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         }))
         .expect_source(prior_source)
         .idempotency_owned(110_011)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
         .unwrap_or_else(|(_, denial)| panic!("prior ordinary construction: {denial:?}"));
     let prior = match prior.advance(&request) {
@@ -89,6 +90,7 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
             ApplicationEncodedScalarValue::try_new("anchor-a".to_owned()).unwrap(),
         ))
         .idempotency_owned(110_012)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
         .unwrap_or_else(|(_, denial)| panic!("ordinary installed construction: {denial:?}"));
     let guard = world

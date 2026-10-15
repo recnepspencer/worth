@@ -31,6 +31,7 @@ fn original(host: &host::Host, key: u64) -> (PublishedWorkflowInstanceRef, Owner
         })
         .without_source()
         .idempotency_owned(key + 4)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(&host.workflow, &required)
         .unwrap_or_else(|_| panic!("original binding"))
         .retain_operation::<WorkflowOwnerProgram, OccurrenceAction>(host.workflow.program_runtime())

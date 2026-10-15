@@ -29,6 +29,7 @@ macro_rules! settle {
                 .mutate(input)
                 .expect_source(source)
                 .idempotency_owned($key)
+                .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
                 .retain_operation::<$program, $action>(&$world.application)
                 .unwrap_or_else(|(_, denial)| panic!("construction: {denial:?}")),
         );

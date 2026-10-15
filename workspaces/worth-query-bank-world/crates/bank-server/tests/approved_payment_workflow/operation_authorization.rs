@@ -123,7 +123,7 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
             key("approved-payment:authorization:revoke"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
     ) = source_operation.advance(&revoked_request)

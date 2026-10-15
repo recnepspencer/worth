@@ -42,7 +42,7 @@ fn executor_context_selector_survives_unwarmed_program_adoption() {
             bank_domain::proposals::BankIdempotencyKey::new("recognition-successor").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("construction: {cause:?}"));
     let WorthQuerySourceOnlyAdvance::Completed(completed) =
         operation.advance(&runtime.request(&actor, &scope))
     else {

@@ -33,7 +33,7 @@ fn public_query_progression_freezes_the_exact_estate_account() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             source_completed,
         ) = source_operation.advance(&source_request)
@@ -77,7 +77,7 @@ fn public_query_progression_freezes_the_exact_estate_account() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             source_completed,
         ) = source_operation.advance(&source_request)
@@ -122,7 +122,7 @@ fn public_query_progression_freezes_the_exact_estate_account() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Terminal(
             source_terminal,
         ) = source_operation.advance(&source_request)
@@ -176,7 +176,7 @@ fn estate_preview_keeps_its_exact_account_status_after_a_freeze_commit() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             source_completed,
         ) = source_operation.advance(&source_request)
@@ -230,7 +230,7 @@ fn foreign_grant_account_reaches_projection_but_cannot_receive_effect_authority(
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: source_custody, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = source_operation.advance(&source_request) else { panic!("native pre-effect projection refusal") };
         let cause = cause
             .downcast::<bank_server::BankEstateFreezeProjectionDenial>()
@@ -274,9 +274,7 @@ fn non_open_accounts_cannot_begin_a_second_freeze_transition() {
                     (*source_key).clone(),
                 ))
                 .retain_operation()
-                .unwrap_or_else(|(_, cause)| {
-                    panic!("exact declared estate construction: {cause:?}")
-                });
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
             let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: source_custody, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::Handler(worth_query_host::facade::primary_graph::MutationHandlerExecutionDenial::Handler(cause))) } = source_operation.advance(&source_request) else { panic!("native pre-effect projection refusal") };
             let cause = cause
                 .downcast::<bank_server::BankEstateFreezeProjectionDenial>()

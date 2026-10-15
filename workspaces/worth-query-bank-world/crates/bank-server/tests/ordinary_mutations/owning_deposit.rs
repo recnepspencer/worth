@@ -29,7 +29,7 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
             key("owning-deposit"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, denial)| panic!("declared deposit: {denial:?}"));
+        .unwrap_or_else(|denial| panic!("declared deposit: {denial:?}"));
     fixture.world.runtime.fail_next_durable_append_for_test();
     let request = fixture.world.runtime.request(&teller, &scope);
     let history = NonZeroUsize::new(128).unwrap();
@@ -150,7 +150,7 @@ fn owning_retained_deposit_recovers_once_with_fresh_authority_and_cleanup() {
             key("owning-deposit-later"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("later deposit construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("later deposit construction: {cause:?}"));
     let Advance::Completed(later) =
         later.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
     else {

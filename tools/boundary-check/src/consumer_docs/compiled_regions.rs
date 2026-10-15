@@ -1,5 +1,5 @@
 //! Compiled fixture region existence and source containment.
-use super::configuration::{confined_path, SOURCE};
+use super::configuration::{confined_path, Configuration, SOURCE};
 use super::{native_test_cfg, region_compilation};
 use crate::source_rules::{parse_crate_modules_where, GovernedCrate};
 use std::collections::BTreeSet;
@@ -11,25 +11,81 @@ pub(super) struct FixtureSources {
 }
 
 impl FixtureSources {
-    pub(super) fn validate(&mut self, root: &Path, name: &str) -> Result<(), String> {
+    pub(super) fn validate(
+        &mut self,
+        root: &Path,
+        config: &Configuration,
+        name: &str,
+    ) -> Result<(), String> {
         if !confined_path(name) || !name.ends_with(".rs") {
             return Err("compiled source must be a Rust path beneath topology_entry/src".into());
         }
-        let owner = root
-            .join(SOURCE)
-            .canonicalize()
-            .map_err(|error| error.to_string())?;
-        let source = owner
-            .join(name)
-            .canonicalize()
-            .map_err(|error| format!("compiled source missing: {error}"))?;
-        if !source.starts_with(&owner) {
-            return Err("compiled source escapes topology_entry/src".into());
-        }
-        let reachable = self.reachable.get_or_insert_with(|| native_sources(&owner));
-        if !reachable.as_ref().map_err(Clone::clone)?.contains(&source) {
-            return Err("compiled source is absent from the topology fixture module graph".into());
-        }
+        let source = if let Some(binding) = config
+            .compiled_sources
+            .iter()
+            .find(|item| item.name == name)
+        {
+            let owner = root
+                .join(&binding.crate_root)
+                .canonicalize()
+                .map_err(|e| e.to_string())?;
+            let target = owner
+                .join(&binding.target)
+                .canonicalize()
+                .map_err(|e| e.to_string())?;
+            let source = owner
+                .join(&binding.source)
+                .canonicalize()
+                .map_err(|e| e.to_string())?;
+            if !source.starts_with(&owner) || !target.starts_with(&owner) {
+                return Err("compiled source escapes its declared owner".into());
+            }
+            let graph = crate::source_rules::parse_compiled_target_where(
+                &GovernedCrate {
+                    package: name.into(),
+                    crate_root: owner.clone(),
+                    relative_crate_root: binding.crate_root.clone(),
+                },
+                &target,
+                &|module| native_test_cfg::active(&module.attrs) == Ok(true),
+            )?;
+            let reachable = graph.modules.iter().any(|(path, node)| {
+                owner
+                    .join(&node.relative_source)
+                    .canonicalize()
+                    .ok()
+                    .as_ref()
+                    == Some(&source)
+                    && (0..=path.len()).all(|length| {
+                        graph.modules.get(&path[..length]).is_some_and(|ancestor| {
+                            native_test_cfg::active(&ancestor.attributes) == Ok(true)
+                        })
+                    })
+            });
+            if !reachable {
+                return Err("compiled source is absent from its selected Cargo target".into());
+            }
+            source
+        } else {
+            let owner = root
+                .join(SOURCE)
+                .canonicalize()
+                .map_err(|e| e.to_string())?;
+            let source = owner
+                .join(name)
+                .canonicalize()
+                .map_err(|e| format!("compiled source missing: {e}"))?;
+            if !source.starts_with(&owner) {
+                return Err("compiled source escapes topology_entry/src".into());
+            }
+            let reachable = self.reachable.get_or_insert_with(|| native_sources(&owner));
+            if !reachable.as_ref().map_err(Clone::clone)?.contains(&source) {
+                return Err(
+                    "compiled source is absent from the topology fixture module graph".into(),
+                );
+            }
+            source
+        };
         let text =
             crate::source_documents::read_to_string(&source).map_err(|error| error.to_string())?;
         let text = text.replace("\r\n", "\n");

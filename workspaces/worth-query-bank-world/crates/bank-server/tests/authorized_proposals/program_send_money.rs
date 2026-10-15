@@ -63,7 +63,7 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                 .as_principal(&actor)
                 .controls(controls(operation_key))
                 .retain_operation()
-                .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+                .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
             match operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap()) {
                 Advance::Completed(done) => {
                     let Completion::Fresh { result, .. } = done.evidence() else {
@@ -123,7 +123,7 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
         .as_principal(&actor)
         .controls(controls("program-post-concurrency-overspend"))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let Advance::Terminal(terminal) =
         operation.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap())
     else {
@@ -199,7 +199,7 @@ fn execute_send(
         .as_principal(&actor)
         .controls(controls(operation_key))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let fresh = world.runtime.request(&actor, &request);
     let Advance::Completed(done) =
         operation.advance(&fresh, std::num::NonZeroUsize::new(20_000).unwrap())

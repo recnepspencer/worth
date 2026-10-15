@@ -44,6 +44,7 @@ fn source_only_pinned_commit_time_staleness_retains_terminal_original_loan() {
         .mutate(input.clone())
         .expect_source(observed.observed_sources()[0].clone())
         .idempotency_owned(10_211)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<PinnedSourceProgram, PinnedAction>(&world.application)
         .unwrap_or_else(|(_, cause)| panic!("actual original row constructs: {cause:?}"));
     drop(observed);
@@ -87,6 +88,7 @@ fn source_only_pinned_commit_time_staleness_retains_terminal_original_loan() {
             })
             .expect_source(observed.observed_sources()[0].clone())
             .idempotency_owned(10_212)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<PinnedSourceProgram, PinnedAction>(&world.application)
             .unwrap_or_else(|(_, cause)| panic!("real competitor constructs: {cause:?}"));
         match competitor.advance(&request) {

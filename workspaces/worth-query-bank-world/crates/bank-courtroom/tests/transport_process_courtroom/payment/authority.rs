@@ -55,7 +55,7 @@ pub(super) fn revoke_approver(
             key("payment-court:revoke-approver"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("revocation construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("revocation construction: {cause:?}"));
     let WorthQuerySourceOnlyAdvance::Completed(revoked) = operation.advance(&request) else {
         panic!("owner revokes before callback")
     };
@@ -85,7 +85,7 @@ pub(super) fn restore_approver(
             key("payment-court:restore-approver"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("grant construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("grant construction: {cause:?}"));
     let request = runtime.request(owner, scope);
     let WorthQuerySourceOnlyAdvance::Completed(granted) = granted.advance(&request) else {
         panic!("owner restores current approval")

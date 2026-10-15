@@ -1,5 +1,6 @@
 //! One observation, one execution and one cumulative native comparison meter.
 use super::*;
+pub(super) mod observation;
 use crate::domain_computation::primary_graph::{
     application_attempt::retained_decision_facts::StorageControl,
     output_reuse::{first_moved_fact, retained_fact_denial},
@@ -27,7 +28,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .map_err(execution_denial)?;
         let control = RequestAllocationControl::new(request, execution.allocation_policy());
         let mut admission = self.request_admission(maximum_work);
-        runtime
+        let outcome = runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |relational| {
@@ -48,7 +49,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     )?;
                 }
                 Ok(())
-            })
+            });
+        observation::record(runtime, admission.charged_work());
+        outcome
     }
     // Single-member comparison is owner-local. It issues no complete-set proof;
     // production's loop lends the SAME admission to every member.

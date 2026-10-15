@@ -106,7 +106,7 @@ pub(super) struct PreparedCapabilityAdmission<
     principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &'a WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
     approved: Option<&'a WorthQueryApprovedElevation>,
-    input: std::sync::Arc<Input>,
+    input: worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
     request_scope: WorthQueryRequestScope,
     installed: &'a WorthQueryInstalledCapabilityPlan,
     projection: ApplicationCapabilityRequestProjection<

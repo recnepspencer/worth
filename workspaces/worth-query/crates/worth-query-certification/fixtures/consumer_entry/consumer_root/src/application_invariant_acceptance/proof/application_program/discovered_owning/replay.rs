@@ -20,6 +20,7 @@ fn discovered_ordinary_registered_reply_loss_recovers_without_rerunning_handler(
         .mutate(Original(input.clone()))
         .expect_source(source.clone())
         .idempotency_owned(110_021)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
         .unwrap_or_else(|(_, d)| panic!("construction: {d:?}"));
     let original = match original.advance(&request) {
@@ -35,6 +36,7 @@ fn discovered_ordinary_registered_reply_loss_recovers_without_rerunning_handler(
         .mutate(Original(input.clone()))
         .expect_source(source.clone())
         .idempotency_owned(110_021)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
         .unwrap_or_else(|(_, d)| panic!("replay construction: {d:?}"));
     let replay = match replay.advance(&request) {
@@ -84,6 +86,7 @@ fn discovered_ordinary_registered_reply_loss_recovers_without_rerunning_handler(
         .mutate(Original(input.clone()))
         .expect_source(source)
         .idempotency_owned(110_021)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
         .unwrap_or_else(|(_, d)| panic!("completed replay construction: {d:?}"));
     let replay = match replay.advance(&request) {

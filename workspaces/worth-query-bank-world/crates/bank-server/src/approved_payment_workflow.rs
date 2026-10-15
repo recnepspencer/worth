@@ -244,6 +244,11 @@ impl<'runtime, 'principal, 'scope> BankApprovedPaymentWorkflow<'runtime, 'princi
             .mutate(ApprovedBusinessPaymentApplyIntent { input: operation })
             .without_source()
             .idempotency_owned(command_key)
+            .map_err(|(builder, key, denial)| {
+                BankApprovedPaymentWorkflowError::OperationCapture(
+                    builder.into_capture_refusal(key, denial),
+                )
+            })?
             .for_workflow_operation(self.runtime.approved_payment_workflow_runtime(), required)
             .map_err(|(_, cause)| BankApprovedPaymentWorkflowError::OperationBinding(cause))?
             .retain_operation::<crate::BankApplication, crate::ApprovedPaymentEffectAction>(

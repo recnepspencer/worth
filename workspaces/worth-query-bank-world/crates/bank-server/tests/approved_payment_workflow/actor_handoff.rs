@@ -88,7 +88,7 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
             key("approved-payment:handoff:revoke-starter"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
     ) = source_operation.advance(&revoked_request)

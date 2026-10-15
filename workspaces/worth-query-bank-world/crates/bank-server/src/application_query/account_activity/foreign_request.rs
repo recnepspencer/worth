@@ -61,7 +61,7 @@ fn canceled_foreign_branch_is_refused_and_the_next_good_request_delivers() {
             bank_domain::proposals::BankIdempotencyKey::new("live-foreign-probe-deposit").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared deposit: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared deposit: {cause:?}"));
     let advance_scope = request_scope();
     let advance_request = runtime.request(&teller, &advance_scope);
     let WorthQuerySourceOnlyAdvance::Completed(committed) = operation.advance(

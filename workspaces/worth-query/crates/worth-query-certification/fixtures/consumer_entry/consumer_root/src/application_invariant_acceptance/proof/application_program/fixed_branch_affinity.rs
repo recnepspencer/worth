@@ -61,6 +61,7 @@ fn fixed_branch_affinity_default_switch_preserves_original_owner() {
         .mutate(input.clone())
         .expect_source(source)
         .idempotency_owned(10_191)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<crate::ConsumerProgram, ConsumerFixedAction>(&world.application)
         .unwrap_or_else(|(_, denial)| panic!("construction: {denial:?}"));
     assert_eq!(operation.branch(), original_branch);

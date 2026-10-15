@@ -65,7 +65,8 @@ fn common_operation_handoff_native_inventory_refuses_required_source() {
             replacement_y: length(2),
         })
         .expect_source(source)
-        .idempotency_owned(10_065);
+        .idempotency_owned(10_065)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
     let (_, denial) = match description
         .retain_operation::<RequiredSourceRequestedAsCompletion, RequestedAction>(
             &world.application,

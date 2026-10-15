@@ -91,7 +91,7 @@ fn performed_effect_recovery_survives_removal_from_the_current_program() {
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         source_operation.advance(&source_request)
     };
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused { operation: _original_ordinary, denial: worth_query_host::facade::application_entry::WorthQuerySourceOnlyDenial::Mutation(worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired) } = ordinary else { panic!("removed declaration refuses at the current installed action owner") };

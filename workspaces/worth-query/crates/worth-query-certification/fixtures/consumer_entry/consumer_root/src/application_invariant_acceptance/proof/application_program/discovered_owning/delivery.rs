@@ -32,6 +32,7 @@ fn discovered_ordinary_batch_is_complete_and_same_basis_after_aggregate_work_ref
             .mutate(Original(input.clone()))
             .expect_source(source)
             .idempotency_owned(110_031)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<Program<BatchDelivery<2>>, Action<BatchDelivery<2>>>(
                 &world.application,
             )
@@ -146,7 +147,8 @@ fn discovered_ordinary_concrete_selector_refused_before_effect_and_valid_twin_se
     let description = request
         .mutate(Original(input.clone()))
         .expect_source(source)
-        .idempotency_owned(110_032);
+        .idempotency_owned(110_032)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
     let (description, denial) = match description
         .retain_operation::<Program<QueryDelivery>, Action<CounterfeitDelivery>>(&world.application)
     {
@@ -204,6 +206,7 @@ fn discovered_ordinary_no_projection_closes_actual_nonempty_fanout_without_query
             })
             .expect_source(source)
             .idempotency_owned(110_033)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<Program<NoProjectionDelivery>, Action<NoProjectionDelivery>>(
                 &world.application,
             )

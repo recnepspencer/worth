@@ -721,7 +721,8 @@ The installed requirement (`workflow_requirements` inside
 Leaving `workflow_requirements` out does **not** mean "no approval". It means
 "exactly one approval". To run a guarded operation without a signature, declare
 `new()`. A definition cannot weaken the installed evidence floor. Execute
-through the existing `for_workflow_operation` plus `execute_in_program` funnel.
+through fallible `idempotency_owned`, `for_workflow_operation`, the installed
+action's `retain_operation`, and fresh owning `advance`/`close`.
 Do not invent signed/unsigned authorization modes, dummy approvals, host permit
 flags, or a parallel state machine to bridge it.
 

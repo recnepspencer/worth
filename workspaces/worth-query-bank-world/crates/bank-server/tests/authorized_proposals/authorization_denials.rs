@@ -57,7 +57,7 @@ fn program_entry_denies_unauthorized_account_mutations() {
             key("customer-cannot-open"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared creation: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared creation: {cause:?}"));
     let fresh = world.runtime.request(&owner_actor, &request);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
         operation: _operation,
@@ -83,7 +83,7 @@ fn program_entry_denies_unauthorized_account_mutations() {
             key("non-owner-cannot-send"),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("send construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("send construction: {cause:?}"));
     let fresh = world.runtime.request(&other_actor, &request);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Refused {
         operation,

@@ -12,4 +12,7 @@ pub use outcome::{
     BankEntityResolutionDenialKind, BankOperationInstallationDenial,
     BankOperationInstallationDenialKind,
 };
-pub use query::{mutations, BankMutation, BankMutationForPrincipal, BankReadyMutation};
+pub use query::{
+    mutations, BankMutation, BankMutationForPrincipal, BankOperationConstructionRefusal,
+    BankReadyMutation,
+};

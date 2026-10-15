@@ -30,6 +30,7 @@ macro_rules! settle {
                 .mutate(input)
                 .expect_source(source)
                 .idempotency_owned($key)
+                .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
                 .retain_operation::<$program, $action>(&$world.application)
                 .unwrap_or_else(|(_, denial)| panic!("construction: {denial:?}")),
         );
@@ -111,7 +112,8 @@ fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
     let description = request
         .mutate(input.clone())
         .expect_source(source)
-        .idempotency_owned(10_142);
+        .idempotency_owned(10_142)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"));
     let (description, denial) = match description
         .retain_operation::<BatchProgram, CounterfeitBatchAction>(&world.application)
     {

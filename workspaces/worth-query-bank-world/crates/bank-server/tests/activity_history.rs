@@ -58,7 +58,7 @@ fn activity_pages_keep_one_exact_basis_across_a_new_commit() {
             BankIdempotencyKey::new("activity-page-version-change").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
     let scope = request_scope();
     let request = fixture.world.runtime.request(&teller, &scope);
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
@@ -208,7 +208,7 @@ fn revocation_before_resume_denies_fresh_page_admission() {
             BankIdempotencyKey::new("revoke-continuation-viewer").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared source action: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared source action: {cause:?}"));
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
         revoked,
     ) = operation.advance(&revoked_request)
@@ -303,7 +303,7 @@ fn activity_order_follows_committed_account_sequence_not_derived_identity() {
                 BankIdempotencyKey::new(key).unwrap(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("deposit construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("deposit construction: {cause:?}"));
         let scope = request_scope();
         let request = fixture.world.runtime.request(&teller, &scope);
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(

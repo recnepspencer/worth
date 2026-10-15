@@ -24,12 +24,7 @@ pub(super) fn notify(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err((description, denial)) => {
-            return EstateSourceCommandOutcome::Construction {
-                description,
-                denial,
-            }
-        }
+        Err(refusal) => return EstateSourceCommandOutcome::Construction(refusal),
     };
     // These existing command inputs declare no additional caller conditions.
     // Construction retains that exact typed empty condition set and owned key.
@@ -60,12 +55,7 @@ pub(super) fn retransmit(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err((description, denial)) => {
-            return EstateSourceCommandOutcome::Construction {
-                description,
-                denial,
-            }
-        }
+        Err(refusal) => return EstateSourceCommandOutcome::Construction(refusal),
     };
     // These existing command inputs declare no additional caller conditions.
     // Construction retains that exact typed empty condition set and owned key.
@@ -93,12 +83,7 @@ pub(super) fn freeze(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err((description, denial)) => {
-            return EstateSourceCommandOutcome::Construction {
-                description,
-                denial,
-            }
-        }
+        Err(refusal) => return EstateSourceCommandOutcome::Construction(refusal),
     };
     // These existing command inputs declare no additional caller conditions.
     // Construction retains that exact typed empty condition set and owned key.
@@ -126,12 +111,7 @@ pub(super) fn open(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err((description, denial)) => {
-            return EstateSourceCommandOutcome::Construction {
-                description,
-                denial,
-            }
-        }
+        Err(refusal) => return EstateSourceCommandOutcome::Construction(refusal),
     };
     // These existing command inputs declare no additional caller conditions.
     // Construction retains that exact typed empty condition set and owned key.
@@ -159,12 +139,7 @@ pub(super) fn recognize(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err((description, denial)) => {
-            return EstateSourceCommandOutcome::Construction {
-                description,
-                denial,
-            }
-        }
+        Err(refusal) => return EstateSourceCommandOutcome::Construction(refusal),
     };
     // These existing command inputs declare no additional caller conditions.
     // Construction retains that exact typed empty condition set and owned key.
@@ -192,12 +167,7 @@ pub(super) fn release(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err((description, denial)) => {
-            return EstateSourceCommandOutcome::Construction {
-                description,
-                denial,
-            }
-        }
+        Err(refusal) => return EstateSourceCommandOutcome::Construction(refusal),
     };
     // These existing command inputs declare no additional caller conditions.
     // Construction retains that exact typed empty condition set and owned key.
@@ -225,12 +195,7 @@ pub(super) fn disburse(
         .retain_operation()
     {
         Ok(operation) => operation,
-        Err((description, denial)) => {
-            return EstateSourceCommandOutcome::Construction {
-                description,
-                denial,
-            }
-        }
+        Err(refusal) => return EstateSourceCommandOutcome::Construction(refusal),
     };
     // These existing command inputs declare no additional caller conditions.
     // Construction retains that exact typed empty condition set and owned key.

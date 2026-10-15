@@ -28,8 +28,23 @@ fn compiled_examples_match_consumer_documents() {
                 examples.insert(name.clone()),
                 "duplicate compiled marker: {name}"
             );
+            let source_path = configuration
+                .get("compiled_sources")
+                .and_then(toml::Value::as_array)
+                .and_then(|bindings| {
+                    bindings
+                        .iter()
+                        .find(|binding| binding["name"].as_str() == Some(&name))
+                })
+                .map_or_else(
+                    || manifest.join("src").join(&name),
+                    |binding| {
+                        root.join(binding["crate_root"].as_str().unwrap())
+                            .join(binding["source"].as_str().unwrap())
+                    },
+                );
             let source = normalized(
-                &fs::read_to_string(manifest.join("src").join(&name))
+                &fs::read_to_string(source_path)
                     .unwrap_or_else(|error| panic!("{name}: source is unreadable: {error}")),
             );
             compare_region(document, &name, &block, &source);
@@ -40,6 +55,10 @@ fn compiled_examples_match_consumer_documents() {
         BTreeSet::from([
             "warehouse_inventory.rs".to_owned(),
             "owning_entry.rs".to_owned(),
+            "owning_fixed.rs".to_owned(),
+            "owning_discovered.rs".to_owned(),
+            "owning_source_only.rs".to_owned(),
+            "owning_workflow.rs".to_owned(),
             "sensor_telemetry.rs".to_owned(),
             "checkpoint_recovery/computation_partition/demand.rs".to_owned(),
             "checkpoint_recovery/required_chain/concurrent_waves/application.rs".to_owned(),

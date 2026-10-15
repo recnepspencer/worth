@@ -95,9 +95,7 @@ impl CrossGateWorld {
                     (*source_key).clone(),
                 ))
                 .retain_operation()
-                .unwrap_or_else(|(_, cause)| {
-                    panic!("exact declared estate construction: {cause:?}")
-                });
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
             let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
                 source_completed,
             ) = source_operation.advance(&source_request)
@@ -143,9 +141,7 @@ impl CrossGateWorld {
                     (*source_key).clone(),
                 ))
                 .retain_operation()
-                .unwrap_or_else(|(_, cause)| {
-                    panic!("exact declared estate construction: {cause:?}")
-                });
+                .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
             let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
                 source_completed,
             ) = source_operation.advance(&source_request)

@@ -137,3 +137,71 @@ where
     let stored = borrowed.into_same_binding_intent::<NonCloneOriginal<I>>();
     (description, stored, progress)
 }
+
+// This body is typechecked: capture refusal returns the complete move-only original
+// builder and key, while successful freeze returns a persistent original descriptor.
+pub(super) fn capture_retains_non_clone_original<'a, 'p, 's, S, I>(
+    builder: crate::application_entry::WorthQueryOperationBuilder<
+        'a,
+        'p,
+        's,
+        S,
+        NonCloneOriginal<I>,
+        crate::application_entry::WorthQueryMutationSourcePrepared,
+    >,
+    key: <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey,
+) -> Result<
+    WorthQueryOperationDescription<S, NonCloneOriginal<I>>,
+    (
+        crate::application_entry::WorthQueryOperationBuilder<
+            'a,
+            'p,
+            's,
+            S,
+            NonCloneOriginal<I>,
+            crate::application_entry::WorthQueryMutationSourcePrepared,
+        >,
+        <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey,
+        WorthQueryOperationInputCaptureDenial,
+    ),
+>
+where
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+    <I::Binding as ApplicationMutationBinding<S>>::Input: Clone + Send + Sync,
+{
+    builder.idempotency_owned(key)
+}
+
+// Private compiler witness: a real description can release its original Intent,
+// conditions/source/key while an encoded sibling retains the SAME backing. The
+// runtime capability court measures that backend's last-owner charge separately.
+pub(super) fn shared_input_survives_description<S, I>(
+    description: WorthQueryOperationDescription<S, NonCloneOriginal<I>>,
+) -> worth_query_declaration::facade::application_operation::ApplicationEncodedInput<
+    <I::Binding as ApplicationMutationBinding<S>>::InputBinding,
+>
+where
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+{
+    let shared = description.encoded_input.as_ref().unwrap().clone();
+    drop(description);
+    shared
+}
+
+// Scope-independent failure transfer is a consuming move, not borrowed original data.
+pub(super) fn preserve_capture_refusal<S: ApplicationSchema, I: ApplicationMutationIntent<S>>(
+    builder: crate::application_entry::WorthQueryOperationBuilder<
+        '_,
+        '_,
+        '_,
+        S,
+        NonCloneOriginal<I>,
+        WorthQueryMutationSourcePrepared,
+    >,
+    key: <I::Binding as ApplicationMutationBinding<S>>::IdempotencyKey,
+    denial: WorthQueryOperationInputCaptureDenial,
+) -> WorthQueryOperationInputCaptureRefusal<S, NonCloneOriginal<I>> {
+    builder.into_capture_refusal(key, denial)
+}

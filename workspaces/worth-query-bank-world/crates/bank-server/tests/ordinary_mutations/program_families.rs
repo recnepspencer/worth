@@ -35,7 +35,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
                 key("create-personal"),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared plain action: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared plain action: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)
@@ -87,7 +87,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
                 key("create-business"),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared plain action: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared plain action: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)
@@ -133,7 +133,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
             .as_principal(&owner)
             .controls(BankMutationControls::new(scope.clone(), key("initiate")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared plain action: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared plain action: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)
@@ -206,7 +206,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
             .as_principal(&approver)
             .controls(BankMutationControls::new(scope.clone(), key("reject")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared plain action: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared plain action: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)
@@ -247,7 +247,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
             .as_principal(&owner)
             .controls(BankMutationControls::new(scope.clone(), key("grant")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared plain action: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared plain action: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)
@@ -293,7 +293,7 @@ fn public_consumer_executes_ordinary_mutation_families_without_bypassing_workflo
             .as_principal(&owner)
             .controls(BankMutationControls::new(scope.clone(), key("revoke")))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared plain action: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("declared plain action: {cause:?}"));
         let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(
             done,
         ) = operation.advance(&request)

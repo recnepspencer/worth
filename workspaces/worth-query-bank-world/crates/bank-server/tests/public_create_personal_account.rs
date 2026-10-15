@@ -80,7 +80,7 @@ fn assert_public_creation(display_name: &str) {
             .as_principal(&actor)
             .controls(BankMutationControls::new(scope.clone(), key.clone()))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("declared personal action: {cause:?}"))
+            .unwrap_or_else(|cause| panic!("declared personal action: {cause:?}"))
     };
     let worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance::Completed(first) =
         create(input.clone()).advance(&request)

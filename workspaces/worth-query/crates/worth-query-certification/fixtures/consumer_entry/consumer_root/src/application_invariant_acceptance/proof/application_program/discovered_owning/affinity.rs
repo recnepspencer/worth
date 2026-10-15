@@ -75,6 +75,7 @@ fn discovered_ordinary_fork_refuses_foreign_requests_and_current_changed_deliver
         .mutate(Original(input.clone()))
         .expect_source(source)
         .idempotency_owned(110_051)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
         .unwrap_or_else(|(_, d)| panic!("construction: {d:?}"));
     assert_eq!(operation.branch(), branch);

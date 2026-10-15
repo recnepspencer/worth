@@ -856,7 +856,7 @@ Construction is effect-free and retains the original input, conditions, key, bra
 // Illustrative: not compiled.
 let owner = runtime.request(&principal, &scope).on_branch(instance.branch())
     .mutate(PlaceOrderIntent { input }).without_source()
-    .preconditions(original_conditions).idempotency_owned(key)
+    .preconditions(original_conditions).idempotency_owned(key)?
     .for_workflow_operation(&workflow, &required)?
     .retain_operation::<PurchaseProgramV1, PlaceOrderAction>(workflow.program_runtime())?;
 let outcome = owner.advance(&runtime.request(&fresh_principal, &fresh_scope)
@@ -1099,7 +1099,7 @@ idempotency key.
 | Variant | Cause |
 |---|---|
 | `ProgramSelection(..)` | The branch's adopted program could not be inspected, so no installed owner could be chosen. |
-| `ApplicationProgramRequired` | The binding needs an application program: send it through `execute_in_program`. On that lane, it means neither the branch's program nor the initial installation supplies this action. |
+| `ApplicationProgramRequired` | Select an installed declared action through the ordinary owning entry. On the advanced native `execute_in_program` lane, this means neither the branch's program nor the initial installation supplies the action. |
 | `ApplicationProgramMismatch` | The program runtime passed is not the request's runtime. |
 | `RequiresWorkflowTransition` | The binding requires workflow authority and the request is not bound to a workflow step. |
 | `WorkflowAuthoritySpent` | The issued workflow authority was already consumed. |

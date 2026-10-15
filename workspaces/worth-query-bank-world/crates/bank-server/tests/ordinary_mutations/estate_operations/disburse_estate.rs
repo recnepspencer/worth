@@ -221,7 +221,7 @@ fn disburse(
                 (*source_key).clone(),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("exact declared estate construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("exact declared estate construction: {cause:?}"));
         source_operation.advance(&source_request)
     }
 }

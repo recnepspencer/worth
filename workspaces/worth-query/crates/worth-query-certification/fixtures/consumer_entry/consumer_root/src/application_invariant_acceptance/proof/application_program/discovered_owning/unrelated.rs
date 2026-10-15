@@ -43,6 +43,7 @@ fn discovered_ordinary_unrelated_progress_is_current_and_consumed_fact_keeps_his
             .mutate(original_input.clone())
             .expect_source(source)
             .idempotency_owned(110_034)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
             .unwrap_or_else(|(_, d)| panic!("construction: {d:?}")),
     );
@@ -94,6 +95,7 @@ fn discovered_ordinary_unrelated_progress_is_current_and_consumed_fact_keeps_his
                 .mutate(input.clone())
                 .expect_source(source)
                 .idempotency_owned(id)
+                .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
                 .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(
                     &world.application,
                 )

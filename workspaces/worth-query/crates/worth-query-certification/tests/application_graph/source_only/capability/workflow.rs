@@ -144,6 +144,7 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
             ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
         ))
         .idempotency_owned(0x9176ca04_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(&workflow, &required)
         .unwrap_or_else(|_| panic!("original binding"))
         .retain_operation::<Program, Action>(workflow.program_runtime())
@@ -156,6 +157,7 @@ fn completed_workflow_owner_acceptance_requires_fresh_selected_capability() {
             ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
         ))
         .idempotency_owned(0x9176ca08_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(&workflow, &required)
         .unwrap_or_else(|_| panic!("same original issued requirement"))
         .retain_operation::<Program, Action>(workflow.program_runtime())

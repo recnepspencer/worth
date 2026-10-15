@@ -25,6 +25,7 @@ fn workflow_owning_unpublished_recovers_original_binding() {
         })
         .without_source()
         .idempotency_owned(0x9176c204_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(&host.workflow, &required)
         .unwrap_or_else(|_| panic!("exact original binding"))
         .retain_operation::<WorkflowOwnerProgram, OccurrenceAction>(host.workflow.program_runtime())

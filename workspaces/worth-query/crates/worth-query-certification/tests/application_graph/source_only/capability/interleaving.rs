@@ -43,6 +43,7 @@ fn authorized_revocation_without_partial_is_a_real_published_transition() {
         })
         .without_source()
         .idempotency_owned(0x91765118_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program, Action>(&host.application)
         .unwrap_or_else(|(_, cause)| panic!("descriptor constructs: {cause:?}"));
     let owner = match owner.advance(&request) {
@@ -120,6 +121,7 @@ fn unpublished_source_refuses_revocation_before_projection_and_retains_recovery(
         })
         .without_source()
         .idempotency_owned(0x91765008_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program, Action>(&host.application)
         .unwrap_or_else(|(_, cause)| panic!("warm source constructs: {cause:?}"));
     let warm = match warm.advance(&request) {
@@ -141,6 +143,7 @@ fn unpublished_source_refuses_revocation_before_projection_and_retains_recovery(
             ApplicationEncodedScalarValue::try_new(DOCUMENT_IDENTITY.to_owned()).unwrap(),
         ))
         .idempotency_owned(0x91765018_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program, Action>(&host.application)
         .unwrap_or_else(|(_, cause)| panic!("source constructs: {cause:?}"));
     let policy = crate::test_request_policy::serial_request();

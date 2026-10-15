@@ -79,6 +79,7 @@ pub(super) fn performed_source_discovers_required_root(
                 .expect("the prior source remains readable")
         })
         .expect("installed host call opens");
+    // compiled-example: begin
     let operation = request
         .mutate(PlanarSourceAdjustment {
             scope_key: "anchor-a".to_owned(),
@@ -86,6 +87,7 @@ pub(super) fn performed_source_discovers_required_root(
         })
         .expect_source(source)
         .idempotency_owned(10_030)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
         .unwrap_or_else(|(_, denial)| panic!("declared discovered construction: {denial:?}"));
     let mut operation = Some(operation);
@@ -154,6 +156,7 @@ pub(super) fn performed_source_discovers_required_root(
     settled
         .close(&request)
         .unwrap_or_else(|(_, denial)| panic!("lawful discovered close: {denial:?}"));
+    // compiled-example: end
 }
 
 pub(super) fn isolated_source_settles_without_roots(
@@ -203,6 +206,7 @@ pub(super) fn isolated_source_settles_without_roots(
         })
         .expect_source(source)
         .idempotency_owned(10_031)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program<NoProjectionDelivery>, Action<NoProjectionDelivery>>(
             &world.application,
         )

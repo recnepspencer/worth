@@ -39,6 +39,8 @@ mod application_aftermath;
 mod application_capability;
 mod application_operation;
 mod application_program;
+#[doc(hidden)]
+pub mod native_input_capture;
 #[macro_use]
 mod workflow_macro;
 #[macro_use]

@@ -97,6 +97,7 @@ fn discovered_owning_original_partial_recovers_native_settlement_and_closes() {
                 ApplicationEncodedScalarValue::try_new("anchor-a".to_owned()).unwrap(),
             ))
             .idempotency_owned(110_001)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<Program<QueryDelivery>, Action<QueryDelivery>>(&world.application)
             .unwrap_or_else(|(_, denial)| panic!("exact discovered construction: {denial:?}"))
     };

@@ -39,10 +39,7 @@ pub enum EstateSourceCommandOutcome<I: ApplicationMutationIntent<BankSchema>, A>
         action: EstateAction,
         key: BankIdempotencyKey,
     },
-    Construction {
-        description: WorthQueryOperationDescription<BankSchema, I>,
-        denial: WorthQueryOperationConstructionDenial,
-    },
+    Construction(bank_server::BankOperationConstructionRefusal<I>),
     Native(EstateSourceAdvance<I, A>),
     CloseRefused {
         completed: WorthQueryCompletedSourceOperation<

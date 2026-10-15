@@ -10,6 +10,7 @@ use worth_execution::{ExecutionArray, ExecutionArrayBuilder};
 use worth_query_installation::facade::ApplicationSchema;
 
 mod comparison;
+pub(in crate::domain_computation::primary_graph) use comparison::observation::RequiredSetComparisonObservations;
 #[cfg(test)]
 mod cumulative_court;
 #[cfg(test)]

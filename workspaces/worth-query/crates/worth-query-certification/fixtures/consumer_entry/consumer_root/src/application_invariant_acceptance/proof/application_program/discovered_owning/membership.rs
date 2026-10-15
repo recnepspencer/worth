@@ -104,6 +104,7 @@ fn discovered_ordinary_membership_refuses_current_but_keeps_original_history_and
             })
             .expect_source(source)
             .idempotency_owned(110_041)
+            .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
             .retain_operation::<Program, Action>(&world.application)
             .unwrap_or_else(|(_, d)| panic!("construction: {d:?}")),
     );
@@ -135,6 +136,7 @@ fn discovered_ordinary_membership_refuses_current_but_keeps_original_history_and
         })
         .without_source()
         .idempotency_owned(110_042)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<Program, MembershipAction>(&world.application)
         .unwrap_or_else(|(_, d)| panic!("real membership construction: {d:?}"));
     let mut operation = Some(operation);

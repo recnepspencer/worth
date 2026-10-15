@@ -19,7 +19,11 @@ pub use workflow::{
     WorthQueryWorkflowEffectRecoveryDenial, WorthQueryWorkflowOperation,
     WorthQueryWorkflowOperationAdvance, WorthQueryWorkflowOperationDenial,
 };
+mod capture_refusal;
 mod construction;
+pub use capture_refusal::{
+    WorthQueryOperationInputCaptureRefusal, WorthQueryOperationInputCaptureRetryDenial,
+};
 mod projection_installation;
 pub use projection_installation::WorthQueryOutputProjectionInstallation;
 mod batch_delivery;
@@ -118,3 +122,5 @@ type FixedAdvance<'runtime, Schema, Intent, Program, Root, Action> = WorthQueryO
     WorthQuerySettledFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
     WorthQueryTerminalFixedOperation<'runtime, Schema, Intent, Program, Root, Action>,
 >;
+
+pub use worth_query_execution::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial;

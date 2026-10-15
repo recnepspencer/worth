@@ -6,10 +6,7 @@ use crate::{
 use bank_domain::schema::*;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
-    application_entry::{
-        WorthQueryOperationConstructionDenial, WorthQueryOperationDescription,
-        WorthQuerySourceOnlyOperation,
-    },
+    application_entry::WorthQuerySourceOnlyOperation,
     declaration::{
         application_program::ApplicationSourceCompletion,
         application_schema::TypedMutationPreconditions,
@@ -46,18 +43,26 @@ impl BankIdentityRuntime {
             ProgramDeploymentRevocationAction,
             ApplicationSourceCompletion,
         >,
-        (
-            WorthQueryOperationDescription<BankSchema, ProgramDeploymentRevocationIntent>,
-            WorthQueryOperationConstructionDenial,
-        ),
+        crate::BankOperationConstructionRefusal<ProgramDeploymentRevocationIntent>,
     > {
         self.request(principal, scope)
             .mutate(ProgramDeploymentRevocationIntent { input })
             .without_source()
             .preconditions(preconditions)
             .idempotency_owned(key)
+            .map_err(|(builder, key, denial)| {
+                crate::BankOperationConstructionRefusal::Capture(
+                    builder.into_capture_refusal(key, denial),
+                )
+            })?
             .retain_operation::<BankApplication, ProgramDeploymentRevocationAction>(
                 self.application_program(),
+            )
+            .map_err(
+                |(description, denial)| crate::BankOperationConstructionRefusal::Declaration {
+                    description,
+                    denial,
+                },
             )
     }
 }

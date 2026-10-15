@@ -15,7 +15,7 @@ fn owning_rejection_preserves_original_actor_and_payment_truth() {
         .as_principal(&approver)
         .controls(controls("wrong-original-actor"))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("declared rejection: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("declared rejection: {cause:?}"));
     let scope = request_scope();
     let request = fixture.world.runtime.request(&approver, &scope);
     let Advance::Terminal(terminal) = operation.advance(&request) else {

@@ -184,7 +184,7 @@ The small caller shape is:
 let operation = request.mutate(intent)
     .expect_source(original_source)
     .preconditions(original_conditions)
-    .idempotency_owned(original_key)
+    .idempotency_owned(original_key)?
     .retain_operation::<Program, DeclaredDiscoveredAction>(&application)?;
 let next = operation.advance(&fresh_request);
 ```
@@ -586,8 +586,9 @@ such an operation commits only through its typed workflow lane.
 The complete executable
 [ordinary product workflow](../../../worth-query-certification/examples/ordinary_product_workflow.rs)
 installs a validated program with `in_memory_program`, retains a read, commits a
-typed mutation through `execute_in_program`, reads the successor and the retained
-occurrence, and closes runtime resources.
+typed mutation through a captured SourceOnly owner, advances with fresh authority,
+closes the completed owner, reads the successor and retained occurrence, and
+closes runtime resources.
 
 ### Branch-local program selection and adoption
 
@@ -816,8 +817,15 @@ Both borrow fresh authority and use the supplied phase's checked allocation
 policy. The description shares immutable encoded input custody across initial,
 recovery and keyed attempts without copying domain input on each attempt.
 
-The prepared mutation's `idempotency_owned(key)` returns an immutable operation
-description. `retain_operation::<Program, Action>(&program)` resolves actual installed
+The prepared mutation's `idempotency_owned(key)` opens the initiating request's
+native capture phase and returns a funded immutable description or the whole
+`(original_builder, owned_key, WorthQueryOperationInputCaptureDenial)` refusal.
+Retain those owners for a lawful fresh opening; refusal precedes any business
+effect or workflow-slot transfer. The original Intent is moved, not cloned.
+One Execution-admitted typed payload is shared across the description and native
+capability consumers; its existing charge follows the final shared input owner.
+The native quote excludes nested caller Clone heaps and allocator/Arc metadata;
+it is not a total-heap measurement or a new authority grant. `retain_operation::<Program, Action>(&program)` resolves actual installed
 delivery meaning and its concrete selector implementation, returning that description
 on refusal. A different delivery type with copied metadata does not resolve. `advance(&fresh_request)`
 opens one native phase and borrows the original intent, key, conditions and

@@ -77,7 +77,7 @@ fn classify(
             if fence.info != "rust" {
                 return Err("compiled fence requires rust without ignore or other flags".into());
             }
-            compiled.validate(root, name)
+            compiled.validate(root, config, name)
         }
         Some(Marker::Doctest(name)) => {
             if !matches!(fence.info.as_str(), "rust" | "rust,no_run") {

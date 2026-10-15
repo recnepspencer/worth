@@ -18,6 +18,7 @@ fn workflow_owning_source_completion_does_not_accept_assessment() {
         })
         .without_source()
         .idempotency_owned(0x9176c300_u64)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<WorkflowOwnerProgram, SavedSourceAction>(
             host.workflow.program_runtime(),
         )

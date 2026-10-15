@@ -15,13 +15,10 @@ use super::document_retention_model::{
 use worth_query_decl::facade::application_program::{
     ApplicationWorkflowControlOutcome, ApplicationWorkflowDefinitionBuilder,
 };
-use worth_query_host::facade::{
-    application_entry::{
-        WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
-        WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
-        WorthQueryApplicationMutationOutcome, WorthQueryApplicationRequestExt,
-    },
-    runtime::ExecutionAllocationPolicy,
+use worth_query_host::facade::application_entry::{
+    WorkflowDefinitionExpectedPredecessor, WorkflowDefinitionPublicationOutcome,
+    WorkflowInstanceStartOutcome, WorkflowProgressOutcome, WorkflowProposalOutcome,
+    WorthQueryApplicationRequestExt,
 };
 
 pub(super) fn run() {
@@ -85,7 +82,7 @@ pub(super) fn run() {
             retention_days: 8,
         })
         .without_source()
-        .idempotency_owned(30005_u64)
+        .idempotency_owned(30005_u64).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(&application, &required)
         .unwrap_or_else(|_|panic!("exact original occurrence"))
         .retain_operation::<super::document_retention_model::programs::WorkflowOwnerProgram,super::document_retention_model::programs::OccurrenceAction>(application.program_runtime())

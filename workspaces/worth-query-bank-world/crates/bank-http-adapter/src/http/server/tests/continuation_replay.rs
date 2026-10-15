@@ -41,7 +41,7 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
             BankIdempotencyKey::new("http-replay-grant-viewer").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("grant construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("grant construction: {cause:?}"));
     let scope = fresh_scope();
     let request = application.runtime.request(&owner, &scope);
     let WorthQuerySourceOnlyAdvance::Completed(granted) = granted.advance(&request) else {
@@ -116,7 +116,7 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
             BankIdempotencyKey::new("http-replay-revoke-viewer").unwrap(),
         ))
         .retain_operation()
-        .unwrap_or_else(|(_, cause)| panic!("revoke construction: {cause:?}"));
+        .unwrap_or_else(|cause| panic!("revoke construction: {cause:?}"));
     let scope = fresh_scope();
     let request = application.runtime.request(&owner, &scope);
     let WorthQuerySourceOnlyAdvance::Completed(revoked) = revoked.advance(&request) else {

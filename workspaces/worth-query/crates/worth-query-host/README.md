@@ -79,7 +79,7 @@ admission or a selected World between executions.
 
 Install a program and declare the exact typed action occurrence and its delivery.
 `request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
-source preparation, preconditions and `idempotency_owned(key)`, followed by
+source preparation, preconditions and fallible `idempotency_owned(key)`, followed by
 `retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
 cannot execute, prepare or recover through that builder or its borrowed-key view.
 The selected action carries composition instance, feature, binding and delivery;
@@ -743,3 +743,10 @@ admission, and currentness checks.
 - [Typed Stops And Remediation Guidance](../worth-query/docs/domain-capabilities/typed-stops-and-remediation-guidance.md)
 - [Installed Operation Lineage And Promotion](../worth-query/docs/domain-capabilities/installed-operation-lineage-and-promotion.md)
 - [Application Aftermath, External Effects, And Recovery](../worth-query/docs/execution/application-aftermath-and-recovery.md)
+
+Input capture uses the initiating request's native resources before moving any
+original fields. Its refusal returns `(original_builder, owned_key,
+WorthQueryOperationInputCaptureDenial)`; keep all three for retry. Success admits
+one typed payload and shares its backing/charge through native input consumers.
+Nested caller Clone heaps and allocator/Arc metadata retain their existing
+contracts; this payload quote does not describe total heap or grant permission.

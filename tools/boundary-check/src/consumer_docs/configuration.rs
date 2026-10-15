@@ -12,12 +12,23 @@ pub(super) const SOURCE: &str = "workspaces/worth-query/crates/worth-query-certi
 pub(super) struct Configuration {
     pub documents: Vec<String>,
     pub doctests: Vec<DoctestRoot>,
+    #[serde(default)]
+    pub compiled_sources: Vec<CompiledSource>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct DoctestRoot {
     pub manifest: String,
     pub packages: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct CompiledSource {
+    pub name: String,
+    pub crate_root: String,
+    pub target: String,
+    pub source: String,
 }
 
 pub(super) fn confined_path(value: &str) -> bool {
@@ -59,6 +70,51 @@ pub(super) fn load(root: &Path) -> Result<Configuration, String> {
             {
                 return Err(format!("duplicate doctest package: {package}"));
             }
+        }
+    }
+    let mut names = BTreeSet::new();
+    for binding in &config.compiled_sources {
+        if ![
+            &binding.name,
+            &binding.crate_root,
+            &binding.target,
+            &binding.source,
+        ]
+        .into_iter()
+        .all(|path| confined_path(path))
+            || !names.insert(&binding.name)
+        {
+            return Err("invalid or duplicate compiled source binding".into());
+        }
+        let owner = root.join(&binding.crate_root);
+        let manifest: toml::Value = toml::from_str(
+            &crate::source_documents::read_to_string(&owner.join("Cargo.toml"))
+                .map_err(|error| error.to_string())?,
+        )
+        .map_err(|error| error.to_string())?;
+        let registered = binding.target == "src/main.rs"
+            && manifest["package"]
+                .get("autobins")
+                .and_then(toml::Value::as_bool)
+                != Some(false)
+            || ["bin", "example"].into_iter().any(|kind| {
+                manifest
+                    .get(kind)
+                    .and_then(toml::Value::as_array)
+                    .is_some_and(|targets| {
+                        targets
+                            .iter()
+                            .any(|target| target["path"].as_str() == Some(&binding.target))
+                    })
+            });
+        if !registered
+            || !owner.join(&binding.target).is_file()
+            || !owner.join(&binding.source).is_file()
+        {
+            return Err(format!(
+                "compiled source target is not registered: {}",
+                binding.name
+            ));
         }
     }
     Ok(config)

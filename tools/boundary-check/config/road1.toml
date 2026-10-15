@@ -1729,3 +1729,18 @@ kind = "thread-spawn"
 count = 1
 category = "certification-harness"
 reason = "A receiver-owned compiled cleanup scheduling guard joins one foreign native cleanup actor and returns the real lower terminal failure to its Signal owner; unarmed cleanup stays on its original thread and no query computation is parallelized."
+
+# Only this concrete Execution owner may supply a native immutable input backer.
+# Normal decl/host facades cannot reexport or construct this integration.
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = [
+  "workspaces/worth-query/crates/worth-query-declaration/src/lib.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/native_input_capture.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/application_operation/binding/identity/input.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/application_operation/binding/identity/shared_input.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_input_capture.rs",
+]
+forbidden_identifiers = ["native_input_capture", "NativeImmutableInput", "encode_native_input", "from_native_owned"]
+forbidden_identifier_fragments = []
+guidance = "Only the exact Execution frozen-input capture owner may construct Declaration native-backed encoded input; neither consumer audience may expose a variable-borrow backend"

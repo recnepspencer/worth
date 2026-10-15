@@ -53,6 +53,7 @@ fn managed_product_stale_retains_native_failure_until_owner_thread_close() {
                 ),
         )
         .idempotency_owned(0x9176_6019)
+        .unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .retain_operation::<SourceOnlyRetentionProgram, RetentionAction>(&host)
         .unwrap_or_else(|(_, cause)| panic!("original descriptor: {cause:?}"));
     drop(request);

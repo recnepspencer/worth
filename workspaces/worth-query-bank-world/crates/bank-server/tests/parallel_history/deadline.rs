@@ -90,11 +90,13 @@ fn present_deadlines_run_in_both_bank_histories() {
             ))
             .as_principal(&actor)
             .controls(bank_server::BankMutationControls::new(
-                expired.clone(),
+                WorthQueryRequestScope::new(None, cancellation.token()),
                 super::seeded_world::key(900),
             ))
             .retain_operation()
-            .unwrap_or_else(|(_, cause)| panic!("deadline construction: {cause:?}"));
+            .unwrap_or_else(|cause| panic!("deadline construction: {cause:?}"));
+        // Capture is admitted work; only the fresh stopped advance is billed below.
+        observations();
         let request = world.world.runtime.request(&actor, &expired);
         let outcome = outcome.advance(&request, std::num::NonZeroUsize::new(20_000).unwrap());
         assert!(
