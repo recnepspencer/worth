@@ -39,9 +39,13 @@ impl WorthQueryApplicationCommittedChanges {
     /// Rehydrates the actual committed native actor evidence under the caller's lease.
     /// No bytes, decoded proof or permission leaves this closed certification door.
     #[doc(hidden)]
-    pub fn retain_workflow_actor_evidence_for_test(
+    pub fn retain_workflow_actor_evidence_for_test<
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        receipt: &super::super::WorthQueryApplicationCommitReceipt,
         approval: EntityId,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
     {
@@ -64,19 +68,63 @@ impl WorthQueryApplicationCommittedChanges {
                 "authorization-request",
             )
             .map_err(|_| invalid())?;
-        let Some(AspectValue::String(worth_foundational::facade::InternedString::Raw(encoded))) =
+        // The receipt must own this exact artifact; its native runtime identity
+        // and canonical commit select the retained snapshot, never current head.
+        if !Arc::ptr_eq(&self.envelope, &receipt.committed_changes().envelope) {
+            return Err(invalid());
+        }
+        let Some(AspectValue::String(worth_foundational::facade::InternedString::Symbol(symbol))) =
             self.committed_field_value(approval, &locator)
         else {
             return Err(invalid());
         };
-        let _retained = WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
-            execution, &encoded,
-        )
-        .map_err(|cause| match cause {
-            Decode::InvalidRequest => invalid(),
-            Decode::Actor(cause) => *cause,
-        })?;
-        Ok(())
+        runtime
+            .primary_provider
+            .graph
+            .with_runtime(execution, |native| {
+                use worth_relational::facade::runtime::{
+                    RelationalPinnedReadAdmissionDenial as PinStop,
+                    RelationalRetainedCommitSnapshotDenialKind as SnapshotStop,
+                };
+                let snapshot = native
+                    .snapshots()
+                    .retained_snapshot_for_commit(
+                        receipt.provider_runtime_instance_id(),
+                        self.commit_reference(),
+                    )
+                    .map_err(|cause| match cause.kind() {
+                        SnapshotStop::Execution(cause) => {
+                            Denial::relational_read_stopped(cause, "committed approval snapshot")
+                        }
+                        _ => invalid(),
+                    })?;
+                let pin = native
+                    .read_truth()
+                    .pin_read_capability(snapshot.snapshot_handle(), &[], execution)
+                    .map_err(|cause| match cause {
+                        PinStop::Request(cause) => {
+                            Denial::request_read_stopped(cause, "committed approval symbols")
+                        }
+                        _ => invalid(),
+                    })?;
+                let encoded = pin
+                    .symbols()
+                    .retained_text(worth_relational::facade::symbols::Symbol(symbol.0))
+                    .filter(|text| text.is_managed())
+                    .ok_or_else(invalid)?;
+                // Borrow the native admitted backing for the entire decode. Only
+                // the decoder's real retained wire/DTO asks the original payer.
+                let _retained =
+                    WorthQueryRetainedCapabilityRequest::decode_workflow_approval_request(
+                        execution,
+                        encoded.as_str(),
+                    )
+                    .map_err(|cause| match cause {
+                        Decode::InvalidRequest => invalid(),
+                        Decode::Actor(cause) => *cause,
+                    })?;
+                Ok(())
+            })
     }
 }
 

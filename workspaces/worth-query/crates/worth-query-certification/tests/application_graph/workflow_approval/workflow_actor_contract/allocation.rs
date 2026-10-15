@@ -41,7 +41,12 @@ fn workflow_actor_contract_retained_wire_refuses_unfunded_storage_and_preserves_
     let zero = authority.request_lease(request(0)).unwrap();
     let execution = worth_execution::ExecutionRequest::leased(&zero);
     let refusal = original
-        .retain_workflow_actor_evidence_for_test(&execution, record)
+        .retain_workflow_actor_evidence_for_test(
+            &execution,
+            application.runtime(),
+            performed.receipt(),
+            record,
+        )
         .unwrap_err();
     use worth_query_host::facade::{
         application_contribution::{
@@ -74,6 +79,8 @@ fn workflow_actor_contract_retained_wire_refuses_unfunded_storage_and_preserves_
     original
         .retain_workflow_actor_evidence_for_test(
             &worth_execution::ExecutionRequest::leased(&retry),
+            application.runtime(),
+            performed.receipt(),
             record,
         )
         .expect("fresh real storage authority retains the unchanged original proof");
