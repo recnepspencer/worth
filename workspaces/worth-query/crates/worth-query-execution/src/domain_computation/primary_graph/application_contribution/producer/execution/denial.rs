@@ -132,6 +132,30 @@ pub(super) fn execution_failed(
     {
         return request_authority_denied(subject, authority.clone());
     }
+    if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
+        match attempt.kind() {
+            WorthQueryApplicationAttemptDenialKind::ExecutionRequest(cause) => {
+                return denial(
+                    source_readmission::request_execution_kind(cause),
+                    format!("{subject}: {error:?}"),
+                )
+                .into();
+            }
+            WorthQueryApplicationAttemptDenialKind::Cancelled => {
+                return request_admission_rejected(denial(
+                    WorthQueryOutputDemandDenialKind::Cancelled,
+                    format!("{subject}: {error:?}"),
+                ));
+            }
+            WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => {
+                return request_admission_rejected(denial(
+                    WorthQueryOutputDemandDenialKind::TimedOut,
+                    format!("{subject}: {error:?}"),
+                ));
+            }
+            _ => {}
+        }
+    }
     let interruption = match &error {
         MutationHandlerExecutionDenial::Projection(projection) => projection
             .invariant_denial()
@@ -183,6 +207,14 @@ fn projection_budget(
         WorthQueryOperationProjectionDenialKind as Projection,
     };
     match kind {
+        Projection::InvariantAdmission(Invariant::ExecutionRequest(cause)) => {
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            Some(match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+                Ok(cause) => source_readmission::request_execution_kind(cause),
+                Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
+                Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
+            })
+        }
         Projection::WorkBudgetExceeded => {
             Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
         }
