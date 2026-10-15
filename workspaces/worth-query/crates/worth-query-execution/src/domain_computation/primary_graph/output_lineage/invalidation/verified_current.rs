@@ -153,7 +153,7 @@ impl SourceInvalidationOwner {
             || !row
                 .facts
                 .for_comparison()
-                .is_some_and(|facts| Arc::ptr_eq(facts.facts(), expected_facts.facts()))
+                .is_some_and(|facts| facts.facts().same_backing(expected_facts.facts()))
         {
             return Ok(None);
         }

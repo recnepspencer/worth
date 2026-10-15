@@ -30,7 +30,7 @@ use crate::domain_computation::primary_graph::{
 pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
     computation_source: super::super::ComputationSourceEvidence,
     predecessor: Arc<RecordedSettlementIdentity>,
-    facts: Arc<[Fact]>,
+    facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
     retained_capacity: Option<RetainedLineageCapacity>,
     consumed_outputs: Arc<[ConsumedOutputEvidence]>,
     completed_handler_facts: CompletedHandlerFactBoundary,
@@ -52,8 +52,10 @@ pub(in crate::domain_computation::primary_graph) struct RepublishedRecord {
 }
 
 impl RepublishedOutput {
-    pub(super) fn facts(&self) -> Arc<[Fact]> {
-        Arc::clone(&self.facts)
+    pub(super) fn facts(
+        &self,
+    ) -> crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload {
+        self.facts.clone()
     }
 
     /// Replace a new restored row's checkpoint posture with the performed
@@ -113,7 +115,9 @@ impl WorthQueryApplicationOutputLineage {
                 && Arc::ptr_eq(&recorded.correspondence, correspondence)
         })?;
         if !suspended.observed_source_facts().is_some_and(|facts| {
-            Arc::ptr_eq(facts.postconditions(), suspended_facts.postconditions())
+            facts
+                .postconditions()
+                .same_backing(suspended_facts.postconditions())
         }) {
             return None;
         }
@@ -134,7 +138,7 @@ impl WorthQueryApplicationOutputLineage {
         let decision = origin.completed_decision_reuse.as_ref();
         let key = suspended.prepared_input_reuse_key.as_ref();
         let (facts, retained_capacity) = if suspended.performed_origin.is_none() {
-            (Arc::clone(suspended_facts.postconditions()), None)
+            (suspended_facts.postconditions().clone(), None)
         } else {
             // A stable alias projects its origin's output into its facts. The
             // republished row seals its own witness instead.
@@ -145,7 +149,7 @@ impl WorthQueryApplicationOutputLineage {
                 &self.retention,
                 admission,
             )?;
-            (facts, Some(capacity))
+            (facts.into(), Some(capacity))
         };
         if boundary.handler_fact_count() > facts.len() {
             return None;
@@ -201,7 +205,7 @@ impl WorthQueryApplicationOutputLineage {
             source_partition_identity,
             producer_dependency_identity,
             idempotency_key_identity,
-            Arc::clone(suspended_facts.postconditions()),
+            suspended_facts.postconditions().clone(),
             resources,
             None,
             &mut republished,

@@ -40,7 +40,9 @@ pub(in crate::domain_computation::primary_graph) struct RecordedOutput {
 
 pub(super) struct RecordedOutputMutable {
     pub(super) verification_requirement: Option<FullVerificationReason>,
-    observed_source_facts: Option<Arc<[WorthQueryApplicationObservedFact]>>,
+    observed_source_facts: Option<
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    >,
     pub(super) resources: Option<WorthQueryProducerDemandResources>,
     /// What the partitioned computation of the attempt that published this
     /// record retained for the producer's next run.
@@ -62,13 +64,13 @@ impl RecordedOutputMutable {
         }
         Self {
             verification_requirement,
-            observed_source_facts: facts.map(|facts| Arc::clone(facts.postconditions())),
+            observed_source_facts: facts.map(|facts| facts.postconditions().clone()),
             resources,
             computation,
         }
     }
     pub(super) fn replace_retained_facts(&mut self, facts: super::RetainedSourceFacts) {
-        self.observed_source_facts = Some(Arc::clone(facts.postconditions()));
+        self.observed_source_facts = Some(facts.postconditions().clone());
     }
     /// Match immutable qualified custody while holding the row's mutable fence.
     pub(super) fn same_qualified_facts(
@@ -77,7 +79,7 @@ impl RecordedOutputMutable {
     ) -> Option<super::ComparableSourceFacts> {
         self.observed_source_facts
             .as_ref()
-            .filter(|facts| Arc::ptr_eq(facts, qualified.facts()))
+            .filter(|facts| facts.same_backing(qualified.facts()))
             .map(|_| qualified.clone())
     }
 }
@@ -114,13 +116,14 @@ impl RecordedOutput {
     /// Fresh and consumes its upstreams again, never a stale reuse.
     pub(super) fn checkpoint_source_facts(
         &self,
-    ) -> Option<Arc<[WorthQueryApplicationObservedFact]>> {
+    ) -> Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
+    {
         self.consumed_outputs
             .is_empty()
             .then(|| self.observed_source_facts())
             .flatten()?
             .for_comparison()
-            .map(|facts| Arc::clone(facts.facts()))
+            .map(|facts| facts.facts().clone())
     }
 
     pub(super) fn resources(&self) -> Option<WorthQueryProducerDemandResources> {
@@ -132,7 +135,7 @@ impl RecordedOutput {
 
     pub(super) fn restore(
         &self,
-        facts: Arc<[WorthQueryApplicationObservedFact]>,
+        facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         resources: Option<WorthQueryProducerDemandResources>,
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) {

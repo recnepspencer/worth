@@ -92,7 +92,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         .transition
         .executor
         .observe(runtime, execution, snapshot, transition, kind, facts)?;
-    if advancer.is_none() || executor.is_some() != operation_receipt_identity.is_some() {
+    let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
+    if applicable(advancer, true).is_err()
+        || applicable(executor, operation_receipt_identity.is_some()).is_err()
+    {
         return Err(denial("current transition actor applicability is corrupt"));
     }
     let nodes = adjacency_with_kind(

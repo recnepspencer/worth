@@ -252,7 +252,7 @@ pub(super) fn perform_approved_effect(
     application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
-) {
+) -> worth_query_host::facade::primary_graph::WorthQueryApplicationCommitReceipt {
     let required = match advance_instance(application, instance.clone(), key)
         .expect("the approved operation requirement prepares")
     {
@@ -280,10 +280,10 @@ pub(super) fn perform_approved_effect(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("the approved effect executes");
-    assert!(matches!(
-        effect,
-        WorthQueryApplicationMutationOutcome::Committed { .. }
-    ));
+    match effect {
+        WorthQueryApplicationMutationOutcome::Committed { receipt, .. } => receipt,
+        other => panic!("the approved native effect did not commit: {other:?}"),
+    }
 }
 
 pub(super) fn started(

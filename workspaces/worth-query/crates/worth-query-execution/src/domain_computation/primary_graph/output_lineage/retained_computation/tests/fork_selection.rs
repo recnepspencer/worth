@@ -76,7 +76,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
             lineage.record_restoration(lineage.binding_type(&source.output_binding), source.runtime_authority, source.schema.clone(), source.scope, observation,
             Arc::new(super::super::super::WorthQueryApplicationOutputCorrespondence::default()),
             super::super::super::RecordedSourceIdentity::Checkpoint(crate::domain_computation::primary_graph::application_query::WorthQueryCheckpointSourceIdentity::new([0x72; 32])),
-            partition, None, [0x73; 32], super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([])), None, None);
+            partition, None, [0x73; 32], super::super::super::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])), None, None);
         };
     restored(&mut lineage, product.observation());
     let captured =

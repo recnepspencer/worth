@@ -60,19 +60,12 @@ impl WorkflowActorFields {
     ) -> Result<Option<EntityId>, super::super::adoption::WorkflowAdoptionReadDenial> {
         let invalid =
             || super::super::adoption::WorkflowAdoptionReadDenial::UnreadableEntity { entity };
-        match [
+        decode_actor_components([
             record.optional_u64(execution, &self.partition)?,
             record.optional_u64(execution, &self.slot)?,
             record.optional_u64(execution, &self.generation)?,
-        ] {
-            [None, None, None] => Ok(None),
-            [Some(partition), Some(slot), Some(generation)] => Ok(Some(EntityId::new(
-                PartitionId::new(u32::try_from(partition).map_err(|_| invalid())?),
-                slot,
-                u32::try_from(generation).map_err(|_| invalid())?,
-            ))),
-            _ => Err(invalid()),
-        }
+        ])
+        .map_err(|_| invalid())
     }
     pub(in crate::domain_computation) fn observe(
         &self,
@@ -128,15 +121,7 @@ impl WorkflowActorFields {
                 _ => return Err(malformed()),
             }
         }
-        match components.as_slice() {
-            [None, None, None] => Ok(None),
-            [Some(partition), Some(slot), Some(generation)] => Ok(Some(EntityId::new(
-                PartitionId::new(u32::try_from(*partition).map_err(|_| malformed())?),
-                *slot,
-                u32::try_from(*generation).map_err(|_| malformed())?,
-            ))),
-            _ => Err(malformed()),
-        }
+        decode_actor_components(components).map_err(|_| malformed())
     }
     pub(in crate::domain_computation::primary_graph) fn planned(
         aspect: &str,
@@ -151,5 +136,32 @@ impl WorkflowActorFields {
             slot: planned_field_locator(aspect, &format!("{role}-slot"))?,
             generation: planned_field_locator(aspect, &format!("{role}-generation"))?,
         })
+    }
+}
+
+/// One decoder for current native records and passive corruption inspection.
+/// All absent is the typed not-yet state; a partial triplet is corrupt.
+pub(in crate::domain_computation) fn decode_actor_components(
+    components: [Option<u64>; 3],
+) -> Result<Option<EntityId>, ()> {
+    match components {
+        [None, None, None] => Ok(None),
+        [Some(partition), Some(slot), Some(generation)] => Ok(Some(EntityId::new(
+            PartitionId::new(u32::try_from(partition).map_err(|_| ())?),
+            slot,
+            u32::try_from(generation).map_err(|_| ())?,
+        ))),
+        _ => Err(()),
+    }
+}
+
+pub(in crate::domain_computation) fn validate_actor_applicability(
+    actor: Option<EntityId>,
+    required: bool,
+) -> Result<Option<EntityId>, ()> {
+    if actor.is_some() == required {
+        Ok(actor)
+    } else {
+        Err(())
     }
 }

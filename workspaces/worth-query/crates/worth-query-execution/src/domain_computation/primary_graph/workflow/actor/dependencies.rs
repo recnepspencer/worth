@@ -5,15 +5,16 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
     WorthQueryApplicationObservedFact as Fact,
 };
-use std::sync::Arc;
-use worth_execution::{ExecutionArray, ExecutionArrayBuilder, ExecutionRequest};
+use worth_execution::{
+    ExecutionArrayBuilder, ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionRequest,
+};
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };
 
 #[derive(Clone, Debug)]
 pub(in crate::domain_computation) struct WorkflowActorDependencies {
-    wire: Arc<ExecutionArray<u8>>,
+    wire: ExecutionImmutableBytes,
     counts: [usize; 3],
 }
 impl WorkflowActorDependencies {
@@ -49,12 +50,11 @@ impl WorkflowActorDependencies {
         let temporary = temporary
             .seal()
             .map_err(|cause| super::storage_denial(cause, "workflow actor encoding"))?;
-        let bytes = facts::encode(temporary.elements())
-            .ok_or_else(|| invalid("workflow actor facts are not durable"))?;
-        Self::restore(execution, &bytes)
+        let bytes = facts::encode_funded(temporary.elements(), control).map_err(decode_denial)?;
+        Self::from_wire(execution, bytes)
     }
     pub(in crate::domain_computation) fn wire(&self) -> &[u8] {
-        self.wire.elements()
+        self.wire.bytes()
     }
     pub(in crate::domain_computation) fn counts(&self) -> [usize; 3] {
         self.counts
@@ -143,7 +143,21 @@ impl WorkflowActorDependencies {
         execution: &ExecutionRequest<'_, '_>,
         bytes: &[u8],
     ) -> Result<Self, Denial> {
-        let mut reader = decoder(execution, bytes)?;
+        let mut output = ExecutionByteBuffer::allocate(bytes.len(), execution.allocation_policy())
+            .map_err(|cause| super::storage_denial(cause, "workflow actor wire"))?;
+        output
+            .extend_from_slice(bytes)
+            .map_err(|cause| super::storage_denial(cause, "workflow actor wire"))?;
+        let wire = output
+            .seal()
+            .map_err(|cause| super::storage_denial(cause, "workflow actor wire"))?;
+        Self::from_wire(execution, wire)
+    }
+    fn from_wire(
+        execution: &ExecutionRequest<'_, '_>,
+        bytes: ExecutionImmutableBytes,
+    ) -> Result<Self, Denial> {
+        let mut reader = decoder(execution, bytes.bytes())?;
         let mut counts = [0; 3];
         while let Some(fact) = reader.next_fact().map_err(decode_denial)? {
             match fact {
@@ -160,20 +174,8 @@ impl WorkflowActorDependencies {
                 _ => return Err(invalid("unexpected workflow actor dependency")),
             }
         }
-        let mut output =
-            ExecutionArrayBuilder::allocate(bytes.len(), execution.allocation_policy())
-                .map_err(|cause| super::storage_denial(cause, "workflow actor wire"))?;
-        for byte in bytes {
-            output
-                .push(*byte)
-                .map_err(|cause| super::storage_denial(cause, "workflow actor wire"))?;
-        }
         Ok(Self {
-            wire: Arc::new(
-                output
-                    .seal()
-                    .map_err(|cause| super::storage_denial(cause, "workflow actor wire"))?,
-            ),
+            wire: bytes,
             counts,
         })
     }
@@ -190,10 +192,13 @@ fn decoder<'bytes, 'scope, 'authority>(
     )
     .map_err(decode_denial)
 }
-fn decode_denial(cause: FactDecodeDenial) -> Denial {
+pub(super) fn decode_denial(cause: FactDecodeDenial) -> Denial {
     match cause {
         FactDecodeDenial::Retention(cause) => {
             cause.into_attempt_denial("workflow actor dependency wire")
+        }
+        FactDecodeDenial::Execution(cause) => {
+            Denial::relational_read_stopped(cause, "workflow actor dependency payload")
         }
         FactDecodeDenial::Format(_) => invalid("workflow actor dependency wire is invalid"),
     }

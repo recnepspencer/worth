@@ -14,11 +14,14 @@ impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn retained_for_test(
         owner: &SourceInvalidationOwner,
         identity: Arc<RecordedSettlementIdentity>,
-        source_facts: Arc<[WorthQueryApplicationObservedFact]>,
+        source_facts: impl Into<
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+        >,
         mut upstream: Vec<Self>,
         requirement: Option<FullVerificationReason>,
         selected: Arc<PositionedRelationalSnapshot>,
     ) -> Self {
+        let source_facts = source_facts.into();
         let mut admission = owner.edit_admission();
         Self::admit_backing(&mut upstream, owner, &mut admission)
             .expect("test carrier backing has installed capacity");
@@ -32,7 +35,7 @@ impl ConsumedOutputEvidence {
             .expect("test carrier has installed capacity");
         Self {
             _computation: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).certify_current().unwrap(),            identity,
-            source_facts: crate::domain_computation::primary_graph::output_lineage::RetainedSourceFacts::for_test(false, source_facts).for_comparison().unwrap(),
+            source_facts: crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(source_facts).for_comparison().unwrap(),
             upstream: Arc::from(upstream),
             verification_requirement: requirement,
             native_output_witness: None,
@@ -49,7 +52,9 @@ impl ConsumedOutputEvidence {
     pub(in crate::domain_computation::primary_graph) fn restored_with_witness_for_test(
         owner: &SourceInvalidationOwner,
         identity: Arc<RecordedSettlementIdentity>,
-        source_facts: Arc<[WorthQueryApplicationObservedFact]>,
+        source_facts: impl Into<
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+        >,
         selected: Arc<PositionedRelationalSnapshot>,
         witness: Arc<
             std::sync::OnceLock<

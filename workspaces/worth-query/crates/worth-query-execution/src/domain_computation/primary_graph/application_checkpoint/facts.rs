@@ -15,8 +15,15 @@ use super::CheckpointCursor;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 mod fact_decode_denial;
 pub(in crate::domain_computation::primary_graph) use fact_decode_denial::FactDecodeDenial;
+mod encoding;
 mod indexed_selection;
+pub(in crate::domain_computation::primary_graph) use encoding::encode_funded;
+use encoding::FactBytes;
+mod payload;
 mod record;
+pub(in crate::domain_computation::primary_graph) use payload::{
+    CodecPayloadReservation, FactPayload,
+};
 mod stream;
 pub(in crate::domain_computation::primary_graph) use stream::FactDecoder;
 
@@ -42,7 +49,14 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
         return None;
     }
     let mut bytes = Vec::with_capacity(capacity);
-    put_u32(&mut bytes, u32::try_from(facts.len()).ok()?);
+    write_facts(facts, &mut bytes)?;
+    Some(bytes)
+}
+fn write_facts(facts: &[Fact], bytes: &mut impl FactBytes) -> Option<()> {
+    if facts.is_empty() {
+        return None;
+    }
+    put_u32(bytes, u32::try_from(facts.len()).ok()?);
     for fact in facts {
         match fact {
             Fact::RetiredOutputEntity {
@@ -53,15 +67,15 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
                 read_locator,
             } => {
                 bytes.push(6);
-                put_entity(&mut bytes, *entity_id);
-                put_u32(&mut bytes, kind.as_u32());
-                put_u64(&mut bytes, created_at.as_u64());
-                put_u64(&mut bytes, deleted_at.as_u64());
-                put_text(&mut bytes, read_locator)?;
+                put_entity(bytes, *entity_id);
+                put_u32(bytes, kind.as_u32());
+                put_u64(bytes, created_at.as_u64());
+                put_u64(bytes, deleted_at.as_u64());
+                put_text(bytes, read_locator)?;
             }
             Fact::SourceEntity { entity_id } => {
                 bytes.push(1);
-                put_entity(&mut bytes, *entity_id);
+                put_entity(bytes, *entity_id);
             }
             Fact::SourceAspectRevision {
                 entity_id,
@@ -69,9 +83,9 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
                 native_revision,
             } => {
                 bytes.push(2);
-                put_entity(&mut bytes, *entity_id);
-                put_text(&mut bytes, aspect.as_str())?;
-                put_optional_version(&mut bytes, native_revision.map(VersionId));
+                put_entity(bytes, *entity_id);
+                put_text(bytes, aspect.as_str())?;
+                put_optional_version(bytes, native_revision.map(VersionId));
             }
             Fact::SourceFieldRevision {
                 entity_id,
@@ -80,9 +94,9 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
             } => {
                 let revision = native_revision.as_ref()?;
                 bytes.push(3);
-                put_entity(&mut bytes, *entity_id);
-                put_locator(&mut bytes, locator)?;
-                put_u64(&mut bytes, revision.version().as_u64());
+                put_entity(bytes, *entity_id);
+                put_locator(bytes, locator)?;
+                put_u64(bytes, revision.version().as_u64());
                 bytes.push(match revision.presence() {
                     RelationalFieldPresence::Present => 1,
                     RelationalFieldPresence::Absent => 2,
@@ -100,27 +114,27 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
                     return None;
                 }
                 bytes.push(4);
-                put_u32(&mut bytes, relation_kind.as_u32());
-                put_entity(&mut bytes, *anchor);
+                put_u32(bytes, relation_kind.as_u32());
+                put_entity(bytes, *anchor);
                 bytes.push(match direction {
                     RelationalAdjacencyDirection::Outgoing => 1,
                     RelationalAdjacencyDirection::Incoming => 2,
                 });
-                put_optional_version(&mut bytes, *native_revision);
-                put_u64(&mut bytes, u64::try_from(*comparison_work_limit).ok()?);
-                put_u32(&mut bytes, u32::try_from(endpoints.len()).ok()?);
+                put_optional_version(bytes, *native_revision);
+                put_u64(bytes, u64::try_from(*comparison_work_limit).ok()?);
+                put_u32(bytes, u32::try_from(endpoints.len()).ok()?);
                 for endpoint in endpoints {
-                    put_entity(&mut bytes, *endpoint);
+                    put_entity(bytes, *endpoint);
                 }
             }
             Fact::Entity { entity_id, kind } => {
                 bytes.push(5);
-                put_entity(&mut bytes, *entity_id);
-                put_u32(&mut bytes, kind.as_u32());
+                put_entity(bytes, *entity_id);
+                put_u32(bytes, kind.as_u32());
             }
             Fact::IndexedEntitySelection { .. } => {
                 bytes.push(7);
-                indexed_selection::encode(&mut bytes, fact)?;
+                indexed_selection::encode(bytes, fact)?;
             }
             Fact::Field {
                 entity_id,
@@ -129,15 +143,12 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
                 value,
             } => {
                 bytes.push(8);
-                put_entity(&mut bytes, *entity_id);
-                put_u32(&mut bytes, kind.as_u32());
-                put_locator(&mut bytes, locator)?;
-                let encoded = serde_json::to_vec(value).ok()?;
-                if encoded.is_empty() || encoded.len() > MAXIMUM_FACT_BYTES {
-                    return None;
-                }
-                put_u32(&mut bytes, u32::try_from(encoded.len()).ok()?);
-                bytes.extend_from_slice(&encoded);
+                put_entity(bytes, *entity_id);
+                put_u32(bytes, kind.as_u32());
+                put_locator(bytes, locator)?;
+                let length = encoding::json_length(value, MAXIMUM_FACT_BYTES)?;
+                put_u32(bytes, u32::try_from(length).ok()?);
+                encoding::json(bytes, value, MAXIMUM_FACT_BYTES)?;
             }
             Fact::AbsentField {
                 entity_id,
@@ -145,9 +156,9 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
                 locator,
             } => {
                 bytes.push(9);
-                put_entity(&mut bytes, *entity_id);
-                put_u32(&mut bytes, kind.as_u32());
-                put_locator(&mut bytes, locator)?;
+                put_entity(bytes, *entity_id);
+                put_u32(bytes, kind.as_u32());
+                put_locator(bytes, locator)?;
             }
             _ => return None,
         }
@@ -155,7 +166,7 @@ pub(super) fn encode_with_capacity(facts: &[Fact], capacity: usize) -> Option<Ve
             return None;
         }
     }
-    Some(bytes)
+    Some(())
 }
 
 #[cfg(test)]
@@ -165,7 +176,7 @@ pub(in crate::domain_computation::primary_graph) fn decode(
         &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     >,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-) -> Result<Arc<[Fact]>, fact_decode_denial::FactDecodeDenial> {
+) -> Result<FactPayload, fact_decode_denial::FactDecodeDenial> {
     decode_for_wire_version(bytes, WIRE_VERSION, request, allocation_policy)
 }
 
@@ -176,16 +187,16 @@ pub(in crate::domain_computation::primary_graph) fn decode_for_wire_version(
         &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     >,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-) -> Result<Arc<[Fact]>, fact_decode_denial::FactDecodeDenial> {
+) -> Result<FactPayload, fact_decode_denial::FactDecodeDenial> {
     let mut decoder = FactDecoder::new(bytes, wire_version, request, allocation_policy)?;
     let mut facts = Vec::with_capacity(decoder.count());
     while let Some(fact) = decoder.next_fact()? {
         facts.push(fact);
     }
-    Ok(facts.into())
+    Ok(FactPayload::decoded(facts, decoder.funding()))
 }
 
-fn put_locator(bytes: &mut Vec<u8>, locator: &AspectFieldLocator) -> Option<()> {
+fn put_locator(bytes: &mut impl FactBytes, locator: &AspectFieldLocator) -> Option<()> {
     bytes.push(match locator.aspect().authority() {
         LocatorAuthority::Authoritative => 1,
         LocatorAuthority::Derived => 2,
@@ -221,7 +232,8 @@ fn next_locator(cursor: &mut CheckpointCursor<'_>) -> Result<AspectFieldLocator,
     let field_count = usize::from(cursor.next_byte()?);
     if field_count == 0
         || field_count > MAXIMUM_FIELD_DEPTH
-        || field_count > cursor.remaining.len() / 9
+        // put_text and CheckpointCursor::next_bounded_text use u64 lengths.
+        || field_count > cursor.remaining.len() / (std::mem::size_of::<u64>() + 1)
     {
         return Err("checkpoint fact field path length is invalid".to_owned());
     }
@@ -240,7 +252,7 @@ fn next_locator(cursor: &mut CheckpointCursor<'_>) -> Result<AspectFieldLocator,
     ))
 }
 
-fn put_text(bytes: &mut Vec<u8>, text: &str) -> Option<()> {
+fn put_text(bytes: &mut impl FactBytes, text: &str) -> Option<()> {
     if text.is_empty() || text.len() > MAXIMUM_TEXT {
         return None;
     }
@@ -249,13 +261,13 @@ fn put_text(bytes: &mut Vec<u8>, text: &str) -> Option<()> {
     Some(())
 }
 
-fn put_entity(bytes: &mut Vec<u8>, entity: EntityId) {
+fn put_entity(bytes: &mut impl FactBytes, entity: EntityId) {
     put_u32(bytes, entity.partition_value());
     put_u64(bytes, entity.local_slot_value());
     put_u32(bytes, entity.generation_value());
 }
 
-fn put_optional_version(bytes: &mut Vec<u8>, version: Option<VersionId>) {
+fn put_optional_version(bytes: &mut impl FactBytes, version: Option<VersionId>) {
     match version {
         Some(version) => {
             bytes.push(1);
@@ -273,10 +285,10 @@ fn next_optional_version(cursor: &mut CheckpointCursor<'_>) -> Result<Option<Ver
     }
 }
 
-fn put_u32(bytes: &mut Vec<u8>, value: u32) {
+fn put_u32(bytes: &mut impl FactBytes, value: u32) {
     bytes.extend_from_slice(&value.to_be_bytes());
 }
-fn put_u64(bytes: &mut Vec<u8>, value: u64) {
+fn put_u64(bytes: &mut impl FactBytes, value: u64) {
     bytes.extend_from_slice(&value.to_be_bytes());
 }
 

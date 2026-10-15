@@ -61,11 +61,7 @@ impl ApplicationMutationBinding<DocumentRetentionSchema> for ExplicitReviewedSet
     const CANDIDATES: ApplicationCandidateRequirements = SetRetentionBinding::CANDIDATES;
 
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
-        Some(
-            ApplicationWorkflowExecutionRequirements::requiring_approval::<
-                WorkflowApprovalCapability,
-            >(),
-        )
+        ApplicationWorkflowExecutionRequirements::requiring_approval::<WorkflowApprovalCapability>()
     }
 
     fn scope_field() -> ApplicationFieldRef<
@@ -108,6 +104,11 @@ impl ApplicationMutationIntent<DocumentRetentionSchema> for ExplicitReviewedSetR
     }
 }
 
-impl worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<DocumentRetentionSchema> for ExplicitReviewedSetRetentionBinding {
-    type Admission = worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
+impl
+    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<
+        DocumentRetentionSchema,
+    > for ExplicitReviewedSetRetentionBinding
+{
+    type Admission =
+        worth_query_decl::facade::application_operation::ApplicationConventionalAdmission;
 }

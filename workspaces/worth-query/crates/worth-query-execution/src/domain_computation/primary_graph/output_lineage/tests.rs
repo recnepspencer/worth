@@ -289,7 +289,7 @@ fn recovered_prior_correspondence_is_not_currentness_evidence_until_exact_readmi
         partition,
         None,
         [0x41; 32],
-            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::from([])),
+            crate::domain_computation::primary_graph::output_lineage::ComputationSourceEvidence::for_test(false).retain_facts(Arc::<[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact]>::from([])),
         None,
         None,
         );
