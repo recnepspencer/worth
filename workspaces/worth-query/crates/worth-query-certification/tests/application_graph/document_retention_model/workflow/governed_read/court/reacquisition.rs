@@ -18,7 +18,7 @@ mod successors;
 fn original_intent_reacquires_carried_start_after_refs_drop_and_current_restore() {
     let mut application = install();
     support_successor(&mut application);
-    let p0 = *application.vocabulary().program_revision();
+    let p0 = *application.program_runtime().installed_program().revision();
     let p1 = *application
         .supported_program::<RetentionProgramP1>()
         .unwrap()

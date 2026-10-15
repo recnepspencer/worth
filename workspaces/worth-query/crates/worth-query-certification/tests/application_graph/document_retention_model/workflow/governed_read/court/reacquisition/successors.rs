@@ -7,7 +7,7 @@ fn carried_source_and_p1_migration_or_fork_successor_have_distinct_native_intent
     for forked in [false, true] {
         let mut application = install();
         support_successor(&mut application);
-        let p0 = *application.vocabulary().program_revision();
+        let p0 = *application.program_runtime().installed_program().revision();
         let p1 = *application
             .supported_program::<RetentionProgramP1>()
             .unwrap()
