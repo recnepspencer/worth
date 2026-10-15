@@ -139,7 +139,7 @@ where
             .source_currentness_work();
         let work = std::num::NonZeroUsize::new(policy.currentness_work.get().min(installed))
             .expect("installed finite positive currentness policy");
-        request.at(&observation).require_current_output_settlements_in_advancement(phase, self.settlement.retained_settlements(), work).map_err(|denial| match denial {
+        request.at(&observation).require_current_program_output_in_advancement(phase, &self.settlement, work).map_err(|denial| match denial {
             WorthQueryOutputCurrentnessDenial::Output(output) if matches!(output.kind(), worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::Superseded) => Denial::Stale(output),
             other => Denial::Currentness(other),
         })?;

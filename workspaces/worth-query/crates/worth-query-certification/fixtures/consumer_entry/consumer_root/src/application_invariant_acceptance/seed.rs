@@ -6,13 +6,12 @@ use worth_query_host::facade::primary_graph::{
 };
 use worth_query_topology_entry::{
     Body, BodyKey, Length, PlanarDiscoverySource, PlanarSuccessor, PositionX, PositionY,
+    TopologySchemaBinding,
 };
 
-use crate::ConsumerSchema;
-
-pub(super) fn seed_cycles(
+pub(super) fn seed_cycles<Schema: TopologySchemaBinding>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
-    graph: &mut WorthQueryPrimaryGraphBootstrap<ConsumerSchema>,
+    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
 ) {
     for (prefix, offset) in [("anchor", 0), ("sibling", 20), ("remote", 40)] {
         for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
@@ -20,20 +19,20 @@ pub(super) fn seed_cycles(
             graph
                 .bind_entity(
                     WorthQueryApplicationEntitySeed::new(
-                        Body::reference::<ConsumerSchema>(),
+                        Body::reference::<Schema>(),
                         entity_key(&key),
                     )
-                    .field(BodyKey::reference::<ConsumerSchema>(), key)
-                    .field(Length::reference::<ConsumerSchema>(), length(1))
-                    .field(PositionX::reference::<ConsumerSchema>(), length(x + offset))
-                    .field(PositionY::reference::<ConsumerSchema>(), length(y + offset)),
+                    .field(BodyKey::reference::<Schema>(), key)
+                    .field(Length::reference::<Schema>(), length(1))
+                    .field(PositionX::reference::<Schema>(), length(x + offset))
+                    .field(PositionY::reference::<Schema>(), length(y + offset)),
                 )
                 .expect("the complete source vertex is valid");
         }
         for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {
             graph
                 .bind_relation(WorthQueryApplicationRelationSeed::new(
-                    PlanarSuccessor::reference::<ConsumerSchema>(),
+                    PlanarSuccessor::reference::<Schema>(),
                     format!("{prefix}-{from}-to-{to}"),
                     entity_key(&format!("{prefix}-{from}")),
                     entity_key(&format!("{prefix}-{to}")),
@@ -44,7 +43,7 @@ pub(super) fn seed_cycles(
     for target in ["b", "c"] {
         graph
             .bind_relation(WorthQueryApplicationRelationSeed::new(
-                PlanarDiscoverySource::reference::<ConsumerSchema>(),
+                PlanarDiscoverySource::reference::<Schema>(),
                 format!("anchor-a-discovers-{target}"),
                 entity_key("anchor-a"),
                 entity_key(&format!("sibling-{target}")),
@@ -53,7 +52,7 @@ pub(super) fn seed_cycles(
     }
     graph
         .bind_relation(WorthQueryApplicationRelationSeed::new(
-            PlanarDiscoverySource::reference::<ConsumerSchema>(),
+            PlanarDiscoverySource::reference::<Schema>(),
             "anchor-a-discovers-remote-b",
             entity_key("anchor-a"),
             entity_key("remote-b"),
@@ -64,7 +63,9 @@ pub(super) fn seed_cycles(
         .expect("the complete bounded seed batch commits before installation finishes");
 }
 
-fn entity_key(key: &str) -> WorthQueryApplicationEntityKey<ConsumerSchema, Body> {
+fn entity_key<Schema: TopologySchemaBinding>(
+    key: &str,
+) -> WorthQueryApplicationEntityKey<Schema, Body> {
     WorthQueryApplicationEntityKey::new(key.to_owned()).unwrap()
 }
 

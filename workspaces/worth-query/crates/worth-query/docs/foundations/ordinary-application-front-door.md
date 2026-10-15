@@ -109,20 +109,18 @@ mutation input. Installation resolves the exact action occurrence and concrete
 delivery implementation; reusing its string identity does not replace its
 selector. Runtime type stamps are excluded from canonical meaning.
 
-The [nested Planar declaration](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/discovered_contracts.rs)
+The [nested Planar declaration](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_program/discovered_delivery.rs)
 shows a query, two-selector batch and explicit no-projection declaration against
-one real discovered root. These are declaration and installation contracts.
-Declaration and installation alone do not establish current delivery or replace
-the native discovered lifecycle. The ordinary discovered current/historical
-delivery composition is not yet available. Fixed and SourceOnly owning entry
-points below retain their existing behavior.
+one real discovered root. Declaration and installation establish meaning, not
+permission. The owning entry below composes that meaning with native admission,
+original-carrier recovery, traversal and complete current delivery.
 
 ## Owning fixed and source-only actions
 
 Install a program and declare the exact typed action occurrence and its delivery.
 `request.mutate(intent)` returns `WorthQueryOperationBuilder`; it exposes original
 source preparation, preconditions and `idempotency_owned(key)`, followed by
-`retain_operation::<Program, Action>(&runtime)`. Fixed and source-only callers
+`retain_operation::<Program, Action>(&runtime)`. Fixed, discovered and source-only callers
 cannot execute, prepare or recover through that builder or its borrowed-key view.
 The selected action carries composition instance, feature, binding and delivery;
 a binding label alone cannot select its contract.
@@ -159,11 +157,90 @@ and unchanged-product assertions. Advanced recovery courts separately refuse
 omitted conditions and substituted row/result-set identity while preserving the
 actual unpublished owner; they do not manufacture recovered handler results.
 
+## Owning discovered actions
+
+Declare a discovered delivery at the actual source occurrence and call the same
+`retain_operation::<Program, Action>` entry. It returns
+`WorthQueryDiscoveredOperation`; construction refuses an undeclared occurrence,
+foreign root, uninstalled projection or counterfeit concrete delivery before any
+effect. An identical delivery identity string cannot substitute a different
+selector implementation. Keep the original input, key, row/result-set expectation
+and complete typed preconditions in that owner. An attempt takes only a fresh
+ordinary request; it cannot replace those fields.
+
+A source publication can perform, retain an unpublished native partial, or commit
+but refuse output-source retention. All three remain genuine native owners inside
+the operation. `advance` delegates one step in one admitted phase. Match
+`Progress { operation, .. }` and `Refused { operation, denial }` and retain the
+returned operation. A committed retention refusal retries its actual original
+carrier; it does not rerun the handler or reconstruct discovery from a receipt.
+The native failure owner's posture decides whether that carrier is retryable.
+
+The small caller shape is:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let operation = request.mutate(intent)
+    .expect_source(original_source)
+    .preconditions(original_conditions)
+    .idempotency_owned(original_key)
+    .retain_operation::<Program, DeclaredDiscoveredAction>(&application)?;
+let next = operation.advance(&fresh_request);
+```
+
+The [original partial-publication consumer](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/discovered_owning.rs)
+uses a non-Clone intent, nondefault conditions and a real append failure. Its
+original request ends before recovery. The
+[committed-refusal consumer](../../../worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/discovered_owning/retention.rs)
+retains the actual failed registration, refuses a stopped fresh attempt, then
+promotes the same carrier and settles native fanout. These are the concrete
+consumer bodies for the source batch; their verification status belongs to the
+associated test run, not this illustrative fragment.
+
+`Settled(settled)` contains the original complete discovery evidence and all
+native output settlements. `settled.read_current(&fresh_request)` resolves the
+same action against the branch's current installed program, checks the complete
+original discovery and every settlement, then executes the original declared
+selector at that **same observation and phase**. It never rediscovers roots to
+replace the original required set. Originally empty discovery retains its
+negative facts. Retired roots retain membership evidence without invented output
+settlements.
+
+`read_current_with_policy` narrows finite native currentness/query ceilings.
+A refusal borrows the settlement; retry with fresh authority on that same owner.
+For a declared `ApplicationQueryBatchProjection<Read, N>`, use
+`read_batch_current::<N>` or `read_batch_current_with_policy::<N>`: one native
+aggregate allowance funds the ordered batch, and a late item refusal publishes
+no partial collection. For `ApplicationNoProjection`, use `deliver_current`;
+there is no dummy selector or query permission.
+
+`read_historical` and `read_batch_historical::<N>` use the original declared
+selectors at the authentic retained settlement basis under fresh query authority.
+They do not claim Current, adopt a new selector, republish outputs, or advance a
+completed handle. A consumed-fact change or removal/change of the current action
+refuses current delivery while preserving this history and lawful close.
+
+Fresh handler results and recovered evidence remain distinct. `handler_result()`
+is present only when the actual native Fresh result survives. A partial recovery
+or registered replay does not manufacture it. Reply loss can rejoin a genuine
+registered output owner using the original descriptor; a receipt cannot recreate
+missing registration or one-shot source delivery. `Terminal` has no advance
+method. Keep its native evidence and cleanup even when its business obligation
+cannot complete. `release_cleanup` discharges only the independent cleanup
+collection; `close` refuses while unresolved native obligations remain and
+returns the whole owner. None of these owners is a crash-durability promise.
+
+Deliberate partial-carrier manipulation, start/promotion and raw registered
+recovery remain current native controls under `request.advanced()`. They serve
+native custody and hostile identity courts, not an alternate ordinary retry path.
+Workflow and assessment owners retain their distinct native authority boundaries.
+
 ## Preparing a program action before publication
 
 ### Advanced native preparation
 
-Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed, discovered and source-only actions.
 Select `request.advanced()` before deliberate native mutation preparation.
 
 
@@ -193,7 +270,7 @@ recovery. Those use their existing source, workflow, and publication owners.
 
 ### Advanced native substrate
 
-Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed, discovered and source-only actions.
 Native request rebuilding in this section requires explicit `advanced()` selection.
 
 
@@ -211,7 +288,7 @@ caller's parent policy or shortening payload custody to the request's lifetime.
 
 #### Advanced native reports
 
-Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed, discovered and source-only actions.
 The following reports belong to the explicitly advanced native builder.
 
 
@@ -434,7 +511,7 @@ phases do not resolve latest product truth again.
 
 #### Advanced native branch lanes
 
-Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed and source-only actions.
+Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed, discovered and source-only actions.
 The covered manual lanes below require `request.advanced()`; discovered and
 bound workflow native lanes remain ordinary until their adapters land.
 

@@ -162,7 +162,46 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
         "native retention retry preserves Fresh result, not recovered projection"
     );
     assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
-    // Same-observation declared delivery is deliberately not claimed before Public's guard join.
+    let head = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
+    use worth_query_host::facade::application_entry::{
+        WorthQueryOperationDeliveryDenial, WorthQueryOperationDeliveryPolicy as Policy,
+    };
+    let one = NonZeroUsize::new(1).unwrap();
+    assert!(matches!(
+        settled.read_current_with_policy(&request, Policy::currentness(one)),
+        Err(WorthQueryOperationDeliveryDenial::Currentness(worth_query_host::facade::application_entry::WorthQueryOutputCurrentnessDenial::Output(denial)))
+        if denial.kind()==worth_query_host::facade::primary_graph::WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
+    ));
+    let policy = Policy::currentness(NonZeroUsize::new(8192).unwrap());
+    assert!(matches!(
+        settled.read_current_with_policy(&request, policy.query(one, one)),
+        Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Admission(denial)))
+        if matches!(denial.kind(),worth_query_host::facade::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded)
+    ));
+    let fresh_scope = authentication::request_scope();
+    let fresh_principal = authentication::block_on(adapter.authenticate(
+        authentication::LocalCredential::issued_for_model_owner(),
+        &fresh_scope,
+    ))
+    .unwrap();
+    let fresh = world.application.request(&fresh_principal, &fresh_scope);
+    let delivered = settled
+        .read_current(&fresh)
+        .expect("same owner retries declared delivery with fresh authorization");
+    assert_eq!(delivered.rows()[0].value, length(43));
+    assert_eq!(
+        settled.read_historical(&fresh).unwrap().rows()[0].value,
+        length(43)
+    );
+    assert_eq!(
+        fresh.retain_current_read().unwrap().selected_commit(),
+        &head
+    );
+    assert_eq!(planar_source_adjustment_contacts(&input), (1, 1));
     let _closed = settled
         .close(&request)
         .unwrap_or_else(|(_, denial)| panic!("lawful native cleanup: {denial:?}"));

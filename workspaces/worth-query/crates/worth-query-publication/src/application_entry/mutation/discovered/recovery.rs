@@ -24,6 +24,7 @@ use crate::application_entry::{
 };
 mod admission;
 mod advance;
+mod advanced;
 mod promotion;
 mod retention;
 
@@ -50,7 +51,7 @@ impl<'application, Schema> WorthQueryApplicationRequest<'application, '_, '_, Sc
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub fn recover_discovered_required_outputs<Program, Root>(
+    pub(in crate::application_entry) fn recover_discovered_required_outputs<Program, Root>(
         &self,
         application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
         receipt: &WorthQueryApplicationCommitReceipt,

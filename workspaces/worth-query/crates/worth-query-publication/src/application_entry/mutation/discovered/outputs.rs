@@ -35,6 +35,7 @@ use crate::application_entry::{
 };
 
 mod admission;
+mod completion;
 mod settlement;
 use admission::{DiscoveryBinding, DiscoveryQuery, DiscoveryValue, RootAdmission};
 pub use settlement::{
@@ -67,6 +68,7 @@ where
     >,
     continuation: Option<Box<dyn ProgramOutputContinuation<Schema, Program> + 'static>>,
     outputs: Vec<ProgramOutputRecord>,
+    dependencies: Option<worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies>,
     work: ProgramOutputTraversalWork,
 }
 
@@ -328,7 +330,12 @@ where
                 ProgramOutputContinuationProgress::Pending => {
                     return Ok(WorthQueryDiscoveredProgramOutputProgress::Pending);
                 }
-                ProgramOutputContinuationProgress::Settled { outputs, work } => {
+                ProgramOutputContinuationProgress::Settled {
+                    outputs,
+                    work,
+                    dependencies,
+                } => {
+                    root.dependencies = dependencies;
                     root.outputs = outputs;
                     root.work = work;
                     root.continuation = None;
@@ -336,50 +343,6 @@ where
                 }
             }
         }
-        application.complete_program_output_source(
-            &worth_query_execution::publication_boundary::program_publication_access(),
-            &self.source_receipt,
-        );
-        self.source_lease.take();
-        self.complete = true;
-        let settled_count = self
-            .roots
-            .iter()
-            .filter(|root| root.settlement.is_some())
-            .count();
-        let mut traversal = ProgramOutputTraversalWork::discovered(1, settled_count);
-        let mut roots = Vec::with_capacity(settled_count);
-        let mut outputs = Vec::new();
-        for mut root in std::mem::take(&mut self.roots) {
-            traversal.include(root.work);
-            if let Some(settlement) = root.settlement.take() {
-                roots.push((root.demand, settlement));
-            }
-            outputs.append(&mut root.outputs);
-        }
-        let work = crate::application_entry::mutation::WorthQueryApplicationProgramWork::from_all_settlements(
-            traversal,
-            roots.iter().map(|(_, settled)| (
-                settled.application_commit_receipt(),
-                settled.readiness_delivery(),
-                settled.checkpoint_readmission_work_units(),
-                settled.checkpoint_readmission_work_bound(),
-                settled.checkpoint_readmission_charged_preparation_bytes(),
-            ))
-                .chain(outputs.iter().map(|output| (
-                    output.receipt(), output.readiness_delivery(),
-                    output.checkpoint_readmission_work_units(),
-                    output.checkpoint_readmission_work_bound(),
-                    output.checkpoint_readmission_charged_preparation_bytes()))),
-        );
-        Ok(WorthQueryDiscoveredProgramOutputProgress::Settled(
-            WorthQueryDiscoveredProgramOutputSettlement::new(
-                self.source.retained_clone(),
-                roots,
-                std::mem::take(&mut self.superseded),
-                outputs,
-                work,
-            ),
-        ))
+        self.complete_outputs(phase, application, request)
     }
 }

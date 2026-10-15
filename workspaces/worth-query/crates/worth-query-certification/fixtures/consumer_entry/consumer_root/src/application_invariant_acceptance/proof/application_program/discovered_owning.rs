@@ -1,6 +1,6 @@
-//! Independent native-owner journey; declared current delivery waits for the reviewed guard.
+//! Original move-only descriptor survives native partial publication through complete ordinary delivery.
 use super::*;
-use crate::application_program::discovered_contracts::{Action, Program, QueryDelivery};
+use crate::application_program::discovered_delivery::{Action, Program, QueryDelivery};
 use worth_query_decl::facade::{
     application_operation::{ApplicationMutationBinding, ApplicationMutationIntent},
     application_program::ApplicationProgramAuthoring,
@@ -14,6 +14,21 @@ use worth_query_topology_entry::{
     planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, BodyKey,
     PlanarMutationScope, PlanarSourceAdjustmentBinding,
 };
+macro_rules! declared_world {
+    ($world:ident,$request:ident,$delivery:ty) => {
+        let program=ApplicationProgramAuthoring::<ConsumerSchema,Program<$delivery>>::begin().validated_program().unwrap();
+        let grants=[crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<Program<$delivery>>("model-owner","model-owner")];
+        let $world=installation::install_selected_program(&crate::installed_schema(),8192,4096,worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(),&grants,program).unwrap();
+        let adapter=authentication::admit($world.application.installed_schema());
+        let scope=authentication::request_scope();
+        let principal=authentication::block_on(adapter.authenticate(authentication::LocalCredential::issued_for_model_owner(),&scope)).unwrap();
+        let $request=$world.application.request(&principal,&scope);
+    };
+}
+mod affinity;
+mod delivery;
+mod membership;
+mod replay;
 mod retention;
 
 // The initiating intent cannot be cloned or reconstructed by the ordinary owner.
@@ -135,10 +150,17 @@ fn discovered_owning_original_partial_recovers_native_settlement_and_closes() {
     ))
     .unwrap();
     let fresh = world.application.request(&fresh_principal, &fresh_scope);
+    let mut held_partial = None;
     let mut current = Some(operation);
     let settled = (0..32)
         .find_map(|_| match current.take().unwrap().advance(&fresh) {
-            Advance::Progress { operation, .. } => {
+            Advance::Progress { operation, progress } => {
+                if matches!(progress,Progress::Recovery(worth_query_host::facade::application_entry::WorthQueryProgramSourceRecoveryProgress::Performed)) {
+                    let page=world.application.product_publication_recovery_page(None,NonZeroUsize::new(8).unwrap()).unwrap();
+                    assert_eq!(page.rows().len(),1);
+                    let inspector=world.application.readmit_product_publication_recovery(page.rows()[0].handle()).unwrap();
+                    held_partial=Some(inspector.inspect().unwrap());
+                }
                 current = Some(operation);
                 None
             }
@@ -166,7 +188,14 @@ fn discovered_owning_original_partial_recovers_native_settlement_and_closes() {
             .y,
         length(2)
     );
-    // This is an independent product read, not a claim that the declared aggregate is Current.
+    let delivered = settled
+        .read_current(&fresh)
+        .expect("whole aggregate guard and declared selector share one phase");
+    assert_eq!(delivered.rows()[0].value, length(42));
+    assert_eq!(
+        settled.read_historical(&fresh).unwrap().rows()[0].value,
+        length(42)
+    );
     let cancellation = worth_query_host::facade::admission::authenticated_principal::WorthQueryCancellationSource::new();
     let stopped =
         worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope::new(
@@ -184,6 +213,26 @@ fn discovered_owning_original_partial_recovers_native_settlement_and_closes() {
         .err()
         .expect("stopped close returns the native settlement and cleanup");
     assert_eq!(settled.settlement().output_count(), 6);
+    assert!(
+        held_partial.is_some(),
+        "actual post-recovery caller capability retained"
+    );
+    let (settled, denial) = settled
+        .close(&fresh)
+        .err()
+        .expect("native cleanup refuses the live inspector capability");
+    assert!(matches!(denial,worth_query_host::facade::application_entry::WorthQueryOperationCloseDenial::Recovery(worth_query_host::facade::product::WorthQueryProductUnpublishedRecoveryReleaseDenial::World(worth_query_host::facade::primary_graph::RuntimeWorldRecoveryDenial::CallerCapabilityLive))));
+    assert_eq!(
+        world
+            .application
+            .product_publication_recovery_page(None, NonZeroUsize::new(8).unwrap())
+            .unwrap()
+            .rows()
+            .len(),
+        1
+    );
+    assert_eq!(settled.settlement().output_count(), 6);
+    drop(held_partial);
     let _closed = settled
         .close(&fresh)
         .unwrap_or_else(|(_, denial)| panic!("fresh lawful cleanup: {denial:?}"));
@@ -193,4 +242,11 @@ fn discovered_owning_original_partial_recovers_native_settlement_and_closes() {
         .unwrap()
         .rows()
         .is_empty());
+}
+
+#[test]
+fn discovered_ordinary_executable_entry_examples_use_installed_delivery_contracts() {
+    let installed = crate::installed_schema();
+    super::discovered::performed_source_discovers_required_root(&installed);
+    super::discovered::isolated_source_settles_without_roots(&installed);
 }

@@ -19,9 +19,13 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationUncommitted, WorthQueryManagedApplicationRecoveryPerformed,
 };
 mod advance;
+mod batch_delivery;
 mod close;
 mod construction;
+mod currentness;
 mod custody;
+mod delivery;
+mod no_projection;
 mod outputs;
 mod recovery;
 mod replay;
@@ -61,3 +65,5 @@ type DiscoveryPrincipal<S, R> =
 type RootInput<S, R> = <RootSource<S, R> as ApplicationQueryBinding<S>>::Input;
 type RootScope<S, R> = <RootSource<S, R> as ApplicationQueryBinding<S>>::ScopeBinding;
 type RootPrincipal<S, R> = <RootSource<S, R> as ApplicationQueryBinding<S>>::PrincipalIdentity;
+
+type ProjectedRead<S,I,A> = <ActionDelivery<S,I,A> as worth_query_declaration::facade::application_program::ApplicationDiscoveredQueryDelivery<S,Binding<S,I>>>::Read;

@@ -122,6 +122,11 @@ where
     RootConnection<Schema, Root>:
         WorthQueryApplicationDiscoveredOutputConnection<Schema, Source = Intent::Binding>,
 {
+    /// Borrows the actual Fresh handler result without transferring or reconstructing custody.
+    pub fn result(&self) -> &MutationResult<Schema, Intent> {
+        &self.result
+    }
+
     pub const fn receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.receipt
     }

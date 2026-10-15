@@ -1693,7 +1693,7 @@ independently after native recovery. No original intent clone is required per pu
 
 Use the [ordinary owning entry](#53-execute-through-the-program) for fixed and
 source-only actions. Deliberate native callers select `request.advanced().mutate(intent)`.
-Only that type exposes manual fixed/source-only execute, two-phase prepare,
+Only that type exposes manual fixed/discovered/source-only execute, two-phase prepare,
 unpublished recovery, keyed resolution and fixed output start/recovery.
 The interim ordinary workflow binding returns `WorthQueryBoundWorkflowOperation`:
 it permits the designated `execute_in_program` funnel and owner-derived workflow
@@ -2062,6 +2062,20 @@ installs a **vocabulary** once: which operations, assessments, conditions,
 and approvals a workflow may use, and which capabilities control it. After
 that, definitions are *data*: authored, validated, published on a branch,
 discovered, started, and advanced at run time.
+
+For explicitly driven discovered programs, retain the completed aggregate and use
+`request.at(&observation).require_current_discovered_program_outputs(&settlement,
+maximum_work)` to validate that exact original required set. The check includes
+root and dependent discovery consumption and every retained output settlement.
+Changing membership refuses delivery even when every surviving root remains
+current. An originally empty set still carries its original negative facts;
+retiring a native root does not erase those facts or invent an output settlement.
+Refusal preserves the borrowed aggregate and its historical observation. This
+native guard does not run a projection. Ordinary discovered actions use
+`retain_operation::<Program, Action>`, then fresh-request `advance`; their settled
+owner composes this complete guard and the installed declared query or batch at
+one authentic observation and phase. See [owning discovered actions](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
+
 
 Every workflow action is a governed mutation. There is no background
 scheduler, and no timer or callback advances an instance: **the caller pumps
@@ -2987,12 +3001,12 @@ but did not publish is recovered with
   `ApplicationProgramAuthoring::<S, P>::begin().validated_program()` and
   install with `application_installation::in_memory_program` or
   `in_memory_rostered_program`.
-- Run fixed and source-only actions through `idempotency_owned(key)` and
+- Run fixed, discovered and source-only actions through `idempotency_owned(key)` and
   `retain_operation::<Program, Action>(&runtime)`, then supply fresh ordinary
   requests for advancement, delivery and close. Native admission checks the
   original runtime, branch and full action meaning on every attempt.
-- Keep the existing discovered and bound workflow entrances until their Phase B
-  and Phase C owners land; do not add a consumer retry engine around them.
+- Keep bound workflow entrances under their issued native workflow authority
+  until their owning adapter lands; do not add a consumer retry engine.
 - Match every outcome variant. Treat `NoEffect`, `ProductUnpublished`,
   `Awaiting*`, and `Commit(..)` as states to handle, not errors to retry.
 - `compare` before `adopt`, and pass the requirements you got.
@@ -3009,7 +3023,7 @@ but did not publish is recovered with
   facades (for example `worth_query_host::facade::domain` and
   `worth_query_host::facade::admission`).
 - Do not install a program-less runtime as an ordinary application or coordinate
-  fixed/source-only retries manually. Deliberate native control is described under
+  fixed/discovered/source-only retries manually. Deliberate native control is described under
   [Advanced](#advanced-native-mutation-control).
 - Do not substitute an action or program meaning on retry. Native admission compares the retained action with the branch's selected program.
 - Do not expect adoption to change sibling branches, or a branch set to adopt

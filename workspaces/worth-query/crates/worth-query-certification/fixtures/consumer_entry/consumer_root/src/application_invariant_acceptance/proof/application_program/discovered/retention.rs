@@ -35,6 +35,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
                 .observed_sources()[0]
                 .clone();
             request
+                .advanced()
                 .mutate($input)
                 .expect_source(source)
                 .idempotency(&$key)
@@ -79,6 +80,7 @@ fn discovered_committed_retention_refuses_twice_then_promotes_original_carrier()
         .refuse_next_discovered_retention_reservation_for_test()
         .is_err());
     let outcome = request
+        .advanced()
         .mutate(input.clone())
         .expect_source(source.clone())
         .idempotency(&109_202)

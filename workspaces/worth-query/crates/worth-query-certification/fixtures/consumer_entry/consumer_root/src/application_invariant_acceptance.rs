@@ -7,3 +7,5 @@ mod resources;
 mod seed;
 
 pub(crate) use proof::run;
+
+pub(crate) mod membership;

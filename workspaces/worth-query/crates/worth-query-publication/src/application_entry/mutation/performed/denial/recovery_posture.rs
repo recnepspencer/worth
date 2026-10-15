@@ -32,6 +32,16 @@ impl WorthQueryRequiredOutputPreparationDenial {
             | Denial::ReadObservation(_)
             | Denial::Connection(_)
             | Denial::Closed => WorthQueryRequiredOutputRecoveryPosture::Terminal,
+            Denial::Dependencies(cause) => match cause {
+                worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Output(cause) => output_posture(cause),
+                worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial::Source(cause) => {
+                    use worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
+                    match cause.kind() {
+                        Kind::RetainedSourceStorageDenied | Kind::WorkBudgetExceeded | Kind::PreparationMemoryExceeded => WorthQueryRequiredOutputRecoveryPosture::Retryable,
+                        _ => WorthQueryRequiredOutputRecoveryPosture::Terminal,
+                    }
+                }
+            },
             Denial::SourceQuery(query) => query_posture(query),
             Denial::DemandExecution(denial) => output_posture(denial),
             Denial::Demand(denial) => demand_posture(denial),

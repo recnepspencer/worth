@@ -2,6 +2,33 @@
 use super::*;
 /// Retains the immutable description and its genuine discovered-source/output custody.
 /// Every advancement borrows fresh authority and returns all custody on refusal.
+///
+/// Retrying cannot substitute original conditions, key, input or selected delivery.
+/// ```compile_fail,E0616
+/// use worth_query_publication::facade::application_entry::*;
+/// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationIntent, application_schema::ApplicationSchema};
+/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
+/// fn original<S,I,P,R,A>(owner: &WorthQueryDiscoveredOperation<'_,S,I,P,R,A>)
+/// where S:ApplicationSchema+'static, I:ApplicationMutationIntent<S>, P:ApplicationProgramDefinition<S>,
+/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
+/// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
+/// A:ApplicationDiscoveredAction<S,I::Binding>, A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R> {
+///     let _ = &owner.description;
+/// }
+/// ```
+/// The same owner exposes its original issued branch without granting authority.
+/// ```
+/// use worth_query_publication::facade::application_entry::*;
+/// use worth_query_declaration::facade::{application_program::*, application_operation::ApplicationMutationIntent, application_schema::ApplicationSchema};
+/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationDiscoveredOutputConnection;
+/// fn original<S,I,P,R,A>(owner: &WorthQueryDiscoveredOperation<'_,S,I,P,R,A>)
+/// where S:ApplicationSchema+'static, I:ApplicationMutationIntent<S>, P:ApplicationProgramDefinition<S>,
+/// R:ApplicationOutputGraphShape<S>+ApplicationDiscoveredOutputRoot,
+/// <R::RootConnection as ApplicationConnectionShape<S>>::Binding:WorthQueryApplicationDiscoveredOutputConnection<S,Source=I::Binding>,
+/// A:ApplicationDiscoveredAction<S,I::Binding>, A::Delivery:ApplicationDiscoveredActionDelivery<S,I::Binding,Root=R> {
+///     let _ = owner.branch();
+/// }
+/// ```
 #[must_use = "retain discovered source, output and cleanup custody until lawful close"]
 pub struct WorthQueryDiscoveredOperation<'r, S, I, P, R, A>
 where
@@ -138,6 +165,7 @@ where
     pub fn handler_result(&self) -> Option<&<I::Binding as ApplicationMutationBinding<S>>::Result> {
         match &self.state {
             State::Retention(failure) => Some(failure.result()),
+            State::Performed(performed) => Some(performed.result()),
             _ => self.result.as_ref(),
         }
     }
@@ -153,9 +181,12 @@ where
         self.initial_cause
     }
     pub(super) fn terminal(
-        self,
+        mut self,
         denial: WorthQueryOperationAdvanceDenial,
     ) -> DiscoveredAdvance<'r, S, I, P, R, A> {
+        if let State::Unpublished(partial) = &mut self.state {
+            self.prior_cleanup = partial.take_prior_cleanup();
+        }
         WorthQueryOperationAdvance::Terminal {
             operation: WorthQueryTerminalDiscoveredOperation { operation: self },
             denial,

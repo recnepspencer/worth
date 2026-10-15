@@ -81,7 +81,7 @@ It is not part of the stable feature described here.
 The [owning action entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
 retains original intent/key/preconditions/source and actual native custody. Keep
 Progress/Refused owners and supply a fresh ordinary request. Unpublished recovery
-and fixed retention promotion reuse original effects; registered replay rejoins
+and fixed/discovered retention promotion reuse original effects; registered replay rejoins
 outputs without fabricating a handler result. Missing registration and terminal
 native postures retain evidence/cleanup, without an advance method.
 
@@ -96,8 +96,8 @@ Drop is abandonment, not completion or crash durability.
 Use the [ordinary owning entry](../foundations/ordinary-application-front-door.md#owning-fixed-and-source-only-actions)
 for covered actions. Exact native unpublished/keyed/fixed recovery remains under
 `request.advanced()` for deliberate control and hostile certification. A receipt
-cannot reconstruct unregistered custody. Workflow/discovered recovery retain
-their own native owners until their adapters land.
+cannot reconstruct unregistered custody. Workflow recovery retains its distinct issued native authority. Ordinary discovered
+recovery is composed by its owning operation without request reconstruction.
 
 ### Committed discovered retention
 
@@ -116,10 +116,12 @@ that owner if starting fails. A terminal native posture is not permission for
 an endless retry. Keep independent managed cleanup and partial-recovery
 obligations; registering or settling outputs does not discharge them.
 
-Registered `recover_discovered_required_outputs` uses an existing registration
+Registered `request.advanced().recover_discovered_required_outputs` uses an existing registration
 and returns no original handler result. It cannot replace committed-retention
 retry or recreate missing one-shot delivery. These deliberate native controls
-are native substrate; they do not supply an ordinary owning discovered action.
+are advanced native substrate. Ordinary discovered callers retain the complete
+operation and supply fresh authority to `advance`; they never rebuild these
+requests or extract raw custody to implement a second retry path.
 
 The sealed certification control exercises controlled reservation-capacity
 refusal on the actual abandoned-source vector. It does not claim ordinary

@@ -185,15 +185,32 @@ where
                         )
                 )
         );
-        if !closable {
-            return Err((
-                self,
-                WorthQueryOperationCloseDenial::NativeObligationRetained,
-            ));
-        }
-        match self.release_cleanup(request) {
-            Ok(receipt) => Ok(WorthQueryClosedOperation::from_cleanup(receipt)),
-            Err(denial) => Err((self, denial)),
+        let runtime = self.operation.runtime.runtime();
+        let result = runtime.with_application_advancement(request.scope, |phase| {
+            let terminal_carrier = match &mut self.operation.state {
+                State::Unpublished(partial)
+                    if partial.recovery_posture()
+                        == WorthQueryRequiredOutputRecoveryPosture::Terminal =>
+                {
+                    let Some(performed) = partial.performed_mut() else {
+                        return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
+                    };
+                    self.operation.cleanup.absorb_recovered(performed)?;
+                    true
+                }
+                _ => false,
+            };
+            if !closable && !terminal_carrier {
+                return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
+            }
+            self.operation
+                .release_in_phase(&phase)
+                .map(WorthQueryClosedOperation::from_cleanup)
+        });
+        match result {
+            Ok(Ok(closed)) => Ok(closed),
+            Ok(Err(denial)) => Err((self, denial)),
+            Err(denial) => Err((self, WorthQueryOperationCloseDenial::Execution(denial))),
         }
     }
 }

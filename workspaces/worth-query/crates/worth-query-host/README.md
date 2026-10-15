@@ -112,21 +112,29 @@ The real result-set court calls the compiled capture with nondefault preconditio
 an actual post-effect append failure. It reads the resulting source and outputs
 independently after native recovery. No original intent clone is required per pump.
 
-### Discovered native entrance until Phase B
+### Owning discovered delivery and deliberate native control
 
-The discovered owner lands in Phase B. Its current typed native entrance remains
-ordinary for that lane; do not build a consumer continuation around it.
+Ordinary discovered actions use the same `retain_operation::<Program, Action>`
+entry with a declared discovered delivery. Keep the returned move-only operation
+on progress and refusal and supply fresh authority on each `advance`. Native
+partial recovery, committed-retention retry, registration and fanout stay inside
+that owner. A settled owner checks all original discovery facts and every output
+settlement at the same retained observation and phase as the declared scalar or
+batch read. Explicit no-projection delivery has no query selector.
 
-Discovered output sources have a separate move-only partial owner. A genuine
-`execute_performed_discovered` publication failure returns `ProductUnpublished`
-with its original preparation and typed discovery. Keep that owner and the exact
-original request, including its source observation when required. A fresh request
-can call `recover_unpublished_discovered_in_program`; after native performance,
-`promote_recovered_discovered_outputs` reads the exact original key and transfers
-the original performed carrier into an output handle once. Refused promotion
-returns the owner. Successful promotion also returns the raw performed recovery
-and all prior cleanup failures: starting outputs does not discharge those
-independent obligations. No original handler or candidate is executed again.
+Current delivery refusal preserves the settlement, original descriptor and
+cleanup. Historical reads use its original declared selector and retained basis
+with fresh authorization; they never claim Current. Fresh handler results remain
+distinct from recovered native evidence, and registered replay never reconstructs
+a result. Terminal custody has no advance entrance and cannot abandon unresolved
+native obligations through a successful close.
+
+For independent native custody tests, select `request.advanced().mutate(intent)`
+before `execute_performed_discovered`, unpublished recovery or promotion.
+Registered native recovery also starts at `request.advanced()`. These controls
+preserve actual partial/source owners and return them on refusal; they are not
+ordinary business retry helpers. See [owning discovered actions](../worth-query/docs/foundations/ordinary-application-front-door.md#owning-discovered-actions).
+
 ### Advanced fixed publication and recovery
 
 Use the [ordinary owning entry](#owning-fixed-and-source-only-actions) for fixed actions.

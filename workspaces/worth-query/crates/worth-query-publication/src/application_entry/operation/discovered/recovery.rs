@@ -32,6 +32,10 @@ where
         let State::Unpublished(partial) = self.state else {
             unreachable!("dispatch owns an unpublished source")
         };
+        if partial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal {
+            self.state = State::Unpublished(partial);
+            return self.terminal(Denial::RecoveryCarrierUnavailable);
+        }
         let mut borrowed = partial.into_same_binding_intent::<&I>();
         if borrowed.performed().is_none() {
             let progress = self
@@ -77,9 +81,14 @@ where
             }
             Err((denial, partial)) => {
                 self.state = State::Unpublished(partial.into_same_binding_intent::<I>());
-                Advance::Refused {
-                    operation: self,
-                    denial: Denial::Recovery(denial),
+                if matches!(&self.state, State::Unpublished(partial) if partial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal)
+                {
+                    self.terminal(Denial::Recovery(denial))
+                } else {
+                    Advance::Refused {
+                        operation: self,
+                        denial: Denial::Recovery(denial),
+                    }
                 }
             }
         }
