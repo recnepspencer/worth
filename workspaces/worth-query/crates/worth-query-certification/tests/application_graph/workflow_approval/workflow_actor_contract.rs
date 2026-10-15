@@ -98,6 +98,15 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
             .is_none(),
         "a control transition never fabricates a business executor"
     );
+    // The original control transition legitimately has no performed executor.
+    for omit_all in [true, false] {
+        assert!(performed
+            .receipt()
+            .committed_changes()
+            .workflow_actor_omission_for_test(performed.transition(), Role::Executor, omit_all)
+            .unwrap()
+            .is_none());
+    }
     let approval = performed.approval().expect("native approval was recorded");
     let principal = performed.receipt().principal_scope().principal();
     assert_eq!(
@@ -124,7 +133,54 @@ fn workflow_actor_contract_multiactor_requires_positive_original_proposer_and_cu
         Some(approval.approver())
     );
 
-    super::instance_migration::perform_approved_effect(&application, &instance, 71_020);
+    // Only remove components from the genuine immutable required role. The
+    // same native decoder must reject both all-missing and partial records.
+    for omit_all in [true, false] {
+        let denial = performed
+            .receipt()
+            .committed_changes()
+            .workflow_actor_omission_for_test(approval.entity(), Role::Approver, omit_all)
+            .expect_err("current required approver cannot be missing or partial");
+        assert_eq!(
+            denial.kind(),
+            WorthQueryApplicationAttemptDenialKind::InvalidAuthoritativeValue
+        );
+    }
+
+    let effect =
+        super::instance_migration::perform_approved_effect(&application, &instance, 71_020);
+    let admitted = effect.principal_scope().principal();
+    let original_executor = worth_relational::facade::identity::EntityId::new(
+        worth_relational::facade::identity::PartitionId::new(admitted.partition_id()),
+        admitted.local_slot(),
+        admitted.generation(),
+    );
+    assert_eq!(
+        original_executor, proposer,
+        "the real performer is the original native operator"
+    );
+    let mut performed_records = 0;
+    for (entity, _) in effect.committed_changes().entity_changes() {
+        if let Some(executor) = effect
+            .committed_changes()
+            .workflow_actor_fields_for_test(entity, Role::Executor)
+            .unwrap()
+        {
+            performed_records += 1;
+            assert_eq!(executor, original_executor);
+            assert_eq!(
+                effect
+                    .committed_changes()
+                    .workflow_actor_fields_for_test(entity, Role::Advancer)
+                    .unwrap(),
+                Some(original_executor)
+            );
+        }
+    }
+    assert_eq!(
+        performed_records, 1,
+        "one actual performed workflow transition records its executor"
+    );
     assert_eq!(read_retention(runtime, runtime.current_world()), 8);
 }
 

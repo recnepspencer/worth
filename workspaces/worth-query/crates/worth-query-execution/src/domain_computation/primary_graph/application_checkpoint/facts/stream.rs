@@ -7,6 +7,7 @@ pub(in crate::domain_computation::primary_graph) struct FactDecoder<'bytes, 'sco
     control: StorageControl<'scope, 'authority>,
     remaining: usize,
     count: usize,
+    funding: Arc<CodecPayloadReservation>,
 }
 impl<'bytes, 'scope, 'authority> FactDecoder<'bytes, 'scope, 'authority> {
     pub(in crate::domain_computation::primary_graph) fn new(
@@ -37,12 +38,22 @@ impl<'bytes, 'scope, 'authority> FactDecoder<'bytes, 'scope, 'authority> {
         }
         let control = StorageControl::new(policy, request);
         control.check_live().map_err(FactDecodeDenial::Retention)?;
+        let quote = super::payload::parse_quote(bytes.len(), count)
+            .ok_or_else(|| FactDecodeDenial::Retention(
+                crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Representability))?;
+        let funding = CodecPayloadReservation::admit(control, quote)?;
         Ok(Self {
+            funding,
             cursor,
             control,
             remaining: count,
             count,
         })
+    }
+    pub(in crate::domain_computation::primary_graph) fn funding(
+        &self,
+    ) -> Arc<CodecPayloadReservation> {
+        Arc::clone(&self.funding)
     }
     pub(in crate::domain_computation::primary_graph) fn count(&self) -> usize {
         self.count

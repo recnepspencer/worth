@@ -53,6 +53,13 @@ impl WorkflowRecordedActorObservation {
                 "workflow recorded role wire is invalid",
             )
         };
+        // Owned strings + native byte Vec + serde's unescape scratch are all
+        // bounded by the original JSON bytes (byte Vec capacity <2*elements).
+        let quote = encoded.len().checked_mul(4).ok_or_else(invalid)?;
+        let _parse_funding =
+            crate::domain_computation::primary_graph::workflow::actor::fund_actor_codec(
+                execution, quote,
+            )?;
         let value = Self::parse_encoding(encoded).map_err(|_| invalid())?;
         let requirement =
             Requirement::from_persistence_identity(&value.requirement).ok_or_else(invalid)?;

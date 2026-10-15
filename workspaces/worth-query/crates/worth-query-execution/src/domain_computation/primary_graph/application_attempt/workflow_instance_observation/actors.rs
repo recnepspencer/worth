@@ -9,12 +9,12 @@ pub(super) fn observe(
     facts: &mut Vec<WorthQueryApplicationObservedFact>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let kind = layout.instance.entity_kind;
-    if layout
+    let applicable = crate::domain_computation::primary_graph::workflow::actor::record::validate_actor_applicability;
+    let start_actor = layout
         .instance
         .start_advancer
-        .observe(runtime, execution, snapshot, entity, kind, facts)?
-        .is_none()
-    {
+        .observe(runtime, execution, snapshot, entity, kind, facts)?;
+    if applicable(start_actor, true).is_err() {
         return Err(denial("current workflow instance has no starting advancer"));
     }
     let end_actor = layout
@@ -52,7 +52,7 @@ pub(super) fn observe(
         locator: layout.instance.state.clone(),
         value: AspectValue::UInt64(tag),
     });
-    if ended != end_actor.is_some() {
+    if applicable(end_actor, ended).is_err() {
         return Err(denial(
             "workflow instance ending actor applicability is corrupt",
         ));

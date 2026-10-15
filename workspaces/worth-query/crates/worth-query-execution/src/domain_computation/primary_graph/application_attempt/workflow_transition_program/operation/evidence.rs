@@ -64,7 +64,7 @@ where
             || operation
                 .workflow_execution_requirements
                 .approval()
-                .is_none_or(|(required_capability, required_type)| {
+                .is_some_and(|(required_capability, required_type)| {
                     required_capability != capability || required_type != capability_type
                 })
         {

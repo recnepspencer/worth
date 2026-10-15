@@ -166,7 +166,7 @@ fn a_commit_delivered_without_touch_keys_starts_a_fully_verified_epoch() {
         ));
         let current = cell.read_image();
         let row = current.payload().current.settlements.get(&earlier).unwrap();
-        assert!(Arc::ptr_eq(row.facts.for_comparison().unwrap().facts(), &facts));
+        assert!(row.facts.for_comparison().unwrap().facts().same_backing(&facts.clone().into()));
         assert_eq!(row.read_basis.as_ref(), &after);
         assert_eq!(row.delivery_epoch, current.payload().current.delivery_epoch);
         let basis_bytes = super::super::index_capacity::arc_bytes::<

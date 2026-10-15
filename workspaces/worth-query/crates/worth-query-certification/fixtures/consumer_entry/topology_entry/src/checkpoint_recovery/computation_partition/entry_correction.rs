@@ -47,7 +47,12 @@ impl<Schema: TopologySchemaBinding, const WORKFLOW: bool> ApplicationMutationBin
     fn workflow_execution_requirements(
     ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
     {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+        use worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements;
+        if WORKFLOW {
+            ApplicationWorkflowExecutionRequirements::occurrence_only()
+        } else {
+            ApplicationWorkflowExecutionRequirements::not_applicable()
+        }
     }
 
     type Input = EntryCorrection;

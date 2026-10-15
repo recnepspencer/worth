@@ -74,7 +74,7 @@ impl WorthQueryApplicationOutputLineage {
         verified_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     ) -> Option<RestoredRecord> {
         let computation_source = observed_source_facts.source();
-        let observed_source_facts = Arc::clone(observed_source_facts.postconditions());
+        let observed_source_facts = observed_source_facts.postconditions().clone();
         self.record_restored_row(
             output_binding,
             runtime_authority,
@@ -110,8 +110,8 @@ impl WorthQueryApplicationOutputLineage {
         source_partition_identity: [u8; 32],
         producer_dependency_identity: Option<[u8; 32]>,
         idempotency_key_identity: [u8; 32],
-        observed_source_facts: Arc<
-            [super::super::application_attempt::WorthQueryApplicationObservedFact],
+        observed_source_facts: impl Into<
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         >,
         resources: Option<
             super::super::application_contribution::WorthQueryProducerDemandResources,
@@ -120,6 +120,7 @@ impl WorthQueryApplicationOutputLineage {
         republished: &mut Option<republication::RepublishedOutput>,
         computation_source: super::ComputationSourceEvidence,
     ) -> Option<RestoredRecord> {
+        let observed_source_facts = observed_source_facts.into();
         let source = SemanticSource {
             runtime_authority,
             schema,
@@ -181,10 +182,9 @@ impl WorthQueryApplicationOutputLineage {
         }
         let slot = generation.len();
         let republished = republished.take();
-        let facts = republished.as_ref().map_or_else(
-            || Arc::clone(&observed_source_facts),
-            |output| output.facts(),
-        );
+        let facts = republished
+            .as_ref()
+            .map_or_else(|| observed_source_facts.clone(), |output| output.facts());
         let mut recorded = RecordedOutput {
             native_prior_checkpoint: None,
             computation_source,

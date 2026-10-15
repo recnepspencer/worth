@@ -86,10 +86,10 @@ impl ComputationSourceEvidence {
     /// This does not certify currentness or expose a stale record's facts.
     pub(in crate::domain_computation::primary_graph) fn retain_facts(
         self,
-        facts: std::sync::Arc<
-            [crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact],
+        facts: impl Into<
+            crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         >,
     ) -> super::RetainedSourceFacts {
-        super::RetainedSourceFacts::retain(self, facts)
+        super::RetainedSourceFacts::retain(self, facts.into())
     }
 }
